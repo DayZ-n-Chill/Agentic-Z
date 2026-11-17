@@ -48,7 +48,7 @@ DayZ 1.30 added four firearm script classes whose weapons are not in the vanilla
 
 Each has its hand animation profile registered with `AddItemInHandsProfileIK`: `Luger_Base` at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:395`, `MP18_Base` at `:432`, `SCARL_Base` at `:445` and `LeeEnfield_Base` at `:446`.
 
-But there is no folder for any of them under `P:\DZ\weapons\firearms\` or `P:\DZ\weapons\pistols\`, and no `CfgWeapons` class. A script class is therefore no proof that a weapon can be spawned or that its model can be used as a reference: check the config on `P:\` first, and build on a weapon that ships there (the SCAR-H at `P:\DZ\weapons\firearms\scarh\config.cpp:26` for a rifle like the SCAR-L). The knowledge pack reports that game build 1.30.164200 ships these weapons in `weapons_nasdara.pbo` with config parents that differ from the script parents (`SCARL_Base: Rifle_Base`, `MP18_Base: Rifle_Base`); not yet checked on `P:\`. Details: `skills/dayz-weapons/references/dayz-1-30-weapons.md`.
+But there is no folder for any of them under `P:\DZ\weapons\firearms\` or `P:\DZ\weapons\pistols\`, and no `CfgWeapons` class. A script class is therefore no proof that a weapon can be spawned or that its model can be used as a reference: check the config on `P:\` first, and build on a weapon that ships there (the SCAR-H at `P:\DZ\weapons\firearms\scarh\config.cpp:26` for a rifle like the SCAR-L). Game build 1.30.164200 ships these weapons in `weapons_nasdara.pbo` with config parents that differ from the script parents (`SCARL_Base: Rifle_Base`, `MP18_Base: Rifle_Base`); not yet checked on `P:\`. Details: `skills/dayz-weapons/references/dayz-1-30-weapons.md`.
 
 ## Config base classes
 
@@ -60,7 +60,7 @@ The `CfgWeapons` roots are in `P:\DZ\data\config.cpp` (addon `DZ_Data`):
 
 Vanilla guns put shared values in a `scope=0` base class and the spawnable variants in `scope=2` children (`CZ527_Base` at `cz527\config.cpp:31` with `scope=0`, `CZ527` at `:180` with `scope=2`). Inherit from the `scope=2` class when the mod gun uses the vanilla model, or from the `_Base` class when it brings its own model and attachment list.
 
-Inheriting another mod's weapon base works the same way and brings that weapon's fire modes, slots and state machine with it: forward declare the base inside `CfgWeapons` and put its addon in `requiredAddons[]`. The knowledge pack's author did this in two finished projects (an SMG on the A6 weapon pack's PP19 base, a rifle on its AKM base; third-party, not on `P:\`). As long as the new class declares no fire mode classes of its own, the root scope rule for `Mode_*` in `weapon-config.md` cannot bite; once it does declare them, it applies.
+Inheriting another mod's weapon base works the same way and brings that weapon's fire modes, slots and state machine with it: forward declare the base inside `CfgWeapons` and put its addon in `requiredAddons[]`. This worked in game for an SMG built on a third-party weapon pack's PP19 base and for a rifle built on its AKM base (third-party mod behaviour, not vanilla). As long as the new class declares no fire mode classes of its own, the root scope rule for `Mode_*` in `weapon-config.md` cannot bite; once it does declare them, it applies.
 
 ## Hand animations
 

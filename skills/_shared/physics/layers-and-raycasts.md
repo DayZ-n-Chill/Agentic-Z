@@ -48,7 +48,7 @@ They look at different things. Choosing the wrong one is a common cause of "my r
 
 - `RaycastRVParams` defaults to `ObjIntersectView` (`P:\scripts\3_game\global\dayzphysics.c:88`).
 - An overlap test reports through `CollisionOverlapCallback.OnContact(IEntity other, Contact contact)` (`P:\scripts\3_game\global\dayzphysics.c:115-121`).
-- `CollisionFlags` is FIRSTCONTACT, NEARESTCONTACT, ONLYSTATIC, ONLYDYNAMIC, ONLYWATER, ALLOBJECTS (`P:\scripts\1_core\proto\endebug.c:140-148`). Pass the names, never numbers: the source pack reports that a later 1.30 build puts `NONE = 0` first, which shifts every value by one. The copy on `P:\` has no `NONE`.
+- `CollisionFlags` is FIRSTCONTACT, NEARESTCONTACT, ONLYSTATIC, ONLYDYNAMIC, ONLYWATER, ALLOBJECTS (`P:\scripts\1_core\proto\endebug.c:140-148`). Pass the names, never numbers: a later 1.30 build may put `NONE = 0` first, which shifts every value by one (not checkable on `P:\`, whose copy has no `NONE`).
 - There is no Roadway choice in `ObjIntersect` (`P:\scripts\3_game\constants.c:31-38`), so `RaycastRV` cannot probe a Roadway LOD; see `player-controller.md` for why that matters for lifts.
 
 Vanilla examples of each family:
@@ -70,5 +70,5 @@ Vanilla examples of each family:
 
 ## Surface under a point
 
-- `DayZPhysics.GetHitSurfaceAndLiquid(other, begPos, endPos, surface, liquidType)` names the surface of an object (`P:\scripts\3_game\global\dayzphysics.c:206`). Measured in game (source pack test mod BenchRE, DayZDiag 1.29; not checkable on `P:\`): it returned no name for open terrain in 6 of 6 probes, because it needs an object and terrain is not one.
+- `DayZPhysics.GetHitSurfaceAndLiquid(other, begPos, endPos, surface, liquidType)` names the surface of an object (`P:\scripts\3_game\global\dayzphysics.c:206`). Measured in game (DayZDiag 1.29; not checkable on `P:\`): it returned no name for open terrain in 6 of 6 probes, because it needs an object and terrain is not one.
 - For terrain use `SurfaceGetType(x, z, out type)` or `SurfaceGetType3D` on the game object (`P:\scripts\3_game\global\game.c:1180`, `:1183`).

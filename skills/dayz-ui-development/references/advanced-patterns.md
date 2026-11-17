@@ -10,7 +10,7 @@ Worked layout and script sketches for interactive UI: keeping widgets from overl
 
 Also wrong in the sketches: several `ScriptView` examples use `m_root` (Dabs exposes `m_LayoutRoot` and `GetLayoutRoot()`) and override `OnShow()` on a class that `extends ScriptView` (Dabs `ScriptView` has no `OnShow`; that hook belongs to `UIScriptedMenu` and to Expansion's `ExpansionScriptViewMenu`). Rebuild the sketch on the vanilla `ScriptedWidgetEventHandler` and `UIScriptedMenu` calls before copying it.
 
-Everything else in this file is not yet checked on `P:\`. Rule numbers ("rule 3") point at `rules-and-checklist.md` in this folder.
+Everything else in this file that carries no `P:\` citation is not yet checked on `P:\`. Rule numbers ("rule 3") point at `rules-and-checklist.md` in this folder.
 
 ---
 
@@ -36,7 +36,7 @@ These are patterns for complex interactive UI elements. They target the most com
 - Outside spacer widgets, layout positioning is absolute (there is no flexbox). `WrapSpacerWidgetClass` and `GridSpacerWidgetClass` place their own children, as section 1 shows
 - Enforce Script has **no ternary operator** (the only confirmed restriction). `++`, `+=` and `foreach` all work
 - All widgets render in tree order (later siblings on top)
-- Mouse events propagate through `ignorepointer` flag
+- A widget with `ignorepointer 1` takes no mouse events itself; its children still do. The vanilla pause menu's `continuebtn` (`P:\gui\layouts\day_z_ingamemenu.layout:122`) is clickable inside a `WrapSpacerWidgetClass bottom` that sets `ignorepointer 1` (`:99-101`)
 
 ---
 
@@ -296,7 +296,7 @@ class CurrencyToggleController extends ScriptView
 1. **Check `ignorepointer 1` flag**
    - REMOVE from all interactive widgets (ButtonWidget, EditBoxWidget, etc.)
    - ONLY keep on decorative widgets (backgrounds, labels, separators)
-   - Parent's `ignorepointer 1` blocks child clicks even if child doesn't have it
+   - A parent's `ignorepointer 1` does not block its children: vanilla puts clickable buttons inside containers that set it (`P:\gui\layouts\day_z_ingamemenu.layout:99-122`). Check the widget itself, not its ancestors
 
 2. **Check widget visibility and size**
    - Is `visible 0` set anywhere? (Disables interaction completely)
@@ -899,7 +899,7 @@ class AmountInputController extends ScriptView
 
 | Symptom | Root Cause | Fix |
 |---------|-----------|-----|
-| Widget not clickable | `ignorepointer 1` on widget or parent | Remove from interactive widgets; only use on decorative elements |
+| Widget not clickable | `ignorepointer 1` on the widget itself | Remove from interactive widgets; only use on decorative elements |
 | Text overlaps content below | No `RecalculateLayout()` after Show/Hide | Call `RecalculateLayout()` after visibility changes |
 | Button doesn't fire OnClick | Missing `SetHandler(this)` or custom handler | Check handler registration; verify OnClick signature has 4 params |
 | Colors look wrong or dark | The player's HUD brightness setting, applied globally by vanilla | Design against it. Never call `Widget.SetLV(0)`: it is `proto static` and overwrites the player's setting (`SetHudBrightness` at `P:\scripts\3_game\dayzgame.c:3910-3914`) |
@@ -909,7 +909,7 @@ class AmountInputController extends ScriptView
 | EditBox text invisible | Text color same as background or not set | Set text color explicitly in layout or script: `SetColor(ARGB(...))` |
 | Widget size 0x0 (not visible) | `hexactsize 0 vexactsize 0` with `size 1 1` misuse | Verify exact size values match intended dimensions |
 | Later siblings block clicks | Widget tree order (later renders on top) | Reorder the tree or call `SetSort` with a lower `int` (the `SortOrderEnum` in the section 3 sketch does not exist) |
-| Parent blocks child clicks | Parent has `ignorepointer 1` but child doesn't | Parent's flag blocks even if child is interactive |
+| Child of an `ignorepointer 1` parent not clickable | Not the parent's flag: vanilla buttons work inside `ignorepointer 1` containers (`P:\gui\layouts\day_z_ingamemenu.layout:99-122`) | Look for a later sibling on top, a zero size, or a missing handler |
 | Window dragging stutters | Drag offset calculation wrong | Recalculate offset at each move: `currentPos - mouseX` |
 | Tab switching doesn't hide old content | `Show(false)` not called on previous tab | Explicitly hide all non-active tabs in `SelectTab()` |
 | Status message fades wrong | Fade duration not matched to auto-hide delay | Ensure fade-out duration (500ms) << auto-hide timeout (3000ms) |

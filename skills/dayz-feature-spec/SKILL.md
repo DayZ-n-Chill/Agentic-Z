@@ -43,9 +43,9 @@ In this repo the plan is `output/<ModName>-plan/plan.md`, written by `dayz-mod-a
 Fill in `references/spec-template.md`. It is short on purpose. Four sections carry the DayZ-specific weight:
 
 - **Acceptance scenarios.** Given/When/Then, each with concrete in-game repro steps (spawn what, do what, observe what). "It works" is not a scenario.
-- **Success criteria.** Measurable and, where possible, independent of the implementation. DayZ examples: "the bolt moves when firing", "0 `Error` lines in `script_*.log` after the test", "hands within 0.5 cm of the grip", "the car reaches at least X km/h on flat ground". Vague adjectives ("looks good", "works") are not criteria. When a criterion is settled by an experiment, the position of each event is a mandatory covariate (lesson LL-427): record it and report it with the result. The mechanism is proven by stratifying on position: if the treatment stops mattering inside each stratum, position was the cause.
+- **Success criteria.** Measurable and, where possible, independent of the implementation. DayZ examples: "the bolt moves when firing", "0 `Error` lines in `script_*.log` after the test", "hands within 0.5 cm of the grip", "the car reaches at least X km/h on flat ground". Vague adjectives ("looks good", "works") are not criteria. When a criterion is settled by an experiment, the position of each event is a mandatory covariate: record it and report it with the result. The mechanism is proven by stratifying on position: if the treatment stops mattering inside each stratum, position was the cause.
 - **Assumptions.** Mark every guess `ASSUMED`. If an assumption decides whether the work is correct (a path, a classname, a version, a format), resolve it with the user now, not after coding (ask with AskUserQuestion where the agent has it). Saying a risk out loud is not managing it.
-- **Forward contract.** List every symbol the next phase or another consumer reads: `config.cpp` classnames, `model.cfg` selections and bones, `.p3d` proxy paths, `hiddenSelections`, stringtable keys, layout names. Each one carries a verify status: a `path:line` you opened (Tier 2, "Cite, then verify"), or `[UNVERIFIED]`. The analyze gate treats an `[UNVERIFIED]` reference as CRITICAL. This is the class of bug measured on the knowledge pack author's LFQuad project: a proxy path that points at a file that does not exist, and selections `model.cfg` needs that the model does not have. Before spending an experiment arm on a field, grep for the code that reads it, not counting its declaration, default, clamp and serialization (lesson LL-428). A field nobody reads is a placebo; when the reader is conditional, prove on recorded run data that the condition is reached.
+- **Forward contract.** List every symbol the next phase or another consumer reads: `config.cpp` classnames, `model.cfg` selections and bones, `.p3d` proxy paths, `hiddenSelections`, stringtable keys, layout names. Each one carries a verify status: a `path:line` you opened (Tier 2, "Cite, then verify"), or `[UNVERIFIED]`. The analyze gate treats an `[UNVERIFIED]` reference as CRITICAL. This is the class of bug the contract exists to catch: a proxy path that points at a file that does not exist, and selections `model.cfg` needs that the model does not have. Before spending an experiment arm on a field, grep for the code that reads it, not counting its declaration, default, clamp and serialization. A field nobody reads is a placebo; when the reader is conditional, prove on recorded run data that the condition is reached.
 
 ## Step 2: spec quality checklist
 
@@ -61,32 +61,32 @@ This gate works on the documents. Tracing an invariant to every call site in the
 
 ## Forward contract for injected objects
 
-(claim `CLAIM-R21-FEATURE-INJECTED-CONTRACT`) When a plan injects an object that replaces another implementation (a planner, a bridge, a transport, a repository), the forward contract lists every field and method the consumer reads, not only the field that motivated the test double. Grep every access on the injected value, and prefer the existing result type over a partial look-alike. The generator of experiment variants applies the consumer's clamp rules before it calls something a treatment, and the manifest records the effective value, not the requested one (lesson LL-429): a variant that clamps back to the control value is a mislabelled control.
+When a plan injects an object that replaces another implementation (a planner, a bridge, a transport, a repository), the forward contract lists every field and method the consumer reads, not only the field that motivated the test double. Grep every access on the injected value, and prefer the existing result type over a partial look-alike. The generator of experiment variants applies the consumer's clamp rules before it calls something a treatment, and the manifest records the effective value, not the requested one: a variant that clamps back to the control value is a mislabelled control.
 
-The failure is concrete: a consumer can read `.status.value`, `.proposal` and `.source` when the plan mentions only `.proposal`, and the partial object then fails at run time although it satisfies the written spec. Measured on the knowledge pack author's GameMaster project, which is not part of this repo.
+The failure is concrete: a consumer can read `.status.value`, `.proposal` and `.source` when the plan mentions only `.proposal`, and the partial object then fails at run time although it satisfies the written spec.
 
 ### Eligibility symmetry across push and pull
 
-(lesson LL-269) Before a forward contract says "use the same bound or rule as X", list every existing predicate that answers the same eligibility, visibility or authorization question. If full sync, incremental broadcast and request handling disagree, the contract names the chosen invariant and justifies it; it does not copy one route because it is nearest.
+Before a forward contract says "use the same bound or rule as X", list every existing predicate that answers the same eligibility, visibility or authorization question. If full sync, incremental broadcast and request handling disagree, the contract names the chosen invariant and justifies it; it does not copy one route because it is nearest.
 
 When the server pushes notice of data and also serves that data on request, the pull must not be stricter than the push unless the contract defines a recoverable exception. Add an acceptance case where the direct player-to-object distance fails but eligibility through a connected endpoint passes: a pushed notice must lead to a successful pull. If the defect was in the contract, amend the contract with a changelog alongside the code; a code-only fix leaves the trap for the next phase.
 
 ## A search with no hits does not prove absence
 
-(claim `CLAIM-R21-FEATURE-API-INDEX-LIVENESS`) Before recommending an API, open the cited vanilla source, record its `path:line`, and read the surrounding `#ifdef` state, the parent chain and the config namespace. In this repo that is the Tier 2 search rule: Grep `P:\scripts\` for the name, then open the hit. Two traps:
+Before recommending an API, open the cited vanilla source, record its `path:line`, and read the surrounding `#ifdef` state, the parent chain and the config namespace. In this repo that is the Tier 2 search rule: Grep `P:\scripts\` for the name, then open the hit. Two traps:
 
 - A hit can be dead code. Grep also finds commented-out declarations and code under a define the build does not set. Vanilla keeps such lines: `disableBaseDecay` is assigned only in a commented-out line of `InitServer` (`P:\scripts\3_game\cfggameplaydatajson.c:48`), while the member itself is live at `:60`.
-- No hit is not proof either. The knowledge pack's own API index (version 1 of its `packctl` tool) strips comments, so a commented-out declaration and a missing one both give zero records. Until an index reports `active`, `commented` or `missing`, a zero result only says "open the source".
+- No hit is not proof either. An API index that strips comments gives zero records for a commented-out declaration and for a missing one alike. Until an index reports `active`, `commented` or `missing`, a zero result only says "open the source".
 
 An index is supporting evidence. It is not a gate that blocks unrelated work such as the `.layout` viewer or a UI evidence loop.
 
 ## Decision tests and probes
 
-Rules promoted from the knowledge pack author's lesson log, each with its lesson id:
+Rules for tests and probes that decide a design question:
 
-- **LL-017.** Every decision test defines PASS, FAIL and INCONCLUSIVE (setup failed), with an explicit precondition that separates the third from the other two. Fix the metrics and the matching rule before running the test.
-- **LL-116.** Every probe used to decide architecture keeps its inputs held during the window, uses a mechanically complete fixture, and proves it fails closed before any side effect. If a null result has more than one plausible cause, classify it INCONCLUSIVE.
-- **LL-040.** Do not close or dismiss a criterion because the log is silent until you have run the interaction that can reveal the failure. If the condition cannot be reproduced yet, keep the gate open or show structural parity with a working baseline.
+- **Three verdicts.** Every decision test defines PASS, FAIL and INCONCLUSIVE (setup failed), with an explicit precondition that separates the third from the other two. Fix the metrics and the matching rule before running the test.
+- **Held inputs.** Every probe used to decide architecture keeps its inputs held during the window, uses a mechanically complete fixture, and proves it fails closed before any side effect. If a null result has more than one plausible cause, classify it INCONCLUSIVE.
+- **Silent logs.** Do not close or dismiss a criterion because the log is silent until you have run the interaction that can reveal the failure. If the condition cannot be reproduced yet, keep the gate open or show structural parity with a working baseline.
 
 ## Raw producer records and canonical derived records
 
@@ -99,7 +99,7 @@ Name the emitter of both records and state the transformation from `X_RAW` to `X
 
 ## What this leaves out of generic spec-driven development
 
-The flow is the specify, clarify, analyze, implement sequence of spec-driven development (spec-kit), cut down to what a DayZ mod needs. Left out on purpose:
+The flow is the specify, clarify, analyze, implement sequence of spec-driven development, cut down to what a DayZ mod needs. Left out on purpose:
 
 - **Test-first, red-green and contract tests.** A DayZ mod has no unit-test harness for its scripts; the acceptance test is the in-game gate. The verification path replaces test-first.
 - **Each user story as an independent MVP.** DayZ features are often all or nothing (a vehicle drives or it does not; a grip pose is right or wrong). Priorities and scenarios stay; the per-story MVP ceremony does not.

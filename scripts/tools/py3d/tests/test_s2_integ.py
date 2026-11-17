@@ -3,10 +3,13 @@
   inspector  extract -> build -> extract is a fixed point
   audit      audit_p3d.py over a healthy model: ALL PASSED
   viewer     p3d_to_gltf.py produces a .glb that pygltflib parses
-  recipe     extract.py and P3D.to_dict() agree semantically
+  recipe     p3d_inspector_extract.py and P3D.to_dict() agree semantically
 
 They skip, with a stated reason, when those scripts or their dependencies
-are not present:
+are not present. SKILLS_DIR names a skills folder that holds
+dayz-p3d-inspector/scripts, dayz-p3d-audit/scripts/audit_p3d.py and
+dayz-3d-viewer/scripts/p3d_to_gltf.py as they stood when py3d's recipe and
+audit code was written:
     SKILLS_DIR=<...>/skills pytest tests/test_s2_integ.py
 """
 
@@ -22,6 +25,10 @@ from builders import build_multilod_v2_p3d
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILLS = os.environ.get(
     "SKILLS_DIR", "")
+if SKILLS:
+    # The scripts run with the py3d folder as working directory, so a
+    # relative SKILLS_DIR has to be resolved here, against pytest's own.
+    SKILLS = os.path.abspath(SKILLS)
 
 INSPECTOR = os.path.join(SKILLS, "dayz-p3d-inspector", "scripts")
 AUDIT_ORIG = os.path.join(SKILLS, "dayz-p3d-audit", "scripts",
@@ -102,7 +109,7 @@ def test_integ_inspector_roundtrip_idempotent(fork, tmp_path):
 
 @needs_skills
 def test_integ_audit_premigracion_all_pass(fork, tmp_path):
-    """The ORIGINAL audit script, running on this fork, reports OVERALL ALL
+    """The skill's audit script, running on this library, reports OVERALL ALL
     PASSED (exit 0) on the healthy model. The legacy GeoPhys and
     autocenter-on-FireGeo WARNINGs are exactly the drift the pruned parity
     check removes; they do not block."""
@@ -129,7 +136,7 @@ def test_integ_viewer_glb_parses(fork, tmp_path):
 
 @needs_skills
 def test_recipe_compat_extract_vs_to_dict(fork, tmp_path):
-    """extract.py and to_dict() agree semantically, under schema v1, on the
+    """p3d_inspector_extract.py and to_dict() agree semantically, under schema v1, on the
     same fixture."""
     pytest.importorskip("numpy")
     extract = os.path.join(INSPECTOR, "p3d_inspector_extract.py")

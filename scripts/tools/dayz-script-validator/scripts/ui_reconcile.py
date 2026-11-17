@@ -1,5 +1,5 @@
 """
-UI-RECONCILE -- cross-file reconciliation gate for DayZ UI (renderer/skill §6.2).
+UI-RECONCILE -- cross-file reconciliation gate for DayZ UI.
 
 Two checks that the per-file linter (script_validator.py) cannot do because they
 span files:

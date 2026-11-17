@@ -27,14 +27,14 @@ Do not write the registry value from this skill. Report the result and the sugge
 
 ## Why the default is broken
 
-On the knowledge pack author's install the value pointed at `<steamapps>\common\DayZ_x64.exe`, without the `DayZ\` folder, which is why the viewer was dead out of the box. He attributes that path to the DayZ Tools installer.
+On one install the value pointed at `<steamapps>\common\DayZ_x64.exe`, without the `DayZ\` folder, which is why the viewer was dead out of the box. The DayZ Tools installer probably wrote that path; this was not confirmed.
 
-A second install (DayZ Tools with game 1.30.164289), checked while this note was written, showed a different broken state: the value existed but was empty, and the `Bin\ObjectBuilder\ObjectBuilder_defaultSettings.reg` file that `/dayz-setup-objectbuilder` imports has no `%External Viewer` line at all. So expect either a wrong path or an empty value on a machine nobody has fixed, and treat both as "no preview".
+A second install (DayZ Tools with game 1.30.164289) showed a different broken state: the value existed but was empty, and the `Bin\ObjectBuilder\ObjectBuilder_defaultSettings.reg` file that `/dayz-setup-objectbuilder` imports has no `%External Viewer` line at all. So expect either a wrong path or an empty value on a machine nobody has fixed, and treat both as "no preview".
 
 ## What was measured
 
-- Source author's machine: configured path `Test-Path` gave `False`, the real path gave `True`, and `P:\Buldozer` was present.
-- The cost of not checking: about 20 work sessions on one vehicle project paid for full in-game cycles to answer "does it show?" questions (label alpha, needle size, a quad behind the screen), and the project handoff never mentioned Buldozer.
+- First install: configured path `Test-Path` gave `False`, the real path gave `True`, and `P:\Buldozer` was present.
+- The cost of not checking: about 20 work sessions on one vehicle project paid for full in-game cycles to answer "does it show?" questions (label alpha, needle size, a quad behind the screen) that Buldozer was never used for.
 - Second install: the snippet above printed `not set`; the game exe was at `<steamapps>\common\DayZ\DayZ_x64.exe` and nothing was at `<steamapps>\common\DayZ_x64.exe`. `P:\Buldozer` did not exist there.
 
 ## Not verified yet

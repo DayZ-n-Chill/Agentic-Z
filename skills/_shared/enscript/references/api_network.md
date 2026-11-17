@@ -69,7 +69,7 @@ Flow: the server changes the field, calls `SetSynchDirty()`, and each client get
 
 ## Native getters that do not answer on every client
 
-Reported by the knowledge pack from in game measurements on DayZDiag 1.29 (the LFHeli mod); the calls are native, so only their declarations were checked on `P:\`.
+Measured in game on DayZDiag 1.29 with a scripted helicopter mod; the calls are native, so only their declarations were checked on `P:\`.
 
 - `EngineIsOn()` (`P:\scripts\3_game\vehicles\car.c:230`) returns `false` on a client that does not own the vehicle, such as a passenger, while the engine runs on the server. Sync your own bool, written in `OnEngineStart` and `OnEngineStop`, and have client code read "native or synced".
 - `GetHealth01(zone, type)` (`P:\scripts\3_game\entities\object.c:1001`) threw `cannot be called on client` and returned 0.

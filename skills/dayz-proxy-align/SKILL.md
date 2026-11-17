@@ -32,7 +32,7 @@ python -c "import py3d; assert getattr(py3d,'IS_DAYZ_FORK',False) and tuple(map(
 ```
 
 - py3d here is the DayZ fork in `scripts/tools/py3d`, version 1.6.0 or later. The last line fails when another py3d imports instead.
-- Do not run `pip install py3d`: the PyPI package of that name is a point cloud library. Upstream KoffeinFlummi py3d uses the same import name and lacks the proxy functions and write guards; uninstall either one first (`python -m pip uninstall py3d`).
+- Do not run `pip install py3d`: the PyPI package of that name is a point cloud library. The Arma py3d that is not the DayZ fork uses the same import name and lacks the proxy functions and write guards; uninstall either one first (`python -m pip uninstall py3d`).
 - When a built wheel of the fork is at hand instead of the source folder, `python "<skill-dir>\scripts\install_py3d.py"` installs it. It looks in `<skill-dir>\wheels\`, then in `scripts\tools\py3d\dist\`, and stops without changing anything when no wheel or more than one is there, when a legacy `py3d-*.whl` sits beside it, or when the py3d already installed is not the fork. Agentic-Z ships no wheel.
 - `worn_overlay.py` shows vanilla worn clothing, and vanilla worn models are binarized (`P:\DZ\characters\vests\plate_carrier_m.p3d` starts with `ODOL`). It needs an external ODOL to MLOD backend, a folder holding `odol_reader.py` and `odol_to_mlod.py`, passed with `--odol-backend` or set in `DAYZ_ODOL_BACKEND_ROOT`. Agentic-Z ships none; it is the same backend the tool in `scripts/tools/dayz-odol-strict` expects. Without it, skip the overlay: the other steps work without it.
 - The editor page loads Three.js 0.185.1 from the jsDelivr CDN, so opening it needs a network. `proxy_viewer.py` takes the page scaffold from `viewer_core.py` in `scripts/tools/dayz-3d-viewer`.
@@ -114,9 +114,11 @@ This skill aligns the anchor and previews the right worn model. It does not make
 
 ## Why the write-back is safe
 
-`proxy_apply.py` loads the MLOD with py3d, changes the coordinates of the listed proxy points and writes the model again. It adds and removes nothing, so the host geometry, the host's own selections (for example `woodup1` and `zbytek`), the Geometry and Memory LODs and `#UVSet#` come back as they were. The skill's end to end test builds a host, runs extract, canon and apply, and checks that the body points, the selections, the face count and the Memory LOD are unchanged.
+`proxy_apply.py` loads the MLOD with py3d, changes the coordinates of the listed proxy points and writes the model again. It adds and removes no point, face or selection, so the host geometry, the host's own selections (for example `woodup1` and `zbytek`), the Geometry and Memory LODs and `#UVSet#` come back as they were. The skill's end to end test builds a host, runs extract, canon and apply, and checks that the body points, the selections, the face count and the Memory LOD are unchanged.
 
-Measured while importing the skill, on a small synthetic host with five proxies and py3d fork 1.10.1: reading the file and writing it back gave identical bytes, and the aligned file had the same length as the source with 67 bytes changed, all inside the point table. The source reports the same byte for byte round trip on real DayZ MLOD files.
+Measured with py3d 1.10.1 on a small synthetic host with five 90/45/45 proxies: reading the file and writing it back gave identical bytes, and the aligned file had the same length as the source (1,467 bytes) with 61 bytes changed, all inside the point table.
+
+A real MLOD does not always come back byte for byte. py3d writes tags in the order Object Builder writes them, and it does not read `#Animation#` tags, so they are not written back. Measured with py3d 1.10.1 on one third-party MLOD that carries `#Animation#` tags: a plain read and write shrank it from 3,065,414 to 448,100 bytes, while the point, face and selection counts of every LOD stayed the same. Keep the source file, and when the aligned file is much smaller than the source, the host has vertex animation frames that this write-back drops.
 
 The recipe and build path of `dayz-p3d-inspector` is not used here: it does not write proxies and can drop Memory selections.
 
@@ -150,7 +152,7 @@ model.save("host_aligned.p3d")
 
 - `space="raw"` is the default and means the frame the angle sort gives. `space="engine"` means the pose expected in DayZ. The two differ by the matrix `P'`; see `skills/_shared/models/proxy-frames.md`.
 - Every one of these calls checks its input before changing anything: path, index, anchor, rotation, scale, the shape of the proxy triangle and that the proxy owns its points and face alone.
-- `get_proxies(strict=True)` raises `ValueError` on a malformed proxy selection, which includes a hand-written 90/45/45 proxy whose face normal does not match its frame. Run `proxy_canon.py` and `proxy_apply.py` first, or call `get_proxies()` without `strict` to list them.
+- `get_proxies(strict=True)`, `align_proxy` and `remove_proxy` raise `ValueError` on a malformed proxy selection, which includes a proxy whose stored face normal is not the X row of its raw frame, the usual state of a hand-written 90/45/45 proxy. `proxy_apply.py` moves points only and leaves the stored normal, so a proxy it rewrote can still fail this check (checked with py3d 1.10.1). Call `get_proxies()` without `strict` to list such proxies, place them with `proxy_canon.py` and `proxy_apply.py`, and keep the py3d calls for proxies that pass `strict`, such as the ones `add_proxy` wrote.
 - `align_proxy` keeps the identities of the points, the face and the selection. `remove_proxy` deletes exactly the proxy's selection, face and three points, renumbers the remaining point indexes and sharp edges, and leaves the normal pool as it is on purpose.
 
 ## References
@@ -171,11 +173,11 @@ Run `/dayz-p3d-audit` on the aligned MLOD, pack it with `/dayz-build-pbo`, and c
 
 ## On Linux
 
-Agentic-Z is a Windows workspace and the steps above are the Windows workflow. The source of this skill also ran on Linux through Proton; the setup, the measured tool matrix and the pitfalls are in `_shared/linux-proton.md`. What changes for this skill:
+Agentic-Z is a Windows workspace and the steps above are the Windows workflow. The skill also runs on Linux through Proton; the setup, the measured tool matrix and the pitfalls are in `skills/_shared/linux-proton.md`. What changes for this skill:
 
 - `P:\` is a plain directory mapped by `dayz-proton.sh init <dir>` (the script is `skills/_shared/scripts/dayz-proton.sh`), so a `P:\<Mod>\...` path is `<dir>/<Mod>/...`. Pass that directory's `DZ` folder to `worn_overlay.py --dz`; the preflight gate runs only for a folder on `P:`.
 - The scripts here are Python and the editor is a browser page; both run natively.
 - Object Builder and TexView run under Proton: `dayz-proton.sh gui ObjectBuilder <p3d>` and `gui TexView <paa>`. Object Builder opened and displayed a model there; editing in it was not exercised.
-- Packing, signing and binarizing use dayzmake 1.0.0 or later, bzed's DayZ fork of armake2 (https://github.com/bzed/dayzmake), pinned to `v1.0.0`: the release binary `dayzmake-v1.0.0-debian-trixie-x86_64.tar.gz` from https://github.com/bzed/dayzmake/releases/tag/v1.0.0, or `cargo install --git https://github.com/bzed/dayzmake --tag v1.0.0`. Use `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed; the `skills/_shared/scripts/dayz-mod-pack.sh` helper wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`). Upstream armake2 is no substitute: it is built for Arma, its V3 file hash leaves out `*.c` files, and it lacks the DayZ-only functions dayzmake keeps adding.
-- The source author's comparison of 2026-11-03, a textured cube against Bohemia's Binarize from a `P:` root, matched byte for byte (fork commit `7dcb3cf`, then still named armake2; `v1.0.0` contains it). That compares files; it is not an in-game check of the binarized model.
+- Packing, signing and binarizing use dayzmake 1.0.0 or later, the DayZ fork of armake2; how to install a pinned release is in `skills/_shared/linux-proton.md`. Use `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed; the `skills/_shared/scripts/dayz-mod-pack.sh` helper wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`). The original armake2 is no substitute: it is built for Arma, its V3 file hash leaves out `*.c` files, and it lacks the DayZ-only functions dayzmake keeps adding.
+- A textured cube binarized with `dayzmake build --proton-binarize` matched Bohemia's Binarize run from a `P:` root byte for byte (compared on 2026-11-03 with the build that `v1.0.0` contains). That compares files; it is not an in-game check of the binarized model.
 - In-game checks on Linux are in the Linux notes of the `dayz-test-ingame` skill (`skills/dayz-test-ingame/references/linux.md`).

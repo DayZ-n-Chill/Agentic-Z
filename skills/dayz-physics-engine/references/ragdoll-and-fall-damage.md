@@ -15,11 +15,11 @@ Citations are `P:\...:line`, opened on `P:\` (a 1.30 build). `1.29:<path>:<line>
 
 ### Infected do not ragdoll
 
-In-game test reported by a contributor to the source pack, 2026-10-16, on 1.30.164078.
+Measured in game on 1.30.164078, 2026-10-16.
 
-`[EXACT][CLAIM-PHYS-RAGDOLL-API-HUMAN-ONLY-130]` The ragdoll API is on `Human` only. `PhysicsSetSimpleDeath`, `PhysicsSetRagdoll` and `PhysicsIsRagdoll` are declared at `P:\scripts\3_game\human.c:1449-1452`, inside `class Human : Man` (`P:\scripts\3_game\human.c:1359`). Infected inherit `DayZInfected`, then `DayZCreatureAI`, then `DayZCreature`, then `EntityAI` (`P:\scripts\3_game\entities\dayzinfected.c:104`, `P:\scripts\3_game\entities\dayzanimal.c:191` and `:24`), so none of those calls exist on an infected and a script call to one will not compile. The source pack found the same lines in 1.30.164014, 1.30.164078 and 1.30.164200.
+`[EXACT]` The ragdoll API is on `Human` only. `PhysicsSetSimpleDeath`, `PhysicsSetRagdoll` and `PhysicsIsRagdoll` are declared at `P:\scripts\3_game\human.c:1449-1452`, inside `class Human : Man` (`P:\scripts\3_game\human.c:1359`). Infected inherit `DayZInfected`, then `DayZCreatureAI`, then `DayZCreature`, then `EntityAI` (`P:\scripts\3_game\entities\dayzinfected.c:104`, `P:\scripts\3_game\entities\dayzanimal.c:191` and `:24`), so none of those calls exist on an infected and a script call to one will not compile. The same declarations are in builds 1.30.164014, 1.30.164078 and 1.30.164200 (not checked on `P:\`, which holds one build).
 
-Config and clips did not work around it in the contributor's test (`[TESTED by the contributor]`, claim `CLAIM-PHYS-INFECTED-NO-RAGDOLL-130`). A custom infected (`z_hermit_m.xob`, with its own 1.30 graph) was given `ragdoll = "DZ/characters/bodies/human.ragdoll";` in both `enfanimsys` blocks, and its death states were pointed at vanilla player death `.anm` clips that embed the `Ragdoll` event (`p_erc_death01_F` and others). Both test kills ran `DayZInfectedCommandDeathModdable`, played the full clip and froze in the last pose. There was no limp body and no RPT error.
+Config and clips did not work around it in that test. A custom infected (its own `.xob`, with its own 1.30 graph) was given `ragdoll = "DZ/characters/bodies/human.ragdoll";` in both `enfanimsys` blocks, and its death states were pointed at vanilla player death `.anm` clips that embed the `Ragdoll` event (`p_erc_death01_F` and others). Both test kills ran `DayZInfectedCommandDeathModdable`, played the full clip and froze in the last pose. There was no limp body and no RPT error.
 
 - The RPT logs no `Initializing ragdoll` line at default verbosity, not even for a player death. The absence of that line proves nothing either way; only the in-game result does.
 - A custom `.ragdoll` for the infected `.xob` is untested. `[INFERRED]` It may not help: in the test the infected death command played clips that carry the `Ragdoll` event and no ragdoll started, so a working definition might never be activated either.
@@ -75,7 +75,7 @@ The head is a sphere, not a capsule:
 
 `[DESIGN]` Author a custom humanoid ragdoll by copying this tree, matching the `RagdollBone` names to the skeleton, and keeping `SurfaceProperties` on a penetration `.bisurf`. Joint limits are degrees relative to the parent.
 
-Masses in the vanilla file, in kg, by line of `P:\DZ\characters\bodies\human.ragdoll`: pelvis 17 (`:5`), spine3 15 (`:23`), head 6.1 (`:39`), leftarm 2.1 (`:54`), leftforearm 1.7 (`:69`), rightarm 2.1 (`:85`), rightforearm 1.7 (`:100`), leftupleg 7.5 (`:118`), leftleg 6.6 (`:134`), rightupleg 7.5 (`:159`), rightleg 6.6 (`:175`). The sum is 73.9 kg. The 87.5 kg that `dBodyGetMass` read on a live player on 2026-06-11 (see `SKILL.md`) is a different body: the player's controller body, not this ragdoll definition.
+Masses in the vanilla file, in kg, by line of `P:\DZ\characters\bodies\human.ragdoll`: pelvis 17 (`:5`), spine3 15 (`:23`), head 6.1 (`:39`), leftarm 2.1 (`:54`), leftforearm 1.7 (`:69`), rightarm 2.1 (`:85`), rightforearm 1.7 (`:100`), leftupleg 7.5 (`:118`), leftleg 6.6 (`:134`), rightupleg 7.5 (`:159`), rightleg 6.6 (`:175`). The sum is 73.9 kg. The 87.5 kg that `dBodyGetMass` read on a live player (see `SKILL.md`) is a different body: the player's controller body, not this ragdoll definition.
 
 ## 2. `PhysicsSetSimpleDeath` against `PhysicsSetRagdoll`
 
@@ -132,7 +132,7 @@ Vanilla clears the vehicle re-attach while that ragdoll is active:
 
 ## 3. Waking up while falling
 
-Up to 1.29 there was only `m_UnconsciousTime > 2` at `1.29:4_world\entities\manbase\playerbase.c:3184`, then `hcu.WakeUp`. The source pack's 2026-06-11 test of a 0.5 s wake buried the player 40 m under the terrain (see `SKILL.md`).
+Up to 1.29 there was only `m_UnconsciousTime > 2` at `1.29:4_world\entities\manbase\playerbase.c:3184`, then `hcu.WakeUp`. An in-game test of a 0.5 s wake buried the player 40 m under the terrain (see `SKILL.md`).
 
 ```c
 // [EXACT] P:\scripts\4_world\entities\manbase\playerbase.c:3419

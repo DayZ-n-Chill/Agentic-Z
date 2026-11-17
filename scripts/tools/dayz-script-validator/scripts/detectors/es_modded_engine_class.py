@@ -12,13 +12,13 @@ ES_MODDED_ENGINE_CLASS_RULE_ID = "ES-MODDED-ENGINE-CLASS"
 # 1.29.163709:
 #
 #   Can't compile "Game" script module!
-#   .../lfpg_moddedtransport.c(9): Engine class 'Transport' cannot be modded.
+#   <file>.c(9): Engine class 'Transport' cannot be modded.
 #
-# DayZDiag 1.30.164200 (StorageLogger, 2026-10-24), scripts/4_World, the
+# DayZDiag 1.30.164200 (a mod, 2026-10-24), scripts/4_World, the
 # server script log of two boots:
 #
-#   storagelogger.c,315: Engine class 'DayZPlayerInventory' cannot be modded.
-#   storagelogger.c,432: Engine class 'Magazine' cannot be modded.
+#   <file>.c,315: Engine class 'DayZPlayerInventory' cannot be modded.
+#   <file>.c,432: Engine class 'Magazine' cannot be modded.
 #   Can't compile "World" script module!
 #
 # Only classes measured in the engine are listed. Another engine class goes in

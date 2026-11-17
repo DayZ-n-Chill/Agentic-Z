@@ -360,7 +360,7 @@ foreach (Man man : m_PlayerCache)
                               new Param3<...>(...), true, man.GetIdentity());
 ```
 
-Loop all players + RPCSingleParam with `man.GetIdentity()` for each. `true` 4th arg = reliable. Not as efficient as a true broadcast (those don't exist in DayZ Enforce Script) but reliable per-player delivery.
+Loop all players + RPCSingleParam with `man.GetIdentity()` for each. `true` 4th arg = reliable. Use the loop when only some players should receive the RPC. To reach every client, leave the recipient out: `RPCSingleParam(Object target, int rpc_type, Param param, bool guaranteed, PlayerIdentity recipient = null)` (`P:\scripts\3_game\global\game.c:1013`) sent from the server with a `null` recipient goes to all clients (see "Where an RPC lands" in `networking.md`).
 
 ### Triple cleanup hook (effect/handle lifetime safety)
 

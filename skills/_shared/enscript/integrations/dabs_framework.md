@@ -189,7 +189,7 @@ Field types with built in converters (`RegisterConversionTemplates`, same file):
 - Override `UseMouse()` (default true), `UseKeyboard()` (default false), `GetInputExcludes()` (names from `<exclude>` in `bin/specific.xml`), `CanClose()` and `HidesParentMenu()`.
 - `ScriptViewMenuTemplate<T>` is the typed controller version.
 - `EnterChildMenu(id or menu)` opens a vanilla menu or another `ScriptViewMenu` on top.
-- **ESC does not close it.** `CanCloseWithEscape()` exists in `ScriptViewMenu.c`, but nothing in the framework calls it (the comment above it reads "tbd how i want to handle this"). Handle the key yourself, for example `OnKeyPress` with `KeyCode.KC_ESCAPE` calling `Close()`.
+- **ESC does not close it.** `CanCloseWithEscape()` exists in `ScriptViewMenu.c`, but nothing in the framework calls it (the comment above it marks the handling as undecided). Handle the key yourself, for example `OnKeyPress` with `KeyCode.KC_ESCAPE` calling `Close()`.
 - **The lifecycle hooks are `OnMenuEnter(UIMenuPanel parent_panel)` and `OnMenuExit(UIMenuPanel parent_panel)`.** `ScriptView` and `ScriptViewMenu` have no `OnShow` or `OnHide` to override; show or hide a plain view with `Show(bool)`.
 - **Game focus is taken on open and not given back on close.** The constructor calls `ChangeGameFocus(1, ...)` for the mouse (and the keyboard when `UseKeyboard()` is true); both `ChangeGameFocus(-1, ...)` lines in the destructor are commented out. A mod that adds its own `ChangeGameFocus` calls around a Dabs menu can leave the focus count unbalanced, so check that the player can move after the menu closes.
 - `GetInputRestrictions()` is not wired: the constructor and destructor loop over an empty local array, so overriding it does nothing. Use `GetInputExcludes()`.

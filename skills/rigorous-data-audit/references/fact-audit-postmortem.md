@@ -1,8 +1,8 @@
 # Fact audit postmortem: an audit that was about 55% confabulated
 
-The index page of a fact audit of the source pack's DayZ skills, run by four parallel agents with no verification step, kept as the case study behind step 3 of this skill. When its critical findings were checked against the real files, most were invented. Open this to see what a convincing but confabulated audit looks like and which patterns to watch for.
+The index page of a fact audit of a set of DayZ skills, run by four parallel agents with no verification step, kept as the case study behind step 3 of this skill. When its critical findings were checked against the real files, most were invented. Open this to see what a convincing but confabulated audit looks like and which patterns to watch for.
 
-Nothing below the notice is a fact about DayZ or about any skill in this repo. The skill and file names are the source pack's own, as the audit wrote them; do not act on any row. The one vanilla line the audit mentions is quoted only as an example of an unverified claim.
+Nothing below the notice is a fact about DayZ or about any skill in this repo. The skill and file names are those of the audited skill set as the audit wrote them, not this repo's skills, even where a name matches; do not act on any row. The one vanilla line the audit mentions is quoted only as an example of an unverified claim.
 
 > **Notice: this audit confabulates**
 >
@@ -25,7 +25,7 @@ Nothing below the notice is a fact about DayZ or about any skill in this repo. T
 
 ---
 
-**Date**: 2026-05-11 **Scope**: 12 DayZ skills from plugin `skills-plugin/.../skills/` **Depth**: Deep (conventions doc + py3d source + Bohemia wiki + cite-then-verify; P:\ marked for manual verification) **Work done by**: 4 general-purpose agents in parallel + aggregation
+**Date**: 2026-05-11 **Scope**: 12 DayZ skills **Depth**: Deep (conventions doc + py3d source + Bohemia wiki + cite-then-verify; P:\ marked for manual verification) **Work done by**: 4 general-purpose agents in parallel + aggregation
 
 ---
 
@@ -102,7 +102,7 @@ Base class list includes `HouseNoDestruct`, `Motorcycle`, `Helicopter`, `Vehicle
 
 ### `dayz-particles`
 - Claim "277 vanilla particles" in SKILL.md:13,182 + catalog header. Catalog table has **276** entries, off-by-one. Small but indicates it was not counted.
-- Remainder verified directly against `dayzexplorer.zeroy.com` (POOL_SIZE=10000, enum values, GetInstance server guard), skill is the most solid of the visual ones.
+- Remainder verified directly against an online browser of the vanilla scripts (POOL_SIZE=10000, enum values, GetInstance server guard), skill is the most solid of the visual ones.
 
 ### `dayz-preflight`
 - Cosmetic: registry key casing inconsistent between SKILL.md and code. Functional but confusing. Sole finding.
@@ -123,7 +123,7 @@ Base class list includes `HouseNoDestruct`, `Motorcycle`, `Helicopter`, `Vehicle
 
 ### dayz-ui-development
 - SKILL.md:317-322, `COLOR_DAYZ_RED` "exactly ONE place, P:\scripts\5_mission\gui\newui\mainmenu\mainmenupromo.c:157" is **claim repeated verbatim** from conventions doc, no source verifiable without P:\. **If it is wrong, it is wrong in two places.**
-- SKILL.md:482-512, Dabs WidgetAnimator, LinearColor, NotifyPropertyChanged: line refs (e.g. `ViewController.c:84-117`) unverifiable. Dabs repo exists; line refs and claims "30 easing curves / 140+ named colors" are SUSPECT until adding permalinks.
+- SKILL.md:482-512, Dabs WidgetAnimator, LinearColor, NotifyPropertyChanged: line refs (e.g. `ViewController.c:84-117`) unverifiable. The Dabs Framework repository exists; line refs and claims "30 easing curves / 140+ named colors" are SUSPECT until adding permalinks.
 
 ---
 
@@ -157,7 +157,7 @@ Base class list includes `HouseNoDestruct`, `Motorcycle`, `Helicopter`, `Vehicle
 
 ## Individual reports
 
-The 11 reports per skill (`audit-<skill>.md` for dayz-3d-viewer, dayz-mod-workflow, dayz-model-pipeline, dayz-p3d-audit, dayz-p3d-inspector, dayz-particles, dayz-pbo-build, dayz-preflight, dayz-ui-development, enforce-script-reference and japm-pbo-recovery) were never part of the source pack; they stayed in its author's own notes. Given the confabulation rate in the notice above they cannot be cited; this index keeps only the lessons.
+The 11 reports per skill (`audit-<skill>.md` for dayz-3d-viewer, dayz-mod-workflow, dayz-model-pipeline, dayz-p3d-audit, dayz-p3d-inspector, dayz-particles, dayz-pbo-build, dayz-preflight, dayz-ui-development, enforce-script-reference and japm-pbo-recovery) are not kept. Given the confabulation rate in the notice above they cannot be cited; this index keeps only the lessons.
 
 ---
 
@@ -176,32 +176,13 @@ Consider adding a review check that catches (1) to (6).
 
 ---
 
-## Methodology and sources
+## Methodology
 
-**Tier**: deep (conventions doc + py3d GitHub + Bohemia wiki + cite-then-verify; P:\ flagged manual)
-
-**Consulted sources** (consolidated from the 4 agents):
-- The Agentic-Z `dayz-conventions.md` at commit 01b15a6
-- [KoffeinFlummi/py3d](https://github.com/KoffeinFlummi/py3d)
-- [Bohemia Wiki, P3D MLOD Format](https://community.bistudio.com/wiki/P3D_File_Format_-_MLOD)
-- [Bohemia Wiki, P3D ODOLV7 Format](https://community.bohemia.net/wiki/P3D_File_Format_-_ODOLV7)
-- [Bohemia Wiki, PBO File Format](https://community.bistudio.com/wiki/PBO_File_Format)
-- [Bohemia Wiki, Compressed LZSS File Format](https://community.bistudio.com/wiki/Compressed_LZSS_File_Format)
-- [Bohemia Wiki, Addon Builder](https://community.bistudio.com/wiki/Addon_Builder)
-- [Bohemia Wiki, raP File Format](https://community.bistudio.com/wiki/raP_File_Format_-_OFP)
-- [DayZ Server (appid 223350), SteamDB](https://steamdb.info/app/223350/)
-- [MKLink command, Windows CMD](https://ss64.com/nt/mklink.html)
-- [DayZ Error 0x00020005, filePatching](https://feedback.bistudio.com/T153410)
-- [DayZ feedback T148506, inventorySlot string-vs-array](https://feedback.bistudio.com/T148506)
-- [DayZ feedback T156746, CallLater 4.5h](https://feedback.bistudio.com/T156746)
-- [PBO-Tools/DayZ-PBO-Obfuscator](https://github.com/PBO-Tools/DayZ-PBO-Obfuscator)
-- [DayZ Explorer (Zeroy), ParticleManager / ParticleList / ParticleSource](https://dayzexplorer.zeroy.com/)
+**Tier**: deep (conventions doc, py3d source, Bohemia wiki pages on the P3D, PBO, LZSS and raP file formats and on Addon Builder, the Bohemia feedback tracker, an online browser of the vanilla scripts, and cite-then-verify; P:\ flagged manual)
 
 **Tokens consumed by agents**: ~674K tokens, ~227 tool calls, ~32 minutes of wall time.
 
 **Limitations**:
 - `P:\` not accessible from sandbox, all claims citing `P:\<path>:line` are marked `SUSPECT(P:\)`.
 - `py3d/__init__.py` not fetchable directly from sandbox (provenance lock); used conventions doc as authoritative proxy for the API.
-- 80+ "battle-tested facts" in `LFPG_UI_KnowledgeBase_v3.md` were not sampled (time budget). Explicit follow-up in `audit-dayz-ui-development.md`.
-
-**Reproducibility**: the prompts sent to the 4 agents are in `audit-prompts.md` for future runs following changes to the skills.
+- About 80 facts of one UI reference document were not sampled (time budget).

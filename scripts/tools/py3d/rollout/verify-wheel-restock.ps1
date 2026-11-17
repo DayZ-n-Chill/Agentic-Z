@@ -35,7 +35,7 @@ $StaleName = "py3d-1.4.0-py3-none-any.whl"
 $PreviousName = "py3d_dayz-0.0.0-py3-none-any.whl"
 $PatchPath = Join-Path $Root "patches\dayz-proxy-align__SKILL.md.patch"
 if ([string]::IsNullOrWhiteSpace($FixtureRoot)) {
-    # Never inside the working tree: stray fixtures make the pack gate BUILD-DIRTY.
+    # Never inside the working tree: stray fixtures would be left there as untracked files.
     $FixtureRoot = Join-Path $env:TEMP "py3d-rollout-verify"
 }
 
@@ -101,8 +101,8 @@ function New-BeforeSkillMd([string]$Path) {
         '## Dependencies',
         '',
         '```bash',
-        '# py3d DayZ fork >= 1.2.0 (wheel vendored in this skill - D2=B).',
-        '# NEVER `pip install py3d` (PyPI = point-cloud lib) NOR git+upstream (no guards).',
+        '# py3d DayZ fork >= 1.2.0 (wheel bundled in this skill).',
+        '# NEVER `pip install py3d` (PyPI = point-cloud lib) NOR the bare codec from git (no guards).',
         'pip install --break-system-packages "$SKILL_DIR"/wheels/py3d-*-py3-none-any.whl 2>/dev/null \',
         '  || pip install --break-system-packages $(ls scripts/tools/py3d/dist/py3d-*-py3-none-any.whl 2>/dev/null | sort -V | tail -1)',
         'python3 -c "import py3d; assert getattr(py3d,''IS_DAYZ_FORK'',False) and tuple(map(int,py3d.__version__.split(''.'')))>=(1,2,0), (py3d.__version__, py3d.__file__)"',
@@ -135,7 +135,7 @@ function Convert-SkillMdToAlreadyApplied([string]$Path) {
     $insert = @(
         '## py3d 1.4.0 lifecycle (batch / non-visual)',
         '',
-        'For deterministic automation, the vendored fork now owns the complete',
+        'For deterministic automation, the bundled fork now owns the complete',
         'add/inspect/align/remove lifecycle:',
         '',
         '```python',

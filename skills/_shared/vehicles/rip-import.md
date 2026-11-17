@@ -2,7 +2,7 @@
 
 The rip import path in detail: what a per-car rip folder holds, which parts to include, how to derive dimensions and the transform from the locators, the structural LOD recipe, the first in-game spawn results and their root causes, textures, materials, wheels, glass, interior and doors.
 
-> Status: one worked example, the SUB_BRZ build (2026-06 to 2026-10), with the MercedesAMGLF and LFQuad builds, a working Landrover build and two shipped third-party car mods as controls. The measurements and in-game results are not yet checked on `P:\`. Sections are dated and later ones correct earlier ones; a block marked SUPERSEDED, RETRACTED or RESOLVED says which. The vanilla script line numbers in this file were opened on `P:\` (a 1.30 build). Script names such as `rip_p3_structural.py` and paths such as `<vehicle-import>\...` are the tooling and work folders of the worked example, which this repo does not ship. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number. Other skills are named by skill name, each a folder under `skills/` (dayz-model-pipeline, dayz-test-ingame, dayz-texture-pipeline, dayz-mcp-verify, enforce-script-reference).
+> Status: one worked example, the SUB_BRZ build (2026-06 to 2026-10), with the MercedesAMGLF and LFQuad builds, a working Landrover build and two shipped third-party car mods as controls. The measurements and in-game results are not yet checked on `P:\`. Sections are dated and later ones correct earlier ones; a block marked SUPERSEDED, RETRACTED or RESOLVED says which. A label such as `s7` or `s20` numbers a dated pass of the worked example, in order, and is how one section refers to another. The vanilla script line numbers in this file were opened on `P:\` (a 1.30 build). Script names such as `rip_p3_structural.py` and paths such as `<vehicle-import>\...` are the tooling and work folders of the worked example, which this repo does not ship. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number. Other skills are named by skill name, each a folder under `skills/` (dayz-model-pipeline, dayz-test-ingame, dayz-texture-pipeline, dayz-mcp-verify, enforce-script-reference).
 
 ## Vanilla anchors checked on `P:\`
 
@@ -39,7 +39,7 @@ Neither is caught by any offline gate, by G3, or by a Blender render — only th
    jumps (a cylindrical `atan2` UV with ×N tiling can still crash at the ±π seam). Check `uniqUV` per LOD vs
    a vanilla control (vanilla sedanwheel LOD0 = 1203, not 1).
 2. **Raw rip body weight tumbles the client.** A full rip body is ~400k+ visual faces; >~315k crashes
-   the render (the MercedesAMGLF build loads at 315k; SUB_BRZ at 417k did not). User-reported symptom = "lag at
+   the render (the MercedesAMGLF build loads at 315k; SUB_BRZ at 417k did not). Symptom in game = "lag at
    spawn" then crash. **Decimate before shipping** — see DECIMATION below.
 Diagnosis order when the client crashes ON the car (not the spawn-blocker): rule out weight, then geometry
 corruption (NaN/overflow/UV-NaN health check), then a degraded environment (wipe `storage_1` — a corrupt CE
@@ -56,7 +56,7 @@ normals + rebuilding the named selections by slot. Result 440k→198k, 77.7→39
 with an assembled 3-angle render), G3 4/4. Decimate ONLY the proxy chunks; leave the shell visual
 (wheel/light/tail selections), ViewPilot and structural LODs untouched. Planar dissolve does NOT deform
 (only near-coplanar faces collapse) — this is the "won't break the model" decimation to use, NOT aggressive
-collapse (which the user rightly rejected).
+collapse.
 
 Tooling: **the community Grub-format extraction tools** (`carbin_importer.py`, `modelbin_importer.py`).
 `modelbin_importer.py` imports one `.modelbin` (geometry-only with `use_materials=False`, try/except per
@@ -137,8 +137,8 @@ authoring target.
   scan of all 404 slots = no value in curb-weight range. Mass is absent from the per-car file **by design**
   (delegated to the GameDB), not merely "unparseable". Do not mine it.
 - **Title of these rips: most likely the 2026 racing-game sequel (internal dev/RC build), NOT FM2023.** The build report
-  (`carscene_*_build_report.html`) shows Perforce branch `forte_main`, depot `the studio internal depot`, build agent
-  `PGL-HNX026`, "restricted access" — an INTERNAL pre-release build (CarBuildTime 2026-04-20; `gamedbRC.slt`
+  (`carscene_*_build_report.html`) shows Perforce branch `forte_main`, an internal studio depot and
+  "restricted access" — an INTERNAL pre-release build (CarBuildTime 2026-04-20; `gamedbRC.slt`
   = Release Candidate; FH6 shipped 2026-05-19). `_fmnext` is the shared next-gen material library (FM2023 +
   FH6), NOT FM2023-exclusive; `.carbin` Root type = `07 00` (one gen past FH5 `06 00`). Not confirmable by
   public codename. Lesson: identify the title from the build report's p4 branch/depot, not just the library
@@ -149,12 +149,12 @@ authoring target.
     Does NOT cover FH6/FM2023.
   - `the server-side GameDB crypto client (2026-title)` — targets **FH6** and does GameDB→editable-SQLite, but the GameDB decrypt is
     **server-side**: closed-source .NET client that ships **no keys**, needs a reachable backend + a gated
-    **application key**, and **uploads the file to the tool's backend** to decrypt (its README states that all
-    decrypt/encrypt runs server-side and that the app ships no keys).
+    **application key**, and **uploads the file to the tool's backend** to decrypt (all
+    decrypt/encrypt runs server-side and the app ships no keys).
   - **Verdict for these internal dev/RC rips: do NOT use the server-side tool.** The GameDB is a non-public
     build ("restricted access" in the build report) — uploading it to a third-party modding backend is a
     privacy/security problem, and the backend may not even hold keys for a non-retail RC build. Get the data
-    from the RIP SOURCE (who has the internal build): a decrypted `.slt`, or a CSV of the `model`+`gamecars`
+    from whoever supplied the rip: a decrypted `.slt`, or a CSV of the `model`+`gamecars`
     tables. Do not burn a session decrypting.
 - **Exact columns to request** (schema = `cardb.bt`, shipped with the extraction tools): table `model` → `DrivetrainTypeID`
   (→ `drivetraintype` = RWD/AWD/FWD), `EnginePlacementID`, `Name`, `Year`; table `gamecars` → `CurbWeight`
@@ -228,7 +228,7 @@ BLOCK), not optional steps — skippable verification is how the offline false-g
   ingest one when a future car keeps both Locators and an independent author.)
 - `visual_gate.py <p3d> <out_dir> [--label N] [--views N]` — **generic for ANY DayZ `.p3d`** (added
   2026-06-25). Exports the visual LOD to OBJ and renders N orbit + top + low views via Blender 5.1 headless
-  (the dayz-3d-viewer Three.js viewer is retired) + a `blender-visual-review` checklist + an
+  (not through a Three.js viewer) + a `blender-visual-review` checklist + an
   unresolved-proxy inventory. CAVEAT (s20 2026-07-02, supersedes the old "reproduces the engine cull"
   claim): it does NOT reproduce the engine — the engine renders the ANTI-cross side and shades with the
   STORED MLOD normals, while Blender no-normals + backface culling shows the +cross side (the opposite);
@@ -244,8 +244,8 @@ helper: `_harness_util.py` (`clean_visual_shell` = reconstruct a runnable shell-
 Env: `python` 3.14.3 + py3d 1.2.0. A phase is CLOSED only with {positive-control OK + target hard-pass +
 structural-bisection PASS + visual-gate captures reviewed}, never on internal asserts alone. Wiring into
 `dayz-test.ps1` (`Invoke-G3-StructuralVerify` = verify + `roundtrip_structural`; `Invoke-G7-OfflineDiff`;
-exit≠0 blocks the PBO) is the build-time gate — **HELD until the SUB_BRZ script-class Cowork session closes**
-(it shares the SUB_BRZ tree); the offline harnesses in `<vehicle-import>\tools\` are done and green.
+exit≠0 blocks the PBO) is the build-time gate — **not done**: the `dayz-test.ps1` template of the
+dayz-test-ingame skill has neither function; the offline harnesses in `<vehicle-import>\tools\` are done and green.
 
 ## PIPELINE PHASES (reusable front-end)
 
@@ -350,7 +350,7 @@ Geometry LOD has mass (`new Point()` defaults to `mass=None`; `add_proxy` points
   (rotation), `wheel_X_Y_damper` (suspension translation) and front `wheel_X_1_steering` selections so
   model.cfg can drive it; without them the animation is a silent no-op. For deferred dials it is expected.
 - `WARN_NOT_WATERTIGHT` (proxy triangles are open), `WARN_WINDING_MIXED` (multi-box collision: each box is internally consistent relative to its own centroid;
-  the warning uses the global centroid, so infer no absolute sign — see invariant 18 of the dayz-model-pipeline skill and use the relative check against the Visual LOD), `WARN_LOD_KIND_UNKNOWN` (ViewPilot 1100) —
+  the warning uses the global centroid, so infer no absolute sign — see rule 18 in `skills/dayz-model-pipeline/references/critical-rules.md` and use the relative check against the Visual LOD), `WARN_LOD_KIND_UNKNOWN` (ViewPilot 1100) —
   all expected.
 
 ### 3.6 Animated interior vs the shell+proxy architecture (the gauge/steering trap)
@@ -396,7 +396,7 @@ Architecture:
 - Everything else = full-detail PROXY chunks (`\<MOD>\proxies\*_chunk_NN.p3d`), each < 65535 resolved,
   NO QEC collapse (planar dissolve per §DECIMATION is mandatory): dense custom widebody/aero (flares, fenders custom, fog lights, bumpers), other panels,
   glass, interior. `add_proxy(path, index, origin=(0,0,0))` at identity (parts are in absolute car space).
-- Paint of proxy parts (user decision 2026-06-24): hiddenSelections does NOT reach proxy geometry, so
+- Paint of proxy parts (decided 2026-06-24): hiddenSelections does NOT reach proxy geometry, so
   body-colored proxy parts get the livery BAKED into their own rvmat (single fixed livery = v1 scope;
   color-swap / damage-material on those parts is out for v1). The shell is hiddenSelections-paintable.
 
@@ -468,18 +468,18 @@ geometry.
 (`light_left`/`light_right`/`tail` ≈ 6594 faces each — should be small lenses) → likely the spawn lag and a
 lights-paint bug.
 
-> Measured on: SUB_BRZ Phase 4 in-game test 2026-06-24 (config.cpp written by an agent + first VPP spawn). Cross-ref §3.7
+> Measured on: SUB_BRZ Phase 4 in-game test 2026-06-24 (first VPP spawn). Cross-ref §3.7
 > (proxy-placement P1, MERCEDES_AMGLF) and `vehicle-structural-parity.md` (Crew check + wheel "no proper
 > selection"). Sister project MERCEDES_AMGLF (same architecture) also has in-game smoke PENDING — neither
 > ripped racing-game car is confirmed drivable yet.
 
 ## (added 2026-06-24, s7) Spawn blocker RESOLVED + body render fixed — get-in ACTIONS + drivability still OPEN [PARTIAL in-game verify]
 
-Closes the s2 "FIRST IN-GAME SPAWN RESULT" only for **spawn + render**. **VERIFIED in-game** (user looked at the
-render): the entity CREATES (both PHYSICS errors gone) and the body renders aligned + right-side-out (recognizable
+Closes the s2 "FIRST IN-GAME SPAWN RESULT" only for **spawn + render**. **VERIFIED in-game** (the render was
+inspected): the entity CREATES (both PHYSICS errors gone) and the body renders aligned + right-side-out (recognizable
 car). **NOT verified / still OPEN — do NOT claim "drivable":** (a) the in-game **get-in / crew ACTIONS do NOT
-appear** (the action menu is empty on the car), (b) **drivability untested**, (c) the user reports **parts still
-look missing** — the "untextured glass" explanation below is a HYPOTHESIS, not confirmed. So: spawn-blocker fixed,
+appear** (the action menu is empty on the car), (b) **drivability untested**, (c) **parts still
+look missing** in game — the "untextured glass" explanation below is a HYPOTHESIS, not confirmed. So: spawn-blocker fixed,
 render fixed, the car is NOT yet a working vehicle.
 
 Three fixes took SUB_BRZ from "won't spawn at all" to "spawns + body renders aligned + solid", in this diagnostic
@@ -511,12 +511,12 @@ order:
   attachments, so the car sits on its chassis / can float; whether that blocks the action is unverified.)
 - **Apparent missing parts / holes.** The client RPT is clean of proxy-not-found and all 9 chunks load, so the
   LEADING HYPOTHESIS is untextured glass (windows see-through without a glass material) + the checkerboard
-  placeholder. BUT the user reports parts still look missing — this is NOT confirmed all-glass; re-check per-part
+  placeholder. BUT parts still look missing in game — this is NOT confirmed all-glass; re-check per-part
   (or after texturing) before closing it.
 
-> Measured on: SUB_BRZ Phase 4 in-game 2026-06-24 s7 (single Cowork session, VPP spawn). Builders fixed so car #2
+> Measured on: SUB_BRZ Phase 4 in-game 2026-06-24 s7 (VPP spawn). Builders fixed so car #2
 > inherits: `rip_p2_shellproxy.py` (proxy frame + winding), `rip_p3_structural.py` (componentNN dual-tag).
-> Box-exclusive gotcha confirmed: SUB_BRZ + MERCEDES_AMGLF Cowork sessions `-Kill` each other's DayZDiag — only
+> One-machine gotcha confirmed: two agent sessions, one per car, `-Kill` each other's DayZDiag — only
 > ONE session tests in-game at a time. Pending (non-blocking): textures (Phase 5), 417k-face lag, PBO `.bak`
 > bloat cleanup.
 
@@ -555,7 +555,7 @@ Openable doors = a separate FEATURE (CarDoor classes + door proxies + door `.p3d
 model.cfg door bones), as that third-party mod ships them (a `CarDoor` subclass per door and
 `AnimationSources class DoorsDriver`).
 
-**Task-3 see-through chunks = s7's GLOBAL winding flip inverted the chunks that were correct-before.** User reports
+**See-through chunks = s7's GLOBAL winding flip inverted the chunks that were correct-before.** The car shows
 see-through "gaps" at the engine bay + above each rear fender (symmetric). RPT clean of proxy-not-found (all 9
 chunks load) → geometry IS present but inverted (DayZ backface-culls inward winding → looks like a missing proxy).
 The SUB_BRZ transform `(−Fx, Fy+Y0, −Fz)` is **det +1** (proper 180° rotation, PRESERVES winding), so the correct DayZ
@@ -564,13 +564,13 @@ global flip), or surgically flip back ONLY the chunks the global flip broke (ide
 non-tautological because s7 flipped blindly, not to match). Do NOT global-flip again; do NOT iterate in-game.
 
 > Measured on: SUB_BRZ s8 2026-06-25 (dayz-mcp broker repaired — kill `--require-version` daemons, run one without it;
-> in-game RPT grep + telemetry + user's full-res eye). Cross-ref
+> in-game RPT grep + telemetry + a full-resolution look at the render). Cross-ref
 > vehicle-structural-parity.md "componentNN DUAL-TAG" +
 > "ATTACHMENT proxy BONE-NAME selection" (now CONFIRMED in-game).
 
 ## (added 2026-06-25, s8) WINDING + BUILD lessons from the s7/s8 see-through debug [VERIFIED]
 
-Four pipeline traps pinned while fixing the see-through chunks (§"s7" + §"s8 ... Task-3"). The mechanism and
+Four pipeline traps pinned while fixing the see-through chunks (§"s7" + §"s8 ... See-through chunks"). The mechanism and
 the global-flip story are in those sections; this is the reusable methodology.
 
 ### 1. The offline glTF winding metric is a FALSE-GREEN GLOBAL-flip detector — the DayZ render is the only gate
@@ -620,7 +620,7 @@ raycast** hitting a closed hull corroborates solidity — but note it probes the
 corroboration, not proof. The definitive gate remains the in-game render after texturing.
 
 > Measured on: SUB_BRZ s7/s8 see-through debug 2026-06-24/25 (builders `rip_p2_shellproxy.py`, `tools\patch_winding.py`;
-> in-game render + RPT). Cross-ref §"s7" (global winding flip), §"s8 ... Task-3 see-through chunks" (det +1 ⇒ glTF
+> in-game render + RPT). Cross-ref §"s7" (global winding flip), §"s8 ... See-through chunks" (det +1 ⇒ glTF
 > winding unchanged), and `vehicle-structural-parity.md` proxy-frame GATE (offline false-green class).
 
 
@@ -642,7 +642,7 @@ collision + stable spawn). Builders updated so car #2 is born textured. Pipeline
   `_nohq = swatch RGB` (off-island = flat `(128,128,255)`; green-flip for DirectX Y- is the ONE item
   not verifiable offline — confirm in-game).
 - **`LiveryMasks__*` are ~empty for a stock-colour car** (1-11% coverage on the BRZ): livery is negligible
-  → v1 body = flat glossy paint, skip the livery projection (B2). "Photorealistic livery" reduces to
+  → v1 body = flat glossy paint, skip the livery projection. "Photorealistic livery" reduces to
   "glossy paint" when the masks are empty — check coverage before planning a projection bake.
 
 ### The swatch UV is TEXCOORD2 — and you must VERIFY it, `use_materials=True` is broken
@@ -738,7 +738,7 @@ The exact factory paint lives in the rip's `ManufacturerColors.bin` (per car). L
 Entry **[0] = the default color**. Parse: for each `Game:\Media…materialbin` string, the 3 floats are the 12
 bytes ending 1 byte before the path's `Game`. Non-vacuity check: run the whole table — white≈(0.99,…), black≈(0.08,…).
 SUB_BRZ default = `wrblue_pearl_sub` → (0.0157,0.290,0.639) = **#044AA3** (a prior pass GUESSED #105BAD = wrong).
-Reusable: `decode_color2.py`. Note: `the clay-render output\out` renders are CLAY (no color) and `_library` materials are
+Reusable: `decode_color2.py`. Note: the renders that ship in the rip are CLAY (no color) and `_library` materials are
 PROCEDURAL — there is **no painted-car bitmap to copy**; the DayZ target is solid-color-per-piece + AO.
 
 ### Black panels + see-through = WINDING, not texture — DECODE the `_co` before touching it
@@ -762,19 +762,19 @@ in-game gate is PENDING.
 
 ### Suspensions + axles: do NOT exclude them — the wheels visually ride on them
 Phase 1/2 EXCLUDED `suspension_a`+`undercarriage_a` (rip droop) for a Phase-3 re-pose that never happened → in-game
-the visible suspension/axle the wheels sit on is missing (user-reported, s12). Re-include them (re-posed to ride
+the visible suspension/axle the wheels sit on is missing (seen in game, s12). Re-include them (re-posed to ride
 height); they're part of the look even though they're not the drivetrain sim. Add to the INCLUDE manifest, not EXCLUDE.
 
 ### Driver / ViewPilot LOD must carry the car's OWN interior, not vanilla `civiliansedan_int1`
 First-person in-seat renders the pilot/interior LOD. If it falls back to vanilla `civiliansedan_int1` you get a
-mismapped/overlapping interior (user photo, s12) that only looks right from a free admin camera (which renders
+mismapped/overlapping interior (in-game photo, s12) that only looks right from a free admin camera (which renders
 LOD0). The pilot LOD needs the car's own interior geometry. Separately, the LOD0 interior also needs its winding
 fixed (it sees-through like the exterior).
 
 ### Paint finish — metallic/pearl is an APPROXIMATION; high specular AMPLIFIES normal-map artifacts
 source pearl paint (flake + clearcoat) is not reproducible in DayZ's Super shader — aim for an approximation:
 a solid `_co` of the source color + the Super stages (specular / fresnel / env reflection). Two s12 findings:
-- Raising specularPower (180→300) + brighter SMDI made the reflection clearly better (user: "the reflection is much better").
+- Raising specularPower (180→300) + brighter SMDI made the reflection clearly better.
 - BUT high specular AMPLIFIES any per-part `_nohq` normal-map artifact (green-flip / DXT1 banding) into visible
   speckle on the paint ("pixelated"). Levers to try: `--flip-green` the normals, lower specularPower a touch, or
   flatten the per-part normal. Also: the raw `ManufacturerColors` BaseColor reads "washed out / dull" vs the
@@ -804,7 +804,7 @@ PLASTIC→matte black, INTERIOR→leather/fabric, RUBBER→matte black, LIGHT→
 `carpaint` on a **paintable selection** (Body/Hood/Mirror/Wing, listed in `ManufacturerColors.bin`) gets the
 body color (default = entry[0]). This removes the per-car eye-tuning and fixes, at the root: blue-on-metal,
 white-interior-seen-through-glass (interiorLOD1 / interior winding), and black-bits-on-glass (glass_edge /
-blackframe = opaque trim, not the see-through window). Measured on: SUB_BRZ s12b — user directive "no trial and error".
+blackframe = opaque trim, not the see-through window). Measured on: SUB_BRZ s12b.
 
 ### Material map — IMPLEMENTED + corrected (SUB_BRZ s13; method offline-verified, in-game gate PENDING)
 The s12b plan was built. Four corrections/invariants the next ripped racing-game car needs UP FRONT:
@@ -827,9 +827,9 @@ The s12b plan was built. Four corrections/invariants the next ripped racing-game
   painted body color (PLASTIC = 54% of SUB_BRZ faces); remapping them to black wrecks the car. PAINT/GLASS/INTERIOR
   keep their shared materials. TYPE→rvmat authored once in `rip_p5_typemats.py` (brz_metal/chrome/black/carbon).
 - **wing_b = PAINT** (the s12b "wing=METAL" was wrong — the path is `paint\paintedmetal`; the extractor/path is the fact).
-- Pack `-BuildOnly -PackOnly` (MLOD raw keeps face.material; binarize would drop it).
+- Pack `-Build -PackOnly` (MLOD raw keeps face.material; binarize would drop it).
 Order: `rip_material_map.py` → `rip_p2_group.py` (Blender) → `rip_p5_typemats.py` → `rip_p5_repaint.py --apply`
-→ pack. STATE: applied s13; exterior (colour/lights/mirrors/per-mesh) in-game-confirmed by the user.
+→ pack. STATE: applied s13; exterior (colour/lights/mirrors/per-mesh) confirmed in game.
 
 ### Wheels / glass / interior / suspension — applied s13 (exterior confirmed; finer items pending)
 - **Original rim from the rip — kill the motion-blur discs FIRST.** `oz_rallyracing_wheellf` ships `blur*`
@@ -853,13 +853,13 @@ Order: `rip_material_map.py` → `rip_p2_group.py` (Blender) → `rip_p5_typemat
 - **Glass "double pane z-fight" — RETRACTED (s20).** `glass*int_a` panes are the legitimate cabin-side layer
   of the two-sided glass pair (raw winding ~92-100% cross-outward = anti-cross side faces the cabin); the s13
   artefact came from the inverted import orientation (orient_authored — deployed chunk_06 glass 73.9%
-  cross-outward = renders inside-only, bug B2), not from an inherent double-pane z-fight. Do NOT run
+  cross-outward = renders inside-only), not from an inherent double-pane z-fight. Do NOT run
   `rip_fix_glass_zfight.py`; keep both panes with the raw glTF winding (reimport in-game gate pending).
 - **Interior see-through / invisible seat = single-sided.** Setting `face.flags |= 0x20000` did not
   produce two-sided rendering; the interior stayed see-through in-game (see invariant #1 under
   "VISUAL CORRECTNESS" below). The route confirmed to work is double-siding the geometry, subject to
   the resolved-vertex budget (this interior was ~72k faces; duplicating drove chunk_07 to 112k
-  resolved, above the 65535 cap). The `0x20000` vs BI-wiki `0x00000020` dispute is CLOSED as moot:
+  resolved, above the 65535 cap). Which value is right, `0x20000` or `0x00000020`, is moot:
   `binarize.exe` discards the MLOD per-face `flags` field outright, so neither value ever reaches the
   game. Measured 2026-08-24 by binarize round-trip; invariant #1 carries the method and its controls.
 - **Excluded geometry (suspension/axles).** `rip_p2_shellproxy` SKIPs `suspension_a` (rip full-droop pose).
@@ -874,7 +874,7 @@ Order: `rip_material_map.py` → `rip_p2_group.py` (Blender) → `rip_p5_typemat
 ## VISUAL CORRECTNESS — single-sided interiors, glass, normals, materials (SUB_BRZ s15, 2026-06-30)
 
 The decimated rip body drives and the exterior renders, but the cabin/glass need a visual pass. Five
-invariants, each verified in-game (the user's eye is the gate):
+invariants, each verified in-game (the in-game render is the gate):
 
 1. **MLOD per-face `flags` do NOTHING in DayZ, because `binarize.exe` discards the field.** Flagging
    single-sided interior faces with `0x20000` left them see-through in-game (first real test of the s13
@@ -894,7 +894,7 @@ invariants, each verified in-game (the user's eye is the gate):
 3. **Two-tone glossy paint = shell-vs-chunks NORMAL-SIGN mismatch — SUPERSEDED (s20 2026-07-02, see
    visual-gates-and-winding.md #10(j)).** The s15 two-tone was a RELATIVE shell-vs-chunks mismatch; the chunks' `+cross`
    normals were the CORRECT convention (vanilla stored·cross>0 = 96.2%, brz_int 99.5% in-game OK) and the
-   deployed shell at 0.5% is the anomaly (prime B1 bright-triangle candidate). Do NOT negate the cross:
+   deployed shell at 0.5% is the anomaly (the prime candidate for the bright-triangle defect). Do NOT negate the cross:
    stored normals = smooth(+cross) of the FINAL winding for shell AND chunks (`decimate_rebuild.py` must be
    set back to +cross); shell-vs-chunks agreement only proves internal consistency, not correctness
    (reimport in-game gate pending).
@@ -919,7 +919,7 @@ invariants, each verified in-game (the user's eye is the gate):
    `prox_int`) and SUB_BRZ had 0 — that half holds. The "vanilla flags=0" half does NOT: vanilla ships
    binarized, where per-face flags do not exist, so that number came from a debinarizer that hardcodes
    `face.flags = 0` (`odol_to_mlod.py:115`) — the instrument answering its own question. It justifies
-   nothing either way, since binarize discards the field. In-game s17: "the interior now draws" (user).
+   nothing either way, since binarize discards the field. In-game s17: the interior now draws.
    RESIDUAL (separate, material pass): the rip interior reads GREY (brz_interior_fp/brz_trim near-grey) — needs
    proper interior colour, not a geometry fix.
    SUPERSEDED as primary fix by visual-gates-and-winding.md #10(i)/(j) (s20): the defect was import ORIENTATION; the s19
@@ -944,7 +944,7 @@ Hinge axes ship in `Locators.xml`: `carLocator_doorLF/RF` (BRZ: x ±0.884088, y 
 z 0.006927, source frame) + `carLocator_doorHandleLF/RF` + `carLocator_entryDoorLF` — exactly the
 axis `class Doors`/AnimationSources needs, same transform as the geometry.
 
-RCA (why this section exists): SUB_BRZ assembled the body WITH the doors fused into the proxy
+Root cause (why this section exists): SUB_BRZ assembled the body WITH the doors fused into the proxy
 chunks, then s34/s35 planned door removal as "manual doorcard marking in Blender" because the
 cabin census was ambiguous (17k/30k faces captured by the footprint, no discriminator). Both were
 non-problems: (a) the pre-cut rip pieces + known transform (`dp=(x, z+Y0, y)`, Y0 per car) make
@@ -952,17 +952,17 @@ fused-face identification a tri_signature/centroid MATCHING job against the rip 
 pattern of `s34_chunk_03_census.py` for calipers); (b) a parallel lane (s33) had ALREADY built
 `sub_brz_doors_{driver,codriver}.p3d` from the authored LODs
 (9 LODs each, collision preserved, LOD0 floor set by the doorcard's authored
-bitmask 0x0003 — no sub-LOD exists, accept the overage) and the HANDOFF never registered it, so
+bitmask 0x0003 — no sub-LOD exists, accept the overage) and the build notes never recorded it, so
 two later sessions budgeted work that was DONE. Lessons: read the Manifest for `doors\`/movable
-parts BEFORE planning any body-cut surgery; register built artifacts (path + checkpoint) in the
-LIVE-STATE the day they are built.
+parts BEFORE planning any body-cut surgery; record built artifacts (path + checkpoint) in the
+project notes the day they are built.
 
-## 2026-07-18 (s37) — B1 wheels-invisible RCA closed: identity proxy frames + vis2 without proxies
+## 2026-07-18 (s37) — wheels-invisible root cause closed: identity proxy frames + vis2 without proxies
 
 History: s35 saw invisible wheels in-game; s36 refuted 7 hypotheses and applied the candidate fix
 "add visual LOD 0.0 to the wheel item" — REFUTED in-game s37 (wheels attached 4/4 server-side,
 sim fully functional — accelerates, wheelspins, upshifts, takes damage — and ZERO render, no
-raycast hit at the hubs). RCA s37 (an agent review + independent double measurement): the shell's four
+raycast hit at the hubs). Root cause, s37 (measured twice, independently): the shell's four
 wheel proxies in visual res 0.0 carried an IDENTITY frame (py3d `add_proxy(rotation=None)`, point
 flags 0) and visual res 2.0 had NO wheel proxies at all; ViewGeo/FireGeo carried the correct
 per-side lateral frames (flags 63). Control: civiliansedan MLOD ships sedanwheel.001-.005 in EVERY
@@ -971,7 +971,7 @@ model.cfg/item changes): copy the ViewGeo triangle onto the vis0 proxy in-place 
 selection membership) + `add_proxy` into vis2 with a leaf companion. Door proxies measured on the
 same control: UNIFORM frame `((-1,0,0),(0,0,1),(0,1,0))` on all four sedandoors_* proxies (no
 per-side mirroring — door models are mirrored per side instead).
-B5 (native client crash on the ruined-wheel swap at 60+ km/h, minidump): the CfgNonAIVehicles
+Native client crash on the ruined-wheel swap at 60+ km/h (minidump): the CfgNonAIVehicles
 class `ProxySUB_BRZ_Wheel_destroyed` did not match the proxy file basename `sub_brz_wheel_ruined`
 (vanilla ties them: `ProxySedanWheel_destroyed` <-> `sedanWheel_destroyed.p3d`) — 1-line class
 rename. Both fixes verified offline (double-measured); in-game gate = the next drive-test.

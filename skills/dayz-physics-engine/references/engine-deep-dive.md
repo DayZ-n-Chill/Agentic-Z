@@ -2,7 +2,7 @@
 
 Covers the full rigid body API (`dBody`, `dGeom`, `dJoint`), interaction layers, the two raycast families and who uses which, contacts, the native drop and throw path, the player controller, surfaces, what the engine syncs to clients, and a worked case (a rolling stone item).
 
-Citations are `P:\...:line`, opened on `P:\` (a 1.30 build). `1.29:<path>:<line>` is a line in the 1.29 scripts, which are not on `P:\` and were not re-checked. In code blocks a comment such as `// :38` is a line of the file named in the heading above the block. What script cannot show is marked `[UNVERIFIED]` or `[INFERRED]`. The source pack wrote this from the vanilla scripts alone (no web sources), first on 1.24 and then re-checked on 1.30.
+Citations are `P:\...:line`, opened on `P:\` (a 1.30 build). `1.29:<path>:<line>` is a line in the 1.29 scripts, which are not on `P:\` and were not re-checked. In code blocks a comment such as `// :38` is a line of the file named in the heading above the block. What script cannot show is marked `[UNVERIFIED]` or `[INFERRED]`.
 
 ## 1. Summary
 
@@ -153,7 +153,7 @@ proto static bool EntityOverlapBullet(...) / EntityOverlapSingleBullet(...) / Sp
 
 - `RaycastRVParams` (`P:\scripts\3_game\global\dayzphysics.c:49-92`): `type` defaults to `ObjIntersectView` (`:88`). The documented values are `ObjIntersectFire(0)`, `ObjIntersectView(1)`, `ObjIntersectGeom(2)`, `ObjIntersectIFire(3)` and `ObjIntersectNone(4)` (`:66-71`); the constants themselves are defined in the engine, not in script.
 - `RaycastRVResult` (`P:\scripts\3_game\global\dayzphysics.c:98-113`): `obj` and `parent` (a proxy when `hierLevel > 0`), `pos`, `dir`, `component`, `surface` (a `SurfaceInfo`), `entry` and `exit`.
-- `CollisionFlags` (`P:\scripts\1_core\proto\endebug.c:140-148`): FIRSTCONTACT, NEARESTCONTACT, ONLYSTATIC, ONLYDYNAMIC, ONLYWATER, ALLOBJECTS. The source pack reports that from 1.30.164289 `NONE = 0` comes first, which moves every other value up by one; the copy on `P:\` has no `NONE`.
+- `CollisionFlags` (`P:\scripts\1_core\proto\endebug.c:140-148`): FIRSTCONTACT, NEARESTCONTACT, ONLYSTATIC, ONLYDYNAMIC, ONLYWATER, ALLOBJECTS. Not checked on `P:\`: from 1.30.164289 `NONE = 0` comes first, which moves every other value up by one. The copy on `P:\` has no `NONE`.
 - `CollisionOverlapCallback.OnContact(IEntity other, Contact contact)` (`P:\scripts\3_game\global\dayzphysics.c:115-121`) receives overlap results.
 - `PhxRaycast...` does not exist (0 matches in `P:\scripts`).
 
@@ -272,7 +272,7 @@ proto native bool    PhysicsIsRagdoll();                          // :1452
 - `Transport` has `proto native void Synchronize()`, "Synchronizes car's state in case the simulation is not running" (`P:\scripts\3_game\vehicles\transport.c:171-172`). Under `FEATURE_NETWORK_RECONCILIATION`, `Transport extends Pawn` (`P:\scripts\3_game\vehicles\transport.c:66`) with the states `TransportOwnerState` and `TransportMove` (transform plus linear and angular velocity, `:11-50`): move replication with replay ("full state synchronization ... triggering a replay on the owner", `P:\scripts\3_game\entities\pawn.c:20-24`).
 - `EntityAI` syncs variables through `RegisterNetSyncVariableBool`, `Int`, `Float` and `Object` (`P:\scripts\3_game\entities\entityai.c:2832-2869`) and `SetSynchDirty` (`:3064`). Position is not part of that.
 - A thrown `ItemBase` is simulated on the server and the owner client (2.9, step 1). The final position on remotes comes from the inventory flow (`LocationSyncMoveEntity`, `P:\scripts\3_game\systems\inventory\hand_actions.c:74`) and the native item replication (`[UNVERIFIED]`, not visible in script).
-- For a body made with `dBodyCreateDynamicEx` on an `ItemBase` there is no script that syncs the transform. If a client sees it move (observed by the source pack's project on 2026-05-21), that is the native replication of the entity's position, not a simulation: the client has no body, so the player passes through it.
+- For a body made with `dBodyCreateDynamicEx` on an `ItemBase` there is no script that syncs the transform. If a client sees it move (observed in game), that is the native replication of the entity's position, not a simulation: the client has no body, so the player passes through it.
 
 ## 3. Vanilla patterns
 
@@ -325,7 +325,7 @@ if (IsDamageDestroyed() && car.GetSpeedometerAbsolute() > 3) {
 6. `dBodyCreateDynamic` and `dBodyCreateStatic` (no `Ex`) exist only in `GAME_TEMPLATE` code and do not compile in DayZ. Use `Physics.CreateDynamic` (the wrapper, `P:\scripts\1_core\physics\physics.c:189`) or `dBodyCreateDynamicEx`.
 7. The cursor (`RaycastRVProxy` with `ObjIntersectView`) sees View Geometry. With no View Geometry LOD in the `.p3d` there is no action target even when a rigid body exists: the body lives in the Bullet world, which the cursor does not query except for the ground fallback (`RayCastBullet` with `ROADWAY|TERRAIN|WATERLAYER`, `P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:383-384`). This explains a "Push does not appear" bug.
 8. `dBodySetAngularVelocity` takes rotation around the x, y and z axes in rad/s, "not yaw/pitch/roll" (`P:\scripts\1_core\proto\enphysics.c:163`).
-9. `SetDynamicPhysicsLifeTime` means drop physics is temporary by design: the engine removes it when the lifetime passes. An object that must roll with no end has to prevent or renew that timeout, or not rely on the drop path. The source pack later measured the default at 15 s (`SKILL.md`, truth 7).
+9. `SetDynamicPhysicsLifeTime` means drop physics is temporary by design: the engine removes it when the lifetime passes. An object that must roll with no end has to prevent or renew that timeout, or not rely on the drop path. The default, measured in game, is 15 s (`SKILL.md`, truth 7).
 10. `GetVelocity` and `SetVelocity` are global functions (they work for a `Man` and for bodies). Do not look for `dBodyGetVelocity`; it does not exist.
 11. `Physics.KMH2MS`, `MS2KMH`, `STANDARD_GRAVITY` (9.81) and `VGravity` (`"0 -9.81 0"`) are ready made constants (`P:\scripts\1_core\physics\physics.c:18-21`).
 12. The default physics time step is 1/40 s (`dSetTimeSlice`, `P:\scripts\1_core\proto\enphysics.c:18-19`); `PhysicsWorld.SetUpdateRate` accepts 20 to 1000 (`P:\scripts\1_core\physics\physicsworld.c:46-48`). Changing it is global.
@@ -348,7 +348,7 @@ Each absence was checked by search across `P:\scripts`.
 
 ## 6. Recipes for mods
 
-**A. A custom dynamic body (a sphere) on the server**, as the LF_RollingStone project first did it:
+**A. A custom dynamic body (a sphere) on the server:**
 
 ```c
 PhysicsGeomDef geoms[] = {PhysicsGeomDef("", dGeomCreateSphere(0.5), "material/default",
@@ -378,7 +378,7 @@ The `.p3d` needs a Geometry LOD (collision), a View Geometry LOD (cursor and act
 **C. Reading the force of an impact** (damage by speed, the vanilla pattern):
 
 ```c
-void LFRS_Stone() { SetEventMask(EntityEvent.CONTACT); }
+void MyStone() { SetEventMask(EntityEvent.CONTACT); }
 override void EOnContact(IEntity other, Contact extra)
 {
     float v = extra.RelativeVelocityBefore.Length();      // relative impact speed (m/s)
@@ -398,9 +398,9 @@ Object hit; vector pos, n; float frac;
 DayZPhysics.RayCastBullet(from, to, PhxInteractionLayers.DYNAMICITEM|PhxInteractionLayers.TERRAIN, ignore, hit, pos, n, frac);
 ```
 
-## 7. Worked case: a rolling stone item (LF_RollingStone)
+## 7. Worked case: a rolling stone item
 
-The source pack's project that prompted this file: a stone, an `ItemBase`, that players push and that rolls and hurts.
+The case: a stone, an `ItemBase`, that players push and that rolls and hurts.
 
 1. **"The player passes through the stone."** Architectural, not a layer problem. A body made with `dBodyCreateDynamicEx` on the server only will never collide with the local client's controller, which is simulated on the client. The right fix is a body on the client too: create it on both sides, or better, use the native path (`ThrowPhysically` or `CreateDynamicPhysics`), which vanilla already runs on the server and the owner (`P:\scripts\3_game\systems\inventory\hand_actions.c:77-81`).
 2. **"Push does not appear."** Confirmed: the cursor uses `RaycastRVProxy` with `ObjIntersectView` (`P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:248-255`); with no View Geometry LOD there is no target. No physics layer fixes it.
@@ -410,9 +410,9 @@ The source pack's project that prompted this file: a stone, an `ItemBase`, that 
 6. **Checking layers at run time.** Log `dGetInteractionLayer(this, PhxInteractionLayers.CHARACTER, dBodyGetInteractionLayer(this))` after creating the body (the pattern at `P:\scripts\3_game\vehicles\transport.c:787-788`).
 7. **If moving to the native path.** Watch `SetDynamicPhysicsLifeTime` (drop physics expires; `StopItemDynamicPhysics` ends it with 0.01, `P:\scripts\4_world\entities\itembase.c:4530-4534`) and `EnableCollisionsWithCharacter(true)`.
 
-## 8. Sources
+## 8. Vanilla files
 
-Vanilla files this reference draws on, all under `P:\scripts\`:
+The vanilla files cited above, all under `P:\scripts\`:
 
 - `1_core\proto\enphysics.c` (the whole `dBody`, `dGeom` and `dJoint` API)
 - `1_core\physics\contact.c`, `physics.c`, `physicsworld.c`, `physicsgeomdef.c`, `activestate.c`, `simulationstate.c`, `surfaceproperties.c`

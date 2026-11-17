@@ -71,7 +71,7 @@ The bone list behind `player_testing.xob` has 172 bones and starts at `P:\DZ\ani
 | `Guts` | `Guts` | 1 | `P:\DZ\characters\data\config.cpp:175` |
 | `Bones` | `Bone` | 2 | `P:\DZ\characters\data\config.cpp:181` |
 
-`BloodInfectionSettings` (`P:\DZ\characters\data\config.cpp:187`) adds a `Salmonella` chance of 0.4. There is no `Lard` class in 1.30. Bohemia's 1.30 changelog and a 1.29 extract report that 1.29 had one; `P:\` holds 1.30, so that part is not checked here. A recipe that expects `Lard` from a human body no longer gets it.
+`BloodInfectionSettings` (`P:\DZ\characters\data\config.cpp:187`) adds a `Salmonella` chance of 0.4. There is no `Lard` class in 1.30. 1.29 had one (1.29, not on `P:\`, so that part is not checked here). A recipe that expects `Lard` from a human body no longer gets it.
 
 ### Surrender state
 
@@ -88,7 +88,7 @@ Clothing or item script that needs to know whether its wearer has surrendered as
 Infected are not survivors: `ZombieBase` inherits `DayZInfected` (`P:\DZ\characters\zombies\config.cpp:24`). Two differences matter for wearables.
 
 - They take four attachment slots only: `Vest`, `Back`, `Headgear` and `Eyewear` (`attachments[]` at `P:\DZ\characters\zombies\config.cpp:64`).
-- They bind to a shorter bone list. `ZombieBase` names `hermit_newbindpose.xob` as its `skeletonName` (`P:\DZ\characters\zombies\config.cpp:76`), 95 bones starting at `P:\DZ\anims\cfg\skeletons.anim.xml:2`, against the player's 172. The infected list has no face bones, so headgear weighted to face bones can stretch on an infected. That stretch, and the fix of overriding `skeletonName` on the infected class, are community reports (DayZ Modders Discord, 2024), not checked here.
+- They bind to a shorter bone list. `ZombieBase` names `hermit_newbindpose.xob` as its `skeletonName` (`P:\DZ\characters\zombies\config.cpp:76`), 95 bones starting at `P:\DZ\anims\cfg\skeletons.anim.xml:2`, against the player's 172. The infected list has no face bones, so headgear weighted to face bones can stretch on an infected. That stretch, and the fix of overriding `skeletonName` on the infected class, are not yet checked on `P:\` or in game.
 
 Since 1.30 there are female military infected (`ZmbF_SoldierNormal_Base` at `P:\DZ\characters\zombies\config.cpp:11119`) next to the male ones. Their behaviour is in `skills/_shared/ai/custom-infected.md`.
 
@@ -96,7 +96,7 @@ Since 1.30 there are female military infected (`ZmbF_SoldierNormal_Base` at `P:\
 
 A text search inside the vanilla binarized models (binary files, so no line numbers) finds the skeleton name `DayzTemporarySkeleton` in the survivor body parts model `P:\DZ\characters\bodies\bodyparts_above0.p3d`, in the infected body `P:\DZ\characters\zombies\hermit_above0.p3d` and in worn clothing such as `P:\DZ\characters\tops\hoodie_m.p3d`. Of the 897 models under `P:\DZ\characters\`, 584 contain that name and 4 unused ones contain `ofp2_manskeleton`.
 
-A worn model whose `model.cfg` names its skeleton `OFP2_ManSkeleton` renders as a rigid block above the player; this was measured in game by a clothing project (ArmorHneck, 2026-08-03), not on `P:\`. The rules for a worn model (skeleton name, frame, the `model.cfg` template) are in `worn-models.md`; the character-side account, with the tests that isolate the fault, is in `skills/dayz-characters/references/worn-clothing-skeleton.md`.
+A worn model whose `model.cfg` names its skeleton `OFP2_ManSkeleton` renders as a rigid block above the player; this was measured in game on a body armor item on DayZ 1.29 diag, not on `P:\`. The rules for a worn model (skeleton name, frame, the `model.cfg` template) are in `worn-models.md`; the character-side account, with the tests that isolate the fault, is in `skills/dayz-characters/references/worn-clothing-skeleton.md`.
 
 ## Sandstorm protection on the wearer (1.30)
 

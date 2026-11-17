@@ -2,24 +2,24 @@
 
 Short, copyable building blocks for UI script: binding widget fields by name, the event signatures, locking input and showing the cursor, background blur, runtime alignment flags, a quick table of widget types, passing layout parameters to a script class, the two text styling branches, the Dabs essentials, a layout registry, and registering styles, imagesets and defines.
 
-**How facts are marked here.** A `P:\` path with a line was checked on `P:\` (DayZ 1.30). "LBmaster pattern" means the pattern is reported from the LBmaster mods (third party, closed source) and is not checked here. Dabs facts are framework facts; the checked details are in `dabs-framework.md`. The checked vanilla references for the same ground are `skills/_shared/enscript/references/widget_api.md` and `skills/_shared/enscript/references/gui_layout.md`; this file adds the recipes around them.
+**How facts are marked here.** A `P:\` path with a line was checked on `P:\` (DayZ 1.30). "LBmaster_Groups pattern" means third-party mod behaviour (the closed source LBmaster_Groups and LBmaster_Core mods), not vanilla and not checked on `P:\`. Dabs facts are framework facts; the checked details are in `dabs-framework.md`. The checked vanilla references for the same ground are `skills/_shared/enscript/references/widget_api.md` and `skills/_shared/enscript/references/gui_layout.md`; this file adds the recipes around them.
 
 ---
 
 ## Contents
 
-- [Auto widget binding](#auto-widget-binding-connectclasswidgetvariables-lbmaster-pattern)
+- [Auto widget binding](#auto-widget-binding-connectclasswidgetvariables-lbmaster_groups-pattern)
 - [Event signatures](#event-signatures)
 - [Input and cursor management](#input-and-cursor-management)
-- [Widget alignment flags](#widget-alignment-flags-lbmaster-hex-values)
+- [Widget alignment flags](#widget-alignment-flags-lbmaster_groups-hex-values)
 - [Widget types quick reference](#widget-types-quick-reference)
 - [scriptclass and the reference keyword](#scriptclass-and-the-reference-keyword)
 - [Text styling: two sibling branches](#text-styling-two-sibling-branches)
 - [Dabs Framework essentials](#dabs-framework-essentials)
-- [Layout registry pattern](#layout-registry-pattern-lbmaster)
+- [Layout registry pattern](#layout-registry-pattern-lbmaster_groups)
 - [Styles, imagesets and defines in config.cpp](#styles-imagesets-and-defines-in-configcpp)
 
-## Auto widget binding: ConnectClassWidgetVariables (LBmaster pattern)
+## Auto widget binding: ConnectClassWidgetVariables (LBmaster_Groups pattern)
 
 Fills a class's `Widget` typed member variables from the layout widgets with the same names. It removes dozens of `FindAnyWidget` calls.
 
@@ -112,9 +112,9 @@ hic.SetDisabled(true);
 ```
 
 - `ChangeGameFocus(int add, int input_device = -1)` is at `P:\scripts\3_game\tools\input.c:20`, `ShowUICursor(bool visible)` at `P:\scripts\3_game\tools\uimanager.c:244`, and `HumanInputController.SetDisabled(bool pState)` at `P:\scripts\3_game\human.c:22`.
-- ESC, reported by the source: `LocalPress` on `UAUIBack` does not fire while `ChangeGameFocus` is active. Intercept the key in `MissionGameplay.OnKeyPress(int key)` (`P:\scripts\5_mission\mission\missiongameplay.c:742`) and compare with `KeyCode.KC_ESCAPE` (`P:\scripts\1_core\proto\ensystem.c:158`). The source compared against the number 1; use the name.
+- ESC (not yet checked in game): `LocalPress` on `UAUIBack` does not fire while `ChangeGameFocus` is active. Intercept the key in `MissionGameplay.OnKeyPress(int key)` (`P:\scripts\5_mission\mission\missiongameplay.c:742`) and compare with `KeyCode.KC_ESCAPE` (`P:\scripts\1_core\proto\ensystem.c:158`). Compare against the name, not the number 1.
 
-### Mission level input blocking (LBmaster pattern)
+### Mission level input blocking (LBmaster_Groups pattern)
 
 ```c
 Mission mission = g_Game.GetMission();
@@ -155,11 +155,11 @@ UIScriptedMenu current = g_Game.GetUIManager().GetMenu();
 
 **Dabs alternative.** A `ScriptViewMenu` handles game focus, the cursor and the menu hierarchy when it opens. It does **not** handle ESC (`CanCloseWithEscape()` has no callers; wire ESC yourself), and it does not release game focus when it closes (the `ChangeGameFocus(-1, ...)` calls in its destructor are commented out), so check the input state after closing. The full contract is in `dabs-framework.md`, "ScriptViewMenu". Corrected on 2026-07-05; older text said it handles ESC.
 
-## Widget alignment flags (LBmaster hex values)
+## Widget alignment flags (LBmaster_Groups hex values)
 
-Reported from LBmaster production code; the values cannot be checked against the engine. The `WidgetFlags` enum (`P:\scripts\1_core\proto\enwidgets.c:57-85`) declares 26 names with no explicit values and no positional alignment flags at all.
+Third-party mod values (LBmaster_Groups production code); they cannot be checked against the engine. The `WidgetFlags` enum (`P:\scripts\1_core\proto\enwidgets.c:57-85`) declares 26 names with no explicit values and no positional alignment flags at all.
 
-- The odd `V_` and `H_` prefixes are LBmaster's own naming (from their `LBWidgetUtils.c`): `V_*` are the horizontal values and `H_*` the vertical ones. The Horizontal and Vertical labels below are the correct meaning.
+- The odd `V_` and `H_` prefixes are that mod's own naming (in its `LBWidgetUtils.c`): `V_*` are the horizontal values and `H_*` the vertical ones. The Horizontal and Vertical labels below are the correct meaning.
 - **Never compute `WidgetFlags` hex values by hand, and never mix these alignment values with `WidgetFlags.*` names.** Under a naive `1 << index` reading, 0x100000 would collide with `DISABLED` and 0x400000 with `CLIPCHILDREN`. Vanilla only ever uses the symbolic names.
 - Treat the values as an opaque recipe that works in that mod.
 
@@ -203,7 +203,7 @@ widget.Update();
 | MapWidgetClass | MapWidget | yes | — | ScreenToMap, MapToScreen, SetMapPos, GetMapPos, SetScale, GetScale, AddUserMark, ClearUserMarks |
 | XComboBoxWidgetClass | XComboBoxWidget | yes | yes | AddItem, ClearAll, GetCurrentItem, SetCurrentItem, GetNumItems |
 | TextListboxWidgetClass | TextListboxWidget | yes | yes | AddItem(text, userData, column, row = -1) returns int, SetItem, GetItemText(row, col, out), SetItemColor(row, col, color), RemoveRow, GetSelectedRow, SelectRow, GetNumItems, GetItemData, EnsureVisible, ClearItems |
-| ProgressBarWidgetClass | ProgressBarWidget | yes | yes | SetCurrent(float); extends SimpleProgressBarWidget; no SetMinMax (GetMin and GetMax only read; the range comes from the layout or style). The source reports vanilla drives it with 0 to 100 |
+| ProgressBarWidgetClass | ProgressBarWidget | yes | yes | SetCurrent(float); extends SimpleProgressBarWidget; no SetMinMax (GetMin and GetMax only read; the range comes from the layout or style). Vanilla is said to drive it with 0 to 100 (not checked on `P:\`) |
 | MultilineTextWidgetClass | MultilineTextWidget | text | no | Plain text over several lines (TextWidget plus SetLineBreakingOverride). Use it for labels that wrap, with `wrap 1` |
 | PasswordEditBoxWidgetClass | PasswordEditBoxWidget | yes | yes | EditBoxWidget plus SetHideText(bool) |
 | HtmlWidgetClass | HtmlWidget | yes | no | RichTextWidget plus LoadFile(path); vanilla note and book UIs, for long scrolling documents |
@@ -213,7 +213,7 @@ widget.Update();
 | ItemPreviewWidgetClass | ItemPreviewWidget | 3D item | no | SetItem, GetItem, SetView, GetView, SetForceFlipEnable, SetForceFlip |
 | PlayerPreviewWidgetClass | PlayerPreviewWidget | 3D player | no | UpdateItemInHands, SetPlayer, GetDummyPlayer, Refresh |
 
-The source's table marked `ProgressBarWidget` and `PasswordEditBoxWidget` as not two way. Dabs's own registry gives both a two way controller, so the column above follows the framework source.
+Dabs's own registry gives `ProgressBarWidget` and `PasswordEditBoxWidget` a two way controller, so the column above marks both yes.
 
 ## scriptclass and the reference keyword
 
@@ -332,7 +332,7 @@ WidgetAnimator.CancelAnimate(widget);
 
 Dabs `LinearColor` has about 150 named colors, HSV, `Lerp` and blend modes.
 
-## Layout registry pattern (LBmaster)
+## Layout registry pattern (LBmaster_Groups)
 
 Central layout management with paths another mod can override:
 

@@ -1,4 +1,4 @@
-"""Original test double for the isolated worker; it parses no ODOL bytes."""
+"""Test double for the isolated worker; it parses no ODOL bytes."""
 
 import json
 from types import SimpleNamespace

@@ -51,7 +51,7 @@ EntityAI
 | `CrewGetIn(Human player, int posIdx)` | `proto native void` | `:206` | |
 | `CrewGetOut(int posIdx)` | `proto native Human` | `:209` | |
 | `CrewDeath(int posIdx)` | `proto native void` | `:212` | |
-| `ApplyForce`, `ApplyTorque`, `ApplyForceAt`, `ApplyTorqueImpulse`, `ApplyImpulseAt` | `proto void` | `:260-275` | Deterministic physics |
+| `ApplyForce`, `ApplyTorque`, `ApplyForceAt`, `ApplyCentralImpulse`, `ApplyTorqueImpulse`, `ApplyImpulseAt` | `proto void` | `:260-275` | Deterministic physics |
 | `Random`, `RandomRange`, `Random01` | `proto native` | `:283-296` | Only inside `EOnSimulate` or `EOnPostSimulate` |
 | `OnContact(zoneName, localPos, other, data)` | `void` | `:315` | Collision callback |
 | `OnInput(float dt)` | `void` | `:353` | Called after each input step |
@@ -116,11 +116,11 @@ override void EOnPostSimulate(IEntity other, float timeSlice)
         m_VelocityPrevTick = GetVelocity(this);
         m_MomentumPrevTick = GetMomentum();
     }
-    // fluid checks, effects, brake lights ... (server and client)
+    // every GameConstants.CARS_FLUIDS_TICK: parts health check, engine stop, fluid leaks, engine wear
 }
 ```
 
-`EOnPostSimulate` runs on the server and the client. The damage part (`CheckContactCache`) and the fluid draining are behind `g_Game.IsServer()`; visual effects are behind `!g_Game.IsDedicatedServer()`. `IsServerOrOwner()` (`P:\scripts\4_world\entities\vehicles\carscript.c:2592`) returns `IsServer()` for the classic networking, or `IsOwner()` when the strategy is `NetworkMoveStrategy.PHYSICS`.
+`EOnPostSimulate` runs on the server and the client. The damage part (`CheckContactCache`, `:826`) and the engine wear are behind `g_Game.IsServer()`; the engine stop and the fluid leaks are behind `IsServerOrOwner()` (`:846-910`). `IsServerOrOwner()` (`P:\scripts\4_world\entities\vehicles\carscript.c:2592`) returns `IsServer()` for the classic networking, or `IsOwner()` when the strategy is `NetworkMoveStrategy.PHYSICS`.
 
 `EOnSimulate` is not in `carscript.c` or `transport.c`: a car's physics loop is native and script does not override it. `BoatScript` is the exception, with its own `EOnSimulate` (`P:\scripts\4_world\entities\vehicles\boatscript.c:393`).
 
@@ -130,9 +130,9 @@ override void EOnPostSimulate(IEntity other, float timeSlice)
 // P:\scripts\4_world\entities\vehicles\carscript.c:1041 (the DIAG test branch, condensed)
 override void OnInput(float dt)  // called by the engine so script can apply controls
 {
-    SetThrottle(thrustWanted);
+    SetThrottle(throttleWanted);
     SetSteering(steeringWanted);
-    SetBrake(0.0);
+    SetBrake(0.1);
     SetHandbrake(0.0);
 }
 
@@ -148,24 +148,22 @@ override void OnUpdate(float dt)
 
 Outside the diagnostic test code, `CarScript.OnInput` does nothing of its own: a human driver controls the vehicle through their input, which the native physics reads directly.
 
-## `CfgVehicles` config (from the wiki, partly checked)
+## `CfgVehicles` config
 
-The vehicle config uses `SimulationModule` and is declarative. It is not in script; it lives in the `config.cpp` of the vehicle addons. The source pack took this list from the Bohemia wiki page "DayZ:Vehicle Configuration" (community.bistudio.com), not from vanilla files:
+The vehicle config uses `SimulationModule` and is declarative. It is not in script; it lives in the `config.cpp` of the vehicle addons. In `P:\DZ\vehicles\wheeled\config.cpp` the vanilla car config writes it as nested classes, not arrays:
 
-- `class SimulationModule`: the vehicle's physics parameters
-  - `axles[]`: the axles (front and rear), each with `wheels[]`
-  - Inside each wheel: `steerAngle`, `frictionCoef`, `dampingRate`
-  - `engine {}`: `torque[][]`, `RPMMin`, `RPMIdle`, `RPMMax`, `RPMRedline`
-  - `gearbox {}`: type (MANUAL or AUTOMATIC), gear ratios
-  - `clutch {}`: `maxRPMDrop`, `engagingSpeed`
-  - `brakes {}`: `torqueMax`
-  - `aerodynamics {}`: `dragCoef`, `frontalArea`
-  - `drive`: `DRIVE_AWD`, `DRIVE_FWD`, `DRIVE_RWD`
-- `inventorySlots[]`: wheel slots (for the `CarWheel` attachment)
-- `attachments[]`: `CarRadiator`, `CarBattery`, `SparkPlug`, `GlowPlug`
-- `dmgZones`: damage zones (Engine, FuelTank, wheels, fenders and so on)
+- `class SimulationModule` (`:283`): the vehicle's physics parameters
+  - `class Axles`, each axle with `class Wheels` (`:285-289`)
+  - `class Steering` with `maxSteeringAngle` (`:441-443`)
+  - `class Brake` with `pressureBySpeed[]` (`:456-458`)
+  - `class Aerodynamics` with `frontalArea` and `dragCoefficient` (`:462-465`)
+  - `drive`: `"DRIVE_RWD"` (`:469`), `"DRIVE_FWD"` (`:565`), `"DRIVE_AWD"` (`:659`)
+  - `class Engine` with `torqueCurve[]`, `rpmIdle`, `rpmMin`, `rpmClutch` and `rpmRedline` (`:470-480`)
+  - `class Gearbox` with `type` (`"GEARBOX_MANUAL"`), `reverse` and `ratios[]` (`:488-492`)
+- `attachments[]`: the attachment slot names, such as `CarBattery` and the reflectors (`:333-338`)
+- `class DamageZones`: the damage zones (`:124`)
 
-Checked against `P:\DZ\vehicles\wheeled\config.cpp`: the vanilla car config writes these as classes, not arrays, and several key names differ from the list above. `class SimulationModule` (`:283`) holds `class Axles` with `class Wheels` (`:285-289`), `class Steering` with `maxSteeringAngle` (`:441-443`), `class Brake` with `pressureBySpeed[]` (`:456-458`), `class Aerodynamics` with `frontalArea` and `dragCoefficient` (`:462-465`), `drive="DRIVE_RWD"` (`:469`), `class Engine` with `torqueCurve[]`, `rpmIdle`, `rpmMin`, `rpmClutch` and `rpmRedline` (`:470-480`), and `class Gearbox` with `type`, `reverse` and `ratios[]` (`:488-492`). The names `steerAngle`, `frictionCoef`, `dampingRate`, `torqueMax`, `maxRPMDrop`, `engagingSpeed` and `RPMMax` have 0 matches in that file. Use `skills/_shared/vehicles/simulation.md` for the keys checked against vanilla.
+The key names `steerAngle`, `frictionCoef`, `dampingRate`, `torqueMax`, `maxRPMDrop`, `engagingSpeed` and `RPMMax` have 0 matches in that file; do not write them. Use `skills/_shared/vehicles/simulation.md` for the full set of keys.
 
 The enums `CarFluid` (FUEL, OIL, BRAKE, COOLANT) and `CarGear` do exist in script and drive the fluid and gearbox behaviour there.
 
@@ -206,8 +204,8 @@ class Transport extends Pawn
 
 - `ItemBase` inherits from `EntityAI`, not `Pawn`. The engine has no reason to treat its transform as continuous network state.
 - `SetSynchDirty()` with `RegisterNetSyncVariable...` is a mechanism for discrete state (sent when a value changes), not a continuous stream of position and velocity.
-- A dynamic body on an `ItemBase` is simulated on the server, but the client does not receive the transform in real time. It updates only when the item enters the client's area of interest and on periodic resyncs.
-- So a "provisional pass" in a local test (the client saw the source pack's stone roll) can be an artifact of low latency and a high resync rate on a local network or in single player, or of an `EntityAI` replication mechanism that script does not document.
+- A dynamic body on an `ItemBase` is simulated on the server, but the client does not receive the transform in real time. It updates only when the item enters the client's area of interest and on periodic resyncs. This part is native behaviour that script does not show, so it is not checked on `P:\`.
+- So a client that sees such a body move in a local test is not proof of replication. It can be an artifact of low latency and a high resync rate on a local network or in single player, or of an `EntityAI` replication mechanism that script does not document.
 
 ### Network methods on `Transport`
 
@@ -334,9 +332,9 @@ Vanilla cars (OffroadHatchback, Truck_02, Van_01 and others) hold a `UniversalTe
 
 1. The player looks at the vehicle; the raycast hits a component of the model.
 2. `ActionGetInTransport.ActionCondition` checks that `transport.CrewPositionIndex(componentIndex)` is 0 or more and that the seat is empty (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:45-69`).
-3. In `Start()`: `player.StartCommand_Vehicle(trans, crew_index, seat)` creates a `HumanCommandVehicle`.
-4. On the server (`OnStartServer`) the lights are updated.
-5. To leave: `ActionGetOutTransport`, and `OnVehicleJumpOutServer` works out the damage from speed when jumping out (`P:\scripts\4_world\entities\vehicles\carscript.c:951`).
+3. In `Start()`: `action_data.m_Player.StartCommand_Vehicle(transport, crewIndex, seat)` creates a `HumanCommandVehicle` (`actiongetintransport.c:104`).
+4. `AddActionJuncture` reserves the seat for the player with an inventory juncture (`actiongetintransport.c:138-158`).
+5. To leave: `ActionGetOutTransport`. After a jump out, its `ApplyJumpOutDmg` calls `OnVehicleJumpOutServer` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetouttransport.c:252-258`), which works out the damage from speed (`P:\scripts\4_world\entities\vehicles\carscript.c:951`).
 
 ## Gotchas
 
@@ -361,16 +359,16 @@ Vanilla cars (OffroadHatchback, Truck_02, Van_01 and others) hold a `UniversalTe
 - **A `HelicopterScript` with full physics.** `HelicopterScript.EOnPostSimulate` is empty (`P:\scripts\4_world\entities\vehicles\helicopterscript.c:11-13`). The flight is native in `HelicopterAuto`.
 - **Doubt that `BoatScript` exists.** It does: `class BoatScript : Boat` (`P:\scripts\4_world\entities\vehicles\boatscript.c:41`), and `Boat extends Transport` (`P:\scripts\3_game\vehicles\boat.c:28`).
 
-## Worked case: a rolling stone item (LF_RollingStone)
+## Worked case: a rolling stone item
 
 ### Why `Transport` replicates and the stone, an `ItemBase`, does not
 
 `Transport extends Pawn`, and the engine gives every `Pawn` of this kind a continuous stream of `TransportOwnerState` (world transform, linear velocity, angular velocity) to all proxies. `ItemBase` does not inherit from `Pawn`, so the engine creates no such stream.
 
-The provisional pass of the first test (the client sees the stone roll) can be explained by:
+A test in which the client sees the stone roll can be explained by:
 
 - **Single player:** no network; one process sees everything.
-- **Local multiplayer at low latency:** `EntityAI` gets a periodic position resync when it has moved enough. That resync is infrequent and carries no velocities, so the client interpolates badly or sees jumps.
+- **Local multiplayer at low latency:** `EntityAI` gets a periodic position resync when it has moved enough. That resync is infrequent and carries no velocities, so the client interpolates badly or sees jumps. (Native behaviour, not visible in script and not checked on `P:\`.)
 
 ### The real options for the stone
 
@@ -399,9 +397,9 @@ The impulse is body mass times force times a coefficient times the direction. Th
 
 `Transport.OnContact`, which does its work on the server only, is the same pattern as an `ItemBase`'s `EOnContact`. The difference is that `Transport` gets a callback with a zone name, while for an `ItemBase` the pattern is `EOnContact(IEntity other, Contact data)`. The damage design (gather in a cache, process in the post simulate step) can be reused for the stone if it should damage players on impact.
 
-## Sources
+## Vanilla files
 
-Vanilla files this reference draws on, under `P:\scripts\`:
+Vanilla files this reference cites, under `P:\scripts\`:
 
 | File | What it holds |
 |---|---|
@@ -418,6 +416,7 @@ Vanilla files this reference draws on, under `P:\scripts\`:
 | `4_world\entities\vehicles\inheritedcars\truck_02.c` | A truck with temperature |
 | `4_world\entities\vehicles\inheritedboats\boat_01.c` | `Boat_01`: fluids, seats |
 | `4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c` | Getting in |
+| `4_world\classes\useractionscomponent\actions\interact\actiongetouttransport.c` | Getting out, the jump out damage call |
 | `4_world\classes\useractionscomponent\actions\continuous\actionpushcar.c` | `dBodyApplyImpulseAt` as a pattern |
 
-Outside vanilla: the Bohemia wiki page "DayZ:Vehicle Configuration" for the `SimulationModule` list (see the checked note in that section).
+The `SimulationModule` keys are cited from `P:\DZ\vehicles\wheeled\config.cpp`.

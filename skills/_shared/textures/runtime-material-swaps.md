@@ -2,7 +2,7 @@
 
 What changes an item's material or texture while the game runs: the engine's health levels, the script calls, and what was measured when a script repaints worn clothing. Read it before writing thermal vision, camouflage, team marking or any effect that calls `SetObjectMaterial`.
 
-How to read it: a line with a `P:\` citation was checked on the vanilla files. A block marked **measured in game** comes from one mod project's test runs; it was not rechecked for this pack, so treat it as a lead and repeat the test before a design depends on it. The clothing runs are dated 2026-08-31 and their notes name the project LFThermalCore.
+How to read it: a line with a `P:\` citation was checked on the vanilla files. A block marked **measured in game** records a test run in the DayZ client that has no vanilla file behind it; it is not yet checked on `P:\`, so treat it as a lead and repeat the test before a design depends on it. The clothing runs are dated 2026-08-31.
 
 ## Contents
 
@@ -28,7 +28,7 @@ Two families of calls exist, and each indexes a different config array.
 - For the simple calls, read the other array and search it by name. Vanilla does both steps, the guard and the lookup, with `ConfigIsExisting("simpleHiddenSelections")` and `ConfigGetTextArray` in `P:\scripts\4_world\entities\firearms\weapon_base.c:94-99`. The member it fills is declared with the comment "index in simpleHiddenSelections cfg array" beside `m_weaponHideBarrelIdx` (`P:\scripts\4_world\entities\firearms\weapon_base.c:62`).
 - The same lookup with `ConfigGetTextArray` sits in the head class (`P:\scripts\4_world\entities\manbase\bodyparts\head.c:20`), and the guard alone in the binoculars action, `ConfigIsExisting("simpleHiddenSelections")` at `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionviewbinoculars.c:35`.
 - Vanilla never feeds one space into the other. Of the 34 lines in `P:\scripts` that call the simple pair, none passes `GetHiddenSelectionIndex`: they use fixed numbers such as `SIMPLE_SELECTION_MELEE_RIFLE` (`P:\scripts\3_game\dayzplayer.c:1173`), stored members such as `m_magazineSimpleSelectionIndex` (`P:\scripts\4_world\entities\firearms\weapon_base.c:2136`), or a getter such as `GetHairIndex` (`P:\scripts\4_world\entities\manbase\playerbase.c:9407`).
-- **Measured in game** (LFThermalCore, 2026-08-31): passing a `GetHiddenSelectionIndex` result to `SetSimpleHiddenSelectionState` crashed the client natively, with a minidump and no script trace.
+- **Measured in game** (2026-08-31): passing a `GetHiddenSelectionIndex` result to `SetSimpleHiddenSelectionState` crashed the client natively, with a minidump and no script trace.
 
 Body clothing has no simple selections to index. Under `P:\DZ\characters`, only four `config.cpp` files declare `simpleHiddenSelections`: `heads` (3 times), `headgear` (2), `data` (2) and `glasses` (1). The tops, pants, vests, gloves, shoes, belts, backpacks and masks configs declare none, so the simple calls cannot hide part of a shirt. They still work for headgear and glasses, with the guard above.
 
@@ -40,7 +40,7 @@ A scan of the `proto native` lines of `entityai.c` and `object.c` finds only the
 
 - The engine applies the swap, not script. `GetHealthLevel` is `proto native` (`P:\scripts\3_game\entities\object.c:1171`), and the only lines in `P:\scripts` that name the config array are three comments in that file. A search of the scripts for a material writer therefore finds nothing, and that does not mean nothing writes the material.
 - `EEHealthLevelChanged` runs on the client: the vanilla body in `Clothing_Base` is guarded by `IsHeadlessOrDedicatedServer` and does only client work (`P:\scripts\4_world\entities\itembase\clothing_base.c:111-125`).
-- **Measured in game** (LFThermalCore, 2026-08-31): crossing a health threshold wiped a script material override on the next frame, and the engine wrote its material after `EEHealthLevelChanged` had run. Inside the hook the getter still returned the script's material; one tick later it was empty. Re-applying the override inside the hook is therefore lost.
+- **Measured in game** (2026-08-31): crossing a health threshold wiped a script material override on the next frame, and the engine wrote its material after `EEHealthLevelChanged` had run. Inside the hook the getter still returned the script's material; one tick later it was empty. Re-applying the override inside the hook is therefore lost.
 
 Leave the `personality` selection alone when you repaint clothing. Vanilla already writes a material and a texture there with `SetObjectMaterial` and `SetObjectTexture` (`P:\scripts\4_world\entities\itembase\clothing_base.c:155-156`).
 
@@ -50,11 +50,11 @@ The four wetness thresholds are the constants `STATE_DRENCHED`, `STATE_SOAKING_W
 
 - The one vanilla material swap by wetness is the garden plot, and it is done in script with `SetObjectMaterial` (`P:\scripts\4_world\entities\gardenbase.c:605-610`).
 - Under `P:\DZ\characters` no file has `wet` in its name, against 353 `*damage*.rvmat` files.
-- **Measured in game** (LFThermalCore, 2026-08-31): a script override stayed in place while a worn item crossed all four wetness thresholds.
+- **Measured in game** (2026-08-31): a script override stayed in place while a worn item crossed all four wetness thresholds.
 
 ## A script material on worn clothing: what was measured
 
-All of this section is **measured in game** by one project (LFThermalCore, DayZ client, 2026-08-31). The override was `dz\data\data\mirror.rvmat` on the camo selections, because it reads as binary to the eye: `specular[]={2,2,2,0}` on a dark diffuse (`P:\DZ\data\data\mirror.rvmat:5`).
+All of this section is **measured in game** (DayZ client, 2026-08-31). The override was `dz\data\data\mirror.rvmat` on the camo selections, because it reads as binary to the eye: `specular[]={2,2,2,0}` on a dark diffuse (`P:\DZ\data\data\mirror.rvmat:5`).
 
 What a first run saw:
 
@@ -92,7 +92,7 @@ When you measure this yourself, two failures give the same vanilla frame: "nothi
 
 ## The getter is not proof of what renders
 
-**Measured in game** (LFThermalCore, 2026-08-31), wrong in both directions within one run:
+**Measured in game** (2026-08-31), wrong in both directions within one run:
 
 | `GetObjectMaterial` returned | The frame showed |
 |---|---|
@@ -113,7 +113,7 @@ When you measure this yourself, two failures give the same vanilla frame: "nothi
 
 ## A material cannot move a texture that a script assigns
 
-**Measured in game** (SUB_BRZ, DayZ 1.29, 2026-09-10), one variable changed on one selection. Two materials were identical except that one had a root level `uvSource="tex"` and a `uvTransform` with `pos[]={0.5,0.5,0}`. The same texture was applied with `SetObjectTexture` under both, and it rendered in the same place.
+**Measured in game** (DayZ 1.29, 2026-09-10), one variable changed on one selection. Two materials were identical except that one had a root level `uvSource="tex"` and a `uvTransform` with `pos[]={0.5,0.5,0}`. The same texture was applied with `SetObjectTexture` under both, and it rendered in the same place.
 
 - The materials declared no `Stage0`, so the color texture was the face texture: the one from the `hiddenSelectionsTextures[]` slot or from `SetObjectTexture`. A root level `uvTransform` governs the stages the material declares, and the face texture does not pass through it.
 - A design that pans or crops one large texture by swapping materials with different transforms does not work in this form.

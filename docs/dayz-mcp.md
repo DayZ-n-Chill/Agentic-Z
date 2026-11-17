@@ -1,8 +1,8 @@
 # DayZ-MCP: the in-game half
 
-Everything under `scripts/tools/` and in the offline checks ends at the same sentence: now go look in game. That step is the expensive one: a rebuild, a server, a client, a scenario set up by hand, several minutes per iteration. DayZ-MCP (<https://github.com/willy92wins/dayz-mcp>, its own repository, installed separately) is an MCP server that lets an agent take that step itself by driving a running DayZDiag server and client.
+Everything under `scripts/tools/` and in the offline checks ends at the same sentence: now go look in game. That step is the expensive one: a rebuild, a server, a client, a scenario set up by hand, several minutes per iteration. DayZ-MCP (its own repository, installed separately) is an MCP server that lets an agent take that step itself by driving a running DayZDiag server and client.
 
-It is not part of this repo and nothing here starts it. This page came in with the DayZ Modding Knowledge Pack import; the statements about the bridge are the Knowledge Pack's and were not re-measured during the import. The bridge protocol note, `skills/_shared/knowledge/mcp-bridge-protocol.md`, has the protocol, the safety invariants and the engine facts in full.
+It is not part of this repo and nothing here starts it. DayZ-MCP is a third-party tool, not vanilla: the statements about the bridge on this page are not yet checked on `P:\`, and the tool list of the installed server is the authority for what it offers. The vanilla script citations were opened on `P:\`. The bridge protocol note, `skills/_shared/knowledge/mcp-bridge-protocol.md`, has the protocol, the safety invariants and the engine facts in full.
 
 ## What it offers
 
@@ -35,8 +35,9 @@ The split is not by tool group, it is by peer.
 
 ## Install and wiring
 
+Clone the DayZ-MCP repository into a folder named `dayz-mcp`, then run its installer:
+
 ```powershell
-git clone https://github.com/willy92wins/dayz-mcp
 cd dayz-mcp\tools
 .\install-mcp.ps1 -Register
 ```
@@ -60,7 +61,7 @@ The installer creates `tools\.venv-mcp` inside the clone and registers the serve
 - Keep an example of this wiring under a name other than `.mcp.json` until the bridge is installed. Agents auto-start the servers declared in `.mcp.json`, and a failed launch on every session is worse than no config.
 - `MAX_MCP_OUTPUT_TOKENS` raises the per-tool output cap so screenshots come back at a usable resolution. At the 25k default a frame lands around 580 px wide.
 
-The skill that uses the bridge is the Knowledge Pack's `dayz-mcp-verify`. Its acceptance ladder for a drivable vehicle is spawn, render, get in, drive, wheel direction. Player UI, door interaction, inventory use and firing stay manual.
+The skill that uses the bridge is `dayz-mcp-verify`. Its acceptance ladder for a drivable vehicle is spawn, render, get in, drive, wheel direction. Player UI, door interaction, inventory use and firing stay manual.
 
 ## What it is not
 

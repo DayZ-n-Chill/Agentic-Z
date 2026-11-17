@@ -187,7 +187,7 @@ def test_deleting_a_face_drops_it_from_the_selection(fork):
 
 def test_wrong_payload_length_raises(fork):
     """A payload that does not match the LOD's counts would bind weights to
-    the wrong elements; upstream's Selection.read ignores the declared
+    the wrong elements; the bare codec's Selection.read ignores the declared
     length, so the check lives here."""
     p3d = build_cube_p3d(fork)
     data = write_bytes(p3d)  # 8 points + 6 faces
@@ -247,8 +247,8 @@ def test_validate_reports_a_stale_selected(fork):
 
 
 def test_save_verify_catches_a_dropped_selected(fork, tmp_path, monkeypatch):
-    """The gate that was blind in BUG-041: save(verify=True) now compares the
-    tag, so a write that loses it raises instead of reporting success."""
+    """The gate that used to be blind to a dropped #Selected#:
+    save(verify=True) now compares the tag, so a write that loses it raises instead of reporting success."""
     p3d = build_cube_p3d(fork)
     _select(fork, p3d.lods[0], point_idx=(0, 1))
     target = tmp_path / "cube.p3d"

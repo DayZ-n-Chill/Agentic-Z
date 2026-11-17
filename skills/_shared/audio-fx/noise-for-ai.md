@@ -1,6 +1,6 @@
 # Noise for AI: making a sound that infected and animals hear
 
-A sound set is what players hear. What the engine AI hears is a separate thing, a noise, made on the server through the noise system. This file covers the sound designer's side: making a noise to go with a sound, and the 1.30 change to weather damping. How the AI reacts to noise is in the AI pack, `skills/_shared/ai/perception.md`. Line numbers are from the 1.30 files on `P:\`; statements about 1.29 come from the notes this file was built from and are not yet checked on `P:\`.
+A sound set is what players hear. What the engine AI hears is a separate thing, a noise, made on the server through the noise system. This file covers the sound designer's side: making a noise to go with a sound, and the 1.30 change to weather damping. How the AI reacts to noise is in the AI pack, `skills/_shared/ai/perception.md`. Line numbers are from the 1.30 files on `P:\`; statements about 1.29 are not yet checked on `P:\`.
 
 ## Contents
 
@@ -38,7 +38,7 @@ Vanilla `CfgNoises` is small: `DeerStepNoise`, `DeerRoarNoise`, `WolfStepNoise`,
 - Opening a door: `LoadFromPath("CfgVehicles SurvivorBase NoiseActionDefault")` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionopendoors.c:83`), then `AddNoisePos` at the player (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionopendoors.c:90`).
 - A shot: `class NoiseShoot` in the weapon config. Its keys and the suppressor modifier are in `skills/_shared/weapons/muzzle-effects.md`.
 
-For your own item, add a noise class to its config (copy the keys of a vanilla one, `strength` and `type`) and load it by path. The notes this file was built from loaded `"FlareLight"` and `"Footstep_Heavy"` with `Load()`; neither name is a class of `CfgNoises` on `P:\`. Use one of the six names above or a path.
+For your own item, add a noise class to its config (copy the keys of a vanilla one, `strength` and `type`) and load it by path. Do not pass `"FlareLight"` or `"Footstep_Heavy"` to `Load()`; neither name is a class of `CfgNoises` on `P:\`. Use one of the six names above or a path.
 
 A distraction noise, server side:
 
@@ -63,7 +63,7 @@ void MyMod_MakeDecoyNoise(vector pos)
 }
 ```
 
-A third-party example of the shot noise: the IMPWMODPart2 weapon mod sets `class NoiseShoot { strength = 82; type = "shot"; }` on one of its rifles. Vanilla values to compare with are in the weapons pack.
+An example of the shot noise on a mod rifle (third-party mod config, not vanilla): `class NoiseShoot { strength = 82; type = "shot"; }`. Vanilla values to compare with are in the weapons pack.
 
 ## Weather damping moved into the engine (1.30)
 

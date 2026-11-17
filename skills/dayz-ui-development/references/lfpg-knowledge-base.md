@@ -27,8 +27,8 @@ A fact ledger for UI work on windows, phones and terminals: what the engine prot
 | # | Fact | Evidence |
 |---|---|---|
 | P1 | Widget.Show(bool show, bool immedUpdate = true) — has immedUpdate parameter | `P:\scripts\1_core\proto\enwidgets.c:125` |
-| P2 | Widget.SetFlags ADDS flags, ClearFlags REMOVES them | `P:\scripts\1_core\proto\enwidgets.c:128` and `:131` |
-| P3 | Widget.Unlink() destroys widget AND ALL its children | comment at `P:\scripts\1_core\proto\enwidgets.c:173` |
+| P2 | Widget.SetFlags adds flags, ClearFlags removes them | `P:\scripts\1_core\proto\enwidgets.c:128` and `:131` |
+| P3 | Widget.Unlink() destroys the widget and all its children | comment at `P:\scripts\1_core\proto\enwidgets.c:173` |
 | P4 | Widget.IsVisibleHierarchy() checks visibility of the entire parent chain | `P:\scripts\1_core\proto\enwidgets.c:139` |
 | P5 | Widget.SetLV(float) is static and sets the global widget luminance, [-15, 0], default 0 | `P:\scripts\1_core\proto\enwidgets.c:114-115` |
 | P6 | Widget.SetTextLV(float) is static and sets the global text luminance, [-15, 0] | `P:\scripts\1_core\proto\enwidgets.c:116-117` |
@@ -57,16 +57,16 @@ A fact ledger for UI work on windows, phones and terminals: what the engine prot
 | # | Fact | File |
 |---|---|---|
 | D1 | NotifyPropertyChanged("X") only touches bindings with Binding_Name=="X" | ViewController.c:106-112 |
-| D2 | NotifyPropertyChanged("") updates ALL (expensive) | ViewController.c:91-103 |
+| D2 | NotifyPropertyChanged("") updates all bindings (expensive) | ViewController.c:91-103 |
 | D3 | NotifyPropertyChanged with notify_controller=false avoids PropertyChanged callback | ViewController.c:84,114 |
-| D4 | LoadWidgetsAsVariables uses FindAnyWidget ONCE in constructor | ScriptView.c:238-266 |
+| D4 | LoadWidgetsAsVariables uses FindAnyWidget once, in the constructor | ScriptView.c:238-266 |
 | D5 | ViewController.OnWidgetScriptInit calls SetHandler automatically | ViewController.c:63 |
 | D6 | Relay_Command: 1) RelayCommand variable, 2) typename, 3) g_Script.CallFunction | ViewBinding.c:206-231 |
 | D7 | ViewController.OnClick calls InvokeCommand and returns true when it was handled; only an unhandled click goes on to super. The first reading here ("calls InvokeCommand and super, so an override plus super fires twice") was corrected on 2026-07-05: see rule 16 in `rules-and-checklist.md` | ViewController.c:316-335 |
 | D8 | CheckBox uses OnChange (not OnClick) for InvokeCommand | ViewController.c:337-357 |
 | D9 | ObservableCollection.Clear() does m_Data.Clear() | ObservableCollection.c:138-142 |
 | D10 | SpacerBaseWidgetController.Clear() iterates GetChildren/GetSibling + RemoveChild | SpacerBaseWidgetController.c:88-95 |
-| D11 | ViewBinding is NOT reactive — requires explicit NotifyPropertyChanged | ViewBinding.c (no auto-sync) |
+| D11 | ViewBinding is not reactive: it requires an explicit NotifyPropertyChanged | ViewBinding.c (no auto-sync) |
 | D12 | Two_Way_Binding requires CanTwoWayBind()=true on WidgetController | ViewBinding.c:112 |
 | D13 | EditBox, Button, CheckBox, Slider, MultilineEditBox, SpacerBase support Two_Way. The Workshop copy also returns true for ProgressBar, XComboBox and TextListbox (`CanTwoWayBind` in their controllers) | WidgetController/*.c |
 | D14 | Sub-property binding: dot notation "m_Obj.value" works | PropertyInfo.GetSubScope, SampleMVC.c:185 |
@@ -136,7 +136,7 @@ It handles ChangeGameFocus, the cursor and the menu hierarchy on open. Trade off
 
 ### 4. map<Widget, T> works
 Dabs `ViewBindingHashMap = map<Widget, ViewBinding>` used throughout the MVC architecture.
-Hundreds of mods use it. Opens the door to a widget factory with map<string, ImageWidget>.
+Opens the door to a widget factory with map<string, ImageWidget>.
 
 ### 5. NotifyPropertyChanged is safe
 Only touches bindings for the specific name. Does not scan or overwrite other fields.

@@ -25,13 +25,13 @@ Because no vanilla gun offers `weaponOpticsLRS`, a mod gun that takes the long r
 
 An attachment fits only when a name in its `inventorySlot[]` is also in the weapon's `attachments[]`, and a magazine only when its class is in the weapon's `magazines[]`. When an optic or magazine "will not attach", compare those names first.
 
-A slot can sit inside a slot. In a third-party SMG project of the knowledge pack's author (confirmed in game there; not on `P:\`), an optics mount is itself an attachment: the mount takes the weapon's optics slot and offers a slot of its own that takes M4 optics, so the gun accepts an optic only once the mount is fitted.
+A slot can sit inside a slot. On a custom SMG (confirmed in game; not vanilla, so not on `P:\`), an optics mount is itself an attachment: the mount takes the weapon's optics slot and offers a slot of its own that takes M4 optics, so the gun accepts an optic only once the mount is fitted.
 
 ### Bayonets
 
 - `P1907_Bayonet` (`P:\scripts\4_world\entities\itembase\inventory_base\p1907_bayonet.c:1`) is an attachment and a melee tool at once. Its `CanPutAsAttachment` refuses the parent when the `suppressorImpro` or `weaponMuzzle` slot is reserved or occupied (`P:\scripts\4_world\entities\itembase\inventory_base\p1907_bayonet.c:13-26`), so a bayonet and a muzzle device cannot be fitted together.
 - `OnWasAttached` and `OnWasDetached` tell the weapon with `SetBayonetAttached` when the parent `IsWeapon()` (`P:\scripts\4_world\entities\itembase\inventory_base\p1907_bayonet.c:28-46`); `Weapon_Base` stores it and answers `HasBayonetAttached()` (`P:\scripts\4_world\entities\firearms\weapon_base.c:2089`, `:2095`).
-- Its slot is `weaponBayonetLeeEnfield` (`P:\scripts\config.cpp:243`). No config class under `P:\DZ` uses that slot or defines `P1907_Bayonet`; the knowledge pack reports both in `weapons_nasdara.pbo` of game build 1.30.164200 (not yet checked on `P:\`). Copy the pattern, not the class, on data that lacks it.
+- Its slot is `weaponBayonetLeeEnfield` (`P:\scripts\config.cpp:243`). No config class under `P:\DZ` uses that slot or defines `P1907_Bayonet`; both are in `weapons_nasdara.pbo` of game build 1.30.164200 (not yet checked on `P:\`). Copy the pattern, not the class, on data that lacks it.
 
 How the proxy triangle on the weapon model places each attachment is in `skills/_shared/models/proxy-frames.md` ("Weapon attachment proxies").
 

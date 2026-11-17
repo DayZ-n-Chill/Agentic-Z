@@ -7,27 +7,26 @@ new `--out` report.
 
 ## Why not a hash
 
-(claim: CLAIM-NAVMESH-GENERATOR-NOT-BYTE-DETERMINISTIC) NavMeshGenerator does
-not write the same bytes twice. In the Baltic 12 km terrain project, two meshes
-generated over terrains that differ in 126 height vertices hold 966 289 tiles
-each (983 x 983, the 12.5 m layout below). 966 286 of those tiles changed bytes;
-138 changed structure (polygon count, vertex count or vertical bounds), all of
-them within 14.1 m of a changed vertex. Hashing the two files, or their tiles,
-says that everything changed. Source: pipeline inbox fb-20261003-203108-9821,
-measured on 2026-10-03 with that project's comparator on its own files (its
-`evidence/v30-shore-wave-2026-10-03`, not published). Level `offline_tested`:
-measured on files, not in game, and not re-measured for this Pack; the numbers
-are the ticket's.
+NavMeshGenerator does not write the same bytes twice. On one custom 12 km
+terrain, two meshes generated over terrains that differ in 126 height vertices
+hold 966 289 tiles each (983 x 983, the 12.5 m layout below). 966 286 of those
+tiles changed bytes; 138 changed structure (polygon count, vertex count or
+vertical bounds), all of them within 14.1 m of a changed vertex. Hashing the two
+files, or their tiles, says that everything changed. Measured on files, not in
+game.
 
 ## Verified envelope
 
-(claim: CLAIM-NAVMESH-TESM6-DNAV11-ENVELOPE) Files written by DayZ Tools'
-NavMeshGenerator for one 12 km world, 12 288 m on a side, with a TESM version 6
-file header and DNAV version 11 tiles, in three layouts: 12.5, 25 or 50 m
-tiles, 983, 491 or 245 tiles on a side. The source project's reader accepted
-these three layouts and no other; the measurement above is on the 12.5 m one.
-Any other layout is read with the same checks and is unverified: the report says
-which (`layout.inside_verified_envelope`, and a line in `limits`).
+Files written by DayZ Tools' NavMeshGenerator for one 12 km world, 12 288 m on
+a side, with a TESM version 6 file header and DNAV version 11 tiles, in three
+layouts: 12.5, 25 or 50 m tiles, 983, 491 or 245 tiles on a side. The
+measurement above is on the 12.5 m one. Any other layout is read with the same
+checks and is unverified: the report says which
+(`layout.inside_verified_envelope`, and a line in `limits`).
+
+Any other format version is refused. The vanilla `navmesh.nm` files unpacked on
+`P:\DZ\worlds\` (Chernarus+, Livonia and Sakhal) carry TESM version 7
+and DNAV version 12, so this tool refuses them at the file header.
 
 ## Run
 
@@ -68,9 +67,8 @@ python scripts/tools/dayz-navmesh-compare/compare_navmesh.py --old-nm <accepted.
 - **Terrain**: two NPZ files (`numpy.savez`), each holding a 2-D, finite,
   numeric array named `heights`, of one shape. The vertex at row `r`, column `c`
   stands at x = `c * cell_m`, z = `(rows - 1 - r) * cell_m`: row 0 is the
-  largest z. That is the source project's convention; check that your export
-  writes rows that way. `--cell-m` is required with them; `--local-m` defaults
-  to 100.
+  largest z. Check that your export writes rows that way. `--cell-m` is required
+  with them; `--local-m` defaults to 100.
 
 ## Report
 
@@ -98,10 +96,11 @@ Detour's `dtMeshHeader` (magic `VAND` on disk, version, tile x and z, polygon
 and vertex counts, bounds). The uint32 at byte 8 of that prefix is the size of
 the tile after the prefix and is checked against the bytes to the next tile or
 the end of the file; the uint64 at byte 0 and the uint32 at byte 12 are not
-interpreted. That size field matched on two Baltic 12.5 m `.nm` files of
-966 289 tiles each, two Baltic 50 m `.nm` files of 60 025 tiles each, and the
-three vanilla `navmesh.nm` files of Chernarus+, Livonia and Sakhal (94 249,
-65 536 and 94 249 tiles): 2 306 662 tiles. It
+interpreted. That size field matched on two 12.5 m `.nm` files of 966 289 tiles
+each and two 50 m `.nm` files of 60 025 tiles each, all of one custom 12 km
+terrain, and on the three vanilla `navmesh.nm` files of Chernarus+, Livonia and
+Sakhal (94 249, 65 536 and 94 249 tiles, read with the two version checks set
+to their 7 and 12): 2 306 662 tiles. It
 refuses, naming the file and the check: a wrong magic or version in the file or
 in any tile; a tile count other than tiles x times tiles z; an origin other than
 (0, 0, 0); tiles that are not one finite, positive square; an offset table that
@@ -118,31 +117,29 @@ the 16 bytes before the header.
   along a route is not a locomotion result.
 - Both files are read whole into memory, with one small record per tile. A
   synthetic pair of 983 x 983 meshes of 120 MB each compared in 15 s with under
-  0.8 GB of memory on the machine that wrote this.
+  0.8 GB of memory in one measured run.
 - Locating costs structural tiles times changed vertices. It is meant for local
   edits; meshes over unrelated terrains can take very long.
 
 ## Design decisions
 
-- The tile width and the grid come from the file header. The source took the
-  width on the command line and accepted only the three layouts above; every
-  check it made is kept. Added: an offset table or tile past the end of the
-  file is refused with a message rather than an exception, and non-finite
-  bounds are refused (a NaN passed the source's bounds check).
-- Terrain inputs are optional, and numpy is imported only for them. The
-  source's terrain grid was fixed (6 m cells, 2048 rows); here it is
-  `--cell-m` and the array's shape. `--routes` has no default (the source
-  defaulted to a project file).
-- **Status when no tile changed structure.** The source returned its review
-  status then, whatever the terrain. Here it passes, unless the terrain inputs
-  show changed vertices, which is reviewed
+- The tile width and the grid come from the file header, not from the command
+  line, and any layout that passes the checks is read, not only the three
+  above. An offset table or tile past the end of the file is refused with a
+  message rather than an exception, and non-finite bounds are refused (a NaN
+  would pass a bounds check written as `abs(a - b) > tolerance`).
+- Terrain inputs are optional, and numpy is imported only for them. The terrain
+  grid is not fixed: it is `--cell-m` and the array's shape. `--routes` has no
+  default.
+- **Status when no tile changed structure.** It passes, unless the terrain
+  inputs show changed vertices, which is reviewed
   (`terrain_changed_without_structure_change`). Without terrain inputs, any
   structural change is reviewed.
-- A structural tile with no changed vertex has no distance (`null`); the source
-  wrote `Infinity`, which is not JSON.
-- A route covers the exact widened rectangle. The source sampled points one
-  tile apart, which could add a row or column past it and leave out a tile that
-  only touches it.
+- A structural tile with no changed vertex has no distance (`null`), not
+  `Infinity`, which is not JSON.
+- A route covers the exact widened rectangle. Sampling points one tile apart
+  along it could add a row or column past it and leave out a tile that only
+  touches it.
 - File hashes come from the bytes read: no `hashlib.file_digest`, which needs
   Python 3.11. Refusals exit `3` and write nothing; an existing `--out` is
   refused rather than asserted.

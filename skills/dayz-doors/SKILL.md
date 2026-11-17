@@ -14,7 +14,7 @@ It covers the `class Doors` subsystem on buildings and static props: doors, hatc
 
 It is not a general animation guide. For `AnimationSources`, `SetAnimationPhase` and doors on items, read `_shared/animation/animation-sources.md` and `_shared/animation/script-hooks.md`. Character and creature animation graphs, rider IK on vehicles, weapons, and RTM, ANM or TXA animation files also belong to the animation pack (`_shared/animation/`).
 
-Vanilla script and config facts were checked on `P:\` (DayZ 1.30). The three worked patterns are the examples of novoGOD's door tutorial *Doors_Buttons_Lesson*, a third party source whose files are not in this repo; the references describe them and cite them by file and line.
+Vanilla script and config facts were checked on `P:\` (DayZ 1.30). The three worked patterns are third-party mod patterns, not vanilla: their names and values cannot be checked on `P:\`, and their models and configs are not files in this repo. The references describe them in tables.
 
 ## What to read
 
@@ -85,13 +85,13 @@ Debug in this order: config loads, entity spawns, action appears in the right pl
 - Only sources need a Doors entry; animated selections that share one source do not each need one.
 - `componentNames[]` of a damage zone can name the moving geometry (**door1**) even when the action source is **door1_open**.
 - Use phase windows to order motion: the Simple Door handle runs **0..0.15**, then the door runs **0.15..1**.
-- `initOpened` is a spawn probability: the door spawns open when a random number is below it (0 never, 0.5 about half the time). `initPhase` is the starting phase, not a delay. Both from the Bohemia wiki page on doors on buildings.
-- Keep skeleton names unique. The tutorial warns that duplicate skeleton names can crash a server.
-- The tutorial's Expert Mode example maps one source to two Doors entries; read the warning in `references/worked-examples.md` before reusing it. Its lever also collides with nothing (`references/lods-and-object-builder.md`).
+- `initOpened` is a spawn probability: the door spawns open when a random number is below it (0 never, 0.5 about half the time). `initPhase` is the starting phase, not a delay. Both are engine behaviour, not checkable on `P:\`.
+- Keep skeleton names unique. **?** Duplicate skeleton names may crash a server; this was not reproduced.
+- The Expert Mode pattern maps one source to two Doors entries; read the warning in `references/worked-examples.md` before reusing it. Its lever also collides with nothing (`references/lods-and-object-builder.md`).
 - A locked `DigitalCodeLock` or `CombinationLock` on a related slot makes `BuildingBase.CanDoorBeOpened` return false (`P:\scripts\4_world\entities\game\super\building.c:307` to `:333`). The lockpick is refused when an external lock is already on that door. Unlocking a combination lock is its own action, `ActionCombinationLockUnlock`, after the dials match.
 - `EBuildingLockType` is still the lockpick and the ship container keys (`P:\scripts\3_game\enums\ebuildinglocktypes.c:7`). Combination and code locks are inventory attachments, not extra enum values. Do not invent `COMBINATION_LOCK = 2` or `CODE_LOCK = 4`.
-- **Vanilla house furniture is proxy geometry inside the building's model, not a placed object.** `StaticObj_Furniture_fridge: HouseNoDestruct` exists with `scope=1` and no `Doors` subclass (`P:\DZ\structures\furniture\config.cpp:547` to `:551`), but the fridges inside houses are not instances of it. The source notes found the fridge model path as a proxy inside about 25 house models of `DZ\structures`, and report at least 1,546 `kitchen\fridge\fridge` placements in `mapgrouppos.xml` of the `dayzOffline.chernarusplus` mission (a lower bound; not recounted here). So neither a `modded` override of `StaticObj_Furniture_fridge` nor Community Framework's `CF_ObjectManager.HideMapObject` reaches them. Before designing doors for furniture, search the extracted house models for the furniture's model path as a proxy and count the placements in the world. In the search pattern write `.` where the path has `\`: in shell tools an escaped backslash collapses, and then even a control search that should match finds nothing.
-- **A measured way to make house furniture interactive: replace the model by path.** Measured by the author of the source notes on DayZDiag 1.29.163709 (2026-09-24), not checkable on `P:\`: a normal mod PBO whose `$PBOPREFIX$` is `DZ\structures\furniture\kitchen\fridge` and which ships its own `fridge.p3d` (binarized, with a new memory point) replaced the vanilla model both for instances created by script and for the proxies inside houses. `MemoryPointExists` was true on server and client for the replaced class, the control class kept the vanilla geometry, and the replacement geometry was visible sticking out of house roofs. Open question: whether the house's Geometry and View LODs carry the furniture proxy; vertical `RaycastRVProxy` sweeps over 7 houses never hit a 16 m marker.
+- **Vanilla house furniture is proxy geometry inside the building's model, not a placed object.** `StaticObj_Furniture_fridge: HouseNoDestruct` exists with `scope=1` and no `Doors` subclass (`P:\DZ\structures\furniture\config.cpp:547` to `:551`), but the fridges inside houses are not instances of it. The fridge model path is a proxy inside about 25 house models of `DZ\structures`, and `mapgrouppos.xml` of the `dayzOffline.chernarusplus` mission has at least 1,546 `kitchen\fridge\fridge` placements (a lower bound; neither number was recounted on `P:\`). So neither a `modded` override of `StaticObj_Furniture_fridge` nor Community Framework's `CF_ObjectManager.HideMapObject` reaches them. Before designing doors for furniture, search the extracted house models for the furniture's model path as a proxy and count the placements in the world. In the search pattern write `.` where the path has `\`: in shell tools an escaped backslash collapses, and then even a control search that should match finds nothing.
+- **A measured way to make house furniture interactive: replace the model by path.** Measured in game on DayZDiag 1.29.163709 (2026-09-24), not checkable on `P:\`: a normal mod PBO whose `$PBOPREFIX$` is `DZ\structures\furniture\kitchen\fridge` and which ships its own `fridge.p3d` (binarized, with a new memory point) replaced the vanilla model both for instances created by script and for the proxies inside houses. `MemoryPointExists` was true on server and client for the replaced class, the control class kept the vanilla geometry, and the replacement geometry was visible sticking out of house roofs. Open question: whether the house's Geometry and View LODs carry the furniture proxy; vertical `RaycastRVProxy` sweeps over 7 houses never hit a 16 m marker.
 
 ## Stop and ask
 
@@ -103,7 +103,7 @@ Vehicle doors do not use the building `class Doors` contract.
 
 - A car door that can be taken off is a `CarDoor` attachment (`P:\scripts\4_world\entities\core\inherited\inventoryitem.c:568`). `ActionCarDoorsOutside` casts its target object to `CarDoor` and reads the car's animation source for the aimed selection (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actioncardoorsoutside.c:34` to `:43`), so the door item's own View Geometry is what the player aims at.
 - Door state on a car is `GetCarDoorsState` and the door's animation phase (`P:\scripts\4_world\entities\vehicles\carscript.c:2243`), driven by `model.cfg` animations and `AnimationSources`, not by `class Doors`.
-- A door that stays part of the vehicle's shell (it cannot be taken off) needs the mod's own vehicle actions around a pair of methods such as `SetDoorOpen` and `IsDoorOpen`, plus `model.cfg` animations and `AnimationSources`. This comes from the source notes on imported vehicles; vanilla script on `P:\` declares no such pair for vehicles, so the mod writes it.
+- A door that stays part of the vehicle's shell (it cannot be taken off) needs the mod's own vehicle actions around a pair of methods such as `SetDoorOpen` and `IsDoorOpen`, plus `model.cfg` animations and `AnimationSources`. Vanilla script on `P:\` declares no such pair for vehicles, so the mod writes it.
 
 Applying building `class Doors` to a vehicle does not produce a working action, even though both mechanisms use the words `source`, `component` and `axis`. Vehicle doors are in `_shared/vehicles/attachments-and-crew.md`.
 
@@ -118,7 +118,7 @@ Applying building `class Doors` to a vehicle does not produce a working action, 
 - **`CombinationLock` has two sides and an unlock action.** The dials no longer drop the lock by themselves; `ActionCombinationLockUnlock` runs after the combination matches. The save stream gains `m_CombinationInside` at version 143 (`P:\scripts\4_world\entities\itembase\combinationlock.c:169`).
 - **Bunker doors.** `Bunker.CanDoorBeOpened` uses `MemPointDirectionalCheck` on `<door>_action` and `<door>_inside`. The main door closes itself after `DOOR_AUTOCLOSE_TIME`, 12 s, and locks its `DigitalCodeLock_Bunker` again (`P:\scripts\4_world\entities\building\bunker.c:3`, `:47` to `:62`).
 - **Doors of houses that can be rebuilt.** `Rebuilding` drives `doorConstructionPhysicsSource` when a door starts to open or close (`OnConstructionDoorOpenStart`, `P:\scripts\4_world\classes\rebuilding\rebuilding.c:439`).
-- **Switching simulation off on a house.** `Entity` has the natives `DisableSimulation` and `GetIsSimulationDisabled` (`P:\scripts\3_game\entities\entity.c:3` to `:6`). The 1.30 changelog also lists a `disableSimulation` config key for houses and a fix for inventory attachments on buildings created at load time; neither was checked on `P:\`.
+- **Switching simulation off on a house.** `Entity` has the natives `DisableSimulation` and `GetIsSimulationDisabled` (`P:\scripts\3_game\entities\entity.c:3` to `:6`). 1.30 also adds a `disableSimulation` config key for houses and fixes inventory attachments on buildings created at load time; neither was checked on `P:\`.
 
 ### What breaks for a 1.29 door mod
 
@@ -137,13 +137,13 @@ Applying building `class Doors` to a vehicle does not produce a working action, 
 - [ ] Do not treat `EBuildingLockType` as the combination or code lock API; those are attachments.
 - [ ] Combination lock mods: add `ActionCombinationLockUnlock` and the version 143 read of `m_CombinationInside`.
 - [ ] Doors that can be rebuilt: set `doorConstructionPart` and `doorConstructionPhysicsSource` on the Doors entry.
-- [ ] Optional: `disableSimulation = 1` on static house classes that must not tick (from the changelog; no vanilla config example on `P:\`).
+- [ ] Optional: `disableSimulation = 1` on static house classes that must not tick (not checked on `P:\`: no vanilla config there sets it).
 
 ## On Linux
 
 Everything above is the Windows workflow. The Proton setup, the measured tool matrix and the pitfalls are in the Linux notes of the shared pack (`_shared/linux-proton.md`). For this skill:
 
-- Packing, signing and binarizing use dayzmake 1.0.0 or later, a DayZ fork of armake2 (https://github.com/bzed/dayzmake, tag `v1.0.0`): `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. Upstream armake2 is not a substitute: it is built for Arma, and its file hash for signatures leaves out `*.c` files. The author of the source notes compared a textured cube against Bohemia's binarize from a `P:` root on 2026-11-03 and got the same bytes; that is not an in-game check of the model.
+- Packing, signing and binarizing use dayzmake 1.0.0 or later, a DayZ fork of armake2: `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. Plain armake2 is not a substitute: it is built for Arma, and its file hash for signatures leaves out `*.c` files. A textured cube binarized this way had the same bytes as the output of Bohemia's binarize run from a `P:` root (compared on 2026-11-03); that is not an in-game check of the model.
 - `P:\` is a plain directory mapped by the Proton helper script; a `P:\<Mod>\...` path in this skill is `<dir>/<Mod>/...`.
 - Object Builder and TexView run under Proton. Object Builder opened and displayed a model; editing in it was not exercised. The offline Python checks run natively.
 
@@ -156,6 +156,3 @@ When the work has to end in a mod that builds, loads and ships, use this repo's 
 - `references/door-model-cfg-and-config.md`
 - `references/lods-and-object-builder.md`
 - `references/worked-examples.md`
-- Bohemia wiki, doors on buildings: https://community.bistudio.com/wiki/DayZ:Doors_on_buildings
-- DayZ Samples: https://github.com/BohemiaInteractive/DayZ-Samples
-- Bohemia wiki, LOD: https://community.bistudio.com/wiki/LOD

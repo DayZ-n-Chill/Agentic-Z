@@ -100,7 +100,7 @@ When you find a bug:
 3. **Add validation at each layer.** Entry, business, environment, debug.
 4. **Test each layer.** Try to bypass layer 1 and verify layer 2 catches it.
 
-## Example from a session
+## Worked example
 
 Bug: an empty `projectDir` caused `git init` in the source code folder.
 
@@ -113,7 +113,7 @@ Bug: an empty `projectDir` caused `git init` in the source code folder.
 
 **Four layers added:**
 
-- Layer 1: `Project.create()` validates not empty, exists, writable.
+- Layer 1: `Project.create()` validates not empty, exists, is a directory.
 - Layer 2: `WorkspaceManager` validates projectDir is not empty.
 - Layer 3: `WorktreeManager` refuses git init outside tmpdir in tests.
 - Layer 4: stack trace logging before git init.

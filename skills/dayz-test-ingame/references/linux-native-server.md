@@ -4,9 +4,8 @@ A mod is only proven to work once a server has loaded it. A syntax check and a c
 show that the scripts compile, that a `modded class` or `override` is legal, or that the engine loaded
 the scripts at all. A local dedicated server answers all three in about a minute, with no client.
 
-Measured by bzed (the author of the dayz-dev-plugin local-server harness). Platform:
-Debian, the native Linux `DayZServer` (Steam app 223350). This page targets DayZ 1.30 or later. The author re-tested all of it on DayZ 1.30 stable (1.30.164289, the
-author's report, 2026-11-13); build numbers in the text say where a detail was first measured: the 1.30.164014
+Measured on Debian with the native Linux `DayZServer` (Steam app 223350). This page targets DayZ 1.30 or later. All of it was
+measured again on DayZ 1.30 stable (1.30.164289, 2026-11-13); build numbers in the text say where a detail was first measured: the 1.30.164014
 pre-release (then on Experimental), 1.30.164200 or 1.30.164289. These are measured server and tool results, not yet
 checked on `P:\`; the vanilla script symbols named in sections 4 and 5 are cited inline and were opened on
 `P:\scripts\`. The Windows server
@@ -222,8 +221,8 @@ grep -h 'MyMod' "$TREE"/profiles/script_*.log                  # your own Print 
 Only a boot catches: engine classes that cannot be `modded` (for example
 `DayZPlayerInventory`, declared at `P:\scripts\4_world\systems\inventory\dayzplayerinventory.c:147`),
 proto native methods that cannot be overridden (for example `SendSyncJuncture`, `P:\scripts\3_game\dayzplayer.c:1303`),
-and wrong override signatures. A server that "works" also proves nothing about load order: see "Script compile order and
-load order" in `dayz-mod-workflow` SKILL.md.
+and wrong override signatures. A server that "works" also proves nothing about load order: see section 7,
+"Mod load order is not the `-mod` order", of `skills/dayz-mod-workflow/references/dayz-1-30-server-measured.md`.
 
 ## 5. Code that needs players
 

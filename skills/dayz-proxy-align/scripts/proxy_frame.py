@@ -13,10 +13,8 @@ derived from the triangle by angle sort, not by face vertex order:
   x = normalize(y x z); z = normalize(x x y)        # re-orthogonalize
   R = rows [x, y, z]                                 # local -> world orientation
 
-The rule is the one Arma3ObjectBuilder implements in utilities/proxy.py
-(find_axis_vertices, get_transform_rotation, create_proxy) and the one written up
-at https://mrcmodding.gitbook.io/home/documents/proxy-coordinates . No vanilla
-file on P: shows it; it is tool and engine behaviour.
+No vanilla file on P: shows the rule; it is MLOD tool and engine behaviour, the
+same for Arma 3 and DayZ proxies.
 
 Coordinates are raw MLOD (what py3d reads). Vanilla worn clothing is authored in
 this same character space, so the identity frame means "item shown worn, upright".
@@ -28,7 +26,7 @@ order, and the frame comes out rotated. A canonical triangle has three distinct
 angles, so the assignment has one answer. Rotating a canonical triangle keeps its
 angles, so canonical triangles carry an exact frame through a write-back.
 
-Engine frame against this frame (reported from in-game tests, 2026-06-24): the
+Engine frame against this frame (measured in game, 2026-06-24): the
 engine renders the triangle as h(R) = P'.R, with
 P' = [[-1,0,0],[0,0,1],[0,1,0]], relative to derive_frame. derive_frame is left
 as it is because callers use it as the raw frame; bake canonical_triangle(anchor, P')

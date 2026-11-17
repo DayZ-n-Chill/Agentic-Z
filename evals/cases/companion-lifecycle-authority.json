@@ -57,8 +57,8 @@
   "variants": [
     {
       "variant_id": "approved",
-      "skill_revision": "r21-prior-art-approved",
-      "baseline_revision": "r21-pre-prior-art",
+      "skill_revision": "r21-current",
+      "baseline_revision": "r21-baseline",
       "runner_id": "fixture",
       "expected_verdict": "PASS",
       "response": "Treat it as external_companion_no_lifecycle_authority: document a pinned_version, exclude start/stop/restart whenever DayZ_MCP owns the run, and record wpf_not_layout_evidence. It remains optional reference tooling.",
@@ -70,8 +70,8 @@
     },
     {
       "variant_id": "baseline",
-      "skill_revision": "r21-pre-prior-art",
-      "baseline_revision": "r21-pre-prior-art",
+      "skill_revision": "r21-baseline",
+      "baseline_revision": "r21-baseline",
       "runner_id": "fixture",
       "expected_verdict": "FAIL",
       "response": "install_by_default, then use the companion start and stop buttons to manage every test run and accept its WPF screenshot as proof that a DayZ .layout is correct.",

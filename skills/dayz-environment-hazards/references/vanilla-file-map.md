@@ -1,6 +1,6 @@
 # Vanilla file map for environment hazards
 
-Which vanilla file holds which part of the 1.30 hazard systems, what could not be checked, and claims from earlier notes that turned out wrong. Every path in the first table exists on `P:\` (DayZ 1.30); line numbers are in the topic files, not here.
+Which vanilla file holds which part of the 1.30 hazard systems, what could not be checked, and common assumptions that are wrong. Every path in the first table exists on `P:\` (DayZ 1.30); line numbers are in the topic files, not here.
 
 ## Files on `P:\`
 
@@ -53,8 +53,8 @@ Which vanilla file holds which part of the 1.30 hazard systems, what could not b
 | `P:\scripts\4_world\entities\vehicles\boatscript.c` | `GetHeatComfortOverride` |
 | `P:\scripts\4_world\entities\manbase\playerbase.c` | handler creation, `HasDisease`, the handler's save and load calls |
 | `P:\scripts\4_world\classes\playersymptoms\states\secondary\squintstate.c` | eye protection for squinting |
-| `P:\scripts\5_mission\mission\gameplayeffectwidgets\gewidgetsmetadataeyeveins.c` | eye veins screen effect (file exists; not read for these notes) |
-| `P:\scripts\5_mission\mission\gameplayeffectwidgets\gewidgetsmetadatasquinting.c` | squinting screen effect (file exists; not read for these notes) |
+| `P:\scripts\5_mission\mission\gameplayeffectwidgets\gewidgetsmetadataeyeveins.c` | eye veins screen effect (file exists; not read) |
+| `P:\scripts\5_mission\mission\gameplayeffectwidgets\gewidgetsmetadatasquinting.c` | squinting screen effect (file exists; not read) |
 | `P:\DZ\data\config.cpp` | `class Sandstorm` in the default world |
 | `P:\DZ\data\aiconfigs\config.cpp` | `AIParams` noise multipliers |
 | `P:\DZ\characters\masks\config.cpp` | `dust_particle_breath` and `dust_particle_eyes` on masks |
@@ -63,11 +63,11 @@ Which vanilla file holds which part of the 1.30 hazard systems, what could not b
 
 ## Not on `P:\`
 
-The source notes read these in the game's own PBOs; they are not unpacked on `P:\` and were not checked here:
+These are in the game's own PBOs or its changelog; they are not unpacked on `P:\` and were not checked here:
 
 - The Nasdara data addon (`DZ\data_takistan\config.cpp`, `basicDefines.hpp`, `aiconfigs\config.cpp`) and the PBO listings of builds 1.30.164014 and 1.30.164200.
 - The 1.30 changelog entries (`OnCEIterate`, native AI noise, the known issues list).
-- Everything reported for build 1.30.164289: the topic files mark each such line.
+- Everything about build 1.30.164289: the topic files mark each such line.
 
 ## Not checked anywhere
 
@@ -77,11 +77,11 @@ The source notes read these in the game's own PBOs; they are not unpacked on `P:
 4. Run time: no tick was measured in game. Every line in this skill is read from source.
 5. Log texts to search for in the RPT (`ThermalBiasHandler`, `Sandstorm`, `Could not get players sandstorm data`) were not confirmed against a real log.
 
-## Corrections to earlier notes
+## Common wrong assumptions
 
-Claims that circulated in earlier digests of the 1.30 scripts and are wrong on `P:\`:
+Assumptions about the 1.30 scripts that are wrong on `P:\`:
 
-| Earlier claim | What `P:\` shows |
+| Wrong assumption | What `P:\` shows |
 |---|---|
 | The shadow check runs every 5 s | Every 30 s: `ENVIRO_TICK_SHADOW_RC_CHECK` (`P:\scripts\3_game\constants.c:760`) |
 | The area enum is `EOffsetDataAreaType` | It is `EEffectAreaType` (`P:\scripts\4_world\classes\contaminatedarea\effectarea.c:10`) |
@@ -91,4 +91,4 @@ Claims that circulated in earlier digests of the 1.30 scripts and are wrong on `
 | Motorbike and boat wind is at lines 371 to 402 and 884 to 942 of the environment class | It is `DetermineHeatcomfortBehavior` at `P:\scripts\4_world\classes\environment\environment.c:575`; line 889 is `GetWetDelta` |
 | Motorbikes have a dust weight coefficient of 0.25 | `Motorbike_01` returns 0.5 and `Motorbike_02` 0.75 from `GetWeightCoef` (`P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:87`) |
 | A mask cancels the sandstorm cough | Only when its `DEF_DUST_PARTICLE_BREATH` protection covers the storm's intensity: `coughIntensity` is intensity minus protection (`P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\sandstormexposure.c:143`) |
-| The Nasdara data config has skinning entries at lines 214 to 239 | Per the source notes that config ends near line 60; the yields are in `basicDefines.hpp`. Not on `P:\` |
+| The Nasdara data config has skinning entries at lines 214 to 239 | That config ends near line 60; the yields are in `basicDefines.hpp`. Not checked on `P:\` |

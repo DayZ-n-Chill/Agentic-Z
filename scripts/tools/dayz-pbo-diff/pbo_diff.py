@@ -1,10 +1,11 @@
 """Entry-level diff of two uncompressed PBOs.
 
 Every entry is compared by the SHA-256 of its payload, and the header
-properties as a whole. Both archives are read with the Pack's fail-closed PBO
+properties as a whole. Both archives are read with the fail-closed PBO
 reader, scripts/tools/dayz-vehicle-proxy-contract/scripts/vehicle_proxy/pbo.py: a
 compressed entry, an unsafe, duplicate or non-ASCII entry name, a malformed
-header and entry data past the end of the file are refused, never skipped.
+header, entry data past the end of the file and bytes after the last entry
+other than a 21-byte trailer are refused, never skipped.
 Read-only: the one file written is the new --out report.
 
 Exit 0: both PBOs read and the report written, whatever they contain.

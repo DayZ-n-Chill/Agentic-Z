@@ -2,14 +2,14 @@
 
 How to build a scripted test (a "cell") that boots the game, drives it without a human and reads a verdict from the logs: the headless pattern, what a mission `init.c` may and may not do, getting a player into a vehicle by script, gates that can actually fail, teardown order, and what makes a run valid evidence. The ready-made self-reporting test mod is in `assets/autotest-mod/` (see `linux-headless-client.md`).
 
-Terms used below: "this box" and "this install" in dated findings mean the Windows test machine the measurement was taken on, not yours. `[EXACT]` marks a flag, path or behaviour that was verified in a real run; `[DESIGN]` marks something plausible that was not verified, so check it in game before relying on it. Tags such as `SP-078`, `LL-196` and `CLAIM-...` are the finding numbers of the knowledge pack this material came from; they are kept so that cross-references between files stay searchable. `DAYZ_INFRA.md` is that pack's infrastructure note (in this repo `skills/_shared/knowledge/environment-and-infra.md`); a tag like `[EXACT - DAYZ_INFRA.md §Section]` names the section of it that records the fact.
+Terms used below: "this box" and "this install" in dated findings mean the Windows test machine the measurement was taken on, not yours. `[EXACT]` marks a flag, path or behaviour that was verified in a real run; `[DESIGN]` marks something plausible that was not verified, so check it in game before relying on it.
 
-Vanilla script facts cite the file on `P:\`. Measured results and third-party behaviour (dayz-mcp, Community Framework, project mods such as LFHeli and LFQuad) are not yet checked on `P:\`.
+Vanilla script facts cite the file on `P:\`. Measured results and third-party behaviour (dayz-mcp, Community Framework, the helicopter and quad-bike mods the cells were built for) are not yet checked on `P:\`.
 
 ## Headless autotest pattern (no client, scripted spawn)
 
-For automated physics/spawn testing without a human client, a dedicated harness lives at
-`LFQuad_dev\tools\dayz-autotest.ps1` (reuses this launcher's build+deploy). Five gotchas that
+For automated physics/spawn testing without a human client, write a dedicated harness script
+that reuses the launcher's build and deploy step. Five gotchas that
 cost many iterations, recorded so the next headless harness works first try:
 1. **Historical detached pattern - superseded 2026-07-15.** A direct `Start-Process` avoided
    waiting on the DayZDiag grandchild but left it outside the registered lifecycle. Launch now
@@ -19,19 +19,18 @@ cost many iterations, recorded so the next headless harness works first try:
    loads ~20k loot items and delays the mission loop by minutes.
 3. **A `CarScript` vehicle only ticks `OnUpdate` / simulates with a player present.** A headless
    server with zero clients won't drive the vehicle's own script; spawn after a client connects
-   (the harness has a `-WithClient` mode that connects a second diag instance to 127.0.0.1).
+   (give the harness a mode that connects a second diag instance to 127.0.0.1).
 4. **Cell infrastructure (spawn-on-connect, engine watcher, auto-test hooks) belongs INSIDE the
-   mod under `#ifdef DIAG` + a CLI param - never only in the mission `init.c`** (added 2026-08-17,
-   LFHeli). The mission lives under Steam (`DayZServer\mpmissions\<mission>\init.c`), which no
-   portable pack, backup or repo carries: the LFHeli cell infra written into `init.c` on
+   mod under `#ifdef DIAG` + a CLI param - never only in the mission `init.c`** (added 2026-08-17).
+   The mission lives under Steam (`DayZServer\mpmissions\<mission>\init.c`), which no
+   backup or repo carries: a helicopter cell's infrastructure written into `init.c` on
    2026-08-12 (`CreateObjectEx` on `InvokeOnConnect` + `EngineStart()` pre-crew watcher) was
-   gone on the other machine five days later and had to be recovered from a transcript. In-tree
+   gone on a second machine five days later and had to be written again. In-tree
    it travels with the PBO, is versioned, and stays inert in retail by absence of the flag
-   (pattern: `LFHeliCore\scripts\5_Mission\LFHeliFLIRMission.c` `modded class MissionServer`,
-   `-lfheliAutoGetIn=1` in `LFHeliPlayerBase.c`). Corollary measured the same day: start the
+   (pattern: a `modded class MissionServer` in the mod's `5_Mission`, switched on by a
+   launch parameter of the mod's own, such as `-<mod>AutoGetIn=1`, read in its `PlayerBase`). Corollary measured the same day: start the
    engine BEFORE the crew sits - a sleeping PARKED body rejects the injected get-in action.
-5. **PowerShell orchestrator traps that hang a cell silently** (measured 2026-08-17, LFHeli
-   `run_celda_scripted.ps1`): (a) never name a function parameter `$Args` - it is the automatic
+5. **PowerShell orchestrator traps that hang a cell silently** (measured 2026-08-17): (a) never name a function parameter `$Args` - it is the automatic
    variable, `@Args` splats EMPTY and `& python` with no argv opens the interactive REPL that
    never returns (the cell sat at "flip DebugLog" for minutes with a `python.exe` child and no
    arguments); (b) `& native 2>&1` under `$ErrorActionPreference='Stop'` turns any stderr line into
@@ -42,13 +41,13 @@ cost many iterations, recorded so the next headless harness works first try:
    and an `ErrorMessage_*.mdmp` while the SERVER (no Steam) boots fine - `steam.exe -shutdown` +
    relaunch repopulated the key in ~20 s. Check the key in the pre-flight of every cell.
 
-## Mission `init.c`: do not extend previous module types from fixture (SP-140)
+## Mission `init.c`: do not extend previous module types from fixture
 
 [IN-GAME CONFIRMED, DayZ 1.29 server diag, 2026-07-30] On this compiler a
 generated mission adding `modded class` on `4_World` types failed with
 `Unknown type` for both a concrete class (`SmallStone`) and a base
 (`BuildingBase`). An earlier incident reproduced the same with
-`LFPG_NetworkManager`. Offline text tests did not detect the boundary.
+a mod's own `4_World` class. Offline text tests did not detect the boundary.
 
 Rule for mission oracles: use an already compiled receiver exposing contract
 under test. If you need to add a method, bridge must live in the
@@ -59,23 +58,22 @@ start of next line produced `Incompatible parameter` + `Syntax
 error`. Before expending pairs, run a single control requiring Module
 Game/World/Mission, OnInit, and oracle marker.
 
-Evidence: the `script-final.log` of attempts 3 (`f02-unknown-type`), 4 (`f03-cross-module-modded`) and 5
-(`f04-boolean-linebreak`) of the LFPowerGrid server-footprint validation of 2026-07-30; the existing receiver
-closed the control run (`a7-control`).
+Measured on 2026-07-30 in three failed attempts of a server-footprint validation (unknown type, cross-module
+`modded class`, boolean line break); the control run with the existing receiver passed.
 
 ## WHEEL SIMULATION DIAGNOSIS (vehicle won't drive / bounces / sinks)
 
 When a modded `CarScript` vehicle spawns but won't drive - wheels mount yet don't
 spin, chassis bounces or sinks, engine revs with no speed - the failure is almost
 always one of two MEASURABLE things, not mass/inertia. Instrument and read them
-side-by-side against a known-good reference vehicle (e.g. the vanilla sedan or the
-Croco quadbike) IN THE SAME RUN before touching geometry.
+side-by-side against a known-good reference vehicle (e.g. the vanilla sedan or a
+modded quad bike known to drive) IN THE SAME RUN before touching geometry.
 
 ### 1. Is the wheel seated in PhysX, and does it touch ground?
 
 - `WheelCountPresent()` - how many wheels the simulation actually seated (the gate).
   `0` while `WheelCount()` returns N means the slot/FireGeometry wiring is wrong; see
-  the `enforce-script-reference` wheel-attachment rule and audit check SP-017.
+  the `enforce-script-reference` wheel-attachment rule.
 - `WheelHasContact(i)` per wheel - `1` = touching ground, `0` = airborne. Print the
   four as a bitstring (`wc=1111` good; `wc=0000` = the whole vehicle is suspended off
   the ground, a placement/clearance problem, not a sim problem). Vanilla refs:
@@ -93,7 +91,7 @@ Spawn with an explicit height flag instead of letting CE drop it:
 - `ECE_PLACE_ON_SURFACE` (`=1060`) - normal surface-trace placement.
 Vanilla refs: `P:\scripts\3_game\ce\centraleconomy.c:38` (`ECE_PLACE_ON_SURFACE`) and `centraleconomy.c:28` (`ECE_KEEPHEIGHT`). If the vehicle is stable under KEEPHEIGHT but
 bounces/sinks under PLACE_ON_SURFACE, the bug is placement burying the hull (wheel-well
-clearance vs tire radius - audit check SP-023), not the model.
+clearance vs tire radius), not the model.
 
 ### 3. Gotcha: parser/instrumentation drift before declaring the test failed
 
@@ -102,17 +100,17 @@ matches the CURRENT log-line format of the instrumentation. A log-format change
 (renamed tag, reordered fields) reads as a test failure when the test actually ran
 fine. Check the regex against a raw sample line before concluding the build is broken.
 
-(origin: SP-023; LFQuad wheel-well and placement session, 2026-06-01)
+(measured in a quad-bike wheel-well and placement session, 2026-06-01)
 
-## DEVELOPER vs DIAG_DEVELOPER - the standard diag only defines DIAG_DEVELOPER (SP-033, added 2026-07-14)
+## DEVELOPER vs DIAG_DEVELOPER - the standard diag only defines DIAG_DEVELOPER (added 2026-07-14)
 
 The standard `DayZDiag_x64` defines `DIAG_DEVELOPER` but NOT `DEVELOPER` (bare). Verified in `script_*.log` of both peers: server/client defines include `DIAG,DIAG_DEVELOPER,...,FEATURE_NETWORK_RECONCILIATION` - no `DEVELOPER`. So every vanilla `#ifdef DEVELOPER` block (e.g. the debug get-in: `DayZPlayerSyncJunctures.SendGetInVehicle`, `SJ_DEBUG_GET_IN_VEHICLE`, `PlayerBase.TryGetInVehicleDebug`, much of `plugindeveloper.c`) does NOT exist in this build. `OnDebugSpawn` working (it is `#ifdef DIAG_DEVELOPER`) does NOT prove `DEVELOPER` is active - different macros. Vanilla: `P:\scripts\4_world\entities\manbase\playerbase.c:3531` opens the `#ifdef DEVELOPER` block that holds `SetGetInVehicleDebug` and `TryGetInVehicleDebug`.
 
 Expensive trap: if a mod PBO EMITS a `#ifdef DEVELOPER` symbol (a call to `SendGetInVehicle`, etc.), the symbol does not exist -> HARD compile failure of the WHOLE PBO -> every tool/script of the mod drops. Not a silent no-op (unlike `ExecuteEnforceScript`, Developer-only, which returns false at runtime).
 
-Rule before basing a design on a vanilla `#ifdef DEVELOPER` API: (1) grep the `#ifdef` guarding it (`DEVELOPER` or `DIAG_DEVELOPER`?); (2) if `DEVELOPER`, read the `defines:` line of a recent `script_*.log` for that build to confirm it is active; (3) if not, do NOT emit the symbol - wrapping it in `#ifdef DEVELOPER` is not "robustness" if the design DEPENDS on it; find a non-DEVELOPER path. Cross-ref `dayz-mod-workflow` (anti-confabulation). Origin: DayZ_MCP Phase 5, section A (2026-06-28), compile logs of both profiles.
+Rule before basing a design on a vanilla `#ifdef DEVELOPER` API: (1) grep the `#ifdef` guarding it (`DEVELOPER` or `DIAG_DEVELOPER`?); (2) if `DEVELOPER`, read the `defines:` line of a recent `script_*.log` for that build to confirm it is active; (3) if not, do NOT emit the symbol - wrapping it in `#ifdef DEVELOPER` is not "robustness" if the design DEPENDS on it; find a non-DEVELOPER path. Cross-ref `dayz-mod-workflow` (anti-confabulation). Measured 2026-06-28 in the compile logs of both profiles.
 
-## (added 2026-08-12, LFHeli COM/pivot cell) AUTOMATED in-game cell without pilot: the 4 measured walls and workarounds
+## (added 2026-08-12) AUTOMATED in-game cell without pilot: the 4 measured walls and workarounds
 
 Eleven iteration cells in one day to get an automated cell green (stack + get-in +
 engine + probes + parser, ~5 min). The four walls, measured with discriminants, so as not to pay
@@ -134,7 +132,7 @@ them again:
    on next tick (with retry), not marking done upon injecting. NOTE: `ActionCondition` is
    protected - cannot be pre-validated from outside; manager validates on both sides.
 
-   **The framework reconciling this with SP-295** (measured against vanilla tree, 2026-08-18):
+   **How this fits with seating a player by script from the server** (measured against the vanilla tree, 2026-08-18):
    crew membership and vehicle command are TWO distinct things, and only real action
    produces both. Crew is NATIVE engine state, not a script netsync:
    `Transport` registers a single variable (`m_EngineZoneReceivedHit`, `transport.c:110`) and
@@ -167,11 +165,10 @@ them again:
 Orchestrator pattern that worked: wrapper with named PHASES (BOOT-spawn / BOOT-log /
 COMPILE / CONNECT / GETIN / probes / SETTLE / teardown / PARSE), each with PASS/FAIL
 verdict and its own timeout; logs are copied to evidence EVEN IF a phase fails; teardown
-kills ONLY PIDs the cell launched. Full reference:
-the LFHeli project's `run_celda_compivot.ps1` wrapper and its `evidence-2026-08-12-offset` folder (11 cells with the
-cause of each failure), from the LFHeli OH-1 session of 2026-08-12.
+kills ONLY PIDs the cell launched. Measured over the 11 cells of a helicopter session on 2026-08-12,
+each with the cause of its failure recorded.
 
-## Preflight: prove your cell's gates can go RED before you trust a single green run (added 2026-08-13, LFHeli council; LL-249)
+## Preflight: prove your cell's gates can go RED before you trust a single green run (added 2026-08-13)
 
 A test-cell wrapper is only worth what its gates are worth, and two failure modes make a gate
 **structurally incapable of failing** while it keeps printing green. Neither is visible by reading
@@ -190,7 +187,7 @@ by construction. Same trap: `-Raw`, `-Literal*`, `[Regex]::Escape` on a pattern 
 and `-match` vs `-like` mixups.
 
 **1-bis. The symmetric one: a pattern that CANNOT come out green - `not closed` is a false red.**
-(measured 2026-09-07, LFPowerGrid). If you add `not closed` to the gate thinking of Enforce's
+(measured 2026-09-07). If you add `not closed` to the gate thinking of Enforce's
 `CParser: quoted string not closed`, you will find it in **healthy** boots:
 CommunityFramework writes
 `File "$mission:storage_1/communityframework/modstorageplayers.bin" was not closed. Always shut
@@ -221,7 +218,7 @@ Corollary for measurement campaigns: fix the gates BEFORE the campaign, not afte
 through a decorative gate produces greens that mean nothing, and you cannot tell afterwards which
 of them were real.
 
-## Teardown copies the logs BEFORE killing the client, and verifies the copy (SP-237, added 2026-08-13)
+## Teardown copies the logs BEFORE killing the client, and verifies the copy (added 2026-08-13)
 
 Killing the DayZ client immediately loses its last unflushed log buffer. A pilot
 run's flight output was lost this way: the **client** log cut at `t=2118` while
@@ -243,15 +240,15 @@ whole run.
 
 A cell only emits `PASS` if it demonstrates that it booted in the planned mode, covered the complete transition, and produced the evidence consumed by the verdict. Apply this contract before spending a batch:
 
-1. **Preflight by mechanism and mode (LL-284, LL-307).** Document each guard as `protected mechanism → affected modes` and code the branch: a client-exclusive guard aborts with client and only warns in `-NoClient`, without manual bypass. On a box with multiple stacks, an unattended cell with client is not isolated from keyboard either: census other `DayZDiag` and active mods, record PID/mods and focus risk, and use a test-exclusive DIAG guard to reject human actions that would change state while script is active. Automation preserves a separate programmatic path. If you cannot demonstrate isolation, result is `SETUP_FAIL`.
+1. **Preflight by mechanism and mode.** Document each guard as `protected mechanism → affected modes` and code the branch: a client-exclusive guard aborts with client and only warns in `-NoClient`, without manual bypass. On a box with multiple stacks, an unattended cell with client is not isolated from keyboard either: census other `DayZDiag` and active mods, record PID/mods and focus risk, and use a test-exclusive DIAG guard to reject human actions that would change state while script is active. Automation preserves a separate programmatic path. If you cannot demonstrate isolation, result is `SETUP_FAIL`.
 
-2. **Boot identity and separation (LL-258, LL-260).** In a batch relaunching client, leave a conservative cooldown of 60 s from previous shutdown to next startup; a native crash during that startup is `SETUP_FAIL`, not a mod regression. Cooldown does not apply to a truly isolated one-shot because it does not chain another client. When packing evidence, do not select file by apparent mtime: product artifacts are named in UTC and RPT/mtimes use local time. Cross-check boot-id or internal marker against ledger incident; its timestamp rules over mtime. If expected boot markers are missing, reject bundle.
+2. **Boot identity and separation.** In a batch relaunching client, leave a conservative cooldown of 60 s from previous shutdown to next startup; a native crash during that startup is `SETUP_FAIL`, not a mod regression. Cooldown does not apply to a truly isolated one-shot because it does not chain another client. When packing evidence, do not select file by apparent mtime: product artifacts are named in UTC and RPT/mtimes use local time. Cross-check boot-id or internal marker against ledger incident; its timestamp rules over mtime. If expected boot markers are missing, reject bundle.
 
-3. **Complete path and bilateral compile gate (LL-310, LL-312).** Draw each critical transition as `input → observable state → exit → poststate` and execute it via software. An autotest that only enters has incomplete coverage; first find the closing trigger among existing watchers, cancellations, and timeouts. Extend the server compile gate (wall 4 of the automated-cell section above) to the client log: scan script logs of both peers for `Compile error` / `Can't compile` before waiting for functional markers. `Dead client / live server + Can't compile` is a client-only code compile failure, not a timeout nor runtime regression. Offline lint does not accredit `private`/`protected` visibility; real compilation of both peers is authoritative.
+3. **Complete path and bilateral compile gate.** Draw each critical transition as `input → observable state → exit → poststate` and execute it via software. An autotest that only enters has incomplete coverage; first find the closing trigger among existing watchers, cancellations, and timeouts. Extend the server compile gate (wall 4 of the automated-cell section above) to the client log: scan script logs of both peers for `Compile error` / `Can't compile` before waiting for functional markers. `Dead client / live server + Can't compile` is a client-only code compile failure, not a timeout nor runtime regression. Offline lint does not accredit `private`/`protected` visibility; real compilation of both peers is authoritative.
 
-4. **Shutdown matching the measurement (LL-277).** SP-237 ("copy/verify before killing") preserves already emitted evidence, but does not accredit metrics born upon exiting. For leak reports, flushes, destructors, or final hooks, request graceful shutdown, wait for an explicit marker that the report or hook executed, and only then collect result. A forced kill produces `SETUP_FAIL` for all exit metrics and also prevents verifying a fix living in that hook. "Problem did not appear" never equals `PASS` if check never ran.
+4. **Shutdown matching the measurement.** Copying and verifying the logs before killing (the teardown section above) preserves already emitted evidence, but does not accredit metrics born upon exiting. For leak reports, flushes, destructors, or final hooks, request graceful shutdown, wait for an explicit marker that the report or hook executed, and only then collect result. A forced kill produces `SETUP_FAIL` for all exit metrics and also prevents verifying a fix living in that hook. "Problem did not appear" never equals `PASS` if check never ran.
 
-## Diagnostic spawn without depending on VPP UI (SP-210, single-use scope)
+## Diagnostic spawn without depending on VPP UI (single-use scope)
 
 If administrative UI blocks a diagnosis, a private mission can use
 `CustomMission.InvokeOnConnect` (`P:\scripts\5_mission\mission\missionserver.c:435`) to create a fixture once per boot, at fixed distance from
@@ -261,7 +258,7 @@ It is a disposable fallback, not cell infrastructure. The portable rule of "Head
 to govern: any spawner, watcher, or control that must survive the project lives inside the mod,
 gated by DIAG and by an explicit parameter.
 
-## Parsers: first extract actual `Print` payload (SP-234)
+## Parsers: first extract actual `Print` payload
 
 A string variable arrives in script log with a form equivalent to:
 
@@ -274,7 +271,7 @@ Closing single quote is stuck to the last field. First extract what is between
 literal fixtures copied from a real log, in addition to synthetic cases, and counter-fixtures with truncated
 wrapper. A self-test that never consumed a real line only validates the imagined parser.
 
-## Teleport and readiness before injecting an action (SP-235)
+## Teleport and readiness before injecting an action
 
 To teleport player in a harness use X/Z of probed point and
 `Y = GetGame().SurfaceY(x, z)` (`P:\scripts\3_game\global\game.c:1176`). The Y of a memory point can leave them in
@@ -285,7 +282,7 @@ Before spending an attempt, require an accepted command ID, no action in progres
 `CanStoreInputUserData()`, and `ActionBase.Can(...)`. Then observe real transition; do not mark
 success upon sending action. A desync `server=Move, client=Fall` points first to placement.
 
-## Headless retail server as parity term (SP-242)
+## Headless retail server as parity term
 
 The requirement of `DayZDiag_x64.exe` in the prerequisites (`windows-launch-cycle.md`) is scoped to iteration with `-filePatching` and to
 official launcher of this skill. A headless retail `DayZServer_x64.exe` can load PBOs with
@@ -297,7 +294,7 @@ depend on `RELEASE` or developer-only APIs. It does not replace client for visua
 verbs requiring a connected player. This server remains outside official lifecycle: only
 a probe-gated runner possessing its exact PID can start and stop it.
 
-## Multi-peer cells: clock, replay, and bilateral probes (SP-276 / SP-278)
+## Multi-peer cells: clock, replay, and bilateral probes
 
 For an exit failure or desync, instrument the callback equivalent to `OnDriverExit` on both
 peers and emit in a single window `playerPos`, `vehiclePos`, `crewEntryWS`, and their distances. Align
@@ -313,10 +310,10 @@ The bridge does not inject arbitrary values into `UAInput`. If the mod neutraliz
 consumes its own axes, a cell needs a DIAG script on the owner before `WriteToMove`; this branch
 is only promoted for the mod when an in-game run demonstrates that it steers.
 
-## Contract of a repeatable scripted cell (SP-279)
+## Contract of a repeatable scripted cell
 
 - Spawn fixture at a known fixed location and place player at a fixed offset on
-  `SurfaceY`; random spawn turns obstacles and doors into environmental noise. A default spawn also draws a random character class: pin it (`session-findings.md`, "H2R import (2026-10)").
+  `SurfaceY`; random spawn turns obstacles and doors into environmental noise. A default spawn also draws a random character class: pin it (`session-findings.md`, the section on untextured runs and a moving 1PP eye).
 - After an exit, rearm placement server-side after cooldown with player on foot.
   Re-entry is part of the test: a ghost pose on client invalidates reach and `Can()`.
 - `forces-off`, `clamp-abort`, `no-probes`, `no-pilot`, and `not-owner` are **INCONCLUSIVE** and accept
@@ -324,7 +321,7 @@ is only promoted for the mod when an in-game run demonstrates that it steers.
 - Script executes; it does not adjudicate. Its gates are the same as preregistration. Detects "settled" by
   sustained AGL or, better, by authoritative state, not by an isolated owner velocity.
 
-## Isolation, settle, and effect probes in cells (SP-285)
+## Isolation, settle, and effect probes in cells
 
 While scripted pilot is active, a DIAG guard must reject in `ActionCondition`
 human actions that break the cell, but preserve a separate programmatic route. Settle is
@@ -337,7 +334,7 @@ startup, runner probes other running DayZDiag with PID, modline, and port; if 23
 session, choose a different accredited port. This extends the preflight of "Validity of an automated run" without touching foreign
 peers.
 
-## Whoever opens a manual process also closes it (SP-344)
+## Whoever opens a manual process also closes it
 
 Managed runs are closed by their `run_id`. For an authorized manual process outside MCP,
 the agent that opened it retains PID and `CommandLine`, requests orderly shutdown with
@@ -350,17 +347,17 @@ closing only those own processes.
 
 ## An in-game observation is worth whatever the `-mod=` line of ITS run is worth (added 2026-09-05)
 
-Distinct from SP-124 in `managed-launcher.md`, which reads `-mod=` to know **whose box it is**. This one
+Distinct from the rule in `managed-launcher.md` that a free lease does not imply a free box, which reads `-mod=` to know **whose box it is**. This one
 reads it to know **if the observation serves as evidence**, and is done BEFORE using it, not at
 launch.
 
-Measured on 2026-09-04 on two mods at once. Of six runs with `@LFQuad3`, **one** carried
-`@SurvivorAnims`; of the four of LFQuad2, **none**. `LFQuad3.c:86-88` (and its twin in
-LFQuad2) does `GetAnimInstance` -> returns 22 only if `CfgPatches SurvivorAnims` exists, and otherwise
+Measured on 2026-09-04 on two quad-bike mods at once. Of six runs of the first, **one** carried
+`@SurvivorAnims`; of the four runs of the second, **none**. Each mod's `GetAnimInstance` override
+returns its own instance (22) only if `CfgPatches SurvivorAnims` exists, and otherwise
 falls back to `VehicleAnimInstances.V3S`, which is TRUCK pose on a quad. With the wrong pose
 **driver camera is not where it would really be**, and that moves both what is seen from
-seat and which LOD engine chooses. LFQuad2 had diagnosed and "fixed" a LOD
-symptom on those runs and had to withdraw the fix: cause was not verified.
+seat and which LOD engine chooses. A LOD symptom was diagnosed and "fixed"
+on those runs and the fix had to be withdrawn: cause was not verified.
 
 The failure is silent by construction: missing mod gives no error, game starts,
 observation seems normal and user reports it in good faith.
@@ -378,11 +375,11 @@ observation seems normal and user reports it in good faith.
    depends on where the eye is, does not.
 4. With every mod present, read two more things from THAT run: whether it rendered textured and, for
    anything that depends on where the eye is, where the eye was. Both changed between runs with the same
-   command line in the H2R import (2026-10) (`session-findings.md`).
+   command line (`session-findings.md`, the section on untextured runs and a moving 1PP eye).
 
-Name trap in this tree: `@Survivor Animations` **with space** splits the command
-line (in RPT it is seen cut off at `-mod=...;P:\Mods\@Survivor`). The good junction is
-`@SurvivorAnims`.
+Name trap: a mod folder such as `@Survivor Animations` **with space** splits the command
+line (in RPT it is seen cut off at `-mod=...;P:\Mods\@Survivor`). Use a junction
+without a space, such as `@SurvivorAnims`.
 
 Cheap audit of a whole workday, to know which runs are valid:
 
@@ -393,9 +390,9 @@ for f in _server/profiles/*.RPT _client/profiles/*.RPT; do
 done
 ```
 
-## An unfocused DayZDiag client runs at ~20 fps: what the client measures depends on who holds the foreground (SP-391, added 2026-09-13)
+## An unfocused DayZDiag client runs at ~20 fps: what the client measures depends on who holds the foreground (added 2026-09-13)
 
-Measured on F1 bench of LFHeli (DayZDiag, windowed client and server on same machine),
+Measured on a helicopter mod's bench (DayZDiag, windowed client and server on same machine),
 **with manipulation**, not by correlation:
 
 - With its window in foreground, client runs at **25.0 ms** per frame (40 fps); without focus, at
@@ -422,5 +419,3 @@ Rules:
    launcher that exits immediately; window lives in another process).
 3. A cell archive run with random focus mixes two frame regimes: before
    comparing variants, stratify by frame time or repeat with focus held.
-
-Evidence and recipes: the LFHeli session note of 2026-09-13 ("the bounce follows the client's focus") in the source author's notes.

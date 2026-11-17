@@ -2,24 +2,22 @@
 
 SIB, RFFS, MH6, DayZ Expansion and LM_Planes side by side: what all five share, monolithic flight loop against modular aerofoil system, kinematic against force based integration, a table of differences, which one to build from, and how players say each one feels. Open it when choosing a flight model or explaining a trade-off; the per-mod detail is in `helicopter-rffs.md`, `helicopter-mh6.md`, `helicopter-sib.md`, `helicopter-expansion.md` and `fixed-wing-lm-planes.md`.
 
-Third-party material, not yet checked on `P:\`. Every fact comes from the five mods' own sources as read for the per-mod files; the tags (`[VERIFIED-RFFS]`, `[RECOVERED-SIB]`, `[RECOVERED-MH6]`, `[UNVERIFIED]`) and `file:line` citations mean what they mean there. The player feel section is secondhand opinion, not a measurement.
+Third-party mod behaviour (SIB, RFFS, MH6, DayZ Expansion, LM_Planes), not vanilla. Not yet checked on `P:\`. Every fact describes the five mods' own scripts as read for the per-mod files; the mod named in a bracket (`[RFFS ...]`, `[SIB ...]`, `[MH6 ...]`) says whose scripts hold the cited line, and `[UNVERIFIED]` and the `file:line` citations mean what they mean there. The player feel section is subjective opinion, not a measurement.
 
-## Four implementations, three authors
+## Four monolithic implementations
 
-**Four independent flight-model implementations from three independent authors** have been read:
-**SIB** (SIBNIC) heli, **RFFS** (RedFalcon) heli, **MH6** (Llama) heli, and **LM_Planes** (Llama +
-Itspete-Here) fixed-wing. All four use the **CarScript-as-aviation** hack, which pins that down as **the**
-way to do aviation in DayZ today. (Note on authorship: Llama accounts for two of the four — the LM_Planes
-fixed-wing *and* the MH6 heli — nailed by the `LM_LLAMA/LM_Vehicles/MH6/` particle paths,
-`MH6_scripts\b_off152027_o355.c:3-5`. So it is three authors, four aircraft, two of them force-based and
-both Llama's.)
+**Four flight-model implementations with a single flight loop** are covered here: the **SIB** heli, the
+**RFFS** heli, the **MH6** heli, and the **LM_Planes** fixed-wing. All four use the
+**CarScript-as-aviation** hack, which pins that down as **the** way to do aviation in DayZ today. Three
+separate code bases stand behind the four: MH6 and LM_Planes come from one mod family, and they are the
+two force-based ones.
 
 ## What is common to all four
 
 - **`CarScript` is the aviation base.** DayZ has no flight class; all four inherit `CarScript`, keep a full
   ground `SimulationModule` (wheels/axles/gearbox) as a taxi fallback, and override the physics in script.
-  [VERIFIED-RFFS `Core_config.cpp:517`] · [RECOVERED-SIB `HeliTest_SIB:Heli_sib_cript:CarScript`] ·
-  [RECOVERED-MH6 `class MH6 extends CarScript`, `MH6_flightmodel.c:112`] ·
+  [RFFS `Core_config.cpp:517`] · [SIB `HeliTest_SIB:Heli_sib_cript:CarScript`] ·
+  [MH6 `class MH6 extends CarScript`, `MH6_flightmodel.c:112`] ·
   [LM_Planes `LlamaPlaneScript extends CarScript`].
 - **Custom `UA*` inputs** drive flight, read via `GetInputInterface().SyncedValue(...)` / `GetUApi()`
   (SIB `UASIBHeli*`, RFFS `UARFFS*`, MH6 `UAKTHeli*`) or the Pawn move pipeline (LM_Planes), declared in a
@@ -31,14 +29,13 @@ both Llama's.)
   attachment-tied part health.
 - **Server-authoritative physics** gated on `IsServer()` / `IsServerOrOwner()`; state pushed to clients.
   A client never owns the authoritative velocity: RFFS's client pump runs only animations and input
-  sync (corrected 2026-08-03, see `helicopter-rffs.md` section 2), while MH6, LM_Planes and Expansion
+  sync (see `helicopter-rffs.md` section 2), while MH6, LM_Planes and Expansion
   predict on the owner and reconcile with the server.
 
-## Cross-author synthesis, extended — now five aircraft, four authors
+## All five implementations, on two axes
 
-With Expansion added, the corpus is **five flight-model implementations from four independent authors**:
-**SIB** (SIBNIC), **RFFS** (RedFalcon), **MH6** + **LM_Planes** (Llama), and **Expansion** (DayZ Expansion
-Team). All five use **CarScript-as-aviation** (Expansion's modern path does; its *legacy* `Transport`-based
+With Expansion added there are **five flight-model implementations from four separate code bases**:
+**SIB**, **RFFS**, **MH6** + **LM_Planes**, and **DayZ Expansion**. All five use **CarScript-as-aviation** (Expansion's modern path does; its *legacy* `Transport`-based
 `ExpansionVehicleBase` is the one exception, and it was superseded). Two orthogonal axes now organise them.
 
 ### Monolithic flight loop vs modular aerofoil system
@@ -127,40 +124,40 @@ now a *sub*-choice inside "monolithic".
 
 ## The new axis that matters most: kinematic vs force-based
 
-The previous 3-way write-up concluded "a buildable DayZ aircraft is kinematic". **MH6 refutes that** — it
-is force-based, legible, and buildable. The real split is:
+A buildable DayZ aircraft does not have to be kinematic: **MH6** is force-based, legible, and buildable.
+The real split is:
 
 | Implementation | Integration | Source state | So the takeaway is… |
 |---|---|---|---|
-| **SIB — simple** (SIBNIC) | **Kinematic** — `SetVelocity`/`SetOrientation`, `dBodyApplyImpulse` commented out | Recovered, legible (buildable) | Arcade heli, minimal code — the simplest teachable loop |
-| **SIB — advanced** (SIBNIC) | **Force** — `dBodyApplyForce`/`Torque` in the applicator `qmdkldkpqpmlsib` | **DRM-locked + core integrator missing** | Proof force was *used*, but unbuildable (lost + license-gated) |
-| **RFFS** (RedFalcon) | **Kinematic** — `SetVelocity`/`SetOrientation`, `dBodyApplyImpulse` only as a commented line (`Core.c:272`) | Clean, complete, DRM-free | The clean **kinematic** reference: physically-grounded (attitude-rotated lift vector, ground effect, ETL, governors, drag, weathervaning), discrete 0-20 collective, typed JSON config, flight HUD |
-| **MH6** (Llama) | **Force** — real `dBodyApplyForce(this, totalForce)` + `dBodyApplyTorque(this, totalTorque)` every tick (`MH6_flightmodel.c:1165-1166`) | **RECOVERED, clean, complete** | The **force-based** reference: full PD flight controller, ISA air density, rotor-RPM authority, autohover/autoland — buildable today |
-| **LM_Planes** (Llama) | **Force** — real aerodynamic lift/drag/stall forces applied at `axis_thruster` | Clean (public workshop) | The fixed-wing reference (real aerodynamics + custom Pawn) |
+| **SIB — simple** | **Kinematic** — `SetVelocity`/`SetOrientation`, `dBodyApplyImpulse` commented out | Readable, legible (buildable) | Arcade heli, minimal code — the simplest teachable loop |
+| **SIB — advanced** | **Force** — `dBodyApplyForce`/`Torque` in the applicator `qmdkldkpqpmlsib` | **DRM-locked + core integrator missing** | Proof force was *used*, but unbuildable (lost + license-gated) |
+| **RFFS** | **Kinematic** — `SetVelocity`/`SetOrientation`, `dBodyApplyImpulse` only as a commented line (`Core.c:272`) | Clean, complete, DRM-free | The clean **kinematic** reference: physically-grounded (attitude-rotated lift vector, ground effect, ETL, governors, drag, weathervaning), discrete 0-20 collective, typed JSON config, flight HUD |
+| **MH6** | **Force** — real `dBodyApplyForce(this, totalForce)` + `dBodyApplyTorque(this, totalTorque)` every tick (`MH6_flightmodel.c:1165-1166`) | **Readable, clean, complete** | The **force-based** reference: full PD flight controller, ISA air density, rotor-RPM authority, autohover/autoland — buildable today |
+| **LM_Planes** | **Force** — real aerodynamic lift/drag/stall forces applied at `axis_thruster` | Clean (public workshop) | The fixed-wing reference (real aerodynamics + custom Pawn) |
 
-**Conclusion, corrected:** a buildable-from-source DayZ *helicopter* can be **either** kinematic (RFFS) or
+**Conclusion:** a buildable DayZ *helicopter* can be **either** kinematic (RFFS) or
 force-based (MH6) — both are clean and complete on disk. The impression the SIB mod gave — that the
-force-based model is always license-gated and out of reach — was an artifact of *that one author's DRM*,
+force-based model is always license-gated and out of reach — was an artifact of *that one mod's DRM*,
 not a property of DayZ. MH6 shows real `dBodyApplyForce`/`Torque` rotor physics is fully viable in
-plaintext Enforce. (And it is no coincidence the force-based heli is by the same author as the force-based
-fixed-wing: LM_Planes already applied real forces; MH6 is that muscle carried onto a rotor.)
+plaintext Enforce. (The force-based heli and the force-based fixed-wing share a mod family: LM_Planes
+already applied real forces, and MH6 carries the same approach onto a rotor.)
 
 ## What differs (all four)
 
-| Axis | RFFS (RedFalcon) | SIB (SIBNIC) | MH6 (Llama) | LM_Planes (Llama) |
+| Axis | RFFS | SIB | MH6 | LM_Planes |
 |---|---|---|---|---|
 | Aircraft type | Helicopter | Helicopter | Helicopter | Fixed-wing (+ 1 amphib car) |
 | Integration | **Kinematic** (`SetVelocity`) | **Kinematic** (simple); force (advanced, lost) | **Force** (`dBodyApplyForce`/`Torque`) | **Force** (aerodynamic) |
-| Source state | **Clean, complete** | Obfuscated; simple recovered, **advanced DRM-gated + integrator missing** | **Recovered clean & complete** (config.bin missing) | Clean (public workshop) |
+| Source state | **Clean, complete** | Obfuscated; simple readable, **advanced DRM-gated + integrator missing** | **Readable, clean & complete** (config.bin not readable) | Clean (public workshop) |
 | Flight model | High-kinematic: attitude-rotated lift vector, ground effect, ETL, speed+climb governors, aero drag, weathervaning | Low-kinematic: pitch attitude → scalar forward speed; bank → yaw; passive +0.25 m/s hover | **PD controller**: RPM-gated authority, ISA-density lift, translational lift, ground effect, per-axis quadratic drag, overspeed + climb limiters | Real aerodynamics: lift/drag/stall, ISA atmosphere, PID auto-stab, NaN-safe forces |
 | Collective / thrust | **Discrete 0-20 detent** × `c_thrust_rate` | `m_rotorTurn` ±2.8 momentary + passive baseline | Analog `m_ThrottleTarget` 0-1 → lift force `= mass·g·1.65 · collective · rotorSpeed² · density · …` | Throttle smoothed via Pawn move |
 | Attitude stability | Recovery mode (level-to-velocity) | Attitude auto-recenter | **PD**: proportional (memory-point tilt) + derivative (angular-rate damping) | PID auto-stabilization |
 | Autohover / autoland | none | Autohover **yes** (license-gated `AutopilotState` bot-map, DRM only) | **Autohover + autoland FSM** (kinematic `SetVelocity` assist on top of force flight) | n/a |
-| Config store | **Typed named JSON** (`MasterConfig` + `HeliConfig`, `get*` accessors, %-of-baseline) | Positional `map<string,float>` from `$profile` JSON | **Hard-coded const literals** (`:141-176`); config.bin not recovered | ~60 `Get*` methods per aircraft (config-as-code) |
+| Config store | **Typed named JSON** (`MasterConfig` + `HeliConfig`, `get*` accessors, %-of-baseline) | Positional `map<string,float>` from `$profile` JSON | **Hard-coded const literals** (`:141-176`); config.bin not readable | ~60 `Get*` methods per aircraft (config-as-code) |
 | Replication | Sync vars + `EOnFrame` client pump (animations and input sync only) | Sync vars + `EOnSimulate` mirror | **Custom Pawn** (`MH6OwnerState`/`MH6Move`, prediction + rewind) + 2 sync vars for toggles | **Custom Pawn** (`PlaneOwnerState`/`PlaneMove`, prediction + rewind) |
 | Atmosphere | none (fixed ceiling clamp) | none (hard 1500 m literal) | **ISA `StandardAtmosphere`** density falloff (shared `Heli_Core` helper) | ISA atmosphere |
-| HUD | **Full flight HUD** (airspeed/altimeter/collective/fuel/hydraulics/warning lights) | Config dials only | [UNVERIFIED] (config/model not recovered) | Cockpit dials |
-| Openness | Fully open | DRM (HTTP license check to `sibnic.info`) | Recovered clean (JAPM, no live DRM in the flight script) | Open |
+| HUD | **Full flight HUD** (airspeed/altimeter/collective/fuel/hydraulics/warning lights) | Config dials only | [UNVERIFIED] (config/model not readable) | Cockpit dials |
+| Openness | Fully open | DRM (HTTP license check to the mod's own server) | Readable (JAPM, no live DRM in the flight script) | Open |
 
 ## Recommendation — pick by feel, not by "what's possible"
 
@@ -181,9 +178,9 @@ Both are now buildable; the choice is a design decision:
 - For **fixed-wing**, **LM_Planes** remains the reference (real aerodynamics + custom Pawn). For
   **rotary-wing**, you now have both a kinematic reference (RFFS) and a force-based one (MH6).
 
-## Player-reported feel (empirical — secondhand, subjective)
+## Player-reported feel (subjective)
 
-Feel feedback relayed by a mod operator running these on a live server (2026-07-07). **Not measured** —
+How players on a live server describe each mod's handling. **Not measured** —
 treat as subjective player impression, not a benchmark. It is the "feel" axis the code cannot show, and
 it maps cleanly onto the verified mechanisms above:
 

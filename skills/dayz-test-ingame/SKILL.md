@@ -29,7 +29,7 @@ On Windows the jobs of the test loop are scripts in this repo. Use them; read th
 | Drive the running game through MCP verbs (spawn, capture, raycast, drive) | the `dayz-mcp-verify` skill |
 | A server-only boot on Linux, a headless client, a self-reporting test mod, a scripted test cell | this skill's references and assets |
 
-The knowledge pack this skill came from ran the whole loop from one PowerShell orchestrator, `dayz-test.ps1`, generated per mod from `templates/`. The templates are kept as they are for readers who want that route or need to read a finding that names its flags (`-Mode all`, `-Build`, `-PackOnly`, `-ExtraMods`, `-ServerWait`); the references say which repo skill each flag corresponds to.
+The whole loop can also run from one PowerShell orchestrator, `dayz-test.ps1`, generated per mod from `templates/`. The templates serve readers who want that route or need to read a finding that names its flags (`-Mode all`, `-Build`, `-PackOnly`, `-ExtraMods`, `-ServerWait`); the references say which repo skill each flag corresponds to.
 
 ## Rules that hold on every route
 
@@ -61,5 +61,5 @@ The knowledge pack this skill came from ran the whole loop from one PowerShell o
 | Path | What it is |
 |---|---|
 | `assets/autotest-mod/` | AutoTest, a small mod whose test cases run on server and client and print their results to the logs, so a run reports on itself. Source under `src/AutoTest/` (`config.cpp`, `scripts/3_Game/AutoTestRpc.c`, `scripts/4_World/AutoTestCases.c`, `scripts/4_World/AutoTestRunner.c`, `scripts/5_Mission/AutoTestMission.c`). How to build, load and read it: `references/linux-headless-client.md`, section 3. Keep it out of a release. |
-| `templates/dayz-test.ps1` | The knowledge pack's PowerShell orchestrator (build, deploy, launch modes, stop), kept for reference. `/dayz-build-pbo`, `/dayz-launch-test` and `/dayz-stop-test` are the supported route in this repo. The script needs `P:\`, DayZ Tools and the game and does not go through `/dayz-preflight` (it carries its own `Invoke-Preflight` check), so run `/dayz-preflight` first when you use it. |
+| `templates/dayz-test.ps1` | A PowerShell orchestrator that runs the whole loop for one mod (build, deploy, launch modes, stop). `/dayz-build-pbo`, `/dayz-launch-test` and `/dayz-stop-test` are the supported route in this repo. The script needs `P:\`, DayZ Tools and the game and does not go through `/dayz-preflight` (it carries its own `Invoke-Preflight` check), so run `/dayz-preflight` first when you use it. |
 | `templates/server.bat`, `templates/client.bat`, `templates/offline.bat` | Double-click wrappers around that orchestrator, one per launch mode. |

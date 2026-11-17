@@ -1,8 +1,8 @@
 # Expansion AI: state machine and combat patterns
 
-How DayZ Expansion's AI module (eAI) puts a unit to sleep, enters and leaves combat, builds its state machine and filters targets by field of view. Pattern IDs (PC-5, PC-9a, PC-11, PC-13) are the knowledge pack's labels.
+How DayZ Expansion's AI module (eAI) puts a unit to sleep, enters and leaves combat, builds its state machine and filters targets by field of view. The pattern IDs (PC-5, PC-9a, PC-11, PC-13) are the ones in the table in `SKILL.md`.
 
-Everything here describes third-party code: the DayZ Expansion scripts (`salutesh/DayZ-Expansion-Scripts`) at commit `8f75d554`. File paths are relative to that repository; none of it is on `P:\`. The knowledge pack reports every `path:line` below as confirmed against that commit; not yet checked for Agentic-Z. The patterns are described in our own words and no Expansion code is reproduced. Use them as ideas: code for a user's mod is written fresh against vanilla (`skills/_shared/ai/patrols-and-guards.md`).
+Everything here is third-party mod behaviour, not vanilla: the DayZ Expansion scripts at commit `8f75d554`. File paths are relative to the Expansion scripts repository; none of it is on `P:\`. Every `path:line` below refers to that commit and is not yet checked. The patterns are described in prose and no Expansion code is reproduced. Use them as ideas: code for a user's mod is written fresh against vanilla (`skills/_shared/ai/patrols-and-guards.md`).
 
 ## PC-5: the dormant state owns `DisableSimulation`
 

@@ -2,7 +2,7 @@
 
 What a custom infected class gets for behaviour by inheriting the vanilla chain, what its new model has to keep for the AI to work, why a bigger body does not reach further, and the 1.30 changes to infected behaviour.
 
-The model, rig and export side of a custom infected is the `/dayz-characters` skill, and how a creature class is tied to its animation graph is in `creature-animation.md`. This file is the behaviour side. Facts marked as community or project reports name where they come from and are not checked on `P:\`.
+The model, rig and export side of a custom infected is the `/dayz-characters` skill, and how a creature class is tied to its animation graph is in `creature-animation.md`. This file is the behaviour side. Facts that cannot be checked on `P:\` are marked as such.
 
 ## What a child class inherits
 
@@ -19,7 +19,7 @@ A class under `ZombieMaleBase` or `ZombieFemaleBase` that redeclares none of the
 
 To change how the creature sees, hears or alerts, add a template and point `aiAgentTemplate` at it (`behaviour-config.md`). To change what it does each step, use the command handler hooks (`creatures.md`).
 
-Inherit the infected chain, never an animal. This is the rule the PvZmoD mod's authors give for custom infected (a community source). The vanilla reason is visible in script: the infected commands, the mind states and `DayZInfectedType` belong to `DayZInfected` (`creatures.md`), and an `AnimalBase` child gets the animal ones instead.
+Inherit the infected chain, never an animal. The reason is visible in vanilla script: the infected commands, the mind states and `DayZInfectedType` belong to `DayZInfected` (`creatures.md`), and an `AnimalBase` child gets the animal ones instead.
 
 ## What the new model has to keep
 
@@ -30,8 +30,8 @@ Inherit the infected chain, never an animal. This is the rule the PvZmoD mod's a
 ## A bigger body does not reach further
 
 - Attack distances are fixed numbers, not read from the model. The chase attacks register at 2.4 m (`RegisterAttack` with `DayZInfectedAttackGroupType.CHASE` at `P:\scripts\3_game\entities\dayzinfectedtype.c:72`) and the fight attacks at 1.7 m and 1.4 m (`DayZInfectedAttackGroupType.FIGHT` at `P:\scripts\3_game\entities\dayzinfectedtype.c:80` and `:86`). Config adds `minDistance` and `distance` per attack under `AttackActions`. A larger mesh keeps these numbers unless the mod changes them.
-- Scaling at run time is not an option. `SetScale` exists on every entity (`P:\scripts\1_core\proto\enentity.c:448`), but Bohemia's feedback tracker reports it broken on entities (T140705) and community tests report that the collision box does not follow it. Size is baked into the mesh by the art side.
-- A baked oversize also deforms under the inherited animations, because the engine binds against a body of vanilla size. On the LFInfectedBig project a mesh at about 1.27 times deformed grossly and had to be scaled back (a project measurement in game).
+- Scaling at run time is not an option. `SetScale` exists on every entity (`P:\scripts\1_core\proto\enentity.c:448`), but it does not work reliably on entities and the collision box does not follow it (not checkable on `P:\`). Size is baked into the mesh by the art side.
+- A baked oversize also deforms under the inherited animations, because the engine binds against a body of vanilla size. A mesh at about 1.27 times vanilla size deformed grossly and had to be scaled back (measured in game).
 - Check in game for any body that is not vanilla sized: foot contact, door clipping, melee and hit range, and whether it still paths through doorways.
 
 ## 1.30: new classes, a new mind state, new attacks
@@ -40,8 +40,8 @@ Inherit the infected chain, never an animal. This is the rule the PvZmoD mod's a
 
 | Class | Parent | Template | Where |
 |---|---|---|---|
-| `ZmbF_SoldierNormal_Base` | `ZombieFemaleBase` | `InfectedMSoldier` (`aiAgentTemplate` at `:11123`) | `P:\DZ\characters\zombies\config.cpp:11119` |
-| `ZmbF_ArmyOfficer` | `ZmbF_SoldierNormal_Base` | `InfectedSoldier_Officer` (`aiAgentTemplate` at `:11358`) | `P:\DZ\characters\zombies\config.cpp:11354` |
+| `ZmbF_SoldierNormal_Base` | `ZombieFemaleBase` | `InfectedMSoldier` (`aiAgentTemplate` at `P:\DZ\characters\zombies\config.cpp:11123`) | `P:\DZ\characters\zombies\config.cpp:11119` |
+| `ZmbF_ArmyOfficer` | `ZmbF_SoldierNormal_Base` | `InfectedSoldier_Officer` (`aiAgentTemplate` at `P:\DZ\characters\zombies\config.cpp:11358`) | `P:\DZ\characters\zombies\config.cpp:11354` |
 | `ZmbF_eastSoldier_Base` | `ZmbF_usSoldier_normal_Base` | Inherited from its parent | `P:\DZ\characters\zombies\config.cpp:11577` |
 
 In script, `ZmbF_SoldierNormal_Base` and `ZmbF_eastSoldier_Base` extend `ZombieFemaleBase` and return true from `IsZombieMilitary()` (`P:\scripts\4_world\entities\creatures\infected\zombiefemalebase.c:139` and `:147`). `IsZombieMilitary()` is declared on `EntityAI` (`P:\scripts\3_game\entities\entityai.c:744`) and returns false on `ZombieBase` (`P:\scripts\4_world\entities\creatures\infected\zombiebase.c:113`). A custom military infected gets the flag by giving its own script class the same override.
@@ -52,10 +52,10 @@ The Nasdara classes are plain children of the sex bases: `ZmbM_takiCitizenUrbanA
 
 **Heavy running attacks.** Two new clips ship in `P:\DZ\anims\anm\infected\attacks\erected\`: `z_erc_run_attackl_heavy.anm` and `z_erc_run_attackr_heavy.anm`. A mod that replaces the infected combat graph should expect them.
 
-**The animation graph is split.** `graphname` still names `infected.agr` (`P:\DZ\characters\zombies\config.cpp:74`), which is now an index over three subgraph files, `Locomotion.agf`, `Combat.agf` and `Interaction.agf` (`GraphFilesResourceNames` at `P:\DZ\anims\workspaces\infected\infected_main\infected.agr:430`). A custom infected graph made for 1.29 has to be opened and saved again in Workbench 1.30 (Bohemia's changelog advice; the converter is noted there as not tested).
+**The animation graph is split.** `graphname` still names `infected.agr` (`P:\DZ\characters\zombies\config.cpp:74`), which is now an index over three subgraph files, `Locomotion.agf`, `Combat.agf` and `Interaction.agf` (`GraphFilesResourceNames` at `P:\DZ\anims\workspaces\infected\infected_main\infected.agr:430`). A custom infected graph made for 1.29 has to be opened and saved again in Workbench 1.30; that conversion is not tested and not checkable on `P:\`.
 
 ## Limits to tell the user
 
-- **One animation graph mod at a time.** Reported by the community and the source project, not checkable on `P:\`: loading two mods that change player or creature animation graphs crashes the client or server. A custom infected that inherits the vanilla `enfanimsys` is not affected; one that ships its own graph conflicts with every other animation mod on the server.
+- **One animation graph mod at a time.** Not checkable on `P:\`: loading two mods that change player or creature animation graphs crashes the client or server. A custom infected that inherits the vanilla `enfanimsys` is not affected; one that ships its own graph conflicts with every other animation mod on the server.
 - **No ragdoll file on infected.** The infected block sets no `ragdoll` key (`enfanimsys` at `P:\DZ\characters\zombies\config.cpp:71` to `:78`); survivors bind one in 1.30 (`ragdoll` at `P:\DZ\characters\data\config.cpp:160`).
 - **Spawning** goes through the server's Central Economy files or a scripted spawner (`spawning-and-performance.md`).

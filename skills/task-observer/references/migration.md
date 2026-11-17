@@ -1,18 +1,17 @@
-# Migrating a pre-3.0 single-file log
+# Migrating a legacy single-file log
 
-Upgrade-only. Versions before 3.0.0 kept every observation in one file,
-`skill-observations/log.md`, with `### Observation N:` headers. Version
-3.0.0 stores one file per observation under
+Upgrade-only. The legacy layout kept every observation in one file,
+`skill-observations/log.md`, with `### Observation N:` headers. The
+current layout stores one file per observation under
 `skill-observations/observation-log/`. This reference converts the former
 into the latter, once, with the conversion script `migrate-log.py`. Fresh
-3.0 installs never need it; the Session Start Protocol loads it only when
+installs never need it; the Session Start Protocol loads it only when
 it finds a `log.md` and no `observation-log/` directory.
 
-**The script is not bundled with this skill.** It ships with the upstream
-project, whose user documentation is linked in `environments.md`. Get it
-from there and pass its path where the commands below say
-`<path-to>/migrate-log.py`. Without the script, HOLD: tell the user the
-legacy file needs it, and do not split `log.md` by hand.
+**The script is not bundled with this skill.** If the user has it, pass
+its path where the commands below say `<path-to>/migrate-log.py`. Without
+the script, HOLD: tell the user the legacy file needs it, and do not
+split `log.md` by hand.
 
 The conversion is a script rather than a procedure for one reason: a
 script can be run in check-only mode over every log you have and its
@@ -144,6 +143,6 @@ Run from the workspace folder. Python 3.8+, no dependencies.
 
 `mv skill-observations/log.md.migrated skill-observations/log.md` and
 reinstall the previous skill version. The per-file directory can stay; a
-pre-3.0 skill ignores it. Anything logged after the cutover exists only
+single-file version of the skill ignores it. Anything logged after the cutover exists only
 as files, so append those to `log.md` by hand if you roll back after
 real use.

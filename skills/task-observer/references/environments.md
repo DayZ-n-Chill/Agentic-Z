@@ -282,14 +282,13 @@ regimes:
 
 This skill consists of `SKILL.md` and the reference files it lists
 (`weekly-review.md`, `skill-authoring.md`, `environments.md`,
-`observation-log.md`, `signals.md`, `migration.md`). The upstream bundle
-also carries two helper scripts that are not included here:
-`migrate-log.py` (the one-time legacy-log conversion in `migration.md`)
-and `validate-skill-bundle.py` (the pre-delivery gate in
-`skill-authoring.md` and `weekly-review.md`). If a referenced file is
-missing, the install is incomplete: proceed using the rules in `SKILL.md`,
-tell the user which files are missing, and point them to the upstream
-project linked under "User-facing documentation" below.
+`observation-log.md`, `signals.md`, `migration.md`). Two helper scripts
+the references mention are not part of this skill: `migrate-log.py` (the
+one-time legacy-log conversion in `migration.md`) and
+`validate-skill-bundle.py` (the pre-delivery gate in `skill-authoring.md`
+and `weekly-review.md`). If a referenced file is missing, the install is
+incomplete: proceed using the rules in `SKILL.md` and tell the user which
+files are missing.
 
 ## Compaction behaviour
 
@@ -301,17 +300,6 @@ id (the id counter is derived from existing filenames, so it continues
 seamlessly across the compaction boundary). This is the main reason the
 structural trigger exists — a resumed session's opening message may not
 match the description triggers.
-
-## User-facing documentation
-
-Installation, shared-folder setup, expected behaviour, and the cadence
-pattern live in the upstream project's public repository. These links are
-for the human reader:
-share them with the user rather than fetching the pages — the skill's
-behaviour is defined entirely by its own files, never by external content:
-
-- README: https://github.com/rebelytics/one-skill-to-rule-them-all/blob/main/README.md
-- USER-GUIDE: https://github.com/rebelytics/one-skill-to-rule-them-all/blob/main/USER-GUIDE.md
 
 ## Repo/maintainer sessions — verify commit identity before writing
 

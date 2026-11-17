@@ -59,7 +59,7 @@ The weight coefficient is `GetWeightCoef()`:
 | `Motorbike_01` | 0.5 | `GetWeightCoef`, `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:87` |
 | `Motorbike_02` | 0.75 | `GetWeightCoef`, `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_02.c:77` |
 
-The source notes passed on an unchecked figure of 0.25 for motorbikes; `P:\` shows 0.5 and 0.75.
+No motorbike uses 0.25; `P:\` shows 0.5 and 0.75.
 
 ## Oil pit
 
@@ -100,7 +100,7 @@ For a custom area, inherit `OilPitArea` or copy its trigger and net sync pattern
 
 ## Nasdara (Badlands DLC)
 
-The scripts for the world are on `P:\` (`P:\scripts\4_world\classes\worlds\nasdara.c:49` holds its monthly maximum temperatures, 38.4 in July). Its data PBOs are not. The rest of this section is from the source notes' reading of the game's own files on builds 1.30.164014 and 1.30.164200, and is not checked on `P:\`:
+The scripts for the world are on `P:\` (`P:\scripts\4_world\classes\worlds\nasdara.c:49` holds its monthly maximum temperatures, 38.4 in July). Its data PBOs are not. The rest of this section describes the game's own files on builds 1.30.164014 and 1.30.164200 and is not checked on `P:\`:
 
 - The mod class is `CfgMods.nasdara` with `appId = 3816030`; the data addon's internal prefix is `DZ\data_takistan`.
 - On 1.30.164014, `data_nasdara.pbo` held 6 files: its config, `basicdefines.hpp`, the AI config and an impact test model with its `.bisurf` and `.rvmat`. There was no `.wrp` and no navmesh.

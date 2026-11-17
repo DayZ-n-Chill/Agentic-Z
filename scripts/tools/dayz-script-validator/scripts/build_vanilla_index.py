@@ -3,10 +3,9 @@
 The index is a derived artifact of Bohemia's vanilla tree and is not
 committed. Detectors consume it through shared/vanilla_reference.py.
 
-Parser lineage: reference/api_index.py (packctl). This generator reuses its
-class/method walk (comment-preserving strip, class stack, brace depth) and
-extends the regexes for Enforce cases that file does not cover — see
-PARSER_GAPS_VS_API_INDEX.
+The parser walks classes and methods line by line (comments and strings
+stripped with line numbers kept, a class stack, brace depth). The Enforce
+cases its regexes are written for are listed in PARSER_COVERAGE.
 """
 
 from __future__ import annotations
@@ -51,9 +50,9 @@ CONSOLE_MACROS = frozenset(
 # only under this macro are not part of any game binary.
 NEVER_COMPILED_MACROS = frozenset({"DOXYGEN"})
 
-# api_index.CLASS_PATTERN allows only `(?:modded|inherited)\s+)?class`.
-# Vanilla also has `sealed class` (Contact, PhysicsWorld) and proto/native
-# prefixes on engine proto classes.
+# `modded class` and `inherited class` are not the only headers: vanilla
+# also has `sealed class` (Contact, PhysicsWorld) and proto/native prefixes
+# on engine proto classes.
 CLASS_HEADER_RE = re.compile(
     r"^\s*(?:(?:modded|inherited|sealed|proto|native)\s+)*"
     r"class\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)"
@@ -61,8 +60,8 @@ CLASS_HEADER_RE = re.compile(
     r"(?:\s*:\s*(?P<base_colon>\w+)|\s+extends\s+(?P<base_ext>\w+))?"
 )
 
-# api_index.METHOD_PATTERN misses `external`, `volatile`, `owned`, `ref`.
-# Those appear on proto declarations (`proto external`, `proto owned string`).
+# The modifiers include `external`, `volatile`, `owned` and `ref`, which
+# appear on proto declarations (`proto external`, `proto owned string`).
 METHOD_PATTERN = re.compile(
     r"^\s*(?:(?:override|static|proto|native|protected|private|const|"
     r"final|event|external|volatile|owned|ref)\s+)*"
@@ -103,15 +102,14 @@ CONTROL_FLOW_START = (
     "default",
 )
 
-PARSER_GAPS_VS_API_INDEX = [
-    "sealed class (Contact, PhysicsWorld) — api_index CLASS_PATTERN "
-    "only allows modded|inherited",
+PARSER_COVERAGE = [
+    "sealed class (Contact, PhysicsWorld) is read as a class header, "
+    "beside modded and inherited",
     "proto/native prefixes on class headers",
-    "method modifiers external, volatile, owned, ref — api_index "
-    "METHOD_PATTERN misses proto external / proto owned string / "
-    "proto volatile",
+    "method modifiers external, volatile, owned, ref are read: proto "
+    "external / proto owned string / proto volatile",
     "destructors (void ~Name) are skipped; they are not override targets",
-    "multiline signatures are joined (api_index is single-line only)",
+    "multiline signatures are joined",
 ]
 
 
@@ -606,7 +604,7 @@ def build_index_document(vanilla_root):
             "omitted_override_params": override_omitted,
             "omitted_platform_gated_multi_owner": omitted_multi_owner,
             "read_errors": read_errors,
-            "parser_gaps_vs_api_index": PARSER_GAPS_VS_API_INDEX,
+            "parser_coverage": PARSER_COVERAGE,
             "console_macros": sorted(CONSOLE_MACROS),
         },
     }

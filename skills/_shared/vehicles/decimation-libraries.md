@@ -231,7 +231,7 @@ wrong — two face-vertices that share a position may need different UVs.
 - **No `__version__` attribute** on the top-level module. Don't rely on it
   for feature detection.
 - **`MeshSet.filter_list()` does not exist** — use `dir(ms)` to find filters
-  or browse `pymeshlab.FilterFunctionList`.
+  or call `pymeshlab.filter_list()`.
 
 ## The Blender path (for reference)
 

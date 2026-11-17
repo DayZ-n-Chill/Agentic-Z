@@ -2,10 +2,10 @@
 
 How the `style` attribute of a layout widget resolves, the format and state names of a `.styles` file, the 9-slice items each widget type expects, which vanilla styles exist, and the recipe for a mod's own styles. `style` is the third most common layout attribute.
 
-Added 2026-07-04 from a full parse of `P:\gui\looknfeel\dayzwidgets.styles` (4,462 lines in 1.29; 4,596 lines in 1.30, 28 widget
+Built from a full parse of `P:\gui\looknfeel\dayzwidgets.styles` (4,462 lines in 1.29; 4,596 lines in 1.30, 28 widget
 types, 130+ styles) cross-checked against all vanilla `.layout` files, plus the LBmaster_Core
 shipped-mod example (third-party, not checked on `P:\`) and the `enwidgets.c` protos. Every count was reproduced by a second,
-independent pass by the source author. The counts come from his 1.29 data; the `path:line` citations were re-read on a `P:\` holding 1.30,
+independent pass. The counts come from 1.29 data unless a line says 1.30; the `path:line` citations were read on a `P:\` holding 1.30,
 and the lines given are the 1.30 lines.
 
 ## 1. How a layout selects a style
@@ -16,7 +16,7 @@ and the lines given are the 1.30 lines.
   `Class` suffix**: `TextWidgetClass` → `<Widget Name="TextWidget">`. Under this mapping **all 3,134
   vanilla refs resolve — zero dangling** (mechanism corroborated by the perfect data-side
   correspondence; not traced in engine binaries).
-- **Style names are SCOPED to their widget type**: `TextWidget` has `Normal`/`Bold` while
+- **Style names are scoped to their widget type**: `TextWidget` has `Normal`/`Bold` while
   MultilineText/RichText/Html use `DayZNormal`/`DayZBold` — the same name can mean different things
   under different widget types, and a style must be declared under every widget type that uses it.
 - **Default when `style` is omitted: unknown offline** `[verify in-game]`. 4,000+ vanilla widgets
@@ -87,7 +87,7 @@ Extensions:
 - **XComboBoxWidget** = 9 + `ArrowLeft` + `ArrowRight` (11).
 - **SmartPanelWidget** = 9 + `Overlay` (10).
 - **CheckBoxWidget / ThreeStateCheckboxWidget** = a single Item named `CheckBox`.
-- **MultilineEditBoxWidget** = a single Item named `Highlight` (text-selection highlight). NOTE: the
+- **MultilineEditBoxWidget** = a single Item named `Highlight` (text-selection highlight). The
   single-line EditBoxWidget style has no Highlight item — plain 9-slice border only.
 - **Listbox family** (GenericListbox/UniversalListbox/ServerBrowser/TextListbox) = identical 31-item
   union: 9-slice with `*Center` edge naming (`TopCenter/BottomCenter/LeftCenter/RightCenter`) +
@@ -109,8 +109,8 @@ Also style-driven for free: ButtonWidget/Default overlays
 `alpha_64` on Disabled (`:1650`) — **picking `style Default` on a button gives
 working press/focus/disabled visual feedback with zero script**. Its `Normal` state has every
 slice empty (`P:\gui\looknfeel\dayzwidgets.styles:1598-1608`), so at rest it draws no body. A button declared with a `color` and no
-`style` drew no fill in game, while the same frame's `style Colorable` button did (SimpleGroup,
-2026-09-28; added 2026-10-03).
+`style` drew no fill in game, while the same frame's `style Colorable` button did (measured in game
+2026-09-28).
 
 ## 6. Style inventory (what exists to pick from — most-used names)
 
@@ -173,14 +173,13 @@ Where the HUD uses it, read on a `P:\` holding 1.30.164014: `style ActionWidget`
 `ActionTargetsCursorWidget` (`P:\gui\layouts\day_z_hud.layout:2271`, style at `:2287`) and `ItemActions` (`:3844`, style at `:3859`).
 The five interaction widgets inside (`item` at `:2294`, `interact` `:2477`, `continuous_interact` `:2755`,
 `single` `:3033`, `continuous` `:3249`) are `PanelWidgetClass` with no `style` line of their own.
-The source of this file put the style on those five panels (lines 2424 and 2617 of the file he read) and said
-it replaces the 1.29 pattern, where the interaction prompts were `ImageWidgetClass` loading `linear_gradient.edds` or
-`card_drop.edds`. The 1.29 half cannot be read on a 1.30 `P:\`; the 1.30 half is corrected above.
+In 1.29 the interaction prompts were `ImageWidgetClass` widgets loading `linear_gradient.edds` or
+`card_drop.edds`; that half cannot be read on a 1.30 `P:\`.
 
 ## 7. Custom-style recipe (production-proven, LBmaster_Core)
 
 1. **File** `<ModDir>/gui/styles/<name>.styles` — one `<Widget>` block per target widget type (the
-   style must be declared separately under each type it will be used on; LBmaster declares
+   style must be declared separately under each type it will be used on; LBmaster_Core declares
    `LB_Clean_outline` twice: under PanelWidget and GridSpacerWidget, `lbstyles.styles:2-27/28-53`).
    The outline-only trick: Normal state sets the 8 border slices to `Image="pixel"` and
    `Center=""`.

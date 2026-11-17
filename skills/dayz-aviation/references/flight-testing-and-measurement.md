@@ -21,7 +21,7 @@ The numbers below were measured in game on a scripted `CarScript` helicopter tha
 
 Before using any existing probe to judge "smooth", "no stutter" or "no lag", and before freezing a baseline computed from it, open the probe's emission site and answer three questions.
 
-1. **What is its emission period?** A probe written to measure a constant (an offset, a drift, a steady residual) is normally throttled to seconds. LFHeli's `[LFHELI-REF]` emits when `refProbeNow - m_RefProbeLastPeriodicLog >= 2.0` (`LFHeliCore\scripts\4_world\LFHeli\LFHeli_Base.c:2203`), which is 0.5 Hz, with a cap of 10 lines per 1 s window (`:2205`).
+1. **What is its emission period?** A probe written to measure a constant (an offset, a drift, a steady residual) is normally throttled to seconds. The reference state probe on the measured helicopter emitted when `refProbeNow - m_RefProbeLastPeriodicLog >= 2.0`, which is 0.5 Hz, with a cap of 10 lines per 1 s window.
 2. **What threshold makes it fire out of turn?** That probe broke its period only when the distance between the reference state and the body exceeded 6.0 m. The stutters under investigation measured 2.3 to 3.9 m, so they pass under the trigger and never fire the probe.
 3. **Can it resolve the thing being judged at all?** A jolt that lasts one frame, sampled every 2 s, is invisible by construction. The same caveat holds for a 5 Hz probe: it does not show whether a change happens in one frame or several.
 

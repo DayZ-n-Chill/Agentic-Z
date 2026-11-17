@@ -8,7 +8,7 @@ Two ways the inventory preview of a door, hood or other part renders empty: the 
 
 - Preview view 0 is documented as `boundingbox_min + boundingbox_max + invView` (`P:\scripts\3_game\gameplay.c:293`).
 - The inventory icon calls `SetModelOrientation("0 0 0")` and then `SetView` with `GetViewIndex` (`P:\scripts\5_mission\gui\inventorynew\containeditems\icon.c:1385-1386`), and `GetViewIndex` looks for an `invView2` memory point (`P:\scripts\3_game\entities\entityai.c:3769-3771`).
-- `Hatchback_02_Door_1_1` sets `rotationFlags=8` (`P:\DZ\vehicles\wheeled\config.cpp:9029`), `Hatchback_02_Door_2_1` sets `rotationFlags=4` (`P:\DZ\vehicles\wheeled\config.cpp:9153`), `Hatchback_02_Door_1_2` sets `rotationFlags=8` (`P:\DZ\vehicles\wheeled\config.cpp:9164`) and `Hatchback_02_Door_2_2` sets `rotationFlags=4` (`P:\DZ\vehicles\wheeled\config.cpp:9288`). `Truck_01_Door_2_1` overrides its left-hand parent only to set `rotationFlags=4` (`P:\DZ\vehicles\wheeled\config.cpp:18348`).
+- `Hatchback_02_Door_1_1` sets `rotationFlags=8` (`P:\DZ\vehicles\wheeled\config.cpp:9029`), `Hatchback_02_Door_2_1` sets `rotationFlags=4` (`P:\DZ\vehicles\wheeled\config.cpp:9153`), `Hatchback_02_Door_1_2` sets `rotationFlags=8` (`P:\DZ\vehicles\wheeled\config.cpp:9164`) and `Hatchback_02_Door_2_2` sets `rotationFlags=4` (`P:\DZ\vehicles\wheeled\config.cpp:9288`). `Truck_01_Door_2_1` inherits from the left-hand `Truck_01_Door_1_1` and overrides `rotationFlags` to `4` (`P:\DZ\vehicles\wheeled\config.cpp:18348`).
 
 ## Two ways a part preview renders empty
 
@@ -16,7 +16,7 @@ Two ways the inventory preview of a door, hood or other part renders empty: the 
 
 Left-hand doors take `8`, right-hand doors take `4`. Vanilla applies this in every family —
 `Hatchback_02_Door_1_1`/`1_2` use 8 while `2_1`/`2_2` use 4 (`P:\DZ\vehicles\wheeled\config.cpp:9029`,
-`:9153`, `:9164`, `:9288`), and `Truck_01_Door_2_1` overrides its left-hand parent purely to set 4
+`:9153`, `:9164`, `:9288`), and `Truck_01_Door_2_1` inherits from its left-hand parent and overrides the value to 4
 (`:18348`). A mirrored door that inherits the left-hand value shows a **blank item-inspect preview**
 while its opposite renders normally, with everything else identical: same LOD table, same named
 properties, same bounding box, same distance to origin, same selections, same winding. Symmetric

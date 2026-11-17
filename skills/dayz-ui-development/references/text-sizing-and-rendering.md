@@ -22,7 +22,7 @@ Two different claims are easy to mix up here, and only one of them comes from co
 - The 2026-08-19 census in `layout-format.md` shows that the `wrap` attribute **is written** on `TextWidgetClass` (4 times) and on `RichTextWidgetClass` (236 times) in an 819 layout corpus. A count cannot show whether the engine **honors** it: four occurrences are just as consistent with four layouts setting an attribute that does nothing.
 - An in game probe settled it on 2026-08-22: **it does not.**
 
-The probe: DayZDiag 1.29.163709, a live client, one `.layout` with three widgets side by side. All three had the same box (260x150, `hexactsize` and `vexactsize`), the same `text_proportion 0.14` and the same string of twelve Spanish number words, `UNO DOS TRES CUATRO CINCO SEIS SIETE OCHO NUEVE DIEZ ONCE DOCE` (kept as flown, since the clip point below is quoted from it).
+The probe: DayZDiag 1.29.163709, a live client, one `.layout` with three widgets side by side. All three had the same box (260x150, `hexactsize` and `vexactsize`), the same `text_proportion 0.14` and the same string of twelve Spanish number words, `UNO DOS TRES CUATRO CINCO SEIS SIETE OCHO NUEVE DIEZ ONCE DOCE` (kept as tested, since the clip point below is quoted from it).
 
 | Widget class | Declares | Draws |
 |---|---|---|

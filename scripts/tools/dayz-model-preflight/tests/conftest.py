@@ -10,9 +10,10 @@ for path in (TOOL_ROOT, PY3D_ROOT):
         sys.path.insert(0, value)
 
 # A different py3d may be installed in site-packages, and a test collected
-# earlier in the same run may already have imported it (the upstream release
-# lacks the fork's API, for example P3D.save and LOD.new_selection). Put the
-# repo copy first and drop a py3d that was imported from anywhere else.
+# earlier in the same run may already have loaded it (the py3d package on
+# PyPI lacks the API these tests need, for example P3D.save and
+# LOD.new_selection). Put the repo copy first and drop a py3d that was
+# loaded from anywhere else.
 _py3d_root = PY3D_ROOT.resolve()
 _value = str(PY3D_ROOT)
 if sys.path[0] != _value:

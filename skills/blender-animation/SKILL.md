@@ -8,7 +8,7 @@ description: "Authors motion in the user's live Blender through the Blender MCP 
 
 # Blender animation (through MCP)
 
-Author animations in the user's live Blender through the Blender MCP server's `execute_blender_code` tool (`mcp__Blender__execute_blender_code` when the server is registered as `Blender`). Everything happens through the `bpy` data API: no UI, no mouse. The API claims in this skill were either run live against Blender 5.1.1 (2026-07-09) or carry a doc or source citation in the references. Probe the version before you start (see "Preflight"); do not assume it, and do not target a leftover Blender folder that has no executable in it.
+Author animations in the user's live Blender through the Blender MCP server's `execute_blender_code` tool (`mcp__Blender__execute_blender_code` when the server is registered as `Blender`). Everything happens through the `bpy` data API: no UI, no mouse. The API claims in this skill were either run live against Blender 5.1.1 (2026-07-09) or name the Blender API reference or manual entry they rest on in the references. Probe the version before you start (see "Preflight"); do not assume it, and do not target a leftover Blender folder that has no executable in it.
 
 This skill runs no script of its own, so it has no preflight gate. It needs Blender and the Blender MCP server, not `P:\` or DayZ Tools. For work that ends in DayZ, also follow `skills/_shared/dayz-conventions.md`. The deep material lives in `<skill-dir>\references\`; the table under "What to read" says which file answers which question.
 
@@ -132,7 +132,7 @@ These rules were checked on 2026-07-09; the detail, the tool behaviour behind th
   - Hold actions ended by a timer (unjam and the like) need `LoopStart` and `LoopEnd` notetracks (format `Name||-1`), a loop at least as long as the engine timer (about 6 s for the 5 s unjam), and the moving part settled into the outro pose well before `LoopEnd` (the micro-jerk lesson).
   - `Weapon_*` bones: correct values, or drop them entirely. Placeholder values stretch the weapon mesh. Never key scale (it is dropped at binarize).
   - 30 fps is the pipeline default. Bone names must match `OFP2_ManSkeleton` exactly.
-- **This skill stops at the `.txa` plus a note of the target `.anm` name.** Workbench "Register & Import", the `.asi` and config wiring, the PBO build and the in-game test belong to `dayz-animation-pipeline` and the user. Never claim to have run Workbench. Mention DayZATool as run only when you ran it and read the file it wrote; on a Windows host it runs headless (`skills/dayz-animation-pipeline/references/skeletal-anm-enfusion.md`, 2026-09-28).
+- **This skill stops at the `.txa` plus a note of the target `.anm` name.** Workbench "Register & Import", the `.asi` and config wiring, the PBO build and the in-game test belong to `dayz-animation-pipeline` and the user. Never claim to have run Workbench. Mention DayZATool as run only when you ran it and read the file it wrote; on a Windows host it runs headless (`skills/dayz-animation-pipeline/references/skeletal-anm-enfusion.md`, 2026-09-29).
 
 ## Before you deliver
 

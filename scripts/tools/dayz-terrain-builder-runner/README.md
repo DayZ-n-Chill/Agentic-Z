@@ -5,19 +5,18 @@ only: menu commands through `PostMessage(WM_COMMAND)`, file dialogs through
 `WM_SETTEXT`. No `SendInput`, no `SetCursorPos`, no `SetForegroundWindow`: the
 desktop stays usable while it runs. Windows only.
 
-**Experimental.** (claim: CLAIM-TB-WIN32-RUNNER-ENVELOPE) Verified on
-2026-10-03, on Spanish Windows, on an instance this runner launched: menu
-commands and the standard Windows file dialogs, with Terrain Builder never
-taking the focus. **Not verified:** Generate Layers, a real import, an
-end-to-end WRP export. Source: pipeline inbox fb-20261003-203108-9821, from the
-Baltic 12 km terrain project; level `runtime_verified` in Terrain Builder
-(DayZ Tools), not in the game, and not re-run for this Pack: the tests here
+**Experimental.** Verified on 2026-10-03, on Spanish Windows, on an instance
+this runner launched: menu commands and the standard Windows file dialogs,
+with Terrain Builder never taking the focus. **Not verified:** Generate
+Layers, a real import, an end-to-end WRP export. This was measured in Terrain
+Builder (DayZ Tools), not in the game. The tests here do not repeat it: they
 use a fake `user32` and never start Terrain Builder.
 
-Why it can work without focus, as the source states it: Terrain Builder is a
-wxWidgets 2.8.12 program, a 32-bit PE with the large-address-aware flag, and
-`wxFrame::HandleCommand` processes `WM_COMMAND` without a focus check
-(wxWidgets 2.8.12, `src/msw/frame.cpp:951-979`; not re-read for this Pack).
+Why it can work without focus: Terrain Builder is a wxWidgets 2.8.12 program,
+a 32-bit PE with the large-address-aware flag, and `wxFrame::HandleCommand`
+processes `WM_COMMAND` without a focus check (wxWidgets 2.8.12 source,
+`src/msw/frame.cpp:951-979`; not yet checked against the wxWidgets source or
+the executable).
 
 ## Before a run
 
@@ -25,8 +24,8 @@ wxWidgets 2.8.12 program, a 32-bit PE with the large-address-aware flag, and
   entry under a prefix and cancels what opens: whatever an entry does, it
   does.
 - **Back up `TerrainBuilder.opt`, `GUILayout.opt` and `Proj.vdat`**, and
-  restore them after: Terrain Builder rewrites them on exit. The source's notes
-  put the `.opt` files in DayZ Tools' `Bin/TerrainBuilder`.
+  restore them after: Terrain Builder rewrites them on exit. The `.opt` files
+  are in DayZ Tools' `Bin/TerrainBuilder` (not yet checked on an install).
 - Close the instance with `close`, then remove the state file (or point
   `TBRUNNER_STATE` at a new one): `close` does not clear the recorded pid, and
   `launch` refuses while one is recorded.
@@ -73,8 +72,7 @@ Output is JSON (or, for `menu`, one line per entry) on stdout.
 
 ## Gotchas
 
-(claim: CLAIM-TB-WIN32-RUNNER-GOTCHAS) Measured on 2026-10-03 in the source
-project, as the same inbox ticket reports them:
+Measured in Terrain Builder (DayZ Tools) on 2026-10-03:
 
 - **Menu ids are dynamic,** and wxWidgets updates a menu's enabled state only on
   `WM_INITMENUPOPUP`: refresh before every command. `command`, `save_loop` and
@@ -96,16 +94,16 @@ project, as the same inbox ticket reports them:
 
 - The Win32 functions are bound when a command runs, so the module imports on
   any OS, and every command refuses off Windows.
-- The executable comes from `--tb-exe` or `TBRUNNER_TB_EXE`; the source had a
-  fixed install path.
-- Asserts became explicit errors (exit 1), and so did the crashes around them:
+- The executable comes from `--tb-exe` or `TBRUNNER_TB_EXE`; no install path
+  is built in.
+- Every refusal is an explicit error (exit 1), not an assert or a traceback:
   no state, log or frame recorded, a file that cannot be read, a bad
   `wait_log` pattern.
-- The same ten subcommands, read with argparse. `press_label` is a helper used
-  by `probe`, not a subcommand, as in the source's dispatch.
-- A menu item that `GetMenuItemInfoW` cannot read stopped the source with a
-  `KeyError`; here `menu` prints it with its error and exits 0, and `probe`
-  leaves it out of the leaves it posts.
+- Ten subcommands, read with argparse. `press_label` is a helper used by
+  `probe`, not a subcommand.
+- A menu item that `GetMenuItemInfoW` cannot read does not stop the run:
+  `menu` prints it with its error and exits 0, and `probe` leaves it out of
+  the leaves it posts.
 
 ## Tests
 

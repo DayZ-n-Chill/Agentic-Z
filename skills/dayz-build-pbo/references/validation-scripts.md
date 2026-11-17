@@ -848,7 +848,7 @@ class P3dLodChecker:
                     self.errors.append({
                         'file': str(p3d_file.relative_to(self.addon_root)),
                         'lod': lod_idx,
-                        'message': 'Memory LOD missing ce_center point (required for physics)',
+                        'message': 'Memory LOD missing ce_center point (the centre used for actions and the vicinity list)',
                         'severity': 'critical'
                     })
 

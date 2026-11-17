@@ -2,7 +2,7 @@
 
 A DXT1 `.paa` writer of about 200 lines that needs only Pillow and NumPy, the file layout it writes, how to check its output, and what it cannot do.
 
-> Status: tool notes from the author's own pipeline. The encoder was not run here, and its output was not loaded in the game here. On a machine with DayZ Tools, `/dayz-pack-texture` (ImageToPAA) is this repo's normal route and handles every texture suffix (the suffix and size rules are in `skills/_shared/textures/suffixes-and-sizes.md`); use this encoder on machines without Bohemia's tools (Linux, macOS, a clean Windows), for opaque `_co` textures only. The header layout it writes was compared with vanilla files on `P:\` (anchors below).
+> Status: the encoder below was run and its output read back with this repo's PAA decoder (see Verification); its output is not yet checked in game, and neither is what the engine does with a file that lacks a tag or the terminator. On a machine with DayZ Tools, `/dayz-pack-texture` (ImageToPAA) is this repo's normal route and handles every texture suffix (the suffix and size rules are in `skills/_shared/textures/suffixes-and-sizes.md`); use this encoder on machines without Bohemia's tools (Linux, macOS, a clean Windows), for opaque `_co` textures only. The header layout it writes was compared with vanilla files on `P:\` (anchors below).
 
 ## Vanilla anchors checked on `P:\`
 
@@ -11,28 +11,27 @@ A DXT1 `.paa` writer of about 200 lines that needs only Pillow and NumPy, the fi
 
 ## Why this exists
 
-The DayZ engine only reads `.paa` textures. Historically the author's skill told the
-user to convert the generated PNGs themselves with TexView or Pal2PacE. That
-handoff broke the "ready to implement" promise — users on Linux/macOS or
-clean Windows environments don't have Bohemia's tools installed.
+The DayZ engine only reads `.paa` textures. Converting a generated PNG with
+TexView or Pal2PacE needs Bohemia's tools, and users on Linux, macOS or a
+clean Windows install do not have them.
 
-This reference provides a pure-Python DXT1 PAA encoder that produces valid
-files the engine accepts. ~200 lines, zero C dependencies, works anywhere
-Pillow + NumPy install.
+This reference provides a pure-Python DXT1 PAA encoder whose files this
+repo's PAA decoder reads back. About 200 lines, no C dependencies, and it works
+anywhere Pillow and NumPy install.
 
 ## When to use this vs TexView
 
 | Situation | Use |
 |---|---|
 | Generating the base color / diffuse `_co` PAA from a PNG | This encoder |
-| Input PNG has an alpha channel you need to preserve (decals, glass) | TexView (needs DXT5; this encoder is DXT1-only for now) |
+| Input PNG has an alpha channel you need to preserve (decals, glass) | TexView or `/dayz-pack-texture` (needs DXT5; this encoder is DXT1-only) |
 | User wants to iterate on the texture outside the pipeline | Ship the PNG + this encoder; they can re-run it |
 | Pre-existing `.paa` from the mod itself | Don't re-encode — reuse as-is |
 
-DXT1 covers the common case for opaque surface color textures. For normal
-maps (`_nohq`) and spec/metal (`_smdi`) the channels encode different data
-but the format is still DXT1/DXT5 — the encoder below handles the color
-case; extend for DXT5 if you need alpha.
+DXT1 covers the common case for opaque surface color textures. Normal
+maps (`_nohq`) are DXT5 (anchors above), and the format of each other suffix is in
+`skills/_shared/textures/suffixes-and-sizes.md`; the encoder below handles the
+opaque color case only.
 
 ## File format summary
 
@@ -254,7 +253,7 @@ from paa_encoder import write_paa_dxt1
 
 info = write_paa_dxt1(
     src_png_path="generated/lamp_diffuse.png",
-    out_paa_path="mod/data/lamp/lf_lamp.paa",
+    out_paa_path="mod/data/lamp/lamp_co.paa",
     max_size=1024,
 )
 print(info)  # {'path': ..., 'size_bytes': 699229, 'mip_count': 9}
@@ -262,12 +261,14 @@ print(info)  # {'path': ..., 'size_bytes': 699229, 'mip_count': 9}
 
 ## Verification
 
-Round-trip the output through the PAA decoder of the 3D viewer tool (`paa_to_png.py` in
-`scripts/tools/dayz-3d-viewer/dayz_3d_viewer/`) to confirm:
+Round-trip the output through the PAA decoder of the 3D viewer tool
+(`scripts/tools/dayz-3d-viewer/dayz_3d_viewer/paa_to_png.py`). Run this from the repo root:
 
 ```python
-from paa_to_png import convert_paa_to_png
-convert_paa_to_png("mod/data/lamp/lf_lamp.paa", "verify.png", verbose=True)
+import sys
+sys.path.insert(0, "scripts/tools/dayz-3d-viewer")
+from dayz_3d_viewer.paa_to_png import convert_paa_to_png
+convert_paa_to_png("mod/data/lamp/lamp_co.paa", "verify.png", verbose=True)
 ```
 
 A valid PAA shows:

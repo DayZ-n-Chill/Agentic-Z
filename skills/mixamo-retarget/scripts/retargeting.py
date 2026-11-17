@@ -281,8 +281,7 @@ def load_bone_mapping(source_armature: str, target_armature: str) -> Dict[str, s
     # Check the armatures
     if not scene.bone_mapping_source_armature:
         raise ValueError(
-            "No bone mapping stored. Please generate mapping first using "
-            "BoneMapping.show command."
+            "No bone mapping stored. Store one first with store_bone_mapping."
         )
 
     if (scene.bone_mapping_source_armature != source_armature or

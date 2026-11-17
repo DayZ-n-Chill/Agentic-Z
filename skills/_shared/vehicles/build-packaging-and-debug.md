@@ -14,13 +14,10 @@ What changes between a packed-only and a binarized vehicle PBO: what `model.cfg`
 > Packaging and debug lessons from shipping the **LFQuad** (imported Yamaha Banshee quad) to a
 > dedicated server. These are the failures that PASS local filepatching and only surface on a
 > dedicated box — the worst kind, because the dev loop never sees them.
->
-> Provenance: `[LFQuad ✓]` = verified in that session against the real mod (config.cpp / model.cfg /
-> raw PBO bytes), 2026-06. Line references are into the LFQuad mod's own `config.cpp` and `model.cfg`.
 
-> Section 1 of these notes (the white, untextured vehicle on a dedicated server: assets that only
-> `config.cpp` references are left out of a binarized PBO) moved with CHANGE-1 to the family B cookbook
-> `skills/rip-vehicle-import/references/cookbook-white-car.md`. "§1" below means that cookbook.
+> The white, untextured vehicle on a dedicated server (assets that only `config.cpp` references are
+> left out of a binarized PBO) is in `skills/rip-vehicle-import/references/cookbook-white-car.md`.
+> "§1" below means that cookbook; the sections here start at 2.
 
 ## 2. ODOL vs MLOD changes what `model.cfg` MEANS at runtime
 
@@ -87,5 +84,4 @@ data. A ~40-line Python parser gives you full offline verification:
 binarized (broken) PBO from the 18 MB packonly (complete) one, and confirmed the −360 wheel bake —
 all without launching DayZ.]`
 
-The LFQuad shipping session kept a parser skeleton only in its scratch folder (`lfq_*.py`), which is not
-part of this repo; re-derive it from the format above rather than trusting a stale copy.
+No such parser ships in this repo: write it from the format above.

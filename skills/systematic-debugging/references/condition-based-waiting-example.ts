@@ -1,9 +1,8 @@
-// Complete implementation of condition-based waiting utilities
-// From: Lace test infrastructure improvements (2025-10-03)
-// Context: Fixed 15 flaky tests by replacing arbitrary timeouts
+// Complete implementation of condition-based waiting utilities.
+// These helpers replace arbitrary timeouts in tests that wait for events on a thread.
 
 import type { ThreadManager } from '~/threads/thread-manager';
-import type { LaceEvent, LaceEventType } from '~/threads/types';
+import type { ThreadEvent, ThreadEventType } from '~/threads/types';
 
 /**
  * Wait for a specific event type to appear in thread
@@ -20,9 +19,9 @@ import type { LaceEvent, LaceEventType } from '~/threads/types';
 export function waitForEvent(
   threadManager: ThreadManager,
   threadId: string,
-  eventType: LaceEventType,
+  eventType: ThreadEventType,
   timeoutMs = 5000
-): Promise<LaceEvent> {
+): Promise<ThreadEvent> {
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
 
@@ -60,10 +59,10 @@ export function waitForEvent(
 export function waitForEventCount(
   threadManager: ThreadManager,
   threadId: string,
-  eventType: LaceEventType,
+  eventType: ThreadEventType,
   count: number,
   timeoutMs = 5000
-): Promise<LaceEvent[]> {
+): Promise<ThreadEvent[]> {
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
 
@@ -111,10 +110,10 @@ export function waitForEventCount(
 export function waitForEventMatch(
   threadManager: ThreadManager,
   threadId: string,
-  predicate: (event: LaceEvent) => boolean,
+  predicate: (event: ThreadEvent) => boolean,
   description: string,
   timeoutMs = 5000
-): Promise<LaceEvent> {
+): Promise<ThreadEvent> {
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
 
@@ -135,7 +134,7 @@ export function waitForEventMatch(
   });
 }
 
-// Usage example from actual debugging session:
+// Usage example:
 //
 // BEFORE (flaky):
 // ---------------
@@ -155,4 +154,4 @@ export function waitForEventMatch(
 // await waitForEventCount(threadManager, threadId, 'TOOL_RESULT', 2); // Wait for results
 // expect(toolResults.length).toBe(2); // Always succeeds
 //
-// Result: 60% pass rate → 100%, 40% faster execution
+// Measured on one suite of 15 flaky tests: pass rate 60% to 100%, execution 40% faster

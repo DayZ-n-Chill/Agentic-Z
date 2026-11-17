@@ -2,7 +2,7 @@
 
 Covers how damage flows from a source to the script callbacks, the calls that deal or read damage, the whole `RegisterTransportHit` flow line by line, hit zones and armor as vanilla configures them, bleeding, shock and hit animations, and a worked case (contact damage from a rolling stone).
 
-Citations are `P:\...:line`, opened on `P:\` (a 1.30 build). `1.29:<path>:<line>` is a line in the 1.29 scripts, which are not on `P:\` and were not re-checked. `[UNVERIFIED]` marks what neither script nor config shows. Where the source pack said a value lived in binary data it could not read, this file gives the unpacked config on `P:\DZ\` instead.
+Citations are `P:\...:line`, opened on `P:\` (a 1.30 build). `1.29:<path>:<line>` is a line in the 1.29 scripts, which are not on `P:\` and were not re-checked. `[UNVERIFIED]` marks what neither script nor config shows.
 
 ## Summary
 
@@ -393,7 +393,7 @@ The parts of a zone:
 - `componentNames[]`: the names of the model selections that map to this zone.
 - `transferToZonesNames[]` and `transferToZonesCoefs[]`: what share of the damage passes to other zones.
 - `transferToGlobalCoef`: the share that goes to global health. `RepairDamageTransfer` reads it (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionrepairtent.c:167`).
-- `fatalInjuryCoef`: vanilla sets it per zone, for example 0.1 on the player's `Head` and 1 on `Brain` (`P:\DZ\characters\data\config.cpp:492` and `:570`). No vanilla script reads it (0 matches in `P:\scripts`), so what the engine does with it is `[UNVERIFIED]`; the source pack's reading is that a zone at 0 health with a coefficient above 0 kills or destroys the object.
+- `fatalInjuryCoef`: vanilla sets it per zone, for example 0.1 on the player's `Head` and 1 on `Brain` (`P:\DZ\characters\data\config.cpp:492` and `:570`). No vanilla script reads it (0 matches in `P:\scripts`), so what the engine does with it is `[UNVERIFIED]`; the likely reading is that a zone at 0 health with a coefficient above 0 kills or destroys the object.
 
 `GlobalHealth` is the zone name `PlayerBase` reads for the HUD, as in `GetHealth("GlobalHealth", "Blood")` (`P:\scripts\4_world\entities\manbase\playerbase.c:5599`).
 
@@ -605,7 +605,7 @@ A helper for tools that wear with use. It skips the ammo system.
 - **A getter for `ShockHandler`.** `PlayerBase` holds `m_ShockHandler` and `m_BleedingManagerServer` as plain `ref` members (`P:\scripts\4_world\entities\manbase\playerbase.c:99` and `:85`). The bleeding manager has the getter `GetBleedingManagerServer()` (`:2973`); the shock handler has none.
 - **A script read of `fatalInjuryCoef`.** `RepairDamageTransfer` carries the comment "hack; mirrors" (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionrepairtent.c:155`) and reads only `transferToGlobalCoef`. The key is read by native code.
 
-## Worked case: contact damage from a rolling stone (LF_RollingStone)
+## Worked case: contact damage from a rolling stone
 
 ### Pushing, and damage like a vehicle hit
 
@@ -639,7 +639,7 @@ override void EOnContact(IEntity other, Contact extra)
 
 The ragdoll impulse of `RegisterTransportHit` goes only to corpses. A living player is moved by the physics solver when the stone's body and the player's controller both exist on that machine and their layers interact.
 
-The source pack's first note also proposed pushing a living player from script on the server:
+One more idea is to push a living player from script on the server:
 
 ```c
 if (target.IsAlive() && speed > 1.0)
@@ -650,7 +650,7 @@ if (target.IsAlive() && speed > 1.0)
 }
 ```
 
-Treat that as untested for a player who is standing and controlled. Vanilla never does it, and the pack's later measurement (`SKILL.md`, "`PhysicsSetRagdoll` on a live player") shows an impulse taking on a live player only after `PhysicsSetRagdoll(true)` on the server, with the owner client not following. Prefer letting the contact solver do the push.
+Treat that as untested for a player who is standing and controlled. Vanilla never does it, and the in-game measurement (`SKILL.md`, "`PhysicsSetRagdoll` on a live player") shows an impulse taking on a live player only after `PhysicsSetRagdoll(true)` on the server, with the owner client not following. Prefer letting the contact solver do the push.
 
 ### A guard against several hits
 
@@ -658,11 +658,11 @@ Without a guard like `m_TransportHitRegistered`, `EOnContact` can fire several t
 
 ### Hit animation
 
-The player shows a hit animation from `TransportHit` because that ammo has `hitAnimation=1`. A custom ammo (for example "LFRS_StoneHit") has to be defined in the mod's `config.cpp`:
+The player shows a hit animation from `TransportHit` because that ammo has `hitAnimation=1`. A custom ammo (for example "MyMod_StoneHit") has to be defined in the mod's `config.cpp`:
 
 ```cpp
 class CfgAmmo {
-    class LFRS_StoneHit {
+    class MyMod_StoneHit {
         hitAnimation = 1;  // full body
         // DamageApplied { Health { damage = 1; }; Shock { damage = 0.5; }; Blood { damage = 0.3; }; }
     };
@@ -678,9 +678,9 @@ Fall damage is a separate path from `TransportHit` (the `Transport` only `EOnCon
 
 The full ragdoll and fall damage detail is in `ragdoll-and-fall-damage.md`.
 
-## Sources
+## Vanilla files
 
-Vanilla files this reference draws on:
+The vanilla files cited above:
 
 | File | What it holds |
 |---|---|

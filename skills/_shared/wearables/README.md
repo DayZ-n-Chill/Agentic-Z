@@ -2,7 +2,7 @@
 
 Reference for clothing, gear and survivor characters: which vanilla class to inherit, slots and cargo, protection and insulation, color variants, and the models and proxies behind them. It is written for `dayz-wearables-specialist`, and any DayZ worker may open one file of it when a task needs it.
 
-Every fact cites the vanilla file on `P:\` it came from. Line numbers are from the copy on `P:\` when the pack was written; if a line has moved, Grep the class or key name in the same file. A note marked **engine** describes behavior that no vanilla file shows, so treat it as a rule of thumb and confirm it in game.
+Every fact cites the vanilla file on `P:\` it came from. Line numbers are from the copy on `P:\` when the pack was written; if a line has moved, Grep the class or key name in the same file. A note marked **engine** describes behavior that no vanilla file shows, so treat it as a rule of thumb and confirm it in game. A fact marked **Measured** was measured in game or on built models and is not yet checked on `P:\`.
 
 ## Which file to open
 

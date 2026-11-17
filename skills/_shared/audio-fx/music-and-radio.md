@@ -1,6 +1,6 @@
 # Music and radio: the dynamic music player and transmitter static
 
-How the client side music player picks a track, how a mod adds a music zone or the music of a custom world, and how the 1.30 bunker static of radios works. Line numbers are from the 1.30 scripts on `P:\`; statements about 1.29 come from the notes this file was built from and are not yet checked on `P:\`.
+How the client side music player picks a track, how a mod adds a music zone or the music of a custom world, and how the 1.30 bunker static of radios works. Line numbers are from the 1.30 scripts on `P:\`; statements about 1.29 are not yet checked on `P:\`.
 
 ## Contents
 
@@ -50,8 +50,6 @@ override void EEDelete(EntityAI parent)
 - The location types are constants of `DynamicMusicLocationTypes`: `NONE = -1`, `CONTAMINATED_ZONE = 0` and `UNDERGROUND = 1` (`P:\scripts\3_game\systems\dynamicmusicplayer\dynamicmusicplayer.c:4`).
 - `locationSize` is turned into a rectangle around the entity's position (`P:\scripts\3_game\systems\dynamicmusicplayer\dynamicmusicplayer.c:289`), so the zone does not follow an entity that moves later.
 - Call both on the client only. The mission creates the music player inside `#ifndef SERVER`, so a dedicated server has none.
-
-The notes this file was built from marked the way to reach the player, `GetGame().GetMission().GetDynamicMusicPlayer()`, as unverified. The vanilla lines above confirm it.
 
 ## Music of a custom world (1.30)
 

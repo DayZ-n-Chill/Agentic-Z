@@ -106,7 +106,7 @@
       "must_not_include": [
         "re:(use|rely on) (g_Game|GetGame\\(\\))\\.SaveVersion\\(\\) (alone|only|as (the|your) (only )?(mod|format))"
       ],
-      "verified": "Community Framework (third-party, not on P:): CfgMods storageVersion -> ModStructure.GetStorageVersion() -> CF_ModStorage.GetVersion(), per skills/dayz-persistence/references/cf-modstorage.md 'Version unit: the mod'. The game's number is one per build: P:/scripts/3_game/global/game.c:435 (SaveVersion) and :5 (GAME_STORAGE_VERSION)"
+      "verified": "Community Framework (third-party, not on P:): CfgMods storageVersion -> ModStructure.GetStorageVersion() -> CF_ModStorage.GetVersion(), described in skills/dayz-persistence/references/cf-modstorage.md 'Version unit: the mod'. The game's number is one per build: P:/scripts/3_game/global/game.c:435 (SaveVersion) and :5 (GAME_STORAGE_VERSION)"
     },
     {
       "id": "basebuilding-part-id-cap",

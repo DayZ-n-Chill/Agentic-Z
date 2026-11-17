@@ -2,19 +2,19 @@
 
 OBJ to game-ready `.p3d`, end to end: parse, transform, decimate, normals, LOD assembly, PNG to PAA, config wiring and validation, with the winding and normal corrections that later vehicle imports forced.
 
-> Status: the workflow was measured by the notes' author on a third-party mod (the LFPG wall lamp of LF PowerGrid; the winding corrections on SUB_BRZ) and is not yet checked on `P:\`. Class and function names starting with `LFPG_` belong to that mod, not to vanilla. A citation written with its full `P:\` path was opened on the vanilla data of this repo. A citation without `P:\` keeps the line number the note was written with, for the DayZ build that entry names, and is not yet checked on `P:\`: Grep for the symbol before relying on the number. The Python libraries named are optional third-party packages that this repo does not install. `py3d-direct-generation.md` and `memory-and-selections.md` are in `skills/dayz-model-pipeline/references/`, not files of this pack. The fixed "32k" ceiling in step 5 is a planning figure: `binarize-vertex-budget.md` holds the measured rule.
+> Status: the workflow was measured on third-party mod content, not vanilla (a wall lamp of a power-grid mod; the winding corrections on a sports coupe import), and is not yet checked on `P:\`. The mod-side hooks the steps describe (placement modes, wall yaw offset, port registration, device registries) belong to that kind of mod, not to vanilla. A citation written with its full `P:\` path was opened on the vanilla data. The Python libraries named are optional third-party packages that this repo does not install. `py3d-direct-generation.md` and `memory-and-selections.md` are in `skills/dayz-model-pipeline/references/`, not files of this pack. The fixed "32k" ceiling in step 5 is a planning figure: `binarize-vertex-budget.md` holds the measured rule.
 
 ## Vanilla anchors checked on `P:\`
 
 - `units[]` is the `CfgPatches` array step 8 says not to forget: `P:\DZ\vehicles\wheeled\config.cpp:5`.
-- The vanilla models an import is compared against are binarized: `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` opens with the `ODOL` signature, version 56 (header read 2026-11-17), so the vanilla winding and normal percentages quoted below were measured by the notes' author on debinarized copies and were not measured again here.
+- The vanilla models an import is compared against are binarized: `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` opens with the `ODOL` signature, version 56, so the vanilla winding and normal percentages quoted below were measured on debinarized copies and cannot be read from the file on `P:\` directly.
 
 ## When to use this
 
 This reference covers the workflow for turning an artist-authored OBJ
 (Maya/ZBrush/Blender export) into a ready-to-implement DayZ `.p3d`. It's
-an end-to-end walkthrough, grounded in a real case (the LFPG wall lamp:
-94k-face high-poly lamp with PBR textures → game-ready mod object in one
+an end-to-end walkthrough, grounded in a real case (a wall lamp for a
+power-grid mod: 94k-face high-poly lamp with PBR textures → game-ready mod object in one
 pipeline run).
 
 Use this when:
@@ -51,8 +51,9 @@ Each step below elaborates with the patterns that proved necessary.
 
 ## Step 1: Use a sibling as reference
 
-For an LFPG electrical device, find the closest analogue already in the
-mod (ceiling_light for lamps, switch_v1 for switches, etc.) and read:
+For an electrical device of a power-grid mod, find the closest analogue
+already in the mod (the ceiling light for a lamp, an existing switch for a
+switch, and so on) and read:
 
 - Its block in `config.cpp` (kit class + placed-entity class)
 - Its entry in `model.cfg` (sections, animations)
@@ -158,21 +159,21 @@ def xform(v):
   modern Blender OBJ exporter with Y-up preset, no axis rotation is
   needed. Unlike Blender's native Z-up exports (covered in
   `py3d-direct-generation.md`), OBJs are almost universally Y-up.
-- **Don't flip Z speculatively — and "flip ⇒ reverse every face" is NOT the invariant (corrected s20
-  2026-07-02).** A reflection (det=-1) does invert face orientation, but what matters is (a) the NET
+- **Don't flip Z speculatively — and "flip ⇒ reverse every face" is NOT the invariant.** A reflection (det=-1) does invert face orientation, but what matters is (a) the NET
   determinant of the full multi-stage transform chain and (b) the side-convention gap between source and
   target: glTF/OBJ/OpenGL render the +cross side, DayZ renders the ANTI-cross side. One net reflection with
   winding kept VERBATIM is exactly the OpenGL→DayZ conversion (measured: Blender→DayZ `(x, z+Y0, y)`
-  det=-1, no reversal, in-game OK on SUB_BRZ); reversing there bakes the inside-out result. A spurious
-  EXTRA flip (the wall-lamp early draft: interior lit, exterior black) changes the net chain — remove the
+  det=-1, no reversal, correct in game on a sports coupe import); reversing there bakes the inside-out result. A spurious
+  EXTRA flip (an early draft of the wall lamp: interior lit, exterior black) changes the net chain — remove the
   flip rather than "fixing" winding. Inverted-normals symptoms (surface visible but black) are a NORMALS
   problem, not winding: recompute stored normals as smooth(+cross) of the FINAL winding.
 - **Front-facing direction is a config concern, not a mesh concern.**
   If the model faces `+Z` but DayZ expects it to face the wall (`-Z`
-  after hologram yaw), fix with `LFPG_GetWallYawOffset()` returning
-  `180.0` in the kit subclass — not by rotating the mesh.
+  after hologram yaw), fix it where the mod's placement code takes its
+  wall yaw offset (return `180.0` from the kit subclass) — not by rotating
+  the mesh.
 
-### Quick sanity check — winding (corrected s20 2026-07-02)
+### Quick sanity check — winding
 
 Centroid-outwardness of the winding cross product is NOT a correctness gate for DayZ: the engine renders
 the ANTI-cross side, and correct content measures inward-dominant (vanilla civiliansedan LOD1 37.1%
@@ -180,9 +181,10 @@ cross-outward, its roof 1.6%; a deployed-approved car shell 14-19%; an in-game-O
 "repair" a mesh to raise this number. Sanity-check instead:
 
 - (a) per-piece topological winding uniformity — every shared edge traversed in opposite directions by
-  its two faces (`<vehicle-import>\scripts\winding_consistency.py`);
+  its two faces (count, for every edge shared by two faces, the pairs that
+  traverse it in the same direction; this repo ships no script for it);
 - (b) stored normals consistent with the final winding: stored·cross>0 ≈ 96-99% as in vanilla
-  (see `visual-gates-and-winding.md`, #10(j)).
+  (see the import orientation rule in `visual-gates-and-winding.md`).
 
 ## Step 4: Decimate per material group
 
@@ -207,7 +209,7 @@ on curved surfaces.
 
 Derive them from the FINAL winding: area-weighted smooth of `+cross` per
 vertex — do NOT auto-orient normals outward from the model centroid
-(corrected s20 2026-07-02: vanilla MLOD stored·cross>0 = 96.2% and an
+(vanilla MLOD stored·cross>0 = 96.2% and an
 in-game-OK interior 99.5%, while a centroid-oriented car shell measured
 0.5% — anomalous, candidate root of bright-triangle artifacts). If the
 source winding is inconsistent, fix the WINDING first by
@@ -231,9 +233,9 @@ def compute_smooth_normals(V, F):
     return vn.astype(np.float32)
 ```
 
-(The centroid auto-orient this section used to append is RETIRED — it was
+(A centroid auto-orient step does not belong here — it is
 the same oracle class that inverted imported-car normals; see the
-s20 correction in `visual-gates-and-winding.md`. The wall-lamp "lit-from-inside" case was a
+import orientation rule in `visual-gates-and-winding.md`. The wall-lamp "lit-from-inside" case was a
 spurious extra axis flip, fixed by removing the flip, not by re-orienting
 normals.)
 
@@ -256,31 +258,29 @@ lights, moving panels).
 
 ### Choose modern LOD resolution values
 
-Recent LFPG items use the **modern** resolution constants:
+Use the DayZ resolution constants:
 
-| LOD | Modern resolution |
-|-----|------------------|
+| LOD | Resolution |
+|-----|------------|
 | Geometry | `1.0e13` |
 | Fire Geometry | `7.0e15` |
 | View Geometry | `6.0e15` |
 | Memory | `1.0e15` |
 
-The older values (`2.0e13` for Fire, `3.0e13` for View) still work — the
-engine accepts both — but modern DayZ tools (the P3D inspector of the dayz-p3d-inspector skill and others)
-label the old values as "unknown." Use the modern set for any new
-generation.
+Do not use the Arma values `2.0e13` for Fire Geometry and `3.0e13` for
+View Geometry: the P3D inspector of the dayz-p3d-inspector skill labels
+them "unknown" (`skills/dayz-p3d-inspector/references/recipe-format.md`).
 
 ## Step 7: PNG → PAA without external tools
 
-Until recently this pipeline required the user to run TexView or Pal2PacE
-after generation. That gap is now closed — see `png-to-paa-encoding.md`
+TexView or Pal2PacE is not needed after generation — see `png-to-paa-encoding.md`
 for a pure-Python DXT1 encoder that produces valid PAAs the engine
 accepts. Typical usage:
 
 ```python
 from paa_encoder import write_paa_dxt1
 write_paa_dxt1(src_png_path="lamp_diffuse.png",
-               out_paa_path=f"{DATA_DIR}/lf_wall_lamp.paa",
+               out_paa_path=f"{DATA_DIR}/wall_lamp.paa",
                max_size=1024)
 ```
 
@@ -295,27 +295,27 @@ adjust model paths, override only what differs.
 
 For the wall lamp, "differs from ceiling light" meant:
 
-- `LFPG_GetPlacementModes()` returned `1` (floor + wall) instead of `2`
+- The kit's placement-modes hook returned `1` (floor + wall) instead of `2`
   (floor + wall + ceiling)
 - The light effect had slightly smaller radius / brightness (wall sconces
   are usually less powerful than overhead lights)
 - A new section in `model.cfg` (class name matches p3d filename)
 - A new block in `config.cpp` and a new entry in `CfgPatches.units[]`
 
-Everything else — port wiring, RPC sync vars, rvmat swap in
-`LFPG_OnVarSyncDevice`, consumption/capacity, ActionFeedFurnace kit
-registration — was identical.
+Everything else — port wiring, RPC sync vars, the rvmat swap in the
+device's variable-sync handler, consumption/capacity, the kit's
+registration as furnace fuel — was identical.
 
 ### Register the new entity everywhere
 
 `CfgPatches.units[]` in `config.cpp` is the most commonly-missed spot.
 Miss it and the class loads but the engine won't create instances for
-mission placement. For LFPG, also check:
+mission placement. In a mod with its own registries, also check:
 
-- `LFPG_ActionFeedFurnace.c` → `LFPG_IsLFPGKit()` check list (if the
-  kit should be accepted as furnace fuel like its siblings)
-- `LFPG_Items.c` or similar spawn-list registries if they exist
-- `LFPG_DeviceRegistry.c` if the device has a special gameplay role
+- The check list of any action that accepts the sibling kits (for
+  example a furnace-fuel action), if the new kit should be accepted too
+- Spawn-list registries, if they exist
+- The device registry, if the device has a special gameplay role
 
 Grep for the sibling class name across the whole mod — every hit is a
 candidate for wall-lamp-specific registration.
@@ -331,8 +331,8 @@ candidate for wall-lamp-specific registration.
   expected resolutions.
 
 Run both after generation. If the textured viewer looks fine but the
-inspector flags LOD types as "unknown", you used old resolution
-constants — regenerate with modern values.
+inspector flags LOD types as "unknown", you used the wrong resolution
+constants — regenerate with the values of Step 6.
 
 ## Pitfalls to expect on first import
 
@@ -351,21 +351,20 @@ constants — regenerate with modern values.
   often look darker than the user expects.
 - **Cable won't attach to the device** — Memory LOD is missing
   `port_input_N` / `port_output_N` points, or their names don't match
-  what the device script calls `LFPG_AddPort(name, ...)` with. See
+  the port names the device script registers. See
   `memory-and-selections.md`.
 - **P3D is enormous (20MB+)** — you skipped decimation. Real items
   should be 0.5–5 MB. Decimate with pymeshlab.
 
 ---
 
-## Blender 5.x — OBJ import/export API (added 2026-05-30)
+## Blender 5.x — OBJ import/export API
 
 In Blender 4.x+/5.x, `bpy.ops.import_scene.obj` / `export_scene.obj` **no longer
 exist** — they moved to `bpy.ops.wm.obj_import` / `bpy.ops.wm.obj_export`,
 with different parameters (`forward_axis`/`up_axis` in uppercase like
 `"NEGATIVE_Z"`/`"Y"`, `use_split_objects`, `export_selected_objects`, etc.).
 **FBX and glTF REMAIN** in `bpy.ops.import_scene.fbx` / `.gltf` (those addons did not
-migrate to `wm.`). Verified in Blender 5.1.1 against the import script of the author's
-weapon ingest work (`import_weapon.py`, 2026-05-30). OBJ snippets
-above assume `<4.x` API; when running them in modern Blender, translate to
+migrate to `wm.`). Checked in Blender 5.1.1. A Blender script written with
+the older OBJ operators has to be translated to
 `wm.obj_import`/`wm.obj_export`.

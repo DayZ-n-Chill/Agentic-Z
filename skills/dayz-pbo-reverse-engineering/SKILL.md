@@ -9,7 +9,7 @@ argument-hint: "<file.pbo | folder> [more ...] [--json] [--no-trailer]"
 
 # /dayz-pbo-reverse-engineering
 
-A workflow for pulling patterns out of another author's DayZ mod in a way that can be checked afterwards. It is the opposite direction of `/dayz-build-pbo`. The method comes from the LM_Planes extraction project (Workshop item 3730564764, by Llama and Itspete-Here): 130 patterns over two passes and about 30 loop turns. The figures quoted from that project are its author's measurements, not checked in this repo.
+A workflow for pulling patterns out of another author's DayZ mod in a way that can be checked afterwards. It is the opposite direction of `/dayz-build-pbo`. On a large Workshop item (43 PBOs, an aircraft mod) the method gave 130 patterns over two passes and about 30 loop turns. The figures quoted from that run are measurements on a third-party mod, not checked on `P:\`.
 
 Follow `skills/_shared/dayz-conventions.md`. `inventory.py` only reads the `.pbo` files it is given, so it does not run `/dayz-preflight`.
 
@@ -26,7 +26,7 @@ Not for:
 - Building your own PBO: `/dayz-build-pbo`.
 - Auditing your own model files: `/dayz-p3d-audit`.
 - Implementation work: `/dayz-mod-dev` and the domain packs.
-- An obfuscated PBO (GUID, `COM1` or BOM file names, encrypted strings). Recover it first with a JAPM recovery tool (`japm-pbo-recovery`, plus `kgb-deobfuscator` for the `KGB_DF` marker). Both are external skills that are not part of this repo. Without them, report that the PBO is obfuscated and stop; do not sweep obfuscated output.
+- An obfuscated PBO (GUID, `COM1` or BOM file names, encrypted strings). Recover it first with a JAPM recovery tool, plus a KGB deobfuscator for the `KGB_DF` marker. This repo ships neither. Without them, report that the PBO is obfuscated and stop; do not sweep obfuscated output.
 
 Respect the mod author's terms: study and compatibility work is the purpose here, and repacking somebody else's content is the user's decision and responsibility.
 
@@ -68,20 +68,20 @@ Outside an agent session, `scripts\dayz\pbo-inventory.bat` runs `inventory.py` w
 
 ### Step 0: setup
 
-Mikero's `ExtractPbo.exe` (DePboTools) does the extraction. Its default install folder is `Mikero\DePboTools\bin` under the 32-bit Program Files folder:
+`ExtractPbo.exe` from the Mikero DePboTools does the extraction. Its default install folder is `Mikero\DePboTools\bin` under the 32-bit Program Files folder:
 
 ```powershell
 $extract = Join-Path ${env:ProgramFiles(x86)} "Mikero\DePboTools\bin\ExtractPbo.exe"
 Test-Path $extract
 ```
 
-If it is missing, install it from https://mikero.bytex.digital/Downloads. The source skill knew no usable open-source extractor for the current ODOL format. Allow two to three times the PBO's size in free disk space if you keep the binaries.
+If it is missing, install it from https://mikero.bytex.digital/Downloads. Allow two to three times the PBO's size in free disk space if you keep the binaries.
 
 ### Step 1: inventory pass
 
 Classify every PBO before any deep work, with `inventory.py` above (or `ExtractPbo -LB -P <pbo>`, which lists contents without extracting). The marker to look for: a PBO whose config is absent or zero bytes is a source distribution, with nothing to load as a mod; a PBO with a substantial config plus `.c` scripts and `.p3d` models is a deployable mod.
 
-In the LM_Planes Workshop item, 42 of 43 PBOs turned out to be source-only distributions. The inventory pass saved weeks of misdirected work. Always do it first, and re-scope on the first day if it contradicts the assumption.
+In one measured Workshop item, 42 of 43 PBOs turned out to be source-only distributions. The inventory pass saved weeks of misdirected work. Always do it first, and re-scope on the first day if it contradicts the assumption.
 
 ### Step 2: extraction
 
@@ -124,7 +124,7 @@ For each file: read it, identify the patterns, classify each one's novelty by se
 
 ### Step 5: per-entity deep dive (pass 2)
 
-Process one entity per unit (one aircraft, vehicle or weapon). Look for what the dimensional sweep does not show: custom logic beyond parameter overrides, per-entity tuning, inheritance variations, unique features (combat code, special physics). In LM_Planes a unit gave about 3 to 10 findings; aircraft with custom code (Catalina, Spitfire) gave 9 to 11, pure parameter overrides about 3. Once you see that most entities are clones of one or two templates, confirm the clones quickly and spend the time on the customised ones.
+Process one entity per unit (one aircraft, vehicle or weapon). Look for what the dimensional sweep does not show: custom logic beyond parameter overrides, per-entity tuning, inheritance variations, unique features (combat code, special physics). In the measured aircraft mod a unit gave about 3 to 10 findings; aircraft with custom code gave 9 to 11, pure parameter overrides about 3. Once you see that most entities are clones of one or two templates, confirm the clones quickly and spend the time on the customised ones.
 
 ### Step 6: convergence and report
 

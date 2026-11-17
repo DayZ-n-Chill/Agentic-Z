@@ -1,6 +1,6 @@
 # Vehicle refactor in DayZ 1.30 (1.29 to 1.30 migration guide)
 
-How DayZ 1.30 restructured the vehicle scripts: `CarScript` split into components, duties moved up to `Transport`, and what an existing car mod has to change. Short citations: `config.cpp:N` is `P:\DZ\vehicles\singletrack\config.cpp`, and a bare script file name is the file of that name under `P:\scripts\` (`motorbike_01.c` and `motorbike_02.c` are the ones in `4_world\entities\vehicles\inheritedmotorbikes\`). Line numbers match the 1.30 data on `P:\` at the time of writing; when a line has moved, Grep for the symbol. In this file `wheeled\config.cpp` is `P:\DZ\vehicles\wheeled\config.cpp`. Statements about 1.29 come from the knowledge pack's own 1.29 to 1.30 diffs; 1.29 is not on `P:\`, so they are not yet checked on `P:\`.
+How DayZ 1.30 restructured the vehicle scripts: `CarScript` split into components, duties moved up to `Transport`, and what an existing car mod has to change. Short citations: `config.cpp:N` is `P:\DZ\vehicles\singletrack\config.cpp`, and a bare script file name is the file of that name under `P:\scripts\` (`motorbike_01.c` and `motorbike_02.c` are the ones in `4_world\entities\vehicles\inheritedmotorbikes\`). Line numbers match the 1.30 data on `P:\` at the time of writing; when a line has moved, Grep for the symbol. In this file `wheeled\config.cpp` is `P:\DZ\vehicles\wheeled\config.cpp`. Statements about 1.29, including the line counts against it, are not yet checked on `P:\`, which holds only the 1.30 data.
 
 ---
 
@@ -38,9 +38,9 @@ In DayZ 1.30, `carscript.c` (-1155 / +877 lines against 1.29) ceases to be a sel
 | `BrakesRearLight()`, etc. | `[Obsolete("1.30: use VehicleLightsComponent instead")]` | Use `m_LightsComponent.SetLightTypeAndMode(...)`. |
 | `ToggleHeadlights()` | none: **deleted**, not in this section | Remove the override; it no longer compiles. |
 
-[EXACT][CLAIM-MOTO-REFACTOR-130-PORT-BLOCKERS] Two corrections to this table (2026-10-26, found by the knowledge pack author while porting a 1.29 quad; the 1.30 lines below were read again on `P:\`).
+[EXACT] Two rows of this table are easy to get wrong when moving a 1.29 vehicle to 1.30 (the 1.30 lines below were read on `P:\`).
 - `ToggleHeadlights()` is not in the `DEPRECATED` section because 1.30 deleted it: `carscript.c` on `P:\` has no such method (1.29 declared it in `CarScript`). In 1.30 `ActionSwitchLights` calls the native `Transport.LightToggle()` instead (`actionswitchlights.c:64`; declared at `transport.c:236`). An `override` of it stops the module from compiling.
-- The battery rows used to say "override `NeedElectricitySourceDevice()` and return `true`", which is already the default (`transport.c:821-824`). What a battery car needs is `GetElectricitySourceDevice()`, because the default `null` (`transport.c:826-829`) reaches `CarScript` through `GetBattery()` (`carscript.c:2437-2440`) and makes it report `NO_BATTERY` with a battery attached (`carscript.c:1768-1774`).
+- For the battery rows, overriding `NeedElectricitySourceDevice()` to return `true` is not enough: that is already the default (`transport.c:821-824`). What a battery car needs is `GetElectricitySourceDevice()`, because the default `null` (`transport.c:826-829`) reaches `CarScript` through `GetBattery()` (`carscript.c:2437-2440`) and makes it report `NO_BATTERY` with a battery attached (`carscript.c:1768-1774`).
 
 More on 1.30 cars: `skills/_shared/vehicles/dayz-1-30-vehicles.md`.
 
@@ -65,7 +65,7 @@ In DayZ 1.30, all car wheel classes (`HatchbackWheel`, `CivSedanWheel`, `Offroad
    `hiddenSelections[] = {"texture_roof_ext","texture_roof_int"};` (`wheeled\config.cpp:20587-20601`).
    The `Doors` damage zone includes dual `.rvmat` arrays in `RefTexsMats[]` and `healthLevels[]`.
 2. **Front impact zone adjustment**:
-   In `DamageZones -> Front`, `"dmgZone_bumper_1"` is removed (seen in the knowledge pack's 1.29 to 1.30 config diff; on `P:\` the `Offroad_02` class, from `wheeled\config.cpp:20899` on, has no `dmgZone_bumper_1`); whether this is to avoid parasitic damage when hitting the bumper is an interpretation [UNVERIFIED].
+   In `DamageZones -> Front`, `"dmgZone_bumper_1"` is removed (on `P:\` the `Offroad_02` class, from `wheeled\config.cpp:20899` on, has no `dmgZone_bumper_1`; that 1.29 had it is not yet checked on `P:\`); whether this is to avoid parasitic damage when hitting the bumper is an interpretation [UNVERIFIED].
 3. **New beige variants**:
    `Offroad_02_Beige` and `_BeigeRust` parts are introduced (`wheeled\config.cpp:22394, 23441`; they do not exist in 1.29).
 

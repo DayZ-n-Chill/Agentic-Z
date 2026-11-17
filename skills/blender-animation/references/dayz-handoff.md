@@ -82,7 +82,7 @@ Every animation in this pipeline that was confirmed in game was made by loading 
      ]
    }
    ```
-   This feeds `python skills/dayz-animation-pipeline/scripts/seanim_export.py --anim <json> --rig <rig.json> --out out.seanim`, where `<rig.json>` is the rig JSON the animation was authored on (the exporter detects from its rest offsets whether it is the plugin rig or the BI FBX rig). The user then runs `DayZATool --generate-anim out.seanim 100`. DayZATool is a closed .NET program for Windows with a command line and no GUI step; an agent on a Windows host can run it headless (`skeletal-anm-enfusion.md`, 2026-09-28).
+   This feeds `python skills/dayz-animation-pipeline/scripts/seanim_export.py --anim <json> --rig <rig.json> --out out.seanim`, where `<rig.json>` is the rig JSON the animation was authored on (the exporter detects from its rest offsets whether it is the plugin rig or the BI FBX rig). The user then runs `DayZATool --generate-anim out.seanim 100`. DayZATool is a closed .NET program for Windows with a command line and no GUI step; an agent on a Windows host can run it headless (`skeletal-anm-enfusion.md`, 2026-09-29).
 
 ### What this skill never does (owned downstream)
 

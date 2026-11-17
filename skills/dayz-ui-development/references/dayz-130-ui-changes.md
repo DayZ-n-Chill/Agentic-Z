@@ -2,7 +2,7 @@
 
 The changes DayZ 1.30 made to the action prompt HUD, the inventory slot icon classes and the preview widgets, the mod code each change breaks, and a migration checklist.
 
-**How facts are marked here.** A `P:\` path with a line was opened and checked on `P:\` (DayZ 1.30). "Before 1.30" statements are the source author's comparison with a 1.29 dump, which is not on `P:\`. Changelog lines are quoted from the source author's copy of the 1.30 experimental modding changelog and are not checked here.
+**How facts are marked here.** A `P:\` path with a line was opened and checked on `P:\` (DayZ 1.30). "Before 1.30" statements describe DayZ 1.29, which is not on `P:\`, so they are not checked. Lines marked "from the changelog" restate the 1.30 experimental modding changelog and are not checked on `P:\` either.
 
 ---
 
@@ -17,8 +17,8 @@ The changes DayZ 1.30 made to the action prompt HUD, the inventory slot icon cla
 
 ### 1. The action prompt rows in day_z_hud.layout are PanelWidgets
 
-- These rows are `PanelWidgetClass` in 1.30: `item` (`P:\gui\layouts\day_z_hud.layout:2294`), `interact` (`:2477`), `continuous_interact` (`:2755`), `single` (`:3033`), `continuous` (`:3249`), `ia_interact` (`:4083`) and `ia_continuous_interact` (`:4306`). The source author reports they were `ImageWidgetClass` before 1.30.
-- The new style `ActionWidget` (`P:\gui\looknfeel\dayzwidgets.styles:3700`) draws a 9-slice frame from the `ActionWidgetGradient*` images of the `dayz_gui` imageset (`P:\gui\imagesets\dayz_gui.imageset:1917`). On `P:\` the style is set on the two containers, `GridSpacerWidgetClass ActionTargetsCursorWidget` (`P:\gui\layouts\day_z_hud.layout:2287`) and the second one at `:3859`; the rows themselves carry a `color` and no `style`. The source author describes the rows as adopting the style.
+- These rows are `PanelWidgetClass` in 1.30: `item` (`P:\gui\layouts\day_z_hud.layout:2294`), `interact` (`:2477`), `continuous_interact` (`:2755`), `single` (`:3033`), `continuous` (`:3249`), `ia_interact` (`:4083`) and `ia_continuous_interact` (`:4306`). Before 1.30 they were `ImageWidgetClass` (not checked on `P:\`).
+- The new style `ActionWidget` (`P:\gui\looknfeel\dayzwidgets.styles:3700`) draws a 9-slice frame from the `ActionWidgetGradient*` images of the `dayz_gui` imageset (`P:\gui\imagesets\dayz_gui.imageset:1917`). On `P:\` the style is set on the two containers, `GridSpacerWidgetClass ActionTargetsCursorWidget` (`P:\gui\layouts\day_z_hud.layout:2287`) and the second one at `:3859`; the rows themselves carry a `color` and no `style`.
 
 ### 2. Action info panels and construction grids on the cursor
 
@@ -54,16 +54,16 @@ When `!action.CanBeStarted()`, the button icons (`<name>_btn_icon` and `<name>_b
 
 | What breaks | Severity | Cause | Migration |
 |---|---|---|---|
-| `ImageWidget.Cast(m_Root.FindAnyWidget("interact"))` returns null | Critical | The prompt rows are `PanelWidgetClass` (`P:\gui\layouts\day_z_hud.layout:2294`, `:2477` and the others above) | Change the fields to plain `Widget` and drop the cast: vanilla scripts declare no `PanelWidget` class (a grep of `P:\scripts\` for `class PanelWidget` finds none), so `PanelWidget.Cast(...)` names a type they do not have. For a custom background, tint the row with `SetColor`, or change the look through the `ActionWidget` style or a layout variant (`layout-variants-130.md`). The source suggests `w.SetStyle(...)`; no `SetStyle` is declared or called anywhere under `P:\scripts`, so do not rely on it |
+| `ImageWidget.Cast(m_Root.FindAnyWidget("interact"))` returns null | Critical | The prompt rows are `PanelWidgetClass` (`P:\gui\layouts\day_z_hud.layout:2294`, `:2477` and the others above) | Change the fields to plain `Widget` and drop the cast: vanilla scripts declare no `PanelWidget` class (a grep of `P:\scripts\` for `class PanelWidget` finds none), so `PanelWidget.Cast(...)` names a type they do not have. For a custom background, tint the row with `SetColor`, or change the look through the `ActionWidget` style or a layout variant (`layout-variants-130.md`). Do not use `w.SetStyle(...)`: no `SetStyle` is declared or called anywhere under `P:\scripts` |
 | Compile warnings from the obsolete Xbox setters | Medium | `SetInteractXboxIcon` and the others are `[Obsolete]` (`P:\scripts\5_mission\gui\actiontargetscursor.c:1368`) | Use `SetControllerIcon(widgetName, inputName)` (`:146`) |
 | Changes to slots do not reach the new cursor and HUD icons | Medium | `SlotsIcon` is no longer the single base class; `SlotsIconBase` was split out and `GenericIconBase` added | Mod or extend `SlotsIconBase` for slot logic, or `GenericIconBase` for generic icons |
-| Code assumes `WorldToScreen` on previews | Low | The ticket was not exposed to script (`P:\scripts\3_game\gameplay.c:276-314`) | Do not call `WorldToScreen` or `ScreenToWorld` on `ItemPreviewWidget` or `PlayerPreviewWidget` |
+| Code assumes `WorldToScreen` on previews | Low | The ticket was not exposed to script (`P:\scripts\3_game\gameplay.c:276-313`) | Do not call `WorldToScreen` or `ScreenToWorld` on `ItemPreviewWidget` or `PlayerPreviewWidget` |
 
 ## Migration checklist
 
 - [ ] Search the whole mod for `FindAnyWidget("interact")`, `"item"`, `"continuous_interact"`, `"single"`, `"continuous"` and `"ia_interact"`, and replace `ImageWidget` with plain `Widget`.
 - [ ] Remove calls to the `Set*XboxIcon` methods in scripts that extend or mod `ActionTargetsCursor`; use `SetControllerIcon`.
-- [ ] A mod that decorated inventory slots: check that its extensions target `SlotsIconBase` and still call `super.InitIconWidgets` and `super.InitIcon` (`P:\scripts\5_mission\gui\inventorynew\containeditems\slotsiconbase.c:61` and `:95`).
+- [ ] A mod that decorated inventory slots: check that its extensions target `SlotsIconBase` and still call `super.InitIcon` and `super.InitIconWidgets` (`P:\scripts\5_mission\gui\inventorynew\containeditems\slotsiconbase.c:61` and `:95`).
 - [ ] For a new panel on the cursor, read the panel architecture in `hud-action-info-panels.md`.
 - [ ] Check your 9-slice styles against the new `ActionWidget` style (`styles-format.md`).
 

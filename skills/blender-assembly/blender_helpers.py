@@ -2,15 +2,14 @@
 
 Version: 2.1 (2026-06-10)
 Convention: execute this whole file via the Blender MCP at session start instead
-of re-pasting functions. A new helper enters this library only after surviving
-its fixtures (see "Helper library" in the skill's SKILL.md).
+of re-pasting functions. A new helper enters this library only after it passes
+a test in Blender (see "Helper library" in the skill's SKILL.md).
 
-VALIDATED 2026-06-10 against Blender 5.1.1 (fixtures F1-F3, F5, F6, run by the
-library's author; the fixture ledger is not part of this repo). Three fixes landed during
-validation and were re-run green: verify_mesh_integrity reports ngons as a
-warning instead of a failure (F3, LL-120); verify_bounds forces a depsgraph
-update before reading matrix_world (B4, LL-121); make_cable fills and welds
-end caps so tubes pass require_closed=True (B5, LL-122).
+Validated on Blender 5.1.1. Three behaviours were fixed during that validation
+and passed again afterwards: verify_mesh_integrity reports ngons as a warning
+instead of a failure; verify_bounds forces a depsgraph update before reading
+matrix_world; make_cable fills and welds end caps so tubes pass
+require_closed=True.
 """
 
 import bpy
@@ -66,7 +65,7 @@ def verify_bounds(name):
     """Print and return world-space bounding box."""
     # matrix_world is depsgraph-evaluated: without an update, objects whose
     # .location was just set (e.g. place_copies output) report the stale
-    # pre-move matrix (fixture B4, 2026-06-10).
+    # pre-move matrix (measured on Blender 5.1.1).
     bpy.context.view_layer.update()
     obj = bpy.data.objects[name]
     vs = [obj.matrix_world @ v.co for v in obj.data.vertices]
@@ -120,7 +119,7 @@ def audit_all():
 
 
 # ============================================================
-# v2 helpers — detail toolbox (Rules 6-10) — PENDING FIXTURES
+# v2 helpers — detail toolbox (Rules 6-10)
 # ============================================================
 
 def add_bevel(obj, width=0.003, segments=2, angle_deg=40):
@@ -168,14 +167,14 @@ def make_cable(name, points, radius=0.006):
         bp.handle_left_type = bp.handle_right_type = 'AUTO'
     cu.bevel_depth = radius; cu.bevel_resolution = 3; cu.resolution_u = 12
     # Closed tube: without fill caps the converted mesh has two open end rings
-    # (boundary_edges=20 at the integrity gate, fixture B5, 2026-06-10).
+    # (boundary_edges=20 at the integrity gate, measured on Blender 5.1.1).
     cu.use_fill_caps = True
     obj = bpy.data.objects.new(name, cu)
     bpy.context.collection.objects.link(obj)
     bpy.context.view_layer.objects.active = obj; obj.select_set(True)
     bpy.ops.object.convert(target='MESH')
     # Fill caps convert as unwelded discs (duplicate ring verts + boundary
-    # edges at the gate, fixture B5, Blender 5.1.1) — weld to close the tube.
+    # edges at the gate, Blender 5.1.1) — weld to close the tube.
     bm = bmesh.new(); bm.from_mesh(obj.data)
     bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-5)
     bm.to_mesh(obj.data); bm.free()
@@ -241,7 +240,7 @@ def loft_profile(name, profile, path, scales=None, close_caps=True):
 
 
 # ============================================================
-# v2 helpers — bake pass (Rule 11) — PENDING FIXTURES F6/F7
+# v2 helpers — bake pass (Rule 11)
 # ============================================================
 
 def smart_uv(obj, angle=66, margin=0.02):
@@ -257,9 +256,8 @@ def smart_uv(obj, angle=66, margin=0.02):
 def bake_map(high, low, kind='NORMAL', size=2048, ray=0.01, path=None):
     """Rule 11 — bake kind ('NORMAL' or 'AO') from high onto low's UVs.
     Low MUST have UVs (smart_uv first). Blender bakes OpenGL-convention (Y+)
-    tangent normals; the author's fixture F7 measured DayZ _nohq as
-    DirectX-convention (Y-), so invert the green channel before export
-    (SKILL.md Rule 11)."""
+    tangent normals; DayZ _nohq is DirectX-convention (Y-), so invert the
+    green channel before export (SKILL.md Rule 11)."""
     scene = bpy.context.scene
     img = bpy.data.images.new(f"{low.name}_{kind.lower()}", size, size, alpha=False)
     if kind == 'NORMAL':
@@ -284,7 +282,7 @@ def bake_map(high, low, kind='NORMAL', size=2048, ray=0.01, path=None):
 
 
 # ============================================================
-# v2 helpers — integrity gate — PENDING FIXTURES F1/F2/F3
+# v2 helpers — integrity gate
 # ============================================================
 
 def verify_mesh_integrity(name, require_closed=True, allow_ngons=False):
@@ -320,7 +318,7 @@ def verify_mesh_integrity(name, require_closed=True, allow_ngons=False):
     if require_closed and r['boundary_edges']:
         fails.append('open boundary')
     # Ngons report as a warning, never a failure: EXACT booleans on flat faces
-    # emit ring ngons as normal output (fixture F3, 2026-06-10, Blender 5.1.1).
+    # emit ring ngons as normal output (measured on Blender 5.1.1).
     # Shading/decimation risk applies to curved surfaces only — judged at the
     # visual checkpoint, not by this gate.
     warns = []

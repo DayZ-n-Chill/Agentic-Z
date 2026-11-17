@@ -2,7 +2,7 @@
 
 Which way to load Three.js in a generated viewer page, what a sandboxed chat frame allows, the "fit editor" pattern for placing memory points offline, the two defects that lose a user's placement, and how to test a viewer page without a headless browser download. Open it when writing or changing any script that emits a viewer page, not only this skill's.
 
-Nothing here is a fact about the game, so nothing is cited to `P:\`. The measurements are the source author's, reported with the imported knowledge pack; each names its date and the mod it was made on.
+Nothing here is a fact about the game, so nothing is cited to `P:\`. The measurements were made on Three.js and Chrome, not in the game; each names what was measured.
 
 ## Three.js loading lanes
 
@@ -12,12 +12,12 @@ Measured on 2026-09-01 by HTTP probe and headless render (Chrome 151, no permiss
 |---|---|---|
 | UMD `<script src=".../three.min.js">` | yes | 0.160.0 |
 | ESM with an `importmap` pointing at an https CDN | yes | 0.185.1 (the latest then) |
-| ESM with an `importmap` pointing at local vendored files | no (CORS) | http only |
+| ESM with an `importmap` pointing at local copies of the module files | no (CORS) | http only |
 
 - `build/three.min.js` (UMD) answers HTTP 200 up to 0.160.0 and 404 from 0.161.0. A viewer on the UMD lane has no upgrade path: it is a dead branch, not just an old version.
 - `examples/js/` (the non-module OrbitControls and TransformControls) answers 200 at 0.147.0 and 404 from 0.148.0. That is why legacy viewers sit at 0.147: a hard limit, not a preference.
-- ESM with an importmap against the https CDN works from `file://` with no browser flags. Notes that say otherwise are wrong. What fails from `file://` is importing local module files. Do not vendor three to make a viewer work offline: vendored modules need http.
-- `three.module.js` is no longer one bundle. It re-exports from `three.core.js` (in 0.185.1: 650 KB plus 1.44 MB). Vendoring only the first gives a silent 404 and a blank page.
+- ESM with an importmap against the https CDN works from `file://` with no browser flags. Notes that say otherwise are wrong. What fails from `file://` is importing local module files. Do not bundle a local copy of three to make a viewer work offline: local module files need http.
+- `three.module.js` is no longer one bundle. It re-exports from `three.core.js` (in 0.185.1: 650 KB plus 1.44 MB). Copying only the first gives a silent 404 and a blank page.
 - Going from r160 to r185.1 changed nothing for the API this tool uses (raw `BufferGeometry`, `MeshStandardMaterial`, `OrbitControls`, `Raycaster`, `shadowMap`, tone mapping): the same raycast distance, the same `outputColorSpace`, no page errors and no deprecation warnings. The one deprecation nearby is `PCFSoftShadowMap` (r182; use `PCFShadowMap`), which still works.
 
 Emit new viewers on the ESM, importmap and CDN lane. Drop to UMD only for a measured reason, knowing it caps that viewer at 0.160.0 for good.
@@ -39,13 +39,13 @@ Some memory points cannot be tuned in game: crew proxies, `pos_driver` and its `
 
 Several occupants at once (driver and co-driver, in different colors) let you fit them without overlap. The real seated pose comes from the animation; the mannequin is a geometric reference only.
 
-The source names two scripts as its reference implementation, `build_viewer3.py` (p3d to per-material groups and a base64 loader) and `build_viewer4.py` (the rider builder, the sliders and the readout). Neither came with the imported pack; the description above is what there is.
+Agentic-Z ships no fit editor script; the description above is the whole pattern. Such a page needs two parts: a builder that turns the `.p3d` into per-material groups with a base64 loader, and the page logic for the mannequins, the sliders and the readout.
 
 To check such a page when a headless browser will not fit on disk: parse the embedded JSON payload, and run `node --check` on the inline script.
 
 ## Two defects that lose the user's placement
 
-Both hit the fit editor pattern, both were shipped, and each cost a whole placement session on the LFQuad3 mod (2026-09-08 and 09). Build both checks before handing a fit editor to a user.
+Both hit the fit editor pattern, both were shipped, and each cost a whole placement session on a quad bike mod. Build both checks before handing a fit editor to a user.
 
 **1. The copyable readout must be rebuilt on every change that matters, and only on those.**
 
@@ -69,6 +69,6 @@ Expect a remainder that is not zero, and do not chase it: `BoxHelper` draws the 
 
 ## Testing a viewer page without Puppeteer
 
-Puppeteer's Chromium download can fill a sandbox disk. Without it: serve the HTML with a static `http.server` and drive it with a browser preview tool. The source used the preview MCP: `preview_start`, then `preview_eval` for the page state, the data and the `THREE` objects, `preview_console_logs` at error level, and `preview_screenshot`. That shows the page renders, the console is clean and the state is right, with no Chromium download.
+Puppeteer's Chromium download can fill a sandbox disk. Without it: serve the HTML with a static `http.server` and drive it with a browser preview tool. With a preview MCP server the calls are `preview_start`, then `preview_eval` for the page state, the data and the `THREE` objects, `preview_console_logs` at error level, and `preview_screenshot`. That shows the page renders, the console is clean and the state is right, with no Chromium download.
 
-The screenshot can time out while the animation loop runs; reading the state with `preview_eval` is the reliable check. First used on the LFQuad mod's wheel well tuner, 2026-06-01.
+The screenshot can time out while the animation loop runs; reading the state with `preview_eval` is the reliable check.

@@ -11,7 +11,7 @@ Server-authoritative: every mutating hop runs through a `*Server` method gated b
 1. `RecipeBase` (`P:\scripts\4_world\classes\recipes\recipes\craftfencekit.c:1`) consumes materials and gives a `KitBase: ItemBase` (`P:\scripts\4_world\entities\itembase\kitbase.c:1`; `IsBasebuildingKit()` returns true, `:5`).
 2. Kit `SetActions()` adds `ActionTogglePlaceObject` + `ActionDeployObject` (`kitbase.c:146-152`).
 3. `ActionDeployObject` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\deployactions\actiondeployobject.c:7`) is hologram-driven (`ActionUsesHologram()` returns true, `:15`). Placement validity is checked against `player.GetHologramLocal()/GetHologramServer()`, `IsColliding()`, `item.CanBePlaced(...)` (`actiondeployobject.c:42-75`). Kits declare `DoPlacingHeightCheck()` as true and a `HeightCheckOverride()` (FenceKit 2.54 `P:\scripts\4_world\entities\itembase\fencekit.c:36-44`; WatchtowerKit 2.83 `P:\scripts\4_world\entities\itembase\watchtowerkit.c:32-40`).
-4. On finish the client calls `entity.OnPlacementComplete(...)` (`actiondeployobject.c:164`). The SERVER-only `FenceKit.OnPlacementComplete` (`fencekit.c:19-34`) does `g_Game.CreateObjectEx("Fence", …)` with `ECE_PLACE_ON_SURFACE`, sets pos/orient, `HideAllSelections()`.
+4. On finish the client calls `entity.OnPlacementComplete(...)` (`actiondeployobject.c:164`). The server-only part of `FenceKit.OnPlacementComplete` (`fencekit.c:19-34`) does `g_Game.CreateObjectEx("Fence", …)` with `ECE_PLACE_ON_SURFACE`, sets pos/orient, `HideAllSelections()`.
 5. The kit self-deletes on `OnEndServer` if it was placed (`actiondeployobject.c:230-234`).
 
 ## 2. Construction init
@@ -20,7 +20,7 @@ Until 1.29 `BaseBuildingBase` owned one `ref Construction m_Construction` (1.29 
 
 ## 3. Base part
 
-The freshly-spawned entity has NO parts built. The player attaches the base material (e.g. WoodenLogs) then builds the `base` part (`is_base=1`). Building the base sets `HasBase()` to true, spawns a construction kit back (`OnPartBuiltServer` `basebuildingbase.c:554-560`), and toggles the `"Deployed"` animation/proxy (`InitVisuals` `:677-691`).
+The freshly-spawned entity has no parts built. The player attaches the base material (e.g. WoodenLogs) then builds the `base` part (`is_base=1`). Building the base sets `HasBase()` to true, spawns a construction kit back (`OnPartBuiltServer` `basebuildingbase.c:554-560`), and toggles the `"Deployed"` animation/proxy (`InitVisuals` `:677-691`).
 
 ## 4. Build a part
 
@@ -47,8 +47,8 @@ Just building further parts whose `required_parts[]` are satisfied (`HasRequired
 
 ## 7. Save and load reconciliation
 
-- `OnStoreSave` (`basebuildingbase.c:420-430`): writes `m_SyncParts01`, `02`, `03`, then `m_HasBase`. A subclass appends its extra fields AFTER `super` (Fence adds `m_GateState`, `m_IsOpened`, `P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:246-254`).
-- `OnStoreLoad` (`basebuildingbase.c:432-464`): reads the three ints then `m_HasBase`, each with a `return false` on read failure (default-then-abort). Subclass reads AFTER `super` in the same order (`fence.c:256-289`, with a `version<110` legacy branch).
+- `OnStoreSave` (`basebuildingbase.c:420-430`): writes `m_SyncParts01`, `02`, `03`, then `m_HasBase`. A subclass appends its extra fields after `super` (Fence adds `m_GateState`, `m_IsOpened`, `P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:246-254`).
+- `OnStoreLoad` (`basebuildingbase.c:432-464`): reads the three ints then `m_HasBase`, each with a `return false` on read failure (default-then-abort). Subclass reads after `super` in the same order (`fence.c:256-289`, with a `version<110` legacy branch).
 - `AfterStoreLoad` (`basebuildingbase.c:466-474`) calls `SetPartsAfterStoreLoad()` (`:476-487`), which calls `SetPartsFromSyncData()`: it rebuilds each part's built flag from the bitmask, sets base state from the base part, re-syncs. Guarded by `m_FixDamageSystemInit` (the damage-system migration path uses `EEOnAfterLoad` + a 500ms deferred call instead, `:505-513`).
 - `SetPartFromSyncData` (`basebuildingbase.c:265-304`), the reconciliation core: per part, compares "built in sync bitmask" vs "built flag", adds/removes constructed parts, shows/hides physics, toggles the `Deployed` proxy for the base, and **failsafe-relocks attached materials** (`:303`, "failsafe for corrupted sync/storage data").
 
@@ -56,7 +56,7 @@ Just building further parts whose `required_parts[]` are satisfied (`HasRequired
 
 `P:\scripts\4_world\classes\useractionscomponent\_constants.c:6-8`: `AT_BUILD_PART=193`, `AT_DISMANTLE_PART=195`, `AT_DESTROY_PART=209`. Also `m_InteractedPartId` / `m_PerformedActionId` (`basebuildingbase.c:13-14`, registered `:46-47`) sync the last action so clients play the right SFX (`SetActionFromSyncData` `:248-262`).
 
-Action classes (under `P:\scripts\4_world\classes\useractionscomponent\actions\`): `actionbuildpart.c`, `actiondismantlepart.c`, `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actiondestroypart.c`, `actiondeployobject.c`, `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionfoldbasebuildingobject.c`, `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionbuildshelter.c` (no-tool build), `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionopenfence.c`, `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionclosefence.c`, `P:\scripts\4_world\classes\useractionscomponent\actions\singleuse\actionattachtoconstruction.c`, `P:\scripts\4_world\classes\useractionscomponent\actions\singleuse\actionplugintofence.c` (DEPRECATED, do not build on it).
+Action classes (under `P:\scripts\4_world\classes\useractionscomponent\actions\`): `actionbuildpart.c`, `actiondismantlepart.c`, `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actiondestroypart.c`, `actiondeployobject.c`, `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionfoldbasebuildingobject.c`, `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionbuildshelter.c` (no-tool build), `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionopenfence.c`, `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionclosefence.c`, `P:\scripts\4_world\classes\useractionscomponent\actions\singleuse\actionattachtoconstruction.c`, `P:\scripts\4_world\classes\useractionscomponent\actions\singleuse\actionplugintofence.c` (deprecated, do not build on it).
 
 Not checked: The no-tool shelter path (`ActionBuildShelter` / `ActionActionBuildPartNoTool` (`actionbuildpart.c:543` on `P:\`), `UseMainItem()` false, 1.29 `actionbuildpart.c:224-245` + `actionbuildshelter.c`) exists but its shelter-specific config was not fully traced in this pass.
 

@@ -9,7 +9,7 @@ How a rider can fire their own handheld weapon from a moving car or boat: the pl
 - `LinkToLocalSpaceOf` is native on `Human`: `P:\scripts\3_game\human.c:1391`.
 - `HumanCommandScript` is the scripted command base class: `P:\scripts\3_game\human.c:1236`.
 - `StartCommand_Script` starts one: `P:\scripts\3_game\human.c:1623`.
-- `IsInVehicle` is declared on `DayZPlayerImplement`, the parent of `PlayerBase`: `P:\scripts\4_world\entities\dayzplayerimplement.c:468`.
+- `IsInVehicle` is declared on `DayZPlayerImplement`, an ancestor of `PlayerBase` (through `ManBase`): `P:\scripts\4_world\entities\dayzplayerimplement.c:468`.
 - `PlayerBase.CanReceiveItemIntoHands` returns `false` while `IsInVehicle()` is true: `P:\scripts\4_world\entities\manbase\playerbase.c:2284`.
 - `UnlinkFromLocalSpace` undoes the link: `P:\scripts\3_game\human.c:1392`.
 - `dBodyActive` sets the active state of a body: `P:\scripts\1_core\proto\enphysics.c:64`.

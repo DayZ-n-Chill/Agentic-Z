@@ -9,7 +9,7 @@ argument-hint: "[--check [--quiet]] [--yes] [--per-file] [--force] [--dry-run] [
 
 # /agentic-z-update
 
-Pull template improvements (agents, skills, conventions, docs) from upstream `DayZ-n-Chill/Agentic-Z`'s `main` branch into the current clone. Three guarantees:
+Pull template improvements (agents, skills, conventions, docs) from the `main` branch of the Agentic-Z GitHub repository (the `upstream` remote, whose URL is `UPSTREAM_URL` in `update.py`) into the current clone. Three guarantees:
 
 1. **`workspace/` mod work is never touched.** All changes are limited to template-managed paths.
 2. **Local customizations to template files are not overwritten silently.** A three-way per-file classification (local file, file at the baseline, upstream file) detects when both the clone and upstream edited the same file and leaves it alone unless the user picks "take" in `--per-file` mode. File contents are never merged: each file is either kept or replaced whole.

@@ -2,11 +2,11 @@
 
 What 1.30 changed in vanilla infected, animal and noise code: the engine now lowers noise for weather by itself, the old script helpers are obsolete, `AIParams` gained four multipliers, infected have a cower mind state, and the Nasdara map brings two animal group templates. None of this is Expansion AI; the Expansion patterns are in `eai-fsm-combat.md` and `eai-pathfinding-groups.md`.
 
-Every block marked `[EXACT]` was read in the cited file on `P:\` and compared with the knowledge pack's copy. `[DESIGN]` is a recommendation, `[UNVERIFIED]` is not confirmed. What the knowledge pack reports for 1.29 or for the Nasdara data could not be read on `P:\` and is marked that way. The same facts, shorter, are in the AI pack: `skills/_shared/ai/perception.md` ("Weather and noise") and `skills/_shared/ai/creatures.md` ("Infected mind states").
+Every block marked `[EXACT]` was read in the cited file on `P:\`. `[DESIGN]` is a recommendation, `[UNVERIFIED]` is not confirmed. Statements about 1.29 or about the Nasdara data could not be read on `P:\` and are marked that way. The same facts, shorter, are in the AI pack: `skills/_shared/ai/perception.md` ("Weather and noise") and `skills/_shared/ai/creatures.md` ("Infected mind states").
 
 ## The engine lowers noise for weather by itself
 
-Until 1.29, `NoiseAIEvaluate.GetNoiseReduction(g_Game.GetWeather())` was multiplied into `AddNoise` from player steps and several other emitters (reported for 1.29; not on `P:\`).
+Until 1.29, `NoiseAIEvaluate.GetNoiseReduction(g_Game.GetWeather())` was multiplied into `AddNoise` from player steps and several other emitters (1.29 behaviour; not checkable on `P:\`, which holds 1.30).
 
 Since 1.30 the engine applies the weather, sandstorm and sea reduction natively. Script can ask for the value:
 
@@ -90,7 +90,7 @@ Its replacement also sees the sandstorm. It is obsolete too, and it is not what 
 
 ## `AIParams` weather multipliers
 
-Until 1.29 `AIParams` had `rainToNoiseMultiplier` and `seaToNoiseMultiplier` only (reported for 1.29 `DZ\data\aiconfigs\config.cpp:21-23`; not on `P:\`). Since 1.30:
+Until 1.29 `AIParams` had `rainToNoiseMultiplier` and `seaToNoiseMultiplier` only (1.29 `DZ\data\aiconfigs\config.cpp:21-23`; not checkable on `P:\`, which holds 1.30). Since 1.30:
 
 ```cpp
 // [EXACT] P:\DZ\data\aiconfigs\config.cpp:12
@@ -139,9 +139,9 @@ class AIParams
 
 ## Animal group templates (Nasdara)
 
-Reported by the knowledge pack from the Nasdara data of 1.30 (`DZ\data_takistan\aiconfigs\config.cpp` in his extraction, `GroupBehaviourTemplates` at `:14-132`); not yet checked on `P:\`, which has no Nasdara data. The vanilla templates that are on `P:\` (`DZWolfGroupBeh`, `DZDeerGroupBeh` and the rest) are in `P:\DZ\data\aiconfigs\config.cpp:77`; see `skills/_shared/ai/animal-territories.md`.
+These are in the Nasdara data of 1.30 (`DZ\data_takistan\aiconfigs\config.cpp`, `GroupBehaviourTemplates` at `:14-132`); not yet checked on `P:\`, which has no Nasdara data. The vanilla templates that are on `P:\` (`DZWolfGroupBeh`, `DZDeerGroupBeh` and the rest) are in `P:\DZ\data\aiconfigs\config.cpp:77`; see `skills/_shared/ai/animal-territories.md`.
 
-`DZMouflonGroupBeh` (his `:16`):
+`DZMouflonGroupBeh` (`:16`):
 
 ```cpp
 	class DZMouflonGroupBeh
@@ -155,7 +155,7 @@ Reported by the knowledge pack from the Nasdara data of 1.30 (`DZ\data_takistan\
 		groupRadius = 10.0;
 ```
 
-`DZDogGroupBeh` (his `:68`):
+`DZDogGroupBeh` (`:68`):
 
 ```cpp
 	class DZDogGroupBeh
@@ -168,8 +168,8 @@ Reported by the knowledge pack from the Nasdara data of 1.30 (`DZ\data_takistan\
 		groupRadius = 10.0;
 ```
 
-The dog life cycle uses `zoneType = "HuntingGround"` (his `:114`) with `siegeAttackCountdownMin = 10` and `siegeAttackCountdownMax = 15` (`:94-95`) and `safeKeeperIntervalMin = 20` and `safeKeeperIntervalMax = 40` (`:92-93`). For comparison, the wolf template on `P:\` is also `type="Predators"` and uses the `Rest` and `HuntingGround` zone types (`P:\DZ\data\aiconfigs\config.cpp:87-148`).
+The dog life cycle uses `zoneType = "HuntingGround"` (`:114`) with `siegeAttackCountdownMin = 10` and `siegeAttackCountdownMax = 15` (`:94-95`) and `safeKeeperIntervalMin = 20` and `safeKeeperIntervalMax = 40` (`:92-93`). For comparison, the wolf template on `P:\` is also `type="Predators"` and uses the `Rest` and `HuntingGround` zone types (`P:\DZ\data\aiconfigs\config.cpp:87-148`).
 
 ## Navmesh
 
-The official 1.30 experimental modding changelog says the navmesh file is a newer version with no backward compatibility, so custom terrains must regenerate it, and that a navmesh can use a hide animation source if the EntityType navmesh config sets one up. Neither statement was checked against binary navmesh files by the knowledge pack's author or for Agentic-Z. It matters to any path code on a custom map, including Expansion's (PC-15 and PC-16 in `eai-pathfinding-groups.md`).
+The official 1.30 experimental modding changelog says the navmesh file is a newer version with no backward compatibility, so custom terrains must regenerate it, and that a navmesh can use a hide animation source if the EntityType navmesh config sets one up. Neither statement has been checked against binary navmesh files. It matters to any path code on a custom map, including Expansion's (PC-15 and PC-16 in `eai-pathfinding-groups.md`).

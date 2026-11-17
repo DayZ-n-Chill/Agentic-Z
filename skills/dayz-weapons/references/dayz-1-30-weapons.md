@@ -2,7 +2,7 @@
 
 The new firearm scripts and where their models are, the pistol animation state getters, magazine detach on open bolt guns, the state machine repair on magazine removal, the new recoil classes, the explosion effect API, and the MP18 drum magazine. Animation motion stays with the dayz-animation-pipeline skill.
 
-Every block marked `[EXACT]` was read in the cited file on `P:\` and compared with the knowledge pack's copy. `[VERIFIED-vanilla]` means read in the cited vanilla file; `[DESIGN]` is a recommendation; `[UNVERIFIED]` is not confirmed. What the knowledge pack reports for 1.29 or for game build 1.30.164200 could not be read on `P:\` and is marked that way.
+Every block marked `[EXACT]` is copied from the cited file on `P:\`. `[VERIFIED-vanilla]` means read in the cited vanilla file; `[DESIGN]` is a recommendation; `[UNVERIFIED]` is not confirmed. Statements about 1.29, and about the config classes of game build 1.30.164200, could not be read on `P:\` and are marked that way.
 
 ## W-STAGING1: scripts without a config class or a model
 
@@ -22,7 +22,7 @@ Since 1.30, four new firearm scripts and a bayonet compile, register their hand 
 
 Magazine script classes exist too: `Mag_Luger_8Rnd`, `Mag_LeeEnfield_10Rnd` and `Mag_MP18_Drum32Rnd` (`P:\scripts\4_world\entities\itembase\magazine\magazines.c:65-67`). `P:\DZ\weapons\attachments\magazine\config.cpp` has no `CfgMagazines` class for any of them. Do not put these class names in `types.xml` or a trader list for a server whose data lacks them.
 
-**Game build 1.30.164200** (reported by the knowledge pack from its own extraction; not yet checked on `P:\`): the four weapons, their magazines and the bayonet ship in `nasdara\addons\weapons_nasdara.pbo` (prefix `DZ\weapons_takistan`), not in `weapons_firearms` or `weapons_pistols`, each weapon with its `.p3d` and a `config.bin` in its own folder. Classes as he read them in the derapified configs (paths relative to `DZ\weapons_takistan\`):
+**Game build 1.30.164200**: the four weapons, their magazines and the bayonet ship in `nasdara\addons\weapons_nasdara.pbo` (prefix `DZ\weapons_takistan`), not in `weapons_firearms` or `weapons_pistols`, each weapon with its `.p3d` and a `config.bin` in its own folder. The prefix and the file list were read in the header of that PBO in an installed DayZ Server (Steam build 26220720); the PBO is not unpacked on `P:\`. The classes and line numbers below are those of the derapified configs and are not yet checked on `P:\` (paths relative to `DZ\weapons_takistan\`):
 
 | Classes (scope 2) | Config parent | Config | Model |
 |---|---|---|---|
@@ -35,7 +35,7 @@ Magazine script classes exist too: `Mag_Luger_8Rnd`, `Mag_LeeEnfield_10Rnd` and 
 
 In that build `Luger_Base` and `MP18_Base` take the same two magazines, the Luger box and the MP18 drum (`pistols\Luger\config.cpp:55`, `firearms\mp18\config.cpp:54`), and `LeeEnfield` takes the bayonet (`attachments[]`, `firearms\leeEnfield\config.cpp:160`). For a comparison on that build, open the model you inherit from that PBO.
 
-Loot, read for Agentic-Z in the vanilla missions of the installed DayZ Server (Steam build 26220720; mission files are not on `P:\`): `dayzOffline.nasdara\db\types.xml` gives every one of these classes a nominal above 0 except `SCARL_Black` (`Luger` 55, `SCARL` 4); Chernarus and Sakhal list them all at 0, and Livonia (`dayzOffline.enoch`) lists them all at 0 except `SCARL_Black` (4). None of them was spawned in game by the author or for Agentic-Z.
+Loot: the vanilla `types.xml` files list all nine class names. On `P:\`, Chernarus and Sakhal give every one a nominal of 0 (`SCARL` at `P:\DZ\worlds\chernarusplus\ce\db\types.xml:19815` and `P:\DZ\worlds\sakhal\ce\db\types.xml:19934`), and Livonia gives every one 0 except `SCARL_Black`, which has 4 (`P:\DZ\worlds\enoch\ce\db\types.xml:19390`). The Nasdara mission is not on `P:\`; in an installed DayZ Server (Steam build 26220720), `mpmissions\dayzOffline.nasdara\db\types.xml` gives every one a nominal above 0 except `SCARL_Black` (`Luger` 55, `SCARL` 4). None of them has been spawned in game yet.
 
 The hand animation files are in the data on `P:\` (the entity side only records the registration; the motion is animation work). All four lines are in `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c`:
 
@@ -73,7 +73,7 @@ class SCARL_Base : SCARH_Base
 
 ## Pistol state machine: virtual animation state getters
 
-Until 1.29, `Pistol_Base.InitStateMachine()` passed `PistolAnimState` constants into each stable state constructor (reported for 1.29 `Pistol_Base.c:203-212`; not on `P:\`).
+Until 1.29, `Pistol_Base.InitStateMachine()` passed `PistolAnimState` constants into each stable state constructor (1.29 `Pistol_Base.c:203-212`; the 1.29 scripts are not on `P:\`, so the 1.29 lines in this file are not checked there).
 
 Since 1.30 the same constructors take `GetDischargedPistolAnimState()`, `GetChargedPistolAnimState()`, `GetOpenPistolAnimState()` and `GetJammedPistolAnimState()`. Override those on the pistol class. The stable state classes still return `PistolStableStateID` values from `GetCurrentStateID()`; they were not rewritten.
 
@@ -121,7 +121,7 @@ The Luger (toggle lock) overrides three getters, not the discharged one, and use
 
 ## Open bolt guns can detach the magazine
 
-Until 1.29, `OpenBolt_Base.SetActions()` only removed `FirearmActionLoadBullet` and `FirearmActionLoadBulletQuick` (reported for 1.29 `OpenBolt_Base.c:382-388`; not on `P:\`). Since 1.30 it also adds `FirearmActionDetachMagazine`:
+Until 1.29, `OpenBolt_Base.SetActions()` only removed `FirearmActionLoadBullet` and `FirearmActionLoadBulletQuick` (1.29 `OpenBolt_Base.c:382-388`; not on `P:\`). Since 1.30 it also adds `FirearmActionDetachMagazine`:
 
 ```c
 // [EXACT] P:\scripts\4_world\entities\firearms\openbolt_base.c:382
@@ -155,11 +155,11 @@ Attaching is stricter: the `ActionCondition` of `FirearmActionAttachMagazine` no
 	}
 ```
 
-Until 1.29, `EEItemDetached` stopped after `UpdateModifiers()` (reported for 1.29 `Weapon_Base.c:1123-1128`; not on `P:\`).
+Until 1.29, `EEItemDetached` stopped after `UpdateModifiers()` (1.29 `Weapon_Base.c:1123-1128`; not on `P:\`).
 
 `EEFired` is an `override` and wraps the muzzle flash and overheating effects in `if ( !g_Game.IsHeadlessOrDedicatedServer() )` (`P:\scripts\4_world\entities\firearms\weapon_base.c:341-346`).
 
-Where a swapped magazine lands when it does not fit the inventory: 1.29 passed an uninitialized `float dir[4]` into `SetGroundEx` (reported for 1.29 `WeaponManager.c:1362-1365`; not on `P:\`). 1.30 fills it from the player's yaw:
+Where a swapped magazine lands when it does not fit the inventory: 1.29 passed an uninitialized `float dir[4]` into `SetGroundEx` (1.29 `WeaponManager.c:1362-1365`; not on `P:\`). 1.30 fills it from the player's yaw:
 
 ```c
 // [EXACT] P:\scripts\4_world\classes\weapons\weaponmanager.c:1364
@@ -203,11 +203,11 @@ All four new recoil classes extend `RecoilBase` and fill `m_HandsCurvePoints` pl
 		m_CamOffsetRelativeTime = 0.125;
 ```
 
-The weapons create them in `SpawnRecoilObject()` (`scarl.c:4-7`, `luger.c:3-6`, `leeenfield.c:3-6`, `mp18.c:7-10`). The config string `recoil="recoil_fal"` on `SCARH_Base` (`P:\DZ\weapons\firearms\scarh\config.cpp:94`) is a different thing from this script object. The knowledge pack calls it the `CfgRecoils` channel; on `P:\` the engine config does have a `class CfgRecoils` (`P:\bin\config.cpp:218`), but it holds only `empty[]` and `impulse[]`, and no `recoil_fal` entry exists under `P:\bin`, `P:\DZ` or `P:\scripts`. Tune recoil in the script class (`skills/_shared/weapons/recoil-fire-modes.md`).
+The weapons create them in `SpawnRecoilObject()` (`scarl.c:4-7`, `luger.c:3-6`, `leeenfield.c:3-6`, `mp18.c:7-10`). The config string `recoil="recoil_fal"` on `SCARH_Base` (`P:\DZ\weapons\firearms\scarh\config.cpp:94`) is a different thing from this script object. It is sometimes described as a `CfgRecoils` entry; on `P:\` the engine config does have a `class CfgRecoils` (`P:\bin\config.cpp:218`), but it holds only `empty[]` and `impulse[]`, and no `recoil_fal` entry exists under `P:\bin`, `P:\DZ` or `P:\scripts`. Tune recoil in the script class (`skills/_shared/weapons/recoil-fire-modes.md`).
 
 ## Explosion effects: the API changed and old calls no longer compile
 
-Until 1.29, `AmmoTypesAPI.GetExplosionParticleID(string ammoName, string surfaceName)` returned an `int` (reported for 1.29 `AmmoTypes.c:57`, called from the explosion code in `DayZGame.c`; not on `P:\`).
+Until 1.29, `AmmoTypesAPI.GetExplosionParticleID(string ammoName, string surfaceName)` returned an `int` (1.29 `AmmoTypes.c:57`, called from the explosion code in `DayZGame.c`; not on `P:\`).
 
 Since 1.30 that method is gone; no file under `P:\scripts` contains `GetExplosionParticleID`. `ExplosiveEffectData` and `GetExplosiveEffectData(ammoName, surfaceName)` return the particle and an optional sound set. The signature is two strings in and an object out, not `(ammoType, outData)`.
 
@@ -254,22 +254,22 @@ The vanilla caller gets `surfaceType` from `SurfaceGetType3D` and then asks for 
 
 The explosion code in `P:\scripts\3_game\dayzgame.c:3634-3638` also plays `explosiveEffectData.m_SoundSetName` through `SetStartSoundParams`. `Init()` registers `Hit_Desert_Sand` and `Hit_Sand` (and snow and ice) per ammo; the sand entries of the RGD5 and M67 grenades pass `"ExplosionDustEffect_SoundSet"` (`P:\scripts\3_game\global\ammotypes.c:66-72`).
 
-`MagazineTypeToAmmoType` still exists. It moved from `AmmoTypes.c:14` (reported for 1.29) to `P:\scripts\3_game\global\ammotypes.c:26`, because `ExplosiveEffectData` was added above it. Vanilla calls it at `P:\scripts\4_world\entities\firearms\weapon_base.c:840` (reported for 1.29: `:848`).
+`MagazineTypeToAmmoType` still exists. It moved from `AmmoTypes.c:14` in 1.29 (not on `P:\`) to `P:\scripts\3_game\global\ammotypes.c:26`, because `ExplosiveEffectData` was added above it. Vanilla calls it at `P:\scripts\4_world\entities\firearms\weapon_base.c:840` (1.29: `:848`, not on `P:\`).
 
 `ExplosivesBase` (`P:\scripts\4_world\entities\explosivesbase.c`): `[Obsolete("1.30: Handled in AmmoTypes instead")]` marks `SetParticleExplosion(int particle)` (`:306-310`), both `AddExplosionEffectForSurface` overloads (`:387`, `:433`), `m_TypeToSurfaceParticleIDMap` (`:40-41`) and `InitSpecificsExplosionEffectForSurface` (`:380-384`). Put `particle = "..."` on the `CfgAmmo` class and `ammoType` on the explosive's `CfgVehicles` class; do not keep a script side map from surface to particle.
 
 ## The MP18 drum magazine
 
-`Mag_MP18_Drum32Rnd` is not an empty class. It drives the animation source `drum`, stops the animation at 12 rounds (`m_AmmoOffset = 12`), plays `wpn_mp18_drum_mag_SoundSet` at the memory point `drum_sound`, and saves `m_LastAnimPhase`, which it reads back from save version 144 on (`P:\scripts\4_world\entities\itembase\magazine\magazines.c:67-121`). The data on `P:\` has no `CfgMagazines` entry for it (W-STAGING1). The knowledge pack reports it at `attachments\magazine\config.cpp:130` of `weapons_nasdara.pbo` in build 1.30.164200, with 32 rounds; not yet checked on `P:\`.
+`Mag_MP18_Drum32Rnd` is not an empty class. It drives the animation source `drum`, stops the animation at 12 rounds (`m_AmmoOffset = 12`), plays `wpn_mp18_drum_mag_SoundSet` at the memory point `drum_sound`, and saves `m_LastAnimPhase`, which it reads back from save version 144 on (`P:\scripts\4_world\entities\itembase\magazine\magazines.c:67-121`). The data on `P:\` has no `CfgMagazines` entry for it (W-STAGING1). In build 1.30.164200 its `CfgMagazines` class is at `attachments\magazine\config.cpp:130` of the derapified `weapons_nasdara.pbo`, with 32 rounds; not yet checked on `P:\`.
 
 ## The changelog names script symbols that do not exist
 
-The official 1.30 modding changelog (ticket T189758) announces `enum SoundHitType` and `SurfaceInfo.GetSoundHitType()`. Neither string appears anywhere under `P:\scripts`. `P:\scripts\3_game\surfaceinfo.c` adds proto natives for vehicle and dust particles, not a hit type. A weapon mod must not call `GetSoundHitType()` in Enforce Script on this data; it will not compile. Surface and impact particle work belongs with the surface material work, not here.
+The official 1.30 modding changelog announces `enum SoundHitType` and `SurfaceInfo.GetSoundHitType()`. Neither string appears anywhere under `P:\scripts`. `P:\scripts\3_game\surfaceinfo.c` adds proto natives for vehicle and dust particles, not a hit type. A weapon mod must not call `GetSoundHitType()` in Enforce Script on this data; it will not compile. Surface and impact particle work belongs with the surface material work, not here.
 
 ## Outside this skill
 
-From the same 1.30 change review, listed so they are not looked for here:
+Other 1.30 changes, listed so they are not looked for here:
 
 - `GunCase`, `GunCaseKeys` and their colour recipes: container work (`dayz-config-specialist`, with `skills/_shared/container-base.md`).
-- Police baton health changed from 18 to 13 and from 40 to 30, and the `hitBricks` and `hitMudDry` melee sound arrays: melee work.
+- Police baton health changed from 18 to 13 and from 40 to 30 (not yet checked on `P:\`), and the `hitBricks` and `hitMudDry` melee sound arrays: melee work.
 - Registration of the `Hit_Mud_Brick` and `Hit_Desert_Sand` surfaces: surface work.

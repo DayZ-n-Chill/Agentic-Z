@@ -6,10 +6,10 @@
 
 Two more things to know before you run it:
 
-- The harness paints its swatches with the procedural texture `#(argb,8,8,3)color(1,1,1,1,CO)`. Measured later by the same author on DayZ 1.29: `ImageWidget.LoadImageFile` rejects that string ("Bad texture name"), which leaves the swatch without a texture (`rules-and-checklist.md`, rule 2). When the swatches come out wrong, ship a 1x1 white `.edds` and load that.
+- The harness paints its swatches with the procedural texture `#(argb,8,8,3)color(1,1,1,1,CO)`. Measured in game on DayZ 1.29: `ImageWidget.LoadImageFile` rejects that string ("Bad texture name"), which leaves the swatch without a texture (`rules-and-checklist.md`, rule 2). When the swatches come out wrong, ship a 1x1 white `.edds` and load that.
 - The result this harness produced was first read as "`SetLV(0)` fixes dark colors" and later retracted: it measured the test machine's HUD brightness setting (`lfpg-knowledge-base.md`, finding 6).
 
-The mod is the source author's own test code; it is not yet checked in game here.
+The harness code below is not yet checked in game on 1.30.
 
 ## What it does
 - F7 opens a panel with 10 rectangles of known ARGB colors
@@ -272,7 +272,7 @@ modded class MissionGameplay
     {
         super.OnKeyPress(key);
 
-        // The source compared against the number 65; the name is safer.
+        // Compare against the KeyCode name, not a raw number.
         if (key == KeyCode.KC_F7)
         {
             LF_ColorTestPanel.Toggle();

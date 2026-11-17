@@ -5,7 +5,7 @@ like it was planned.** It answers *why* that happens in DayZ/Enfusion specifical
 concrete author → preview → build → verify loop plus a plan/spec artifact and a parity gate.
 
 Evidence: a `path:line` citation points into the vanilla data on `P:\` (read on a `P:\` holding 1.30).
-A line marked "not checked on `P:\`" is a behaviour reported from practice that was not confirmed
+A line marked "not checked on `P:\`" is a behaviour seen in practice that was not confirmed
 against the vanilla files. In-game measurements say what was measured and when. If a line has
 neither, treat it as a hint.
 
@@ -75,7 +75,7 @@ Two things move color away from what you authored:
   must record intended colors separately, and the renderer's colors are best-effort only.
 - `ImageWidget.SetColor()` **modulates/tints** the texture (multiplies), it does not repaint pixels
   — an already-colored image gets desaturated, not recolored. Author recolorable art white/greyscale
-  and tint via `SetColor`. (community: https://www.answeroverflow.com/m/1379476089000300725)
+  and tint via `SetColor`. (Not checked on `P:\`.)
 
 ### 1.3 3D-object brightness inside widgets is a separate knob
 Item/player previews render dark unless you touch `Widget.SetObjectLighting(float [0,1], default 1)`
@@ -122,8 +122,8 @@ definition and the gap is judged by eye between two hand-made artifacts.
 
 - **Proportional (flags 0):** position/size are fractions of the parent, so the widget scales with
   the parent and stretches with its aspect. Use `halign`/`valign` `*_ref` anchors to pin to an
-  edge/center of the parent (`valign` 4518× + `halign` 4157× in the corpus — heavily used, not
-  "rare").
+  edge/center of the parent (`valign` 4,687× + `halign` 4,064× across the 227 layouts under
+  `P:\gui\layouts` on 1.30 — heavily used, not "rare").
 - **Exact (flags 1):** units of 1/1080 of the screen height, so the widget keeps its shape and
   scales with the screen height. It does not keep a pixel size: by that law a 1-unit border is
   2/3 of a pixel at 720p (how the engine rasterizes it was not measured).
@@ -139,7 +139,7 @@ definition and the gap is judged by eye between two hand-made artifacts.
 - **Canonical resolution-independent full-screen 16:9 background:**
   ```
   ImageWidgetClass Background {
-      size 0.16 0.09                 // 16% × 9%  (NOT 1.0 1.0)
+      size 0.16 0.09                 // 16% × 9%  (not 1.0 1.0)
       hexactpos 0 vexactpos 0 hexactsize 0 vexactsize 0
       halign center_ref
       valign center_ref
@@ -149,10 +149,9 @@ definition and the gap is judged by eye between two hand-made artifacts.
       { }
   }
   ```
-  Evidence: `P:\gui\layouts\loading.layout:36-55`; community consensus
-  https://www.answeroverflow.com/m/1241899536742617208 and
-  https://www.answeroverflow.com/m/1474596453661016238
-- **Console/TV:** the `keepsafezone` attribute (163× in corpus) respects TV-safe margins. Gamepad/
+  Evidence: `P:\gui\layouts\loading.layout:36-55` (the vanilla widget sets these same position,
+  size, anchor and `fixaspect` values).
+- **Console/TV:** the `keepsafezone` attribute (246× under `P:\gui\layouts` on 1.30) respects TV-safe margins. Gamepad/
   keyboard focus = the global `SetFocus(Widget)/GetFocus()` pair — *(corrected 2026-07-04:
   `SetActiveWindow` has zero vanilla call sites; do not design around it)*. Vanilla conventions:
   console menus `SetFocus(defaultButton)` in Init, hover and focus share one highlight path
@@ -169,22 +168,19 @@ Enfusion editor; same workflow Arma Reforger documents as "Layout Creation" — 
 `UI/layouts` tree, right-click → new `.layout`, double-click to open in the Layout Editor). It is the
 most direct way to make the plan and the implementation the same artifact instead of two.
 
-Reality check: it exists, but it is not a silver bullet — modern DayZ-specific tutorials still
-hand-author `.layout` files (e.g. the stardz DayZ Modding Wiki HUD chapter writes the widget tree by
-hand). Use the editor for visual positioning/preview; keep the brace-format file as source of truth.
+Reality check: it exists, but it is not a silver bullet — DayZ layouts are still commonly
+written by hand. Use the editor for visual positioning/preview; keep the brace-format file as source of truth.
 
 **The double-registration rule (verified mechanism of editor-vs-game divergence):**
 - For the **Layout Editor to preview** your custom imagesets / `.styles`, register them in
   **`dayz.gproj`** (`GameProjectClass` `imageSets{}` / `widgetStyles{}` blocks), then restart
-  Workbench. **Community-standard practice (2026-07-05): keep a per-mod dayz.gproj instead of
-  hand-editing the global one next to `workbenchApp.exe`** — canonical copyable example: COT ships
-  `JM/COT/Workbench/dayz.gproj` (complete GameProjectClass with `FileSystemPathClass Name "Game
-  Root" Directory "P:"` + imageSets/widgetStyles/ScriptModules blocks); joetex's
-  DayZ-BoutDangTimeTools generates the gproj from a template and copies it to the Workbench folder,
-  after which Workbench auto-loads the mod's `.c`, `.layout` and `.styles` files.
-  - Evidence: WoozyMasta "To make Workbench display new custom imagesets (in layout), add them to the
-    dayz.gproj file next to workbenchApp.exe" https://www.answeroverflow.com/m/1467071719020953682 ;
-    BRITTO (styles, both sides) https://www.answeroverflow.com/m/869608103442780342
+  Workbench. **Common practice: keep a per-mod dayz.gproj instead of
+  hand-editing the global one next to `workbenchApp.exe`** — a copyable example: Community Online
+  Tools ships `JM/COT/Workbench/dayz.gproj` (complete GameProjectClass with `FileSystemPathClass
+  Name "Game Root" Directory "P:"` + imageSets/widgetStyles/ScriptModules blocks). Another route is
+  to generate the gproj from a template and copy it to the Workbench folder, after which Workbench
+  auto-loads the mod's `.c`, `.layout` and `.styles` files. (Third-party mod behaviour and Workbench
+  behaviour; not checked on `P:\`.)
 - For the **game to load** the same assets, register them in **`config.cpp`**:
   ```cpp
   class CfgPatches { /* ... */ };
@@ -195,35 +191,34 @@ hand). Use the editor for visual positioning/preview; keep the brace-format file
   ```
 - Missing `dayz.gproj` side → images/styles blank in the editor mockup. Missing `config.cpp` side →
   blank in-game. Keep both in sync or the plan and the build disagree.
-- Workbench launch recipe (community-current): run `workbenchApp.exe` with cwd = DayZ install,
+- Workbench launch recipe (not checked here; `/dayz-launch-workbench` opens Workbench on a mod's gproj): run
+  `workbenchApp.exe` with cwd = DayZ install,
   `-mod=<relative;prefixes;to;each;mod>` (semicolon-separated, each pointing at the folder with the
   `CfgMods` config.cpp), `-newErrorsAreWarnings=1`, `-profiles=...`; kill any running instance first.
-  https://www.answeroverflow.com/m/1516861595706327092
-- Editor quirk: a `MapWidget` cannot be resized directly — change its type to another class, resize,
-  switch back. https://www.answeroverflow.com/m/1506791557657788486
+- Editor quirk (not checked here): a `MapWidget` cannot be resized directly — change its type to
+  another class, resize, switch back.
 
 ---
 
 ## 4. The offline → in-game iteration loop
 
 What to write is covered elsewhere in this skill; this section is how to see it fast. The loop is
-assembled from the tools under `scripts/tools/` and the source author's test harnesses.
+assembled from the tools under `scripts/tools/` and keybind-toggled test harnesses.
 
 ### 4.1 Iteration mechanics (verified)
 - Client + server as `DayZDiag_x64.exe` + `-filePatching` + `serverDZ.cfg allowFilePatching=1` lets
   you edit raw `.c` without a PBO rebuild, and skips BattlEye + `.bisign` signing (harness mods are
-  cheap to deploy). Source: the source author's Workbench diagnostics and DayZ infrastructure notes.
-  In this repo, `/dayz-launch-test` starts the Diag server and client for you.
+  cheap to deploy). `/dayz-launch-test` starts the Diag server and client for you.
 - **There is no script hot-reload**: a mission restart is required to pick up `.c` changes, and
   `config.cpp` changes always require a full PBO rebuild. `-clear` on AddonBuilder avoids stale
   `-temp`.
-- **OPEN EXPERIMENT (highest-leverage unknown, ~5 min to settle):** does a raw `.layout` under
-  filePatching get re-read from disk when a menu is closed and reopened (since `CreateWidgets` runs
-  per-open)? If yes, UI iteration collapses from rebuild+reconnect (~3-10 min) to edit-file +
-  reopen-menu (~seconds), no restart. **Answered 2026-08-19: `hot-iteration.md`.** A `.layout` under
+- **Layout hot reload (measured in game 2026-08-19; details in `hot-iteration.md`).** A raw
+  `.layout` can be re-read from disk when a menu is closed and reopened, which cuts UI iteration from
+  rebuild+reconnect (~3-10 min) to edit-file + reopen-menu (seconds), with no restart, but only from
+  one place. A `.layout` under
   an addon prefix is served only by the PBO, loose files included, but a `.layout` under `$profile:` is
   re-read from disk on every `CreateWidgets`, which gives the seconds-long loop.
-  **Partial answer for Dabs UIs (2026-07-05): Dabs ships layout hot-reload under DIAG** —
+  **Dabs UIs: Dabs Framework ships layout hot-reload under DIAG** —
   `static ScriptView.ReloadAll()` (`MVC/ScriptView.c:126-134`, `#ifdef DIAG_DEVELOPER`, comment
   literally "Hot reload all widgets layouts") Unlinks + rebuilds every live ScriptView's layout.
   Wire it to a keybind/DbgUI button under DayZDiag and Dabs-based UI gets edit→see in seconds; it
@@ -231,20 +226,21 @@ assembled from the tools under `scripts/tools/` and the source author's test har
 
 ### 4.2 Tools on disk
 - **Pre-PBO linter** — `scripts/tools/dayz-script-validator/scripts/script_validator.py <addon_root>` (JSON
-  to stdout; exit 0 PASS / 1 FAIL / 2 WARN). Five UI detectors: layout leaf-brace, XML-format layout
+  to stdout; exit 0 PASS / 1 FAIL / 2 WARN). Four UI detectors: XML-format layout
   (crashes `CreateWidgets`), layout-file-missing (referenced from `.c` but absent → un-guardable CTD),
   `$PBOPREFIX$` path mismatch (→ crash + ghost menu), 3-param `OnMouseLeave` (compiles, never fires).
-  Smoke on LFPG: 28 true positives, 0% FP. **Make this step 1 of the delivery checklist.**
-- **Offline `.layout`→HTML renderer (v1)** — the source author's first renderer, `dayz_layout_render.py <in.layout> [out.html]` (not part of this repo; kept here because its bug list says what to distrust in any static preview). **Use only as a labelled
-  approximation** — its own bug ledger lists 15+ fidelity bugs: `visible 0` ignored, `text_proportion`
+  A fifth, the leaf-brace detector, is quarantined because its rule was false (`rules-and-checklist.md`
+  rule 1). **Make this step 1 of the delivery checklist.**
+- **What to distrust in a naive `.layout`→HTML renderer.** A first-generation renderer (v1, not in
+  this repo) had 15+ fidelity bugs, and any static preview can repeat them: `visible 0` ignored, `text_proportion`
   never modelled (all text ~14px), `halign right_ref/bottom_ref` sign inverted, script-side centering
   not emulated, GridSpacer/WrapSpacer/Scroll layout not implemented, only the first root parsed,
   companion-`.c` color/text extraction by fragile regex that emits plausible-but-wrong output with no
-  warning. Good for gross layout/text sanity; never trust its pixels or colors.
-- **Renderer v2 (built 2026-07-03) — the faithful offline previewer** —
+  warning. Such a preview is good for gross layout/text sanity; never trust its pixels or colors.
+- **Renderer v2 — the faithful offline previewer** —
   `python scripts/tools/dayz-layout-viewer/build_viewer.py <in.layout> [-o out.preview.html] [--layout-root DIR]`.
-  Uses the tested `parse.py` (tokenizer + parser + geometry resolver; the pack copy is
-  `scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py`) and bundles the resolved geometry
+  Uses the layout parser `scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py` (tokenizer + parser +
+  geometry resolver) and bundles the resolved geometry
   at 4 resolutions (1080p / 1440p / ultrawide 21:9 / 720p) into one self-contained `*.preview.html` that
   opens in any browser with no server. Improvements over v1 that matter for fidelity: **respects
   `visible 0`** (v1 rendered hidden widgets), **models `text_proportion`** (font-size = proportion ×
@@ -258,10 +254,9 @@ assembled from the tools under `scripts/tools/` and the source author's test har
   parts of the layout break off-1080p before ever launching the game».)* Still an
   approximation (real Metron fonts, PAA/EDDS textures shown hatched, and script-side `SetColor`/`SetPos`
   are not emulated — trust in-game for pixels/colors/fonts). Self-tested headless 2026-07-03 on
-  `loading.layout` (vanilla, 25 widgets), `day_z_hud.layout` (292 widgets) and `LFPG_SorterTag.layout`
-  (0 pageerrors, all toggles + resolution switch verified). The sample outputs the author kept next to
-  his copy (`loading.preview.html`, `LFPG_SorterTag.preview.html`) are not in this repo.
-- **In-game harnesses (keybind-toggled test menus).** These are the source author's own test mods.
+  the vanilla `loading.layout` and `day_z_hud.layout` and on one mod layout
+  (0 pageerrors, all toggles + resolution switch verified).
+- **In-game harnesses (keybind-toggled test menus).** Three test mods.
   `LF_ColorTest` is reproduced in `color-test-harness.md`; the other two are described, not shipped.
   - `LF_ColorTest` — F7 (scancode 65) panel of 10 known-ARGB swatches + SetLV(0) A/B protocol (a
     measurement only; a mod must not call `SetLV`, section 1.2).
@@ -278,7 +273,7 @@ assembled from the tools under `scripts/tools/` and the source author's test har
   SetTextExactSize` on a live menu gives real-time UI tweaking, then bake the final numbers into the
   `.layout`. (DiagMenu proper needs DayZDiag + WIN+ALT; DbgUI itself compiles in retail.)
 - **Cheap post-test gate:** grep the RPT for `Cannot open layout <path>` — present when a layout fails
-  to load (LFPowerGrid produced it at RPT l.505-506; a clean load produces zero). Also grep your
+  to load (a clean load produces zero). Also grep your
   harness `[UILab]`/LOG_TAG PASS/FAIL lines. Group all in-game checks into one session.
 
 ### 4.3 The loop, assembled
@@ -318,7 +313,7 @@ Rules for filling it:
 - Record where each color comes from (layout attribute vs script `SetColor`) so the preview's
   limitations are known and the in-game color is planned, not discovered.
 
-**5.2 Acceptance criteria (forward contract):** derive them from what the CONSUMER needs, not from
+**5.2 Acceptance criteria (forward contract):** derive them from what the consumer needs, not from
 internal consistency — "every row's widget exists in the built layout with the planned name and mode;
 every `Binding_Name` resolves to a controller property; every `#STR` resolves in stringtable; the
 build screenshots within tolerance of the calibrated mockup at 1080p and one non-1080p resolution."
@@ -328,19 +323,19 @@ build screenshots within tolerance of the calibrated mockup at 1080p and one non
 ## 6. The plan → implementation parity gate (the closing check)
 
 The delivery checklist in `rules-and-checklist.md` is mostly syntax (braces, flags, null-checks). Add this gate that ties
-the build back to the plan. A crashing UI merge went GREEN through points 1/4/5 before an in-game
-test (LFGungame BUG-004), so this is proven to catch real failures.
+the build back to the plan. A crashing UI merge once passed points 1/4/5 before an in-game
+test, so this gate catches real failures.
 
 ### 6.1 Offline load gate (automate where possible)
 1. Every `CreateWidgets(path)` resolves to a file that exists and is **brace** format (not XML).
    *(A missing file is an un-guardable native CTD — the `if(!root)` after `CreateWidgets` never runs.
    linter: layout-file-missing + XML-format.)*
-2. Brace balance per layout (opens == closes); zero XML characters. *(linter: leaf-brace + XML.)*
+2. Brace balance per layout (opens == closes); zero XML characters. *(linter: XML-format; count
+   the braces yourself.)*
 3. `$PBOPREFIX$`/packaging: every layout path starts with the prefix, and `gui/` (plus
    `*.layout;*.imageset;*.fnt;*.styles;*.edds;*.paa;*.xml`) actually ships — AddonBuilder only packs
    extensions in its copy-list, so a working-locally / missing-for-others UI is usually a packaging
-   filter miss. *(linter: PBOPREFIX path; filter list
-   https://www.answeroverflow.com/m/1497956336799977484)*
+   filter miss. *(linter: PBOPREFIX path.)*
 
 ### 6.2 Name / key reconciliation (automated 2026-07-03)
 Run `python scripts/tools/dayz-script-validator/scripts/ui_reconcile.py <addon_root>` (exit 0 clean / 1 FAIL
@@ -351,9 +346,9 @@ typo-likely / 2 WARN verify; `--json` for machine output). It cross-checks the w
    silent null → crash on Cast); a name with no match is WARN (could be vanilla or dynamically created).
 5. Every `#STR_...` used in layouts and `.c` string literals exists in the addon's `stringtable.xml`
    or legacy `stringtable.csv` (case-insensitive; typo → FAIL with suggestion, else WARN).
-   Verified 2026-07-03: clean on LFPG_UITest (28 refs, 0 findings) and LFPowerGrid (22 refs + 143 #STR
-   over 261 CSV keys, 0 FAIL) — and it surfaced a real dangling `CreateWidgets` on a missing
-   `LFPG_TankHUD.layout` in LFPowerGrid. Known false negative: names/keys built from variables or
+   Verified 2026-07-03 on two mods: clean on a small test mod (28 refs, 0 findings) and on a large
+   production mod (22 refs + 143 #STR over 261 CSV keys, 0 FAIL) — and it surfaced a real dangling
+   `CreateWidgets` on a missing layout there. Known false negative: names/keys built from variables or
    concatenation are not resolvable statically and are skipped by design.
 6. Every `Binding_Name` / `Relay_Command` matches a controller property/method exactly (still manual —
    grep both sides).
@@ -380,7 +375,6 @@ Menu lifecycle (see also `vanilla-menus-map.md` and `expansion-mvc-patterns.md`)
   a common bug puts `SetID` in the wrong branch, leaving `MENU_UNKNOWN`); `ShowScriptedMenu(menu,
   parent)` shows an already-constructed instance. `P:\scripts\3_game\tools\uimanager.c`,
   `P:\scripts\3_game\dayzgame.c:1415-1421`, `P:\scripts\5_mission\mission\missionbase.c:198-354`, `P:\scripts\3_game\tools\uiscriptedmenu.c:136-153`.
-  Community: https://www.answeroverflow.com/m/1018294147649634408
 - Vanilla MenuID range is 1..46 (`P:\scripts\3_game\constants.c:176-221`, `MENU_ANY`..
   `MENU_CONNECTION_DIALOGUE`); pick an arbitrary high int for custom menus (e.g. 98765).
 - `UIScriptedMenu.OnShow()` auto-calls `LockControls()` and `OnHide()` auto-`UnlockControls()` — per
@@ -395,7 +389,7 @@ Menu lifecycle (see also `vanilla-menus-map.md` and `expansion-mvc-patterns.md`)
 - HUD overlays extend `ScriptedWidgetEventHandler` (not `UIScriptedMenu`); must `Unlink()` the root in
   `OnMissionFinish` or widgets leak into the next session (stacked ghost HUDs after server hops).
   `inputs.xml` actions must be referenced in `config.cpp class inputs` or `GetInputByName` returns null
-  and crashes. (stardz DayZ Modding Wiki HUD chapter; DayZ-CommunitySamples UISample.)
+  and crashes. (Not checked on `P:\`.)
 
 Widgets worth knowing beyond the common ones:
 - `ItemPreviewWidget` (`SetItem(EntityAI)/SetView(idx)/SetModelPosition/Orientation`) and
@@ -407,16 +401,14 @@ Widgets worth knowing beyond the common ones:
 
 Fonts (bitmap-atlas reality):
 - Fonts are pre-baked bitmap atlases, one `.fnt`+`.edds` pair per size (`gui/fonts`: metron12/14/16/
-  22/28/48/58, sdf_metronlight24/30/36/42/72, …; 118 `.fnt` files in the source's count, 121 on a 1.30 `P:\gui\fonts`). Layouts reference a specific size
+  22/28/48/58, sdf_metronlight24/30/36/42/72, …; 119 `.fnt` files in `P:\gui\fonts` on 1.30). Layouts reference a specific size
   file (`font "gui/fonts/sdf_MetronLight42"`). You cannot request an arbitrary point size at runtime;
   a custom TTF must be converted in Workbench to `.fnt/.edds` per needed size. `"exact text" 1` pins
   rendering to the registered bitmap sizes; with it off, the engine scales the bitmap to any size.
-  Community: https://www.answeroverflow.com/m/1212857334620229632 ,
-  https://www.answeroverflow.com/m/759968942113554452
+  (The conversion and scaling behaviour is not checked on `P:\`.)
 - Workbench has no way to register a custom widget font for a mod so its Layout Editor lists it —
   workaround: drop `.fnt` into `P:\gui\fonts` for preview, then hand-edit the mod's `.layout` font
-  paths. `.fnt` files are not hand-editable atlas descriptors. (Strykar 2026-06:
-  https://www.answeroverflow.com/m/1511090647824597053)
+  paths. `.fnt` files are not hand-editable atlas descriptors. (Workbench behaviour, not checked here.)
 
 Imagesets:
 - `.imageset` is plain-text, hand-editable — no Workbench needed to read/patch:
@@ -425,30 +417,28 @@ Imagesets:
   Flags N } } }`. The `Name` on line 2 is what scripts use in `set:NAME image:IMG` — the filename is
   irrelevant. The `ImageSetClass` header: `P:\gui\imagesets\ccgui_enforce.imageset:1-10`
   (+ `ProgressMenuTileFull … Flags 3` at :4181-4186, tiling flag for segmented progress bars).
-- New standalone tool that bypasses Workbench for imagesets: Strykar's **DayZ Imageset Editor**
-  (github.com/Strykar86/DayZ-Imageset-Editor, v1.4 2026-06) — drag-drop atlas editor + compiler,
-  unpacks vanilla imagesets, exports element PNGs.
+- Imagesets can be built without Workbench: `/dayz-build-imageset` packs PNG sprites into the
+  `.imageset` and its atlas. The standalone **DayZ Imageset Editor** (v1.4, 2026-06) is a drag-drop
+  atlas editor and compiler that also unpacks vanilla imagesets and exports element PNGs.
 - `RichTextWidget` can embed imageset icons inline: `<image set="dayz_gui" name="icon_pin"/>` — mix
-  text and icons (keybind hints) in one widget. https://www.answeroverflow.com/m/1019262760732868710
+  text and icons (keybind hints) in one widget. (Not checked on `P:\`.)
 
 ---
 
-## 8. Sources
+## 8. Vanilla files and tools this file rests on
 
 Vanilla ground truth on `P:\`: `P:\scripts\1_core\proto\enwidgets.c` and `dbgui.c` beside it,
 `P:\scripts\3_game\tools\uimanager.c` and `uiscriptedmenu.c`, `P:\scripts\3_game\constants.c`,
 `P:\scripts\3_game\gameplay.c`, `P:\scripts\3_game\gui\spacers\spacerbase.c`, `P:\gui\layouts\day_z_hud.layout`
 and `loading.layout`, `P:\gui\imagesets\ccgui_enforce.imageset`, `P:\gui\fonts\`. Tooling:
 `scripts/tools/dayz-script-validator/`, `scripts/tools/dayz-ui-lab/` and `scripts/tools/dayz-layout-viewer/`.
-The source author's project ledgers (LFGungame, his UI research notes) are not in this repo.
 
-Web: DayZ Modders Discord via AnswerOverflow (URLs inline); DayZ-CommunitySamples (UISample);
-stardz-team DayZ Modding Wiki (HUD overlay chapter) — **warning (2026-07-05): its script-side
-advice is sound, but its `.layout` snippets are XML format (`<?xml?>` + `<Widget>/<Attribute>` tags)
-— the exact format verified to crash native CreateWidgets. Never copy its layout snippets**; Arma
-Reforger "Layout Creation" wiki (same early-Enfusion Layout Editor workflow DayZ uses). Bohemia wiki
-`Workbench` / `Game_Editor_(Workbench)` pages exist but block automated fetch (403) — confirm the
-exact editor menu path in-app. The Doxygen-style mirror once cited here, **dayz-scripts.yadz.app**,
-now redirects to **diff.yadz.app** and its class pages return 404 (checked 2026-11-09): for quick
-signature lookups use the vanilla scripts on `P:\scripts` or DayZ-Script-Diff. Ecosystem hygiene: GitHub searches for "DayZ mod menu" surface
-cheat/malware template repos — never source UI code from them.
+Three cautions when reading UI material outside this repo:
+
+- Layout snippets written as XML (`<?xml?>` + `<Widget>/<Attribute>` tags) are the format that
+  crashes native `CreateWidgets` (section 6.1). Never copy a layout snippet in that form, even from
+  a tutorial whose script-side advice is sound.
+- The Arma Reforger "Layout Creation" workflow describes the same early-Enfusion Layout Editor DayZ
+  uses; confirm the exact editor menu path in the DayZ Tools Workbench itself.
+- For signature lookups, read the vanilla scripts on `P:\scripts`. GitHub searches for "DayZ mod
+  menu" surface cheat and malware template repos; never take UI code from them.

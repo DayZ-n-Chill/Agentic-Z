@@ -15,32 +15,33 @@ Every name below comes from vanilla config or script. The vanilla weapon models 
 
 Optic attachments carry their own camera points in their own models, such as `eyeScope_temp` and `cameraDir` on `HuntingOptic` (`P:\DZ\weapons\attachments\optics\config.cpp:1465`, `:1466`).
 
-### Points reported from a readable vanilla model
+### Points in the AKM memory LOD
 
-Vendored from the knowledge pack, whose author read them in the memory LOD of a debinarized vanilla `akm.p3d` (model space, muzzle toward -X, Y up); not yet checked on `P:\`, where the model is binarized:
+Read in the memory LOD of a debinarized vanilla `akm.p3d` (model space, muzzle toward -X, Y up). The names `bolt_axis`, `trigger_axis`, `magazine_axis`, `nabojnicestart`, `ce_center` and `invview` occur in `P:\DZ\weapons\firearms\akm\akm.p3d`; positions and directions cannot be checked on `P:\`, where the model is binarized:
 
 - `bolt_axis` (two points): the travel of the bolt or charging handle, parallel to the bore.
 - `trigger_axis` (two points): the trigger's axis, sideways.
 - `magazine_axis` and `recoil` (two points each): magazine and recoil axes, roughly vertical on the AKM. Their exact meaning is not confirmed.
 - `nabojnicestart` and `nabojniceend`: on the AKM the ejection direction is up, to the right and to the rear.
-- `eye` sits about 5 cm above the bore on AKM iron sights.
+- `eye` sits 5.2 cm above the bore on AKM iron sights.
 - `ce_center`, `ce_radius`, `invview`, `boundingbox_min` and `boundingbox_max` are present too.
 - There are no hand or grip points in a weapon model. The grip comes from the player's IK pose animation, which is animation work.
 
-Checks worth making on a new model before the first test (each one failed on a real AI generated rifle mesh in his MK47 project, measured against the AKM):
+Checks worth making on a new model before the first test (each one failed on an AI generated rifle mesh, measured against the AKM):
 
 - `usti hlavne` and `konec hlavne` share height and side offset, so the bore is level. A `konec hlavne` 4.6 cm too high tilted that rifle's fire line by 6.3 degrees.
-- `bolt_axis` is parallel to the bore, and `magazine_axis` and `recoil` point the way they do on the reference gun (his were sideways, 90 degrees off).
-- The ejection direction is within about 25 degrees of the reference gun's (his was 42 degrees off, with no rearward part).
-- The casing side depends on how the weapon sits in model space. On his SR2M project the two ejection points were on +Z and threw casings into the receiver; -Z was right (confirmed in game there). Read the side off the reference weapon, do not assume it.
+- `bolt_axis` is parallel to the bore, and `magazine_axis` and `recoil` point the way they do on the reference gun (on that mesh they were sideways, 90 degrees off).
+- The ejection direction is within about 25 degrees of the reference gun's (on that mesh it was 42 degrees off, with no rearward part).
+- `eye` sits about as high over the bore as on the reference gun.
+- The casing side depends on how the weapon sits in model space. On a custom SMG the two ejection points were on +Z and threw casings into the receiver; -Z was right (confirmed in game). Read the side off the reference weapon, do not assume it.
 
 ## Selections
 
 | Name | Kind | Used by | Source |
 |---|---|---|---|
 | `camo` (and `camo2` and so on) | `hiddenSelections[]` | Retexture slots; `hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]` need one entry per name, in the same order. | `cz527\config.cpp:72` to `:75`, `:193`, `:197`; AKM has two at `P:\DZ\weapons\firearms\akm\config.cpp:72` to `:76` |
-| `hide_barrel` | `simpleHiddenSelections[]` | The barrel part `HideWeaponBarrel` hides on the client while aiming through an optic that does not allow depth of field. | `cz527\config.cpp:68` to `:71`; `P:\scripts\4_world\entities\firearms\weapon_base.c:98`, `:2120` |
-| `magazine` | `simpleHiddenSelections[]` | The visible magazine, switched by `ShowMagazine` and `HideMagazine`. Without it script falls back to the engine magazine selection. | `weapon_base.c:99`, `:2132` to `:2146` |
+| `hide_barrel` | `simpleHiddenSelections[]` | The barrel part `HideWeaponBarrel` hides on the client while aiming through an optic that does not allow depth of field. | `cz527\config.cpp:68` to `:71`; `P:\scripts\4_world\entities\firearms\weapon_base.c:98`, `:2121` |
+| `magazine` | `simpleHiddenSelections[]` | The visible magazine, switched by `ShowMagazine` and `HideMagazine`. Without it script falls back to the engine magazine selection. | `weapon_base.c:99`, `:2133` to `:2146` |
 | `bullet`, `bullet2`, `bullet3` and on | `simpleHiddenSelections[]` | The chambered round for each muzzle, switched by `ShowBullet` and `HideBullet`. Without them script falls back to the engine bullet selection. | `weapon_base.c:101` to `:118`, `:379` to `:397` |
 | `zasleh` | Fire animation selection | Muzzle flash geometry named by `selectionFireAnim`, set on `Magazine_Base` and `ItemOptics`. | `P:\DZ\weapons\attachments\magazine\config.cpp:52`; `P:\DZ\data\config.cpp:3535` |
 
@@ -55,7 +56,7 @@ The weapon's moving parts are remapped to player skeleton bones by `boneRemap[]`
 
 The script remap is an array of pairs, the model's selection first and the player bone second, passed to `AddItemBoneRemap` (`P:\scripts\3_game\dayzplayer.c:245-252`). `bolt` goes to `Weapon_Bolt`, `magazine` to `Weapon_Magazine`, `trigger` to `Weapon_Trigger`. A part can instead be animated by the model's own `model.cfg`; drive each part one way only.
 
-A selection that feeds a remap must cover the real part. On the author's SR2M project the `bolt` selection had been painted on the barrel, in front of the chamber, so the remap would have moved the barrel; comparing the selection's centre with where a bolt sits (behind the chamber) caught it before a test (confirmed in game after the repaint; third-party, not on `P:\`). Ask the object builder for the centre and bounds of each remapped selection and check them against the reference gun. The repaint steps are in `skills/dayz-weapons/references/p3d-selection-contract.md`.
+A selection that feeds a remap must cover the real part. On a custom SMG the `bolt` selection had been painted on the barrel, in front of the chamber, so the remap would have moved the barrel; comparing the selection's centre with where a bolt sits (behind the chamber) caught it before a test (confirmed in game after the repaint; a mod model, not on `P:\`). Ask the object builder for the centre and bounds of each remapped selection and check them against the reference gun. The repaint steps are in `skills/dayz-weapons/references/p3d-selection-contract.md`.
 
 ## Other config the model must match
 

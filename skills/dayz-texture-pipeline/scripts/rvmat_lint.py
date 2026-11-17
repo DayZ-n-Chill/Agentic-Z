@@ -318,8 +318,7 @@ class Stage4 { texture="x\data\mask_co.paa"; uvSource="tex"; };
 
 
 def run_matpbr_self_test() -> int:
-    # Real MatPBR block from a user-supplied example file, reused verbatim as the
-    # well-formed fixture instead of an invented one.
+    # A well-formed MatPBR block as the fixture.
     good_emat = '''
 MatPBR {
  AlbedoMap "{62634FC733258F68}path/albedo.edds"

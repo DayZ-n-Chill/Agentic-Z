@@ -1,4 +1,4 @@
-"""The write contract: byte-identical output against upstream, and the
+"""The write contract: byte-identical output against the bare codec, and the
 semantic invariants that must survive a round trip."""
 
 import io
@@ -18,17 +18,17 @@ IDS = [c[0] for c in CANONICAL]
 
 
 @pytest.mark.parametrize("name,builder", CANONICAL, ids=IDS)
-def test_canon_ident(fork, upstream, name, builder):
-    """Same model, identical bytes from this fork and upstream, with the one
+def test_canon_ident(fork, bare, name, builder):
+    """Same model, identical bytes from this library and the bare codec, with the one
     deliberate exception introduced in 1.6.0: in a LOD without faces this
-    fork emits the empty #UVSet# (a 4-byte id) that Object Builder writes
-    and upstream omits. The tag is counted - one per faceless LOD - and
+    library emits the empty #UVSet# (a 4-byte id) that Object Builder writes
+    and the bare codec omits. The tag is counted - one per faceless LOD - and
     the rest is compared byte for byte.
     """
     model = builder(fork)
     faceless = sum(1 for lod in model.lods if not lod.faces)
     fork_bytes = write_bytes(model)
-    up_bytes = write_bytes(builder(upstream))
+    up_bytes = write_bytes(builder(bare))
     marker = EMPTY_UVSET_TAG + EOF_TAG
     assert fork_bytes.count(marker) == faceless
     stripped = fork_bytes.replace(marker, EOF_TAG)

@@ -23,7 +23,7 @@ Other handoffs, all through the config lead: `model.cfg`, selections and memory 
 
 Follow Tier 2 (`skills/_shared/dayz-conventions.md` plus `skills/_shared/conventions/config.md` and `skills/_shared/conventions/scripts.md`). Script you write MUST conform to `skills/_shared/enscript-style.md`.
 
-Knowledge pack: `skills/_shared/vehicles/README.md` says which file answers which question. Open the file a step names, at that step, not the whole pack.
+Vehicles pack: `skills/_shared/vehicles/README.md` says which file answers which question. Open the file a step names, at that step, not the whole pack.
 
 Skills to load through Skill, each only for its kind of task (the table in its `SKILL.md` names the one reference to open):
 
@@ -32,7 +32,7 @@ Skills to load through Skill, each only for its kind of task (the table in its `
 - `dayz-aviation`: any plane, seaplane or helicopter (flight physics, inputs, rotor and control surface animation, sounds, effects, weapons, flight testing).
 - `rip-vehicle-import`: a ripped racing-game car, with one cookbook per symptom (no get-in, `wheelPresent=0`, white car, invisible attachment, no door radial).
 
-Material other skills and packs keep for vehicles, opened only when the task names the topic: seat, crew and wheel-slot selections in `skills/_shared/models/selections.md` and crew proxies in `skills/_shared/models/proxy-frames.md`; rider and driver poses in `skills/_shared/animation/rider-poses.md`; why `Transport` replicates and how contact damage is computed in `skills/dayz-physics-engine/references/transport-netsync.md`; paint, color variants and light material pairs in `skills/dayz-texture-pipeline/references/vehicle-materials-and-color-variants.md`; the vehicle script traps in `skills/enforce-script-reference/references/vehicle-scripting.md`; a mod written for 1.29 in `skills/_shared/vehicles/dayz-1-30-vehicles.md`; findings from several vehicle projects in `skills/_shared/knowledge/vehicles-crossproject.md`.
+Material other skills and packs keep for vehicles, opened only when the task names the topic: seat, crew and wheel-slot selections in `skills/_shared/models/selections.md` and crew proxies in `skills/_shared/models/proxy-frames.md`; rider and driver poses in `skills/_shared/animation/rider-poses.md`; why `Transport` replicates and how contact damage is computed in `skills/dayz-physics-engine/references/transport-netsync.md`; paint, color variants and light material pairs in `skills/dayz-texture-pipeline/references/vehicle-materials-and-color-variants.md`; the vehicle script traps in `skills/enforce-script-reference/references/vehicle-scripting.md`; a mod written for 1.29 in `skills/_shared/vehicles/dayz-1-30-vehicles.md`; the invariants every vehicle runs into, in one summary, in `skills/_shared/knowledge/vehicles-crossproject.md`.
 
 Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Run `/dayz-lint` through Skill; use Bash only for its script when Skill is unavailable, and for the read-only model checks of the `dayz-vehicles` skill. Don't run `/dayz-gate`: the orchestrator owns it and the one test session, so return gate checks for it instead (step 7). Vehicle configs live in `P:\DZ\vehicles\` (`wheeled`, `water`, `parts`, `singletrack`), native config parents in `P:\bin\config.cpp`, slots in `P:\scripts\config.cpp`, and scripts in `P:\scripts\3_game\vehicles\` and `P:\scripts\4_world\entities\vehicles\`.
 

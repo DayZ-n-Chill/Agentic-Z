@@ -121,7 +121,7 @@ def test_recipe_idem_multilod_v2(fork):
     # and the rebuilt P3D is a valid, clean MLOD
     p2 = fork.P3D.from_dict(d2)
     reread = read_p3d(fork, write_bytes(p2))
-    # from_dict keeps build.py's mass policy VERBATIM (geometry and
+    # from_dict keeps the schema v1 build mass policy VERBATIM (geometry and
     # fire_geometry), so the rebuilt model raises
     # ERR_MASS_ONLY_GEOMETRY BY DESIGN. This is an EXACT pin: if the
     # policy changes, this assert fails and the decision gets revisited
@@ -176,7 +176,7 @@ def test_recipe_from_dict_mass_policy(fork):
 
 def test_recipe_axes_two_point_selection(fork):
     """A Memory selection with exactly two points produces an axis in the
-    recipe (ported from extract 292-308)."""
+    recipe (as the extractor's extract_memory_data builds it)."""
     p3d = build_multilod_v2_p3d(fork)
     mem = p3d.get_lod("memory")
     mem.set_selection("door_axis",

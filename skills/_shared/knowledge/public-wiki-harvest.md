@@ -1,153 +1,63 @@
-# Public wiki and GitHub harvest: hubs and staging pointers
+# Public DayZ reference outside the repo: where to look and how far to trust it
 
-Covers which public sources were harvested on 2026-09-07 (Bohemia wiki hubs, GitHub READMEs, StarDZ, DZconfig, API explorers), where each pointer leads and how far each can be trusted.
+Covers which public reference exists for DayZ modding outside this repo (the Bohemia Interactive wiki pages by topic, Bohemia's GitHub repositories, community wikis and script browsers), what each answers, and how far each can be trusted.
 
 Status: an index of pointers. Not yet checked on `P:\`: it states almost no game facts. The one it repeats was checked on 2026-11-17: `P:\scripts` holds no `CfgStamina` class, and the stamina maximum is the constant `STAMINA_MAX` at `P:\scripts\3_game\constants.c:749`.
 
-> Pointers only: no Bohemia wiki HTML and no third-party README text is copied here.
-> Harvest date: **2026-09-07**. Wiki facts from this batch are **`historical` until live-verified** against current `community.bohemia.net` / vanilla `P:\scripts` / CE samples.
->
-> **Reconcile, do not duplicate:** gameplay/server systems already distilled live in
-> `wiki-systems-reference.md`
-> (Wiki Sweep #2, 2026-07). Prefer that note for contaminated areas, stamina/`cfggameplay.json`,
-> diag menu categories, object/gear spawners, surfaces, and related errata. This note is the
-> **batch-1 harvest index** (hubs, paths, ingest posture) for the 2026-09 public corpus.
+This file holds pointers only: no wiki text and no README text is copied into the repo. The game facts themselves are in `wiki-systems-reference.md` (contaminated areas, stamina and `cfggameplay.json`, diag menu categories, object and gear spawners, surfaces). Open that note for a fact, and this one to find the page that covers a topic.
 
-## Provenance (`source_id` in the source registry, `scripts/dev/knowledge-pack/sources/`)
+## Trust order
 
-| `source_id` | Kind | Role |
-|---|---|---|
-| `bi-community-wiki-wayback` | archive | BI Community Wiki via Wayback (`id_` captures → staging markdown). Cite archive URL + harvest date; do not ship HTML. |
-| `dayz-public-github-index-2026-09` | web | Public GitHub org/author index + README **pointers** (license clues only). Prefer link+summarize; promote durable facts only with claims evidence. |
+1. The vanilla files on `P:\` (`P:\scripts`, `P:\DZ`) and the mission files shipped with the server. They answer for the build they were extracted from.
+2. The Bohemia Interactive wiki. Treat every identifier and default on a wiki page as a hint until it is found on `P:\` or in the shipped files: pages lag behind the game.
+3. An archived copy of a wiki page. It is historical: it shows what the page said on the capture date, so record that date with anything taken from it.
+4. Community wikis, public script browsers and tutorials. Leads only. A script browser can show another build than the one on `P:\`, and its pages can move or disappear.
 
-Canonical hosts (live often Cloudflare-blocked from automation): `community.bohemia.net/wiki/…`, mirror `community.bistudio.com/wiki/…`.
+Two corrections already made this way: there is no vanilla `CfgStamina` class (see the Status line), and `vonCodecQuality` goes from 0 to 30, as the shipped `serverDZ.cfg` says, not to 20.
 
-## Staging corpus (local research inbox, not in this repo)
+## The Bohemia Interactive wiki
 
-The staging tree is the author's local research folder `dayz-public-corpus-2026-09-07` (outside this repo). Paths below are relative to it.
+Hosts: `community.bohemia.net/wiki/...`, with `community.bistudio.com/wiki/...` as a mirror. The live site answers automated fetches with HTTP 403, so an agent usually cannot read it directly; the Wayback Machine holds copies of most DayZ pages.
 
-| Path under staging | Contents |
+Category hubs: `Category:DayZ`, then Editing, Tutorials, Official Tools, Scripting, Vehicles, Central Economy, Modelling, Modding Structure, Server, Terrain Editing and Troubleshooting.
+
+| Topic | Wiki page |
 |---|---|
-| `BRIEF.md` / `SOURCE-MAP.md` | Pipeline goal, exclusions (no Discord, no sealed skill edits), source inventory |
-| `harvested/wiki/` | 23 markdown pages + `INDEX.md` + `harvest-meta.json` (Wayback) |
-| `harvested/github/` | `GITHUB-INDEX.md`, `user-*.json`, search snapshots, `readmes/` |
-| `harvested/dayzmodding/` | Site **DOWN** (HTTP 525); Wayback homepage ~2021 — **historical only** |
-| `distilled/PACK-INTEGRATION.md` | Integration checklist for the assistant (inbox → claims → note → source-map → validate) |
+| The `P:` project drive, Extract Game Data, script module order, `modded class` / `override` / `super`, file patching and packing a PBO | DayZ Modding Basics |
+| Enforce Script classes, modded chains, access rules | DayZ Enforce Script Syntax |
+| PBO and addon layout | DayZ Modding Structure |
+| Vehicle configuration in the mission and on the server (this is not vehicle authoring: for that use the `dayz-vehicles` skill) | DayZ Vehicle Configuration |
+| The diag menu | DayZ Diag Menu |
+| Adding or overriding Central Economy files through `cfgeconomycore.xml` | DayZ Central Economy mission files modding |
+| Central Economy on a custom terrain | Central Economy setup for custom terrains |
+| The ambient spawner | CE Ambient Spawner |
+| Server settings | Server Configuration, Gameplay Settings, Administration Logs, Server manager |
+| Player and gear spawning, placed objects | Player Spawning, Spawning Gear, Object Spawner |
+| Hazard areas, weather, underground | Contaminated Areas, Weather Configuration, Underground Areas Configuration |
+| Surfaces | Surfaces |
+| Error and exit codes | Error Codes, Unusual Process Exit |
+| Doors and ladders on buildings | Doors on buildings, Ladders on buildings |
+| Terrain work | Terrain sample, Configuring 2D Map, Generating navigation mesh, Using Road Tool in Terrain Builder, the Grass-clutter pages, Projection Layer, A2-DZ env assets lookup table |
+| Buldozer | Buldozer for Object Builder, Buldozer for Terrain Builder |
+| Tools | Tools Launcher, Workbench Script Debugging, Modding Samples, DayZ Tools EULA |
+| A Linux server | Hosting Linux Server |
 
-## Wiki hubs harvested (batch 1)
+## Bohemia Interactive on GitHub
 
-Category hubs: `Category:DayZ` and Editing / Tutorials / Official Tools / Scripting / Vehicles / Central Economy / Modelling / Modding Structure.
+Under the `BohemiaInteractive` organisation: `DayZ-Central-Economy` (the mission and Central Economy files), `DayZ-Samples` (sample mods), `DayZ-Misc`, and `DayZ-Script-Diff` with its Experimental twin (the script tree per game version, for comparing builds). Not checked here beyond their names.
 
-High-value pages (staging filenames):
+## Sources that cannot be read by an agent
 
-- `DayZ_Modding_Basics.md` — P: project drive, Extract Game Data, script module order, `modded class` / `override` / `super`, filepatching → PBO
-- `DayZ_Enforce_Script_Syntax.md` — Enforce OOP surface; modded chains; access rules
-- `DayZ_Modding_Structure.md` — PBO / addon layout conventions
-- `DayZ_Vehicle_Configuration.md` — mission/server vehicle config (**pair later with** skill `dayz-vehicles`; do not conflate)
-- `DayZ_Diag_Menu.md` — diagnostic surface (cross-link `dayz-test-ingame` / MCP verify); detailed category list already in `wiki-systems-reference.md`
-- `DayZ_Central_Economy_mission_files_modding.md` — `cfgeconomycore.xml` append/override pattern
-- Also: Server Configuration, Gameplay Settings, Spawning Gear, Object Spawner, Contaminated Areas, Player Spawning, Hosting Linux Server, Terrain sample
+- The Bohemia DayZ forums and the feedback tracker need a login; anonymous requests fail.
+- Discord servers are not a source for this repo.
 
-**Posture:** treat identifiers and defaults as hints until re-checked live. Honor errata in `wiki-systems-reference.md` (e.g. no vanilla `CfgStamina` class; `vonCodecQuality` 0–20; `wiki-systems-reference.md` has since recorded 0–30 from the shipped `serverDZ.cfg`).
+## What to do with a fact found outside
 
-## GitHub index (batch 1) — pointers only
+1. Find the symbol, key or file on `P:\` or in the shipped mission files, and cite that line.
+2. If it cannot be found there, write it down marked "not yet checked on `P:\`", with the date of the page.
+3. Link and summarise. Do not copy page text, README text or large class listings into the repo.
 
-Official-ish: `BohemiaInteractive/DayZ-Central-Economy`, `DayZ-Samples`, `DayZ-Misc`, `DayZ-Script-Diff` (+ Experimental).
+## Related notes
 
-Community lineage often cited in this work: InclementDab (CF / Dabs / Editor), Arkensor (CF / persistence / DB), Jacob-Mango (COT / samples), salutesh (Expansion / eAI / CF forks), `willy92wins` (the DayZ Modding Knowledge Pack, DayZ-MCP).
-
-Full table: staging `harvested/github/GITHUB-INDEX.md` (46 README copies — **not** redistributed here).
-
-## Next steps (not done by this note)
-
-1. Adjudicate 5–10 durable facts into `scripts/dev/knowledge-pack/sources/claims.json` with Wayback URL + harvest date; `verification_level: historical` until live-verified.
-2. Keep sealed `skills/*/SKILL.md` untouched; route skill updates through the normal contribution flow + `packctl` (`scripts/dev/knowledge-pack/packctl/`).
-3. No Discord ingestion in this pipeline.
-
-## Cross-ref
-
-- `wiki-systems-reference.md` — prior systems distill (reconcile target)
-- `environment-and-infra.md` — operator server/launch infra
-- Staging `distilled/PACK-INTEGRATION.md` — integration recommendation for the assistant
-
----
-
-## Batch 2 (2026-09-07) — maximize coverage append
-
-Append-only. Does not rewrite batch-1 section above. Still: **no Discord**, **no sealed skill edits**, staging remains research inbox.
-
-### Counts after batch 2
-
-| Artifact | Batch 1 | After batch 2 | Net |
-|---|---:|---:|---:|
-| Wiki MD (excl. INDEX) | 23 | 51 | +28 |
-| GitHub README copies | 46 | 133 | +87 |
-| dayzmodding.dev Wayback MD | homepage stub | 15 | +15 |
-
-Staging: the author's local research folder `dayz-public-corpus-2026-09-07` (outside this repo).  
-Distill index: staging `distilled/BATCH-2.md`
-
-### New wiki hubs / pages (pointers only — bodies stay in staging)
-
-Category hubs added: Server, Terrain Editing, Troubleshooting.
-
-High-value new pages (staging filenames): Surfaces; Error_Codes; Projection_Layer; Central_Economy_setup_for_custom_terrains; Configuring_2D_Map; Workbench_Script_Debugging; Weather_Configuration; Underground_Areas_Configuration; Buldozer_for_Object_Builder / Buldozer_for_Terrain_Builder; CE__Ambient_Spawner; Doors_on_buildings; Ladders_on_buildings; Grass-clutter_*; Administration_Logs; Generating_navigation_mesh; Using_Road_Tool_in_Terrain_Builder; Tools_Launcher; Server_manager; Modding_Samples; Survival; Unusual_Process_Exit; A2-DZ_env_assets_lookup_table; DayZ Tools EULA.
-
-**Posture unchanged:** Wayback/`historical` until live-verified. Reconcile with `wiki-systems-reference.md` (esp. Surfaces).
-
-### GitHub batch 2
-
-+87 README pointers (ExpansionModTeam, DaemonForge UniversalApi/MapLink, enforce LSP/Workbench tooling, more CE schema/tools). Full list: staging `harvested/github/GITHUB-INDEX.md` + `readme-meta-batch2.json`.
-
-### dayzmodding.dev
-
-Live still **525**. Wayback captured Mod-Code-Bases + Enforce Syntax article under staging `harvested/dayzmodding/pages/` — **historical only**.
-
-### Suggested future `source_id`s (not applied here)
-
-- Keep using `bi-community-wiki-wayback` for new wiki pages
-- Keep `dayz-public-github-index-2026-09` for README pointers
-- Optional new: `dayzmodding-dev-wayback-historical` when promoting Mod-Code-Bases facts
-
----
-
-## Batch 3 (2026-09-07) — remaining public sources squeeze
-
-Append-only. Still: **no Discord**, **no sealed skill edits**, staging remains research inbox.
-
-### Live wiki / forums
-
-- Live BI wiki: Cloudflare **403**; **browserUse/computerUse not available** this harvest → skipped. Wayback BI wiki **~saturated** (~51 MD) — **do not recommend more wiki scrapes**.
-- Bohemia DayZ Editing forums / feedback tracker: not publicly harvestable without login (403 / board not found). Status note in staging `harvested/forums/ACCESS-STATUS.md`.
-
-### Counts after batch 3
-
-| Artifact | After batch 2 | After batch 3 | Net |
-|---|---:|---:|---:|
-| BI wiki MD (excl. INDEX) | 51 | 51 | 0 |
-| GitHub README copies | 133 | 203 | +70 |
-| StarDZ chapters/pages | — | 18 | +18 |
-| DZconfig wiki MD | — | ~40 | +40 |
-| dayzexplorer + YADZ MD | — | ~16 | +16 |
-| Steam guide MD | — | 13 | +13 |
-
-Staging: the author's local research folder `dayz-public-corpus-2026-09-07` (outside this repo).  
-Distill: staging `distilled/BATCH-3.md`
-
-### Highest-value new pointers (bodies stay in staging)
-
-- **StarDZ** `DayZ-Modding-Wiki`: gotchas, five-layer script hierarchy, entity system, professional template, troubleshooting, first-mod tutorial (also github.io mirrors under staging `harvested/other/stardz/`).
-- **DZconfig wiki**: Understanding CE, loot balancing, types/events/globals, cfggameplay, cfgeconomycore, serverDZ.cfg, init.c.
-- **API explorers**: `dayzexplorer.zeroy.com` (1.29) + `diff.yadz.app` (formerly `dayz-scripts.yadz.app`, which redirects there; its Doxygen pages return 404 as of 2026-11-09) — cite/browse; avoid copying giant class dumps into the repo.
-- **GitHub +70 READMEs** via topics `dayz` / `enforce-script` / "dayz-mod" / `workbench` / `enfusion` + awesome/wiki searches (includes VPP, Epoch historical, WoozyMasta tooling, StarDZ, DayZGhost plugin, …).
-
-### dayzmodding.dev / dayzmodding.com
-
-- `.dev` still **525**.
-- `.com` hub captured as directory of resources (Discord not harvested). Notion link present but low anonymous value.
-
-### Suggested future `source_id`s (not applied here)
-
-- `stardz-dayz-modding-wiki-2026-09`
-- `dzconfig-wiki-2026-09`
-- `yadz-diff` / `zeroy-dayzexplorer` (URL-cite preferred)
+- `wiki-systems-reference.md`: the gameplay and server facts taken from the wiki, with what was checked.
+- `environment-and-infra.md`: server and launch infrastructure.

@@ -537,4 +537,4 @@ The blocks are written the way a mod's `config.cpp` is written: one statement pe
 | `GetTransportCameraOffset()` | Camera offset in model space (script override, not config key) | `"0 1.3 -0.25"` | `"0 1.4 -0.3"` | `dayzplayercameravehicles.c:280`; value in `motorbike_01.c:45`, `motorbike_02.c:46` |
 
 > Every row was checked against `P:\DZ\vehicles\singletrack\config.cpp` and the cited scripts. Units and meanings cannot be read from `config.cpp`.
-> The knowledge pack this came from reports that on build 1.30.164200 the values in this table are unchanged, and that the config of that build adds the front and brake reflector materials to both bikes and drops `itemBehaviour = 0` from `Motorbike_02_ShieldFront_ColorBase` (on `P:\` it is at `config.cpp:1106`); not yet checked on `P:\`.
+> On build 1.30.164200 the values in this table are unchanged; the config of that build adds the front and brake reflector materials to both bikes and drops `itemBehaviour = 0` from `Motorbike_02_ShieldFront_ColorBase` (on `P:\` it is at `config.cpp:1106`). Those statements about 1.30.164200 are not yet checked on `P:\`.

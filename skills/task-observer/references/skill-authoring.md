@@ -6,7 +6,7 @@ file: see "In an Agentic-Z clone" in `SKILL.md`.
 
 **Contents:** Taxonomy in full · The Pre-Flight Principle · Lean Content
 (including progressive disclosure, the default structure above ~500 lines)
-· Documenting an external tool surface · Licensing · Versioning releases ·
+· Configuration vs process · Documenting an external tool surface · Licensing · Versioning releases ·
 Author Attribution Template · Confidentiality layers · Timelessness ·
 Editing skills — always start from the live file · Verifying relocations
 and restructures · Trial design · New skills · Retiring skills · Principle
@@ -293,7 +293,7 @@ but distinct, reference it and delineate scope instead of duplicating it;
 welcome) and use the preferred channel — a concrete fix travels as a PR
 where PRs are welcome, otherwise as an issue; (3) when the local install
 is modified or may have drifted, verify the problem still exists at
-upstream HEAD before reporting it; (4) match the repository's house style
+the repository's HEAD before reporting it; (4) match the repository's house style
 for reports.
 
 ## Confidentiality layers
@@ -461,7 +461,7 @@ patterns before committing — a scan, not a reminder.
    raw central-directory bytes, because CPython's `zipfile` normalises
    `0x5C` to `/` on read and reports a malformed archive as clean; Windows
    `Compress-Archive` produces exactly this defect for any skill with a
-   subdirectory. The upstream helper `validate-skill-bundle.py` implements
+   subdirectory. A helper script, `validate-skill-bundle.py`, implements
    all five as assertions and packs a well-formed bundle on any platform;
    it is not bundled with this skill, so check the five items by hand
    unless the user has it. Generally: any hard limit the consuming platform

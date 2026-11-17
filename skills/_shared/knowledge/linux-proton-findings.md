@@ -2,12 +2,11 @@
 
 Covers what was measured between 2026-11-03 and 2026-11-06 when running DayZ Tools, the DayZ server and client, and the third-party DayZ-MCP bridge on Linux under Proton and podman.
 
-Status: measured results on one Linux machine. Not yet checked on `P:\`: these are tool, launcher and operating-system observations, and they name the DayZ-MCP commit each one came from. The one vanilla class the bridge leans on, `RestApi`, is declared at `P:\scripts\3_game\http\restapi.c:147`. The measured guide built from these notes is `skills/_shared/linux-proton.md`.
+Status: measured results on one Linux machine. Not yet checked on `P:\`: these are tool, launcher and operating-system observations, and each names the DayZ-MCP version (by commit) it was measured on. The one vanilla class the bridge leans on, `RestApi`, is declared at `P:\scripts\3_game\http\restapi.c:147`. The measured guide built from these notes is `skills/_shared/linux-proton.md`.
 
-Scope update (2026-11-15): these are historical branch measurements from `linux-port` (2026-11-03..06), not new runtime results on `main`. The dayz-dev plugin names its author's helpers; since 2026-11-13 they ship in `skills/_shared/scripts/` (server tree, ports, headless client, `dayz-mod-pack.sh`, source extraction). dayz-mcp PR #353 (`linux-port`) was closed unmerged and its successor https://github.com/willy92wins/dayz-mcp/pull/411 merged into dayz-mcp `main` on 2026-11-14; the runs recorded below were measured on `linux-port` before #411 merged and were not re-measured on `main`. Full managed binarization with assets remains unverified. bzed's armake2 fork, used for every measurement here, was renamed dayzmake at `v1.0.0` (https://github.com/bzed/dayzmake, which contains the measured commits); the `armake2` commands below are recorded as run, and today's equivalent is `dayzmake` with the same subcommands (use >= `v2.0.0`, commit `f31056ae`, before running `dayzmake unpack` on third-party PBOs).
+Scope (2026-11-15): these are measurements of 2026-11-03 to 2026-11-06 on DayZ-MCP's Linux development branch, not new runtime results on its main line. That Linux work reached DayZ-MCP's main line on 2026-11-14; the runs recorded below were made before that and were not repeated on the main line. The helper scripts these notes mention ship in `skills/_shared/scripts/` (server tree, ports, headless client, `dayz-mod-pack.sh`, source extraction). Full managed binarization with assets remains unverified. The packer used for every measurement here was the DayZ build of armake2, which has since been renamed dayzmake at `v1.0.0`; the `armake2` commands below are recorded as run, and today's equivalent is `dayzmake` with the same subcommands (use `v2.0.0` or later before running `dayzmake unpack` on third-party PBOs).
 
-Status: **raw findings**; sections 1–4 are the first pass, section 5 records what was built from them. Nothing here is registered in
-`scripts/dev/knowledge-pack/sources/claims.json`; promote individual items through the normal workflow once they are re-checked.
+These are raw findings. Sections 1 to 4 are the first pass; sections 5 to 9 record what was built from them, and section 9 corrects three earlier statements. Re-check an item before relying on it.
 
 Machine: Debian testing, Python 3.14, Steam native, GE-Proton11-1, native Linux `DayZServer`
 (app 223350), DayZ client (app 221100) under Proton. dayz-mcp at commit `0107c0c` (2026-11-03).
@@ -21,16 +20,16 @@ Machine: Debian testing, Python 3.14, Steam native, GE-Proton11-1, native Linux 
   `HKLM\Software\Wow6432Node\Bohemia Interactive\DayZ` `"main"="S:\steamapps\common\DayZ"`, while in the
   tools prefix (`compatdata/830640`) the same key exists but is **empty**. The tools prefix has an `s:`
   drive pointing at the Steam root, and no `P:`. So the link is the `main` value in the tools prefix,
-  plus a `P:` with the game data the tool resolves (`dz\...`). This repair is not tested here; see the
-  dayz-dev skill (`systems/mod-packaging.md`). dayz-mcp's `dayz_tools_paths.py` and `pack-addon.ps1` need that
-  linked prefix. For these tests the addon was packed with bzed's armake2 fork (`armake2 build`, `keygen`,
+  plus a `P:` with the game data the tool resolves (`dz\...`). This repair is not tested here; the
+  measured route is in `skills/_shared/linux-proton.md`. dayz-mcp's `dayz_tools_paths.py` and `pack-addon.ps1` need that
+  linked prefix. For these tests the addon was packed with the DayZ build of armake2 (`armake2 build`, `keygen`,
   `sign`), and the game was started by hand.
 - The **native Linux `DayZServer`** runs mods and the dayz-mcp bridge unchanged (see 3). Its defines
   include `SERVER_FOR_WINDOWS` and `PLATFORM_LINUX`.
 - The **client runs under Proton** (Steam Linux Runtime → Proton → `DayZ_x64.exe`). It accepts
   `-profiles=Z:\<linux path>`, and `$profile:` resolves there. It loads an `@Mod` that is a
-  symlink in the client's DayZ folder pointing at a Linux path. Started headless in sway; the
-  dayz-dev skill's `dayz-client-headless.sh` does this.
+  symlink in the client's DayZ folder pointing at a Linux path. Started headless in sway;
+  `skills/_shared/scripts/dayz-client-headless.sh` does this.
 - **Client and server builds must match.** The Steam client auto-updated to 1.30.164289 while the
   DayZ Server app was still 1.30.164200 (`StateFlags=6`, update pending): the client is refused with
   `CONNECTING FAILED (0x00020013) Client is a newer build than the server`. Check both
@@ -96,13 +95,13 @@ Linux port can leave out. The minimal Linux set is: loopback daemon + client mod
   what Steam does on a first launch (install-script registry, VC++ runtime) that a private prefix
   lacks. ImageToPAA, CfgConvert, the DS tools, AddonBuilder, binarize, TexView, Object Builder,
   Workbench and DayZDiag (client and `-server`) all ran.
-- **armake2 `--proton-binarize` alpha bug**: fixed in bzed's fork by `0a0ce3b`; a build from HEAD
+- **armake2 `--proton-binarize` alpha bug**: fixed in the DayZ build of armake2 by commit `0a0ce3b`; a build from commit
   `7dcb3cf` gives output byte-identical to BI's binarize run from a `P:` root. An older installed build
   still showed the 20-byte difference (texture not found); `--version` prints `v0.3.0` for both.
 - **Build match**: by the evening both client and server reported 1.30.164289 (`doctor` in the runner
   compares the game versions; Steam `buildid`s differ per app by design). The Experimental server
   (1042420) was still on 1.30.164200 with an update pending.
-- **dayz-mcp Python side**: branch `linux-port` (commit `ac5578d`) fixes #1–#5 and #7 properly
+- **dayz-mcp Python side**: the Linux branch (commit `ac5578d`) fixes #1–#5 and #7 properly
   (no shims): every module imports except `native_launcher_backend`, the POSIX keyfile reader, OFD
   byte locks, `SO_REUSEADDR` on Linux, XDG state dir. `--embedded` answers MCP `initialize` and
   `tools/list` (107 tools) and serves the loopback. #6/#8 got further: the daemon passes the instance
@@ -119,8 +118,7 @@ Linux port can leave out. The minimal Linux set is: loopback daemon + client mod
 
 ## 6. Follow-up, 2026-11-04: podman server, daemon on Linux, binding measured
 
-- **Native server in rootless podman** (dayz-mcp `bbcd0c5`, `tools/dayz_mcp/podman_server.py`): the
-  way dzo starts DayZServer, without dzo. A minimal `debian:trixie-slim` image, a private tree per run,
+- **Native server in rootless podman** (dayz-mcp `bbcd0c5`, `tools/dayz_mcp/podman_server.py`): a minimal `debian:trixie-slim` image, a private tree per run,
   `--network host`, the install and mods mounted read-only as overlays. The container (name, ID,
   image ID, labels) identifies the run, and `$profile:dayz_mcp.json` is written before start.
   1.30.164289 with `@DayZ_MCP` loaded the mission in about 10 s and stopped cleanly in about 13 s.
@@ -155,8 +153,7 @@ Linux port can leave out. The minimal Linux set is: loopback daemon + client mod
 
 ## 7. Follow-up, 2026-11-04 (evening): `dayz_test_run` on Linux, server role
 
-The "still missing" item of section 6 is done for `mode=server` (dayz-mcp `7effeef`, branch
-`linux-port`), behind the same lease, sealed worker and daemon lifecycle as on Windows. The sealed modules are still
+The "still missing" item of section 6 is done for `mode=server` (dayz-mcp `7effeef`), behind the same lease, sealed worker and daemon lifecycle as on Windows. The sealed modules are still
 byte-identical (21/21).
 
 - **Launcher without the PE.** A Linux bundle in `$LOCALAPPDATA/DayZ_MCP/linux-launchers/dayz-test-v1/`
@@ -195,8 +192,8 @@ byte-identical (21/21).
 
 ## 8. Follow-up, 2026-11-05: the client role, implemented but not yet run
 
-dayz-mcp `3a82bdc` adds the client and offline roles for `dayz_test_run` on Linux. They use dayz-dev's headless
-chain (headless sway, Steam Linux Runtime 4, `proton run`) with `DayZDiag_x64.exe`, not the retail
+dayz-mcp `3a82bdc` adds the client and offline roles for `dayz_test_run` on Linux. They use the headless
+chain of `skills/_shared/scripts/dayz-client-headless.sh` (headless sway, Steam Linux Runtime 4, `proton run`) with `DayZDiag_x64.exe`, not the retail
 `DayZ_x64.exe`, which the daemon treats as the user's own game. The Steam check reads `SteamPID` from
 `~/.steam/registry.vdf`. No managed client was started (the client was in use), so the join and the bound
 client polls are still open. Measured on the way:
@@ -215,7 +212,7 @@ client polls are still open. Measured on the way:
 
 ## 9. Follow-up, 2026-11-06: the full cycle ran, and three earlier statements were wrong
 
-dayz-mcp branch `linux-port`, newer than `3a82bdc`. Machine as above, DayZDiag 1.30.164289.70 under GE-Proton11-1, `@DayZ_MCP`,
+dayz-mcp's Linux branch, a version newer than `3a82bdc`. Machine as above, DayZDiag 1.30.164289.70 under GE-Proton11-1, `@DayZ_MCP`,
 every result through `dayz_test_run` with a scratch `HOME`.
 
 **Corrections to the sections above**

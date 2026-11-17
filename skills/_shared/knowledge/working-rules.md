@@ -1,8 +1,8 @@
 # Working rules for DayZ modding with an AI agent
 
-Tier 3 pack: the process rules the DayZ Modding Knowledge Pack was built on, for any DayZ worker. Load it when planning how to verify, test or record DayZ work. Tier 1 (`.claude/CLAUDE.md`) and Tier 2 (`dayz-conventions.md`) still apply and win where they are more specific.
+Tier 3 pack: the process rules for any DayZ worker. Load it when planning how to verify, test or record DayZ work. Tier 1 (`.claude/CLAUDE.md`) and Tier 2 (`skills/_shared/dayz-conventions.md`) still apply and win where they are more specific.
 
-The rules are process rules distilled from shipped mods. They are not checked on `P:\` as game facts; the vanilla lines cited below are examples, each opened on `P:\` for this file.
+The rules are process rules learned while shipping mods. They are not checked on `P:\` as game facts; the vanilla lines cited below are examples, each opened on `P:\` for this file.
 
 ## The four rules
 
@@ -20,7 +20,7 @@ Keep these even when everything else is adapted.
 7. **Keep a durable memory outside the agent.** An assistant's context dies at the end of the session. Without somewhere to put what was learned, every session re-derives the same facts, re-proposes hypotheses that were already refuted and pays again for the same in-game cycles.
    - What earns a note is narrow: a verified API with its `path:line`, an assumption that turned out false and why, a decision and the alternative it rejected, a bug and the measurement that found it. Not transcripts and not summaries of what was done; those are recoverable from git.
    - Convert relative dates to absolute ones. "Last week" ages badly.
-   - Before real, multi-session work, ask the human which durable memory they will use, and offer to create the skeleton: project brief, verified APIs, assumptions, decision log, bug ledger, session handoffs. The Knowledge Pack's author used an Obsidian vault (plain Markdown files, `[[wikilink]]` links between notes); any plain-Markdown folder in version control works the same way. In this repo, user and machine notes go in `.claude/local-memory/` and agent memory in `.claude/agent-memory/` (Tier 1).
+   - Before real, multi-session work, ask the human which durable memory they will use, and offer to create the skeleton: project brief, verified APIs, assumptions, decision log, bug ledger, session handoffs. An Obsidian vault (plain Markdown files, `[[wikilink]]` links between notes) works; any plain-Markdown folder in version control works the same way. In this repo, user and machine notes go in `.claude/local-memory/` and agent memory in `.claude/agent-memory/` (Tier 1).
    - Three surfaces, three jobs: git is the distributable source, the notes vault is durable memory and full evidence, installed skills are the operational copy. Knowledge flows outward from the notes into skills; a release is never built from an installed copy.
 
 ## Evidence rules
@@ -35,7 +35,7 @@ Keep these even when everything else is adapted.
 
 ### Verification levels
 
-The compatibility matrix (`docs/compatibility-matrix.md`) and the imported skills use these words with these meanings.
+The compatibility matrix (`docs/compatibility-matrix.md`) and the skills use these words with these meanings.
 
 | Level | Meaning |
 |---|---|
@@ -52,7 +52,7 @@ Absence of a listed breaking change means unknown, not none.
 
 - Before adopting a DayZ stable update: pin the exact build, diff the relevant vanilla contracts, rerun the offline checks, then run the smallest representative batch of in-game tests. Record evidence and unknowns in `docs/compatibility-matrix.md`.
 - A vanilla line number belongs to one build. Measurements keep the build they were made on: something measured in game on one build is evidence for that build only.
-- The imported material targets DayZ 1.30 or later. Single-track vehicles are a 1.30 feature: `MotorbikeScript` is at `P:\scripts\4_world\entities\vehicles\motorbikescript.c:53`, and the Knowledge Pack found no reference to it in the 1.29 stable scripts (checked 2026-10-01; from the Knowledge Pack, not re-checked here because `P:\` holds 1.30).
+- The skills and packs target DayZ 1.30 or later. Single-track vehicles are a 1.30 feature: `MotorbikeScript` is at `P:\scripts\4_world\entities\vehicles\motorbikescript.c:53`, and the 1.29 stable scripts have no reference to it (checked on the 1.29 scripts on 2026-10-01; not re-checked here because `P:\` holds 1.30).
 - Dependencies with their own release cycles are pinned per project. Nothing here promises compatibility with an unpinned VPP, Expansion, TraderPlus, TraderX, Blender or ML-tool version.
 
 ## Using tools
@@ -65,5 +65,5 @@ Absence of a listed breaking change means unknown, not none.
 
 - Load on demand, never wholesale. Route from the skill's `name` and `description`, load the one skill that matches, and open a `references/` file only when the procedure names it. Loading everything buries the answer under what is not needed.
 - A knowledge note is consulted, not routed: open it when a skill points at it or when a fact the skill assumes is needed. Notes are still cite-then-verify against the vanilla source for the game version in use, because the engine moves.
-- Example project names in the imported skills (`LFQuad`, `SUB_BRZ`/`BRZ`, `MercedesAMGLF`, `A6_SR2M`, `LF_VStorage`, `LFPowerGrid`, `KT-Roadkill`) say where a rule came from. The rules are general; the mod source is not included. Treat the names as case-study labels.
-- Angle-bracket tokens such as `<notes>`, `<research-notes>`, `<skills>`, `<claude-home>` and `<tmp>` in the imported material stand for private local paths that were removed. `P:\` is the standard DayZ work drive and is left as is.
+- Mod names in the skills (`LFQuad`, `SUB_BRZ`/`BRZ`, `MercedesAMGLF`, `A6_SR2M`, `LF_VStorage`, `LFPowerGrid`, `KT-Roadkill`) name the mod a rule was measured on. The rules are general; the mod source is not in this repo. Treat the names as case-study labels.
+- Angle-bracket tokens such as `<notes>`, `<research-notes>`, `<skills>`, `<claude-home>` and `<tmp>` in the skills stand for local paths that differ per machine; substitute your own. `P:\` is the standard DayZ work drive and is written as is.

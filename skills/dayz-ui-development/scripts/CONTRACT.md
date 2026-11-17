@@ -58,7 +58,7 @@ Defaults:
 | info | 0.28 | 0.40 | 0.02 | 0.04 |
 | hud  | 0.22 | 0.10 | 0.76 | 0.04 |
 
-The grammar and the attribute set come from `stringtable_ladder.layout`, a layout from the source author's project that was tested in game with `ui_reload_layout` (it is not in this repo). The extra HUD chrome comes from `../templates/hud_overlay.layout`. Files are written as UTF-8 without a BOM, with LF line ends. A `.layout` holds no absolute paths.
+The grammar and the attribute set are those of a ladder panel layout that was tested in game with `ui_reload_layout`. The extra HUD chrome comes from `../templates/hud_overlay.layout`. Files are written as UTF-8 without a BOM, with LF line ends. A `.layout` holds no absolute paths.
 
 Examples (these three files sit next to the generator and are what `--self-test` writes):
 

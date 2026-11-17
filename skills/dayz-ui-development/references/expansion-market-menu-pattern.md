@@ -2,7 +2,7 @@
 
 The DayZ Expansion Market menu as a worked example of a complete UI feature: an MVC menu, RPCs where the server has authority, an explicit UI state machine and stock that survives restarts. Read `expansion-mvc-patterns.md` first for the base MVC patterns.
 
-**Where these facts come from.** DayZ Expansion is a third party mod. Every `path:line` in P1 to P12 points into the public source repository `salutesh/DayZ-Expansion-Scripts`, branch `release`, commit `8f75d554fda209b257c00deb8f01c181e67c980a`; the last section reads a later snapshot. Each citation was read twice at that commit by the source author. Nothing here is a vanilla fact, and nothing was checked against the Workshop build of the mod, so line numbers will have moved in the copy on your machine: search for the symbol. The only vanilla call the pattern relies on is `JsonFileLoader`, declared at `P:\scripts\3_game\tools\jsonfileloader.c`.
+**How facts are marked here.** DayZ Expansion is a third party mod, so nothing here is a vanilla fact and none of it can be checked on `P:\`. Every `path:line` in P1 to P12 points into the DayZ Expansion scripts, branch `release`, commit `8f75d554fda209b257c00deb8f01c181e67c980a`; the last section reads a later snapshot. Nothing was checked against the Workshop build of the mod, so line numbers will have moved in the copy on your machine: search for the symbol. The only vanilla call the pattern relies on is `JsonFileLoader`, declared at `P:\scripts\3_game\tools\jsonfileloader.c:1`. The `JsonLoadFile` and `JsonSaveFile` calls the mod uses still exist on 1.30 (`:105` and `:134`), each under a comment that says to use `LoadFile` (`:7`) and `SaveFile` (`:42`) instead; write new code with those two.
 
 ---
 
@@ -344,12 +344,12 @@ and ATM. Pattern `JsonFileLoader<T>.JsonSaveFile/JsonLoadFile` for per-entity pe
 
 ## Open assumptions (not verified)
 
-- [SUP-1] Batch pagination: `next < 0` appears to signal end of batches, but exact batch size
+- Batch pagination: `next < 0` appears to signal end of batches, but exact batch size
   and reconnect-on-timeout mechanism not verified. Confirm with `grep -n "BATCH_SIZE\|next < 0\|RequestTraderItems"` in module.
-- [SUP-2] `ExpansionMath.PowerConversion` with exponent 6.0 infers a convex curve (price drops
+- `ExpansionMath.PowerConversion` with exponent 6.0 infers a convex curve (price drops
   fast as stock rises), but the `PowerConversion` implementation lives in Core, not Market.
   Not verified.
-- [SUP-4] Base implementation of `ExpansionScriptViewMenu`, `ExpansionViewController`, and
+- Base implementation of `ExpansionScriptViewMenu`, `ExpansionViewController`, and
   binding runtime are in `DayZExpansion/Core/`, outside the Market code that was read.
   Verify before implementing exact binding compatibility.
 
@@ -357,8 +357,8 @@ and ATM. Pattern `JsonFileLoader<T>.JsonSaveFile/JsonLoadFile` for per-entity pe
 
 ## Settings files, item fields and related names (later snapshot)
 
-A later snapshot than the one above: `salutesh/DayZ-Expansion-Scripts@14fd692` (2026-10-15). Read from the
-source, not measured on a server.
+A later snapshot of the DayZ Expansion scripts than the one above: commit `14fd692` (2026-10-15). Read from the
+mod's source, not measured on a server.
 
 - Settings live under `$profile:ExpansionMod\Settings\` (`EXPANSION_FOLDER`, `EXPANSION_SETTINGS_FOLDER`,
   `DayZExpansion/Core/Scripts/3_Game/DayZExpansion_Core/ExpansionConstants.c:75`, `:78`) or under

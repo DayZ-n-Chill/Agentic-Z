@@ -1,101 +1,54 @@
 # Placement, `autocenter`, and the knee-height bug
 
-Where `autocenter=0` belongs on a placed item and on a vehicle, why adding it to every LOD of one placed item made it float at knee height, and the LOD resolution bands to use when reading or writing LOD properties.
+Where `autocenter=0` sits on a vanilla placed item and on a vanilla vehicle, one measured case where the property on two LODs of a placed item made it float at knee height, and a snippet that strips the property to test for that case.
 
-> Status: a field note measured on one third-party mod item (LFPG_PressurePad, April 2026) and on debinarized copies of the vanilla CivilianSedan and of a quad bike mod. Those measurements were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. Other skills are named by skill name, each a folder under `skills/` (dayz-p3d-inspector, enforce-script-reference).
+> Status: the knee-height case was measured in game on one placed mod item (a pressure pad on `Inventory_Base`), and the vehicle LOD properties on unbinarized copies of the vanilla CivilianSedan and of a quad bike mod; the mod results are third-party mod behaviour, not vanilla. A citation written with its full `P:\` path was opened on the vanilla data on `P:\`. Other skills are named by skill name, each a folder under `skills/` (dayz-p3d-inspector, enforce-script-reference).
 
 ## Vanilla anchors checked on `P:\`
 
-- Vehicles: `ProxyVehiclePart` at `P:\DZ\vehicles\wheeled\config.cpp:23901` sets `autocenter=0` four lines down, and that is the only `autocenter` line in the file. `CivilianSedan` (`P:\DZ\vehicles\wheeled\config.cpp:5113`) has none, which matches the SCOPE note below: a vanilla car carries the property in the model and on its part proxy classes, not on the car's config class.
+- Vehicles: `ProxyVehiclePart` at `P:\DZ\vehicles\wheeled\config.cpp:23901` sets `autocenter=0` four lines down, and that is the only `autocenter` line in the file. `CivilianSedan` (`P:\DZ\vehicles\wheeled\config.cpp:5113`) has none: a vanilla car carries the property in the model and on its part proxy classes, not on the car's config class.
 - Placed gear: in `P:\DZ\gear\camping\config.cpp` the only two `autocenter` lines sit in proxy classes under `CfgNonAIVehicles`: `ProxyPart` (`P:\DZ\gear\camping\config.cpp:13387`) and `Proxycable_reel` (`P:\DZ\gear\camping\config.cpp:13548`). No item class under `CfgVehicles` there sets it.
 - A byte scan of the 82 binarized models in `P:\DZ\gear\camping\` finds the property name `autocenter` in 78 of them (for example `P:\DZ\gear\camping\wooden_case.p3d`), and in `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` and `P:\DZ\vehicles\wheeled\civiliansedan\proxy\sedanwheel.p3d`. The scan shows that vanilla keeps the property in the model; it cannot tell which LOD holds it or its value.
 
-## Where this note disagrees with the rest of the repo
+## The rule to follow
 
-For placed items this note says the config class is authoritative and a LOD-level `autocenter=0` is a bug. `skills/_shared/models/named-properties.md` says the opposite: a placed object carries the named property on the Geometry LOD as well as the config line, and `check_autocenter_prop` in `skills/dayz-p3d-audit/scripts/audit_p3d.py` reports a Geometry LOD that lacks the property when the config sets it. Vanilla on `P:\` sides with the model-side property (anchors above), so follow `named-properties.md` when building a new placed object.
+- **A new placed object**: follow `skills/_shared/models/named-properties.md`. The named property `autocenter` = `0` goes on the Geometry LOD together with the config line, and `check_autocenter_prop` in `skills/dayz-p3d-audit/scripts/audit_p3d.py` reports a Geometry LOD that lacks the property when the config sets it. Vanilla on `P:\` keeps the property in the model (anchors above).
+- **A vehicle or a proxy model**: the property is a named property on the Geometry LOD. The unbinarized CivilianSedan carries `{autocenter:0, class:vehicle}` on its resolution 1e13 LOD (read with py3d), a quad bike mod likewise, and the CivilianSedan config class has no `autocenter` line. Follow `vehicle-structural-parity.md`, and never run `strip_bad_autocenter` (below) on a vehicle `.p3d`. `rip-geometry-and-winding.md` ("`autocenter=0`: corrected scope by LOD, host, and submodel") covers the host and its sub-models.
 
-Keep this note for what it measured. On that one item the property sat on the Geometry and LandContact LODs together with the config line, the hologram and the placed object were about 0.4 m too high, and removing the two LOD properties fixed it. When a placed item floats at knee height, test that removal first. The explanation under "Why adding it to LODs breaks things" is the author's reading and is not checked on `P:\`.
+## The measured case: a placed item floating at knee height
 
-## What the note says
+One measured case goes against the first rule, so test for it when a placed item floats:
 
-A short but important reference: where `autocenter=0` actually belongs, and
-why the "add it everywhere to be safe" advice is wrong and actively breaks
-DayZ placements.
+- The item was a pressure pad on `Inventory_Base` with `autocenter = 0;` in its config class:
+  ```cpp
+  class MyMod_PressurePad : Inventory_Base
+  {
+      scope = 2;
+      model = "\MyMod\data\pressure_pad\pressure_pad.p3d";
+      autocenter = 0;
+      // ...
+  };
+  ```
+- Its `.p3d` also had `autocenter=0` on LOD 3 (Geometry, resolution 1 × 10¹³) and on LOD 5 (LandContact, resolution 2 × 10¹⁵), added by an earlier pipeline step.
+- In game the placement hologram floated about 0.4 m above the ground (knee height), and the placed object stayed at that height, on the server and on the client.
+- Removing only those two LOD properties restored ground placement at once, with no code change.
 
-## Short answer
+Why it happened is not established and is not checked on `P:\`. One reading: the ground contact calculation takes the bottom of the object from the Geometry and LandContact LODs, and the property on those LODs applied an offset a second time on top of the config line. Vanilla models carry the property in the model without floating, so do not turn this case into a rule that a LOD property is a bug. When a placed item floats at knee height, test that removal first.
 
-`autocenter=0` goes on the **config.cpp** class, not on any `.p3d` LOD — for
-**Inventory_Base placeable items**; vehicles are the exception (see SCOPE below).
+## LOD resolutions used here
 
-SCOPE (corrected s20 2026-07-02): this rule is for **Inventory_Base placeable items** (verified on
-LFPG_PressurePad). **VEHICLES AND PROXY MODELS ARE THE EXCEPTION**: vanilla working vehicles carry
-`autocenter=0` as a named property ON the Geometry LOD (CivilianSedan MLOD res=1e13 props
-`{autocenter:0, class:vehicle}`, measured via py3d; QuadBike likewise), and the CivilianSedan config class
-has NO config-level autocenter. For vehicles follow `vehicle-structural-parity.md`; never run
-`strip_bad_autocenter` on a vehicle `.p3d`.
+The resolution values of each LOD type are in the table in `skills/_shared/conventions/assets.md`. The ones this file uses: Geometry 1 × 10¹³, Memory 1 × 10¹⁵, LandContact 2 × 10¹⁵, View Geometry 6 × 10¹⁵, Fire Geometry 7 × 10¹⁵, Shadow volume 10 000, and Visual LODs below 1000. A classifier that puts Fire Geometry at 3 × 10¹³ or View Geometry at 7 × 10¹³ is wrong for DayZ and reports LandContact, View Geometry and Fire Geometry as unknown.
 
-```cpp
-class LFPG_PressurePad : Inventory_Base
-{
-    scope = 2;
-    model = "\LFPowerGrid\data\pressure_pad\pressure_pad.p3d";
-    autocenter = 0;   // <- THIS is the right place
-    // ...
-};
-```
-
-Do NOT duplicate `autocenter=0` onto the Geometry LOD, LandContact LOD,
-Memory LOD, View Geometry LOD, or Fire Geometry LOD properties. The config
-flag is authoritative.
-
-## Why adding it to LODs breaks things
-
-Verified on `LFPG_PressurePad` in April 2026:
-
-- The `.p3d` had `autocenter=0` added to LOD 3 (Geometry, res 1 × 10¹³) and
-  LOD 5 (LandContact, res 2 × 10¹⁵) by a previous pipeline/editor.
-- In-game symptom: the placement hologram appeared floating ~0.4 m above
-  ground (knee height), and the final placed object stayed at the same
-  height. Both server-side and client-side.
-- Removing just those two LOD-level `autocenter=0` properties restored
-  correct ground placement immediately. No code changes needed.
-
-The engine's ground-contact calculation uses the Geometry/LandContact
-position to figure out where the "bottom" of the object is. When the
-config's `autocenter=0` already freezes the model origin, re-asserting it
-on the LOD effectively double-applies the offset and the engine places the
-object with an extra shift on top of the visual origin.
-
-## LOD resolution bands (DayZ)
-
-For reference when reading/writing LOD properties (the same values as the table in `skills/_shared/conventions/assets.md`, which adds GeoPhys at 4 × 10¹³):
-
-| Type | Resolution |
-|---|---|
-| Visual 0, 1, 2… | 0, 1, 2, … |
-| Shadow volume | 10 000 |
-| Geometry (collision) | 1 × 10¹³ |
-| Memory | 1 × 10¹⁵ |
-| LandContact | 2 × 10¹⁵ |
-| Roadway | 3 × 10¹⁵ |
-| Paths | 4 × 10¹⁵ |
-| HitPoints | 5 × 10¹⁵ |
-| View Geometry | 6 × 10¹⁵ |
-| Fire Geometry | 7 × 10¹⁵ |
-
-Older skill notes listed GeoPhys at 2 × 10¹³, FireGeo at 3 × 10¹³, ViewGeo
-at 7 × 10¹³. Those values are wrong for modern DayZ and cause LandContact,
-ViewGeo, and FireGeo to all be misclassified as "memory".
-
-## Audit / fix snippet
+## Snippet: strip the property to test for the measured case
 
 ```python
 import py3d
 
 def strip_bad_autocenter(p3d_path, out_path=None):
-    """Remove `autocenter=0` from collision/landcontact LODs only.
+    """Remove `autocenter=0` from the collision, memory and LandContact LODs.
 
     Returns list of (lod_index, lod_type) tuples that were changed.
+    Never run it on a vehicle or proxy model.
     """
     with open(p3d_path, "rb") as f:
         p = py3d.P3D(); p.read(f)
@@ -103,9 +56,6 @@ def strip_bad_autocenter(p3d_path, out_path=None):
     changed = []
     for i, lod in enumerate(p.lods):
         res = lod.resolution
-        # Everything except Visual (res < 1000) and Shadow (10000)
-        is_non_visual = res >= 10000 and res != 10000
-        # More specifically: Geometry, LandContact, Memory, View, Fire
         is_collision = (
             abs(res - 1e13) < 1e12 or    # Geometry
             abs(res - 1e15) < 1e14 or    # Memory
@@ -123,29 +73,11 @@ def strip_bad_autocenter(p3d_path, out_path=None):
     return changed
 ```
 
-## When config-level `autocenter=0` is appropriate
-
-- **Always** for `Inventory_Base` items that are placeable on the ground
-  (the vast majority of deployable kits and their placed devices).
-- **Always** when you authored the model with the origin at the intended
-  ground-contact point rather than at the geometric center.
-- Skip it only if you know the engine's auto-centering gives you what you
-  want (uncommon — usually only for small handheld items where the exact
-  "sit on ground" pose doesn't matter).
-
-## When someone might legitimately add LOD-level `autocenter=0`
-
-Rare. The one case is a model where the LOD's geometry centroid is far
-from the origin and you explicitly don't want the engine to recompute
-the LOD's own center. In practice, for DayZ mod kits you should assume
-"LOD-level autocenter is a bug" until proven otherwise.
+Write the result to a copy (`out_path`), test it in game, and keep the original: for a new placed object the property on the Geometry LOD is the rule.
 
 ## See also
 
-- `/dayz-p3d-audit`: the author's copy of `audit_p3d.py` warned when `autocenter=0` was found on a
-  non-visual LOD. This repo's `skills/dayz-p3d-audit/scripts/audit_p3d.py` does the reverse (see the
-  disagreement section above): it reports a Geometry LOD without the property when the config sets it.
-- The dayz-p3d-inspector skill: `p3d_inspector_build.py` does NOT auto-add
-  `autocenter`; Recipe JSON `properties` is authoritative.
-- The enforce-script-reference skill: config.cpp conventions for placeable items.
-- `vehicle-structural-parity.md` and `rip-geometry-and-winding.md` ("`autocenter=0`: corrected scope"): the vehicle side of this rule.
+- `/dayz-p3d-audit`: `skills/dayz-p3d-audit/scripts/audit_p3d.py` reports a Geometry LOD without the property when the config sets `autocenter = 0`.
+- The dayz-p3d-inspector skill: `p3d_inspector_build.py` writes the `properties` of the Recipe JSON, and adds `autocenter` = `0` to a Geometry LOD whose recipe has none.
+- The enforce-script-reference skill: `config.cpp` conventions for placeable items.
+- `vehicle-structural-parity.md` and `rip-geometry-and-winding.md` ("`autocenter=0`: corrected scope by LOD, host, and submodel"): the vehicle side of this rule.

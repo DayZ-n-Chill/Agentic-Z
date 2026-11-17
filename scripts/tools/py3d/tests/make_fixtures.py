@@ -3,7 +3,8 @@
 No Bohemia Interactive asset is used.
 
 Deterministic: the same output on every run. The fixtures are NOT
-committed; this script is the source. Use: python3 tests/make_fixtures.py
+committed; this script is the source. From the repository root:
+python scripts/tools/py3d/tests/make_fixtures.py
 """
 
 import os

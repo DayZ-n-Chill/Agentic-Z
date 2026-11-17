@@ -25,7 +25,7 @@ Deeper references. You have no Skill tool, so Read the file, and open one only w
 - `skills/dayz-environment-hazards/SKILL.md`: sandstorm, heat stroke, dust and oil pits on a custom world; the modifier and agent code it describes goes to dayz-script-specialist.
 - Contaminated area sizing in `skills/dayz-particles/references/effect-area-particles.md`, the music registry of a custom world in `skills/_shared/audio-fx/music-and-radio.md`, water queries over rivers and ponds in `skills/_shared/physics/water-queries.md`, and animal territories in `skills/_shared/ai/animal-territories.md`.
 - Buildings placed on the map: `skills/_shared/models/building-selections.md` and `skills/_shared/models/multi-rvmat-texturing.md`; a large building whose collision fails with no message is in `skills/dayz-model-pipeline/references/lods-and-geometry.md` ("Collision of a large building with an interior").
-- Weather, surfaces and contaminated areas as the public wiki describes them: `skills/_shared/knowledge/wiki-systems-reference.md`.
+- Weather, surface, clutter and contaminated area settings, most not yet checked on `P:\`: `skills/_shared/knowledge/wiki-systems-reference.md`.
 - Step 4: `scripts/tools/dayz-terrain-builder-runner/README.md` (an experimental runner that drives Terrain Builder's menus; its README says what is not verified) and `scripts/tools/dayz-navmesh-compare/README.md` (comparing two `.nm` files tile by tile after a terrain edit). You have no Bash, so give their commands to your caller or the user.
 
 ## Workflow

@@ -2,7 +2,7 @@
 
 Tier 3 reference for how DayZ objects behave physically: mass, collision LODs, dropping, throwing and contact, plus rigid bodies from script, interaction layers and raycasts, the player controller, what replicates, scripted triggers and water queries. Written for `dayz-physics-specialist`; any DayZ worker may load one file of it when a task needs it. Tier 1 and Tier 2 still apply on top.
 
-Every game fact here cites the vanilla file on `P:\` it came from. A line marked **model knowledge** comes from the MLOD format or Object Builder, not from a vanilla text file, so check it on the mod's own MLOD model with `/dayz-p3d-audit`. Vanilla `.p3d` files under `P:\DZ\` are binarized ODOL and stay closed: never open, convert or audit them.
+Every game fact here cites the vanilla file on `P:\` it came from. A line marked **model knowledge** comes from the MLOD format or Object Builder, not from a vanilla text file, so check it on the mod's own MLOD model with `/dayz-p3d-audit`. A line marked **measured in game** was seen on a running game and can't be checked on `P:\`; confirm it in game before a design depends on it. Vanilla `.p3d` files under `P:\DZ\` are binarized ODOL and stay closed: never open, convert or audit them.
 
 ## Which file to open
 

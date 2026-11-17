@@ -2,7 +2,7 @@
 
 Reference for saving mod data across server restarts: the store save and load chain, save versions and upgrade paths, base building parts, and the data loss audit run before a release. Written for `dayz-persistence-specialist`; any worker that touches `OnStoreSave` or `OnStoreLoad` may load the file it needs.
 
-Every fact here was checked in the vanilla scripts and configs on `P:\` and cites the file and line it came from, except lines marked as measured in game or as third-party (Community Framework and named mods), which say so. Line numbers are from game storage version 144 (`P:\scripts\3_game\global\game.c:5`); after a game update, search for the method name if a line has moved.
+Every fact here was checked in the vanilla scripts and configs on `P:\` and cites the file and line it came from, except lines marked as measured in game or as third-party mod behaviour (Community Framework and other mods), which say so. Line numbers are from game storage version 144 (`P:\scripts\3_game\global\game.c:5`); after a game update, search for the method name if a line has moved.
 
 The short pattern file `_shared/enscript/patterns/persistence.md` shows the basic version header. This pack goes deeper.
 

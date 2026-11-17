@@ -1,6 +1,6 @@
 # Item and player sounds: the vanilla handlers
 
-The sound systems vanilla already runs for items and players: the item sound handler that lets the server start a sound on every client, the player sound handlers, step sounds, player sound events and the step sounds of bushes. Use them before writing your own sync. Line numbers are from the 1.30 scripts on `P:\`; statements about 1.29 come from the notes this file was built from and are not yet checked on `P:\`.
+The sound systems vanilla already runs for items and players: the item sound handler that lets the server start a sound on every client, the player sound handlers, step sounds, player sound events and the step sounds of bushes. Use them before writing your own sync. Line numbers are from the 1.30 scripts on `P:\`; statements about 1.29 are not yet checked on `P:\`.
 
 ## Contents
 
@@ -120,7 +120,7 @@ A mod requests it the same way, with `RequestSoundEventEx` on the player (`P:\sc
 
 `SoundEventBase` stops its sound in the destructor only while the game object still exists: `if (g_Game) Stop();` (`P:\scripts\4_world\classes\soundevents\soundevents.c:12`).
 
-Do not add a destructor of the 1.29 style to a subclass of `InfectedSoundEventBase` that calls `m_SoundSetCallback.Stop()` without that test. The notes this file was built from report a crash on shutdown from it (not checked on `P:\`).
+Do not add a destructor of the 1.29 style to a subclass of `InfectedSoundEventBase` that calls `m_SoundSetCallback.Stop()` without that test. Such a destructor crashes the game on shutdown (not yet checked on `P:\`).
 
 ## Step sounds of bushes and other static objects (1.30)
 

@@ -17,7 +17,6 @@ What is checked and what is not: the material and config facts cite vanilla file
 - [Baking in Blender for DayZ](#baking-in-blender-for-dayz)
 - [Symptom to cause](#symptom-to-cause)
 - [Reference numbers](#reference-numbers)
-- [Sources outside P:\](#sources-outside-p)
 
 ## What to know first
 

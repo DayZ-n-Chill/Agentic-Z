@@ -12,7 +12,7 @@
         "re:(?<!n't )(?<!not )(?<!never )\\b(keep|leave)\\s+(the\\s+)?`?extends\\b(?![^.\\n]{0,25}\\b(out|off)\\b)"
       ],
       "cite": "4_world/entities/manbase/playerbase.c",
-      "verified": "P:/scripts/4_world/entities/manbase/playerbase.c:49 (class PlayerBase extends ManBase) and :7623 (void OnConnect); the no-extends form is the vanilla modding example form: P:/scripts/3_game/particles/particlelist.c:5, P:/scripts/4_world/plugins/pluginbase/plugindiagmenu/plugindiagmenumodding.c:21 (one commented-out vanilla sample, P:/scripts/3_game/ppemanager/pperequesterbank.c:276, writes extends Managed; none writes a class extending itself). Not checked (so not scored): that extends on a modded class is a silent no-op (modded_class.md marks it reported)"
+      "verified": "P:/scripts/4_world/entities/manbase/playerbase.c:49 (class PlayerBase extends ManBase) and :7623 (void OnConnect); the no-extends form is the vanilla modding example form: P:/scripts/3_game/particles/particlelist.c:5, P:/scripts/4_world/plugins/pluginbase/plugindiagmenu/plugindiagmenumodding.c:21 (one commented-out vanilla sample, P:/scripts/3_game/ppemanager/pperequesterbank.c:276, writes extends Managed; none writes a class extending itself). Not checked (so not scored): that extends on a modded class is a silent no-op (skills/_shared/enscript/patterns/modded_class.md marks it as not checked on P:)"
     },
     {
       "id": "action-layer",
@@ -110,7 +110,7 @@
       "must_not_include": [
         "re:\\A\\W*yes\\b"
       ],
-      "verified": "P:/scripts/3_game/gameplay.c:652-653 (ShowWalkieTalkie(bool show) and ShowWalkieTalkie(int fadeOutSeconds) in class Hud); skills/_shared/enscript/patterns/language_workarounds.md section 'Overloading works, but keep it simple'. The source case listed 'overloaded methods' as an unsupported claim; P: shows overloads compile, so the question checks the P: fact."
+      "verified": "P:/scripts/3_game/gameplay.c:652-653 (ShowWalkieTalkie(bool show) and ShowWalkieTalkie(int fadeOutSeconds) in class Hud); skills/_shared/enscript/patterns/language_workarounds.md section 'Overloading works, but keep it simple'. Vanilla declares overloads in one class, so the claim that they are unsupported is false."
     },
     {
       "id": "stardz-negatives-managed",
@@ -158,7 +158,7 @@
       "must_not_include": [
         "re:\\A\\W*yes\\b"
       ],
-      "verified": "Dabs Framework is a third-party mod, not vanilla: a search of P:/scripts for 'class ViewController' and for 'DabsFramework' finds no file (checked on game storage version 144). A mod that uses another mod's classes lists that mod's CfgPatches class in requiredAddons: skills/_shared/dayz-conventions.md and skills/_shared/conventions/config.md"
+      "verified": "Dabs Framework is a third-party mod, not vanilla: a search of P:/scripts for 'class ViewController' and for 'DabsFramework' finds no file (checked on game storage version 144). A mod that uses another mod's classes lists that mod's CfgPatches class in requiredAddons: skills/_shared/enscript/integrations/dabs_framework.md (add \"DF_Scripts\" to requiredAddons[]) and skills/_shared/enscript/patterns/modded_class.md"
     }
   ]
 }

@@ -4,7 +4,7 @@ When to use the Multi shader, its stage layout, the two UV sets it needs, how to
 
 The model side of the same shader (the two UV sets on the mesh, faces without a texture, an annotated template) is in `skills/dayz-model-pipeline/references/multi-rvmat-section-texturing.md`, and the vanilla counts are in `skills/_shared/models/multi-rvmat-texturing.md`.
 
-How to read it: a `P:\` citation was checked on the vanilla files. The skeleton with `MyMod` paths is a shape to adapt. Community sources are named where they are used.
+How to read it: a `P:\` citation was checked on the vanilla files. The skeleton with `MyMod` paths is a shape to adapt.
 
 ## When Multi is worth it
 
@@ -108,8 +108,6 @@ class Stage14 { texture="MyMod\data\blue_nohq.paa"; texGen="3"; };
 ```
 
 The script's own skeleton writes `TexGen1` to `TexGen3` out in full instead of inheriting; both forms describe the same thing. Vanilla writes each `TexGen` in full.
-
-Other sources for the shader: Mondkalb's MultiMaterial tutorial on the Bohemia wiki (https://community.bistudio.com/wiki/Mondkalb%27s_MultiMaterial_Tutorial) and a DayZ Modders template thread (https://www.answeroverflow.com/m/1499902968651186378).
 
 ## Painting the mask
 

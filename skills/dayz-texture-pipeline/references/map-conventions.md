@@ -2,7 +2,7 @@
 
 How each DayZ texture map is oriented, packed and levelled: the normal map convention and how to measure it, how `_nohq` and `_smdi` are stored, how to get from a metallic and roughness set to `_smdi`, and how to calibrate levels against a vanilla asset.
 
-How to read it: a `P:\` citation was checked on the vanilla files. "Measured" blocks name the project and date they come from and were not rechecked here unless the line says "rechecked". "Starting point" marks a value to adapt, not a vanilla measurement. The suffix table and what ImageToPAA does with each suffix are in `_shared/textures/suffixes-and-sizes.md`, not here.
+How to read it: a `P:\` citation was checked on the vanilla files. "Measured" blocks carry their date and were not rechecked here unless the line says "rechecked". "Starting point" marks a value to adapt, not a vanilla measurement. The suffix table and what ImageToPAA does with each suffix are in `_shared/textures/suffixes-and-sizes.md`, not here.
 
 ## Contents
 
@@ -19,7 +19,7 @@ How to read it: a `P:\` citation was checked on the vanilla files. "Measured" bl
 
 ## Normal maps
 
-- DayZ `_nohq` is tangent space, DirectX style: X+ and Y-, green pointing down. Bohemia's "RVMAT basics" wiki page states the X+ Y- orientation (https://community.bistudio.com/wiki/RVMAT_basics). 3ds Max and Unreal use the same convention by default.
+- DayZ `_nohq` is tangent space, DirectX style: X+ and Y-, green pointing down. 3ds Max and Unreal use the same convention by default.
 - Blender, Cycles and many bakers write OpenGL style, Y+, by default. Invert the green channel of such a source before the final export.
 - Do not guess the convention of a source from where it came from. `normal_convention.py` proposes a candidate, and the candidate is then confirmed another way (next section).
 - About 3 % of vanilla `_nohq` files are consistent with OpenGL by their own features (at least 25 of 848 measured, see below). Do not take a vanilla file as a sign reference without checking it.
@@ -52,7 +52,7 @@ When the two renders look the same, the check is inconclusive, not a confirmatio
 
 ### Measured results
 
-- A Sketchfab heater model (LFPowerGrid): candidate DirectX both ways. Albedo reading red -0.130 and green -0.085 over 491,775 of 1,048,576 pixels (2026-09-21); curl residuals 0.013 under DirectX against 0.024 under OpenGL (2026-10-03). With the block check it stays DirectX: curl 19 blocks for and 0 against, albedo 29 for and 2 against. Not confirmed another way and not checked in game.
+- A downloaded heater model that did not state its convention: candidate DirectX both ways. Albedo reading red -0.130 and green -0.085 over 491,775 of 1,048,576 pixels (2026-09-21); curl residuals 0.013 under DirectX against 0.024 under OpenGL (2026-10-03). With the block check it stays DirectX: curl 19 blocks for and 0 against, albedo 29 for and 2 against. Not confirmed another way and not checked in game.
 - Vanilla `_nohq` and `_co` pairs decoded with ImageToPAA (2026-10-04):
   - On 284 pairs never used to design the block check (every tenth pair under `P:\DZ`, offset 2) the script gave 157 `DirectX`, 119 `INCONCLUSIVE` (41.9 %) and 8 `OpenGL`.
   - Each of the 8 `OpenGL` answers is consistent with OpenGL by its own features: ring targets, knobs, perforation holes, pores. None was a wrong candidate (0 of 165).
@@ -73,7 +73,7 @@ A shipped `_nohq` is DXT5 with swizzled channels, not an RGB normal sitting in a
 
 - ImageToPAA's rule for `*_nohq.*` is `class normalmap_hq` in `<DayZ Tools>\Bin\ImageToPAA\TexConvert.cfg`: `format = "DXT5"`, `channelSwizzleA = "1-R"`, `channelSwizzleR = "1-A"`, green and blue kept. So the stored alpha is 1 minus X, and the stored red is 1 minus the source alpha, which is 0 for an opaque source.
 - Header scan of the vanilla files (2026-11-17): all 3,865 `_nohq.paa` files under `P:\DZ` are type `0xFF05` (DXT5) and carry the tag `SWIZ` with the bytes `05 04 02 03`, for example `P:\DZ\vehicles\wheeled\hatchback_02\data\hatchback_02_rust_body_nohq.paa`.
-- Measured on vanilla vehicle maps and two regenerated mod maps (LFQuad2, 2026-08-30): the raw mip has red at 0 on every pixel and the X component in the alpha channel. That measurement did not tell X from 1 minus X; the `TexConvert.cfg` rule above does.
+- Measured on vanilla vehicle maps and two regenerated mod maps (2026-08-30): the raw mip has red at 0 on every pixel and the X component in the alpha channel. That measurement did not tell X from 1 minus X; the `TexConvert.cfg` rule above does.
 - Converting a `_nohq.paa` back with ImageToPAA gives an RGB image (X, Y, Z). Measure amplitude, `mean(sqrt((R-128)^2 + (G-128)^2))`, and relief (the share of pixels with amplitude above 25) on that decoded PNG, never on the raw block.
 - Find out how a file is packed from the file itself and from a vanilla `_nohq`, not from its suffix.
 
@@ -112,29 +112,27 @@ What is checked:
 - **Painting R white is redundant.** `class specular_diffuseinverse_map` in `TexConvert.cfg` sets `channelSwizzleR = "1"` and `channelSwizzleA = "1"` and keeps G and B. Rechecked 2026-11-17 with DayZ Tools ImageToPAA: a 64 x 64 `x_smdi.png` filled with R = 0, G = 56, B = 200 converts to a `.paa` that decodes back as (255, 56, 200, 255). The earlier test (2026-10-07) found the same for `x_SMDI.png`, so the match ignores case. All 2,696 vanilla `_smdi.paa` files under `P:\DZ` carry the `SWIZ` tag `08 08 02 03`.
 - **Measured vanilla files** (2026-09-21): the `_smdi` of the searchlight, battery adapter, a housing and the battery charger decode with R at 255 everywhere; G and B carry the data.
 - **The procedural SMDI has no single default.** Counted on `P:\DZ` (2026-11-17): 1,007 procedural `color(r,g,b,a,SMDI)` textures in `.rvmat` files. R is 0 in 566, 1 in 384, between the two in 55, and out of range in 2: `color(100,100,100,1,SMDI)` at `P:\DZ\structures\specific\statues\data\ww2monument_stele_flags.rvmat:59` and in `ww2monument_wall_floor.rvmat`. Of the 928 in Super materials, R is 0 in 545 and 1 in 337. The most common value is `color(0,0,1,1,SMDI)` (297 times, 280 of them in Super materials), for example `P:\DZ\characters\bodies\data\jeans_f_grd.rvmat:59`: green 0, no specular at all. Since Super materials ship R at 0 that often, a white R looks conventional, not required. Which G is neutral for a given material is not something the count can say.
-- Sources for the channel meaning: Bohemia's Super shader page (https://community.bistudio.com/wiki/Super_shader) and a DayZ Modders discussion (https://www.answeroverflow.com/m/1512098192869818471).
 
 ## From a metallic and roughness set to the green channel
 
-A community rule (Strykar, DayZ Modders Discord, 2026-10-07; not verified in game): do not copy a metallic map straight into specular. Metallic is a blend factor between insulator and metal, not a reflectance. Copied as specular, its black (wood, cloth, plastic) becomes zero specular, while real insulators reflect about 4 % at normal incidence (2 to 16 %) and metals 70 to 100 %. Replace the black with `#383838` and keep the bright metal.
+A rule that is not verified in game: do not copy a metallic map straight into specular. Metallic is a blend factor between insulator and metal, not a reflectance. Copied as specular, its black (wood, cloth, plastic) becomes zero specular, while real insulators reflect about 4 % at normal incidence (2 to 16 %) and metals 70 to 100 %. Replace the black with `#383838` and keep the bright metal.
 
 - Arithmetic, checked offline: 4 % linear encoded to sRGB is 0.2209, which is 56, `0x38`. Read back as sRGB it is 3.95 %. 56 sits inside the G ranges of the table above for rubber, plastic and wood.
 - **Not verified: whether the Super shader decodes `_smdi` green as sRGB.** If it reads green as raw linear, `0x38` is 0.22 of full scale, about 5.6 times the intended 4 %. That green behaves like a physically based F0 at all is not established either. A hint against the sRGB reading: `TexConvert.cfg` comments the color classes (`_co`, `_ca`, macro) as "sRGB color space" and gives `*_smdi.*` no such comment. A second hint: the vanilla motorbike paint below sits at 5, not 56. Treat `0x38` as a sensible starting point, not a calibrated value.
-- Strykar's right-click tool (`DayZ_Specular_Converter.zip`, ImageMagick) composites solid `#383838` over the metallic map using the inverted metallic map as the mask. Worked out from ImageMagick's masked composite rule for opaque inputs, not run: `out = m*m + 0.2196*(1 - m)`, so 0 gives 56, 64 gives 58, 128 gives 92 and 255 gives 255. That is correct for a black and white metallic map and darkens grey or antialiased transitions (m squared where m was meant). Starting point: the textbook form is the linear blend `out = 0.2196 + (1 - 0.2196)*m` (128 gives 156). Pick one on purpose.
+- One ImageMagick recipe composites solid `#383838` over the metallic map using the inverted metallic map as the mask. Worked out from ImageMagick's masked composite rule for opaque inputs, not run: `out = m*m + 0.2196*(1 - m)`, so 0 gives 56, 64 gives 58, 128 gives 92 and 255 gives 255. That is correct for a black and white metallic map and darkens grey or antialiased transitions (m squared where m was meant). Starting point: the textbook form is the linear blend `out = 0.2196 + (1 - 0.2196)*m` (128 gives 156). Pick one on purpose.
 - Metal comes out at the metallic value (white is 255), not at the albedo's color. DayZ's green is one number per texel, so that loss comes with the packing.
-- The tool writes a greyscale `<name>_Specular.<ext>` beside the source. That file is the green source of an `_smdi`, not an `_smdi`: pack R = 255, G = this map, B = gloss (inverted roughness).
-- The tool is a third party download with no stated license. It is described here, not shipped with this repo.
+- The result is a greyscale specular map, usually saved as `<name>_Specular.<ext>` beside the source. That file is the green source of an `_smdi`, not an `_smdi`: pack R = 255, G = this map, B = gloss (inverted roughness).
 
 ## Packing the `_smdi` from a specular map and a roughness map
 
-Strykar's second tool ("DayZ SMDI Channel Packer", `Pack_SMDI.bat`, DayZ Modders Discord, 2026-10-07) was read, not run. Right-click an image named `<base>_Specular`; the batch file looks for `<base>_gloss`, `_glossy`, `_glossiness`, `_rough`, `_roughness` or `_r` with the same extension and runs one ImageMagick `-combine`: R filled white, G the specular as grey, B the gloss as grey (negated when it is roughness). The output is `<base>_SMDI<ext>`. That matches the packing table. What reading the script shows:
+One ImageMagick `-combine` call packs the map: R filled white, G the specular as grey, B the gloss as grey (negated when the source is roughness). That matches the packing table. A batch file can do it by name: given an image named `<base>_Specular`, it looks for `<base>_gloss`, `_glossy`, `_glossiness`, `_rough`, `_roughness` or `_r` with the same extension and writes `<base>_SMDI<ext>`. One such batch file was read, not run. What to check in a packer of that kind:
 
-- **Roughness beats gloss.** The roughness loop runs after the gloss loop and overwrites the match. With both `<base>_gloss` and `<base>_rough` present, B is the inverted roughness.
+- **Roughness beats gloss** when the roughness loop runs after the gloss loop and overwrites the match. With both `<base>_gloss` and `<base>_rough` present, B is the inverted roughness.
 - **Only exact siblings match**: the same `<base>` and the same extension. A `.png` specular next to a `.tga` roughness gives "Could not find a matching gloss or roughness map". The `_r` suffix means `<base>_r<ext>` only, but a red mask named that way would still be read as roughness.
 - The name match ignores case, wherever `_Specular` sits in the name. A path that contains `!` breaks the lookup.
 - The output keeps the input's extension: a `.jpg` specular gives a lossy `_SMDI.jpg`. Whether ImageMagick writes the `.tga` compressed is not verified; if it does, ImageToPAA rejects it (`baked-atlas-to-paa.md`).
 - The inputs must share a size. How `-combine` handles a mismatch is not verified, so resize first.
-- **Write 8 bits per channel.** A 16-bit greyscale PNG fails ImageToPAA (`baked-atlas-to-paa.md`). 16-bit RGB was not tested, so 8 bits is the safe target. Strykar advises the 64-bit Q8 ImageMagick build; what matters is the depth of the file written, so on a Q16 build force `-depth 8` (not run here). `Pack_SMDI.bat` passes no `-depth`.
+- **Write 8 bits per channel.** A 16-bit greyscale PNG fails ImageToPAA (`baked-atlas-to-paa.md`). 16-bit RGB was not tested, so 8 bits is the safe target. The Q8 ImageMagick build is the usual advice; what matters is the depth of the file written, so on a Q16 build force `-depth 8` (not run here). A packer that passes no `-depth` leaves the depth to the build.
 
 ## Calibrating against a vanilla asset of the same family
 
@@ -146,7 +144,7 @@ The vanilla motorbike body material sets, in `P:\DZ\vehicles\singletrack\Motorbi
 - `fresnel(0.53,0.22)` in `Stage6` (`P:\DZ\vehicles\singletrack\Motorbike_02\data\motorbike_02_body.rvmat:71`)
 - `env_land_optic_co.paa` in `Stage7` (`P:\DZ\vehicles\singletrack\Motorbike_02\data\motorbike_02_body.rvmat:83`)
 
-Measured 2026-11-02 (DayZ 1.30.164014): the vanilla `motorbike_02_body_red_co.paa`, `_smdi.paa` and `_as.paa` against the body atlas of a mod motorbike before its calibration. The mod's material already used the four values above, and its owner had judged it worse than the vanilla in gloss and color side by side in game. Mip 0 decoded with ImageToPAA, `_smdi` and `_as` resampled to the `_co` size. Both columns cover the texels whose `_co` is not black (largest channel above 6). Luminance is 0.299 R + 0.587 G + 0.114 B.
+Measured 2026-11-02 (DayZ 1.30.164014): the vanilla `motorbike_02_body_red_co.paa`, `_smdi.paa` and `_as.paa` against the body atlas of a mod motorbike before its calibration. The mod's material already used the four values above, and it looked worse than the vanilla in gloss and color side by side in game. Mip 0 decoded with ImageToPAA, `_smdi` and `_as` resampled to the `_co` size. Both columns cover the texels whose `_co` is not black (largest channel above 6). Luminance is 0.299 R + 0.587 G + 0.114 B.
 
 | | Vanilla `motorbike_02_body` | Mod atlas before calibration |
 |---|---|---|
@@ -165,15 +163,15 @@ Measured 2026-11-02 (DayZ 1.30.164014): the vanilla `motorbike_02_body_red_co.pa
 - Half of this body's texels have G at 4 or less, and its red paint sits at a G median of 5. The high values are in the p90 of the light metal and mid grey classes. The generic "worn painted metal" row (G 70 to 130) is 14 to 26 times that paint median.
 - The mod's darkest tenth was lighter (luminance p10 of 30 against 24) and its ambient shadow weaker (`_as` G median 175 against 120). Since the material constants matched, the maps are the likely cause of the difference; other inputs, normals and viewing conditions were not compared.
 - Name the statistic and the texels it covers. On the vanilla dark class the `_as` G mean is 56 and the median 8. On the mod atlas the `_as` G median is 154 over all texels and 175 without the black ones.
-- One more account from that project, not part of the measurement: a factor computed over faces plus padding left one class of the mod at luminance 48 against a target of 28.
+- A related trap, not part of the measurement: a factor computed over faces plus padding left one class of the mod at luminance 48 against a target of 28.
 
 Procedure (a starting point): decode the shipped `.paa` files of the closest vanilla asset of the same family and of the mod, not the PNG sources. Check that the material constants match. Set G and B per surface class with the vanilla figure beside each, stating the texels and the statistic. Then look in game next to the vanilla asset under the same light.
 
 ## The DXT block staircase after a per material change
 
-One project's account (a mod motorbike, 2026-10-28), with no stored evidence:
+Seen on a mod motorbike (2026-10-28), with no stored evidence:
 
-- A per material `_smdi` recalibration raised a fuel tank's mirror paint from about G/B 100/190 to 205/237 and gave no class to the logo panel that shares its UV island. The project's export step keeps the old value in every 4 x 4 DXT block that holds texels of another material, so that DXT1 does not mix two islands. That step left 74 % of the mirror texels within 2 px of the logo at G of about 100, and 33 % of those 2 to 4 px away. With the logo given the class of the paint around it, that stale rim measured 0 %.
+- A per material `_smdi` recalibration raised a fuel tank's mirror paint from about G/B 100/190 to 205/237 and gave no class to the logo panel that shares its UV island. The export step used there keeps the old value in every 4 x 4 DXT block that holds texels of another material, so that DXT1 does not mix two islands. That step left 74 % of the mirror texels within 2 px of the logo at G of about 100, and 33 % of those 2 to 4 px away. With the logo given the class of the paint around it, that stale rim measured 0 %.
 - In game before the fix: a sawtooth line under the logo seen up close, and a two tone tank with matte bands around the logo and a mirror centre. After it the tank read as one tone from above; the close-up was not looked at again.
 
 What follows from that one case (starting points):

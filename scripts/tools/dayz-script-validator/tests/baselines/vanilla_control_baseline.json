@@ -44,7 +44,7 @@
   "measured": {
     "date": "2026-11-10",
     "elapsed_seconds": 340.71,
-    "roots": "P:\\scripts on the owner's PC (DayZ 1.30.164289 stable); three runs gave the same findings and the same digest: the --update run, the check after it and the --json check",
+    "roots": "P:\\scripts (DayZ 1.30.164289 stable); three runs gave the same findings and the same digest: the --update run, the check after it and the --json check",
     "runs": 3
   },
   "schema": 1,

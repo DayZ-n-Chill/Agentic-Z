@@ -105,10 +105,10 @@ def fake_dayzmake(tmp_path: Path, help_text: str, version: str) -> Path:
             "dayzmake v1.0.0 (ok for building; upgrade to >= v2.0.0 before unpacking PBOs you did not build)",
         ),
         ("build [--proton-binarize]", "v0.3.0", "from before the rename (v0.3.0)"),
-        ("build", "v0.3.0", "is upstream armake2"),
+        ("build", "v0.3.0", "armake2, whose V3 file hash omits *.c"),
     ],
 )
-def test_doctor_tells_the_dayzmake_fork_from_upstream_and_old_builds(
+def test_doctor_tells_dayzmake_from_plain_armake2_and_old_builds(
     tmp_path: Path, help_text: str, version: str, expected: str
 ) -> None:
     done = run(tmp_path, "doctor", bin_dir=fake_dayzmake(tmp_path, help_text, version))

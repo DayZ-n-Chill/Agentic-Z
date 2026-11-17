@@ -36,7 +36,7 @@ The discipline this cost: a plan that declared a "measured mechanism" because th
 
 ## Fourth sub-cause of guard 5: the base seat to door table is left-hand drive
 
-Measured on the WRX STI (item B-01), in game on DayZ 1.30.164014 Experimental; first measured on 1.29 Diag on 2026-09-04.
+Measured on the WRX STI, in game on DayZ 1.30.164014 Experimental; first measured on 1.29 Diag on 2026-09-04.
 
 On a right-hand-drive car whose memory points are named by physical side, the base `GetDoorConditionPointFromSelection` pairs every seat with the far door: `seat_driver` with `seat_con_1_1`, `seat_codriver` with `seat_con_2_1`, `seat_cargo1` with `seat_con_1_2` and `seat_cargo2` with `seat_con_2_2` (`P:\scripts\4_world\entities\vehicles\carscript.c:2141-2160`). `CanReachSeatFromDoors` fails the 1.0 m plan test from the correct door and no get-in appears, with names, points and `componentNN` all correct.
 

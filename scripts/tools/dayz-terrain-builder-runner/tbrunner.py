@@ -6,10 +6,11 @@ NOT driven by this tool yet.
 
 No SendInput, no SetCursorPos, no SetForegroundWindow. Menu commands go through
 PostMessage(WM_COMMAND), which wx 2.8.12 wxFrame::HandleCommand processes without a focus
-check (src/msw/frame.cpp:951-979). File dialogs are filled with WM_SETTEXT; dialog_file
-confirms with the OK by id 1 (standard Windows dialogs; Terrain Builder's own swap the
-Ok and Cancel ids). probe cancels by label. Only the instance recorded in the state file is ever addressed. Back up and
-restore Bin/TerrainBuilder *.opt and Proj.vdat around a run: TB rewrites them on exit.
+check (wxWidgets 2.8.12 source, src/msw/frame.cpp:951-979). File dialogs are filled with
+WM_SETTEXT; dialog_file confirms with the OK by id 1 (standard Windows dialogs; Terrain
+Builder's own swap the Ok and Cancel ids). probe cancels by label. Only the instance
+recorded in the state file is ever addressed. Back up and restore Bin/TerrainBuilder
+*.opt and Proj.vdat around a run: Terrain Builder rewrites them on exit.
 
 Windows only. The module imports on any OS; the Win32 functions are bound when a command
 runs, and every command refuses off Windows. The executable comes from --tb-exe or the
@@ -318,7 +319,7 @@ WM_INITMENUPOPUP = 0x117
 
 
 def refresh_menus(f):
-    """wx 2.8 on MSW updates menu enable state only on WM_INITMENUPOPUP (framecmn.cpp OnMenuOpen);
+    """wx 2.8 on MSW updates menu enable state only on WM_INITMENUPOPUP (wxWidgets source, framecmn.cpp OnMenuOpen);
     ProcessCommand ignores items still marked disabled. Ask the frame to refresh every top menu."""
     hmenu = user32.GetMenu(f)
     for i in range(user32.GetMenuItemCount(hmenu)):

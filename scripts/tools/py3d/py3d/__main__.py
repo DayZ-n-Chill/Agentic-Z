@@ -240,7 +240,7 @@ def cmd_diff(args):
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="python -m py3d",
-        description="py3d DayZ fork - info/validate/diff for MLOD .p3d")
+        description="py3d-dayz - info/validate/diff for MLOD .p3d")
     sub = parser.add_subparsers(dest="cmd", required=True)
     p_info = sub.add_parser("info", help="readback kept as evidence")
     p_info.add_argument("file")

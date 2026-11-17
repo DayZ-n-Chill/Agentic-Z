@@ -63,11 +63,11 @@ frequency = 0.80 * ((850 + ((rpm - 850)/(8000/5600))) max 850) / TARGET_RPM
 
 Where `TARGET_RPM` is the band's design RPM (e.g., 1200, 1700, 2300, 3250, 4400 for the 5 bands).
 
-Volume uses chained `factor [low, high]` calls (each returns 0→1 lerp). Two factors per band: one ramps up entering the band, one ramps down leaving:
+Volume uses chained `factor [low, high]` calls (each returns 0→1 lerp). Two factors per band: one ramps up entering the band, one ramps down leaving. `lower_mid` is the midpoint between this band's design RPM and the band below, `upper_mid` the midpoint with the band above (for the 1700 band above: `(1200+1700)/2` and `(1700+2300)/2`, spread 150):
 
 ```
-... * ((rpm_remapped) factor [(midpoint - 2.5*spread), (midpoint - spread)])
-  * ((rpm_remapped) factor [(midpoint + 2.5*spread), (midpoint - spread)])
+... * ((rpm_remapped) factor [(lower_mid - 2.5*spread), (lower_mid + spread)])
+  * ((rpm_remapped) factor [(upper_mid + 2.5*spread), (upper_mid - spread)])
 ```
 
 Creates smooth crossfade with no audible band-edge clicks.

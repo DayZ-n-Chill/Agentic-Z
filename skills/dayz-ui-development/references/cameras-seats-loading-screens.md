@@ -2,7 +2,7 @@
 
 Three lifecycle contracts that sit next to UI work and fail late: leaving a scripted camera (spectator, CCTV, drone), opening an interface while the player sits in a vehicle, and replacing the loading screen background.
 
-**How facts are marked here.** A `P:\` path with a line was opened and checked on `P:\` (DayZ 1.30). Results described as checked against a production implementation or measured in game come from the source author (DayZ 1.29 unless a line says otherwise) and are not yet repeated here.
+**How facts are marked here.** A `P:\` path with a line was opened and checked on `P:\` (DayZ 1.30). Results described as checked against a working implementation or measured in game are from a shipped mod on DayZ 1.29 (unless a line says otherwise) and are not yet checked on `P:\`.
 
 ---
 
@@ -16,17 +16,17 @@ Three lifecycle contracts that sit next to UI work and fail late: leaving a scri
 
 Added 2026-08-31. Use this checklist for a spectator, CCTV, drone, thermal or other scripted camera. The failure usually shows on **exit**, after the feature itself looked finished.
 
-1. **Reuse the engine camera.** Take `Camera.GetCurrentCamera()` (`P:\scripts\3_game\entities\camera.c:7`) and activate it. Do not create an unmanaged `staticcamera` object: in the source author's comparison against his own production code, that route could crash.
+1. **Reuse the engine camera.** Take `Camera.GetCurrentCamera()` (`P:\scripts\3_game\entities\camera.c:7`) and activate it. Do not create an unmanaged `staticcamera` object: compared with a working implementation that reuses the engine camera, that route could crash.
 2. **Keep that camera active through `SelectPlayer`.** Deactivating it first leaves the engine with no active camera while the player is selected. Call `SetActive(false)` (`P:\scripts\3_game\entities\camera.c:45`) in the cleanup after the selection.
 3. **Enable the `HumanInputController` again before `SelectPlayer`, not after it.** The restored third person camera reads that input in `UpdateUDAngleUnlocked` (called at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercamera3rdperson.c:54-55`). The symptom is specific: first person works, while third person stays pinned to the old camera transform and the player's actions are missing. `SetDisabled(bool pState)` is declared at `P:\scripts\3_game\human.c:22`.
-4. **Do not use a continuous action's key as the exit key.** Use a separate key such as SPACE or ESC. Otherwise the action manager can keep an action in progress. The third person camera narrows the up and down look while an action runs and the player is not in free look: on 1.30 it takes the limits from `player.GetLookLimits(...)` every frame (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercamera_base.c:176-180`). The source author read the 1.29 file as blocking the look outright during such an action; whether a running action still narrows the limits on 1.30 is decided inside `GetLookLimits` and was not checked again.
+4. **Do not use a continuous action's key as the exit key.** Use a separate key such as SPACE or ESC. Otherwise the action manager can keep an action in progress. The third person camera narrows the up and down look while an action runs and the player is not in free look: on 1.30 it takes the limits from `player.GetLookLimits(...)` every frame (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercamera_base.c:176-180`). On 1.29 the same file was read as blocking the look outright during such an action (1.29 is not on `P:\`); whether a running action still narrows the limits on 1.30 is decided inside `GetLookLimits` and is not yet checked.
 
 How far each rule was verified:
 
-- Rules 1 and 2 were checked against the source author's production implementation.
-- Rules 3 and 4 were checked in source and match the observed difference between first and third person, but the session of 2026-08-08 that raised them had not confirmed each cause in game.
+- Rules 1 and 2 were checked against a working implementation in a shipped mod.
+- Rules 3 and 4 were checked in the vanilla scripts and match the observed difference between first and third person, but each cause is not yet confirmed in game.
 - `Input.ChangeGameFocus(+1)` and `(-1)` were also seen around entry and exit; their effect in this camera contract is unverified.
-- "Vanilla never calls it" is not a reason to remove a mechanism that works. `HumanInputController.SetDisabled` had no vanilla callers in that audit, yet removing it broke the working comparison.
+- "Vanilla never calls it" is not a reason to remove a mechanism that works. `HumanInputController.SetDisabled` has no callers under `P:\scripts` (a search for `.SetDisabled(` finds none on 1.30), yet removing it broke the working implementation.
 
 ## In seat interfaces: interrupt before excluding input
 

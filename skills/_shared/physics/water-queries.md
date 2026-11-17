@@ -2,7 +2,7 @@
 
 What the engine's water queries return over objects that carry their own water: the vanilla river and stream pieces, the streambed kit, and a roadway water face of your own. For a map maker deciding how to build rivers, and for a scripter who tests "is this point in water".
 
-The query declarations were checked on `P:\` (DayZ 1.30). Every number below was measured in game by the author of the source notes, on a DayZDiag server with probe missions of a custom map project (the Baltic map), between 2026-10-03 and 2026-10-14. They are native queries read on the server; a boat, a player drinking and how the water looks were not tested. None of the measurements can be checked on `P:\`.
+The query declarations were checked on `P:\` (DayZ 1.30). Every number below was measured in game, on a DayZDiag server with probe missions on Chernarus and on a custom map, between 2026-10-03 and 2026-10-14. They are native queries read on the server; a boat, a player drinking and how the water looks were not tested. None of the measurements can be checked on `P:\`.
 
 ## The queries
 
@@ -14,19 +14,19 @@ The query declarations were checked on `P:\` (DayZ 1.30). Every number below was
 | `SurfaceRoadY3D(float x, float y, float z, RoadSurfaceDetection rsd)` | `P:\scripts\3_game\global\game.c:1178` |
 | `GetObjectsAtPosition(vector pos, float radius, out array<Object> objects, out array<CargoBase> proxyCargos)` | `P:\scripts\3_game\global\game.c:923` |
 
-The source notes give the 1.29 lines of the first two as 1183 and 1185; that build is not on `P:\`.
+In 1.29 the first two were at lines 1183 and 1185; that build is not on `P:\`.
 
 The vanilla pieces are the models `river_24_*` and `stream_14_*` under `P:\DZ\water\streams\` (for example `P:\DZ\water\streams\river_24_24.p3d`) and the kit under `P:\DZ\water\streambed\`.
 
 ## Measure the vanilla map first
 
-Before deciding how a map's water or terrain objects are cut into pieces, measure how the vanilla map does it with a server probe. The survey behind these notes walked Chernarus in 103 by 103 cells of 150 m with `GetObjectsAtPosition` and logged, for every water piece, its pose, its `GetDirectionUp` and water queries along its axes.
+Before deciding how a map's water or terrain objects are cut into pieces, measure how the vanilla map does it with a server probe. The survey behind the numbers below walked Chernarus in 103 by 103 cells of 150 m with `GetObjectsAtPosition` and logged, for every water piece, its pose, its `GetDirectionUp` and water queries along its axes.
 
 Query at gameplay heights, the water surface plus or minus 1 m, never from high above: on a pitched piece the level you read moves with the height of the query (last section).
 
 ## A server with no player reads no object water until the objects are loaded
 
-With no player connected, `GetWaterDepth`, `GetWaterSurfaceHeightNoFakeWave` and `SurfaceRoadY3D` at points over the streambed kit and over the `stream_14` pieces of Chernarus returned sea level and a depth of 0, while the pond pieces of the project's own map layer read correctly.
+With no player connected, `GetWaterDepth`, `GetWaterSurfaceHeightNoFakeWave` and `SurfaceRoadY3D` at points over the streambed kit and over the `stream_14` pieces of Chernarus returned sea level and a depth of 0, while the pond pieces placed in the custom map's own layer read correctly.
 
 Calling `GetGame().GetObjectsAtPosition(Vector(x, 0, z), 30, objs, proxies)` in the same frame, and keeping both arrays alive until the water queries had run, made 371 of 417 points on the kit's axes read water.
 
@@ -46,11 +46,11 @@ A server read of all of vanilla Chernarus, 2026-10-03:
 - The water surface the engine returns follows the slope of the piece: the median ratio of water slope to piece slope is 0.95 on the rivers (172 pieces) and 0.94 on the streams (188 pieces).
 - At the centers of the pieces above 50 m altitude, `SurfaceIsPond` is true for only 75 of 375 river pieces and 30 of 384 stream pieces, while the water depth is positive for 365 of 375 and 312 of 384.
 
-So in a vanilla bed, `SurfaceIsPond` returning false is the normal case and does not rule water out. Test the depth instead. An acceptance test that demands `SurfaceIsPond` true pushes a map maker to replace pitched beds with flat planes; on the Baltic map those stepped planes left visible steps and dry strips on the sloped stretches. The survey's streambed rows mix other surfaces and cannot be used for the slope ratio.
+So in a vanilla bed, `SurfaceIsPond` returning false is the normal case and does not rule water out. Test the depth instead. An acceptance test that demands `SurfaceIsPond` true pushes a map maker to replace pitched beds with flat planes; on the custom map those stepped planes left visible steps and dry strips on the sloped stretches. The survey's streambed rows mix other surfaces and cannot be used for the slope ratio.
 
 ## How the level is read over a roadway water face
 
-Measured on the DayZDiag server in one run (8392533a) of a vanilla channel pilot on the Baltic map: the rule below reproduces 1,940 of 1,941 logged rows within 2 mm, and a second query height agrees with a mean residual of 1 cm or less. Over a roadway water face, `GetWaterSurfaceHeightNoFakeWave` and `GetWaterDepth` read like this:
+Measured on the DayZDiag server in one run over a channel laid from vanilla pieces on the custom map: the rule below reproduces 1,940 of 1,941 logged rows within 2 mm, and a second query height agrees with a mean residual of 1 cm or less. Over a roadway water face, `GetWaterSurfaceHeightNoFakeWave` and `GetWaterDepth` read like this:
 
 1. The candidate faces are those whose bounding box in world x and z contains the query point.
 2. The query point is taken into the object's model space with its own height, through the object's whole transform (rotation and uniform scale).

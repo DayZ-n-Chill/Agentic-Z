@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pin a complete Pack commit into a task-local capture plus one derived adapter.
+"""Pin a complete repo commit into a task-local capture plus one derived adapter.
 
 This is not a universal launcher. It materializes git blobs, writes one
 versioned discovery adapter, and grades a probe transcript. It does not

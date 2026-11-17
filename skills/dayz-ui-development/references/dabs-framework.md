@@ -2,9 +2,9 @@
 
 How Dabs Framework's UI layer behaves when you read its source line by line: what the `ScriptView` constructor does, how a `Relay_Command` is dispatched, the full `ObservableCollection` contract, the `WidgetAnimator` and `LinearColor` calls with their traps, and what `ScriptViewMenu` does and does not do for you.
 
-Dabs Framework is a third party mod by InclementDab, not part of the game. Everything here is a **framework** fact, not a vanilla fact. The short, checked introduction (attributes, a first view, a first binding) is `skills/_shared/enscript/integrations/dabs_framework.md`; read that first and come here for depth.
+Dabs Framework is a third party mod, not part of the game. Everything here is a **framework** fact, not a vanilla fact. The short, checked introduction (attributes, a first view, a first binding) is `skills/_shared/enscript/integrations/dabs_framework.md`; read that first and come here for depth.
 
-**Where these facts come from.** The source author read the public repository `InclementDab/DayZ-Dabs-Framework` twice: a first pass on 2026-03-23 and a line by line pass on 2026-07-05 at `production` commit `fd859fd8` (last code commit 2025-12-18). In November 2026 the claims below were checked again against the Steam Workshop copy of the mod (`addons\Scripts.pbo` and `addons\GUI.pbo`). File paths are paths inside `Scripts.pbo`, for example `3_Game\DabsFramework\MVC\ScriptView.c`, and line numbers are the Workshop copy's. Where the Workshop copy disagrees with the source author's reading, the text says so. The framework changes between releases, so open the named file again when something here does not match.
+**How facts are marked here.** The claims below were checked in November 2026 against the Steam Workshop copy of Dabs Framework (`addons\Scripts.pbo` and `addons\GUI.pbo`); none of it is on `P:\`. File paths are paths inside `Scripts.pbo`, for example `3_Game\DabsFramework\MVC\ScriptView.c`, and line numbers are the Workshop copy's. A line that says "not checked against the Workshop copy" describes the framework's repository at `production` commit `fd859fd8` (last code commit 2025-12-18). The framework changes between releases, so open the named file again when something here does not match.
 
 ---
 
@@ -95,7 +95,7 @@ Under `#ifdef DIAG_DEVELOPER`, the static `ScriptView.ReloadAll()` (`MVC\ScriptV
 - It is a **flat loop**: for every property whose type inherits `Widget` it does exactly one `root_widget.FindAnyWidget(property_name)`. There is no recursion, no special case for children of a `ButtonWidget` and no workaround. The guard commented `// fixes bug that breaks everything` only skips the assignment when the lookup is null or the name is the root's own name.
 - Dots are stripped from the property name before the lookup, and a field named like the layout root gets the root widget itself.
 - The framework's own answer for nested lookups is **dot naming**: name children `Button.Icon`, `Button.Text` in the layout and resolve them with `ScriptView.FindWidgetClass(parent, classname)` (`:281-291`, splits on `.`), or with the generic `FindWidget<T>.SearchDown(parent, name)` in `1_Core`.
-- Reported from LFPowerGrid production (the source author's mod), not reproduced here: `FindAnyWidget` returned wrong references for widgets nested inside a `ButtonWidget`, and since this loader is only `FindAnyWidget`, fields bound to such widgets were wrong too. That mod stores the children of a button in arrays filled by walking the button's children, not in named fields (rule 8 in `rules-and-checklist.md`).
+- Seen in a shipped mod, not reproduced: `FindAnyWidget` returned wrong references for widgets nested inside a `ButtonWidget`, and since this loader is only `FindAnyWidget`, fields bound to such widgets were wrong too. The workaround is to store the children of a button in arrays filled by walking the button's children, not in named fields (rule 8 in `rules-and-checklist.md`).
 
 ---
 
@@ -147,7 +147,7 @@ reference bool Two_Way_Binding;    // view to controller sync
 reference string Relay_Command;    // command name or function name
 ```
 
-`Debug_Logging` is a fifth one. It is declared on the base class as `[NonSerialized()] reference bool Debug_Logging` (`MVC\ScriptedViewBase.c:8`), so it can be set from a layout's `ScriptParamsClass` on any binding or controller, and it spreads to children through `SetParent` (`:71`). An earlier note by the source author said the field was not found on 2026-05-13 and should be treated as removed; the 2026-07-05 read and the Workshop copy both have it.
+`Debug_Logging` is a fifth one. It is declared on the base class as `[NonSerialized()] reference bool Debug_Logging` (`MVC\ScriptedViewBase.c:8`), so it can be set from a layout's `ScriptParamsClass` on any binding or controller, and it spreads to children through `SetParent` (`:71`). An older claim that the field was removed is wrong: the Workshop copy has it.
 
 ### UpdateView (controller to widget)
 
@@ -277,7 +277,7 @@ From `CanTwoWayBind()` in each file under `MVC\WidgetController\`:
 | TextWidget, MultilineTextWidget, RichTextWidget | no | SetText | |
 | ImageWidget | no | LoadImageFile | |
 
-The source author's table left `XComboBoxWidget` blank and did not list `ProgressBarWidget` or `TextListboxWidget`. The Workshop copy returns true for all three, which matches the table in `skills/_shared/enscript/integrations/dabs_framework.md`.
+The Workshop copy returns true for `ProgressBarWidget`, `XComboBoxWidget` and `TextListboxWidget`, which matches the table in `skills/_shared/enscript/integrations/dabs_framework.md`.
 
 `ButtonWidgetController`: `Set` and `Get` map to `SetState` and `GetState` (the pressed bool). `Selected_Item` on a button binds its label text (`SetText` and `GetText`).
 
@@ -419,7 +419,7 @@ About 150 `static const LinearColor` values named after the X11 color set: `Line
 
 ### What it does not do
 
-- **ESC does not close a Dabs menu.** `CanCloseWithEscape()` exists (`:181-184`) but nothing in the framework calls it; the author's comment above it reads "tbd how i want to handle this". Wire ESC yourself, for example `OnKeyPress` with `KeyCode.KC_ESCAPE` calling `Close()`.
+- **ESC does not close a Dabs menu.** `CanCloseWithEscape()` exists (`:181-184`) but nothing in the framework calls it; the source comment above it reads "tbd how i want to handle this". Wire ESC yourself, for example `OnKeyPress` with `KeyCode.KC_ESCAPE` calling `Close()`.
 - **Game focus is not released on close.** Both `ChangeGameFocus(-1, ...)` calls in the destructor are commented out (`:68` and `:73`), and `UIScriptViewMenu` overrides `LockControls` and `UnlockControls` as empty methods (`MVC\UIScriptViewMenu.c:30-36`). Only cursor visibility is restored. A mod that adds its own `ChangeGameFocus` around a Dabs menu can leak focus counts; check the input state after the menu closes.
 - **There is no `OnShow` or `OnHide` on `ScriptView` or `ScriptViewMenu`.** The only ones in the framework are the `UIScriptedMenu` overrides in the internal wrapper (`MVC\UIScriptViewMenu.c:54-66`), which forward to `ScriptViewMenu.OnMenuEnter(parent)` and `OnMenuExit(parent)`. Those two are the lifecycle hooks to override. Show or hide a plain `ScriptView` with `ScriptedViewBase.Show(bool)` and `IsVisible()`.
 - **`GetInputRestrictions()` is dead code.** The constructor and destructor loop over a fresh empty local array instead of calling it (`:26-35` and `:84-92`), so overriding it does nothing.
@@ -452,7 +452,7 @@ static ScriptViewMenu Get(UIScriptedMenu menu)
 
 ### Trade off
 
-It uses the `UIManager` menu stack, which can conflict with other mods that manage menus. For a floating window that coexists with gameplay (the LFPowerGrid sorter), the source author still recommends handling `ChangeGameFocus` and `HumanInputController.SetDisabled` by hand.
+It uses the `UIManager` menu stack, which can conflict with other mods that manage menus. For a floating window that coexists with gameplay (a sorter window over the running game, for example), handle `ChangeGameFocus` and `HumanInputController.SetDisabled` by hand instead.
 
 ---
 
@@ -543,8 +543,8 @@ static void SetWidgetPosRelativeToParent(Widget w, float x, float y)
 ## Event flow
 
 - Every `ScriptedViewBase` `On*` event bubbles up through `m_ParentScriptedViewBase`, from the `ViewController` to the `ScriptView` (`MVC\ScriptedViewBase.c`, comment "Events are invoked up heirarchy, starting at ViewController, and up to ScriptView"). The events enter through the handler that `ViewController.OnWidgetScriptInit` installs on the root. That is why a Dabs view needs no `SetHandler(this)` of its own (rule 10 in `rules-and-checklist.md`).
-- The source author found `OnResize` to be dead code at commit `fd859fd8`. The Workshop copy forwards it like the other events (`MVC\ScriptedViewBaseHandler.c:121-124`), so treat it as working there and test it before relying on it.
-- The repository's wiki has nothing on the UI layer, and its issue tracker (43 issues at the time of the read) has no `ViewBinding`, `ScriptView` or `WidgetAnimator` reports. The known problems of the MVC layer are found only by reading the source, as was done here.
+- The Workshop copy forwards `OnResize` like the other events (`MVC\ScriptedViewBaseHandler.c:121-124`). At repository commit `fd859fd8` it was dead code (not checked against the Workshop copy's history), so test it before relying on it.
+- The framework's wiki has nothing on the UI layer, and its issue tracker has no `ViewBinding`, `ScriptView` or `WidgetAnimator` reports (not checked against the Workshop copy; read in July 2026). The known problems of the MVC layer are found only by reading the source.
 
 ---
 
@@ -562,7 +562,7 @@ A generic handler search that walks up the parents and casts only `GetScript()` 
 
 ## Versions, branches and dependencies
 
-- The active branch of the repository is `production` (its default branch), not `master`. The source author reports that the Steam Workshop build (item 2545327648) tracks `staging`, and that the MVC and animator files are byte identical between the two branches (the 31 file difference between them touches nothing under `MVC\` or `!Core\WidgetAnimator*`). Not checked here beyond the Workshop copy itself.
-- In the repository the scripts live under `DabsFramework/Scripts/3_Game/DabsFramework/MVC/` (capital `Scripts`, and a second `DabsFramework` folder). The raw URL pattern is `https://raw.githubusercontent.com/InclementDab/DayZ-Dabs-Framework/production/DabsFramework/Scripts/3_Game/DabsFramework/MVC/<File>.c`.
-- There are no releases or tags. To detect the framework version from script, use `#ifdef DABSFRAMEWORK_1_51`, which is defined at the top of `MVC\ScriptedViewBase.c` (line 1). The source author reports `Version.hpp` is stuck at 1.5 on both branches.
+- The active branch of the framework's repository is `production` (its default branch), not `master`. Not checked against the Workshop copy: the Steam Workshop build (item 2545327648) tracks `staging`, and the MVC and animator files are byte identical between the two branches (the 31 file difference between them touches nothing under `MVC\` or `!Core\WidgetAnimator*`).
+- In the repository the scripts live under `DabsFramework/Scripts/3_Game/DabsFramework/MVC/` (capital `Scripts`, and a second `DabsFramework` folder).
+- There are no releases or tags. To detect the framework version from script, use `#ifdef DABSFRAMEWORK_1_51`, which is defined at the top of `MVC\ScriptedViewBase.c` (line 1). Not checked against the Workshop copy: `Version.hpp` is stuck at 1.5 on both branches.
 - The mod's `CfgPatches` classes are `DF_Scripts` (which requires `DZ_Scripts` and `DF_GUI`) and `DF_GUI`. A mod requires those. `DabsFramework` is only the `CfgMods` name and is not a patch class.

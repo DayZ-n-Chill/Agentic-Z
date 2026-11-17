@@ -105,7 +105,7 @@ Headgear, masks and eyewear can block each other with three config flags, read b
 | Key | Effect | Vanilla example |
 |---|---|---|
 | `noHelmet=1` | In the mask or eyewear slot, blocks headgear. | `GasMask` at `P:\DZ\characters\masks\config.cpp:47` |
-| `noMask=1` | In the headgear or eyewear slot, blocks a mask. | Read at `entityai.c:4438` |
+| `noMask=1` | In the headgear or eyewear slot, blocks a mask. | Read at `P:\scripts\3_game\entities\entityai.c:4438` |
 | `noEyewear=1` | In the headgear or mask slot, blocks eyewear. | `GasMask` at `P:\DZ\characters\masks\config.cpp:48` |
 | `noNVStrap=1` | In the headgear or mask slot, blocks the NVG head strap. | `Mich2001Helmet` at `P:\DZ\characters\headgear\config.cpp:8404` |
 

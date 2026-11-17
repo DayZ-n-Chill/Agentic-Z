@@ -746,7 +746,8 @@ def test_readme_ask_note_names_the_free_grep_fallback():
 # dayz-particles is reference-only (no script). dayz-record-correction ships check.py, but only
 # the agent running the skill calls it (root, baseline, compare steps in its SKILL.md), never a user.
 RUNNABLE_WITHOUT_BAT = {"dayz-particles", "dayz-record-correction"}
-# Reference-only skills: a SKILL.md and reference files, no script.
+# Reference-only skills: a SKILL.md and reference files, no Python script to run. Three carry a pytest file
+# for their own docs, and dayz-test-ingame ships launcher templates kept for reference and a test mod.
 RUNNABLE_WITHOUT_BAT |= {
     "3d-generation-harness",
     "ai-3d-to-dayz",

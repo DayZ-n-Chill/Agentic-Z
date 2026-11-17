@@ -15,7 +15,7 @@ To fix a proxy, use `/dayz-proxy-align`. Proxy names, indexes and config classes
 3. The direction from the anchor to the middle-angle corner is local +Y. The direction to the smallest-angle corner is local +Z.
 4. +X is Y cross Z, and Z is then made square to X and Y again.
 
-The rule is known from Arma 3 tooling. That DayZ reads an MLOD proxy the same way is an assumption, held with high confidence because the MLOD format is the same; the in-game measurements below are what back it for DayZ.
+Arma 3 tools read an MLOD proxy this way. That DayZ reads an MLOD proxy the same way is an assumption, held with high confidence because the MLOD format is the same; the in-game measurements below are what back it for DayZ.
 
 Coordinates are raw MLOD, Y up, as py3d reads them. Because the rule is pure geometry, a frame can be worked out offline: `derive_frame` in `skills/dayz-proxy-align/scripts/proxy_frame.py` computes it, and the py3d in `scripts/tools/py3d` has the same code as `derive_proxy_frame`.
 

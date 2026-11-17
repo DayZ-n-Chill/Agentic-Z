@@ -2,12 +2,11 @@
 
 Covers the work drive and mod layout, the diag binaries, `serverDZ.cfg` settings, build and launch commands with their measured gotchas, mission files, BattlEye kick codes and log files.
 
-Status: field notes from mod projects. Vendored, not yet checked on `P:\` line by line; the lines that cite a `P:\` file were opened and confirmed. Tool behaviour (AddonBuilder, CfgConvert, FileBank, BattlEye, VPP AdminTools) was measured on the author's machine and names the project it came from. Where this note and Tier 2 (`skills/_shared/dayz-conventions.md`, `skills/_shared/conventions/server.md`) cover the same rule, Tier 2 wins: this repo keeps test servers under `.server/<instance>/`, not the `workspace\_server\` layout the commands below show.
+Status: field notes from mod projects, not yet checked on `P:\` line by line; the lines that cite a `P:\` file were opened and confirmed. Tool behaviour (AddonBuilder, CfgConvert, FileBank, BattlEye) was measured on one Windows machine; the VPP AdminTools section is third-party mod behaviour, not vanilla. Where this note and Tier 2 (`skills/_shared/dayz-conventions.md`, `skills/_shared/conventions/server.md`) cover the same rule, Tier 2 wins: this repo keeps test servers under `.server/<instance>/`, not the `workspace\_server\` layout the commands below show.
 
 ## Drive and mod layout
 
-- **`P:\` is the DayZ Tools work drive** (on the author's machine a link to the
-  DayZ projects folder). DayZ Tools / AddonBuilder / Buldozer
+- **`P:\` is the DayZ Tools work drive.** DayZ Tools / AddonBuilder / Buldozer
   require the work drive as `P:\`.
 - **`P:\Mods\` must be a directory junction to the `!Workshop\` of the installed DayZ**
   (not a normal folder). The engine and the Launcher read mods from
@@ -22,7 +21,7 @@ Status: field notes from mod projects. Vendored, not yet checked on `P:\` line b
   Does not require admin. Verify before every PBO build. If `P:\Mods\` exists
   as a normal folder, it must be deleted first (`rmdir /S /Q`).
 - **Vanilla data candidates on `P:\`**: `P:\dz`, `P:\DZ`, `P:\dta` — the first
-  that exists is the right one. On the author's machine both `P:\dz` and `P:\DZ` resolve.
+  that exists is the right one. Windows paths are case-insensitive, so `P:\dz` and `P:\DZ` are the same folder.
 - **Mod source convention**: `P:\<ModName>\` as a junction to the actual
   editable folder (typically outside OneDrive if you want to avoid the OneDrive
   race rule). AddonBuilder reads from `P:\<ModName>\`, you edit in the actual
@@ -63,8 +62,8 @@ script iteration).
 
 Recurring problem: VPP asks for password when activating admin mode (End key) and
 rejects it even if the SteamID is in `Permissions\SuperAdmins\SuperAdmins.txt`.
-Verified by extracting VPP source (`PermissionManager.c`, `missionServer.c`,
-2026-06-09):
+Third-party mod behaviour, not vanilla: read in the VPP AdminTools scripts
+(`PermissionManager.c`, `missionServer.c`) on 2026-06-09:
 
 - Superadmins are read from `<profile>\VPPAdminTools\Permissions\SuperAdmins\SuperAdmins.txt`
   (one per line). The root `SuperAdmins.json` is from the old version — it is not used.
@@ -97,7 +96,7 @@ AddonBuilder.exe P:\<ModName> P:\Mods\@<ModName>\Addons ^
 `-clear` wipes target dir before building (useful in large refactors /
 chasing stale assets).
 
-**Verified build gotchas (added 2026-06-10, LFGungame session):**
+**Measured build gotchas:**
 
 - **AddonBuilder cleans its `-temp` BEFORE copying** ("Clearing temp folder" in its log) and
   the default is `P:\temp\<mod>`. `P:\temp` and `P:\TEMP` are the SAME path (Windows
@@ -105,23 +104,22 @@ chasing stale assets).
   causes AddonBuilder to DELETE the entire staging and fail with "Copy failed" (and exit 0 on
   some error paths — log is the truth, not exit code). NEVER place staging
   or sources under `P:\temp\*` / `P:\TEMP\*`.
-- **Without `-clear` the sync of `-temp` is INCREMENTAL and can serve STALE source** (added
-  2026-06-18, LFPowerGrid perf-audit session). Only with `-clear` does AddonBuilder log
+- **Without `-clear` the sync of `-temp` is INCREMENTAL and can serve STALE source.** Only with `-clear` does AddonBuilder log
   "Clearing temp folder"; without it, it does incremental "Syncing folders" and a changed `.c`
-  may NOT be re-copied. Real case: `LFPG_DeviceInspector.c` kept a ~2-month copy
-  in `P:\temp\LFPowerGrid\` → each build (packonly and binarize) packed old code,
+  may NOT be re-copied. Measured case: one `.c` file kept a ~2-month-old copy
+  in `P:\temp\<Mod>\` → each build (packonly and binarize) packed old code,
   diag compiled the old version, and an applied fix verified on disk "did not take"
   during several rebuilds. Filepatching did NOT save the case (did not overwrite `.c` files in
   the PBO with loose ones from work drive). Canonical symptom: compilation error that
-  persists identically after editing + verifying source. Mitigation: the author's test script
-  deletes `P:\temp\<Mod>` before each build; manually, use `-clear` or delete temp.
+  persists identically after editing + verifying source. Mitigation: delete
+  `P:\temp\<Mod>` before each build, or pass `-clear`.
 - **CfgConvert `-dst` fails SILENTLY (exit 0, no output) with quoted args** via
   `Start-Process -ArgumentList` (nested quotes). Reliable pattern: `-WorkingDirectory`
   in config folder + RELATIVE paths without quotes
   (`-bin -dst config.bin config.cpp`). ALWAYS validate output by
-  timestamp+exact location, not by "a file with that name exists" (LL-135: a
-  config.bin from 2024 in cwd almost ended up inside the day's PBO).
-- **Pack-only pipeline validated in-game (LFGungame, RPT 06-02)** for pure script
+  timestamp+exact location, not by "a file with that name exists" (a years-old
+  config.bin in the working directory almost ended up inside the day's PBO).
+- **Pack-only pipeline validated in game** for pure script
   mods: (1) clean copy of sources WITHOUT `*.pbo`/`*.bisign` (robocopy `/XF`); (2)
   `CfgConvert -bin -dst config.bin config.cpp` and remove `config.cpp` + `mod.cpp` from
   staging (deployable PBO does NOT include them; `mod.cpp` goes loose in `@Mod\`); (3)
@@ -216,7 +214,7 @@ Standard layout under `<mission>/`:
 | `cfgeventspawns.xml` | Event spawn positions |
 | `cfgspawnabletypes.xml` | Items appearing as event content |
 | `cfggameplay.json` | Runtime tuning (movement, stamina, environment). Read from `$mission:cfggameplay.json` (`P:\scripts\3_game\cfggameplayhandler.c:3`), and only when `enableCfgGameplayFile` is set in `serverDZ.cfg` (`P:\scripts\3_game\cfggameplayhandler.c:53`) |
-| `cfgweather.xml` | Weather config (XML: `<weather reset= enable=>` + overcast/fog/rain/wind/storm). NOT `.json` (erratum corrected 2026-07-06 against DayZ wiki:Weather_Configuration) |
+| `cfgweather.xml` | Weather config (XML: `<weather reset= enable=>` + overcast/fog/rain/wind/storm). NOT `.json` |
 | `db/globals.xml` | CE global variables |
 | `mapgroupproto.xml` + `mapgrouppos.xml` | Loot tier locations (military, residential, etc.) |
 | `storage_1/` | Active persistence. **Backup BEFORE touching economy.** |
@@ -261,8 +259,8 @@ Basic pipeline:
 | Mask map | Surface assignment per pixel |
 | `layers.cfg` | Layer config — which surface maps to which mask color |
 
-## Caveats measured on the author's machine (2026-06-11, LFSlidingFloor session)
+## Caveats measured on one Windows machine (2026-06)
 
 - **DayZServer standalone (Steam, app 223350) does NOT complete mission loading on this machine EVEN IN PURE VANILLA**: hangs after loading configs, no error in logs, and dies ~6 min later with -freezecheck ("Termination successfully completed"). 4 verified runs 2026-06-10. For local tests ALWAYS use DayZDiag route (skill dayz-test-ingame; per-mod tools in `<Mod>_dev\tools\`). Its mpmissions folder remains useful as mission source for diag absolute -mission. **Not reproduced on 1.30 (2026-11-10):** on the same machine the retail DayZServer 1.30.164289 passed Steam init, loaded a copy of the vanilla mission and ran until a test mod asked it to exit, with a `serverDZ.cfg` that sets `instanceId` (without it the server counts down `termination in: 10` and exits: `skills/dayz-test-ingame/references/windows-launch-cycle.md`, the `instanceId` bullet).
 - **Parsing of -mod in standalone DayZServer**: embedded quotes in paths with spaces SPLIT the value (treats `"C:\Program` as mod name; symptom: `ANIMATION (E): Can't load "C:\Program...`). DayZDiag with ENTIRE -mod token wrapped in outer quotes does accept absolute paths with spaces separated by semicolons. General fix: junctions without spaces (mklink /J) and paths relative to working dir.
-- Junctions created 2026-06-10 in DayZServer folder: `@CF` and `@VPPAdminTools` pointing to client !Workshop (for deprecated Steam server .bat; diag flow does not need them).
+- The standalone DayZServer route needs each mod reachable from its own install folder: junctions there (`@CF`, `@VPPAdminTools`) pointing at the client `!Workshop` folders served a Steam-server `.bat`. The DayZDiag flow does not need them.

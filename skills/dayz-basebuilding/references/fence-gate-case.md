@@ -20,10 +20,10 @@ Barbed wire is a `mountables[]` attachment (proxy physics toggled, see `config-c
 
 ## 3. Gate persistence and the version bump
 
-The gate state is persisted AFTER the base three sync ints, following the strict `OnStoreSave`/`OnStoreLoad` ordering invariant (this is the canonical example of the subclass-after-super rule in `persistence-audit.md`):
+The gate state is persisted after the base three sync ints, following the strict `OnStoreSave`/`OnStoreLoad` ordering invariant (this is the canonical example of the subclass-after-super rule in `persistence-audit.md`):
 
-- `Fence.OnStoreSave` (`fence.c:246-254`): calls `super.OnStoreSave` FIRST (which writes `m_SyncParts01/02/03` then `m_HasBase`), THEN writes `m_GateState`, `m_IsOpened`.
-- `Fence.OnStoreLoad` (`fence.c:256-289`): calls `super.OnStoreLoad` FIRST, then handles a legacy branch, for `version < 110` it reads and DISCARDS a bool, then reads the gate state + opened for current versions.
+- `Fence.OnStoreSave` (`fence.c:246-254`): calls `super.OnStoreSave` first (which writes `m_SyncParts01/02/03` then `m_HasBase`), then writes `m_GateState`, `m_IsOpened`.
+- `Fence.OnStoreLoad` (`fence.c:256-289`): calls `super.OnStoreLoad` first, then handles a legacy branch: for `version < 110` it reads and discards a bool, then reads the gate state + opened for current versions.
 
 **Version note:** Fence gate persistence was bumped at **v110**. The base damage-system version is `GetDamageSystemVersionChange()` returning `111` (`basebuildingbase.c:1133-1136`). When you add a persisted field to a subclass, you bump the version and add a legacy branch exactly like this, read the old layout for old saves, the new layout for new ones, so existing bases don't corrupt on the first load after the update. Getting this wrong loses every fence on the server, so treat it as data-critical and run the data audit (`persistence-audit.md`).
 
@@ -34,7 +34,7 @@ The gate state is persisted AFTER the base three sync ints, following the strict
 ## 5. What to copy when authoring your own stateful entity
 
 1. Add the state field(s) and register them for netsync in the ctor, alongside the base `m_SyncParts*`.
-2. Persist them in `OnStoreSave`/`OnStoreLoad` AFTER `super`, in the exact same order both ways.
+2. Persist them in `OnStoreSave`/`OnStoreLoad` after `super`, in the exact same order both ways.
 3. Bump the version and add a legacy read branch for old saves.
 4. If the behaviour has a physical volume (area damage, a moving leaf), rotate/relocate it in the same handler that mutates the state (`fence.c:604-612` pattern).
 5. Gate the whole thing behind server authority, the state mutation runs server-side and syncs to clients.
@@ -55,7 +55,7 @@ The gate state is persisted AFTER the base three sync ints, following the strict
 	const string ATTACHMENT_SLOT_CODE_LOCK 			= "Att_CodeLock";
 ```
 
-`GetCodeLock()` finds the slot (`fence.c:161-165`). `GetCombinationLock()` is unchanged (`:155-159`). Gate open checks in 1.30 also reject a mounted code lock (`fence.c:208,438-446`).
+`GetCodeLock()` finds the slot (`fence.c:161-165`). `GetCombinationLock()` is unchanged (`:155-159`). The two locks exclude each other: the combination lock slot is hidden and refuses an attachment while a code lock is mounted, and the code lock is refused while a combination lock is mounted (`fence.c:206-211`, `:438-446`).
 
 `CombinationLock.SetActions` now includes `ActionCombinationLockUnlock` (`P:\scripts\4_world\entities\itembase\combinationlock.c:686`). Dialing the right combination is not enough. Persist: `OnStoreSave` writes `m_Combination`, `m_CombinationLocked`, then `m_CombinationInside`; `OnStoreLoad` reads the third int only when `version >= 143` (`combinationlock.c:128-136,169-177`). Fence gate fields themselves still follow the v110 branch (`fence.c:246-289`, the methods of §3).
 

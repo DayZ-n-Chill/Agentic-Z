@@ -138,7 +138,7 @@ A shader or set can inherit a vanilla one and change only what differs. Declare 
 - `base_closeShot_SoundShader` sets `volume=1`, `range=3000` and `rangeCurve="closeShotAttenuationCurve"` (line 17117).
 - `Rifle_Shot_Base_SoundSet` sets `volumeFactor`, `volumeCurve="RifleShotCurve"`, `sound3DProcessingType="WeaponMediumShot3DProcessingType"`, `distanceFilter`, `occlusionFactor`, `obstructionFactor`, `spatial=1`, `doppler=0`, `loop=0`, `soundShadersLimit=2` and `soundObjectsLimit=2` (line 323687).
 
-The pattern, as a third-party weapon mod writes it (IMPWMODPart2, the sound config of its F2000 rifle; the mod's own names are replaced by `MyMod_`):
+The pattern, as a weapon mod writes it for a rifle (third-party mod config, not vanilla):
 
 ```cpp
 class CfgSoundShaders
@@ -167,7 +167,7 @@ class CfgSoundSets
 
 Both parents are in `P:\DZ\sounds\hpp\config.cpp`, so `requiredAddons[]` needs `DZ_Sounds_Effects` (see "CfgPatches" above). The weapon then names the set in `soundSetShot[]`; that side is in `effects-wiring.md` and in the weapons pack.
 
-The same mod shows a shader with no parent and an inline curve in meters, for a mid distance shot layer that is quiet up close, loudest at 50 m and gone by 300 m:
+A shader can also have no parent and an inline curve in meters. This one (also third-party mod config) is a mid distance shot layer that is quiet up close, loudest at 50 m and gone by 300 m:
 
 ```cpp
 class MyMod_SoundShaderMid
@@ -187,11 +187,11 @@ class MyMod_SoundShaderMid
 
 Its `volume` is a decibel step written as a factor, like the vanilla values above: `0.56234133` is -5 dB. Instead of an inline curve, a shader can name a vanilla curve, for example `rangeCurve="closeShotCurve"` (the class is at line 930).
 
-Facts about IMPWMODPart2 are from that mod's own files and are not checked on `P:\`. Every sample path in it is written without a file extension, the same as vanilla.
+The two mod examples above are third-party mod config and are not checked on `P:\`. Their sample paths are written without a file extension, the same as vanilla.
 
 ### File formats
 
-Vanilla samples on `P:\DZ\sounds\` are `.ogg` files, named in config without the extension. The notes this pack was built from add that the engine also accepts `.wav`, that mods in practice ship `.ogg`, and that Bohemia's own compressed format `.wss` is not needed for a DayZ mod; none of those three statements is checked on `P:\`. Ship `.ogg`.
+Vanilla samples on `P:\DZ\sounds\` are `.ogg` files, named in config without the extension. Three more statements are not yet checked on `P:\`: the engine also accepts `.wav`, mods in practice ship `.ogg`, and Bohemia's own compressed format `.wss` is not needed for a DayZ mod. Ship `.ogg`.
 
 ## Worked example: a generator running loop
 

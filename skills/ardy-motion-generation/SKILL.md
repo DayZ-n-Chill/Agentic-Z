@@ -8,13 +8,13 @@ description: "Installs and runs NVIDIA ARDY, an open-source real-time motion gen
 
 # ARDY: real-time motion generation (NVIDIA)
 
-This skill is a setup and usage guide; it ships no script and runs nothing against `P:\`, DayZ Tools or the game. What it says about ARDY comes from the project's own pages as the source notes read them, and from one install on one machine. None of it is checkable on `P:\`: re-check the primary sources below before relying on a detail, and do not trust videos or marketing.
+This skill is a setup and usage guide; it ships no script and runs nothing against `P:\`, DayZ Tools or the game. What it says about ARDY describes the project's own pages and one install on one machine. None of it is checkable on `P:\`: re-check the project pages listed below before relying on a detail, and do not trust videos or marketing.
 
 ## What ARDY does not solve (read before investing time)
 
 The goal of this skill is **full-body survivor locomotion** (running, jumping, vaulting, scene traversal), not weapon animation.
 
-The real bottleneck of a weapon grip in DayZ is geometric parity between the weapon model and the reference `.anm` on the `Weapon_Root` and `RightHand_Dummy` bones. Both are in the vanilla skeleton lists: `RightHand_Dummy` at `P:\DZ\anims\cfg\skeletons.anim.xml:100` and `Weapon_Root` at `P:\DZ\anims\cfg\skeletons.anim.xml:254`. The source notes measured the parity problem in game on one weapon project in June 2026; that result is not checkable on `P:\`. ARDY works on a full-body skeleton (about 27 "core" bones) with hand control as an end-effector position. It has no concept of held object geometry, individual fingers or the DayZ ASI and IK system. Bringing ARDY to a weapon grip problem would be solving the wrong layer. For grip work use `dayz-realistic-animation-director` and `dayz-animation-pipeline`.
+The real bottleneck of a weapon grip in DayZ is geometric parity between the weapon model and the reference `.anm` on the `Weapon_Root` and `RightHand_Dummy` bones. Both are in the vanilla bone list of the player skeleton `player_testing.xob`: `RightHand_Dummy` at `P:\DZ\anims\cfg\skeletons.anim.xml:115` and `Weapon_Root` at `P:\DZ\anims\cfg\skeletons.anim.xml:254`. The parity problem was measured in game on one weapon project; that result is not checkable on `P:\`. ARDY works on a full-body skeleton (about 27 "core" bones) with hand control as an end-effector position. It has no concept of held object geometry, individual fingers or the DayZ ASI and IK system. Bringing ARDY to a weapon grip problem would be solving the wrong layer. For grip work use `dayz-realistic-animation-director` and `dayz-animation-pipeline`.
 
 ## What it is
 
@@ -27,7 +27,7 @@ The real bottleneck of a weapon grip in DayZ is geometric parity between the wea
 
 ## VRAM budget (read before launching anything)
 
-The text encoder alone (Llama-3-8B-Instruct, bf16) asks for about **14 GB**. The documented total is 16 to 18 GB at minimum and about **24 GB for smooth real time**. A 24 GB card such as an RTX 3090 has no margin at all; for comparison, the source notes measured TRELLIS2-4B, the heaviest model they had run on that card, peaking at only 6.5 GB. WSL2 adds its own VRAM overhead on top. Expect a real risk of running out of memory in real-time mode.
+The text encoder alone (Llama-3-8B-Instruct, bf16) asks for about **14 GB**. The documented total is 16 to 18 GB at minimum and about **24 GB for smooth real time**. A 24 GB card such as an RTX 3090 has no margin at all; for comparison, TRELLIS2-4B, another heavy model, was measured peaking at only 6.5 GB on that card. WSL2 adds its own VRAM overhead on top. Expect a real risk of running out of memory in real-time mode.
 
 Mitigations to try, in order, when memory runs out:
 
@@ -37,10 +37,10 @@ Mitigations to try, in order, when memory runs out:
 
 ## Setup: WSL2, a dedicated conda env
 
-**Use a new, separate conda env, never an env another heavy model already uses.** The source notes' example is a TRELLIS2 env pinned to exactly PyTorch 2.6.0 with extensions compiled against that build: mixing the dependencies of two heavy models in one env is the fastest way to break both.
+**Use a new, separate conda env, never an env another heavy model already uses.** An example is a TRELLIS2 env pinned to exactly PyTorch 2.6.0 with extensions compiled against that build: mixing the dependencies of two heavy models in one env is the fastest way to break both.
 
 ```bash
-# Inside WSL2 (Ubuntu 22.04 in the source notes)
+# Inside WSL2 (Ubuntu 22.04 is the distribution this setup was run on)
 conda create -n ardy python=3.11 -y
 conda activate ardy
 
@@ -110,7 +110,7 @@ By default outputs go to the repo's `outputs/` folder.
 
 Everything in this section is design, not tested code. Before writing any retargeting script, read `references/dayz-integration-plan.md` in full (it holds the complete checklist) and the skills it names. Do not assume the pipeline described here works as written.
 
-The pending chain in short: `.npz` (world-space joints, "core" skeleton of about 27 bones), then import into Blender, then **retarget to the DayZ player skeleton** (`OFP2_ManSkeleton` in the source notes; the same kind of problem `mixamo-retarget` faces and that skill is still experimental: a generic external skeleton onto the specific DayZ one, with no official ARDY mapping to any game format), then export `.txa`, then the existing `dayz-animation-pipeline` route to `.anm`, then the in-game gate.
+The pending chain in short: `.npz` (world-space joints, "core" skeleton of about 27 bones), then import into Blender, then **retarget to the DayZ player skeleton** (`player_testing.xob`, which the RPT calls `OFP2_ManSkeleton`; the same kind of problem `mixamo-retarget` faces and that skill is still experimental: a generic external skeleton onto the specific DayZ one, with no official ARDY mapping to any game format), then export `.txa`, then the existing `dayz-animation-pipeline` route to `.anm`, then the in-game gate.
 
 No part of that chain is tested. See `references/dayz-integration-plan.md` for the detail and the open questions before trying it.
 
@@ -122,10 +122,8 @@ No part of that chain is tested. See `references/dayz-integration-plan.md` for t
 | How does the real DayZ animation system work (bones, ASI, skeleton map, the grip mechanism)? | `dayz-animation-pipeline`, and the animation pack index `_shared/animation/README.md` |
 | How do I retarget an external skeleton onto a Blender rig? | `mixamo-retarget` |
 
-The source notes compared ARDY with six other animation tools; that comparison note is not part of this repo, and only its conclusions about ARDY and Cascadeur are carried here and in the plan.
-
 ## On Linux
 
-Everything above is the Windows workflow and stays valid there. On Linux, the Proton setup, the measured tool matrix and the pitfalls are in `_shared/linux-proton.md` (brought by the scripting part of this import); this section only says what changes for this skill.
+Everything above is the Windows workflow and stays valid there. On Linux, the Proton setup, the measured tool matrix and the pitfalls are in `_shared/linux-proton.md`; this section only says what changes for this skill.
 
 - The setup is written for WSL2. On a Linux host it runs natively: same conda environment, no WSL layer, no `/mnt/c` paths. The later `.txa` to Workbench to `.anm` step is Windows-first: see the Linux notes of `dayz-animation-pipeline`.

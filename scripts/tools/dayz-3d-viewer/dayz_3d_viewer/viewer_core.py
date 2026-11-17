@@ -1,19 +1,24 @@
 # GENERATED FILE - DO NOT EDIT.
 # Source: skills/_shared/viewer_core.py
-# source-sha256: 7C59F1CC5DCAF8CF33CE54D17D17BFC8272EA12899ED2F6AC0665B431F2D153D
+# source-sha256: 05B1F88B3EEE53A463B0F8A6F442482D11C8DC33FD7A67B11D30B2E554EB773C
 # Regenerate: python scripts/tools/sync_generated.py sync --root .
 """Emit the shared Three.js viewer scaffold (ESM + importmap, three 0.185.1).
 
 This module is a string emitter. Generators splice the returned HTML/JS into
-their templates. It does not render, does not vendor three.js, and does not
+their templates. It does not render, does not bundle three.js, and does not
 add gizmos/panels the generators did not already have.
 
 How generators find this file
 -----------------------------
-There is no install step and no machine-absolute path. Each generator carries
-a private copy of the bounded locator below (they cannot import this module
-until they have found it). The candidate list depends on the caller's layout,
-not a fixed four-name probe at every ancestor:
+There is no install step and no machine-absolute path. A generator cannot
+import this module until it has found it, so each one carries its own locator.
+``weapon_grip_viewer.py`` and the ``dayz_3d_viewer`` package's
+``viewer_template.py`` carry a private copy of the bounded locator below. The
+other skill generators (``build_viewer.py``, ``alignment_viewer_build.py``,
+``proxy_viewer.py``, ``p3d_inspector_viewer.py``) try two fixed repo paths,
+``skills/_shared/viewer_core.py`` and the ``dayz_3d_viewer`` copy, and check
+the same contract and version. In the bounded locator the candidate list
+depends on the caller's layout, not a fixed four-name probe at every ancestor:
 
 - under ``skills/``: never the file next to the caller. Canonical is
   ``<dir>/skills/_shared/viewer_core.py`` (and ``<dir>/_shared/viewer_core.py``).
@@ -30,7 +35,7 @@ own directory. A homonym above the root is never opened.
 A candidate is inspected with ``ast.parse`` (no execution). Comments and
 string literals do not count. Only a module-level assignment of
 ``VIEWER_CORE_CONTRACT`` / ``THREE_VERSION`` and ``def`` of the four public
-functions make it eligible to load. That covers the five pack locations and
+functions make it eligible to load. That covers the repo locations above and
 ``out/patched/*.py`` -> ``out/viewer_core.py``.
 """
 
@@ -174,10 +179,10 @@ def load_viewer_core(start_file):
     """Load this module given the calling generator's ``__file__``.
 
     Walks ``start_file``'s directory and its parents using a layout-dependent
-    candidate list, and stops at the pack/workspace root. A decoy above that
+    candidate list, and stops at the repo/workspace root. A decoy above that
     root is not loaded. A homonym next to a skill script is not a candidate.
     Candidates are parsed, not executed, before loading. Invalid candidates
-    are skipped (same decision as the six private locators). No sys.path
+    are skipped (same decision as the generators' private locators). No sys.path
     mutation with machine-absolute paths.
     """
     start_dir = os.path.dirname(os.path.abspath(start_file))
@@ -199,7 +204,7 @@ def load_viewer_core(start_file):
             break
         directory = parent
     raise ImportError(
-        "viewer_core.py not found within pack/workspace root walking parents of %s"
+        "viewer_core.py not found within repo/workspace root walking parents of %s"
         % os.path.abspath(start_file)
     )
 
@@ -467,7 +472,7 @@ def loop_js(
     ``controls``, if set, is updated each frame (OrbitControls damping).
     ``frame_hook`` is an optional JS function name called as ``fn(ts)``
     *before* ``controls.update()`` (timeline / pose work that should see
-    the pre-damping camera, matching original build_viewer).
+    the pre-damping camera, as build_viewer does).
     ``post_controls_hook`` is called *after* ``controls.update()`` and
     *before* ``render()`` so overlay labels project with the same camera
     the canvas uses (proxy, p3d_inspector, weapon_grip).

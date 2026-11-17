@@ -66,7 +66,7 @@
     {
       "variant_id": "autoptr",
       "skill_revision": "r21-current",
-      "baseline_revision": "stardz-source",
+      "baseline_revision": "unverified-claims",
       "runner_id": "fixture",
       "expected_verdict": "PASS",
       "response": "Reject the claim; no verified declaration supports universal ownership.",
@@ -79,7 +79,7 @@
     {
       "variant_id": "overload",
       "skill_revision": "r21-current",
-      "baseline_revision": "stardz-source",
+      "baseline_revision": "unverified-claims",
       "runner_id": "fixture",
       "expected_verdict": "PASS",
       "response": "Reject the overload claim.",
@@ -92,7 +92,7 @@
     {
       "variant_id": "managed",
       "skill_revision": "r21-current",
-      "baseline_revision": "stardz-source",
+      "baseline_revision": "unverified-claims",
       "runner_id": "fixture",
       "expected_verdict": "PASS",
       "response": "Reject the ownership interpretation of Managed.",
@@ -105,7 +105,7 @@
     {
       "variant_id": "jsonloadfile",
       "skill_revision": "r21-current",
-      "baseline_revision": "stardz-source",
+      "baseline_revision": "unverified-claims",
       "runner_id": "fixture",
       "expected_verdict": "PASS",
       "response": "Reject the unverified helper.",
@@ -118,7 +118,7 @@
     {
       "variant_id": "ondrop",
       "skill_revision": "r21-current",
-      "baseline_revision": "stardz-source",
+      "baseline_revision": "unverified-claims",
       "runner_id": "fixture",
       "expected_verdict": "PASS",
       "response": "Reject the universal callback claim.",
@@ -131,7 +131,7 @@
     {
       "variant_id": "dabs",
       "skill_revision": "r21-current",
-      "baseline_revision": "stardz-source",
+      "baseline_revision": "unverified-claims",
       "runner_id": "fixture",
       "expected_verdict": "PASS",
       "response": "Reject the unverified utility.",

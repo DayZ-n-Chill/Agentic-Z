@@ -1,18 +1,18 @@
 # MH6 helicopter: the force based reference
 
-How the MH6 Little Bird helicopter mod by Llama (the author of the LM_Planes fixed-wing mod in `fixed-wing-lm-planes.md`) flies a `CarScript` child with real rigid body forces: Pawn owner state and move replication, the simulate loop, the PD flight controller in `ApplyHelicopterPhysics`, the ISA atmosphere helper, autohover and autoland, inputs, particles and lights. Open it when building or debugging a force based helicopter.
+How the MH6 Little Bird helicopter mod (from the same mod family as the LM_Planes fixed-wing mod in `fixed-wing-lm-planes.md`) flies a `CarScript` child with real rigid body forces: Pawn owner state and move replication, the simulate loop, the PD flight controller in `ApplyHelicopterPhysics`, the ISA atmosphere helper, autohover and autoland, inputs, particles and lights. Open it when building or debugging a force based helicopter.
 
-Third-party material, not yet checked on `P:\`. The flight model script was recovered from `MH6_scripts.pbo` on 2026-07-07 and is fully legible Enforce Script; nothing in it is DRM-locked. The recovered files are not in this repo: `MH6_flightmodel.c` (the flight model, identical twin `MH6_scripts\b_off175614_o48037.c`), `MH6_scripts\b_*.c` (actions and particles) and the shared framework `Heli_Core\b_*.c`. Citations are `file:line` into `MH6_flightmodel.c` unless another file is named. Authorship is fixed by the particle paths `LM_LLAMA/LM_Vehicles/MH6/graphics/` (`MH6_scripts\b_off152027_o355.c:3-5`). Tags: `[RECOVERED]` read from the recovered source, `[UNVERIFIED]` not recovered, so do not invent it. Learn the pattern from it and write the mod's own code; `skills/_shared/vehicles/helicopters.md` says which model to build from.
+Third-party mod behaviour (MH6), not vanilla. Not yet checked on `P:\`. The flight model script inside `MH6_scripts.pbo` is fully legible Enforce Script; nothing in it is DRM-locked. The mod's files are not in this repo: the flight model script (named `MH6_flightmodel.c` here; in the unpacked PBO it is `MH6_scripts\b_off175614_o48037.c`), `MH6_scripts\b_*.c` (actions and particles) and the shared framework `Heli_Core\b_*.c`. Citations are `file:line` into the flight model script unless another file is named. A section or bullet marked `[UNVERIFIED]` could not be read in the mod's files, so do not invent it; everything else was read in those scripts. Learn the pattern from it and write the mod's own code; `skills/_shared/vehicles/helicopters.md` says which model to build from.
 
-**This is the third independent heli read from source and the first buildable force-based one.** Where SIB
-and RFFS both fly kinematically (`SetVelocity`) and only SIB's *unrecoverable, DRM-locked* advanced variant
+**Of the three helicopters with a single flight loop, this is the buildable force-based one.** Where SIB
+and RFFS both fly kinematically (`SetVelocity`) and only SIB's *unreadable, DRM-locked* advanced variant
 was force-based, MH6 applies real rigid-body forces every tick — `dBodyApplyForce(this, totalForce)` +
 `dBodyApplyTorque(this, totalTorque)` (`:1165-1166`) — and its whole integrator is present in plaintext.
 It proves the force-based model that SIB made look permanently gated is in fact viable and shippable.
 
 ## 1. Architecture — `MH6 : CarScript` + Pawn OwnerState/Move replication
 
-[RECOVERED] Same **CarScript-as-aviation** hack as the other two helis and LM_Planes: `class MH6 extends
+Same **CarScript-as-aviation** hack as the other two helis and LM_Planes: `class MH6 extends
 CarScript` (`:112`). But MH6's networking is the most advanced of the three helis — it uses the **custom
 Pawn OwnerState/Move pipeline** (the same family LM_Planes uses for fixed-wing), not SIB's `SetSynchDirty`
 polling or RFFS's `RegisterNetSyncVariable*` bank:
@@ -37,7 +37,7 @@ Two `RegisterNetSyncVariable*` remain for the two discrete states that must surv
 
 ## 2. The simulate loop — `EOnSimulate` / `EOnPostSimulate`
 
-[RECOVERED] Physics run **server-or-owner** (`IsServerOrOwner()`), i.e. server-authoritative with owner
+Physics run **server-or-owner** (`IsServerOrOwner()`), i.e. server-authoritative with owner
 client-prediction. `EOnSimulate` (`:1276-1343`):
 
 1. **Non-owner clients** just `Synchronize()`, interpolate the smoothed channels toward their synced
@@ -67,10 +67,10 @@ and PD torques ride on top of that baseline.
 
 ## 3. The PD flight controller — `ApplyHelicopterPhysics(dt)` (`:980-1167`)
 
-[RECOVERED] This is the core and the reason MH6 is the force-based reference. It accumulates a single
+This is the core and the reason MH6 is the force-based reference. It accumulates a single
 `totalForce` + `totalTorque` and applies both at the end. All constants below are `protected const`
 literals in the class body (`:141-176`) — **there is no JSON config** (contrast SIB/RFFS; the config.bin
-that might override was not recovered, see §7).
+that might override is not readable, see §7).
 
 ### 3a. Rotor-RPM authority gates (realism: no control without RPM)
 
@@ -155,7 +155,7 @@ the defining feature of MH6's model.
 
 ## 4. Shared framework — `Heli_Core` + memory-point geometry
 
-[RECOVERED] MH6 depends on `Heli_Core.pbo`. The only **legible, sizeable** class recovered from it is
+MH6 depends on `Heli_Core.pbo`. The only **legible, sizeable** class in it is
 `class StandardAtmosphere` (`Heli_Core\b_off89829_o1538.c:2-43`) — a static ISA atmosphere helper the
 flight model calls for `densityRatio`:
 - `GetDensity(altitude_m)` uses the real barometric law:
@@ -163,8 +163,8 @@ flight model calls for `densityRatio`:
   clamped to `MAX_ALTITUDE=2000` m (`:12-21`).
 - `GetDensityRatio` = density/sea-level (`:22-25`); plus `GetPerformanceFactor` (1.0 below 1200 m, lerp to
   0.6 at 2000 m), `IsApproachingCeiling` (>1800 m), `GetCeilingWarningLevel` (`:26-42`). **This is the same
-  ISA-atmosphere idea LM_Planes uses for fixed-wing**, reused for the heli — another Llama through-line.
-- [UNVERIFIED] the *rest* of `Heli_Core\b_*.c` — the remaining 25 blocks recovered as **JAPM anti-tamper
+  ISA-atmosphere idea LM_Planes uses for fixed-wing**, reused for the heli.
+- [UNVERIFIED] the *rest* of `Heli_Core\b_*.c` — the remaining 25 blocks are **JAPM anti-tamper
   shells** (obfuscated commented `static float ...Hash()...` lines) or byte-fragment junk, not real logic.
   Whether Heli_Core defines any shared heli base beyond `StandardAtmosphere` is [UNVERIFIED].
 
@@ -172,14 +172,14 @@ flight model calls for `densityRatio`:
 `GetOrientation()` Euler angles (SIB's approach), MH6 computes pitch/roll from the world-space height delta
 between `axis_front`/`axis_back` and `axis_left`/`axis_right` memory points via `Atan2`. Rotor positions
 read `rotor_main` / `rotor_tail` memory points with sane fallbacks (`GetMemoryPointSafe`, `:549-564`).
-[UNVERIFIED] the actual `.p3d` memory-point set (config.bin/model not recovered) — but the *names*
+[UNVERIFIED] the actual `.p3d` memory-point set (config.bin/model not readable) — but the *names*
 (`axis_front/back/left/right`, `rotor_main/tail`) and animation selections (`rotor_1_1`, `rotor_2_1`,
 `rotor_1_1_hide`, `rotor_1_1_rotate_hide`, `seat_driver/codriver/cargo1/cargo2`, `seat_con_1..4`) are
 confirmed from script reads.
 
 ## 5. Autohover & autoland — kinematic state machines on top of force flight
 
-[RECOVERED] MH6 is a **hybrid**: real force-based free flight, but the assist modes switch to kinematic
+MH6 is a **hybrid**: real force-based free flight, but the assist modes switch to kinematic
 `SetVelocity` for scripted precision.
 
 - **AutoHover** (`UpdateAutoHover`, `:663-698`): a PD altitude+attitude hold that writes *into the control
@@ -206,42 +206,41 @@ lift force toward a desired climb rate + strong horizontal damping (`:1014-1036`
 
 ## 6. Inputs, actions, particles, lights
 
-[RECOVERED]
 - **Flight inputs** are custom `UAKTHeli*` UA actions, read owner-side in `EOnPostSimulate` via
   `GetUApi().GetInputByName(...).LocalHold()` (`:1431-1450`): `UAKTHeliForward`/`Back` → cyclic pitch,
   `UAKTHeliRight`/`Left` → cyclic roll, `UAKTHeliLeanLeft`/`LeanRight` → pedal/yaw, `UAKTHeliTurbo`/
   `Handbrake` → collective up/down (integrated into `m_ThrottleTarget` at `THROTTLE_INCREMENT_RATE=0.80`).
   Toggles `UAKTHeliAutoHover` / `UAKTHeliAutoLand` via `input.LocalPress` (`:1374-1379`). [UNVERIFIED] the
-  `modded_Inputs.xml` bindings (config.bin not recovered; names confirmed from script).
+  `modded_Inputs.xml` bindings (config.bin not readable; names confirmed from script).
 - **Engine start/stop**: MH6 reuses the **vanilla CarScript engine actions** — `ActionStartEngine` /
   `ActionStopEngine` are `modded` only to relabel the prompt to "Start/Stop MH6 Helicopter" when the
   transport `IsKindOf("MH6")` (`MH6_scripts\b_off212633_o856.c:1-41`). No custom start action class — the
   flight loop simply gates on `EngineIsOn()`. `OnEngineStart`/`OnEngineStop` (`:1220-1242`) seed collective
   to throttle, reset the flight phase, and set/clear native damping.
 - **Particles**: `modded class ParticleList` registers rocket VFX `ROCKET_TAIL2`/`ROCKET_IMPACT`/
-  `ROCKET_TAIL` under `LM_LLAMA/LM_Vehicles/MH6/graphics/` (`b_off152027_o355.c:1-6`) — MH6 is an *armed*
-  Little Bird (matches LM_Planes' combat-aviation lineage; the fire pipeline itself was not recovered).
+  `ROCKET_TAIL` from the mod's own graphics folder (`b_off152027_o355.c:1-6`) — MH6 is an *armed*
+  Little Bird (the fire pipeline itself is not readable).
 - **Lights**: `MH6FrontLight : CarLightBase` + `MH6RearLight : CarRearLightBase` (`:1626-1667`), standard
   CarScript segregated/aggregated light pattern.
 - **Sound**: `OnSound` scales the `CarSoundCtrl.RPM` channel by `m_RotorSpeed` (`:1256-1261`) so engine
   audio tracks rotor spool, not wheel RPM.
 
-## 7. Not recovered / [UNVERIFIED] — do not fabricate
+## 7. Not readable / [UNVERIFIED] — do not fabricate
 
-- **`config.bin`** (the MH6 CfgVehicles entry) was **obfuscated and not recovered** — so the exact
+- **`config.bin`** (the MH6 CfgVehicles entry) is **obfuscated and not readable** — so the exact
   `CfgVehicles MH6` class, `AnimationSources`, `DamageZones`, `Crew`, memory-point declarations, wheel
   slots, and any config values that would *override* the script constants are all [UNVERIFIED]. The script
   is authoritative for the flight *logic*; the config contract around it is inferred from script reads
   (crew seats 0=Driver/1=CoDriver/2+=passengers via `GetSeatAnimationType`, `:1607-1616`; door state
   `DOORS_MISSING`, `:1567-1570`).
-- **`model.cfg` + the `.p3d`** — not recovered. Memory points (`axis_*`, `rotor_main/tail`) and animation
+- **`model.cfg` + the `.p3d`** — not readable. Memory points (`axis_*`, `rotor_main/tail`) and animation
   selections (`rotor_1_1`, `rotor_2_1`, `rotor_1_1_hide`, `rotor_1_1_rotate_hide`, `seat_*`) are confirmed
   as *names* from script, [UNVERIFIED] as actual model data.
-- **`modded_Inputs.xml`** — the `UAKTHeli*` input names are confirmed from script; bindings not recovered.
+- **`modded_Inputs.xml`** — the `UAKTHeli*` input names are confirmed from script; bindings not readable.
 - **`Heli_Core` beyond `StandardAtmosphere`** — the remaining blocks are JAPM shells / byte-fragment junk;
   any additional shared logic is [UNVERIFIED].
 - **The combat/fire pipeline** — only the `ParticleList` rocket registrations survived; the projectile /
-  RPC / damage code was not recovered.
+  RPC / damage code is not readable.
 
 ## Takeaway for building your own force-based heli
 

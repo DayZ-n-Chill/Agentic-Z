@@ -202,7 +202,7 @@ and a particle is lowered to the road surface only when it starts above it:
 			partPos[1] = roadY;
 ```
 
-Design note: a custom area that still overrides `OnCEUpdate` does not tick. The road snap keeps gas on a bridge deck instead of on the terrain under it. The particle budget and the vertical band of an area are in `effect-area-particles.md`.
+Design note: `OnCEUpdate` is marked obsolete in favour of `OnCEIterate` (`P:\scripts\3_game\entities\entityai.c:4924`), and `EffectArea` no longer calls `Tick()` from it. Whether the engine still calls `OnCEUpdate` is not yet checked on `P:\`, so move a custom area's override to `OnCEIterate`. The road snap keeps gas on a bridge deck instead of on the terrain under it. The particle budget and the vertical band of an area are in `effect-area-particles.md`.
 
 ## Sandstorm: a postprocess material, not a particle material
 
@@ -258,7 +258,7 @@ All of these are in the catalog (`vanilla-particle-catalog.md`). This list says 
 | Particles play on a headless client | Medium | Replace `!IsDedicatedServer()` with `!IsHeadlessOrDedicatedServer()` around particle code. |
 | Wheel or step particles ignore custom surfaces | Medium | Stop calling `Surface.GetStepsParticleID` and `Surface.GetWheelParticleID`; read `SurfaceInfo`. |
 | A call to `EffWheelSmoke.SetSurface(string)` warns as obsolete | Low | Call `SelectFromSurface(SurfaceInfo)`. |
-| A custom `EffectArea` never ticks, or its particles float above bridges | Medium | Override `OnCEIterate` and snap with `SurfaceRoadY`. |
+| A custom `EffectArea` that overrides `OnCEUpdate` may not tick, or its particles float above bridges | Medium | Override `OnCEIterate` and snap with `SurfaceRoadY`. |
 
 ## Migration checklist
 

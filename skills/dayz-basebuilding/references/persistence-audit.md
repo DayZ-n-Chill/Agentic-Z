@@ -6,7 +6,7 @@ The hand-off checklist for a base building save change. Line numbers are from th
 
 ## 1. The representation, three 31-bit ints, netsync AND save at once
 
-Part-built state is NOT stored per part. It is packed into three sync ints `m_SyncParts01/02/03` (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:10-12`), registered for netsync in the ctor (`:43-45`). This SAME representation is both the network sync AND the persistence format, there is no separate per-part save record.
+Part-built state is not stored per part. It is packed into three sync ints `m_SyncParts01/02/03` (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:10-12`), registered for netsync in the ctor (`:43-45`). This same representation is both the network sync and the persistence format, there is no separate per-part save record.
 
 Part `id` → bit:
 
@@ -25,7 +25,7 @@ Three ints × 31 usable bits = **93 distinct parts maximum per BaseBuildingBase 
 - `OnStoreSave` (`basebuildingbase.c:420-430`): writes `m_SyncParts01`, `02`, `03`, then `m_HasBase`.
 - `OnStoreLoad` (`basebuildingbase.c:432-464`): reads the three ints then `m_HasBase`, each guarded with a `return false` on read failure (default-then-abort).
 
-**Subclass-after-super invariant:** a subclass writes/reads its extra fields AFTER calling `super`, in the exact same order in both methods. Fence appends `m_GateState`, `m_IsOpened` after the base three ints (`P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:246-254` save / `:256-289` load). Reorder either side, or write in the subclass before `super`, and every saved base corrupts on the next load.
+**Subclass-after-super invariant:** a subclass writes/reads its extra fields after calling `super`, in the exact same order in both methods. Fence appends `m_GateState`, `m_IsOpened` after the base three ints (`P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:246-254` save / `:256-289` load). Reorder either side, or write in the subclass before `super`, and every saved base corrupts on the next load.
 
 ## 4. Load reconciliation
 
@@ -46,7 +46,7 @@ Before declaring a base-building persistence change release-safe, confirm with `
 
 1. Every part `id` in the `Construction{}` block is unique and in 1..93.
 2. `OnStoreSave` and `OnStoreLoad` write and read the same fields in the same order.
-3. Every subclass writes/reads its fields AFTER `super`, same order both ways.
+3. Every subclass writes/reads its fields after `super`, same order both ways.
 4. A new persisted field bumps the version and adds a legacy branch for old saves.
 5. Crash-recovery walk: kill the server between each I/O hop of save/load, does the next boot recover the base or lose parts? (walk it step by step.)
 6. The failsafe relock path (`SetPartFromSyncData`, `basebuildingbase.c:303`) still runs for corrupted sync/storage data.

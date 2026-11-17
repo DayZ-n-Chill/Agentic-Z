@@ -75,7 +75,7 @@ for v in low.data.vertices:
     v.co = MWi @ (pivot + Rw @ (MW @ v.co - pivot))
 ```
 
-On LFInfectedBig the arms were 28 and 34 degrees narrower than canonical; this opened them onto the bones cleanly.
+On the giant infected build the arms were 28 and 34 degrees narrower than canonical; this opened them onto the bones cleanly.
 
 The angle is not enough: the joint positions must match too (giant infected build, in game, 2026-06-24). The rotation above conforms each limb's direction, but the engine binds against the canonical bone positions (`references/canonical-bind.md`). When the mesh's anatomical joints (elbow, knee, shoulder, wrist) sit at other positions, which a generated mesh always has because its proportions are its own, the limbs overextend and stretch under animation even though scale, orientation and winding are right and the rest pose looks fine. The giant infected build shipped with this unfixed (arms about 0.12 m shorter than the armature: length, not angle) and showed visible arm overextension in game.
 

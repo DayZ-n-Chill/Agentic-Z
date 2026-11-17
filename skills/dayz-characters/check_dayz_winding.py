@@ -25,7 +25,7 @@ winding check", engine verdict 2026-09-07)
       a non-convex quad whose first three corners point the other way), read as the winding fix leaves it.
       A normal within 5 degrees of its face's plane has no clear sign and is not read. Above 90 % in every
       shell they agree; that is a tolerance, not proof of every corner: smooth-shaded exports carry corners
-      against their face (LFInfectedBig's Rule 12 build, lit like vanilla in game, has 219 of 131,478; its
+      against their face (the giant infected Rule 12 build, lit like vanilla in game, has 219 of 131,478; its
       body shell reads 99.5 %). Below 10 % in every shell they disagree: with the winding right that means
       the normals point out of the material, and the fix is to negate the normal pool, never to reverse the
       faces; the gate says how many corners that agree now the pool fix turns too. Anything else lists the
@@ -48,7 +48,7 @@ WHAT IT CANNOT SEE
   - A debinarized model: the ODOL->MLOD converter's winding handling inverts the comparison.
 
 HISTORY
-  The version of 2026-06-25 (LFInfectedBig S6) encoded that build's det=+1 recipe: stored normals OUTWARD
+  The version of 2026-06-25 (the first giant infected build) encoded that build's det=+1 recipe: stored normals OUTWARD
   and cross . normal < 0. It failed all three MLODs of the Rule 12 in-game test, the correct one included
   (measured 2026-10-01), and passed the outward-normal state (dayz-characters references/winding-gate.md).
   Until 2026-10-03 its fix for the shells in between read "negate the normal of each corner that points
@@ -84,7 +84,7 @@ MIN_THICKNESS = 2e-5     # m; a closed shell with 3*|volume|/area below it is fl
                          # 5 decimals stay under 1.5e-5; a real part is thicker (a 50-micron one is not flat)
 PERPENDICULAR = 0.0872   # |cos| between a corner normal and its face's vector area at or below it (within 5
                          # degrees of the face's plane): no clear sign. A chosen margin, not a measured one;
-                         # LFInfectedBig's Rule 12 build has 200 such corners of 131,478
+                         # the giant infected Rule 12 build has 200 such corners of 131,478
 
 POOL_FIX = ("negate the normal pool in place: lod.facenormals[j] = (-x, -y, -z) for every j "
             "(not through Vertex.normal).")
@@ -470,7 +470,7 @@ def read_lod(lod, index):
                 verb = would if reversal or agree > 1 else "agrees"
                 text += (f" It also turns {_plural(agree, 'corner')} that {verb} now: right for an export that stored "
                          "every normal the other way, whose odd corners go back to how they were authored "
-                         "(LFInfectedBig's Rule 12 build has 219 against their face); to keep them, read the shells "
+                         "(the giant infected Rule 12 build has 219 against their face); to keep them, read the shells "
                          "part by part instead, never a corner on its own sign (py3d README, \"Winding\", step 3).")
             lines.append(text)
     elif classes == {"disagree"}:

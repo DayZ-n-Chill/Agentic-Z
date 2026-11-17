@@ -129,3 +129,7 @@ exception.
 ```powershell
 python -m pytest -q scripts/tools/dayz-model-preflight/tests
 ```
+
+The tests load py3d from `scripts/tools/py3d`, so nothing needs installing
+beyond pytest. The schema tests also use the `jsonschema` package and are
+skipped when it is not installed.

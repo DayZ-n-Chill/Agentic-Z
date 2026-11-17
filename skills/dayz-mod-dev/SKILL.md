@@ -20,7 +20,7 @@ Three other entry points keep their own jobs; this skill does not replace them:
 
 Target: **DayZ 1.30 or later** (written against 1.30.164289). Builds before 1.30 are not covered; do not write `#ifdef` branches for them unless the user asks for a mod that must still load on an older server. On a newer build, check a fact against that build's sources before relying on it.
 
-Marks used here: a fact with a `P:\` citation was read in that vanilla file. "Measured" facts come from booting test mods on a server and name who measured them; they are not yet checked on `P:\` because a source file cannot show them. Third-party facts name the mod they come from.
+Marks used here: a fact with a `P:\` citation was read in that vanilla file. "Measured" facts come from booting test mods on a server and name the build they were measured on; they are not yet checked on `P:\` because a source file cannot show them. Third-party facts name the mod they describe.
 
 ## The loop
 
@@ -36,16 +36,16 @@ Marks used here: a fact with a `P:\` citation was read in that vanilla file. "Me
 ## Rules for every task
 
 - **Look it up before you use it.** Every class, method, enum value and config token is checked against the target build's sources before it goes into code (next section). Unverified names are the most common cause of a mod that does not compile.
-- **The engine defines only the current version.** Vanilla documents one define "filled in with the current Major and Minor version", `DAYZ_X_XX` (`P:\scripts\1_core\defines.c:12-14`). Measured on a 1.30 server by bzed: its module lines list `DAYZ_1_30` and not `DAYZ_1_29`. So plain current code needs no version `#ifdef`, and `#ifdef DAYZ_1_30` would drop the code on the next release. Never use `DIAG_DEVELOPER` or `BUILD_EXPERIMENTAL` to mean a version.
+- **The engine defines only the current version.** Vanilla documents one define "filled in with the current Major and Minor version", `DAYZ_X_XX` (`P:\scripts\1_core\defines.c:12-14`). Measured on a 1.30 server: its module lines list `DAYZ_1_30` and not `DAYZ_1_29`. So plain current code needs no version `#ifdef`, and `#ifdef DAYZ_1_30` would drop the code on the next release. Never use `DIAG_DEVELOPER` or `BUILD_EXPERIMENTAL` to mean a version.
 - **Forward slashes in every path**, including `CfgMods` `files[]`. Measured on the Linux server build 164014: with backslashes a 1.30 server compiles none of the mod's scripts and reports no error (not tested again on build 25963285 or on Windows). `/dayz-new-mod` already writes forward slashes; keep them as the safe habit.
 - **Every PBO sits in `@Mod/addons/`.** A PBO at the mod folder root is silently ignored. In this repo builds deploy to `P:\Mods\@<ModName>\Addons\`.
 - **Load order follows `requiredAddons`, not the `-mod` list** (the measured loading order; launching in dependency order is a careful recipe, not a guarantee). Never build a fix on a position in the `modded class` chain; hook an event that runs after the behaviour you counteract.
 - **A `modded class` lives in the script module of the class it modifies.** `Transport` is declared in `3_Game` (`P:\scripts\3_game\vehicles\transport.c:68`), so `modded class Transport` in `4_World` fails with `Unknown type 'Transport'`.
 - **A compile error can crash the server** right after `Can't compile ... script module!`. When a server dies at boot, read `script_*.log` before anything else.
-- **`FindFile` works again from 1.30.164200.** Its declaration is unchanged: `FindFile`, `FindNextFile` and `CloseFindFile` are at `P:\scripts\1_core\proto\ensystem.c:520-522` (claim `CLAIM-130-FINDFILE-PROTO`). Measured on Linux build 25963285: `$profile:`, `$mission:`, `$saves:` and `$storage:` resolve again; the first stable 1.30 release was broken (`dayz-mod-workflow`, `references/dayz-1-30-server-measured.md`). `CF.FindFileEx` and copied `FindFile` path helpers are leftovers to remove on that build or later.
+- **`FindFile` works again from 1.30.164200.** Its declaration is unchanged: `FindFile`, `FindNextFile` and `CloseFindFile` are at `P:\scripts\1_core\proto\ensystem.c:520-522`. Measured on Linux build 25963285: `$profile:`, `$mission:`, `$saves:` and `$storage:` resolve again; the first stable 1.30 release was broken (`dayz-mod-workflow`, `references/dayz-1-30-server-measured.md`). `CF.FindFileEx` and copied `FindFile` path helpers are leftovers to remove on that build or later.
 - **Never write into Steam's directories for test servers or Workshop folders.** Test servers run from a tree of their own; in this repo that is `.server/<instance>/`. The two exceptions are on Linux: the client's own Proton prefix, and a symlink to the test mod in the client's install folder that the headless client script creates and removes after the run (`dayz-test-ingame`, `references/linux-headless-client.md`, section 2). This does not contradict the Windows `P:\Mods` junction to `!Workshop` that Tier 2 requires.
 - **Uploading to the Workshop is the user's call.** Prepare the commands; never run them unprompted.
-- **On Linux, build and sign with dayzmake 1.0.0 or newer**, never upstream armake2: that is built for Arma, leaves `*.c` out of the signature and lacks the DayZ-only functions dayzmake adds (`skills/_shared/linux-proton.md`, section 1).
+- **On Linux, build and sign with dayzmake 1.0.0 or newer**, never the original armake2: that is built for Arma, leaves `*.c` out of the signature and lacks the DayZ-only functions dayzmake adds (`skills/_shared/linux-proton.md`, section 1).
 
 Details and evidence for the measured rules: `dayz-mod-workflow`, `references/dayz-1-30-server-measured.md`.
 
@@ -67,10 +67,10 @@ In this order:
    python3 "$S/dayz-api.py" sub Weapon_Base                # subclasses; "enum X" and "src X" likewise
    ```
 
-   `src X` names the declaring file; read the body there and cite `path:line`. Pass `--force` to `extract-dayz-sources.sh` only to replace a non-empty output folder that has no `pbo-map.tsv`; otherwise it refuses, so an unrelated folder is not overwritten (claim `CLAIM-EXTRACT-FORCE`). The index holds Bohemia's declarations, so build it locally and never commit it to a mod or to this repo.
+   `src X` names the declaring file; read the body there and cite `path:line`. Pass `--force` to `extract-dayz-sources.sh` only to replace a non-empty output folder that has no `pbo-map.tsv`; otherwise it refuses, so an unrelated folder is not overwritten. The index holds Bohemia's declarations, so build it locally and never commit it to a mod or to this repo.
 4. **Online**, when neither is at hand: `https://diff.yadz.app/api/classes/<Name>.json` (latest build, one class as JSON) and the BohemiaInteractive/DayZ-Script-Diff repository for exact bodies. Remote mirrors can lag a release.
 
-CF and Expansion classes: read their public sources at a pinned commit (Arkensor/DayZ-CommunityFramework, salutesh/DayZ-Expansion-Scripts), read the mod under `P:\Mods\` when it is installed, or index an extracted Workshop copy with `build-api-index.py --mod <name>`. Our own checked notes are `skills/_shared/enscript/integrations/community_framework.md`, `dabs_framework.md` and `expansion_style.md` in the same folder.
+CF and Expansion classes: read their public script repositories on GitHub (Community Framework, DayZ Expansion Scripts) at a pinned commit, read the mod under `P:\Mods\` when it is installed, or index an extracted Workshop copy with `build-api-index.py --mod <name>`. Our own checked notes are `skills/_shared/enscript/integrations/community_framework.md`, `dabs_framework.md` and `expansion_style.md` in the same folder.
 
 ## Router
 
@@ -115,7 +115,7 @@ Match the request and read that skill first; read more than one when the request
 
 ## Community Framework and Expansion
 
-Third-party facts; the mods named are the source.
+Third-party mod behaviour, not vanilla.
 
 - **CF.** Use the regular Workshop CF 1.5.9 or newer (Workshop id 1559212036), one dependency: `JM_CF_Scripts`. `#ifdef CF_MODULES` detects it without a hard dependency. Removing CF from a tree whose storage was written with CF is an observed breakage. Whether adding CF needs a wipe is a hypothesis that was not isolated: isolate first (rebuild with the same storage kept, or copy the storage aside) before rotating `storage_1`.
 - **Expansion** needs CF, Dabs Framework and DayZ-Expansion-Licensed before the Bundle. The ids, the order and the failure without Dabs are in section 8 of `references/dayz-1-30-server-measured.md` in `dayz-mod-workflow` (the one copy to keep current).
@@ -123,7 +123,7 @@ Third-party facts; the mods named are the source.
 
 ## Testing a mod or a server
 
-- **Windows.** In this repo: `/dayz-add-server` once, then `/dayz-launch-test` (a DayZDiag server and client with the same mods), `/dayz-gate` for the scripted gates and `/dayz-logwatch` while you play. The knowledge pack's managed cycle through the dayz-mcp server and its `dayz-test.ps1` template is in `dayz-test-ingame`.
+- **Windows.** In this repo: `/dayz-add-server` once, then `/dayz-launch-test` (a DayZDiag server and client with the same mods), `/dayz-gate` for the scripted gates and `/dayz-logwatch` while you play. The managed cycle through the dayz-mcp server and its `dayz-test.ps1` template is in `dayz-test-ingame`.
 - **Linux.** The native `DayZServer` from a private tree, the retail client headless under Proton, and the self-reporting AutoTest mod: `dayz-test-ingame`, `references/linux-native-server.md` and `references/linux-headless-client.md`. DayZ Tools and DayZDiag under Proton: `skills/_shared/linux-proton.md`.
 - **Either way:** one server per tree, never the default ports, a vanilla boot as the baseline, and a deliberate syntax error as the probe when an override silently does nothing. One server at a time is a limit for hosts with little RAM (about 7.5 GB resident each with the Expansion bundle, measured on Linux), not an engine rule; parallel servers are allowed. Compare each script module the mod adds files to against the vanilla baseline count; an unchanged count in such a module means its scripts did not load.
 

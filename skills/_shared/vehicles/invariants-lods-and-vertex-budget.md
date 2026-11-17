@@ -66,10 +66,10 @@ far-LOD ~98% cross-outward while LOD0 ~17% ⇒ winding inverted. FIX: if stored 
  simple fix first). Root cause on SUB_BRZ: the ladder assembler took the dissolve winding VERBATIM +
  raw +cross normals and skipped the make-consistent pass the shell goes through → res=2 shipped
  see-through, `outward=38.9%` was printed and ignored, no offline gate. GATE any baked far-LOD by census-vs-LOD0
- BEFORE deploy — Blender cannot judge DayZ winding (right- vs left-handed cull). Instrument
- replicates consumer ORDER: culling runs BEFORE depth test; group
- hits at t_min+epsilon and ask whether ANY face camera, and reread controls when
- fix changes geometry class that instrument resolves.
+ BEFORE deploy — Blender cannot judge DayZ winding (right- vs left-handed cull). The measuring
+ instrument must follow the engine's ORDER: culling runs BEFORE the depth test, so group the
+ hits at t_min+epsilon and ask whether ANY of them faces the camera, and re-read the controls
+ whenever a fix changes the class of geometry the instrument resolves.
 
 > History of the superseded text: `history/superseded-family-b-rules.md`, section "Invariant 13".
 

@@ -16,7 +16,7 @@ Compare the names one to one, character by character, across the three files bef
 
 ## Reading inputs on the server: SyncedValue
 
-The shipped helicopters with a server side solver (SIB and RFFS) read the pilot's inputs on the server through the crew member's input interface. The source notes list MH6 with them, though its recovered flight script reads on the owner (next section):
+The shipped helicopters with a server side solver (SIB and RFFS) read the pilot's inputs on the server through the crew member's input interface. MH6 reads on the owner instead (next section):
 
 - `CrewMember(0)` returns the pilot (`P:\scripts\3_game\vehicles\transport.c:187`), and `GetInputInterface()` returns that player's `UAInterface` (`P:\scripts\3_game\entities\man.c:19`).
 - `SyncedValue(string action, bool check_focus = true)` returns the action state as a float, 0 or 1 for a button and `<0, 1>` for an analog axis with deadzones applied (`P:\scripts\3_game\inputapi\uainput.c:116-120`). Two opposing actions make one channel from -1 to 1: `right - left`.

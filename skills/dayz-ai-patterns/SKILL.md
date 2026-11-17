@@ -12,10 +12,10 @@ Follow `skills/_shared/dayz-conventions.md`. This skill is reference only; it ru
 
 Two kinds of material are in here, and they are checked differently:
 
-- **Expansion AI patterns.** Twelve patterns that make up the core of how DayZ Expansion's AI module (eAI) works, read by the knowledge pack's author in the DayZ Expansion scripts (`salutesh/DayZ-Expansion-Scripts`, commit `8f75d554fda209b257c00deb8f01c181e67c980a`). It is third-party code and none of it is on `P:\`. The knowledge pack reports every `path:line` as confirmed against that commit; not yet checked for Agentic-Z, and not checked against any later Expansion version.
+- **Expansion AI patterns.** Twelve patterns that make up the core of how DayZ Expansion's AI module (eAI) works, as they stand in the DayZ Expansion scripts at commit `8f75d554fda209b257c00deb8f01c181e67c980a`. This is third-party mod behaviour, not vanilla, and none of it is on `P:\`. Every `path:line` refers to that commit; the lines are not yet checked, and do not hold for any later Expansion version.
 - **Vanilla 1.30 AI facts.** Noise, the infected cower state and animal groups, each cited to the file on `P:\`.
 
-Nothing is copied from another mod. The Expansion patterns are described in our own words so you can debug a server that runs Expansion AI and borrow the ideas; code for a user's mod is written fresh against vanilla, as `skills/_shared/ai/patrols-and-guards.md` says. For a mod that extends Expansion itself, also read `skills/_shared/enscript/integrations/expansion_style.md`.
+The Expansion patterns are described in prose, with no Expansion code reproduced, so you can debug a server that runs Expansion AI and borrow the ideas; code for a user's mod is written fresh against vanilla, as `skills/_shared/ai/patrols-and-guards.md` says. For a mod that extends Expansion itself, also read `skills/_shared/enscript/integrations/expansion_style.md`.
 
 ## What to read
 
@@ -46,7 +46,7 @@ File names are relative to the Expansion scripts repository; the full paths are 
 | PC-17 | Group targets: distribution by who already tracks a target | `eAIGroup.c:726`, `eAIBase.c:3497-3505` |
 | PC-18 | Formation positions cached per unit, refreshed every 2 to 4 s | `eAIGroup.c:822-830` |
 
-PC-2, PC-7 and PC-9b are the Expansion AI instances of general server scheduling rules (a budget per frame, an interval that adapts to load, staggering by index). The general rules for our own code are in `skills/_shared/ai/spawning-and-performance.md` ("Server performance") and `skills/_shared/enscript/patterns/scheduler.md`; the knowledge pack's write-up is the server performance reference of its `enforce-script-reference` skill, which also holds its rules on `#ifdef SERVER` against `IsServer()` checks and the `ScriptInvoker` lifecycle (hard rules 17 to 20 and 28 there).
+PC-2, PC-7 and PC-9b are the Expansion AI instances of general server scheduling rules (a budget per frame, an interval that adapts to load, staggering by index). The general rules for our own code are in `skills/_shared/ai/spawning-and-performance.md` ("Server performance") and `skills/_shared/enscript/patterns/scheduler.md`. The longer write-up is `skills/enforce-script-reference/references/server-performance.md`, which also covers `#ifdef SERVER` against `IsServer()` checks and the `ScriptInvoker` lifecycle (rules 17 to 20 and 28 in `skills/enforce-script-reference/references/hard-rules.md`).
 
 ### State machine
 
@@ -112,10 +112,10 @@ This is not Expansion AI. Vanilla infected gained `DayZInfectedConstants.MINDSTA
 
 ## Vanilla: animal group templates (since 1.30)
 
-The knowledge pack reports two new group behaviour templates in the Nasdara data (`GroupBehaviourTemplates` in `DZ\data_takistan\aiconfigs\config.cpp:14-132` of his extraction; not yet checked on `P:\`, which has no Nasdara data). They are engine group templates, not Expansion state machines:
+The Nasdara data of 1.30 has two new group behaviour templates (`GroupBehaviourTemplates` in `DZ\data_takistan\aiconfigs\config.cpp:14-132`; not yet checked on `P:\`, which has no Nasdara data). They are engine group templates, not Expansion state machines:
 
-- `DZMouflonGroupBeh`, `type = "DomesticHerbivores"`: a graze and rest life cycle, `safeKeeperIntervalMin` and `safeKeeperIntervalMax`, catch-up radii (his `:16-67`).
-- `DZDogGroupBeh`, `type = "Predators"`: `zoneType = "HuntingGround"`, `siegeAttackCountdownMin` and `Max`, `huntAttackCountdownMin` and `Max`, `safeKeeperIntervalMin` and `Max` (his `:68-127`).
+- `DZMouflonGroupBeh`, `type = "DomesticHerbivores"`: a graze and rest life cycle, `safeKeeperIntervalMin` and `safeKeeperIntervalMax`, catch-up radii (`:16-67`).
+- `DZDogGroupBeh`, `type = "Predators"`: `zoneType = "HuntingGround"`, `siegeAttackCountdownMin` and `Max`, `huntAttackCountdownMin` and `Max`, `safeKeeperIntervalMin` and `Max` (`:68-127`).
 
 `[DESIGN]` A custom map that wants the same packs copies or inherits these classes in its own `aiconfigs` config instead of rebuilding predator or herbivore behaviour in script. The templates that are on `P:\`, and how mission territories bind to them, are in `skills/_shared/ai/animal-territories.md`.
 
@@ -126,14 +126,14 @@ What changed, what breaks, and what to change in a mod. Literal blocks: `referen
 What changed:
 
 - Native noise reduction. New proto `GetEnvironmentNoiseReduction(vector pos)` on `NoiseSystem` (`P:\scripts\3_game\noise.c:12-13`). The debug display reads it (`P:\scripts\4_world\plugins\pluginbase\pluginpresencenotifier.c:155-158`).
-- `class AIParams` gained `snowfallToNoiseMultiplier=5`, `fogToNoiseMultiplier=10`, `windToNoiseMultiplier=10` and `sandstormToNoiseMultiplier=10` (`P:\DZ\data\aiconfigs\config.cpp:12-21`); the knowledge pack reports that 1.29 had the rain and sea keys only. The official changelog says weather handling is native and that `Weather.GetNoiseReductionByWeather` was removed; the method still exists, marked `[Obsolete]` (`P:\scripts\3_game\weather.c:454-467`), next to `GetNoiseReductionByWeatherEx(object)` (`P:\scripts\3_game\weather.c:407-420`).
+- `class AIParams` gained `snowfallToNoiseMultiplier=5`, `fogToNoiseMultiplier=10`, `windToNoiseMultiplier=10` and `sandstormToNoiseMultiplier=10` (`P:\DZ\data\aiconfigs\config.cpp:12-21`); 1.29 had the rain and sea keys only (not checkable on `P:\`, which holds 1.30). The official changelog says weather handling is native and that `Weather.GetNoiseReductionByWeather` was removed; the method still exists, marked `[Obsolete]` (`P:\scripts\3_game\weather.c:454-467`), next to `GetNoiseReductionByWeatherEx(object)` (`P:\scripts\3_game\weather.c:407-420`).
 - Vanilla infected: `MINDSTATE_COWER` for sandstorms; the sync range of `m_MindState` ends at 5.
-- The Nasdara animal group templates `DZMouflonGroupBeh` and `DZDogGroupBeh` (reported, see above).
+- The Nasdara animal group templates `DZMouflonGroupBeh` and `DZDogGroupBeh` (not yet checked on `P:\`, see above).
 - The official changelog says the navmesh file format has no backward compatibility, so custom terrains must regenerate their navmesh (this matters to PC-15 and PC-16), and that a navmesh can use a hide animation source through the EntityType navmesh config. Not checked on `P:\`.
 
 What breaks in an AI or stealth mod written for 1.29:
 
-1. A compile warning from `[Obsolete("Use Weather.GetNoiseReductionByWeatherEx instead!")]` if it still calls `GetNoiseReductionByWeather` or `NoiseAIEvaluate.GetNoiseReduction`.
+1. A compile warning from the `[Obsolete(...)]` attribute if it still calls `Weather.GetNoiseReductionByWeather` (`P:\scripts\3_game\weather.c:454`) or `NoiseAIEvaluate.GetNoiseReduction` (`P:\scripts\4_world\static\sensesaievaluate.c:92`).
 2. Overriding `GetNoiseReductionByWeather` no longer changes what engine infected and animals hear; they hear the native `AIParams` curve.
 3. Passing a weather based multiplier into `AddNoise` while the engine also applies its own reduction lowers the noise twice.
 4. On a custom terrain, old navmesh files will not load (per the changelog).
@@ -146,7 +146,7 @@ Checklist for moving a mod to 1.30:
 - [ ] Call `AddNoise(entity, params)` without folding weather into `external_strenght_multiplier`.
 - [ ] If you spawn custom infected, keep the `m_MindState` sync range wide enough for `MINDSTATE_COWER` (5).
 - [ ] Custom maps: regenerate the navmesh. Copy or inherit `DZMouflonGroupBeh` or `DZDogGroupBeh` if you want those packs.
-- [ ] The Expansion patterns PC-5 to PC-18 were read in the Expansion scripts as they were at commit `8f75d554`, before 1.30. Treat their line numbers as research on that version and read the current Expansion scripts before relying on one.
+- [ ] The Expansion patterns PC-5 to PC-18 were read in the Expansion scripts as they were at commit `8f75d554`, before 1.30. Treat their line numbers as valid for that version only and read the current Expansion scripts before relying on one.
 
 ## Building, testing and publishing
 

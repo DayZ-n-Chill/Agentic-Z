@@ -82,7 +82,7 @@ class LayoutViewerTests(unittest.TestCase):
             self.assertEqual(canvas, {"width": width, "height": height})
 
     def test_visible_zero_is_not_shown(self) -> None:
-        """v1 used `int(attr or 1)`, which turns authored 0 into 1."""
+        """Reading the flag as `int(attr or 1)` would turn authored 0 into 1."""
         html = viewer.build_preview_html(FIXTURE)
         self.assertIn(".hidden-w{display:none}", html)
         self.assertIn("g.visible?'':' hidden-w'", html)

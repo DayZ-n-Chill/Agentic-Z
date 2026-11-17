@@ -1,9 +1,9 @@
 # py3d rollout — wheel restock + pinned preimage
 
 > Status: py3d 1.4.0 patch intake is CLOSED (2026-09-02); what is active
-> is restocking of vendored wheel.
+> is restocking of the bundled wheel.
 > Preimage: `live-snapshot-2026-09-02`, re-read against live skills root.
-> Distribution: vendored wheel per skill; this decision is not modified here.
+> Distribution: one bundled wheel per skill; this decision is not modified here.
 
 ## Restock the wheel (the command)
 
@@ -28,7 +28,7 @@ This directory contains a fail-closed operation. There are no full projections n
 - `preimage-manifest.json`: 6 paths with SHA-256 of live preimage, all `not_applicable`. Only detect drift; none are written.
 - `patches/`: the four py3d 1.4.0 patches, kept as record. None remain live (see "Closed patch intake"); applicator patch engine remains active and covered by `scripts/tools/py3d/rollout/tests/test_apply_rollout.py`.
 - `wheel-manifest.json`: v2 identity of wheel, including its version and SHA-256.
-- `patched/`: deliberately removed. Restoring it would reopen the full replacement route that caused BUG-018/BUG-019.
+- `patched/`: deliberately removed. Restoring it would reopen the full replacement route, which overwrote whole skill files instead of patching them.
 
 ## Classification by target
 
@@ -37,8 +37,8 @@ This directory contains a fail-closed operation. There are no full projections n
 | `dayz-model-pipeline/SKILL.md` | `retired` | Patch raised minimum to 1.4.0 and live already declares `>= 1.6.0` (`SKILL.md:113,119,122`): applying it would be a regression. |
 | `dayz-model-pipeline/references/py3d-direct-generation.md` | `not_applicable` | Projection contains no new 1.4.0 delta; replacing it would remove conditional winding and DayZ-canonical LOD resolutions. |
 | `dayz-3d-viewer/SKILL.md` | `not_applicable` | Contains no new 1.4.0 API; its differences are destructive divergence from live. |
-| `dayz-p3d-inspector/SKILL.md` | `not_applicable` | No separable delta from 1.4.0; SP-028 is preserved. |
-| `dayz-p3d-audit/SKILL.md` | `not_applicable` | Does not provide 1.4.0; SP-017, SP-051 and the 13 Silent Killers are preserved. |
+| `dayz-p3d-inspector/SKILL.md` | `not_applicable` | No separable delta from 1.4.0; the live text is kept as it is. |
+| `dayz-p3d-audit/SKILL.md` | `not_applicable` | Does not provide 1.4.0; the live rules and the 13 Silent Killers are preserved. |
 | `dayz-p3d-audit/scripts/audit_p3d.py` | `not_applicable` | Projection is a strict subset of live: 7 of 15 functions; all 15 are preserved, including `check_wheel_slot_firegeo`. |
 | `dayz-pbo-build/references/validation-scripts.md` | `not_applicable` | Contains no 1.4.0 delta; projected changes belong to another scope. |
 | `dayz-proxy-align/SKILL.md` | `retired` | Live declares `>= 1.6.0` (`SKILL.md:37,40`), already has `add / inspect / align / remove` cycle (`SKILL.md:49`) and preserves **on purpose** patch delta under "py3d 1.4.0 lifecycle (plugin projection, historical)" (`SKILL.md:92`). Not lost: relabeled. |
@@ -46,6 +46,8 @@ This directory contains a fail-closed operation. There are no full projections n
 | `dayz-animation-pipeline/SKILL.md` | `retired` | Already applied in live (`git apply --reverse --check` exits 0) and live minimum is `>= 1.6.0` (`SKILL.md:16`). |
 
 The six `not_applicable` remain in manifest: although not written, their hash is checked to detect preimage drift. No empty patch is fabricated.
+
+Targets are relative to `-TargetSkillRoot`, and the hashes and `SKILL.md` line numbers above are those of the `live-snapshot-2026-09-02` skills root. `dayz-pbo-build` is not a skill of this repository; the applicator skips a skill folder that is absent. This repository's own `skills/` has changed since that snapshot: a full run against it (without `-WheelOnly`) stops in preflight with a preimage mismatch on the five entries whose skill is present, and writes nothing.
 
 ## Closed patch intake (2026-09-02)
 
@@ -84,9 +86,10 @@ For each textual target, preflight produces one of these decisions:
 - `[FAIL] preimage mismatch`: includes path, expected and observed SHA-256; entire operation aborts.
 
 Any preflight failure prevents creating backups or modifying targets. Before the first change, all files to be patched are copied to the external backup and reread by SHA-256. After that I/O, the preimage check is repeated to close the concurrent change window.
-## Vendored wheel
 
-The mechanism remains a vendored copy in `wheels/` across consuming skills. `$WheelSkillNames` is the CANDIDATE set (seven); a skill is restocked only where its `wheels/` directory ALREADY exists, and the applicator prints `[SKIP] not vendored: <skill>` where it does not. The script restocks, never deciding that a skill should start vendoring: as of 2026-09-02 four vendor (`dayz-3d-viewer`, `dayz-animation-pipeline`, `dayz-p3d-inspector`, `dayz-proxy-align`) and the other three declare `pip install -e tools/py3d` in their own dependency block. The applicator hardens three properties:
+## Bundled wheel
+
+The mechanism is a copy of the wheel in the `wheels/` folder of each consuming skill. `$WheelSkillNames` is the CANDIDATE set (seven); a skill is restocked only where its `wheels/` directory ALREADY exists, and the applicator prints `[SKIP] no wheels folder: <skill>` where it does not. The script restocks, never deciding that a skill should start carrying a wheel. In this repository no skill under `skills/` has a `wheels/` folder (the skills load py3d from `scripts/tools/py3d`, or from `python -m pip install -e scripts/tools/py3d`), so a `-WheelOnly -NoWrite` run against `skills/` plans 0 changes; the restock is for skill trees installed elsewhere that carry the wheel. The applicator hardens three properties:
 
 1. wheel backups reside under `-BackupRoot`, outside skills;
 2. each copy with pinned name must match `wheel-manifest.json` SHA-256, or it aborts without overwriting it;
@@ -96,20 +99,21 @@ If installing or replacing a wheel is needed, `../dist/<pinned filename>` is als
 
 ### Identity gate
 
-`scripts/tools/py3d/dist/` is gitignored: the pinned wheel lives on the machine that built it, and `wheel-manifest.json` is its tracked identity. Current pin: `py3d_dayz-1.10.1-py3-none-any.whl` (`c9f000a5...`), sealed on 2026-10-03 at the owner's explicit request ("seal 1.10.1 and port it to the fork") from the source on main at `ea7b396`, where `tools/py3d` is as #78 left it (`9c89864`). Since the 1.9.0 pin, that source adds `ERR_COMPONENT_COVERAGE` (#72, 1.10.0) and the winding messages' part-by-part normals step (#78, 1.10.1); the CHANGELOG has the details. Before resealing, the same script rebuilt the 1.9.0 pin (`33d8b5ba...`) byte for byte from the commit that sealed it (`4626f4b`), so the toolchain (Python 3.14.3, setuptools 83.0.0) is the one that sealed it; then `-UpdateManifest` built 1.10.1 twice to the same hash, and check runs without it, one before and one after, built it four more times to that hash. The wheel's `py3d/` files and `LICENSE` are byte-identical to the source; its long description is `README.md` with CRLF line endings, as setuptools writes METADATA on Windows. `verify-wheel-restock.ps1` passed against it (tests A-C and E on synthetic skill roots; the negative control D needs `-BaselineScript` and did not run). Nothing was restocked: checked the same day, no installed skill tree vendors a `wheels/` directory. The applicator, dry-run (`-WheelOnly -NoWrite`) on temporary copies of every skill root on the build machine that holds a candidate skill, planned 46 replacements, all in trees this rollout does not manage (the desktop app's own plugin copies, at 1.2.0 and 1.4.0, and the skill copies another local agent imported, at 1.7.0), and wrote nothing. The user site-packages install follows the merge, at the owner's request. The previous pin, 1.9.0 (`33d8b5ba...`), was sealed on 2026-10-02 from the source on main at `62c3dcc` (#37, #40, #46 and #54 since the 1.8.0 pin), after rebuilding the 1.8.0 pin (`e7184429...`) byte for byte; its wheel stays on the build machine as the rollback. The pin before it, 1.8.0 (`e7184429...`), was sealed on 2026-10-01 for the Blender -> DayZ change and resealed on 2026-10-02 after a docstring fix, after rebuilding the 1.7.0 pin (`96bb546b...`) byte for byte.
+`scripts/tools/py3d/dist/` is gitignored: the pinned wheel lives on the machine that built it, and `wheel-manifest.json` is its tracked identity. The pin is `py3d_dayz-1.10.1-py3-none-any.whl` (`c9f000a5...`), sealed on 2026-10-03 with Python 3.14.3 and setuptools 83.0.0. Since the 1.9.0 pin its source adds `ERR_COMPONENT_COVERAGE` (1.10.0) and the winding messages' part-by-part normals step (1.10.1). Before that seal, the same script rebuilt the 1.9.0 pin (`33d8b5ba...`) byte for byte, so the toolchain is the one that sealed it; then `-UpdateManifest` built 1.10.1 twice to the same hash, and check runs without it, one before and one after, built it four more times to that hash. The sealed wheel's `py3d/` files and `LICENSE` were byte-identical to the source of that day; its long description is `README.md` with CRLF line endings, as setuptools writes METADATA on Windows. `verify-wheel-restock.ps1` passed against it (tests A-C and E on synthetic skill roots; the negative control D needs `-BaselineScript` and did not run). The previous pin, 1.9.0 (`33d8b5ba...`), was sealed on 2026-10-02 after rebuilding the 1.8.0 pin (`e7184429...`) byte for byte. The pin before it, 1.8.0 (`e7184429...`), was sealed on 2026-10-01 for the Blender -> DayZ change and resealed on 2026-10-02 after a docstring fix, after rebuilding the 1.7.0 pin (`96bb546b...`) byte for byte.
 
-Do not run `-UpdateManifest` or edit `wheel-manifest.json` to bypass a mismatch. Resealing identity is an explicit user decision. If source wheel is missing or hash does not match, applicator aborts without overwriting any vendored copy.
+The source in this folder has changed since the 1.10.1 seal: `py3d/__init__.py`, `py3d/__main__.py`, `README.md`, `pyproject.toml` and `setup.py` were edited (comments, docstrings, messages and the package description; no behaviour), and they go into the wheel. So a build from this source no longer has the pinned hash, `build-wheel.ps1` reports the mismatch, and the pin has to be resealed with `-UpdateManifest` before a wheel built here can be restocked. That reseal has not been done.
 
-What the 1.10.1 seal did NOT check: that another machine reproduces the hash, or a restock of an installed tree (none vendors the wheel; the trees the dry-run planned are not managed here and were not written). The 1.9.0 seal did not check those either. The 1.8.0 reseals were not checked on another machine either, and their applicator was only dry-run (`-WheelOnly -NoWrite`) against a temporary root holding one skill that vendors 1.7.0: it planned that one replacement and wrote nothing.
+Do not run `-UpdateManifest` or edit `wheel-manifest.json` to bypass a mismatch. Resealing identity is an explicit user decision. If source wheel is missing or hash does not match, applicator aborts without overwriting any copy in a skill.
+
+What the 1.10.1 seal did NOT check: that another machine reproduces the hash, or a restock of an installed skill tree. The 1.9.0 seal did not check those either. The 1.8.0 reseals were not checked on another machine either, and their applicator was only dry-run (`-WheelOnly -NoWrite`) against a temporary root holding one skill with a 1.7.0 wheel: it planned that one replacement and wrote nothing.
 
 ## Maintenance checks
 
 From the repository root:
 
 ```powershell
-python -m pytest -q
+python -m pytest -q scripts\tools\py3d
 python -m pytest -q scripts\tools\py3d\rollout\tests\test_apply_rollout.py
-python -m packctl validate --root . --report .\reports\validate-session2.json
 ```
 
 To inspect the reproducible gate without resealing:
@@ -128,4 +132,4 @@ Expected failure must display `expected=<pinned sha256>` and `actual=<reproducib
 - Never use the snapshot as target; always copy it to temporary location.
 - Never locate backup inside skills root.
 - Preimage or wheel drift is a blocker, not an invitation to overwrite.
-- `packctl` and any installation redesign remain outside this rollout.
+- Any installation redesign remains outside this rollout.

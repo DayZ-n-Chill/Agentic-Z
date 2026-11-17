@@ -62,13 +62,12 @@ When invoked on a task, an agent should:
 ├── AGENTS.md                           # L1 rules (Codex reads this)
 ├── GEMINI.md                           # L1 rules (Gemini reads this)
 ├── docs/                               # this folder
-├── evals/                              # answer tests per agent, plus the imported cases/ and live/ cases (see docs/evals.md)
+├── evals/                              # answer tests per agent, plus the mechanical cases/ and the live/ cases (see docs/evals.md)
 ├── mods/agentic-z-panel/               # Claude Code panel plugin (one-click DayZ buttons)
 ├── scripts/                            # ad-hoc helper scripts
 │   ├── setup/, dayz/, dev/             # .bat wrappers around the skills, grouped by audience
-│   ├── tools/                          # offline Python tools from the knowledge pack (see docs/knowledge-pack-tools.md)
-│   └── dev/knowledge-pack/             # the knowledge pack's own tooling, packctl (see docs/knowledge-pack-maintenance.md)
-├── THIRD_PARTY_NOTICES.md              # licenses of the material brought in from other projects
+│   ├── tools/                          # offline Python tools (see docs/knowledge-pack-tools.md)
+│   └── dev/knowledge-pack/             # packctl: validation, packaging and promotion tooling (see docs/knowledge-pack-maintenance.md)
 ├── workspace/                          # in-progress mods (workspace/<ModName>/)
 ├── .server/                            # local test-server instances (.server/<instance>/)
 └── output/                             # one-shot deliverables
@@ -211,9 +210,9 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | [`/dayz-p3d-audit`](../skills/dayz-p3d-audit/SKILL.md) | Audit `.p3d` models for collision, action targeting, physics, animation issues |
 | [`/dayz-particles`](../skills/dayz-particles/SKILL.md) | Particle effect creation (`.ptc` / `.emat`) without Workbench |
 
-### Knowledge pack skills
+### Reference and pipeline skills
 
-These 41 skills came in with the DayZ Modding Knowledge Pack. Most are reference skills: the agent loads one when a task touches its topic, and reads the reference file the skill points at. Some also ship offline scripts. [`compatibility-matrix.md`](compatibility-matrix.md) says which DayZ build each one was checked on and how.
+Most of these 41 skills are reference skills: the agent loads one when a task touches its topic, and reads the reference file the skill points at. Some also ship offline scripts. [`compatibility-matrix.md`](compatibility-matrix.md) says which DayZ build each one was checked on and how.
 
 #### Vehicles
 
@@ -277,7 +276,7 @@ These 41 skills came in with the DayZ Modding Knowledge Pack. Most are reference
 | [`/dayz-feature-spec`](../skills/dayz-feature-spec/SKILL.md) | Define and quality-gate a feature before it is implemented: success criteria, Given/When/Then scenarios and a forward contract for every name the next phase uses |
 | [`/dayz-test-ingame`](../skills/dayz-test-ingame/SKILL.md) | Reference for testing in the running game: the build, deploy and launch cycle with `-filePatching`, server and mission config, scripted test cells and the AutoTest mod |
 | [`/dayz-mcp-verify`](../skills/dayz-mcp-verify/SKILL.md) | Test a mod in the running game through the dayz-mcp MCP server: spawn, capture, raycast and read telemetry, then write a PASS or FAIL report. Needs DayZ-MCP, which is optional and installed separately ([`dayz-mcp.md`](dayz-mcp.md)) |
-| [`/dayz-pbo-reverse-engineering`](../skills/dayz-pbo-reverse-engineering/SKILL.md) | Study a mod somebody else built: classify its PBOs from their headers, extract them with Mikero ExtractPbo, and sweep for patterns with a `path:line` ledger |
+| [`/dayz-pbo-reverse-engineering`](../skills/dayz-pbo-reverse-engineering/SKILL.md) | Study a mod somebody else built: classify its PBOs from their headers, extract them with ExtractPbo, and sweep for patterns with a `path:line` ledger |
 | [`/systematic-debugging`](../skills/systematic-debugging/SKILL.md) | Find the root cause of a failure before any fix is proposed: observe, trace, test one hypothesis, make one change |
 | [`/task-observer`](../skills/task-observer/SKILL.md) | Watch a work session for ways to improve skills: log corrections and repeated workflows as observations, and review them into staged skill updates |
 
@@ -312,7 +311,7 @@ These 41 skills came in with the DayZ Modding Knowledge Pack. Most are reference
 | Command | Purpose |
 |---|---|
 | [`/sync-skills`](../.claude/skills/sync-skills/SKILL.md) | Link `skills/` and `.claude/skills/` into each agent CLI's home dir. Required after clone |
-| [`/agentic-z-update`](../.claude/skills/agentic-z-update/SKILL.md) | Pull upstream template improvements into your clone without touching `workspace/` |
+| [`/agentic-z-update`](../.claude/skills/agentic-z-update/SKILL.md) | Pull the latest template improvements into your clone without touching `workspace/` |
 | [`/docs-sync`](../.claude/skills/docs-sync/SKILL.md) | Detect drift between canonical sources and the React wiki; `--apply` writes mirrors |
 | [`/clean-repo`](../.claude/skills/clean-repo/SKILL.md) | Orchestrator — run every domain's cleanup skill |
 
@@ -356,14 +355,13 @@ Skills also carry their own packs in `<skill>/references/`.
 
 | Path | What it holds |
 |---|---|
-| `scripts/tools/` | The offline Python tools that came with the knowledge pack: the script validator `/dayz-lint` runs as its second stage, the DayZ fork of py3d, model, layout and animation-format checkers, and viewers. [`knowledge-pack-tools.md`](knowledge-pack-tools.md) says what each does and picks one by symptom or task |
-| `scripts/dev/knowledge-pack/` | The knowledge pack's own validation, packaging and promotion tooling (`packctl`) with its tests. [`knowledge-pack-maintenance.md`](knowledge-pack-maintenance.md) explains it |
-| `evals/` | Answer tests per agent, plus the knowledge pack's `cases/` and `live/` cases. See [`evals.md`](evals.md) |
-| [`compatibility-matrix.md`](compatibility-matrix.md) | Which DayZ build each imported skill was checked on and how |
+| `scripts/tools/` | The offline Python tools: the script validator `/dayz-lint` runs as its second stage, py3d for DayZ `.p3d` files, model, layout and animation-format checkers, and viewers. [`knowledge-pack-tools.md`](knowledge-pack-tools.md) says what each does and picks one by symptom or task |
+| `scripts/dev/knowledge-pack/` | The validation, packaging and promotion tooling (`packctl`) with its tests. [`knowledge-pack-maintenance.md`](knowledge-pack-maintenance.md) explains it |
+| `evals/` | Answer tests per agent, plus the mechanical `cases/` and the `live/` cases. See [`evals.md`](evals.md) |
+| [`compatibility-matrix.md`](compatibility-matrix.md) | Which DayZ build each skill was checked on and how |
 | [`dayz-mcp.md`](dayz-mcp.md) | The optional DayZ-MCP server for in-game automation, installed separately |
-| [`knowledge-pack-product-spec.md`](knowledge-pack-product-spec.md) | The product definition the knowledge pack was built against, with what is finished and what is open |
-| [`knowledge-pack-authoring-lessons.md`](knowledge-pack-authoring-lessons.md) | Rules for writing skills, helper scripts and tests, each from a defect the knowledge pack shipped and fixed |
-| [`../THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) | The licenses of the material brought in from other projects, with upstream, copyright line and paths |
+| [`knowledge-pack-product-spec.md`](knowledge-pack-product-spec.md) | The product definition for the reference skills and tools, with what is finished and what is open |
+| [`knowledge-pack-authoring-lessons.md`](knowledge-pack-authoring-lessons.md) | Rules for writing skills, helper scripts and tests, each from a defect that shipped and was fixed |
 
 ## DayZ agents
 

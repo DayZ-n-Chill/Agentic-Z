@@ -21,14 +21,14 @@ Choose the route by where the asset came from and how it is built, not by its sy
 
 | What you have | Route | Files to open on day 0 |
 |---|---|---|
-| A new car ripped from a source game (a "Grub source-game car" in the notes), split into proxies, with doors or other moving parts (family B) | The rip-vehicle-import skill (`<skill-dir>\..\rip-vehicle-import\`). Follow only its adapter, golden and allowlist. | This table, that skill's `SKILL.md`, then the asset's own `asset-contract.json`. The schema, the Blender export and the primitive are machine inputs, not more documents to maintain. |
+| A new car ripped from a racing game (a Grub rip), split into proxies, with doors or other moving parts (family B) | The rip-vehicle-import skill (`<skill-dir>\..\rip-vehicle-import\`). Follow only its adapter, golden and allowlist. | This table, that skill's `SKILL.md`, then the asset's own `asset-contract.json`. The schema, the Blender export and the primitive are machine inputs, not more documents to maintain. |
 | An asset already in flight with a frozen plan or runbook | That runbook. Do not migrate it here. | Whatever its current plan cites. |
 | Any other vehicle: authored from scratch, an OBJ import, a port from another mod or game | The tables below. | The one pack file the current step needs. |
 | A family B asset whose adapter is missing | Stop and report. Do not improvise a route from the pack. | None. |
 
 Everything below the route table is a diagnostic atlas, not the day 0 path. Open a file only when the adapter or a symptom points at it.
 
-Before re-importing or re-assembling any piece, measure whether the piece is complete, face for face, against the model already packed. A mesh that looks rotten is usually complete, and the defect lies elsewhere (SP-193, in `rip-panel-open-rim.md` of the pack).
+Before re-importing or re-assembling any piece, measure whether the piece is complete, face for face, against the model already packed. A mesh that looks rotten is usually complete, and the defect lies elsewhere (`rip-panel-open-rim.md` of the pack).
 
 ## How to run
 
@@ -190,13 +190,13 @@ All files are in `skills/_shared/vehicles/`. Open only the one the current step 
 | Question | File |
 |---|---|
 | The iteration budget, calibrating a gate before trusting it, what a PASS covers, the habits that stop re-deriving known causes | `method-and-gate-calibration.md` |
-| Negative fixtures for import gates, rules promoted from the lessons corpus, a config gate is not a visual gate | `process-gates.md` |
+| Negative fixtures for import gates, rules promoted from recurring lessons, a config gate is not a visual gate | `process-gates.md` |
 | The superseded diagnostic order, kept for vehicles already in flight | `history/legacy-gate-ladder.md`, `history/pre-change-0-gate-ladder.md` |
 | The exact text of rules that were later corrected | `history/superseded-family-b-rules.md` |
 
 ## Numbered invariants
 
-The field notes number the checks that recur on every vehicle. They were each won on one project and then re-derived from scratch on the next because they had not been written down in time, so check them up front. Other files cite them as "invariant N", "preflight #N" or "#N".
+The checks that recur on every vehicle are numbered. Each one is easy to miss and costly to re-derive, so check them up front. Other files cite them as "invariant N", "preflight #N" or "#N".
 
 | Number | File |
 |---|---|
@@ -216,13 +216,13 @@ Items 3, 12 and 21 moved to the family B cookbooks of the rip-vehicle-import ski
 
 ## Cite, then verify
 
-Vehicle config and model values are easy to half-remember. Before writing a class name, a property or a named selection, Grep it in vanilla under `P:\DZ\vehicles\` or in the source a pack file cites, and keep the provenance labels the pack files use (`[Landrover ✓]`, `[QuadBike]`, `[LFQuad ✓]`, `[TBD-verify]`). Anchor a new vehicle lesson to a real file with `path:line`, never to memory.
+Vehicle config and model values are easy to half-remember. Before writing a class name, a property or a named selection, Grep it in vanilla under `P:\DZ\vehicles\` or in the file a pack file cites. Anchor a new vehicle lesson to a real file with `path:line`, never to memory, and mark a value that could not be checked as "not yet checked on `P:\`".
 
 ## On Linux
 
 Everything above is the Windows workflow. On Linux the Proton setup, the measured tool matrix and the pitfalls are in the shared Linux and Proton notes (`skills/_shared/linux-proton.md`); this section only says what changes for vehicle work.
 
-- Pack, sign and binarize with dayzmake 1.0.0 or later, a DayZ fork of armake2 (https://github.com/bzed/dayzmake), pinned to `v1.0.0`: `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. Upstream armake2 is no substitute: it is built for Arma, its V3 file hash leaves out `*.c` files (dayzmake v1.0.0 includes them) and it lacks the DayZ-only functions dayzmake keeps adding. The shared script `skills/_shared/scripts/dayz-mod-pack.sh` wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`). A textured cube built this way on 2026-11-03 matched BI binarize from a `P:` root byte for byte; that is not an in-game ODOL check.
+- Pack, sign and binarize with dayzmake 1.0.0 or later, a DayZ fork of armake2 (the shared Linux notes say how to install it): `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. Plain armake2 is no substitute: it is built for Arma, its V3 file hash leaves out `*.c` files (dayzmake v1.0.0 includes them) and it lacks the DayZ-only functions dayzmake keeps adding. The shared script `skills/_shared/scripts/dayz-mod-pack.sh` wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`). A textured cube built this way on 2026-11-03 matched BI binarize from a `P:` root byte for byte; that is not an in-game ODOL check.
 - `P:\` is a plain directory mapped by the shared script `dayz-proton.sh init <dir>` (`skills/_shared/scripts/dayz-proton.sh`); a `P:\<Mod>\...` path in the pack is `<dir>/<Mod>/...`.
 - Object Builder and TexView run under Proton: `dayz-proton.sh gui ObjectBuilder <p3d>` and `gui TexView <paa>`. Object Builder opened and displayed a model; editing in it was not exercised. The offline checks are Python and run natively: py3d (`scripts/tools/py3d/`), the model preflight (`scripts/tools/dayz-model-preflight/`) and the 3D viewer (`scripts/tools/dayz-3d-viewer/`).
 - In-game checks: the Linux notes of the `dayz-test-ingame` skill (`skills/dayz-test-ingame/references/linux.md`).

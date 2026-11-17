@@ -64,7 +64,7 @@ this ladder first; each rung is minutes, the full audit is sessions.
 
 1. **Audit the UVs, not the textures.** Exact SAT overlap + island count + density
    (the uv-clean-atlas skill). Overlap > 0, atomised islands (2-4 faces each) or wildly
-   uneven density means the problem is upstream of any `.rvmat` — no material wiring fixes it.
+   uneven density means the problem sits before any `.rvmat` in the chain — no material wiring fixes it.
 
    **No-overlap means an exact `SAT=0` (added 2026-08-31).** A Monte-Carlo
    estimate has a measured nonzero floor, so its displayed `0%` is not proof. Route

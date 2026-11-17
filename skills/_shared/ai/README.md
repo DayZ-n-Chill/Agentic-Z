@@ -1,6 +1,6 @@
 # AI pack
 
-Reference for computer controlled characters: infected, animals, and patrols or guards built on them. Written in our own words from the vanilla files on `P:\`; every fact cites the file it came from. Used by `dayz-ai-specialist`; any DayZ worker may load one file when a task needs it.
+Reference for computer controlled characters: infected, animals, and patrols or guards built on them. Facts about the vanilla game cite the vanilla file and line on `P:\`. Used by `dayz-ai-specialist`; any DayZ worker may load one file when a task needs it.
 
 | Question | Open |
 |---|---|
@@ -13,6 +13,6 @@ Reference for computer controlled characters: infected, animals, and patrols or 
 | How is a creature tied to its animation graph, and which commands, variables and bones does the graph use? | `creature-animation.md` |
 | What does a custom infected inherit, what must its model keep for the AI, and what did 1.30 change for infected? | `custom-infected.md` |
 
-Deeper material is in the `dayz-ai-patterns` skill (`dayz-ai-patterns/SKILL.md`): twelve patterns studied in the DayZ Expansion AI module, described in our own words, and the vanilla 1.30 AI changes (native noise reduction, `MINDSTATE_COWER`, `AIParams`, animal group templates).
+Deeper material is in the `dayz-ai-patterns` skill (`dayz-ai-patterns/SKILL.md`): twelve patterns of how the DayZ Expansion AI module works (third-party mod behaviour, not vanilla), and the vanilla 1.30 AI changes (native noise reduction, `MINDSTATE_COWER`, `AIParams`, animal group templates).
 
 Code from other mods is never copied into this pack or into a user's mod. Where a community approach is described, it is described in our own words only.

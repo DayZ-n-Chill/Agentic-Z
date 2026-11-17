@@ -2,7 +2,7 @@
 
 What a passing automated UI check does not tell you, how two layouts with the same widget names make one of them unreachable, why resizing the game window does not test another resolution, and the traps in the probes and harnesses used to check a UI on a running client.
 
-**How facts are marked here.** A `P:\` path with a line was opened and checked on `P:\` (DayZ 1.30). Everything described as measured was measured in game by the source author on DayZ 1.29.163709, mostly on the LFPowerGrid mod (his own); none of it is yet repeated here. The verbs `ui_tree`, `ui_click`, `ui_set_text`, `ui_reload_layout`, `capture_screenshot`, `camera_get` and `logs_since` belong to the DayZ MCP bridge, a third party test harness described in `skills/dayz-mcp-verify/` and `skills/dayz-test-ingame/`; facts about them are harness facts, not game facts. The measurement logs, captures and probe layouts stay with the source author; dates and run labels are kept so a result can be traced.
+**How facts are marked here.** A `P:\` path with a line was opened and checked on `P:\` (DayZ 1.30). Everything described as measured was measured in game on DayZ 1.29.163709, mostly on the sorter panel of a power grid mod; none of it is yet repeated on 1.30. The verbs `ui_tree`, `ui_click`, `ui_set_text`, `ui_reload_layout`, `capture_screenshot`, `camera_get` and `logs_since` belong to the DayZ MCP bridge, a third party test harness described in `skills/dayz-mcp-verify/` and `skills/dayz-test-ingame/`; facts about them are harness facts, not game facts. The measurement logs, captures and probe layouts are not in this repo; the dates tell the measurements apart.
 
 ---
 
@@ -52,27 +52,27 @@ Two different questions need two different readers of a `.layout` file, and neit
 | Question | Tool |
 |---|---|
 | **What** does the widget say (text, color, image, any key)? | `python scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py <layout>` |
-| **Where** is the widget (rect, click center, whether it can be reached)? | A geometry parser. The source author used `layout_ast.py` and `ui_rects.py` from his separate tooling repo, which is **not** part of this repo. Here, `/dayz-layout-preview` draws the rects, and the running game is the reference. |
+| **Where** is the widget (rect, click center, whether it can be reached)? | A geometry reader. `/dayz-layout-preview` draws the rects, and the running game is the reference. |
 
 - `parse.py` collapses an inline `position` into its own format; do not use it for geometry.
-- An older parser, `renderer/parse.py` from the source author's research folder, silently strips `\` from Windows paths. It was replaced by the UI lab tool under `scripts/tools/dayz-ui-lab/`; do not bring it back.
-- `ui_rects.py predict` does not model layouts made only of exact flag widgets (its own header says so). For those, the source author parsed the layout into a flat list with parent and child links and typed attributes, and checked containment, nesting, draw order and `visible 0` by adding up the ancestors' offsets.
-- The offline check for the starting layouts in `<skill-dir>\templates\` is `parse.py --check`. A script named `ui_rect_lint.py` that older notes mention is not part of this repo.
+- A layout parser must keep the `\` in Windows paths; one that strips it silently corrupts every image and font path. The UI lab tool under `scripts/tools/dayz-ui-lab/` keeps it.
+- A rect predictor that works on fractions of the parent does not model layouts made only of exact flag widgets. For those, parse the layout into a flat list with parent and child links and typed attributes, and check containment, nesting, draw order and `visible 0` by adding up the ancestors' offsets.
+- The offline check for the starting layouts in `<skill-dir>\templates\` is `parse.py --check`.
 
 ## What the HTML viewer models and what it does not
 
-`python scripts/tools/dayz-layout-viewer/build_viewer.py <layout>` writes a self contained `.preview.html` with viewport switches for 1080p, 1440p, 21:9 and 720p. Read out of its code by the source author on 2026-08-20 (line numbers are in `scripts/tools/dayz-layout-viewer/dayz_layout_viewer/html_template.py` as he read it; open the file again before relying on a line):
+`python scripts/tools/dayz-layout-viewer/build_viewer.py <layout>` writes a self contained `.preview.html` with viewport switches for 1080p, 1440p, 21:9 and 720p. What its code does (line numbers are in `scripts/tools/dayz-layout-viewer/dayz_layout_viewer/html_template.py`):
 
 - It **does** model text layout: font size from `text_proportion` (`:110-112`), wrapping (`:116`), `text halign` and `text valign` (`:104-105`, `:115`), and it clips with `overflow:hidden` (`:117`).
 - It **cannot** tell you whether **your string** fits, for two reasons. The font is a browser substitute (Bahnschrift, Roboto Condensed or Arial Narrow, `:73`) where the engine uses the Metron bitmap atlases, so glyph widths differ. And a `#STR_` key is drawn as the bracketed key, not the translated sentence (`:107`): run on vanilla's `dialog_input_text.layout`, it shows `#STR_TextInputDialogRoot_MessageText0`. Since production text is always `#STR_` keys, that is the normal case.
 - **It lays exact units out as pixels at every viewport** (`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py:772-775`), while the engine scales them with the screen height (rule 3 in `rules-and-checklist.md`). At any viewport other than 1080p it misplaces exact widgets and everything inside them. Trust those views only for widgets with no exact ancestor. Corrected on 2026-10-03: this step used to say the viewports let you "see exact flag breakage without a build".
 - `wrap` defaults to **1** in the preview (`:116`), so a widget that never declared `wrap` still wraps there. The game does not wrap a `TextWidget` (`text-sizing-and-rendering.md`), so the preview shows two lines where the game clips one.
 
-So: trust it for **where a box is and whether text of that size would overflow it**; never for whether the shipped string fits. That question needs a build. Two older copies of the source skill disagreed here ("structure and anchoring only" against "trust it for text"); neither was right.
+So: trust it for **where a box is and whether text of that size would overflow it**; never for whether the shipped string fits. That question needs a build. Neither "structure and anchoring only" nor "trust it for text" describes it correctly.
 
 ## Clicks on ScriptViews cannot be automated through the MCP bridge
 
-Measured 2026-08-29 with a healthy bridge (version 10 on both sides, `bridge_status ready=true`) on the LFPowerGrid sorter panel, which is a Dabs `ScriptView` and not a `UIScriptedMenu`:
+Measured 2026-08-29 with a healthy bridge (version 10 on both sides, `bridge_status ready=true`) on the power grid mod's sorter panel, which is a Dabs `ScriptView` and not a `UIScriptedMenu`:
 
 - `ui_tree` with an empty `path` returns `no_menu`. The walker looks for the active scripted menu, and a `ScriptView` is not one. There is no widget tree to inspect by that route.
 - `ui_click` returns `not_handled` on buttons that exist and are visible on screen. Why a generic handler search misses a Dabs view is explained in `dabs-framework.md` ("Click dispatch and external automation").
@@ -87,14 +87,14 @@ What this means when you plan a test cycle:
 
 ## Two layouts with the same names
 
-Measured 2026-09-04, with the LFPowerGrid sorter's test variant and its production layout loaded at once. This is the most expensive structural mistake and the easiest to make: copy a `.layout` to make a test or debug variant and leave the widget names as they were.
+Measured 2026-09-04, with the sorter panel's test variant and its production layout loaded at once. This is the most expensive structural mistake and the easiest to make: copy a `.layout` to make a test or debug variant and leave the widget names as they were.
 
 ```
-LFPG_Sorter.layout            185 widgets
-test/LFPG_Sorter_TEST.layout  213 widgets
-names in both                 124    (SorterRoot, SorterPanel, HeaderFrame, BtnCloseX,
-                                      BtnSave, every CatBtnN, every Edit* ...)
-only in the test layout        89    (Builder*, CatchAllRow*, BtnPreview*)
+Sorter.layout            185 widgets
+test/Sorter_TEST.layout  213 widgets
+names in both            124    (SorterRoot, SorterPanel, HeaderFrame, BtnCloseX,
+                                 BtnSave, every CatBtnN, every Edit* ...)
+only in the test layout   89    (Builder*, CatchAllRow*, BtnPreview*)
 ```
 
 A third layout of the same mod (a different screen) also had a `BtnCloseX`.
@@ -105,7 +105,7 @@ Measured consequences:
 - **Scoping by an ancestor does not always save you.** The chain of the test layout's `BtnCloseX` is `SorterRoot`, `SorterPanel`, `HeaderFrame`, `BtnCloseX`, and all three ancestors collide too. No ancestor is unique, so the button cannot be reached by name at all.
 - **The other root only has to exist, not be open.** Creating a view once at mission init and hiding it (rule 9 in `rules-and-checklist.md`) keeps the production root alive for the whole session. The ambiguity is permanent.
 
-**Rule.** Widget names are an API contract (the spec table in `plan-to-implementation.md`). A test or debug variant **prefixes all its names** (`TEST_`, `Dbg_`), or it cannot be addressed. In LFPowerGrid the 89 names found only in the test layout were the only ones that worked; of the 124 shared ones, none did.
+**Rule.** Widget names are an API contract (the spec table in `plan-to-implementation.md`). A test or debug variant **prefixes all its names** (`TEST_`, `Dbg_`), or it cannot be addressed. In that mod the 89 names found only in the test layout were the only ones that worked; of the 124 shared ones, none did.
 
 **A cheap offline check.** Before approving a layout variant, count the names both files share:
 
@@ -138,7 +138,7 @@ Measured 2026-09-04. Before you prefix 227 widgets, check whether **one** is eno
 
 The resolver counts matches **under the scope**. So when the variant's root is unique, its whole tree can be addressed again (`ui_tree`, `ui_click` and `ui_set_text` with `root: "TEST_SorterRoot"`), even though the other names still collide.
 
-In LFPowerGrid that was **one line**: `FrameWidgetClass SorterRoot` became `TEST_SorterRoot` in the test layout. Checked before touching anything: `SorterRoot` appeared exactly twice in the whole mod (the production declaration and the test one), with no string literal in any `.c` file, no `Binding_Name` and no member field. Five more bytes, the same brace balance, and the production file unchanged byte for byte.
+In the sorter panel that was **one line**: `FrameWidgetClass SorterRoot` became `TEST_SorterRoot` in the test layout. Checked before touching anything: `SorterRoot` appeared exactly twice in the whole mod (the production declaration and the test one), with no string literal in any `.c` file, no `Binding_Name` and no member field. Five more bytes, the same brace balance, and the production file unchanged byte for byte.
 
 **Why check that first.** Prefixing everything looks like the obvious fix and is the expensive one. A Dabs MVC view has **three naming systems that overlap**, and renaming widgets touches all three:
 
@@ -197,7 +197,7 @@ The danger is not the reading but the **check**. A window resize to "1280x720" w
 
 ## ESC does not close while an EditBox has focus
 
-Measured 2026-09-04. The ESC handler of the LFPowerGrid sorter view, read in its source:
+Measured 2026-09-04. The ESC handler of the sorter view:
 
 ```c
 Widget focused = GetFocus();
@@ -249,7 +249,7 @@ The same string, same build, same RPT, by two routes:
 
 ## What the UI verbs return
 
-Measured 2026-09-04; a contract change from what the source author's August notes described. `ui_set_text` and `ui_click` now return:
+Measured 2026-09-04; the contract changed from the one measured in August. `ui_set_text` and `ui_click` now return:
 
 ```json
 "ui_request": {
@@ -268,7 +268,7 @@ Measured 2026-09-04; a contract change from what the source author's August note
 
 Measured 2026-09-05 without repacking the mod: every probe layout was loaded from `$profile:`, which is what makes hot reload useful (`hot-iteration.md`).
 
-**Correction: `ui_reload_layout` replaces; it does not stack.** The source skill used to say, in its entry for `hot-iteration.md`, that "a second load stacks instead of replacing". Measured, for this verb, it does not:
+**Correction: `ui_reload_layout` replaces; it does not stack.** An older warning said that "a second load stacks instead of replacing". Measured, for this verb, it does not:
 
 ```
 ui_reload_layout($profile:uiprobe.layout, reload)   twice
@@ -312,11 +312,11 @@ The mechanism works and picks correctly. That confirms the fix above: **a unique
 
 ## Preview and resize rules from the sorter panel session
 
-Measured 2026-08-29 on a `$profile:` preview of the LFPowerGrid sorter (an 820x600 layout, 250 widgets, at 1920x1080 and 1280x720). The rules from that session about text and color are in `text-sizing-and-rendering.md`; these are the ones about verification:
+Measured 2026-08-29 on a `$profile:` preview of the sorter panel (an 820x600 layout, 250 widgets, at 1920x1080 and 1280x720). The rules from that session about text and color are in `text-sizing-and-rendering.md`; these are the ones about verification:
 
 - **Resizing the window from the host is not safe everywhere.** It killed one client at 1942x1136 (the process died, with no script crash) and worked on another at 846x461. The safe way to sweep resolutions is to start the client again with a width and height, and to **check the viewport in the tree**: a request for 1280x720 gave exactly 1280x720 that time, while an earlier run got 846x461 from the same request. The mapping is not stable.
 - **A `$profile:` preview is drawing with no menu behind it.** Clicking the window gives focus to the game and the camera **captures the mouse** (the cursor disappears and no further click arrives). ESC, which opens the vanilla menu, gives it back. No click on a preview widget works; test interaction on the real panel.
-- **Geometry of a layout made only of exact flag widgets** is not modelled by the rect predictor; see "Which offline tool answers which question" above.
+- **Geometry of a layout made only of exact flag widgets** is not modelled by a fraction based rect predictor; see "Which offline tool answers which question" above.
 
 ## Log marker trap
 

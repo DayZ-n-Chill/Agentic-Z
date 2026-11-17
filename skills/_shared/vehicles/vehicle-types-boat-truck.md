@@ -1,10 +1,10 @@
 # Vehicle types: boats and trucks, with notes on quads and motorbikes
 
-What changes when the vehicle is not a four-wheeled `CarScript` car: boats (a sibling of `Car` under `Transport`), trucks (a `CarScript` config with three axles and double wheels), community quads, and the motorbike family that arrived in DayZ 1.30.
+What changes when the vehicle is not a four-wheeled `CarScript` car: boats (a sibling of `Car` under `Transport`), trucks (a `CarScript` config with three axles and double wheels), mod-made quads, and the motorbike family that arrived in DayZ 1.30.
 
-> Status: written from the vanilla scripts and configs on 2026-07-07 and extended for DayZ 1.30. Every citation of a 1.30 file below was opened on this repo's `P:\` (a 1.30 build) during the import; where the note's line number belonged to another build it now reads as on `P:\`. A number marked "1.29" belongs to the 1.29 build, which is not on `P:\`, and is kept as written. A citation written with its full `P:\` path is also checked by the repo tests. `[UNVERIFIED]` marks anything the source does not pin down. "Preflight #N" and "invariant N" mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: written from the vanilla scripts and configs. Every citation of a 1.30 file below was opened on `P:\` (a 1.30 build); a citation without the `P:\` prefix names the same file under `P:\scripts`, `P:\DZ` or `P:\bin`. A number marked "1.29" belongs to the 1.29 build, which is not on `P:\`, and is not yet checked on `P:\`. A citation written with its full `P:\` path is also checked by the repo tests. `[UNVERIFIED]` marks anything the vanilla data does not pin down. "Preflight #N" and "invariant N" mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
 
-The invariant files of this pack are written around the `CarScript` (wheeled) case. This file is the difference for the other `Transport` subclasses: boats, trucks (a car config, not a new class), community quads, and the motorbike gap that 1.30 closed. `class-hierarchy.md` holds the short form of the class tree and `simulation.md` the `SimulationModule` keys; this file adds the per-type detail.
+The invariant files of this pack are written around the `CarScript` (wheeled) case. This file is the difference for the other `Transport` subclasses: boats, trucks (a car config, not a new class), mod-made quads, and the motorbike gap that 1.30 closed. `class-hierarchy.md` holds the short form of the class tree and `simulation.md` the `SimulationModule` keys; this file adds the per-type detail.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -28,7 +28,7 @@ The invariant files of this pack are written around the `CarScript` (wheeled) ca
 ```
 Pawn (FEATURE_NETWORK_RECONCILIATION) / EntityAI
  └─ Transport            transport.c:66-69
-     ├─ Car              car.c:87            → CarScript   carscript.c:1
+     ├─ Car              car.c:87            → CarScript   carscript.c:94
      └─ Boat             boat.c:28           → BoatScript  boatscript.c:41
 ```
 
@@ -39,7 +39,7 @@ Pawn (FEATURE_NETWORK_RECONCILIATION) / EntityAI
   `extends EntityAI` (without) — `scripts\3_game\vehicles\transport.c:66-69`.
 - `class Car extends Transport` — `scripts\3_game\vehicles\car.c:87`.
 - `class Boat extends Transport` — `scripts\3_game\vehicles\boat.c:28`.
-- Scripted layer: `class CarScript` — `scripts\4_world\entities\vehicles\carscript.c:1`.
+- Scripted layer: `class CarScript` — `scripts\4_world\entities\vehicles\carscript.c:94`.
   `class BoatScript : Boat` — `scripts\4_world\entities\vehicles\boatscript.c:41`.
 - Config layer: `class BoatScript: Boat` base at `DZ\vehicles\water\config.cpp:17`;
   concrete `Boat_01_ColorBase: BoatScript` at `:47`. Truck base
@@ -216,7 +216,7 @@ NOT a new class. It is a plain `CarScript` config; the deltas are pure config.
 | Wheel slots | 6 driven hubs `Truck_01_Wheel_1_1..2_3` + 2 spares — `config.cpp:18441-18448` | 4 hubs |
 | Double wheel | Middle+Rear hubs take **`Truck_01_WheelDouble`** — `config.cpp:18128-18141`; its `inventorySlot[]` = the 4 rear slots `1_2,1_3,2_2,2_3`. `width=0.40` (vs single `0.20`), `weight=50000` (vs 30000), better grip/resistance | single `Truck_01_Wheel` |
 | Dual-wheel craft | `Truck_01_Wheel + Truck_01_Wheel → Truck_01_WheelDouble` recipe — `crafttruck01doublewheel.c:27-46`; reverse decraft needs Crowbar/LugWrench → 2 wheels — `decrafttruck01doublewheel.c:36,48-60` | n/a |
-| Crew | **2 seats**: Driver + CoDriver. `Truck_01_Base` declares no `class Crew` of its own and inherits the two-seat one of the config base `CarScript` (`config.cpp:265-283`); its script maps only seats 0 and 1 (`truck_01_base.c:130-138`). *(Corrected on import: the note read "4 seats: Driver + CoDriver + Cargo1 + Cargo2" and cited `config.cpp:1341-1364`, which is the `Crew` block of `OffroadHatchback`, `:1348-1366` on `P:\`.)* | 2-4 depending |
+| Crew | **2 seats**: Driver + CoDriver. `Truck_01_Base` declares no `class Crew` of its own and inherits the two-seat one of the config base `CarScript` (`config.cpp:265-283`); its script maps only seats 0 and 1 (`truck_01_base.c:130-138`). The four-seat `Crew` block at `config.cpp:1348-1366` belongs to `OffroadHatchback`, not to the truck. | 2-4 depending |
 | Cargo | `class Cargo { itemsCargoSize[]={10,40}; }` — `config.cpp:18674-18677` | small/none |
 | Fuel | `fuelCapacity=120; fuelConsumption=30` — `config.cpp:18506-18507` | ~50 / lower |
 
@@ -238,11 +238,11 @@ is still `CarScript`.
 
 ---
 
-## 5. ATV (quad) — community pattern, one line
+## 5. ATV (quad) — mod pattern, one line
 
-Community ATVs are plain `CarScript` with slots hung off `Chassis` instead of
-`Body`. (No vanilla ATV in the base game; this is the community convention
-observed in the heli/RaG research pass.) Everything else is the standard
+Mod-made ATVs are plain `CarScript` with slots hung off `Chassis` instead of
+`Body`. (No vanilla ATV in the base game; this is third-party mod behaviour, not
+vanilla, and not yet checked on `P:\`.) Everything else is the standard
 `CarScript` contract of the invariant files (LFQuad is the worked example throughout
 them: a quad IS a car).
 
@@ -250,11 +250,9 @@ them: a quad IS a car).
 
 ## 6. Motorbikes — honest gap
 
-> (updated 2026-09-16) This gap closed with DayZ 1.30 Experimental (build 1.30.164014): the engine ships `class Motorbike: Transport` with `simulation = "motorbike"` (`bin\config.cpp:1481-1486`), `MotorbikeScript` (`4_World\Entities\Vehicles\MotorbikeScript.c:53`, not a `CarScript`), two vanilla bikes (`Motorbike_01` = Jawa_05, `Motorbike_02` = Jawa_Bitrak in `vehicles_singletrack.pbo`) and a 2-wheel `SimulationModule` (`Wheels{Front,Rear}` instead of `Axles`, `Steering.maxLeanAngle[]`/`tipoverAngle`, `Brakes{Front input=1, Rear input=0}`; `DZ\vehicles\singletrack\config.cpp:263-378` for `Motorbike_01_ColorBase`). The contract, script API, actions, sounds and rider animation live in `motorbikes.md` and `motorbike-invariants.md` of this pack and in the `dayz-motorbikes` skill. The paragraph below is the pre-1.30 state and is kept for history; its "do not derive from Axles" warning still holds.
+> (updated 2026-09-16) This gap closed with DayZ 1.30 Experimental (build 1.30.164014): the engine ships `class Motorbike: Transport` with `simulation = "motorbike"` (`bin\config.cpp:1481-1486`), `MotorbikeScript` (`4_World\Entities\Vehicles\MotorbikeScript.c:53`, not a `CarScript`), two vanilla bikes (`Motorbike_01` = Jawa_05, `Motorbike_02` = Jawa_Bitrak in `vehicles_singletrack.pbo`) and a 2-wheel `SimulationModule` (`Wheels{Front,Rear}` instead of `Axles`, `Steering.maxLeanAngle[]`/`tipoverAngle`, `Brakes{Front input=1, Rear input=0}`; `DZ\vehicles\singletrack\config.cpp:263-378` for `Motorbike_01_ColorBase`). The contract, script API, actions, sounds and rider animation live in `motorbikes.md` and `motorbike-invariants.md` of this pack and in the `dayz-motorbikes` skill. The paragraph below is the pre-1.30 state; its "do not derive from Axles" warning still holds.
 
-
-(up to 1.29:) No vanilla motorbike and no community source on disk; the 2-wheel physics pattern
-is an open gap (needs a real project or a community PBO to reverse-engineer).
+(up to 1.29:) No vanilla motorbike exists, so the 2-wheel physics pattern has no vanilla reference.
 Do not fabricate a `SimulationModule` for two wheels from the car pattern — a
 motorbike's lean/balance model is not derivable from the 4-wheel `Axles` blocks
-and there is nothing verified to cite. Flag `[UNVERIFIED]` and research first.
+and there is nothing verified to cite. Flag `[UNVERIFIED]` and check the engine first.

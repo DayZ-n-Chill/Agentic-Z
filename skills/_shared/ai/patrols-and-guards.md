@@ -19,9 +19,9 @@ What vanilla gives you for creatures that walk a route or hold a post, and what 
 - The infected pack template is `DZInfectedPackBeh` with `type="InfectedPack"` (`P:\DZ\data\aiconfigs\config.cpp:304`). Its keys include `groupRadius=10` (`:311`) and `agentPathLength=100` (`:313`). No vanilla script calls `CreateGroup` with it.
 - The bear template `BlissBearGroupBeh` is in a second addon, `DZ_data_aiconfigs_bliss` (`P:\DZ\data_bliss\aiconfigs\config.cpp:9`).
 - Each template has a `type` that selects the engine behaviour: `Predators` for the wolf (`P:\DZ\data\aiconfigs\config.cpp:89`), `WildHerbivores` for deer (`P:\DZ\data\aiconfigs\config.cpp:153`), `DomesticHerbivores` for cattle and sheep (`P:\DZ\data\aiconfigs\config.cpp:203`), `Bear` for the bear (`P:\DZ\data_bliss\aiconfigs\config.cpp:11`). Its life cycle classes name the kind of mission zone the group goes to with `zoneType` (wolf: `Rest` and `HuntingGround`, `P:\DZ\data\aiconfigs\config.cpp:127`, `:133`). How the mission binds territories to these templates is in `animal-territories.md`.
-- The knowledge pack reports two more templates in the Nasdara data of 1.30, `DZMouflonGroupBeh` (`type = "DomesticHerbivores"`) and `DZDogGroupBeh` (`type = "Predators"`, `zoneType = "HuntingGround"`); not yet checked on `P:\`, which has no Nasdara data. A custom map that wants a new herd or pack copies or inherits a group template in its own config instead of rebuilding the behaviour in script. Details: `skills/dayz-ai-patterns/references/dayz-1-30-ai.md`.
+- The Nasdara data of 1.30 has two more templates, `DZMouflonGroupBeh` (`type = "DomesticHerbivores"`) and `DZDogGroupBeh` (`type = "Predators"`, `zoneType = "HuntingGround"`); not yet checked on `P:\`, which has no Nasdara data. A custom map that wants a new herd or pack copies or inherits a group template in its own config instead of rebuilding the behaviour in script. Details: `skills/dayz-ai-patterns/references/dayz-1-30-ai.md`.
 
-The official 1.30 modding changelog says the navmesh file format changed with no backward compatibility, so a custom terrain must regenerate its navmesh for 1.30. Not checked on `P:\`; a path that works on a vanilla map and fails on a custom one after the update points there first.
+In 1.30 the navmesh file format changed with no backward compatibility, so a custom terrain must regenerate its navmesh for 1.30. Not checked on `P:\`; a path that works on a vanilla map and fails on a custom one after the update points there first.
 
 ## Waypoint patrols for infected
 
@@ -58,7 +58,7 @@ Large community AI mods build human NPCs by spawning a player class character th
 
 ### How one community AI mod is organised
 
-The `dayz-ai-patterns` skill (`skills/dayz-ai-patterns/SKILL.md`) describes, in our own words and with no code from the mod, twelve patterns the knowledge pack's author read in the DayZ Expansion AI scripts (third-party, not on `P:\`). Read it to debug a server that runs that mod, or for design ideas when planning the human AI milestone above; the code is still written fresh. The ideas, in one line each:
+The `dayz-ai-patterns` skill (`skills/dayz-ai-patterns/SKILL.md`) describes, with no code from the mod, twelve patterns of how the DayZ Expansion AI module works (third-party mod behaviour, not vanilla, not on `P:\`). Read it to debug a server that runs that mod, or for design ideas when planning the human AI milestone above; the code is still written fresh. The ideas, in one line each:
 
 - A state of the state machine, not scattered calls, switches a far away unit's simulation off and back on.
 - Combat starts at one threat level and ends at a lower one, so a unit does not flip in and out.

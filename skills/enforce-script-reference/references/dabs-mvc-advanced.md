@@ -17,20 +17,18 @@ Dabs MVC provides data-binding UI for DayZ:
 
 ## Critical gotchas, met in production
 
-### 1. NotifyPropertyChanged Requires String Variable
+### 1. NotifyPropertyChanged with a string literal (unconfirmed failure)
 
 ```
-// CRASH or SILENT FAILURE — string literal as parameter
-ctrl.NotifyPropertyChanged("HeaderTitle");  // May not compile or work
+// Seen to fail in one mod (not reproduced, not checked against the Dabs source)
+ctrl.NotifyPropertyChanged("HeaderTitle");
 
-// CORRECT — always use local variable
+// Fallback if the literal form fails in your build
 string propName = "HeaderTitle";
 ctrl.NotifyPropertyChanged(propName);
 ```
 
-This is Enforce Script's "no string literals as function params" rule applied to the MVC framework. Every single `NotifyPropertyChanged` call must use a local string variable.
-
-This gotcha disagrees with the rest of the material and is kept as a report only. Syntax rule 5 in `hard-rules.md` says string literals as function arguments work, vanilla passes them everywhere (`RegisterNetSyncVariableBool("m_EM.m_IsSwichedOn")`, `P:\scripts\3_game\entities\entityai.c:218`), and the Dabs integration file named above calls `NotifyPropertyChanged("FieldName")` with a literal. Use the local variable only if a literal fails in your own build.
+A literal is valid Enforce Script: syntax rule 5 in `hard-rules.md` says string literals as function arguments work, vanilla passes them everywhere (`RegisterNetSyncVariableBool("m_EM.m_IsSwichedOn")`, `P:\scripts\3_game\entities\entityai.c:218`), and the Dabs integration file named above calls `NotifyPropertyChanged("FieldName")` with a literal. Write the literal, and use the local variable only if a literal fails in your own build.
 
 ### 2. ScriptView Constructor Calls CreateWidgets
 
@@ -241,8 +239,8 @@ void DoOpen()
         }
     }
 
-    // Do NOT use INPUT_EXCLUDE_ALL or ModalOverlay
-    // Do NOT use PlayerControlDisable (deprecated, causes issues)
+    // Do not use INPUT_EXCLUDE_ALL or ModalOverlay
+    // Do not use PlayerControlDisable (deprecated, causes issues)
 }
 
 void DoClose()

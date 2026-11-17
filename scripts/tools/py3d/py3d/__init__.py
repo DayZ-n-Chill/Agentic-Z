@@ -2,13 +2,12 @@
 
 r"""Py3d-dayz - read and write Arma/DayZ .p3d files (MLOD).
 
-A maintained fork of https://github.com/KoffeinFlummi/py3d (master 7acd58b,
-MIT, unmaintained since 2018) by Felix "KoffeinFlummi" Wiegand, whose
-copyright is preserved in LICENSE. The importable module is still `py3d`,
-so `import py3d` keeps working; only the distribution name differs, because
-`py3d` on PyPI belongs to an unrelated library.
+At its core this is a minimal MLOD codec. The importable module is `py3d`,
+so `import py3d` works; only the distribution name, py3d-dayz, differs,
+because `py3d` on PyPI belongs to an unrelated library.
 
-What this fork adds on top of upstream's MLOD codec:
+What this library adds on top of the bare MLOD codec (plain py3d at
+revision 7acd58b, without the guards and DayZ additions):
 
 - Anti-corruption guards: paths that used to corrupt a .p3d silently or
   crash late now fail EARLY with an actionable message (selection weight
@@ -31,9 +30,11 @@ What this fork adds on top of upstream's MLOD codec:
   into `LOD.selected` and written back with its payload intact, so a file
   written by Object Builder survives a read/write cycle byte for byte.
 
-Write contract: byte-identical to upstream for valid canonical inputs, with
-one deliberate exception - the empty `#UVSet#` tag in LODs without faces;
-it raises where upstream would have corrupted the file or crashed later.
+Write contract: byte-identical to the bare codec for valid canonical inputs,
+with two deliberate exceptions - the empty `#UVSet#` tag in LODs without
+faces, and `#Selected#`, which is written back where the bare codec drops
+it; it raises where the bare codec would have corrupted the file or crashed
+later.
 
 `IS_DAYZ_FORK = True` is provided so scripts can assert they imported this
 library and not the unrelated `py3d` from PyPI.
@@ -63,7 +64,7 @@ def _read_asciiz(f, encoding="utf-8"):
     while b"\0" not in bts:
         chunk = f.read(1024)
         if not chunk:
-            # Upstream (master 7acd58b) loops here forever: at EOF read()
+            # The bare codec loops here forever: at EOF read()
             # keeps returning b"" and the process HANGS, with no traceback
             # and nothing the caller can catch. A truncated .p3d is the
             # normal way to hit this: a half-finished write, an incomplete
@@ -84,10 +85,10 @@ def _read_asciiz(f, encoding="utf-8"):
 # ---------------------------------------------------------------------------
 # Canonical DayZ LOD constants.
 #
-# Consolidated from the DayZ modelling notes and the p3d inspector
-# (extract.py:32-46, build.py:80-96 - a separate tool, not in this
-# repository), verified against real MLODs. Replaces the 4
-# historical copies of the resolution -> LOD map, which each used a
+# The same ids the DayZ p3d inspector uses (LOD_THRESHOLDS in
+# p3d_inspector_extract.py and LOD_RESOLUTION in p3d_inspector_build.py,
+# under skills/dayz-p3d-inspector/scripts), verified against real MLODs.
+# There used to be 4 copies of the resolution -> LOD map, each with a
 # DIFFERENT absolute tolerance (+-1e11, +-5e13, +-1e13 and ad-hoc ranges).
 # Here there is ONE relative tolerance.
 #
@@ -106,7 +107,7 @@ LOD_RESOLUTIONS = collections.OrderedDict([
     ("fire_geometry", 7.0e15),
 ])
 
-#: |res - canon| <= LOD_RELATIVE_TOLERANCE * canon => ese kind.
+#: |res - canon| <= LOD_RELATIVE_TOLERANCE * canon => that kind.
 LOD_RELATIVE_TOLERANCE = 0.05
 
 #: Visual levels of detail (0.0, 1.0, 2.0, 4.0, 8.0, ...).
@@ -186,16 +187,15 @@ def classify_lod_resolution(resolution):
 # ---------------------------------------------------------------------------
 # MLOD proxy frame.
 #
-# 1:1 port (stdlib, no numpy) of a source-verified convention. The
-# "proxy_frame.py:38-52" citations below name the script it was ported
-# from, which is a separate tool and not part of this repository.
-#   - derive_frame() -> proxy_frame.py:38-52 (ANGLE-SORT: the vertex with
-#     the largest interior angle is the anchor; the middle one gives local
-#     +Y, the smallest local +Z; x = y X z; z = x X y re-orthogonalised)
-#   - canonical_triangle() -> proxy_frame.py:54-61 (anchor + scale*R[1] +
-#     2*scale*R[2]: three DISTINCT angles => an unambiguous frame)
-# Fuente original: Arma3ObjectBuilder utilities/proxy.py + mrcmodding
-# gitbook entry on proxy coordinates.
+# The same convention as proxy_frame.py in the dayz-proxy-align skill
+# (skills/dayz-proxy-align/scripts), written with the stdlib only:
+#   - derive_proxy_frame() follows its derive_frame() (ANGLE-SORT: the
+#     vertex with the largest interior angle is the anchor; the middle one
+#     gives local +Y, the smallest local +Z; x = y X z; z = x X y
+#     re-orthogonalised)
+#   - canonical_proxy_triangle() follows its canonical_triangle() (anchor +
+#     scale*R[1] + 2*scale*R[2]: three DISTINCT angles => an unambiguous
+#     frame)
 
 PROXY_NAME_RE = re.compile(r"^proxy:(?P<path>.+)\.(?P<index>\d+)$",
                            re.IGNORECASE)
@@ -380,7 +380,8 @@ def _proxy_angle(u, v):
 
 
 def derive_proxy_frame(tri):
-    """Port of proxy_frame.derive_frame (proxy_frame.py:38-52).
+    """The frame of a proxy triangle, by the same rule as derive_frame in
+    the dayz-proxy-align skill's proxy_frame.py.
 
     tri: a sequence of 3 (x, y, z) coordinates in raw MLOD space.
     Returns (anchor list, R as rows (x, y, z) tuple-of-tuples,
@@ -403,7 +404,8 @@ def derive_proxy_frame(tri):
 
 
 def canonical_proxy_triangle(anchor, rotation=None, scale=0.001, space="raw"):
-    """Port of proxy_frame.canonical_triangle (proxy_frame.py:54-61).
+    """The canonical proxy triangle, by the same rule as canonical_triangle
+    in the dayz-proxy-align skill's proxy_frame.py.
 
     An unambiguous triangle at *anchor* whose derived frame equals
     *rotation* (identity if None). Order: [anchor, vert_y (+Y, the short
@@ -441,24 +443,27 @@ def canonical_proxy_triangle(anchor, rotation=None, scale=0.001, space="raw"):
 # ---------------------------------------------------------------------------
 # Recipe JSON v1 - compatibility layer for the DayZ p3d inspector.
 #
-# The inspector's schema IS the specification here. These helpers are 1:1
-# ports of its extract.py / build.py (without numpy). Line references of
-# the form "extract.py:91-109" below point into those inspector scripts,
-# which are a separate tool and are NOT part of this repository; they are
-# kept because they record exactly which behaviour was reproduced.
-# _recipe_lod_type reproduces the extractor's thresholds VERBATIM
-# (extract.py:55-88). It is deliberately DIFFERENT from
+# The inspector's schema v1 IS the specification here. These helpers
+# reproduce, without numpy, what the inspector's extract and build scripts
+# (p3d_inspector_extract.py and p3d_inspector_build.py under
+# skills/dayz-p3d-inspector/scripts) did when schema v1 was fixed; each
+# docstring names the inspector function it follows. The inspector has
+# changed since - its extractor also writes face_of_triangle and
+# point_of_vertex, and its builder puts mass on the Geometry LOD only - so
+# the two no longer give identical output.
+# _recipe_lod_type reproduces the schema v1 thresholds of the extractor's
+# classify_lod. It is deliberately DIFFERENT from
 # classify_lod_resolution(): this one classifies for the recipe's schema
 # v1, while kind() is this library's canonical classifier.
 #
-# What schema v1 loses, exactly as extract/build lose it today:
+# What schema v1 loses:
 #   - per-point mass does not travel in the recipe; from_dict reassigns it
-#     with build's policy (override, then density heuristic) to geometry
-#     AND fire_geometry, so ERR_MASS_ONLY_GEOMETRY is expected on the
-#     rebuilt model - kept on purpose, for parity with the inspector;
+#     with the schema v1 build policy (override, then density heuristic) to
+#     geometry AND fire_geometry, so ERR_MASS_ONLY_GEOMETRY is expected on
+#     the rebuilt model - kept on purpose, and pinned by a test;
 #   - point and face flags become 0; selection weights become 1;
 #   - resolution is snapped to the canonical value for the type
-#     (build:108-112);
+#     (the build script's lod_resolution_for_type);
 #   - the Memory LOD is rebuilt from recipe["memory_points"].
 
 _RECIPE_WIREFRAME_TYPES = (
@@ -466,14 +471,13 @@ _RECIPE_WIREFRAME_TYPES = (
     "landcontact", "roadway", "paths", "hitpoints",
 )
 _RECIPE_BUILD_WIREFRAME_TYPES = _RECIPE_WIREFRAME_TYPES + ("shadow",)
-#: build.py assigns mass to geometry AND fire_geometry (ported verbatim).
-#: This is CONSERVED for parity even though #Mass# outside the Geometry
-#: LOD is wrong for DayZ -> a model produced by from_dict raises
-#: ERR_MASS_ONLY_GEOMETRY, and a test pins that. The fix belongs in the
-#: inspector, not here.
+#: Schema v1 assigns mass to geometry AND fire_geometry. This is KEPT even
+#: though #Mass# outside the Geometry LOD is wrong for DayZ -> a model
+#: produced by from_dict raises ERR_MASS_ONLY_GEOMETRY, and a test pins
+#: that. The inspector's own build script now masses the Geometry LOD only.
 _RECIPE_MASSED_TYPES = ("geometry", "fire_geometry")
 
-# build.py:80-96 (verbatim)
+# The inspector build script's LOD_RESOLUTION table.
 _RECIPE_LOD_RESOLUTION = {
     "visual_0":       0.0,
     "visual_1":       1.0,
@@ -492,7 +496,7 @@ _RECIPE_LOD_RESOLUTION = {
     "fire_geometry":  7.0e15,
 }
 
-# build.py:40-60 (verbatim)
+# The inspector build script's DENSITY_KEYWORDS, as of schema v1.
 _RECIPE_DENSITY_KEYWORDS = [
     ("steel",   7800),
     ("iron",    7800),
@@ -517,7 +521,7 @@ _RECIPE_DENSITY_DEFAULT = 2000
 
 
 def _recipe_lod_type(resolution):
-    """Classifier for schema v1 (ported verbatim from extract.py:55-88)."""
+    """Classifier for schema v1 (the extractor's classify_lod thresholds)."""
     if resolution < 0.5:
         return "visual_0"
     elif resolution < 2.0:
@@ -549,7 +553,7 @@ def _recipe_lod_type(resolution):
 
 
 def _recipe_classify_memory_point(selections):
-    """Port of extract.py:91-109."""
+    """Follows the extractor's classify_memory_point."""
     for sel in selections:
         s = sel.lower()
         if "axis" in s:
@@ -570,7 +574,8 @@ def _recipe_classify_memory_point(selections):
 
 
 def _recipe_visual_geometry(lod):
-    """Port of extract.py:114-173 (vertex dedup plus the glTF V flip)."""
+    """Follows the extractor's extract_visual_geometry (vertex dedup plus
+    the glTF V flip)."""
     vertex_map = {}
     positions = []
     normals = []
@@ -621,7 +626,8 @@ def _recipe_visual_geometry(lod):
 
 
 def _recipe_wireframe(lod):
-    """Port of extract.py:176-193, with SORTED edges so the output is stable.
+    """Follows the extractor's extract_wireframe, with SORTED edges so the
+    output is stable.
     The extractor emits the set's iteration order instead, which is the
     same set of edges, just not in a repeatable order."""
     positions = [list(p.coords) for p in lod.points]
@@ -641,7 +647,8 @@ def _recipe_wireframe(lod):
 
 
 def _recipe_selections(lod):
-    """Port of extract.py:196-238 (indices via id(), weight > 0)."""
+    """Follows the extractor's extract_selections (indices via id(),
+    weight > 0)."""
     selections = collections.OrderedDict()
     pt_idx = {id(p): i for i, p in enumerate(lod.points)}
     fc_idx = {id(f): i for i, f in enumerate(lod.faces)}
@@ -668,7 +675,8 @@ def _recipe_selections(lod):
 
 
 def _recipe_memory_data(lod):
-    """Port of extract.py:252-308. Returns (memory_points, axes)."""
+    """Follows the extractor's extract_memory_data. Returns (memory_points,
+    axes)."""
     memory_points = []
     axes = collections.OrderedDict()
     point_to_selections = {}
@@ -714,7 +722,7 @@ def _recipe_memory_data(lod):
 
 
 def _recipe_guess_density(recipe):
-    """Port of build.py:63-74."""
+    """Follows the build script's guess_density."""
     paths = []
     refs = recipe.get("referenced_paths", {})
     paths.extend(refs.get("textures", []))
@@ -727,7 +735,7 @@ def _recipe_guess_density(recipe):
 
 
 def _recipe_dedup_normals(per_vertex_normals):
-    """Port of build.py:117-128."""
+    """Follows the build script's dedup_normals."""
     pool = []
     lookup = {}
     index_map = []
@@ -741,7 +749,7 @@ def _recipe_dedup_normals(per_vertex_normals):
 
 
 def _recipe_face_normal(positions, indices):
-    """Port of build.py:286-300 (cross product)."""
+    """Follows the build script's _face_normal (cross product)."""
     try:
         p0, p1, p2 = (positions[indices[0]], positions[indices[1]],
                       positions[indices[2]])
@@ -755,8 +763,8 @@ def _recipe_face_normal(positions, indices):
 
 
 def _recipe_build_selections(lod, selections_dict):
-    """Port of build.py:397-407. Weights collapse to 1; that loss is part of
-    the schema, not a bug here."""
+    """Follows the build script's build_lod_selections. Weights collapse to
+    1; that loss is part of the schema, not a bug here."""
     for sel_name, sel_data in selections_dict.items():
         sel = Selection(lod.points, lod.faces)
         for vi in sel_data.get("vertices", []):
@@ -769,7 +777,7 @@ def _recipe_build_selections(lod, selections_dict):
 
 
 def _recipe_build_visual(lod_dict):
-    """Port of build.py:152-212."""
+    """Follows the build script's build_visual_lod."""
     lod = LOD()
     lod.resolution = _RECIPE_LOD_RESOLUTION.get(
         lod_dict["type"], lod_dict.get("resolution", 0.0))
@@ -805,7 +813,7 @@ def _recipe_build_visual(lod_dict):
                                    if vi < len(normal_idx_map) else 0)
                 if vi < len(uvs):
                     u, v = uvs[vi]
-                    vx.uv = (float(u), 1.0 - float(v))  # des-flip glTF
+                    vx.uv = (float(u), 1.0 - float(v))  # undo the glTF V flip
                 else:
                     vx.uv = (0.0, 0.0)
                 face.vertices.append(vx)
@@ -819,7 +827,8 @@ def _recipe_build_visual(lod_dict):
 
 
 def _recipe_assign_mass(lod, lod_dict, recipe):
-    """Port of build.py:323-353 (override > meta > density heuristic)."""
+    """Follows the build script's _assign_mass (override > meta > density
+    heuristic)."""
     if not lod.points:
         return
     override = None
@@ -847,11 +856,11 @@ def _recipe_assign_mass(lod, lod_dict, recipe):
 
 
 def _recipe_build_wireframe(lod_dict, lod_type, recipe):
-    """Port of build.py:217-283.
+    """Follows the build script's build_wireframe_lod.
 
-    One deliberate divergence: build.py's n-gon path (303-320) leaves the
-    normal_index of every later face out of step. That is a latent bug,
-    unreachable from an extractor recipe because MLOD only ever emits
+    One deliberate divergence: the schema v1 build script's n-gon path left
+    the normal_index of every later face out of step. That was a latent
+    bug, unreachable from an extractor recipe because MLOD only ever emits
     triangles and quads. Here n-gons are triangulated with correct indices.
     """
     lod = LOD()
@@ -910,7 +919,7 @@ def _recipe_build_wireframe(lod_dict, lod_type, recipe):
 
 
 def _recipe_build_memory(recipe):
-    """Port of build.py:358-392."""
+    """Follows the build script's build_memory_lod."""
     memory_points = recipe.get("memory_points", [])
     if not memory_points:
         return None
@@ -938,28 +947,29 @@ def _recipe_build_memory(recipe):
 
 
 # ---------------------------------------------------------------------------
-# Parity with the audit script shipped alongside this library, pruned to
-# the checks that survived review. "audit:104-171" below cites that
-# script, in tools/audit_p3d.py.
+# Model checks that started in the dayz-p3d-audit skill's audit script
+# (skills/dayz-p3d-audit/scripts/audit_p3d.py) and now live here, pruned to
+# the ones that held up. Each docstring below names the audit function its
+# check started from; that script has changed since, so the two are not
+# line for line the same.
 #
-# Checks ported, as a closed list: relative cross-product winding
-# (audit:104-171), Component01 naming/coverage (174-208), autocenter
-# (211-219), watertight (222-234), degenerate faces (237-253), Memory
-# structure (256-307), axes against selections (310-330) and P:\ paths on
-# faces (333-342). check_required_lods is NOT ported - it stays in the
-# audit script with its normalised ids - and the absolute-centroid check
-# is WITHDRAWN.
+# The closed list: relative cross-product winding, Component01
+# naming/coverage, autocenter, watertight, degenerate faces, Memory
+# structure, axes against selections and P:\ paths on faces.
+# check_required_lods is NOT here - it stays in the audit script with its
+# normalised ids - and the absolute-centroid check is WITHDRAWN.
 #
-# Refinements applied relative to the original audit:
+# Where these checks differ from the audit functions they started from:
 #   - modern DayZ ids: the "collision" class is geometry, view_geometry
 #     and fire_geometry; the audit's GeoPhys/2e13 slot was stale;
 #   - autocenter is only required on the Geometry LOD - the audit also ran
 #     it over FireGeo, left over from the GeoPhys-era loop;
-#   - the reference visual LOD for winding is the FIRST in file order; the
-#     audit used the last one, through an accidental overwrite;
+#   - the reference visual LOD for winding is the one of LOWEST
+#     resolution; the audit used the last one in file order, through an
+#     accidental overwrite;
 #   - severities: CRITICAL -> ERROR, WARNING -> WARN. Informational NOTEs
-#     are not ported, except P:\ paths and the low-confidence winding
-#     branch, which is part of the ported check;
+#     are left out, except P:\ paths and the low-confidence winding
+#     branch, which is part of the winding check;
 #   - component naming (1.9.0): the audit required 'Component01' and
 #     flagged 'component01'; in game the case made no difference, so the
 #     check now flags a missing component, on every collision LOD;
@@ -982,7 +992,8 @@ def _recipe_build_memory(recipe):
 
 
 def _pct_outward(lod):
-    """Port of audit_p3d.check_winding_vs_visual.pct_outward (117-144)."""
+    """The share of faces wound outward from the LOD's centroid, in percent
+    (the measure of the audit script's relative winding check)."""
     if len(lod.points) == 0 or len(lod.faces) == 0:
         return None
     n = len(lod.points)
@@ -1136,7 +1147,7 @@ def _normals_step():
 def _check_winding_absolute(lod, lod_index, kind_label):
     r"""A LOD's ABSOLUTE winding, without comparing it to any other LOD.
 
-    This closes the false negative that motivated the fork.
+    This closes the false negative this check was added for.
     `_check_winding_vs_visual` is RELATIVE to the Visual LOD, so inverting
     EVERY LOD left the model consistent with itself and `validate()`
     returned [] - precisely the state a Blender Z-up to Y-up export
@@ -1195,7 +1206,7 @@ def _check_winding_absolute(lod, lod_index, kind_label):
 
 def _check_winding_vs_visual(lod, lod_index, visual_lod, visual_index,
                              kind_label):
-    """Pruned port of audit_p3d.check_winding_vs_visual (104-171).
+    """The audit script's relative winding check, pruned.
 
     NOTE: this check is RELATIVE to the Visual LOD and leans on
     `_pct_outward`, which assumes convex geometry. It CANNOT detect a
@@ -1311,9 +1322,9 @@ def _check_component_naming(lod, lod_index, kind_label):
 
     The case of the name is not checked. On the same run 'component01'
     collided exactly like 'Component01' (rays, physics ray, walk), and
-    binarize writes both as 'component01'. Up to 1.8.0 this check, a port
-    of audit_p3d.check_component_naming, ran on the Geometry LOD alone
-    and raised this ERROR on 'component01': a false positive.
+    binarize writes both as 'component01'. Up to 1.8.0 this check, which
+    started from audit_p3d.check_component_naming, ran on the Geometry LOD
+    alone and raised this ERROR on 'component01': a false positive.
 
     The ERROR needs no selection whose name starts with "component" (any
     case). WARN_COMPONENT_NAMING: there are such selections, but none is
@@ -1519,12 +1530,12 @@ def _check_component_coverage(lod, lod_index, kind_label):
 
     Up to 1.9.0 every face in no component raised the WARN, whose message
     said that faces outside every component beside covered ones were not
-    measured. Up to 1.8.0 this check, a port of
+    measured. Up to 1.8.0 this check, which started from
     audit_p3d.check_component_coverage, read the Geometry LOD only when it
     held a selection named exactly 'Component01' and compared that
     selection alone with the whole LOD: it fired whenever 'Component01'
     held fewer points or faces than the LOD, as on a healthy LOD with
-    several components (the Pack's three door samples, two of them fully
+    several components (three door sample models, two of them fully
     covered), never read a LOD without an exact 'Component01' (lowercase
     components included), counted proxy triangles and loose points as
     uncovered, and did not run on View or Fire.
@@ -1613,7 +1624,7 @@ def _check_component_coverage(lod, lod_index, kind_label):
 
 
 def _check_autocenter(lod, lod_index):
-    """Port of audit_p3d.check_autocenter_prop (211-219), Geometry only."""
+    """Started from audit_p3d.check_autocenter_prop; Geometry only."""
     if "autocenter" not in lod.properties:
         return [Finding(
             "WARN_AUTOCENTER_MISSING", "WARN", lod_index,
@@ -1623,7 +1634,7 @@ def _check_autocenter(lod, lod_index):
 
 
 def _check_watertight(lod, lod_index):
-    """Port of audit_p3d.check_watertight (222-234)."""
+    """Started from audit_p3d.check_watertight."""
     edge_count = {}
     for face in lod.faces:
         pts = [id(v.point) for v in face.vertices]
@@ -1640,7 +1651,7 @@ def _check_watertight(lod, lod_index):
 
 
 def _check_degenerate_faces(lod, lod_index):
-    """Port of audit_p3d.check_degenerate_faces (237-253)."""
+    """Started from audit_p3d.check_degenerate_faces."""
     degen = 0
     for face in lod.faces:
         verts = face.vertices
@@ -1660,7 +1671,7 @@ def _check_degenerate_faces(lod, lod_index):
 
 
 def _check_memory_structure(lod, lod_index):
-    """Port of audit_p3d.check_memory_lod (256-307), without the NOTEs."""
+    """Started from audit_p3d.check_memory_lod, without the NOTEs."""
     findings = []
     sels = list(lod.selections.keys())
     if "pos center" not in sels:
@@ -1699,7 +1710,7 @@ def _check_memory_structure(lod, lod_index):
 
 
 def _check_axis_selections(memory_lod, visual_lod, visual_index):
-    """Port of audit_p3d.check_visual_lod (316-330): a *_axis in the Memory
+    """Started from audit_p3d.check_visual_lod: a *_axis in the Memory
     LOD requires a selection of the same name, without the suffix, holding
     vertices in the Visual LOD."""
     findings = []
@@ -1723,7 +1734,7 @@ def _check_axis_selections(memory_lod, visual_lod, visual_index):
 
 
 def _check_pdrive_faces(lod, lod_index):
-    """Port of audit_p3d.check_visual_lod (333-342): P:\\ paths on faces."""
+    """Started from audit_p3d.check_visual_lod: P:\\ paths on faces."""
     count = 0
     for face in lod.faces:
         if face.texture and face.texture.upper().startswith("P:\\"):
@@ -1884,8 +1895,8 @@ class Face:
 class Selection:
     def __init__(self, all_points=_REQUIRED, all_faces=_REQUIRED, f=None):
         if all_points is _REQUIRED or all_faces is _REQUIRED:
-            # upstream's positional signature already made the no-arg
-            # form a TypeError; the fork freezes that behaviour with an
+            # The bare codec's positional signature already made the
+            # no-arg form a TypeError; this keeps that behaviour with an
             # actionable message instead of a bare signature error.
             raise TypeError(
                 "Selection() requires the owning LOD's lists: "
@@ -1905,9 +1916,10 @@ class Selection:
         """Validate/normalize a selection weight at write time.
 
         Accepted: int 0/1, float exactly 0.0/1.0 (coerced to int), float
-        strictly between 0 and 1 (upstream fractional encoding). Anything
-        else raised upstream as a cryptic late TypeError inside bytes() -
-        here it is an early ValueError naming the selection.
+        strictly between 0 and 1 (the bare codec's fractional encoding).
+        Anything else raised in the bare codec as a cryptic late TypeError
+        inside bytes() - here it is an early ValueError naming the
+        selection.
         """
         label = "'%s'" % name if name is not None else "<unnamed>"
         if isinstance(value, float) and value in (0.0, 1.0):
@@ -2035,7 +2047,7 @@ class LOD:
         return [0] + sorted(ids)
 
     def new_selection(self, name):
-        """Helper (fork API): get-or-create a selection correctly
+        """Helper (not in the bare codec): get-or-create a selection correctly
         bound to this LOD's point/face lists and registered under *name*.
         """
         existing = self.selections.get(name)
@@ -2283,7 +2295,8 @@ class LOD:
     def add_proxy(self, path, index=1, origin=(0.0, 0.0, 0.0),
                   rotation=None, scale=0.001, space="raw"):
         """Add a canonical MLOD proxy - the unambiguous triangle of
-        proxy_frame.py:54-61 - as the selection 'proxy:<path>.<index %03d>'.
+        canonical_proxy_triangle() - as the selection
+        'proxy:<path>.<index %03d>'.
 
         *rotation*: rows (x, y, z), local to world, identity if None.
         Identity means the item shows upright in character space (worn).
@@ -2625,7 +2638,7 @@ class LOD:
 
     def get_proxies(self, strict=False):
         """This LOD's proxies, each with the frame derived by ANGLE-SORT
-        (proxy_frame.py:38-52).
+        (derive_proxy_frame).
 
         Each entry: {name, path, index, anchor, frame (rows x,y,z),
         ambiguous, angles_deg}. ambiguous=True means the two smallest
@@ -2819,7 +2832,7 @@ class LOD:
         pair per face vertex, in face order.
 
         Set 0 duplicates the uv already carried by every face vertex and is
-        ignored, as upstream does. Any other set is attached to the face
+        ignored, as in the bare codec. Any other set is attached to the face
         vertices as `Vertex.uv_sets[id]` so that write() can emit it again;
         in a LOD without faces there is nothing to attach it to, so the id
         alone is kept in `faceless_uv_sets`. A payload whose length does not
@@ -2949,7 +2962,7 @@ class LOD:
         for k, v in self.properties.items():
             key_bytes = bytes(k, "utf-8")
             value_bytes = bytes(v, "utf-8")
-            # upstream struct.pack("64s64s") silently truncates
+            # A bare struct.pack("64s64s") silently truncates
             # anything longer (and a 64-byte value loses its NUL
             # terminator, corrupting the read side). Quirk 6.
             if len(key_bytes) > 63 or len(value_bytes) > 63:
@@ -2975,7 +2988,8 @@ class LOD:
         # that lacks a set present elsewhere in the LOD gets (0, 0), which is
         # what Object Builder assigns to new faces. Object Builder also
         # writes the tag for a LOD without faces (Memory, LandContact), with
-        # the 4-byte set id as its whole payload. Upstream omits it there;
+        # the 4-byte set id as its whole payload. The bare codec omits it
+        # there;
         # BI-authored MLOD files carry it, so it is emitted for parity.
         num_vertices = self.num_vertices
         for uv_id in self.uv_set_ids():
@@ -3160,8 +3174,8 @@ class P3D:
     def to_dict(self, source_path=None):
         """The inspector's Recipe JSON, schema v1.
 
-        1:1 port of p3d_inspector_extract.extract_recipe (extract.py:
-        313-423): meta, lods (geometry, wireframe or note, by type),
+        Follows the inspector's p3d_inspector_extract.extract_recipe as of
+        schema v1: meta, lods (geometry, wireframe or note, by type),
         memory_points, axes, bounding_box, referenced_paths. JSON-safe.
         What the schema loses is documented in the _recipe_* block.
         """
@@ -3244,8 +3258,8 @@ class P3D:
     def from_dict(cls, recipe):
         """Build a P3D from a Recipe v1.
 
-        1:1 port of p3d_inspector_build.build_p3d (build.py:486-545)
-        WITHOUT the winding auto-fix, which stays in the inspector's own
+        Follows the inspector's p3d_inspector_build.build_p3d as of schema
+        v1, WITHOUT the winding auto-fix, which stays in the inspector's own
         script; this is construction only. Unknown LOD types are OMITTED,
         as build does, which logs them as a warning. The Memory LOD is
         ALWAYS rebuilt from recipe["memory_points"].
@@ -3265,7 +3279,8 @@ class P3D:
         return model
 
     def _scan_v12_findings(self):
-        """The checks ported from the audit script; see the parity block."""
+        """The checks that started in the audit script; see the block above
+        _pct_outward."""
         findings = []
         visual = None
         visual_index = None

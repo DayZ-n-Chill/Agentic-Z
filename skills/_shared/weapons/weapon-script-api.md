@@ -61,14 +61,14 @@ Changes in 1.30:
 
 ## Taking a round from the magazine
 
-The state machine helper that chambers from the attached magazine calls `mag.LocalAcquireCartridgeEx(damage, type)` (`P:\scripts\4_world\entities\firearms\fsm\weapon_utils.c:9`). `LocalAcquireCartridgeEx` wraps the proto `LocalAcquireCartridge` and then calls `UpdateAnimation()` (`P:\scripts\4_world\entities\itembase\magazine\magazine.c:180-185`; the proto is at `:79`), which is what moves the MP18 drum (see `magazines-ammo.md`). Use the `Ex` call in a custom chamber helper. The knowledge pack reports that 1.29 called `LocalAcquireCartridge` there; not on `P:\`.
+The state machine helper that chambers from the attached magazine calls `mag.LocalAcquireCartridgeEx(damage, type)` (`P:\scripts\4_world\entities\firearms\fsm\weapon_utils.c:9`). `LocalAcquireCartridgeEx` wraps the proto `LocalAcquireCartridge` and then calls `UpdateAnimation()` (`P:\scripts\4_world\entities\itembase\magazine\magazine.c:180-185`; the proto is at `:79`), which is what moves the MP18 drum (see `magazines-ammo.md`). Use the `Ex` call in a custom chamber helper. DayZ 1.29 called `LocalAcquireCartridge` there (the 1.29 scripts are not on `P:\`, so this is not checked).
 
 ## Explosion effects (changed in 1.30)
 
 - `AmmoTypesAPI.GetExplosiveEffectData(string ammoName, string surfaceName)` returns an `ExplosiveEffectData` with `m_ParticleID` and `m_SoundSetName` (`P:\scripts\3_game\global\ammotypes.c:90`; the class is at `P:\scripts\3_game\global\ammotypes.c:1`). It returns null when `NO_GUI` is defined, so check the result on a server build.
 - Vanilla reads the surface with `SurfaceGetType3D` and then asks for the effect (`P:\scripts\3_game\ammoeffects.c:49-56`); the explosion code also starts the sound set with `SetStartSoundParams` (`P:\scripts\3_game\dayzgame.c:3634-3638`).
 - Effects are registered per ammo and surface with `AddExplosionParticleEffect` (`P:\scripts\3_game\global\ammotypes.c:78`), for example the RGD5 grenade on `Hit_Desert_Sand` with `"ExplosionDustEffect_SoundSet"` (`:66`).
-- `GetExplosionParticleID`, which the knowledge pack reports for 1.29, is gone: no file under `P:\scripts` contains the name. A mod that still calls it does not compile.
+- `GetExplosionParticleID`, the 1.29 call (the 1.29 scripts are not on `P:\`, so its old form is not checked), is gone: no file under `P:\scripts` contains the name. A mod that still calls it does not compile.
 - On `ExplosivesBase`, `SetParticleExplosion`, both `AddExplosionEffectForSurface` overloads, `m_TypeToSurfaceParticleIDMap` and `InitSpecificsExplosionEffectForSurface` are marked `[Obsolete("1.30: Handled in AmmoTypes instead")]` (`P:\scripts\4_world\entities\explosivesbase.c:306`, `:386`, `:432`, `:40`, `:380`). Set `particle` on the `CfgAmmo` class instead of keeping a script map from surface to particle.
 
 The official 1.30 modding changelog also names `SoundHitType` and `SurfaceInfo.GetSoundHitType()`. Neither exists in `P:\scripts\3_game\surfaceinfo.c` or anywhere else under `P:\scripts`; do not call them.

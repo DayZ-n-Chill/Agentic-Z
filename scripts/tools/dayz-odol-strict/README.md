@@ -9,13 +9,14 @@ recovery as success.
 
 ## Why the backend is external
 
-The compatible local backend is derived from `ScripyZz/BisDLL-Arma-3`, whose
-pinned source revision does not publish a license or redistribution grant.
-The MIT pack therefore contains no backend source. It contains only:
+The ODOL parser backend (`odol_reader.py` and the four modules it imports) is
+not shipped in this repository, so you supply it from a local folder. This
+tool contains only:
 
-- this independently authored strict adapter;
-- `backend/manifest-v1.json`, which pins the required external file closure;
-- three user-authorized first-party binary fixtures.
+- the strict adapter;
+- `backend/manifest-v1.json`, which pins the five required backend files by
+  SHA-256;
+- three first-party binary fixtures.
 
 The adapter verifies the manifest and every backend file by SHA-256 in the
 parent process, launches an isolated subprocess, and verifies the same
@@ -36,7 +37,7 @@ is:
 ## Inspect
 
 ```powershell
-$env:DAYZ_ODOL_BACKEND_ROOT = 'D:\external\odol-backend\scripts'
+$env:DAYZ_ODOL_BACKEND_ROOT = '<folder holding the backend files>'
 python -m dayz_odol_strict inspect model.p3d
 python -m dayz_odol_strict inspect model.p3d --json anatomy.json
 ```
@@ -118,18 +119,19 @@ converted model must not be represented as a strict inspection pass.
 | `odol-v54-rugermarkiv-optic.p3d` | v54 / 1 | 562 | `ccdb62e78661f2a0d98e5d5ca8844a8a7f0ae5242c2e1f403530d01d0ef037f9` |
 | `odol-v55-lfquad-body.p3d` | v55 / 5 | 1,441,109 | `9dd2b16a70001b5e6513bf26da0b24db6c2a92c09f6fa09ae9aab20f77ef19d3` |
 
-The user confirmed that all three are first-party assets authorized for public
-redistribution. They contain no backend source.
+All three are first-party assets authorized for public redistribution. They
+contain no backend source.
 
 ## Test
 
-Tests that do not need the external backend always run. Real fixture
-integration is enabled only when `DAYZ_ODOL_BACKEND_ROOT` points to the exact
-pinned closure.
+Tests that do not need the external backend always run with only pytest
+installed. Real fixture integration is enabled only when
+`DAYZ_ODOL_BACKEND_ROOT` points to the exact pinned set of backend files. The
+schema checks also need the optional `jsonschema` package and skip without it.
 
 ```powershell
 python -m pytest -q scripts/tools/dayz-odol-strict/tests
 
-$env:DAYZ_ODOL_BACKEND_ROOT = 'D:\external\odol-backend\scripts'
+$env:DAYZ_ODOL_BACKEND_ROOT = '<folder holding the backend files>'
 python -m pytest -q scripts/tools/dayz-odol-strict/tests
 ```

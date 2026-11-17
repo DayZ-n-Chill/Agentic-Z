@@ -10,9 +10,9 @@ exact units out as pixels (`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py:772-7
 2026-10-03: this called it the usual "looked right in the mockup, wrong
 in-game" failure.)*
 
-Geometry, attributes and diagnostics come from the pack format parser
+Geometry, attributes and diagnostics come from the layout parser
 `scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py` (`LayoutDoc`). This tool is **not**
-`dayz-ui-lab/render.py`, which emits semantic scenario JSON, not an HTML
+`scripts/tools/dayz-ui-lab/dayz_ui_lab/render.py`, which emits semantic scenario JSON, not an HTML
 preview.
 
 ## What this is not
@@ -31,16 +31,18 @@ It does **not**:
   `position`/`size` are shown; the engine overwrites those in-game);
 - resolve `.styles` or imagesets;
 - instantiate child layouts that script mounts at runtime;
-- claim `right_ref` / `center_ref` / `bottom_ref` offset signs (those
-  anchors are badged `assumed`).
+- verify anchors itself: `center_ref`, `right_ref` and `bottom_ref` use the
+  parser's arithmetic (`center_ref` adds `position`, `right_ref` and
+  `bottom_ref` subtract it), and the hover panel shows the parser's note. An
+  unsupported anchor value falls back to left/top and is badged `?`.
 
-Unknown in-string escapes (`gui\layouts\…`) fail closed in the pack parser;
+Unknown in-string escapes (`gui\layouts\…`) fail closed in the layout parser;
 this viewer does not recover them.
 
 ## Requirements and install
 
 Stdlib only. It imports the sibling `scripts/tools/dayz-ui-lab` parser; run it from
-the pack tree (or put that directory on `PYTHONPATH`). `dayz-ui-lab` is not
+this repository (or put that directory on `PYTHONPATH`). `dayz-ui-lab` is not
 a pip extra of this tool and is not modified by it.
 
 From the repository root, either use the script path (no install):
@@ -61,13 +63,14 @@ python -m dayz_layout_viewer gui/layouts/menu.layout -o menu.preview.html
 `--layout-root` only resolves the input path. It does not compose child
 layouts.
 
-Default output is `<input>.preview.html` next to the layout. The HTML needs
+Default output sits next to the layout with the suffix replaced:
+`menu.layout` becomes `menu.preview.html`. The HTML needs
 no server and no CDN.
 
 | Exit | Meaning |
 |---:|---|
 | `0` | HTML written |
-| `1` | The file was found but the pack parser rejected it |
+| `1` | The file was found but the layout parser rejected it |
 | `2` | Usage error or the layout path was not found |
 
 ## Library API
@@ -84,8 +87,8 @@ host path.
 
 ## `visible 0`
 
-The predecessor HTML emitter coerced `visible 0` to shown (`int(attr or 1)`
-in Python: `0 or 1` is `1`). This viewer embeds the pack parser's
+Reading the flag as `int(attr or 1)` would turn `visible 0` into shown
+(in Python `0 or 1` is `1`). This viewer embeds the layout parser's
 `geometry.visible` (boolean; `0` is `false`) and the page CSS hides
 `.hidden-w` unless "show hidden" is checked. A unit test fails if that
 contract regresses.

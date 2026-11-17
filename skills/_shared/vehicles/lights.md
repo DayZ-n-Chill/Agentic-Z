@@ -49,8 +49,9 @@ asked \SUB_BRZ\data\brz_light_brake_on.rvmat  ->  got \sub_brz\data\brz_light_br
 asked  SUB_BRZ\data\brz_light_brake_on.rvmat  ->  got  SUB_BRZ\data\brz_light_brake_on.rvmat    APPLIED
 ```
 
-Vanilla never writes the leading backslash on a material path — `CivilianSedan` has 25 of them,
-all starting at `dz\` (`P:\DZ\vehicles\wheeled\config.cpp:5180`). Neither does a working modded
+Vanilla never writes the leading backslash on a material path — every entry of `CivilianSedan`'s
+`hiddenSelectionsMaterials[]` and every `*MatOn` / `*MatOff` key after it starts at `dz\`
+(`P:\DZ\vehicles\wheeled\config.cpp:5180-5210`). Neither does a working modded
 glowing item. **But `model=` paths keep their leading backslash and resolve fine**, which is why
 the inconsistency survives review: half the file uses one form, half the other, and only the
 material half breaks.
@@ -100,7 +101,7 @@ bring it back**. The working pattern decouples the beam from `LightIsOn()`:
 
 To make the parked beam appear promptly, copy vanilla's own line rather than inventing one:
 `ForceUpdateLightsStart(); g_Game.GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(ForceUpdateLightsEnd, 100, false);`
-(1.29 `carscript.c:535-536`; the pair is defined at 1.29 `:2981` and `:2990`).
+(1.29 `carscript.c:535-536`; the pair is defined at 1.29 `:2981` and 1.29 `:2990`).
 
 
 **On 1.30 there is nothing to fix.** Measured on 1.30.164200, `LightIsOn()` stays true on the server and on the client when the driver gets out with the lights on, so the pattern above finds nothing to do; its step 3 no longer compiles (`ToggleHeadlights` was deleted), and `ForceUpdateLightsStart`/`End` are empty `[Obsolete]` declarations (`carscript.c:2805-2809`). See `dayz-1-30-vehicles.md`.
@@ -112,8 +113,9 @@ are gated on it (`carscript.c:522-543`, `:1929`). Testing brake lights on a car 
 the cargo produces a confident false FAIL.
 
 Related and cheap: `OnDebugSpawn` must use **`CreateAttachment`**, not `CreateInInventory`.
-Vanilla's `SpawnUniversalParts` (`carscript.c:2500-2528`) drops everything into cargo, so every
-test cycle starts with manual assembly and one forgotten bulb poisons the run.
+Vanilla's `SpawnUniversalParts` (`carscript.c:2500-2528`) uses `CreateInInventory`, which may put a
+part in cargo instead of its slot (`P:\scripts\3_game\systems\inventory\inventory.c:876-893`), so a
+test cycle can start with manual assembly and one forgotten bulb poisons the run.
 
 ### 5. Measure the setter against a VANILLA car spawned alongside
 

@@ -1,6 +1,6 @@
 # skill-runtime-pin
 
-Stdlib pin of a **complete Pack commit** into a new task-local root, plus one
+Stdlib pin of a **complete repo commit** into a new task-local root, plus one
 derived discovery adapter. It is not a universal launcher, not a catalog
 quarantine, and it does not run Cursor or Codex.
 
@@ -42,23 +42,26 @@ receipt **outside** `<probe-root>`. Assembled consumer prompts do not include it
 
 ## Commands
 
-Run from the Pack root, without installing a package:
+Run from the repo root, without installing a package:
 
 ```powershell
-python scripts/tools/skill-runtime-pin/runtime_pin.py materialize --source <pack-repo> --commit <sha> --task-root <new-task-root>
+python scripts/tools/skill-runtime-pin/runtime_pin.py materialize --source <source-repo> --commit <sha> --task-root <new-task-root>
 python scripts/tools/skill-runtime-pin/runtime_pin.py verify --task-root <task-root>
 python scripts/tools/skill-runtime-pin/runtime_pin.py assemble --task-root <task-root> --consumer all
 python scripts/tools/skill-runtime-pin/runtime_pin.py inspect-prompt --task-root <task-root> --prompt-input <prompt-input.txt>
 python scripts/tools/skill-runtime-pin/runtime_pin.py grade --task-root <task-root> --transcript <transcript.json>
 ```
 
-`--task-root` must not exist. It is created as:
+For `materialize`, `--task-root` must not exist. It is created as:
 
 ```
 <task-root>/probe/          # capture + derived adapter (consumer cwd)
 <task-root>/manifest.json  # commit, tree, per-file blob/SHA-256/bytes, before/after
 <task-root>/receipt.json    # oracle: nonce, original hash/path (never inside probe/)
 ```
+
+`assemble` later adds `<task-root>/commands.json` with the same `program` and
+`argv` arrays it prints.
 
 Exit `0` is `PASS`, `1` is `FAIL` or a refused pin, `2` is usage. Reports are
 JSON on stdout.
@@ -180,5 +183,8 @@ foreign absolute path with a copied hash is a failed grade.
 ## Tests
 
 ```powershell
-python -m pytest -q -p no:cacheprovider scripts/dev/knowledge-pack/tests/packctl/test_runtime_pin.py
+python -m pytest -q -p no:cacheprovider scripts/dev/knowledge-pack/tests/packctl/test_packctl_runtime_pin.py
 ```
+
+The tests need `git` on PATH and build their fixture repositories in a
+temporary folder.

@@ -19,11 +19,11 @@ def test_q1_neg_selection_noargs_raises_actionable(fork):
     assert "lod.points" in msg and "new_selection" in msg
 
 
-def test_q1_neg_upstream_parity(upstream):
-    """For the record: upstream rejects the no-arg form too, through its
+def test_q1_neg_bare_codec_parity(bare):
+    """For the record: the bare codec rejects the no-arg form too, through its
     positional signature."""
     with pytest.raises(TypeError):
-        upstream.Selection()
+        bare.Selection()
 
 
 def test_q1_pos_factory_registers_and_roundtrips(fork):
@@ -81,13 +81,13 @@ def test_w_neg_invalid_weight_early_valueerror(fork, bad):
     assert "lf_bad" in msg and repr(bad) in msg
 
 
-def test_w_upstream_crashes_late_and_cryptic(upstream):
-    """Upstream blows up LATE, with a cryptic TypeError from bytes() over a
-    float, for the weight 1.0. This fork turns that into success by
+def test_w_bare_codec_crashes_late_and_cryptic(bare):
+    """The bare codec blows up LATE, with a cryptic TypeError from bytes() over a
+    float, for the weight 1.0. This library turns that into success by
     coercing it, and turns invalid weights into an early ValueError."""
-    p3d = build_cube_p3d(upstream)
+    p3d = build_cube_p3d(bare)
     lod = p3d.lods[0]
-    sel = upstream.Selection(lod.points, lod.faces)
+    sel = bare.Selection(lod.points, lod.faces)
     sel.faces[lod.faces[0]] = 1.0
     lod.selections["lf_up"] = sel
     with pytest.raises(TypeError):
@@ -121,14 +121,14 @@ def test_prop_neg_over_63_bytes_raises(fork, key, value):
     assert "63" in str(ei.value)
 
 
-def test_prop_upstream_corrupts_silently_on_write(upstream):
-    """Verified upstream behaviour: it WRITES a property longer than 63
+def test_prop_bare_codec_corrupts_silently_on_write(bare):
+    """Verified behaviour of the bare codec: it WRITES a property longer than 63
     bytes without complaining - struct '64s' truncates it and loses the NUL
     terminator - and the resulting .p3d is NOT EVEN readable again: the read
     fails on the NUL assert. Silent corruption on write, deferred failure on
-    read: exactly what this fork's guard prevents."""
-    p3d = build_cube_p3d(upstream)
+    read: exactly what this library's guard prevents."""
+    p3d = build_cube_p3d(bare)
     p3d.lods[0].properties["class"] = "x" * 70
-    data = write_bytes(p3d)  # upstream does not complain
+    data = write_bytes(p3d)  # the bare codec does not complain
     with pytest.raises(AssertionError):
-        read_p3d(upstream, data)  # the output is corrupt
+        read_p3d(bare, data)  # the output is corrupt

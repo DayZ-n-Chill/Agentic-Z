@@ -19,7 +19,7 @@ DayZ 1.30 adds hazards that come from the environment itself:
 - Oil pits (`OilPitArea`), dust that depends on the surface (`SurfaceInfo`), and sunstroke that depends on shade (`IsInShadow`).
 - The Nasdara world (Badlands DLC, `appId = 3816030`) with its sand weather and sun table.
 
-Everything here is read from source on `P:\` (DayZ 1.30). Nothing was measured in a running game. Lines marked "reported for 1.30.164289" describe a later build than the one on `P:\` and were not checked.
+Everything here is read from source on `P:\` (DayZ 1.30). Nothing was measured in a running game. Lines marked "build 1.30.164289, not checked on `P:\`" describe a later build than the one on `P:\`.
 
 ## What to read
 
@@ -29,7 +29,7 @@ Everything here is read from source on `P:\` (DayZ 1.30). Nothing was measured i
 | How does heat stroke build, what cools a player, how do shade and vehicle wind work? | `references/thermal-heatstroke.md` |
 | Which mask or glasses stop silicosis and eye irritation, and what do the agents do? | `references/ppe-agents.md` |
 | Where does ceiling, kickup and wheel dust come from, how does an oil pit work, what ships with Nasdara? | `references/dust-oilpit-nasdara.md` |
-| Which vanilla file holds which part, what was not checked, which earlier claims were wrong? | `references/vanilla-file-map.md` |
+| Which vanilla file holds which part, what was not checked, which common assumptions are wrong? | `references/vanilla-file-map.md` |
 
 Work that belongs elsewhere:
 
@@ -79,7 +79,7 @@ A new environmental hazard should copy a vanilla pattern: an `EffectArea` with a
 
 - **Symptom:** the sickness icon does not come back, or stays on.
 - **Cause:** on `P:\`, phase 1's `OnDeactivate` calls `DecreaseDiseaseCount()` with no matching increase (`heatstroke.c:72` to `:75`), and phase 2's `OnActivate` calls `IncreaseDiseaseCount()` with no matching decrease (`heatstroke.c:110` to `:123`).
-- **Fix:** reported fixed in 1.30.164289. On an older build, or when modding the phases, keep each increase and its decrease in the same phase. Detail: `references/thermal-heatstroke.md`.
+- **Fix:** fixed in build 1.30.164289 (not checked on `P:\`). On an older build, or when modding the phases, keep each increase and its decrease in the same phase. Detail: `references/thermal-heatstroke.md`.
 
 ### 5. Breathing protection is not eye protection
 
@@ -133,7 +133,7 @@ A new environmental hazard should copy a vanilla pattern: an `EffectArea` with a
 
 ## Unfinished parts seen in 1.30
 
-1. **Nasdara map files.** Reported, not on `P:\`: the first 1.30 build shipped a 6 file stub of `data_nasdara.pbo`; 1.30.164200 installs the full set of 24 PBOs with the world in an encrypted `.ebo`. See `references/dust-oilpit-nasdara.md`.
+1. **Nasdara map files.** Not checked on `P:\`: the first 1.30 build shipped a 6 file stub of `data_nasdara.pbo`; 1.30.164200 installs the full set of 24 PBOs with the world in an encrypted `.ebo`. See `references/dust-oilpit-nasdara.md`.
 2. **Washing the head with a frozen bottle.** `ActionWashHeadItemContinuous` only refuses gasoline, which matches the changelog's known issue.
 3. **Sickness icons.** Rule 4 above.
 4. **Sun on Chernarus.** `ChernarusPlus` does not fill `m_TemperatureUnderSunModifier`, so the sun effect there stays 0.

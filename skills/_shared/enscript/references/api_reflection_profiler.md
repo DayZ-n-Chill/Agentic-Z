@@ -1,6 +1,6 @@
 # Reference: reflection, the script profiler and debugging globals
 
-Reading and writing fields by name, calling methods by name, creating a class from a string, measuring script time with `EnProfiler`, and the global functions used while debugging. Every line cited as `P:\...:N` was opened on `P:\`; behaviour marked "reported" was measured by the knowledge pack in production mods and not re-run here. More examples are in `skills/enforce-script-reference/references/verified-api-catalog.md` and `timers-performance.md` in the same folder.
+Reading and writing fields by name, calling methods by name, creating a class from a string, measuring script time with `EnProfiler`, and the global functions used while debugging. Every line cited as `P:\...:N` was opened on `P:\`; behaviour marked "reported" was measured in production mods and not re-run here. More examples are in `skills/enforce-script-reference/references/verified-api-catalog.md` and `timers-performance.md` in the same folder.
 
 ## Reflection
 
@@ -15,7 +15,7 @@ Reading and writing fields by name, calling methods by name, creating a class fr
 | `ScriptCaller.Create(fn)` then `Invoke()` | Keep a function reference to call later. | `P:\scripts\2_gamelib\tools.c:160`, `:165` |
 | `DoOnce.Run(key, target, "Method", params)` | New in 1.30: run a method by name once per key for the whole process; `HasRun(key)` and `Clear(key)` go with it. For one time setup, not for per frame debouncing. | `P:\scripts\3_game\doonce.c:12`, `:30`, `:37` |
 
-Limits, reported by the knowledge pack:
+Limits (reported):
 
 - `SetClassVar` reached a `private bool` in a production mod, but eight attempts to replace a `protected ref` collection field returned 0. Do not build a test hook on writing `ref` collections through reflection.
 - A failed write is not harmless. In that probe the eight failed writes were followed by 48 null pointer exceptions when the object was deleted, while a control without reflection had none. When `SetClassVar` returns 0, stop using that object.
@@ -71,4 +71,4 @@ A high count from `GetAllocationsPerClass` in a tick path means allocation every
 | `GetScreenSize(out x, out y)`, `GetMousePos(out x, out y)` | Screen size and mouse position in pixels. | `P:\scripts\1_core\proto\ensystem.c:331`, `:329` |
 | `GetWidgetUnderCursor()`, `GetFocus()` | The widget under the mouse and the focused widget. | `P:\scripts\1_core\proto\enwidgets.c:184`, `:702` |
 
-Crash and log reading, from the knowledge pack (reported): a `crash_<date>_<time>.log` holds script exceptions, not native crashes, which write a separate dump; and when a compile error names a file that looks correct, the cause is often a class from an addon that is not loaded, because the compiler reports the last file it parsed.
+Crash and log reading (reported): a `crash_<date>_<time>.log` holds script exceptions, not native crashes, which write a separate dump; and when a compile error names a file that looks correct, the cause is often a class from an addon that is not loaded, because the compiler reports the last file it parsed.

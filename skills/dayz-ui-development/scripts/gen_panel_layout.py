@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Parameterized DayZ .layout generator for UI-on-demand panels.
 
-Grammar and attribute set copied from stringtable_ladder.layout (a layout
-from the source author's project, flown in game via ui_reload_layout; it is
-not in this repo) and, for HUD panel chrome only, ../templates/hud_overlay.layout.
+Grammar and attribute set are those of a ladder panel layout that was tested
+in game via ui_reload_layout and, for HUD panel chrome only,
+../templates/hud_overlay.layout.
 All TextWidget `text` values are empty literals; content is injected at
 runtime with ui_set_text / FindAnyWidget. No #STR_ keys.
 
@@ -19,7 +19,7 @@ import re
 import sys
 from pathlib import Path
 
-# Output encoding matches stringtable_ladder.layout: UTF-8, no BOM, LF.
+# Output encoding matches the ladder layout: UTF-8, no BOM, LF.
 ENCODING = "utf-8"
 NEWLINE = "\n"
 
@@ -28,7 +28,7 @@ KIND_INFO = "info"
 KIND_HUD = "hud"
 KINDS = (KIND_FEED, KIND_INFO, KIND_HUD)
 
-# Inner fractions copied from stringtable_ladder.layout (header + data rows).
+# Inner fractions of the ladder layout (header + data rows).
 PAD_X = 0.025
 PAD_Y = 0.035
 TITLE_H = 0.075

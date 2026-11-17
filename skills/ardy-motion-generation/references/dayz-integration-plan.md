@@ -41,9 +41,9 @@ The axis convention matters twice. Blender is Z-up; the DayZ engine is Y-up (`ve
 
 Structurally this is the problem the `mixamo-retarget` skill already solves, partly and experimentally: mapping a generic external skeleton onto the specific bone hierarchy DayZ expects. Differences that may make it harder than the Mixamo case:
 
-- The ARDY "core" skeleton has no documented official mapping to any game format (not FBX, not BVH, not SMPL). The bone-by-bone map has to be derived by hand, comparing names and hierarchy against the full DayZ player bone map (core and spine, legs, arms, IK helpers, fingers). That map is in `dayz-animation-pipeline`; the vanilla bone list is `hermit_newbindpose.xob` in `P:\DZ\anims\cfg\skeletons.anim.xml:2`.
-- The exact bone count of "core" is not known from an official source (a video said 27; that is not confirmed on research.nvidia.com or GitHub). Count the actual joints of the first generated `.npz` before trying to map.
-- DayZ expects fingers, the hand helpers `LeftHand_Dummy` and `RightHand_Dummy` (both `lod = "2"`, `P:\DZ\anims\cfg\skeletons.anim.xml:74` and `P:\DZ\anims\cfg\skeletons.anim.xml:100`) and several IK helpers (`RightHandOrigin`, `LeftHandOrigin`, `LeftHandIKTarget`, listed for `player_testing.xob` at `P:\DZ\anims\cfg\skeletons.anim.xml:149-151`). A generic "core" skeleton of 27 bones probably covers none of them. Leg and torso locomotion may map reasonably well, but hands and fingers will probably have to stay in their bind pose (unanimated) or inherit from another source.
+- The ARDY "core" skeleton has no documented official mapping to any game format (not FBX, not BVH, not SMPL). The bone-by-bone map has to be derived by hand, comparing names and hierarchy against the full DayZ player bone map (core and spine, legs, arms, IK helpers, fingers). That map is in `dayz-animation-pipeline`; the vanilla bone list is the `player_testing.xob` block that starts at `P:\DZ\anims\cfg\skeletons.anim.xml:110`.
+- The exact bone count of "core" is not known from an official source (the figure of about 27 is not confirmed on the project's landing page or in its repo). Count the actual joints of the first generated `.npz` before trying to map.
+- DayZ expects fingers, the hand helpers `LeftHand_Dummy` and `RightHand_Dummy` (both `lod = "1"` in `player_testing.xob`, `P:\DZ\anims\cfg\skeletons.anim.xml:116` and `P:\DZ\anims\cfg\skeletons.anim.xml:115`) and several IK helpers (`RightHandOrigin`, `LeftHandOrigin`, `LeftHandIKTarget`, listed for `player_testing.xob` at `P:\DZ\anims\cfg\skeletons.anim.xml:149-151`). A generic "core" skeleton of 27 bones probably covers none of them. Leg and torso locomotion may map reasonably well, but hands and fingers will probably have to stay in their bind pose (unanimated) or inherit from another source.
 
 **Open question to settle with the first test:** is retargeting only legs, torso and spine (leaving arms and hands untouched, or additive) enough for the real goal of running, jumping and vaulting? If yes, the retargeting scope shrinks a lot and the risk drops. Decide this before trying to map hands and fingers, which is where this kind of retarget usually fails most.
 
@@ -56,7 +56,7 @@ Once an FK pose exists on the Blender armature with the correct DayZ bone names,
 If step 2 costs too much for the actual benefit:
 
 - Use ARDY only as a **visual reference** (a playblast) and animate by hand in Blender or Cascadeur, instead of trying an automatic one-to-one retarget. This loses "real time" but avoids the skeleton mapping problem.
-- Check whether Cascadeur covers the same locomotion goal without ARDY's non-standard skeleton problem. In the source notes' comparison of animation tools Cascadeur got a conditional medium verdict and was the only one with custom skeleton, IK and FK, and physics support. That comparison note is not part of this repo.
+- Check whether Cascadeur covers the same locomotion goal without ARDY's non-standard skeleton problem. Of the animation tools compared for this goal, Cascadeur was the only one with custom skeleton, IK and FK, and physics support, and its fit was rated conditional and medium. That rating is not checkable on `P:\`.
 
 ## Cross-references
 

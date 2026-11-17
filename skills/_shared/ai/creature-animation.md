@@ -8,9 +8,9 @@ A creature's config names its graph in `class enfanimsys`:
 
 | Key | Wolf (`P:\DZ\animals\canis_lupus\config.cpp:266` to `:272`) | Infected (`P:\DZ\characters\zombies\config.cpp:71` to `:78`) |
 |---|---|---|
-| `meshObject` | `canis_lupus_skeleton.xob` | `z_hermit_m.xob` |
+| `meshObject` | `dz\animals\canis_lupus\Data\canis_lupus_skeleton.xob` | `dz\characters\zombies\z_hermit_m.xob` |
 | `graphname` | `dz\animals\animations\!graph_files\Wolf\Wolf_Graph.agr` | `dz\anims\workspaces\infected\infected_main\infected.agr` |
-| `defaultinstance` | `Wolf_AnimInstance.asi` | `infected_main.asi` |
+| `defaultinstance` | `dz\animals\animations\!graph_files\Wolf\Wolf_AnimInstance.asi` | `dz\anims\workspaces\infected\infected_main\infected_main.asi` |
 | `startnode` | `AlignToTerrain_Rot` | `MasterControl` |
 | `skeletonName` | `canis_lupus_skeleton.xob` | `hermit_newbindpose.xob` |
 
@@ -37,7 +37,7 @@ These are the names graph conditions test. The script calls that raise them (`St
 | Animals | `CMD_Attack`, `CMD_AttackSuccess`, `CMD_Death`, `CMD_JumpType`, `CMD_LookAt`, `CMD_AnimCallBack`, `CMD_Hit`, `CMD_LookAtXChange` | `P:\DZ\animals\animations\!graph_files\wolf\wolf_graph.agr:63` to `:84` |
 | Infected | `CMD_HIT_LIGHT`, `CMD_HIT_HEAVY`, `CMD_DEATH`, `CMD_ATTACK`, `CMD_TURN`, `CMD_VAULT`, `CMD_CRAWL`, `CMD_NODEATH` | `P:\DZ\anims\workspaces\infected\infected_main\infected.agr:46` to `:67` |
 
-`CMD_AttackSuccess` is the attack connecting. There is no `CMD_Success`, and the spellings with spaces or lower case that tutorials use do not exist.
+`CMD_AttackSuccess` is the attack connecting. There is no `CMD_Success`, and spellings with spaces or in lower case do not exist.
 
 ## Variables
 
@@ -72,4 +72,4 @@ Bone names for all vanilla skeletons are listed in `P:\DZ\anims\cfg\skeletons.an
 - Start from the vanilla creature closest in build and behaviour: its skeleton, graph, template, instance and AI template. Change as little as possible.
 - Get one idle state with one clip playing in game before adding states.
 - A mod that ships its own graph for a new creature class collides with nothing. A mod that replaces a vanilla creature's graph collides with any other mod replacing the same one.
-- 1.30 rewrote every vanilla graph in a new text format. A graph written for 1.29 has to be ported; whether 1.30 loads the old format is not tested (source pack).
+- 1.30 rewrote every vanilla graph in a new text format. A graph written for 1.29 has to be ported; whether 1.30 loads the old format is not tested.

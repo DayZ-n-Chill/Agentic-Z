@@ -1,6 +1,6 @@
 # DayZ 1.30 sound: headless check, noise, music, radios
 
-What DayZ 1.30 changed for mod audio, with the vanilla lines quoted, what breaks in a 1.29 mod and a migration checklist. Line numbers are from the 1.30 scripts on `P:\`. Statements about 1.29 come from the notes this file was built from; `P:\` holds 1.30, so they are not yet checked on `P:\`.
+What DayZ 1.30 changed for mod audio, with the vanilla lines quoted, what breaks in a 1.29 mod and a migration checklist. Line numbers are from the 1.30 scripts on `P:\`. `P:\` holds 1.30, so statements about 1.29 are not yet checked on `P:\`.
 
 The pack files under `skills/_shared/audio-fx/` explain how to use each system; this file is the record of what changed.
 
@@ -35,7 +35,7 @@ The pack files under `skills/_shared/audio-fx/` explain how to use each system; 
 Up to 1.29 that was the only check written down for sound. 1.30 adds a second one on the game, for code that must not run on a headless client either:
 
 ```c
-// P:\scripts\3_game\global\game.c:1132
+// P:\scripts\3_game\global\game.c:1132 (the declaration is on line 1136)
 	/**
 	 \brief Check whether the application is headless or a dedicated server (it combines IsDedicatedServer and IsHeadless)
 		\note This includes servers with a head as well (-headlessMode=0)
@@ -65,7 +65,7 @@ The vanilla sound handlers that use it:
 	{
 ```
 
-`SEffectManager.Cleanup` logs a warning when sound parameters or effects exist on that side (`P:\scripts\3_game\effectmanager.c:536`). The source notes say `IsHeadlessOrDedicatedServer` is not in the 1.29 `game.c`.
+`SEffectManager.Cleanup` logs a warning when sound parameters or effects exist on that side (`P:\scripts\3_game\effectmanager.c:536`). `IsHeadlessOrDedicatedServer` is not in the 1.29 `game.c` (1.29, not yet checked on `P:\`).
 
 Design note: in new play and stop code for synced item sounds, test `IsHeadlessOrDedicatedServer()`. `PlaySoundSet` on `Object` still tests `IsDedicatedServer()`; do not assume it moved.
 
@@ -191,7 +191,7 @@ The base radio assigns `SOUND_BUNKER_STATIC_NOISE` the same way (`P:\scripts\4_w
 			return m_CustomVegetationSoundsMap.Get(stepEventID);
 ```
 
-The macro `CUSTOM_PLAYER_MOVEMENT_SOUNDSETS` is at `P:\DZ\data\basicdefines.hpp:310` and runs to line 338. (An earlier digest placed it at lines 68 to 96 of that file; those lines hold other defines.) Animation event IDs it uses: walking 1, 2, 23, 24, 51, 52; crouched 21, 22, 31, 32, 33, 34, 131; running 3, 4, 17, 101, 53, 54; sprinting 5, 6, 35, 36, 37, 38, 100, 110, 111; scuffing 7, 8.
+The macro `CUSTOM_PLAYER_MOVEMENT_SOUNDSETS` is at `P:\DZ\data\basicdefines.hpp:310` and runs to line 338. Animation event IDs it uses: walking 1, 2, 23, 24, 51, 52; crouched 21, 22, 31, 32, 33, 34, 131; running 3, 4, 17, 101, 53, 54; sprinting 5, 6, 35, 36, 37, 38, 100, 110, 111; scuffing 7, 8.
 
 ## The destructor of a sound event
 
@@ -239,7 +239,7 @@ The 1.30 changelog mentions `SoundHitType` and a `GetSoundHitType()` getter. No 
 1. Calls to `GetNoiseReductionByWeather` and `NoiseAIEvaluate.GetNoiseReduction` are marked obsolete.
 2. A weather multiplier still passed into `AddNoise` damps the noise twice.
 3. A custom radio that ignores the bunker frequency never plays `bunkerbroadcast_staticnoise_SoundSet`.
-4. A subclass of `InfectedSoundEventBase` whose destructor calls `Stop()` without `if (g_Game)` can crash on shutdown (reported in the source notes, not checked on `P:\`).
+4. A subclass of `InfectedSoundEventBase` whose destructor calls `Stop()` without `if (g_Game)` can crash on shutdown (not yet checked in game).
 5. A looped sound with a fade in now starts at volume zero. Levels tuned around the first frame of 1.29 sound different.
 
 ## Migration checklist

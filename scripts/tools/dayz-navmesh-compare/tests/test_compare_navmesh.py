@@ -122,7 +122,7 @@ class TestStructure(_Case):
         self.assertIsNone(report["changed_terrain_vertices"])
         self.assertIsNone(report["max_structural_tile_distance_m"])
 
-    def test_report_keeps_the_source_fields(self):
+    def test_report_has_every_summary_field(self):
         report = self.compare(self.new(), expect=0)
 
         for key in ("status", "old_nm", "old_nm_sha256", "new_nm", "new_nm_sha256", "old_terrain_sha256",

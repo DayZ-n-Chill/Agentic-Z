@@ -8,7 +8,7 @@ param(
 
     [switch]$NoWrite,
 
-    # Restock the vendored wheel without reading the patch payload. Wheel
+    # Restock the bundled wheel without reading the patch payload. Wheel
     # correctness depends only on wheel-manifest.json and scripts/tools/py3d/dist;
     # binding it to a prose preimage made every skill edit abort the restock.
     [switch]$WheelOnly
@@ -23,9 +23,9 @@ $WheelRoot = Join-Path $Py3dRoot "dist"
 $TargetRoot = (Resolve-Path -LiteralPath $TargetSkillRoot).Path
 $BackupBase = [IO.Path]::GetFullPath($BackupRoot)
 
-# Candidate set. A skill is restocked only where it ALREADY vendors a wheels/
+# Candidate set. A skill is restocked only where it ALREADY has a wheels/
 # directory: this script restocks, it never decides that a skill starts
-# vendoring. Three candidates install py3d editable instead.
+# carrying a wheel. A candidate without one installs py3d editable instead.
 $WheelSkillNames = @(
     "dayz-model-pipeline",
     "dayz-3d-viewer",
@@ -450,7 +450,7 @@ foreach ($SkillName in $PresentWheelSkills) {
     $WheelsDirectory = Join-Path (Join-Path $TargetRoot $SkillName) "wheels"
     Assert-UnderRoot $WheelsDirectory $TargetRoot "wheel directory"
     if (-not (Test-Path -LiteralPath $WheelsDirectory -PathType Container)) {
-        Write-Host "[SKIP] not vendored: $SkillName"
+        Write-Host "[SKIP] no wheels folder: $SkillName"
         continue
     }
     $Existing = @(

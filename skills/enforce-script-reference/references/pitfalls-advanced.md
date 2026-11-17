@@ -1,6 +1,6 @@
 # Advanced pitfalls and debugging
 
-Compiler quirks, runtime crashes, `modded class` rules, scoping traps, debugging tools and the DayZ 1.30 traps. A line cited as `P:\...:N` was opened on `P:\` (game storage version 144). Measured results name the build or the mod that measured them and were not re-run here; entries marked "reported" come from the community and could not be checked on `P:\`. The rule numbers point into `hard-rules.md`.
+Compiler quirks, runtime crashes, `modded class` rules, scoping traps, debugging tools and the DayZ 1.30 traps. A line cited as `P:\...:N` was opened on `P:\` (game storage version 144). Measured results name the build they were measured on and were not re-run here; entries marked "reported" could not be checked on `P:\`. The rule numbers point into `hard-rules.md`.
 
 ## Compiler Bugs & Quirks
 
@@ -67,7 +67,7 @@ correct, check if any class it references requires an addon that isn't loaded.
 
 ### 5. An #ifdef Block Holding Only a Comment Compiles (no segfault measured)
 
-[EXACT][CLAIM-ENFORCE-EMPTY-IFDEF-COMMENT-130] This entry used to say that an empty `#ifdef` block, comments or not, causes a segfault. Measured on DayZDiag 1.30.164289 (2026-11-09), in a mod's `4_World` scripts: a block holding only a comment compiled and ran on server and client, at file scope, in a class body and in a method body, each with `DIAG_DEVELOPER` (which DayZDiag defines on both peers) and with a macro nobody defines; the method's marker was printed and neither process hung. Vanilla 1.30 ships such a block, `#ifdef DIAG_DEVELOPER` around one commented line, at `P:\scripts\4_world\classes\environment\environment.c:1-3`.
+An empty `#ifdef` block, comments or not, is often said to cause a segfault. Measured on DayZDiag 1.30.164289 (2026-11-09), in a mod's `4_World` scripts: a block holding only a comment compiled and ran on server and client, at file scope, in a class body and in a method body, each with `DIAG_DEVELOPER` (which DayZDiag defines on both peers) and with a macro nobody defines; the method's marker was printed and neither process hung. Vanilla 1.30 ships such a block, `#ifdef DIAG_DEVELOPER` around one commented line, at `P:\scripts\4_world\classes\environment\environment.c:1-3`.
 
 ```
 // Compiled and ran on DayZDiag 1.30.164289, server and client
@@ -78,21 +78,21 @@ correct, check if any class it references requires an addon that isn't loaded.
 
 Not measured: a block with nothing at all inside, a retail build, DayZ 1.29. The script validator (`scripts/tools/dayz-script-validator/`) still reports such a block, as a WARN (`ES-EMPTY-IFDEF`); remove the block if it holds no code.
 
-### **`Expected ',' or ')', not a '0'`** + cascade (`Unexpected scope`, `Syntax error`) on a signature line (SP-364)
+### **`Expected ',' or ')', not a '0'`** + cascade (`Unexpected scope`, `Syntax error`) on a signature line
 
-- The lexer splits an identifier that STARTS with a reserved keyword followed by a digit: `out vector out0` is tokenized as keyword `out` + type `vector` + keyword `out` + literal `0`, so the parser sees a stray `'0'` that "does not exist" on the line at first glance. Same family as SP-073 (keyword-as-name) but the trigger is keyword+digit, not keyword alone. Affected prefixes: `out`, `ref`, `new`, `auto`, `inout`. Vanilla contains zero `out<digit>` identifiers (full grep of `P:\scripts`)
-- Rename to a non-keyword prefix: `dst0`, `res0`, `val0`, etc. Diag: if the error names a digit token (`'0'`, `'1'`, …) you cannot find on the line, suspect a parameter or variable whose name starts with a reserved keyword. Measured in the LF-COM mod (2026-08-07): the compile failed at three signature lines, and renaming `out0..out3` to `dst0..dst3` compiled clean.
+- The lexer splits an identifier that STARTS with a reserved keyword followed by a digit: `out vector out0` is tokenized as keyword `out` + type `vector` + keyword `out` + literal `0`, so the parser sees a stray `'0'` that "does not exist" on the line at first glance. Same family as a keyword used as a name (the `owned` row in `review-and-troubleshooting.md`), but the trigger is keyword+digit, not keyword alone. Affected prefixes: `out`, `ref`, `new`, `auto`, `inout`. Vanilla contains zero `out<digit>` identifiers (full grep of `P:\scripts`)
+- Rename to a non-keyword prefix: `dst0`, `res0`, `val0`, etc. Diag: if the error names a digit token (`'0'`, `'1'`, …) you cannot find on the line, suspect a parameter or variable whose name starts with a reserved keyword. Measured in a mod compile (2026-08-07): the compile failed at three signature lines, and renaming `out0..out3` to `dst0..dst3` compiled clean.
 
 ### **`Unknown operator '%'`**: `%` in an expression with a float literal
 
-[EXACT][CLAIM-ENFORCE-MODULO-FLOAT-LITERAL-130] On DayZDiag 1.30.164289 (2026-11-09), in a mod's `4_World` script, `float x = (cell % 103) * 150 + 150 * 0.5;` and `float x = (cell % SIDE) * STEP + STEP * 0.5;` (`static const float STEP`, `static const int SIDE`) each stopped the World module with `Unknown operator '%'` at its own line, then `Can't compile "World" script module!`. With the `%` in an `int` local first, `int col = cell % SIDE; float x = col * STEP; x = x + STEP * 0.5;` compiled and ran. Both failing lines hold the literal `0.5`, so whether a `static const float` with no literal beside it fails is not isolated. The ticket that reported the second expression saw `Unknown operator ''` instead, in a mission's `init.c`, which was not measured again. Syntax rule 13 in `hard-rules.md` gives the rule; the script validator reports it as `ES-MODULO-FLOAT-CONTEXT`.
+On DayZDiag 1.30.164289 (2026-11-09), in a mod's `4_World` script, `float x = (cell % 103) * 150 + 150 * 0.5;` and `float x = (cell % SIDE) * STEP + STEP * 0.5;` (`static const float STEP`, `static const int SIDE`) each stopped the World module with `Unknown operator '%'` at its own line, then `Can't compile "World" script module!`. With the `%` in an `int` local first, `int col = cell % SIDE; float x = col * STEP; x = x + STEP * 0.5;` compiled and ran. Both failing lines hold the literal `0.5`, so whether a `static const float` with no literal beside it fails is not isolated. The second expression has also been seen to fail with `Unknown operator ''`, in a mission's `init.c`; that was not measured again. Syntax rule 13 in `hard-rules.md` gives the rule; the script validator reports it as `ES-MODULO-FLOAT-CONTEXT`.
 
-### Six recurring compile-fail families (SP-208, added 2026-08-31)
+### Six recurring compile-fail families
 
 1. **Opaque file handles are not integers.** `FileHandle` and `FindFileHandle` are `int[]` aliases (`P:\scripts\1_core\proto\ensystem.c:390`, `:503`). Declare the proper type without `= 0`; test `if (!handle)` and track open state separately. The directory API is `FindFile(pattern, out name, out attr, flags)`, `FindNextFile(handle, out name, out attr)`, then `CloseFindFile(handle)` (`:520-522`). `OpenFile` returns `FileHandle` (`:417`); `ReadFile(FileHandle, void, int)` (`:425`) is not a whole-file-by-path helper. Read text with `OpenFile(READ)` + repeated `FGets` + `CloseFile`, as vanilla does (`P:\scripts\5_mission\gui\controlsxbox.c:297-305`).
 2. **`ScriptRPC` has no `WriteString`.** The class `ScriptRPC` adds only `Reset` and `Send` to `ParamsWriteContext` (`P:\scripts\3_game\gameplay.c:104-118`); that context is a `Serializer`, whose payload API is generic `Write` / `Read` (`P:\scripts\1_core\proto\serializer.c:57-58`). A class member that keeps the RPC object needs a strong `ref`.
 3. **`string.Replace` mutates and returns an `int`** (`P:\scripts\1_core\proto\enstring.c:156`). Chaining `.Replace().Replace()` tries to call `Replace` on that integer. Copy to a local, call `Replace` once per step, then return the local.
-4. **Long formulas have a compiler limit.** [EXACT][CLAIM-ENFORCE-FORMULA-TERMS-130] On DayZDiag 1.30.164289, one statement on one line that alternates string literals with an `int` and a float's `ToString()` (`string s = "a" + i0 + " b" + f0.ToString() + …`) compiled with 17 terms and failed with 18 and with 20: `Formula too complex` on its line, then `Incompatible parameter 'i0'`, then `Can't compile "World" script module!`. Other operand types and a statement over several lines are not measured; a JSON-style expression with roughly 30 operands also failed in the LF-COM compile gate. Build it incrementally (`result = result + part;`). The script validator warns on a statement that holds a string literal and joins 18 or more terms with `+` (`ES-FORMULA-TOO-COMPLEX`).
+4. **Long formulas have a compiler limit.** On DayZDiag 1.30.164289, one statement on one line that alternates string literals with an `int` and a float's `ToString()` (`string s = "a" + i0 + " b" + f0.ToString() + …`) compiled with 17 terms and failed with 18 and with 20: `Formula too complex` on its line, then `Incompatible parameter 'i0'`, then `Can't compile "World" script module!`. Other operand types and a statement over several lines are not measured; a JSON-style expression with roughly 30 operands also failed in a mod's compile. Build it incrementally (`result = result + part;`). The script validator warns on a statement that holds a string literal and joins 18 or more terms with `+` (`ES-FORMULA-TOO-COMPLEX`).
 5. **Locals have method scope, not block scope.** Reusing one local name in sibling `if` or `switch` branches produces `Multiple declaration`; rename per branch or hoist once. Separate `#ifdef` / `#else` compile views may reuse a name because only one view exists at a time.
 6. **Brace-only balance is incomplete.** `Unmatched brackets detected!` can come from parentheses or square brackets. An offline checker must balance `()`, `[]`, and `{}` after stripping strings and comments, per file. It cannot replace the game compile gate; preprocessor views, encoding failures, and these API contracts remain outside that check.
 
@@ -121,7 +121,7 @@ use an intermediate local variable.
 
 Using `NormalMapMacro` shader in .rvmat files causes dedicated server crash
 at model load time. The shader references client-only rendering paths.
-(Reported from the LFPowerGrid mod; not checked on `P:\`.)
+(Reported in a third-party mod; not checked on `P:\`.)
 
 ```
 // CRASH on dedicated server
@@ -155,7 +155,7 @@ override EntityAI PlaceEntity(EntityAI newEntity)
 ### 9. map<Widget, T> runtime crash (reported; vanilla uses this key type)
 
 ```
-// Reported from the LFPowerGrid mod: compiled, then crashed at runtime
+// Seen in one third-party mod: compiled, then crashed at runtime
 ref map<Widget, int> m_Map;
 
 // The mod's workaround: parallel arrays
@@ -172,17 +172,17 @@ ref array<int> m_Values;
 // CreateWidgets() fails in RPC context (no workspace available)
 void OnRPC(...)
 {
-    LFPG_SorterView view = new LFPG_SorterView();  // CRASH
+    MyMod_SorterView view = new MyMod_SorterView();  // CRASH
 }
 
 // CORRECT — pre-create in MissionInit, show/hide later
 class MissionGameplay
 {
-    ref LFPG_SorterView m_SorterView;
+    ref MyMod_SorterView m_SorterView;
 
     override void OnInit()
     {
-        m_SorterView = new LFPG_SorterView();  // safe here
+        m_SorterView = new MyMod_SorterView();  // safe here
     }
 }
 ```
@@ -228,15 +228,15 @@ modded class PlayerBase
 ```
 
 **CRITICAL RULES:**
-1. A `modded class` can add member variables as well as methods and overrides. (The knowledge pack's older text here said it cannot; rule 25 in `hard-rules.md` and the prefix convention further down this file both add members, and vanilla's own modding example adds a `static const int` member to `modded class ParticleList`, `P:\scripts\3_game\particles\particlelist.c:5`.) Prefix every member you add.
+1. A `modded class` can add member variables as well as methods and overrides. (Rule 25 in `hard-rules.md` and the prefix convention further down this file both add members, and vanilla's own modding example adds a `static const int` member to `modded class ParticleList`, `P:\scripts\3_game\particles\particlelist.c:5`.) Prefix every member you add.
 2. Two `modded class` declarations for the same class CAN coexist in different files
 3. Call `super.MethodName()` in overrides to preserve vanilla behavior
-4. Only ONE `modded class Hologram` can exist across ALL files, because multiple declarations conflict (reported from the LFPowerGrid mod; it contradicts rule 2 for this one class and was not checked on `P:\`)
+4. Only ONE `modded class Hologram` can exist across ALL files, because multiple declarations conflict (reported in a third-party mod; it contradicts rule 2 for this one class and was not checked on `P:\`)
 
     - **`modded class MissionServer` — `OnGameplayDataHandlerLoad` has a vanilla implementation.** It sets `m_RespawnMode`, the debug monitor, and calls `InitialiseWorldData()` (`P:\scripts\5_mission\mission\missionserver.c:161-167`). A `modded` override that omits `super` silently breaks world data. The same applies to `OnClientPrepareEvent`, which decides `useDB` from `GetHive()` (`P:\scripts\5_mission\mission\missionserver.c:449-463`): without `super`, character loading breaks.
-    - **CE-safe spawn timing is `GlobalsInit()`, not `OnGameplayDataHandlerLoad`.** The vanilla spawn and the comment *«CE being initialized before spawning them»* live inside `GlobalsInit()` (`P:\scripts\3_game\dayzgame.c:1160`, opens with `if (GetCEApi())`, spawn at `:1173-1174`), queued separately at `:1096`. The Mission hook runs much earlier: `MissionServer.OnInit` calls `CfgGameplayHandler.LoadData()` at `P:\scripts\5_mission\mission\missionserver.c:88` (`OnInit` from `:85`, carriers at `:91`). Citing the `GlobalsInit` spawn lines to justify a spawn in `OnGameplayDataHandlerLoad` is a misattributed citation. The derived rule is not "always spawn late": vanilla spawns Underground carriers in `OnInit` (`UndergroundAreaLoader.SpawnAllTriggerCarriers`, `P:\scripts\5_mission\mission\missionserver.c:91`) because they do not touch the CE. Spawn where vanilla spawns the family you are creating: items / `ItemBase` with CE lifetime go through the ObjectSpawner route.
+    - **CE-safe spawn timing is `GlobalsInit()`, not `OnGameplayDataHandlerLoad`.** The vanilla spawn and the comment *«CE being initialized before spawning them»* live inside `GlobalsInit()` (`P:\scripts\3_game\dayzgame.c:1158`, opens with `if (GetCEApi())` at `:1160`, spawn at `:1173-1174`), queued separately at `:1096`. The Mission hook runs much earlier: `MissionServer.OnInit` calls `CfgGameplayHandler.LoadData()` at `P:\scripts\5_mission\mission\missionserver.c:88` (`OnInit` from `:85`, carriers at `:91`). Citing the `GlobalsInit` spawn lines to justify a spawn in `OnGameplayDataHandlerLoad` is a misattributed citation. The derived rule is not "always spawn late": vanilla spawns Underground carriers in `OnInit` (`UndergroundAreaLoader.SpawnAllTriggerCarriers`, `P:\scripts\5_mission\mission\missionserver.c:91`) because they do not touch the CE. Spawn where vanilla spawns the family you are creating: items / `ItemBase` with CE lifetime go through the ObjectSpawner route.
 
-### A variable named like a type (`map`) fails the whole module (SP-317)
+### A variable named like a type (`map`) fails the whole module
 
 Declaring a variable whose name is already a type name does not compile:
 `Widget map = root.FindAnyWidget("mapWidget")` fails with
@@ -247,8 +247,8 @@ on later lines (`Trying to modify write protected variable '(null)'`,
 line of the block; the rest is noise. Same risk with any type name
 (`set`, `array`, `vector`, `string`, `Class`). Indirect symptom: the client
 boots, never enters, and dies on its own; the server writes it clearly in
-`script_*.log`, the client does not. Origin: a probe script in the LFVehicleUI
-mod (2026-08-22), which would never have compiled even if packed.
+`script_*.log`, the client does not. Measured with a probe script
+in a mod (2026-08-22).
 
 ### Detecting Other Mods
 
@@ -366,7 +366,7 @@ Common log patterns and what they mean:
 
 ### String parameters: a literal argument is fine
 
-The knowledge pack's older text here told you to assign every string literal to a local before passing it ("may cause issues"). That is not a rule of the language: syntax rule 5 in `hard-rules.md` says string literals as function arguments work, and vanilla passes them everywhere, for example `layoutRoot.FindAnyWidget("continuebtn")` (`P:\scripts\5_mission\gui\ingamemenu.c:40`).
+Assigning every string literal to a local before passing it is not a rule of the language: syntax rule 5 in `hard-rules.md` says string literals as function arguments work, and vanilla passes them everywhere, for example `layoutRoot.FindAnyWidget("continuebtn")` (`P:\scripts\5_mission\gui\ingamemenu.c:40`).
 
 ```
 widget.FindAnyWidget("MyWidget");  // fine
@@ -381,10 +381,10 @@ widget.FindAnyWidget(wName);
 ```
 // Enforce uses 32-bit float — precision ~7 significant digits
 // Large timestamps lose precision after 16,777,216 (2^24)
-// GetTime() itself returns an int (3_game/global/game.c, line 1534); the loss starts when you store it in a float
+// GetTime() itself returns an int (P:\scripts\3_game\global\game.c:1534); the loss starts when you store it in a float
 float time = GetGame().GetTime();  // milliseconds, converted to float
-// After 4.66 hours, this value loses sub-millisecond precision
-// After 46 hours, loses sub-second precision
+// After 4.66 hours (2^24 ms) the float can no longer hold every millisecond: the step becomes 2 ms
+// After 46 hours the step is 16 ms, and it keeps doubling
 ```
 
 ### ToString Limitations
@@ -395,27 +395,26 @@ int x = 42;
 string s = x.ToString();  // "42"
 
 // No printf-style formatting — build manually
-// The LFPowerGrid mod formats one decimal by hand (its FormatFloat1 helper in LFPG_DeviceInspector)
+// Format one decimal by hand with a small helper of your own
 ```
 
 ---
 
 # Additional pitfalls: style guide and performance
 
-These entries come from the community EnScript style guide written by Expansion developers.
-Each one notes whether it was checked against vanilla on `P:\`.
+Each entry notes whether it was checked against vanilla on `P:\`.
 
 ### Compiler / language quirks
 
 - **Empty `#ifdef` / `#ifndef` blocks were reported to segfault**, even with only comments
-  inside *(Expansion devs)*. Not reproduced: on DayZDiag 1.30.164289 a block holding only a
+  inside. Not reproduced: on DayZDiag 1.30.164289 a block holding only a
   comment compiled and ran on server and client, at file scope, in a class body and in a
   method body (section 5 above). A block with nothing at all inside, a
   retail build and DayZ 1.29 are not measured. Remove a block that holds no code.
 
 - **`1 < int.MIN` returns TRUE** — and `1 < -2147483647` also returns TRUE. Integer
   comparison against `int.MIN` is broken. Always guard MIN/MAX comparisons explicitly.
-  *(Reported community quirk; not a vanilla pattern.)*
+  *(Reported; not checked on `P:\`.)*
 
 - **Switch with `default` STILL requires a return outside** — even though every case
   including default returns, the compiler complains "function must return a value".
@@ -457,10 +456,10 @@ Each one notes whether it was checked against vanilla on `P:\`.
   - Static arrays on the class you're looking for (`s_AllInstances`)
   - Triggers (`ScriptedEntity`-derived with collision events)
   - `GetScene()` API for scene-graph queries
-  *(Vanilla call, performance claim is community guidance.)*
+  *(Vanilla call; the performance claim is not measured.)*
 
 - **`SurfaceIsPond` / `SurfaceIsSea` / `SurfaceRoadY` are slow**: `proto native` at `P:\scripts\3_game\global\game.c:1197`,
-  `:1196`, `:1177` in 1.30 (`:1182`, `:1181`, `:1163` in 1.29). For "is this point in water?" prefer:
+  `:1196`, `:1177`. For "is this point in water?" prefer:
 
   ```c
   if (g_Game.GetWaterDepth(pos) > 0)  // pos is vector
@@ -541,7 +540,7 @@ prefix the member to avoid collision with other mods that also extend `X`:
 modded class ItemBase
 {
     bool m_Expansion_CustomFlag;       // GOOD — prefixed
-    int  m_LFPG_PowerDraw;             // GOOD — prefixed
+    int  m_MyMod_PowerDraw;            // GOOD — prefixed
     bool m_CustomFlag;                 // BAD — collides with any other mod's m_CustomFlag
 }
 ```
@@ -582,7 +581,7 @@ Then in script:
 #endif
 ```
 
-*(Version-gated — works only on DayZ 1.26 and later.)*
+*(Version-gated: works only on DayZ 1.26 and later. Not checked on `P:\`.)*
 
 ### Cross-mod `#ifdef` gates: use the CfgMods auto-define, NOT a manual `#define`
 
@@ -594,14 +593,14 @@ identical. A consumer mod's `#ifdef X` that gates code against the manual
 define will silently compile to no-op.
 
 ```c
-// In <YourMod>/scripts/4_World/...c — gating an override of a Boomlay class:
+// In <YourMod>/scripts/4_World/...c — gating an override of another mod's class:
 
-#ifdef bl_pallet_table   // CfgMods auto-define from bl_pallet_table.pbo
-modded class bl_pallet_table_s { ... }   // works
+#ifdef OtherMod_table   // CfgMods auto-define from OtherMod_table.pbo
+modded class OtherMod_table_s { ... }   // works
 #endif
 
-#ifdef bl_pallet_furniture   // manual #define in bl_pallet_table/Common/Define.c
-modded class bl_pallet_table_s { ... }   // never compiles, override silently lost
+#ifdef OtherMod_furniture   // manual #define in OtherMod_table/Common/Define.c
+modded class OtherMod_table_s { ... }   // never compiles, override silently lost
 #endif
 ```
 
@@ -612,13 +611,13 @@ Rule: when picking the cross-mod gate symbol, audit the target PBO's
 `config.cpp` `CfgPatches` / `CfgMods.defines[]` entries — never trust a
 matching `#define` in `scripts/Common/Define.c` to propagate.
 
-### `#ifdef DEVELOPER` ≠ `DIAG_DEVELOPER` — read the actual compile defines (SP-037, added 2026-06-29)
+### `#ifdef DEVELOPER` ≠ `DIAG_DEVELOPER` — read the actual compile defines
 
-Anti-confabulation. Vanilla has APIs guarded by `#ifdef DEVELOPER` (e.g. `DayZPlayerSyncJunctures.SendGetInVehicle` → `SJ_DEBUG_GET_IN_VEHICLE`, much of `plugindeveloper.c`). Standard `DayZDiag_x64` defines `DIAG_DEVELOPER` but does **NOT** define `DEVELOPER`. Emitting a `DEVELOPER`-only symbol from your mod breaks the compilation of the **entire PBO** (cross-mod compile failure, no clean RPT, only "PBO not loaded" / addons missing) — not a silent no-op. Before relying on any `#ifdef <SYMBOL>` API, verify the `defines:` line of `<profiles>\script_*.log` for BOTH server and client peers (the runtime tells you what is defined). That `OnDebugSpawn` (`#ifdef DIAG_DEVELOPER`) works does NOT prove `DEVELOPER` is active — different macros. Origin: the DayZ-MCP bridge mod, 2026-06-28 (the first hypothesis was refuted by a review that read the real compile logs; it would have shipped a broken PBO). Cross-ref: LL-173.
+Vanilla has APIs guarded by `#ifdef DEVELOPER` (e.g. `DayZPlayerSyncJunctures.SendGetInVehicle` → `SJ_DEBUG_GET_IN_VEHICLE`, much of `plugindeveloper.c`). Standard `DayZDiag_x64` defines `DIAG_DEVELOPER` but does **NOT** define `DEVELOPER`. Emitting a `DEVELOPER`-only symbol from your mod breaks the compilation of the **entire PBO** (cross-mod compile failure, no clean RPT, only "PBO not loaded" / addons missing) — not a silent no-op. Before relying on any `#ifdef <SYMBOL>` API, verify the `defines:` line of `<profiles>\script_*.log` for BOTH server and client peers (the runtime tells you what is defined). That `OnDebugSpawn` (`#ifdef DIAG_DEVELOPER`) works does NOT prove `DEVELOPER` is active — different macros. Measured in a mod, 2026-06-28: the real compile logs showed `DEVELOPER` was not defined, and the PBO would have shipped broken.
 
-### PluginDeveloper is dead in release — use the retail substitutes (SP-287)
+### PluginDeveloper is dead in release — use the retail substitutes
 
-`PluginDeveloper` registers ONLY under `#ifdef DIAG_DEVELOPER` (`RegisterPluginDiag`, `P:\scripts\4_world\plugins\pluginmanager.c:65`, `:249-254`): in `DayZServer_x64` release, `GetPlugin(PluginDeveloper)` returns null and any teleport/give built on it (`TeleportAtCursor`, `SpawnEntityInInventory`…) is DEAD even though it compiles and works in DayZDiag. The retail substitutes (the pattern VPP/COT use, which run on retail):
+`PluginDeveloper` registers ONLY under `#ifdef DIAG_DEVELOPER` (`RegisterPluginDiag`, `P:\scripts\4_world\plugins\pluginmanager.c:65`, `:249-254`): in `DayZServer_x64` release, `GetPlugin(PluginDeveloper)` returns null and any teleport/give built on it (`TeleportAtCursor`, `SpawnEntityInInventory`…) is DEAD even though it compiles and works in DayZDiag. The retail substitutes (the pattern admin tools such as Community Online Tools use, which runs on retail):
 
 - **Teleport**: `player.SetPosition(pos)` (if y==0, resolve `GetGame().SurfaceY(x, z)` first).
 - **Seated player + vehicle**: `HumanCommandVehicle vc = player.GetCommand_Vehicle();` (`P:\scripts\3_game\human.c:1528`), then `Transport veh = vc.GetTransport();` (`P:\scripts\3_game\human.c:716`), then `veh.GetTransform(mat); mat[3] = pos; veh.SetTransform(mat);` — vehicle and occupant move together. **The occupant's position lags one frame**: to report the applied position, read `veh.GetPosition()`, not `player.GetPosition()`.
@@ -640,13 +639,13 @@ foreach (string t : test) { Print(t); }
 foreach (string t : m_Test) { Print(t); }
 ```
 
-### `modded class` must live in the base class's script module; compile both peers (SP-208, added 2026-08-31)
+### `modded class` must live in the base class's script module; compile both peers
 
 A `modded class X` declaration must be compiled in the same script module that defines `X`. This is stricter than merely referring to the type from a method in a higher module. `PPERequesterBank` is defined in `3_Game` (`P:\scripts\3_game\ppemanager\pperequesterbank.c:4`): referring to it from `4_World` can compile, but declaring `modded class PPERequesterBank` under `Scripts/4_World/` fails with `Unknown type 'PPERequesterBank'` and kills the entire World module. Put that declaration under `Scripts/3_Game/<Mod>/`.
 
 Do not hide the declaration with `#ifndef SERVER`. That can make the dedicated-server compile pass only by excluding the failing code, while the client still compiles it and fails. The release gate must compile **both the dedicated-server and client views**. A server-only gate cannot cover UI, camera, or post-process code excluded by `#ifndef SERVER`; a client-only gate cannot cover `#ifdef SERVER` code. Keep rebuilding both views until neither reports a script-module failure.
 
-### Long concatenation diagnostic cascades (SP-080, added 2026-08-31)
+### Long concatenation diagnostic cascades
 
 For a long concatenation or formatting expression, `Formula too complex` is the root parser/compiler error. An `Incompatible parameter` reported on the same line can be a cascade, not a second API defect: the 18- and 20-term statements of item 4 in "Six recurring compile-fail families" logged that pair on one line. Split the build into incremental single-line assignments (`s = s + part;`). Extract vector or matrix indexing and function-call results into typed locals before formatting them.
 
@@ -670,7 +669,7 @@ The 1.30 traps (the full bodies are in `dayz-1-30-enforce-script.md`):
 
 Any loop that performs several merges in one call (auto-stack, stack-all, loot consolidation) can therefore pick the emptied stack as a later target and move live quantity into it. Everything merged into it disappears on the next frame. Rag stacks 2/2/5: A←B (B=0, pending), A←C (A full, C=3), B←C (C=0) → 9 rags become 6.
 
-[EXACT][CLAIM-ENFORCE-COMBINEITEMS-PENDING-DELETE] Before each target and donor, skip entities already queued for deletion (`IsSetForDeletion`, `P:\scripts\3_game\entities\entityai.c:812-814`), and empty ammunition piles:
+Before each target and donor, skip entities already queued for deletion (`IsSetForDeletion`, `P:\scripts\3_game\entities\entityai.c:812-814`), and empty ammunition piles:
 
 ```c
 if (!item || item.IsSetForDeletion())
@@ -680,4 +679,4 @@ if (pile && pile.GetAmmoCount() <= 0)
     continue;
 ```
 
-Verification: a static trace through the vanilla script tree (from an audit of the TransferZ mod, 2026-09-19); not reproduced in game.
+Verification: a static trace through the vanilla script tree (2026-09-19); not reproduced in game.

@@ -369,7 +369,7 @@ def test_the_pool_fix_says_what_else_it_turns(tmp_path):
     """One corner of b_normals_out put back inward by hand. Every shell stays below 10 %, so
     the gate gives the pool fix, and says it also turns that corner; applied anyway, the corner ends against
     its face and the model passes: the 90 % per shell is a tolerance, which the healthy smooth-shaded
-    LFInfectedBig build needs (219 corners against their face)."""
+    giant infected build needs (219 corners against their face)."""
     m = _import_py3d()
     p3d = load(m, "mirror_b_normals_out.p3d")
     lod = p3d.lods[0]
@@ -382,7 +382,7 @@ def test_the_pool_fix_says_what_else_it_turns(tmp_path):
             "every shell: the stored normals point out of the material (the older outward-normal "
             "convention).") in lines, out
     assert ("It also turns 1 corner that agrees now: right for an export that stored every normal the other way, "
-            "whose odd corners go back to how they were authored (LFInfectedBig's Rule 12 build has 219 against "
+            "whose odd corners go back to how they were authored (the giant infected Rule 12 build has 219 against "
             "their face); to keep them, read the shells part by part instead, never a corner on its own sign "
             "(py3d README, \"Winding\", step 3).") in out, out
     assert "negate only the corners" not in out, out

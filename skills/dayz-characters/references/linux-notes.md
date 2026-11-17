@@ -6,7 +6,7 @@ How to read the marks: this is tool behaviour measured on Linux (a comparison da
 
 The Proton setup, the measured tool matrix and the pitfalls are in the shared Linux and Proton notes (`skills/_shared/linux-proton.md`). This file only says what changes for character work.
 
-- **Pack, sign and binarize with dayzmake 1.0.0 or newer**, a DayZ fork of armake2, pinned to `v1.0.0`: the release binary `dayzmake-v1.0.0-debian-trixie-x86_64.tar.gz` from the `v1.0.0` release page, or a `cargo install` of the `v1.0.0` tag (the install steps are in `skills/_shared/linux-proton.md`). Use `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed.
+- **Pack, sign and binarize with dayzmake**, a DayZ fork of armake2. Version 1.0.0 or newer builds and signs your own mod; which release to install, and how, is in `skills/_shared/linux-proton.md`. Use `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed.
 - **Plain armake2 is no substitute.** It is built for Arma, its V3 file hash leaves out `*.c` files (dayzmake 1.0.0 includes them), and it lacks the DayZ-only functions dayzmake keeps adding.
 - **Wrapper.** The shared helper script `skills/_shared/scripts/dayz-mod-pack.sh` wraps those commands (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`).
 - **How far it was checked.** A textured cube binarized this way matched Bohemia's binarize from a `P:` root byte for byte (fork commit `7dcb3cf`, then still named armake2; `v1.0.0` contains it). That is not an in-game check of a binarized model, and not a check of a skinned character.

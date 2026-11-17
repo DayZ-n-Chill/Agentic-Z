@@ -107,7 +107,7 @@ not verified.
 Not invariants but the working method that would have saved most of the LFQuad→SUB_BRZ→MercedesAMGLF
 iterations. They are otherwise diffuse across the references; they live here at the front on purpose:
 
-1. **Parity-first.** Debinarize a known-good vanilla vehicle (`civiliansedan`, ODOL v54) ONCE and diff your
+1. **Parity-first.** Debinarize a known-good vanilla vehicle (`civiliansedan`; ODOL v54 when this was first done, version 56 in the header of the copy on `P:\`) ONCE and diff your
    model against it — LODs, named selections, crew proxies, wheel hubs, componentNN, memory points — into a
    single master gap checklist. Fix every gap in one pass instead of discovering them error-by-error in-game.
    → `vehicle-structural-parity.md` "Parity-first method".

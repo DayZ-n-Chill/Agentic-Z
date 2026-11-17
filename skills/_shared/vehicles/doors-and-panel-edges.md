@@ -82,8 +82,8 @@ Two things that this corrects at once:
    loop of ~4.4 m (outer skin + glass) and vanilla also has it. A gate measuring "total
    free edge" gives red on a healthy door.
 2. **The area gate (`cap >= 70% of height x thickness`) is poorly calibrated** and must not be used: it assumes
-   constant thickness across full height and that full height is sheet metal. On a frameless door (BRZ,
-   GT86, and any coupe) the upper half is glass, and the "thickness" reported by a band
+   constant thickness across full height and that full height is sheet metal. On a frameless door (any
+   coupe) the upper half is glass, and the "thickness" reported by a band
    probe is the CURVATURE of the bend, not a gap. That gate demanded ~710 cm2 of cap where
    real geometry admits ~640 and only along part of the height.
 

@@ -64,12 +64,8 @@ Usage:
 Exit: 0 = both readings agree on a candidate (DirectX or OpenGL), stable across the blocks,
 2 = INCONCLUSIVE, 1 = bad input (a missing or unreadable file, sizes that differ, or numpy or
 Pillow not installed).
-JSON keeps the key "verdict" for that candidate.
-
-Differences from the script this one grew from: command-line paths instead of fixed ones, a
-non-finite correlation is INCONCLUSIVE (the first version read NaN as DirectX), a size check, JSON
-output (null for undefined numbers), and the curl reading with the agreement rule, added after a
-review found a confident wrong verdict.
+JSON keeps the key "verdict" for that candidate; undefined numbers are null. A non-finite
+correlation is INCONCLUSIVE, never a convention.
 """
 from __future__ import annotations
 

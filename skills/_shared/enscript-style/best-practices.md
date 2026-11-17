@@ -1,6 +1,6 @@
 # Enforce Script style: Best practices and pitfalls
 
-Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`. The guide is a mirror of the [TrueDolphin/references wiki](https://github.com/TrueDolphin/references/wiki/EnScript-(Enforce-Script)-Style-Guide).
+Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`.
 
 Vanilla facts: Engine traps are filed with the API they belong to; `../enscript/README.md` has the symptom to file map.
 
@@ -90,7 +90,7 @@ if (player)
 
 ### 8. Avoid Complex Expressions in Array Assignments
 
-**Unverified engine behaviour:** the wiki reports that assigning a complex expression straight into an array element segfaults. The compiler and runtime are engine code, so this cannot be checked on `P:\`; treat it as a report, not a rule:
+**Unverified engine behaviour:** assigning a complex expression straight into an array element is reported to segfault. The compiler and runtime are engine code, so this cannot be checked on `P:\`; treat it as unconfirmed, not a rule:
 
 ```
 class MyClass
@@ -116,7 +116,7 @@ Workaround (safe either way): for array assignments with complex expressions, us
 
 ### 9. Be Aware of Integer Limits
 
-**Unverified engine behaviour:** the wiki reports this comparison quirk. Integer comparison is engine code, so it cannot be checked on `P:\`:
+**Unverified engine behaviour:** the comparison quirk below is not confirmed. Integer comparison is engine code, so it cannot be checked on `P:\`:
 
 ```
 // int.MIN = -2147483648 (P:\scripts\1_core\proto\enconvert.c:28)
@@ -159,7 +159,7 @@ Are reported to **NOT** show the correct filename and line number, but the last 
 1. **Complex array assignments** (unverified, see Best Practice 8): Use intermediate variables
 2. **Misused `delete` keyword** (unverified as a segfault cause): `delete` on a script object is valid and vanilla does it (`P:\scripts\4_world\entities\manbase\playerbase.c:1224`), but never `delete` an entity; use `Delete()` or `DeleteSafe()` (`_shared/enscript/references/language_memory.md`, "Deleting entities")
 3. **Over-specified `ref` usage** (unverified as a segfault cause): put `ref` on members and on container element types (`ref array<ref MyData>`, `language_memory.md` rule 2); two `ref`s pointing at each other leak both (`language_memory.md` rule 3)
-4. **Empty preprocessor blocks** (on the original guide's list, not reproduced): vanilla ships a comment-only `#ifdef` block (`P:\scripts\4_world\classes\environment\environment.c:1-3`) and one compiled and ran in a measurement on DayZDiag 1.30.164289; see `control-flow-and-preprocessor.md`, "Empty Preprocessor Blocks"
+4. **Empty preprocessor blocks** (not reproduced as a segfault cause): vanilla ships a comment-only `#ifdef` block (`P:\scripts\4_world\classes\environment\environment.c:1-3`) and one compiled and ran in a measurement on DayZDiag 1.30.164289; see `control-flow-and-preprocessor.md`, "Empty Preprocessor Blocks"
 
 ### Performance Considerations
 
@@ -193,8 +193,3 @@ This style guide reflects the conventions used in professional DayZ modding. Con
 - CfgMod class names are reported to be defines in script as of 1.26 (unverified engine behaviour; nothing on `P:\scripts` shows it, so declare your own `defines[]` instead of relying on it)
 - Style rule, not a crash rule: mod code puts `ref` on member variables and on container element types (`array<ref T>`, `language_memory.md` rule 2), and leaves it off method parameters, return types and locals. Vanilla does use `ref` on returns and locals (`ref map<int, string> GetAttachSoundSets()`, `P:\scripts\3_game\inventoryitemtype.c:20`; `ref set<Object> victims`, `P:\scripts\4_world\classes\areadamage\areadamage.c:175`), so code like that is not a defect
 - **NEVER add inheritance (`: ParentClass`) to `modded` classes**: they already inherit from the original class
-
-### References
-
-- [DayZ Script Diff (Bohemia Interactive)](https://github.com/BohemiaInteractive/DayZ-Script-Diff)
-- [Bohemia Interactive Community Wiki: Enforce Script](https://community.bistudio.com/wiki/DayZ:Enforce_Script_Syntax)

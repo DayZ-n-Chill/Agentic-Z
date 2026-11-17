@@ -4,10 +4,10 @@
 sees after a server change, RPCs both ways) needs a real client. This page runs the retail client under Proton
 without a monitor, joins it to a local native server, and lets a test mod report its own results.
 
-**Measured** by bzed (the author of the dayz-dev-plugin client-testing harness) on Linux with the
+**Measured** on Linux with the
 1.30.164014.27 pre-release (then on the Experimental apps, 1024020) unless a line says otherwise; GE-Proton11-1, an AMD
 GPU on Vulkan/RADV, sway 1.12. This page targets DayZ 1.30 or later.
-The author re-tested the whole plugin on DayZ 1.30 stable (the author's report, 2026-11-13; build not recorded here).
+The whole flow was measured again on DayZ 1.30 stable (2026-11-13; build not recorded).
 These are measured tool and runtime results, not yet checked on `P:\`; the one vanilla script fact (godmode) is
 cited inline and was re-opened on `P:\scripts\`.
 
@@ -105,14 +105,14 @@ a known order and prints results an outside script can grep; it ran green on bot
 mod name is also a script define (`#ifdef AutoTest`, visible in the `Module: ...; defines:` line).
 
 **Godmode.** The runner records `player.GetAllowDamage()` before it first calls
-`player.SetAllowDamage(false)` (`P:\scripts\3_game\entities\object.c:1191-1196`) [EXACT][CLAIM-OBJECT-ALLOWDAMAGE-130], sets godmode between tests, and restores the recorded value when the run
+`player.SetAllowDamage(false)` (`P:\scripts\3_game\entities\object.c:1191-1196`) [EXACT], sets godmode between tests, and restores the recorded value when the run
 finishes, times out or is aborted; a test that overrides `NeedsDamage()` to `true` gets damage for itself
 only. Results (`AUTOTEST_RPC_RESULT`) are accepted only from the identity of the player the run was
 scheduled for; other senders are ignored with a `Print`. A server-side melee hit left health `100 -> 100`
-and the same hit with damage allowed gave `100 -> 95` (both builds, measured by the author before this
+and the same hit with damage allowed gave `100 -> 95` (both builds, measured before this
 change). Only the harness's own `ProcessDirectDamage` with `MeleeZombie` was tried, not real zombies,
 animals, falls, hunger, thirst or cold. The sender-binding and restore change in the bundled `AutoTestRunner.c`
-was checked by the offline script linter only, not run in game [EXACT][CLAIM-AUTOTEST-RUNNER-UNVERIFIED].
+was checked by the offline script validator only (`scripts/tools/dayz-script-validator`), not run in game.
 
 **Pitfalls found building it**:
 

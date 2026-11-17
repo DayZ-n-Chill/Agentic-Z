@@ -2,7 +2,7 @@
 
 The native methods of each widget class a mod calls, the `WidgetFlags` and `ControlID` enums, the global widget functions, the preview widgets, and what was measured about `SetRotation` and `SetTransform`. The shorter overview of the same classes, with events, menus and imagesets, is `skills/_shared/enscript/references/widget_api.md`; this file is the full prototype list.
 
-**How facts are marked here.** A `P:\` path with a line was opened and checked on `P:\` (DayZ 1.30). Every prototype in a code block below was compared, name and signature, with `class Widget` and the classes after it in `P:\scripts\1_core\proto\enwidgets.c:107` onward, or with `P:\scripts\3_game\gameplay.c` for the preview widgets; all of them exist there. "Measured" means the source author measured it on a running client (DayZ 1.29.163709 unless a line says otherwise); those results are not yet checked on `P:\` or in game here. Facts that come from LBmaster_Core, Dabs Framework or LFPowerGrid name the mod. "Rule 3" is rule 3 in `rules-and-checklist.md`.
+**How facts are marked here.** A `P:\` path with a line was opened and checked on `P:\` (DayZ 1.30). Every prototype in a code block below was compared, name and signature, with `class Widget` and the classes after it in `P:\scripts\1_core\proto\enwidgets.c:107` onward, or with `P:\scripts\3_game\gameplay.c` for the preview widgets; all of them exist there. "Measured" means measured on a running client (DayZ 1.29.163709 unless a line says otherwise); those results are not yet repeated on 1.30. Third-party mod behaviour is marked as such. "Rule 3" is rule 3 in `rules-and-checklist.md`.
 
 ## Contents
 
@@ -18,7 +18,7 @@ The native methods of each widget class a mod calls, the `WidgetFlags` and `Cont
 - [CanvasWidget and VideoWidget](#canvaswidget-and-videowidget)
 - [Global functions](#global-functions)
 - [ControlID](#controlid)
-- [Usage notes from LBmaster_Core](#usage-notes-from-lbmaster_core)
+- [Usage notes](#usage-notes)
 - [Text readback and widget type IDs](#text-readback-and-widget-type-ids)
 
 ---
@@ -111,7 +111,7 @@ A mod must not call `SetLV` or `SetTextLV`. Vanilla `SetHudBrightness` is exactl
 
 ## SetRotation and SetTransform: what was measured
 
-Measured by the source author on 2026-08-22, DayZ 1.29.163709, with a probe mod (LFVUI_Spike). None of it is repeated here.
+Measured in game on 2026-08-22, DayZ 1.29.163709, with a probe mod. None of it is yet repeated on 1.30.
 
 - **`SetTransform` is declared but not linked by the engine.** It is declared at `P:\scripts\1_core\proto\enwidgets.c:156`. Calling it threw a non-fatal VM exception, "Function SetTransform not linked", every frame. Do not use it; there is no matrix alternative.
 - **`SetRotation` draws, but only an affine result (scale and shear).** It is declared at `P:\scripts\1_core\proto\enwidgets.c:146`. The width varied by 2 px or less between scanlines across 8 measurements: the sides never converge, so there is no keystone and no perspective.
@@ -199,7 +199,7 @@ proto void GetShadowOffset(out float sx, out float sy);
 
 `class RichTextWidget` is at `P:\scripts\1_core\proto\enwidgets.c:224`.
 
-Reported by the source (not yet checked here): it supports the markup tags `<b>`, `<i>`, `<color rgba="R,G,B,A">`, `<color hex="0xAARRGGBB">`, `<image set="..." name="..." scale="1" />`, `<outline>`, `<shadow>` and `<font>`. Tags must not overlap. Bold and italic need SDF fonts. Wrapping plus a new layout pass on every runtime resize is expensive; avoid it with long text.
+Not yet checked on `P:\` or in game: it supports the markup tags `<b>`, `<i>`, `<color rgba="R,G,B,A">`, `<color hex="0xAARRGGBB">`, `<image set="..." name="..." scale="1" />`, `<outline>`, `<shadow>` and `<font>`. Tags must not overlap. Bold and italic need SDF fonts. Wrapping plus a new layout pass on every runtime resize is expensive; avoid it with long text.
 
 ```
 proto native float GetContentHeight();
@@ -247,7 +247,7 @@ proto native float GetMaskTransitionWidth();
 proto native void SetMaskTransitionWidth(float value);  // [0,1] softness
 ```
 
-**Pattern for a colored background (as the source gives it):**
+**Pattern for a colored background (it failed on DayZ 1.29; read the note below before using it):**
 
 ```
 string tex = "#(argb,8,8,3)color(1,1,1,1,CO)";
@@ -255,7 +255,7 @@ img.LoadImageFile(0, tex);
 img.SetColor(ARGB(alpha, r, g, b));
 ```
 
-The source contradicts itself on this pattern. Rule 2 in `rules-and-checklist.md` records that on DayZ 1.29 the same `LoadImageFile` call with a procedural texture string failed with "Bad texture name" and left the widget without a texture (measured in LFPowerGrid, confirmed again on 2026-09-04). Vanilla script builds such strings only for item materials (`P:\scripts\4_world\static\miscgameplayfunctions.c:243` formats `"#(argb,8,8,3)color(%1,CO)"`), not for `LoadImageFile`. Until someone tests it in game here, use one of the fallbacks from rule 2: a 1x1 white `.edds`, or a style whose center is `WhitePixel` (`styles-format.md`).
+Rule 2 in `rules-and-checklist.md` records that on DayZ 1.29 this `LoadImageFile` call with a procedural texture string failed with "Bad texture name" and left the widget without a texture (measured in game, confirmed again on 2026-09-04). Vanilla script builds such strings only for item materials (`P:\scripts\4_world\static\miscgameplayfunctions.c:243` formats `"#(argb,8,8,3)color(%1,CO)"`), not for `LoadImageFile`. Until it is tested in game on 1.30, use one of the fallbacks from rule 2: a 1x1 white `.edds`, or a style whose center is `WhitePixel` (`styles-format.md`).
 
 ---
 
@@ -427,8 +427,8 @@ class PlayerPreviewWidget: PreviewWidget
 
 ### What the 1.30 changelog says against what the scripts hold
 
-1. **Ticket T181406 (`WorldToScreen` and `ScreenToWorld`).** The official DayZ 1.30 experimental changelog says: "Added: WorldToScreen and ScreenToWorld methods for ItemPreviewWidget and PlayerPreviewWidget classes (T181406)". The scripts do not declare them: `class PreviewWidget` and its two children at `P:\scripts\3_game\gameplay.c:276-314` hold only the methods above, and a search of every `.c` file under `P:\scripts` for `WorldToScreen` and `ScreenToWorld` finds nothing (checked here on DayZ 1.30; the source author found the same on build 1.30.164014). The feature presumably sits in the engine binary without a script binding. Do not call these methods from a mod.
-2. **Disabling particles in preview widgets.** The changelog says: "Added: Possibility to disable specific attached particles inside of the player / item preview widgets". The source author found no `Particle` method in `gameplay.c` and no such property in the preview layouts; it is taken to be an internal ability of the renderer.
+1. **Ticket T181406 (`WorldToScreen` and `ScreenToWorld`).** The official DayZ 1.30 experimental changelog says: "Added: WorldToScreen and ScreenToWorld methods for ItemPreviewWidget and PlayerPreviewWidget classes (T181406)". The scripts do not declare them: `class PreviewWidget` and its two children at `P:\scripts\3_game\gameplay.c:276-314` hold only the methods above, and a search of every `.c` file under `P:\scripts` for `WorldToScreen` and `ScreenToWorld` finds nothing (checked on DayZ 1.30). The feature presumably sits in the engine binary without a script binding. Do not call these methods from a mod.
+2. **Disabling particles in preview widgets.** The changelog says: "Added: Possibility to disable specific attached particles inside of the player / item preview widgets". The three preview classes at `P:\scripts\3_game\gameplay.c:276-314` declare no `Particle` method (checked on DayZ 1.30); whether a preview layout has such a property is not yet checked on `P:\`. It is taken to be an internal ability of the renderer.
 
 ---
 
@@ -512,9 +512,9 @@ CID_RADIALMENU = 11
 
 ---
 
-## Usage notes from LBmaster_Core
+## Usage notes
 
-How LBmaster_Core (a third-party mod) calls the vanilla API. The methods are vanilla and listed above; the flag bit values and the usage patterns are LBmaster's and are not yet checked on `P:\`.
+Call patterns for the vanilla API. The methods are vanilla and listed above; the flag bit values under "Alignment flags" are third-party mod behaviour, not vanilla, and are not yet checked on `P:\`.
 
 ### Text styling
 
@@ -541,7 +541,7 @@ bool isItalic = widget.GetTextItalic();
 bool isBold = widget.GetTextBold();
 ```
 
-Corrected against `P:\`: the source lists the nine `GetText...` getters under "TextWidget" and adds "also on EditBoxWidget". In vanilla they belong to `class UIWidget` only (`GetTextOutlineSize` to `GetTextBold`, `P:\scripts\1_core\proto\enwidgets.c:323-338`), so they work on an `EditBoxWidget`, a `ButtonWidget` and other controls. A `TextWidget` does not have them; it has `GetOutlineSize`, `GetOutlineColor`, `GetShadowSize`, `GetShadowColor`, `GetShadowOpacity`, `GetShadowOffset`, `GetBold` and `GetItalic` instead (listed under TextWidget above).
+The nine `GetText...` getters are not `TextWidget` methods. In vanilla they belong to `class UIWidget` only (`GetTextOutlineSize` to `GetTextBold`, `P:\scripts\1_core\proto\enwidgets.c:323-338`), so they work on an `EditBoxWidget`, a `ButtonWidget` and other controls. A `TextWidget` does not have them; it has `GetOutlineSize`, `GetOutlineColor`, `GetShadowSize`, `GetShadowColor`, `GetShadowOpacity`, `GetShadowOffset`, `GetBold` and `GetItalic` instead (listed under TextWidget above).
 
 ### GetText on the two edit boxes
 
@@ -581,7 +581,7 @@ widget.ClearFlags(flagMask);
 widget.SetFlags(newFlags);
 widget.Update();                                // MUST be called after a flag change
 
-// Bit values used by LBmaster_Core (not in the vanilla scripts):
+// Bit values used by a third-party mod (not in the vanilla scripts):
 // Horizontal: V_LEFT=0x00, V_CENTER=0x140, V_RIGHT=0x100 (mask: 0x1C0)
 // Vertical: H_TOP=0x00, H_CENTER=0xA00, H_BOTTOM=0x800 (mask: 0xE00)
 // Position clear mask: 0xFC0
@@ -609,7 +609,7 @@ string translated = Widget.TranslateString("#STR_MY_KEY");
 ```
 CanvasWidget canvas;
 // Drawing primitives for custom rendering
-// LBmaster uses them to generate QR codes
+// DrawLine is enough to draw a QR code
 ```
 
 ### Global widget functions
@@ -624,8 +624,6 @@ GetScreenSize(sw, sh);                          // screen resolution
 ```
 
 ## Text readback and widget type IDs
-
-Added by the source author on 2026-08-31; the line numbers were checked here on `P:\`.
 
 `TextWidget` has **no `GetText` method**. Its native block is `P:\scripts\1_core\proto\enwidgets.c:189-218`; it has `SetText` and no getter for the text. A test criterion that says "read the native TextWidget and compare its text" therefore cannot compile. Reading a wrapper the mod owns only proves what the model wrote, not what the widget drew.
 

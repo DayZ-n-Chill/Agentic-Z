@@ -37,7 +37,7 @@ When that specialist, or the owner of a file a physics fix touches, is on anothe
 
 - A task that changes no files, such as the normalizer's JSON or a physics diagnosis, passes when the worker returns what the brief asked for. Its output goes to the next step (the JSON to `figma-to-dayz-layout`, a physics fix to the worker that owns the file), and that step is gated.
 - A `dayz-build-engineer` task passes when the engineer reports `DONE` and the PBO path exists. Its brief carries the test-server instance the orchestrator names (for example `chernarus-hardcore`), the map when that name isn't a map alias, and the mod's dependency list in load order. When it reports `BLOCKED` (a running session it may not stop, a missing map or dependency list), mark the task `blocked` and quote its line after the table for the orchestrator; don't use the fix loop or the debugger.
-- When a worker reports that the main session must run a skill (`blender-assembly`, `blender-visual-review`, `blender-animation`, `mixamo-retarget` and `ardy-motion-generation` need a Blender MCP server, `dayz-mcp-verify` the dayz-mcp server, and no worker has those tools), mark the task `blocked` and quote the worker's line and the brief it wrote after the table for the orchestrator.
+- When a worker reports that the main session must run a skill (`blender-assembly`, `blender-visual-review`, `blender-animation` and `mixamo-retarget` need a Blender MCP server, `dayz-mcp-verify` the dayz-mcp server, and no worker has those tools; `ardy-motion-generation` is a manual install and run under WSL2), mark the task `blocked` and quote the worker's line and the brief it wrote after the table for the orchestrator.
 
 ## How you run a task
 

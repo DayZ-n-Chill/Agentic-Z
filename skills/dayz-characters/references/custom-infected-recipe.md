@@ -81,13 +81,13 @@ Everything about the rig is in `references/character-rigging.md`; the facts that
 - The Object Spawner's `scale` is for static objects only, not characters or AI (not checkable on `P:\`). There is no per-axis scale and no character `scale` key in `CfgVehicles`.
 - The only route is to bake the size into the mesh on the same skeleton. Geometry and collision LODs scale together, so collision matches.
 
-The cost is larger than foot sliding. Vanilla animations assume vanilla bone lengths, and the engine binds against the canonical bind of about 1.8 m (`references/canonical-bind.md`), so a baked oversize deforms the mesh under animation. LFInfectedBig at about 1.27 times deformed grossly; rescaling to about 1.8 m removed the catastrophic deformation (in game, 2026-06-24). Small departures, up to about 1.1 times, may pass with only foot sliding and IK drift. The first estimate of this recipe ("about 1.2 times is subtle and probably acceptable, 2 times breaks badly") did not survive that test at 1.27 times. A character that is truly bigger and still deforms cleanly is unsolved here: it would need a custom skeleton with a scaled bind, not a scaled mesh. No shipped example of a clean giant infected was found.
+The cost is larger than foot sliding. Vanilla animations assume vanilla bone lengths, and the engine binds against the canonical bind of about 1.8 m (`references/canonical-bind.md`), so a baked oversize deforms the mesh under animation. The giant infected build at about 1.27 times deformed grossly; rescaling to about 1.8 m removed the catastrophic deformation (in game, 2026-06-24). Small departures, up to about 1.1 times, may pass with only foot sliding and IK drift. The first estimate of this recipe ("about 1.2 times is subtle and probably acceptable, 2 times breaks badly") did not survive that test at 1.27 times. A character that is truly bigger and still deforms cleanly is unsolved here: it would need a custom skeleton with a scaled bind, not a scaled mesh. No shipped example of a clean giant infected was found.
 
 Check in game: foot contact, door clipping, melee and hit range, AI pathing. If limbs distort under animation, the size is fighting the bind.
 
 ## 4. A see-through hole in the torso
 
-- **Visual.** Model an interior tunnel (a closed surface whose faces look into the hole). It is the most robust. Alternatives: the "both sides" face flag, or double-sided geometry. Two values are on record for that flag, `0x00000020` and `0x20000` ("no backface culling"). They were never reconciled, so check the flag in Object Builder before relying on it (`skills/dayz-p3d-audit/references/winding-diagnostics.md` covers the `0x20000` flag).
+- **Visual.** Model an interior tunnel (a closed surface whose faces look into the hole). It is the most robust. The alternative is double-sided geometry (each face twice, once per direction). A per-face "both sides" flag is not a route: Binarize discards the MLOD face flags, so neither `0x00000020` nor `0x20000` reaches the game, and faces flagged `0x20000` stayed see-through in game (measured, not checkable on `P:\`; `skills/dayz-p3d-audit/references/winding-diagnostics.md`).
 - **Collision (Geometry LOD).** It must be closed and convex. A torso with a hole is not convex. Either split it into convex pieces as numbered `ComponentXX` selections, or take the simple route and leave the collision solid, ignoring the hole. The collision LOD does not have to match the visual LOD. Mass at least 10.
 - **Fire Geometry.** Solid unless shots should pass through (more components for little gain). With solid collision, bullets that cross the visual hole still hit. That is a design decision; tell the user.
 - **Damage zones.** They are config driven: each zone lists the model's component names, for example `componentNames[]` with `Head` and `Neck` at `P:\DZ\characters\zombies\config.cpp:239`. A remodelled torso keeps working as long as the named selections and components the config expects are still in the model.
@@ -95,9 +95,9 @@ Check in game: foot contact, door clipping, melee and hit range, AI pathing. If 
 ## 5. Character LODs
 
 - **Visual.** The rendered mesh, with the hole or other detail.
-- **Geometry.** Closed and convex, as above; mass at least 10. LFInfectedBig used one hull with the named property `class = "man"`, not skinned.
-- **Fire Geometry.** LFInfectedBig skinned it to the bones, with a `dmgzone_spine` selection and the vanilla penetration material `P:\DZ\data\data\penetration\meatbones.rvmat` on its faces.
-- **View Geometry, LandContact, Memory.** As for any model (`skills/_shared/models/lods.md`, `skills/_shared/models/memory-points.md`). LFInfectedBig built its Memory points from the bone positions.
+- **Geometry.** Closed and convex, as above; mass at least 10. The giant infected build used one hull with the named property `class = "man"`, not skinned.
+- **Fire Geometry.** The giant infected build skinned it to the bones, with a `dmgzone_spine` selection and the vanilla penetration material `P:\DZ\data\data\penetration\meatbones.rvmat` on its faces.
+- **View Geometry, LandContact, Memory.** As for any model (`skills/_shared/models/lods.md`, `skills/_shared/models/memory-points.md`). The giant infected build built its Memory points from the bone positions.
 
 Use the DayZ LOD resolution values, not the Arma 3 ones: the table is in `skills/_shared/conventions/assets.md` (View Geometry `6.0e+15`, Fire Geometry `7.0e+15`).
 

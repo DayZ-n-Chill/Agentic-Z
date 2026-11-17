@@ -2,7 +2,7 @@
 
 Tier 3 pack for anyone reading `.p3d` files with py3d (used by `/dayz-p3d-audit`). Tier 2 rules in `dayz-conventions.md` still apply.
 
-When using KoffeinFlummi's `py3d` library (or any MLOD reader), a critical
+When using the `py3d` library (or any MLOD reader), a critical
 detail to know:
 
 `lod.facenormals` is a global pool of normal vectors for the LOD, indexed
@@ -76,8 +76,8 @@ library version and fails with `'str' object has no attribute 'name'` or
 
 ### Two libraries share the name
 
-KoffeinFlummi's `py3d` is the upstream library. The repo keeps a DayZ fork of it under
-`scripts/tools/py3d/`, the copy `/dayz-p3d-audit` and the other skills load, which adds `P3D.validate()`, proxy helpers and
-guards against writing a corrupt file, and sets `py3d.IS_DAYZ_FORK = True`. The
-package called `py3d` on PyPI is neither: it is an unrelated point cloud library, so
-never `pip install py3d`.
+The `py3d` these notes describe is the DayZ build kept in the repo under
+`scripts/tools/py3d/`, the copy `/dayz-p3d-audit` and the other skills load. It has `P3D.validate()`, proxy helpers and
+guards against writing a corrupt file, and sets `py3d.IS_DAYZ_FORK = True`, so a script
+can assert it imported this copy. The package called `py3d` on PyPI is a different
+thing: it is an unrelated point cloud library, so never `pip install py3d`.

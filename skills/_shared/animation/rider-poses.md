@@ -24,7 +24,7 @@ AnimSrcNodePose AnimNodePose {
 }
 ```
 
-(`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:47` to `:51`; the motorbike's stopped pose `MotoIdleSteeringP` uses the same `Time` expression at `P:\DZ\anims\workspaces\player\player_main\vehicles.agf:1466`.) The clip therefore spans −0.785 to +0.785 of `VehicleSteering`. The source pack measured `VehicleSteering` on the 1.30 motorbike as the wheel angle in radians, so the clip covers 45 degrees each way whatever the vehicle's steering lock: a clip authored over the lock instead put the hands 44 mm off at full lock.
+(`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:47` to `:51`; the motorbike's stopped pose `MotoIdleSteeringP` uses the same `Time` expression at `P:\DZ\anims\workspaces\player\player_main\vehicles.agf:1466`.) The clip therefore spans −0.785 to +0.785 of `VehicleSteering`. Measured in game on 1.30, `VehicleSteering` on the motorbike is the wheel angle in radians, so the clip covers 45 degrees each way whatever the vehicle's steering lock: a clip authored over the lock instead put the hands 44 mm off at full lock.
 
 ## The motorbike pose has four pieces
 
@@ -37,7 +37,7 @@ The 1.30 motorbike graph separates standing from riding:
 | Pulling away | `IdleToDrive` | The state machine `Idle_MotorBikeSTM` enters `IdleToDrive` on `VehicleSpeed >= 0.5 && !VehicleWalking` (`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:1248` to `:1251`). |
 | Stopping | `DriveToIdle` | It enters `DriveToIdle` on `VehicleSpeed < 0.5 \|\| VehicleWalking` (`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:1267` to `:1270`). |
 
-The vanilla transition clips hold differences over a base pose. Measured by the source pack: a clip made with DayZATool plays as an absolute pose, so a mod's own transitions must be written as absolute whole body poses, or the spine collapses during the transition.
+The vanilla transition clips hold differences over a base pose. Measured in game on 1.30: a clip made with DayZATool plays as an absolute pose, so a mod's own transitions must be written as absolute whole body poses, or the spine collapses during the transition.
 
 ## Changing the pose for one vehicle class
 
@@ -47,7 +47,7 @@ Replacing `vehicles.agf`, the template or the base instance replaces the player 
 2. The file registered as a profile in the mod callback `RegisterCustom` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:329`), the way vanilla registers `SurrenderDummyItem` and `"Empty"` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1543`, `:1548`).
 3. The switch in script while the player rides that class: `EnableAutoAnimInstUpdateOnHandsChange(false)` and `SetAnimationInstanceByName` with the child's path, as surrender does (`P:\scripts\4_world\entities\manbase\playerbase.c:2087`, `:2088`); back to `player_main.asi` with the automatic switch on again when the player gets out (`P:\scripts\4_world\entities\manbase\playerbase.c:2104` to `:2107`). `PlayerBase` has the hooks `OnCommandVehicleStart` and `OnCommandVehicleFinish` (`P:\scripts\4_world\entities\manbase\playerbase.c:4342`, `:4375`).
 
-That the mechanism exists is checked above. That a mod's child instance changes the rider's pose on one class only, on a dedicated server and the owning client, is the source pack's in-game result on 1.30; remote observers, late join, a held item, unconsciousness and death were not tested. The native's own comment warns that the switch can desync when misused (`SetAnimationInstanceByName`, `P:\scripts\3_game\human.c:1384`).
+That the mechanism exists is checked above. That a mod's child instance changes the rider's pose on one class only, on a dedicated server and the owning client, is measured in game on 1.30, not checked on `P:\`; remote observers, late join, a held item, unconsciousness and death were not tested. The native's own comment warns that the switch can desync when misused (`SetAnimationInstanceByName`, `P:\scripts\3_game\human.c:1384`).
 
 ## Boarding side and falling off
 

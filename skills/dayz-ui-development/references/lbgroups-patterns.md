@@ -62,7 +62,7 @@ class LBGroupManagePage {
     Widget playerlist_members, panel_list;
 }
 
-// Single call binds ALL matching names:
+// Single call binds all matching names:
 ConnectClassWidgetVariables(this, rootWidget, excludeArray, renameArray);
 
 // excludeArray: skip these variable names (e.g. {"rootWidget", "buttonWidget"})
@@ -110,7 +110,7 @@ void Update() {
 }
 ```
 
-**MapWidget raster ignores inherited parent transform (measured in-game 2026-08-22).** Rotating an ancestor of a `MapWidget` does **not** rotate the drawn map. Measured on the tree `rootFrame > panelMap > mapWidget > iconPane > headingArrow`: applying `SetRotation` on `rootFrame` deforms `headingArrow` — a descendant of the `mapWidget`, two levels below — as expected, while the raster that `mapWidget` itself paints, in the middle of that same chain, stays axis-aligned. The transform propagates through the tree; the map raster renderer discards it. Confirmed by two independent observers (scanline measurement and looking at the screen). Consequence: a heading-up navigation HUD **cannot** be made by rotating a `MapWidget`. Compose the map with `ImageWidget` (e.g. a tile mosaic) and rotate those, which do honour the transform. `MapWidget` is for north-up with translation — `SetMapPos` works and the map follows the vehicle — not for heading.
+**MapWidget raster ignores inherited parent transform (measured in-game 2026-08-22).** Rotating an ancestor of a `MapWidget` does **not** rotate the drawn map. Measured on the tree `rootFrame > panelMap > mapWidget > iconPane > headingArrow`: applying `SetRotation` on `rootFrame` deforms `headingArrow` — a descendant of the `mapWidget`, two levels below — as expected, while the raster that `mapWidget` itself paints, in the middle of that same chain, stays axis-aligned. The transform propagates through the tree; the map raster renderer discards it. Confirmed by a scanline measurement and by eye on screen. Consequence: a heading-up navigation HUD **cannot** be made by rotating a `MapWidget`. Compose the map with `ImageWidget` (e.g. a tile mosaic) and rotate those, which do honour the transform. `MapWidget` is for north-up with translation — `SetMapPos` works and the map follows the vehicle — not for heading.
 
 ---
 
@@ -142,7 +142,7 @@ Project world positions onto screen for floating 3D markers:
 vector screenPos = GetGame().GetScreenPos(worldPosition);
 float x = screenPos[0];
 float y = screenPos[1];
-float z = screenPos[2]; // CRITICAL: z <= 0 means behind camera
+float z = screenPos[2]; // z <= 0 means behind camera
 
 // Check bounds:
 if (x <= 0 || x >= screenWidth || y <= 0 || y >= screenHeight || z <= 0) {
@@ -218,7 +218,7 @@ class LBTextLengthCalculator {
     float GetTextLength(string text, int size) {
         widget.SetTextExactSize(size);
         widget.SetText(text);
-        widget.Update();         // FORCE layout recalculation
+        widget.Update();         // force layout recalculation
         float width, height;
         widget.GetScreenSize(width, height);
         width = width / screenWidth;  // normalize to 0-1
@@ -242,7 +242,7 @@ const int LINE_COUNT = 100;
 const int VISIBLE_LINES_COUNT = 12;
 int m_LastLine = 0;
 
-// Add message: advance ring pointer, set content, reposition ALL lines
+// Add message: advance ring pointer, set content, reposition all lines
 void AddInternal(ChatMessageEventParams params) {
     m_LastLine = (m_LastLine + 1) % m_Lines.Count();
     ChatLine line = m_Lines.Get(m_LastLine);
@@ -425,7 +425,7 @@ void MyComponent() {
     LBColorManager_.Event_OnColorChange.Insert(OnColorChanged);
 }
 
-// Unsubscribe (in destructor — ALWAYS, prevents dangling callbacks):
+// Unsubscribe (in the destructor, every time; prevents dangling callbacks):
 void ~MyComponent() {
     if (LBColorManager_.Event_OnColorChange)
         LBColorManager_.Event_OnColorChange.Remove(OnColorChanged);
@@ -503,7 +503,7 @@ modded class ChatInputMenu {
 }
 ```
 
-**Critical**: `super.Init()` must be called first because it initializes
+`super.Init()` must be called first because it initializes
 internal variables (like `m_BackInputWrapper`) that cause NPE if missing.
 Then immediately `Unlink()` the old widget.
 
@@ -674,7 +674,7 @@ class ChatEventHandler : ScriptedWidgetEventHandler {
     void ChatEventHandler(ChatInputMenu menu) {
         chatMenu = menu;
         m_edit_box = menu.GetEditBox();
-        m_edit_box.SetHandler(this);   // CRITICAL: binds events to this handler
+        m_edit_box.SetHandler(this);   // binds events to this handler
     }
 
     override bool OnChange(Widget w, int x, int y, bool finished) {
@@ -697,8 +697,8 @@ SendChatMessage(text);
 ## 21. Float to string formatting
 
 Enforce Script has `string.Format` (`P:\scripts\1_core\proto\enstring.c:526`), but its `%1` to `%9`
-placeholders take no precision, so there is no printf-style way to fix the number of decimals. (The claim
-that the language "lacks printf/format" is wrong; only the precision part holds.) Manual decimal formatting:
+placeholders take no precision, so there is no printf-style way to fix the number of decimals. Manual
+decimal formatting:
 
 ```
 string FloatToString(float f, bool addPoint) {
@@ -828,7 +828,7 @@ Convert world coordinates to pixel position within the map widget:
 
 ```
 vector screenPos = mapWidget.MapToScreen(worldPosition);
-// Returns pixel coords relative to screen, NOT to the widget
+// Returns pixel coords relative to the screen, not to the widget
 // Subtract widget screen position to get widget-local coords:
 float wx, wy;
 mapWidget.GetScreenPos(wx, wy);
@@ -898,7 +898,7 @@ Widget keeps all its children when reparented.
 
 ```
 // DrawLine(x1, y1, x2, y2, width, color)
-// NOTE: a thick horizontal line acts as a filled rectangle:
+// A thick horizontal line acts as a filled rectangle:
 void DrawFilledRect(float x, float y, float w, float h, int color) {
     drawCanvas.DrawLine(x, y + h / 2, x + w, y + h / 2, h, color);
 }
@@ -961,7 +961,7 @@ The component self-destructs: `callback.Invoke(GetColor())` and only **then** `d
 and the `delete this` that follows operates on an already-invalidated object — a crash shape at
 the exact moment the player confirms.
 
-The production pattern keeps the member and never touches it in the callback. In LBmaster's only
+The production pattern keeps the member and never touches it in the callback. In LBmaster_Core's only
 call site the sole assignments are the declaration and the three `new`
 (`GUI/Helper/WidgetLinker/LBWidget_Linked_Var.c:12`, `:221`, `:225`, `:245`; callback at `:179`).
 Let the next `new` overwrite it.

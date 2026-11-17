@@ -8,7 +8,7 @@ This is a rule about agent tooling, not about the game, so it cites no vanilla f
 
 - The Agentic-Z plugin serves every skill under `skills/` with the `agentic-z:` prefix (`agentic-z:dayz-p3d-audit`).
 - `/sync-skills --agents claude` links the same skills into `~/.claude/skills/`, where they load under the bare name (`dayz-p3d-audit`). `.claude/skills/sync-skills/SKILL.md` explains why Claude Code is left out of a plain `/sync-skills` run for this reason.
-- A user may also keep an own, patched copy of a skill in `~/.claude/skills/` (for example `dayz-p3d-audit`, `dayz-p3d-debin` or `dayz-particles`) and then install a plugin that ships a skill with the same name.
+- A user may also keep an own, patched copy of a skill in `~/.claude/skills/` (for example `dayz-p3d-audit` or `dayz-particles`) and then install a plugin that ships a skill with the same name.
 
 In each case both copies stay reachable: the bare name and the prefixed name.
 
@@ -18,7 +18,7 @@ With no written project policy, the personal copy in `~/.claude/skills/<name>` w
 
 ## Per-skill policy (decide when a conflict is found)
 
-1. **The personal copy came from the plugin and its patch is already upstream.** Delete the personal copy and use the plugin copy. Compare the two `SKILL.md` files with a diff before deleting anything, and read "What the measurement showed" below first: the plugin folder you diff against may not be the copy that is served.
+1. **The personal copy came from the plugin and the plugin now has the same patch.** Delete the personal copy and use the plugin copy. Compare the two `SKILL.md` files with a diff before deleting anything, and read "What the measurement showed" below first: the plugin folder you diff against may not be the copy that is served.
 2. **The personal copy differs a lot** (its own `P:\` paths, numbers tuned to one setup, sections for the user's own mods). Keep the personal copy and switch off the plugin's copy of that one skill with `/plugin manage <plugin>`.
 3. **Not sure.** Keep both and write the conflict down where every agent reads it:
 

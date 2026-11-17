@@ -128,4 +128,4 @@ Opened on this repo's `P:\`, which is a 1.30 build. The port blockers in detail,
 - The vehicle light key is `UAToggleVehicleLights`, set in `ToggleVehicleLightsActionInput` (`P:\scripts\4_world\classes\useractionscomponent\actioninput.c:849-855`); `UAToggleHeadlight` is the head torch (`P:\scripts\4_world\classes\useractionscomponent\actioninput.c:782`).
 - Get-in calls `CanGetIn`, then `CrewCanGetThrough` with `IsAreaAtDoorFreeDiag`, and does call `CanReachSeatFromDoors` from script with a distance of `1.0` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:36`, `:54`, `:64`).
 
-Reported on a 1.30 port of a third-party quad (LFQuad, 1.30.164200) and not reproduced here: a script module path written with backslashes in `CfgMods` loaded none of the mod's scripts, with no error.
+Measured in game on 1.30.164200 with a third-party quad mod (LFQuad), mod behaviour and not checked on `P:\`: a script module path written with backslashes in `CfgMods` loaded none of the mod's scripts, with no error. Detail in `dayz-1-30-vehicles.md`.

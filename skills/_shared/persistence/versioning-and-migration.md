@@ -27,7 +27,7 @@ Vanilla gates its own fields on that number:
 
 A mod must not change `GAME_STORAGE_VERSION`. It belongs to the game and moves with game updates, not with your releases, so it cannot tell you which version of your mod wrote a record. Write your own version.
 
-The number was 142 on DayZ 1.29 (from the source pack's 1.29 scripts, which are not on `P:\`), so a record saved on 1.29 arrives with `version` 142 and skips the two `>= 143` gates above.
+The number was 142 on DayZ 1.29 (the 1.29 scripts are not on `P:\`, so this is not checked here), so a record saved on 1.29 arrives with `version` 142 and skips the two `>= 143` gates above.
 
 Not every vanilla field is gated. `PlayerBase` writes a thermal value through `m_ThermalBiasHandler` after the arrow manager (`P:\scripts\4_world\entities\manbase\playerbase.c:7395`) and reads it back with no version check, failing the whole load when the read fails (`m_ThermalBiasHandler` at `P:\scripts\4_world\entities\manbase\playerbase.c:7520` to `:7524`). A player record from 1.29 has no such value. Two lessons for mod code: gate every field you add, and a `modded class PlayerBase` that copies the old save tail instead of calling `super` breaks on the next game update. The 1.30 changes are listed with the vanilla code in `references/dayz-1-30-persistence.md` of the `dayz-persistence` skill.
 
@@ -133,7 +133,7 @@ So, in order of preference:
 2. If a vanilla class must carry new saved state, ship it only on a fresh server, and say so in the audit report.
 3. Or use a framework that gives each mod its own storage block. Community Framework does this; it is not part of vanilla, so its API is not checked here. See `_shared/enscript/integrations/community_framework.md`.
 
-What Community Framework's ModStorage gives, from the source pack's reading of the CF source (third-party, not yet checked on `P:\`): it writes a framework version, a mod count and one framed block per mod; it hands each mod the `storageVersion` set in its `CfgMods` entry, so the mod can version its own block; and when a mod that owns a block is not loaded, it writes that block back unchanged, so the data is there again after the mod is added back. It does not define the mod's upgrade paths, and it cannot keep values a `modded class` appended outside its framing. The CF line references are in `references/cf-modstorage.md` of the `dayz-persistence` skill.
+What Community Framework's ModStorage gives (third-party mod behaviour, not yet checked on `P:\`): it writes a framework version, a mod count and one framed block per mod; it hands each mod the `storageVersion` set in its `CfgMods` entry, so the mod can version its own block; and when a mod that owns a block is not loaded, it writes that block back unchanged, so the data is there again after the mod is added back. It does not define the mod's upgrade paths, and it cannot keep values a `modded class` appended outside its framing. The CF line references are in `references/cf-modstorage.md` of the `dayz-persistence` skill.
 
 The same holds for `modded class PlayerBase`. The player's chain also writes its server sections only on a multiplayer server (`P:\scripts\4_world\entities\manbase\playerbase.c:7366`), so mirror any condition you put around a write with the same condition around the read.
 

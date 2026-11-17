@@ -37,7 +37,7 @@ The player's presence follows from the type in `TranslateTriggerTypeToPresence` 
 3. **Synchronization.** When a player connects, the server sends the whole JSON with `RPC_UNDERGROUND_SYNC` (`SyncDataSend`, `undergroundarealoader.c:174` to `:177`, called at `P:\scripts\5_mission\mission\missionserver.c:342` and `:363`) and the client stores it (`OnRPC`, `undergroundarealoader.c:181` to `:193`). The client does not need the file.
 4. **Local play.** In a local game on a `DIAG_DEVELOPER` build, the client loads the file and creates the triggers itself (`P:\scripts\5_mission\mission\missiongameplay.c:112` to `:117`).
 
-Limit: `m_TriggerIndex` is synchronized in the range -1 to 4095 (`P:\scripts\4_world\entities\scriptedentities\triggers\undergroundtrigger.c:10`), so one JSON holds up to 4096 triggers. The source notes report the 1.29 range as -1 to 255.
+Limit: `m_TriggerIndex` is synchronized in the range -1 to 4095 (`P:\scripts\4_world\entities\scriptedentities\triggers\undergroundtrigger.c:10`), so one JSON holds up to 4096 triggers. The 1.29 range was -1 to 255 (not on `P:\`).
 
 ## Triggers tied to an object
 

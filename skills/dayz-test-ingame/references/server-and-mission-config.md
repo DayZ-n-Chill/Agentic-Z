@@ -39,7 +39,7 @@ and `pra/`.
 
 ## 2. `serverDZ.cfg` keys in the stock file
 
-(claim: CLAIM-TEST-SERVERCFG-STOCK-COPIES) The shipped `serverDZ.cfg` documents each key in a comment. Steam
+The shipped `serverDZ.cfg` documents each key in a comment. Steam
 installs it once and does not update it (the depot marks the file `UserConfig`): a Windows install updated to build
 26220720 on 2026-11-10 still holds its copy of 2024-07-31 (2987 bytes), while the depot of build 26220720 holds a
 3200-byte file whose content was not checked. Newer copies add two keys, `description` (before `enableWhitelist`)
@@ -64,7 +64,7 @@ keys the test skills already set:
 | `instanceId = 1` | server instance number; names the storage folder |
 | `storageAutoFix = 1` | replace corrupted persistence files with empty ones |
 
-[EXACT][CLAIM-TEST-SERVERCFG-SCRIPT-KEYS-164289] Keys the scripts read with `ServerConfigGetInt` (so they work even
+Keys the scripts read with `ServerConfigGetInt` (so they work even
 though the stock file does not list all of them):
 
 - `enableCfgGameplayFile`: unless it is set to a non-zero value (it is read into a `bool`,
@@ -78,12 +78,12 @@ though the stock file does not list all of them):
 
 ## 3. `cfggameplay.json`
 
-[EXACT][CLAIM-TEST-CFGGAMEPLAY-LOAD-164289] `CfgGameplayHandler.LoadData` reads `$mission:cfggameplay.json`, or
+`CfgGameplayHandler.LoadData` reads `$mission:cfggameplay.json`, or
 `dz/worlds/<world>/ce/cfggameplay.json` when the mission has none, and only when `enableCfgGameplayFile` is set in
 `serverDZ.cfg`; a diag build that is not a dedicated server forces it on (`P:\scripts\3_game\cfggameplayhandler.c:3`,
 `:44-60`). Otherwise, or when neither file exists, every `ITEM_*` class runs its `InitServer`, which sets its
 defaults, some of them from the section-2 keys (`:29-35`, `:62-68`). The whole object is sent to each client on
-connect (`CfgGameplayJson`, `P:\scripts\3_game\cfggameplaydatajson.c:1`; `CfgGameplayHandler.c:94-98`, called for
+connect (`CfgGameplayJson`, `P:\scripts\3_game\cfggameplaydatajson.c:2`; `CfgGameplayHandler.c:94-98`, called for
 `ClientPrepareEventTypeID` at `P:\scripts\5_mission\mission\missionserver.c:320`). The members of the four stock files
 carry the names of the fields of `CfgGameplayJson` and its `ITEM_*` classes (`CfgGameplayDataJson.c:15-23`, the
 classes at `:43-459`), with one exception: Chernarus and Livonia carry `disableColdAreaBuildingCheck` (line 76 in
@@ -120,9 +120,9 @@ file does not carry and the Nasdara file does (`skills/dayz-mod-workflow/referen
 
 ## 4. `cfgeffectarea.json`
 
-Read by `EffectAreaLoader` (the class in 164200, `P:\scripts\4_world\classes\contaminatedarea\contaminatedarealoader.c:2`; the file name keeps the old `ContaminatedAreaLoader` name) from `$mission:cfgeffectarea.json`, with the same `dz/worlds/<world>/ce/`
-fallback (`P:\scripts\4_world\classes\contaminatedarea\contaminatedarealoader.c:4`, `:18`). Re-opened on `P:\` for this file: the class, both paths and the radius check are at the lines cited. The top level has two
-arrays (`JsonDataContaminatedArea.c:1-6`):
+Read by `EffectAreaLoader` (`P:\scripts\4_world\classes\contaminatedarea\contaminatedarealoader.c:2`; the file name keeps the old `ContaminatedAreaLoader` name) from `$mission:cfgeffectarea.json`, with the same `dz/worlds/<world>/ce/`
+fallback (`P:\scripts\4_world\classes\contaminatedarea\contaminatedarealoader.c:4`, `:18`). The top level has two
+arrays (`P:\scripts\4_world\classes\contaminatedarea\jsondatacontaminatedarea.c:2-6`):
 
 - `Areas`: one object per zone with `AreaName`, `Type` (the entity class, e.g. `ContaminatedArea_Static`),
   `TriggerType` (e.g. `ContaminatedTrigger`), `Data` and `PlayerData`.
@@ -131,8 +131,8 @@ arrays (`JsonDataContaminatedArea.c:1-6`):
 `Data` holds `Pos`, `Radius`, `PosHeight`, `NegHeight`, `InnerRingCount`, `InnerPartDist`, `OuterRingToggle`,
 `OuterPartDist`, `OuterOffset`, `VerticalLayers`, `VerticalOffset`, `ParticleName`, `EffectInterval`,
 `EffectDuration`, `EffectModifier`; `PlayerData` holds `AroundPartName`, `TinyPartName`, `PPERequesterType`
-(`JsonDataContaminatedArea.c:17-41`). A `Radius` of 0 or less is rejected with an error naming the area
-(`ContaminatedAreaLoader.c:48`, the `EffectAreaLoader` file). Chernarus ships nine `ContaminatedArea_Static` zones.
+(`jsondatacontaminatedarea.c:17-41`). A `Radius` of 0 or less is rejected with an error naming the area
+(`contaminatedarealoader.c:46-50`). Chernarus ships nine `ContaminatedArea_Static` zones.
 
 ## 5. `db/messages.xml`
 
@@ -146,5 +146,5 @@ only commented examples (`MISSION/db/messages.xml:3-45`).
 
 With `-profiles=<dir>` the server writes `DayZServer_<date>_<time>.RPT` (engine), `script_<date>_<time>.log`
 and `error_<date>_<time>.log`. With `-adminlog` it also writes `DayZServer_<date>_<time>.ADM`, which starts with
-an `AdminLog started on <date> at <time>` header; without the switch no `.ADM` file appears (both measured at runtime by the author on the
-native Linux server, 1.30.164289, 2026-11-13; probe not included here). The rest of this page was read from the 164289 source (paths cited inline), not measured at runtime.
+an `AdminLog started on <date> at <time>` header; without the switch no `.ADM` file appears (both measured at runtime on the
+native Linux server, 1.30.164289, 2026-11-13). The rest of this page was read from the 164289 source (paths cited inline), not measured at runtime.

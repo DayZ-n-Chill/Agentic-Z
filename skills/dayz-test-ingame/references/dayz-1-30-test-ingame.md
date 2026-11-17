@@ -68,7 +68,7 @@ dummy bots.
 ## Launching the 1.30 DayZDiag directly (outside the managed lifecycle)
 
 The managed launcher runs the 1.29 install. Probing the Exp install by hand
-(measured 2026-09-26 with the dayz-mcp tooling; the evidence folder is not part of this repo)
+(measured 2026-09-26 with the dayz-mcp tooling)
 hit six traps, each costing a run:
 
 1. **The script log is the define oracle.** Each module logs
@@ -77,19 +77,19 @@ hit six traps, each costing a run:
    It also shows the version define, `DAYZ_1_30`.
 2. **From the Claude desktop app the game can read a dead Steam PID.** The app sees a
    private, frozen copy of `HKCU\Software\Valve\Steam\ActiveProcess` (MSIX registry
-   virtualization, LL-516). After Steam restarts, a game launched from the app reads a
+   virtualization). After Steam restarts, a game launched from the app reads a
    dead PID, logs `Unable to locate a running instance of Steam` and shows an error
    dialog while `steam.exe` runs. Compare the app's view with the real value (WMI
    `StdRegProv`) and the live `steam.exe`; then launch through WMI
    (`Win32_Process.Create`) or sync the copy right before launching. Writing the
    value from a shell inside the app only fixes the private copy, and only until the
    next Steam restart.
-   Two measured corollaries (2026-09-23/24, LL-510 / SP-420). Never START or restart Steam from a shell inside the sandboxed app: the new Steam registers in the private copy, and the REAL key can be left at `pid = 0, ActiveUser = 0` — a state the outside WMI check reports as broken while the app's own view looks healthy, and which `auto_remediate_steam` cannot fix because the worker sits inside the app too. Never write or delete another app's HKCU keys from an app shell: a write creates the private copy (shadow), a delete leaves a tombstone that hides the real key even after it is rewritten outside; the shadow only disappears with the app closed and the hive loaded offline. Preflight BOTH views: WMI `StdRegProv` reads the real hive, `Get-ItemProperty` inside the app reads the copy the launched client will see — require both to point at the live `steam.exe`. [EXACT] (measured, LL-510 / SP-420 / LL-516)
+   Two measured corollaries (2026-09-23/24). Never START or restart Steam from a shell inside the sandboxed app: the new Steam registers in the private copy, and the REAL key can be left at `pid = 0, ActiveUser = 0` — a state the outside WMI check reports as broken while the app's own view looks healthy, and which `auto_remediate_steam` cannot fix because the worker sits inside the app too. Never write or delete another app's HKCU keys from an app shell: a write creates the private copy (shadow), a delete leaves a tombstone that hides the real key even after it is rewritten outside; the shadow only disappears with the app closed and the hive loaded offline. Preflight BOTH views: WMI `StdRegProv` reads the real hive, `Get-ItemProperty` inside the app reads the copy the launched client will see — require both to point at the live `steam.exe`. [EXACT] (measured)
 3. **A very long `-profiles=` path is a crash suspect.** A ~245-character profiles
    path ended in `0xC0000005` after 1 s with no log written; a short path did not
    repeat it. Steam was broken at the same time, so the cause is probable, not
    isolated. Keep profiles paths short.
-4. **Launch DayZ with a whitelisted environment (LL-525).** A DayZ `ErrorMessage_*.mdmp` or
+4. **Launch DayZ with a whitelisted environment.** A DayZ `ErrorMessage_*.mdmp` or
    crash minidump embeds the parent's whole environment block, and an agent shell
    usually carries API keys and passwords. On every crash the DayZ CrashReporter
    also sends "analytical data" before offering the dump. Start DayZ with
@@ -102,7 +102,7 @@ hit six traps, each costing a run:
 6. **Use a fresh `-profiles=` directory per run.** A readiness check that greps the
    newest `script_*.log` found a log left by an earlier run in the same directory.
    It reported the server ready and the client connected at +0 s (2026-09-26): the
-   run looked healthy and measured nothing. A client that never loads its textures fools a visual check the same way (`session-findings.md`, "H2R import (2026-10)").
+   run looked healthy and measured nothing. A client that never loads its textures fools a visual check the same way (`session-findings.md`, the section on untextured runs and a moving 1PP eye).
 
 ## Measuring server load
 
@@ -134,7 +134,7 @@ What worked on 2026-09-26 (dummy-bot load, same measurement session):
   samples around a window then mixes stages into its CPU delta. Use the samples inside
   the window, report how much of it they cover, and drop the window when coverage is
   short. The in-server FPS meter was unaffected.
-- **Write CSV numbers with the invariant culture (LL-524).** On an es-ES host,
+- **Write CSV numbers with the invariant culture.** On an es-ES host,
   `'{0:F3}' -f` writes decimal commas and silently splits every CSV row into
   extra columns. Use `[string]::Format([Globalization.CultureInfo]::InvariantCulture, …)`.
 

@@ -1,6 +1,6 @@
 # Terrain holes: the evidence (DayZ 1.30)
 
-What is known about 1.30 terrain holes and how it was found: the Livonia config, the cell size, the new engine strings, the `.wrp` version change, and outside sources. The config, the trigger file and the `.wrp` files are on `P:\` and were checked there. The engine string search and the comparison with 1.29 were measured by the source notes on 2026-09-24 (install 1.30.164014 against 1.29 stable) and are not checkable on `P:\`. Nothing here was tested in a running game.
+What is known about 1.30 terrain holes and how it was found: the Livonia config, the cell size, the new engine strings, the `.wrp` version change, and what Terrain Builder 1.30 and the FTT tool add. The config, the trigger file and the `.wrp` files are on `P:\` and were checked there. The engine string search and the comparison with 1.29 were measured on 2026-09-24 (install 1.30.164014 against 1.29 stable) and are not checkable on `P:\`. Nothing here was tested in a running game.
 
 ## The Livonia config
 
@@ -30,7 +30,7 @@ The same world class gained `hasOcean=0` (`P:\DZ\worlds\enoch\world\config.cpp:4
 
 The Chernarus world config on `P:\` (file `P:\DZ\worlds\chernarusplus\world\config.cpp`) has neither `Holes` nor `tiles`. The Sakhal world is in an encrypted `.ebo` and is not unpacked.
 
-From the source notes' comparison with 1.29, not on `P:\`: the 1.29 config of Livonia has no `Holes` class, and `cfgundergroundtriggers.json` of Livonia is byte for byte the same in 1.29 and 1.30, so holes did not arrive with new triggers.
+From the comparison with 1.29, not on `P:\`: the 1.29 config of Livonia has no `Holes` class, and `cfgundergroundtriggers.json` of Livonia is byte for byte the same in 1.29 and 1.30, so holes did not arrive with new triggers.
 
 ## Cell size in Livonia: 6.25 m
 
@@ -50,7 +50,7 @@ With 5 m and with 10 m neither group falls inside the range of the triggers. Two
 
 ## New engine strings
 
-Measured by the source notes in `DayZDiag_x64.exe` 1.30.164014; not on `P:\`. Four related strings appear that the 1.29 executable does not have (other occurrences of "hole" belong to Recast, the navmesh generator, and were already there):
+Measured in `DayZDiag_x64.exe` 1.30.164014; not on `P:\`. Four related strings appear that the 1.29 executable does not have (other occurrences of "hole" belong to Recast, the navmesh generator, and were already there):
 
 | String | Where used (reference address in that build) | Nearby strings in that function |
 |---|---|---|
@@ -75,24 +75,24 @@ The script side is on `P:\`: `SurfaceIsHole` is declared at `P:\scripts\3_game\g
 
 ## The `.wrp` changes the same way with and without holes
 
-| Map | 1.29 (source notes) | 1.30 (on `P:\`) | Difference | Has `Holes`? |
+| Map | 1.29 (not on `P:\`) | 1.30 (on `P:\`) | Difference | Has `Holes`? |
 |---|---|---|---|---|
 | ChernarusPlus | OPRW v29, 223,653,986 bytes | OPRW v32, 235,121,528 bytes (`P:\DZ\worlds\chernarusplus\world\chernarusplus.wrp`) | plus 5.1 % | no |
 | Enoch (Livonia) | OPRW v29, 226,053,187 bytes | OPRW v32, 237,263,513 bytes (`P:\DZ\worlds\enoch\world\enoch.wrp`) | plus 5.0 % | yes |
 
 Both files move to v32 and grow by the same share although only one map has holes, so the `.wrp` change is a format change. This supports holes living in the config. It does not rule out the `.wrp` also storing something related, for example the per object "underground" flag.
 
-## Outside sources
+## Not on `P:\`: the 1.30 release and the FTT tool
 
-- **Official changelog for 1.30.164014.** The forum post is at `forums.dayz.com/topic/266385`; a copy on mydayz.eu was read.
-  - Its modding section adds "Terrain holes" with no further detail.
-  - Its Terrain Builder section adds a Buldozer camera that can be unlinked from the terrain to edit below the surface (key 8), an input to link and unlink it, the same toggle affecting objects, and an "underground" flag per object against occlusion.
-- **Dev Blog Recap 2 (Steam announcement, 2026-09-22).** Among what arrives with Badlands: underground facilities and infrastructure built on the new terrain holes system, which will also be available for other maps and for the modding community, and Morse radio signals that lead to underground shelters.
-- **Flynn's Terrain Tools (third party, `github.com/Naviata/FTT-Releases`, 2026-09-19 and 20).** Binaries only, no source. According to its guide `guide/holes.md`:
+- **DayZ 1.30.164014.**
+  - The release adds terrain holes for modding, with no further detail published.
+  - Terrain Builder gains a Buldozer camera that can be unlinked from the terrain to edit below the surface (key 8), an input to link and unlink it, the same toggle affecting objects, and an "underground" flag per object against occlusion.
+- **Badlands (announced 2026-09-22).** Among what arrives with it: underground facilities and infrastructure built on the new terrain holes system, which will also be available for other maps and for mods, and Morse radio signals that lead to underground shelters.
+- **FTT (third-party terrain tool, 2026-09-19 and 20).** Binaries only, no source. Third-party tool behaviour, as its documentation describes it:
   - its "Hole Generator" marks cells of the height field grid;
   - it writes `holes.cfg` next to `layers.cfg`, one class per group;
   - it adds the `#include` to the terrain's `config.cpp`;
   - Buldozer reads the file again on each alt-tab;
-  - its general guide warns that a newer Terrain Builder needs an "underground" flag column in object imports.
+  - a newer Terrain Builder needs an "underground" flag column in object imports.
 
   None of this was verified. Its binary was not run.

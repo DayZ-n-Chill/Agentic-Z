@@ -10,7 +10,7 @@ Recoil is a script class. Fire modes are config classes. This file covers both.
 
 The fire mode's `recoil="recoil_cz527"` and `recoilProne` strings (`P:\DZ\weapons\firearms\cz527\config.cpp:105`, `:106`) do not name a config class: no `CfgRecoils` or `recoil_cz527` class exists anywhere under `P:\DZ` or `P:\scripts`. Tune recoil in the script class, not in those strings.
 
-The engine config does define a `class CfgRecoils` (`P:\bin\config.cpp:218`), but it holds only two arrays, `empty[]` and `impulse[]`, and no entry named after a gun: `recoil_cz527` and the SCAR-H's `recoil_fal` (`P:\DZ\weapons\firearms\scarh\config.cpp:94`) appear nowhere in `P:\bin\config.cpp` either. The knowledge pack describes the config `recoil` string as a separate `CfgRecoils` channel next to the script object; on `P:\` that channel has nothing for these names to select, so the advice above stands.
+The engine config does define a `class CfgRecoils` (`P:\bin\config.cpp:218`), but it holds only two arrays, `empty[]` and `impulse[]`, and no entry named after a gun: `recoil_cz527` and the SCAR-H's `recoil_fal` (`P:\DZ\weapons\firearms\scarh\config.cpp:94`) appear nowhere in `P:\bin\config.cpp` either. The config `recoil` string looks like a separate `CfgRecoils` channel next to the script object, but on `P:\` that channel has nothing for these names to select, so the advice above stands.
 
 DayZ 1.30 added four recoil classes for the new firearm scripts, all in `P:\scripts\4_world\classes\recoilbase\recoils\`:
 

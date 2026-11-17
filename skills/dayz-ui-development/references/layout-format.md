@@ -153,7 +153,7 @@ both builds on 2026-10-28).
 | `SimpleProgressBarWidgetClass` | `SimpleProgressBarWidget` | yes | Simpler progress variant |
 | `CanvasWidgetClass` | `CanvasWidget` | no | Programmatic drawing (DrawLine) |
 | `VideoWidgetClass` | `VideoWidget` | yes | Video playback |
-| `RTTextureWidgetClass` | `RTTextureWidget` | yes | Render target (3D model preview) |
+| `RTTextureWidgetClass` | `RTTextureWidget` | yes | Texture used as a render target for its child widgets (`P:\scripts\1_core\proto\enwidgets.c:28`) |
 
 ### Special / MVC Widgets
 
@@ -676,7 +676,7 @@ ScrollWidgetClass RulesScroll {
 
 ### Fullscreen Click Blocker (with ignorepointer!)
 ```
-// v2.7 pattern: ClickBlocker as visual-only element.
+// ClickBlocker as visual-only element.
 // ChangeGameFocus(1) + SetDisabled(true) handle click-through prevention.
 // DO NOT remove ignorepointer — it steals mouse events from buttons!
 ImageWidgetClass ClickBlocker {
@@ -1029,10 +1029,15 @@ The DayZ Expansion market menu shows 3D item previews in the UI using RTTextureW
 // In script — set up 3D preview
 // Note: requires entity creation for the preview object
 // and camera setup — complex pattern; the DayZ Expansion market
-// menu is a full implementation. Key API:
-// RTTextureWidget has SetRTTextureWidget() on EntityAI
-// for rendering entity to UI texture.
+// menu is a full implementation. Vanilla API:
+// RTTextureWidget itself has no methods (P:\scripts\1_core\proto\enwidgets.c:243).
+// SetGUIWidget(IEntity ent, int index, RTTextureWidget w) makes it the $rendertarget
+// of an entity's shader (P:\scripts\1_core\proto\enwidgets.c:637), and
+// ImageWidget.SetImageTexture(int image, RTTextureWidget texture) draws it in an image (:258).
 ```
+
+For a plain 3D render of one item, vanilla uses `ItemPreviewWidgetClass` and `SetItem(EntityAI)`
+(`P:\scripts\3_game\gameplay.c:286-301`), which needs no camera setup.
 
 ### Pattern: HUD Overlay
 
@@ -1056,20 +1061,21 @@ if (m_HudWidget && m_HudWidget.IsVisible())
 ### Pattern: Sound Feedback
 
 ```
-// UI click sound (vanilla)
+// UI click sound (a light vanilla sound set, P:\DZ\sounds\hpp\config.cpp:323140)
 static void PlayUIClick()
 {
-    SEffectManager.PlaySound("Backpack_SoundSet", vector.Zero);
+    SEffectManager.PlaySound("pickUpBackPack_Plastic_Light_SoundSet", vector.Zero);
 }
 
-// UI action sound (more noticeable)
+// UI action sound (more noticeable, P:\DZ\sounds\hpp\config.cpp:323114)
 static void PlayUIAction()
 {
     SEffectManager.PlaySound("pickUpBackPack_Metal_SoundSet", vector.Zero);
 }
 ```
 
-Use sparingly — on button clicks and confirmations, not on hover or tab switch.
+`SEffectManager.PlaySound(string sound_set, vector position, ...)` is at
+`P:\scripts\3_game\effectmanager.c:178`. Use sparingly — on button clicks and confirmations, not on hover or tab switch.
 
 ---
 
@@ -1213,7 +1219,7 @@ does the same vertically. An absent `position` behaves as `0 0`.
 (`w = size_x if hexactsize == 1`), which holds only on a 1080-pixel-tall screen.
 The 1920x1080 calibration below is unaffected (`s = 1`); the 1280x720 table it
 mentions was computed by hand with the same formula, not read from the engine.
-`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py:772-775` still uses the pixel form.
+`resolve_geometry` in `scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py` still uses the pixel form.
 
 **Corrected 2026-08-19.** This paragraph used to say `position_x` is *ignored*
 under `center_ref`. The engine adds it. Measured on the live HUD: `Zeroing`

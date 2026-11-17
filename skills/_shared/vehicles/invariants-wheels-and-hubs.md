@@ -9,6 +9,7 @@ Where wheel hubs live in the model, how wheel proxies line up with them, hub hei
 - The `CarScript` base names the hub of each wheel with `wheelHub="wheel_1_1_damper_land"` and its three siblings (`P:\DZ\vehicles\wheeled\config.cpp:297`).
 - `CivSedanWheel` has `radius=0.34` (`P:\DZ\vehicles\wheeled\config.cpp:4762-4778`).
 - Vanilla lists both `Front` and `Rear` inside every `Axles` override: the `RearDrive` template (`P:\DZ\vehicles\wheeled\config.cpp:494` to `:510`) and `OffroadHatchback` (`P:\DZ\vehicles\wheeled\config.cpp:1431` to `:1466`).
+- `civiliansedan_mlod.p3d`, the vanilla control named below, is a debinarized copy of the vanilla sedan. It is not on `P:\`, and py3d cannot read the binarized `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d`, so the hub, proxy and matrix numbers quoted from the sedan are not checked on `P:\`.
 
 ## A faithful import does not mean the pieces line up (added 2026-07-27)
 
@@ -54,7 +55,7 @@ as 1 face too). Consequences, each of which cost a session:
   **0.000000 m**. Point the gate at `wheel_X_Y_damper_land`.
 - **Proxy triangle size bakes NO scale.** The frame is derived from UNIT vectors
   (`derive_proxy_frame` in `scripts/tools/py3d/py3d/__init__.py`), and vanilla's binarised proxy
-  matrix is orthonormal (`|aside|=|up|=|dir|=1.000000` on `civiliansedan.p3d` ODOL v54). A 1 mm
+  matrix is orthonormal (`|aside|=|up|=|dir|=1.000000` on `civiliansedan.p3d`, ODOL v54 when measured; the copy on `P:\` carries version 56 in its header). A 1 mm
   canonical triangle and a 0.34 m one place the same wheel; SUB_BRZ shipped on `scale=0.001`.
   Do not "fix" a small triangle.
 - **Vanilla reference, if you need one:** `civiliansedan` puts the hub **0.106334-0.107333 m

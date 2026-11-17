@@ -25,7 +25,7 @@ Reaching the cap does not shrink the damage radius. The trigger keeps its full s
 
 The loader copies the JSON keys into the area's parameters: `InnerRingCount`, `InnerPartDist`, `OuterRingToggle`, `OuterPartDist`, `OuterOffset` and `VerticalLayers` (`P:\scripts\4_world\classes\contaminatedarea\contaminatedarealoader.c:57` to `:62`).
 
-- A static area (`ContaminatedArea_Static`, declared at line 33 of the same file) fills itself with `FillWithParticles(m_Position, m_Radius, m_OuterRingOffset, m_InnerSpacing, m_ParticleID)` (`P:\scripts\4_world\classes\contaminatedarea\contaminatedarea.c:70`). Only `InnerPartDist` (`m_InnerSpacing`) and `OuterOffset` (`m_OuterRingOffset`) reach it.
+- A static area (`ContaminatedArea_Static`, declared at `P:\scripts\4_world\classes\contaminatedarea\contaminatedarea.c:33`) fills itself with `FillWithParticles(m_Position, m_Radius, m_OuterRingOffset, m_InnerSpacing, m_ParticleID)` (`P:\scripts\4_world\classes\contaminatedarea\contaminatedarea.c:70`). Only `InnerPartDist` (`m_InnerSpacing`) and `OuterOffset` (`m_OuterRingOffset`) reach it.
 - A dynamic area calls `PlaceParticles` with `m_InnerRings`, `m_InnerSpacing`, `m_OuterRingToggle`, `m_OuterSpacing` and `m_OuterRingOffset` (`P:\scripts\4_world\classes\contaminatedarea\contaminatedarea_dynamicbase.c:74`).
 
 So for a static area `InnerRingCount`, `OuterPartDist` and `OuterRingToggle` do nothing. Do not tune them to fix the density of a static area.

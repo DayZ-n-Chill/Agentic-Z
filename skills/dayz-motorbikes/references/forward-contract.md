@@ -165,7 +165,7 @@ class MyBike extends MotorbikeScript
 
 ---
 
-## 3. WHAT NEEDS TO BE MEASURED IN THE P3D
+## 3. What needs to be measured in the P3D
 
 Since binary `.p3d` files cannot be read in plain text, the modder **must measure** the following mandatory elements on their 3D model before compiling the addon, with `/dayz-p3d-audit` (MLOD source models only) or py3d (`scripts/tools/py3d/`):
 
@@ -202,4 +202,4 @@ Names verified in script: lights `motorbikescript.c:69-71`, `engine` `:181`, `pt
    - Components named `dmgZone_chassis`, `dmgZone_fender`, `dmgZone_engine`, `dmgZone_front`, `dmgZone_back`, `dmgZone_fuelTank`, `dmgZone_lights_1_1` paired with `DamageSystem` damage zones.
 4. **LOD ViewPilot (res 1100, a visual LOD)**, optional:
    - None on the vanilla motorbikes (`vanilla-p3d-anatomy.md`, parsed from their ODOLs, not checked in game).
-   - Add one only for geometry meant for the seat alone, such as closures over the gaps the rider sees through the fairing (`skills/_shared/vehicles/view-pilot-and-first-person.md`, SP-469).
+   - Add one only for geometry meant for the seat alone, such as closures over the gaps the rider sees through the fairing (`skills/_shared/vehicles/view-pilot-and-first-person.md`).

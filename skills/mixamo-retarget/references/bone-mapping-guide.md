@@ -2,7 +2,7 @@
 
 How the automatic bone matching works for animation retargeting, how to review a map, the common naming patterns per rig family, and how to fix bad matches.
 
-This is a guide to a Blender tool, not to the game, so it cites no vanilla file. The guide was written for the full upstream toolkit. Three things it describes are not shipped in this skill: the `blender-toolkit` command line, its TypeScript workflow and its Blender review panel. They are kept below because they explain the intended workflow; each is marked "upstream only". In this skill the same steps run as Python calls through the Blender MCP (see `SKILL.md`). Scores and outputs marked "measured" were produced with the shipped `bone_matching.py`.
+This is a guide to a Blender tool, not to the game, so it cites no vanilla file. Every step runs as a Python call through the Blender MCP (see `SKILL.md`); there is no command line and no Blender panel, so the map is reviewed by printing and editing the dict. Scores and outputs marked "measured" were produced with the shipped `bone_matching.py`.
 
 ## Contents
 
@@ -11,7 +11,7 @@ This is a guide to a Blender tool, not to the game, so it cites no vanilla file.
 - [Auto bone matching algorithm](#auto-bone-matching-algorithm)
 - [Two-phase workflow](#two-phase-workflow)
 - [Quality assessment](#quality-assessment)
-- [Blender review panel (upstream only)](#blender-review-panel-upstream-only)
+- [Reviewing the map](#reviewing-the-map)
 - [Common mapping patterns](#common-mapping-patterns)
 - [Troubleshooting](#troubleshooting)
 - [Best practices](#best-practices)
@@ -49,17 +49,11 @@ Three modes are available.
 bm = auto_map_bones("Armature", "Hero")
 ```
 
-Upstream only:
-
-```bash
-blender-toolkit retarget --target "Hero" --file "./Walking.fbx" --mapping auto
-```
-
 **How it works:**
 1. Reads the bone names of the source (Mixamo) and the target (your character)
 2. Uses the fuzzy matching algorithm to find the best matches
-3. Builds the map and rates its quality
-4. Shows the map for review (the upstream panel; here, print the dict)
+3. Builds the map and prints its quality rating
+4. Returns the map; print the dict to review it
 5. The user confirms or edits it before it is applied
 
 **Advantages:**
@@ -84,12 +78,6 @@ blender-toolkit retarget --target "Hero" --file "./Walking.fbx" --mapping auto
 bm = get_preset_bone_mapping("mixamo_to_rigify")
 ```
 
-Upstream only:
-
-```bash
-blender-toolkit retarget --target "Hero" --file "./Walking.fbx" --mapping mixamo_to_rigify
-```
-
 **How it works:**
 - Uses a predefined Mixamo to Rigify bone map
 - Meant for the standard Rigify control rig structure
@@ -97,10 +85,10 @@ blender-toolkit retarget --target "Hero" --file "./Walking.fbx" --mapping mixamo
 
 **Advantages:**
 - No configuration for Rigify users
-- High accuracy on Rigify rigs
-- Can be applied without the review step
+- No fuzzy pass, so no near-miss matches
+- Needs only a check that the rig has bones with these names
 
-**The preset the shipped `retargeting.py` holds** is ten bones, with deform-style names:
+**The preset the shipped `retargeting.py` holds** is ten bones, named as below:
 
 ```
 Mixamo              Rigify (shipped preset)
@@ -117,7 +105,7 @@ LeftForeArm         forearm.L
 LeftHand            hand.L
 ```
 
-It stops at the left hand; the right arm, the legs and the fingers are not in it, so extend it before use. The upstream guide lists the FK control names instead (`hips`, `spine_fk`, `upper_arm_fk.L`, ...); that fuller table is under "Common mapping patterns". Pick the set that matches the bones your rig actually has.
+It stops at the left hand; the right arm, the legs and the fingers are not in it, so extend it before use. A fuller table that uses the FK control names instead (`hips`, `spine_fk`, `upper_arm_fk.L`, ...) is under "Common mapping patterns". Pick the set that matches the bones your rig actually has.
 
 ### 3. Custom mode
 
@@ -132,25 +120,6 @@ custom_mapping = {
     "RightArm": "R_UpperArm",
 }
 retarget_animation("Armature", "MyCharacter", bone_map=custom_mapping)
-```
-
-Upstream only (TypeScript workflow):
-
-```typescript
-// In your workflow code
-const customMapping = {
-  "Hips": "Root",
-  "Spine": "Torso_01",
-  "Spine1": "Torso_02",
-  "LeftArm": "L_UpperArm",
-  "RightArm": "R_UpperArm"
-};
-
-await workflow.run({
-  targetCharacterArmature: 'MyCharacter',
-  animationFilePath: './Walking.fbx',
-  boneMapping: customMapping
-});
 ```
 
 **Advantages:**
@@ -183,7 +152,7 @@ All bone names are normalized before comparison (measured):
 3. Collapse consecutive underscores
 4. Strip leading and trailing underscores
 
-The upstream guide showed `"left.arm"` becoming `"left_arm"`. The code keeps the dot, which is what lets the `.l` and `.r` suffix bonus work.
+The dot is kept on purpose: it is what lets the `.l` and `.r` suffix bonus work.
 
 ### Phase 2: similarity calculation
 
@@ -219,7 +188,7 @@ def calculate_similarity(name1: str, name2: str) -> float:
 "LeftArm" ↔ "Head"         = 0.364  (no bonus)
 ```
 
-The upstream guide gave illustrative values here (0.95, 0.78, 0.65, 0.42, 0.15) that the code does not produce. The measured ones matter for one reason: `LeftArm` against `LeftLeg` is above the default threshold of 0.6, while `LeftArm` against `RightArm` is below it. A shared side prefix counts for more than a shared limb keyword, so a missing arm bone in the target can pull a leg bone of the same side into the map.
+These values matter for one reason: `LeftArm` against `LeftLeg` is above the default threshold of 0.6, while `LeftArm` against `RightArm` is below it. A shared side prefix counts for more than a shared limb keyword, so a missing arm bone in the target can pull a leg bone of the same side into the map.
 
 ### Phase 3: best match selection
 
@@ -279,43 +248,34 @@ The rating counts which of those nine source names have an entry. It does not ch
 
 ## Two-phase workflow
 
-The toolkit uses a two-phase workflow so the map is right before anything is baked.
+The skill uses a two-phase workflow so the map is right before anything is baked.
 
 ### Phase 1: generate and display
 
 **What happens:**
-1. Import the animation FBX into Blender
-2. Auto-generate the bone map with fuzzy matching
-3. Calculate the quality rating
-4. Show the map (upstream: in the Blender panel; here: print it)
-
-**The upstream panel shows:**
-- The complete bone mapping table
-- Source bone to target bone correspondence
-- An editable dropdown for each entry
-- The quality rating
-- An "Auto Re-map" button (regenerate)
-- An "Apply Retargeting" button (go to phase 2)
+1. Import the animation FBX into Blender (`import_fbx`)
+2. Auto-generate the bone map with fuzzy matching (`auto_map_bones`)
+3. The quality rating is printed
+4. Print the map
 
 **User actions:**
-- Review each bone correspondence
-- Fix wrong entries
+- Review each bone correspondence (see "Reviewing the map")
+- Fix wrong entries in the dict
 - Regenerate if needed
 - Apply when satisfied
 
 ### Phase 2: apply and bake
 
 **What happens:**
-1. The user applies the map (upstream: "Apply Retargeting"; here: `retarget_animation`)
+1. The user applies the map with `retarget_animation`
 2. A constraint-based retargeting setup is created
-3. The animation is baked to keyframes
-4. The animation is added to an NLA track (here: call `add_to_nla` yourself)
-5. Temporary constraints are cleared by the bake
+3. The animation is baked to keyframes over the scene frame range
+4. Temporary constraints are cleared by the bake
+5. To stack the result, call `add_to_nla` yourself; `retarget_animation` does not add an NLA track
 
 **Result:**
-- A retargeted animation on your character
-- The animation stored in an NLA track
-- The original character rig unchanged
+- A retargeted action on your character
+- The bones of the rig unchanged; only keyframes are added
 - Ready for further editing or export
 
 ---
@@ -376,73 +336,51 @@ In this skill the review is never skipped on a first map for a rig (see the two-
 
 ---
 
-## Blender review panel (upstream only)
+## Reviewing the map
 
-The upstream add-on shows a bone mapping panel in Blender's 3D View sidebar. It is not shipped here; its role is taken by printing and editing the map dict.
+There is no review panel; the map is a Python dict that is printed, edited and passed to `retarget_animation`.
 
-### Location
+**Step 1: print the map and its quality**
 
-**Path:** View3D, Sidebar (N key), "Blender Toolkit" tab, "Bone Mapping Review"
-
-### Panel components
-
-**1. Mapping table**
-```
-┌─────────────────────────────────┐
-│ Bone Mapping Review             │
-├─────────────────────────────────┤
-│ Source Bone    → Target Bone    │
-│ ─────────────────────────────── │
-│ Hips           → [Dropdown: Hips]│
-│ Spine          → [Dropdown: Spine]│
-│ LeftArm        → [Dropdown: LeftArm]│
-│ ...                             │
-└─────────────────────────────────┘
+```python
+bm = auto_map_bones("Armature", "Hero")   # prints the quality, the total and the critical-bone ratio
+for source_bone, target_bone in bm.items():
+    print(source_bone, "->", target_bone)
 ```
 
-**2. Quality info**
-```
-Quality: Excellent
-Total: 52 mappings
-Critical: 8/9 bones
-```
+`auto_map_bones` prints three lines of this shape (the first one starts with a check mark character):
 
-**3. Action buttons**
-- **Auto Re-map**: regenerate the map
-- **Apply Retargeting**: apply it
-
-### Using the panel
-
-**Step 1: open the panel**
 ```
-1. Press the N key in the 3D View
-2. Click the "Blender Toolkit" tab
-3. Find the "Bone Mapping Review" panel
+Auto-mapped 52 bones
+   Quality: EXCELLENT
+   Critical bones: 8/9
 ```
 
 **Step 2: review the map**
-```
-1. Scroll through the mapping table
-2. Check each source to target correspondence
-3. Pay special attention to critical bones:
+
+1. Go through every entry
+2. Check each source to target correspondence against the bone list of the target (`get_bones("Hero")`)
+3. Pay special attention to the critical bones:
    - Hips (root motion)
    - Spine chain (posture)
    - Arms and legs (animation transfer)
-```
 
 **Step 3: edit the map**
-```
-1. Click the dropdown next to a wrong entry
-2. Select the correct target bone from the list
-3. Repeat for every wrong entry
+
+```python
+bm["LeftArm"] = "upper_arm.L"   # replace a wrong entry
+del bm["LeftToeBase"]           # drop an entry that has no counterpart
 ```
 
+Repeat for every wrong entry. To regenerate from scratch, call `auto_map_bones` again.
+
 **Step 4: apply**
+
+```python
+retarget_animation("Armature", "Hero", bone_map=bm)
 ```
-1. Click the "Apply Retargeting" button
-2. Wait for processing (progress is shown in the console)
-3. The animation is applied and baked
-```
+
+The animation is applied and baked.
 
 ---
 
@@ -560,7 +498,7 @@ LeftHand            LeftHand
    - Verify the suffix matches through the whole rig
 
 2. **Manual correction**
-   - Swap the entries in the map (upstream: in the Blender panel)
+   - Swap the entries in the map dict
    - Fix all left and right pairs
 
 ### Missing critical bones
@@ -631,7 +569,7 @@ LeftHand            LeftHand
 
 ### 3. Save custom maps
 
-**For reuse** (here: keep the reviewed dict, or save it as JSON next to the `.blend`):
+**For reuse**, keep the reviewed dict, or save it as JSON next to the `.blend`:
 
 ```python
 import json
@@ -639,33 +577,21 @@ with open(r"<path-to>\hero_bone_map.json", "w", encoding="utf-8") as handle:
     json.dump(bm, handle, indent=2)
 ```
 
-Upstream only (TypeScript workflow):
+Load it again for every later animation on the same pair of rigs; a map that was reviewed once does not need a second review:
 
-```typescript
-// Save successful mapping
-const myCharacterMapping = {
-  "Hips": "root_bone",
-  "Spine": "torso_01",
-  // ... complete mapping
-};
-
-// Reuse for all animations
-await workflow.run({
-  boneMapping: myCharacterMapping,
-  skipConfirmation: true  // Safe with known mapping
-});
+```python
+with open(r"<path-to>\hero_bone_map.json", encoding="utf-8") as handle:
+    bm = json.load(handle)
+retarget_animation("Armature", "Hero", bone_map=bm)
 ```
 
 ### 4. Use a quality threshold
 
-**Decide the confirmation strategy** (upstream only, TypeScript workflow):
-```typescript
-// Auto-apply only for excellent quality
-if (quality === 'excellent') {
-  skipConfirmation = true;
-} else {
-  skipConfirmation = false;  // Review in UI
-}
+**Decide the confirmation strategy** from the rating: skip the review only for a map rated "excellent" on a rig whose map was reviewed before, and review every other map.
+
+```python
+report = get_match_quality_report(bm)
+needs_review = report["quality"] != "excellent"
 ```
 
 ### 5. Document your rigs

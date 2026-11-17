@@ -41,7 +41,7 @@ Quick facts on five vanilla systems: recipes and crafting (`PluginRecipesManager
   the pipeline (no EEHitBy/animation/bleeding).
 - `ProcessIndirectDamage` does not exist in script (no hit under `P:\scripts\`); radius damage =
   `DamageSystem.ExplosionDamage(source, null, ammo, pos, DamageType.EXPLOSION)` (`P:\scripts\3_game\damagesystem.c:25`).
-- `GetProtectionLevel` (`P:\scripts\4_world\entities\itembase.c:4073`) covers only `DEF_BIOLOGICAL` and `DEF_CHEMICAL` (hazmat; the constants are at `P:\scripts\3_game\constants.c:547-548`). Ballistic absorption of
+- `GetProtectionLevel` (`P:\scripts\4_world\entities\itembase.c:4073`) covers only `DEF_BIOLOGICAL`, `DEF_CHEMICAL`, `DEF_DUST_PARTICLE_BREATH` and `DEF_DUST_PARTICLE_EYES` (hazmat and dust; the constants are at `P:\scripts\3_game\constants.c:547-550`). Ballistic absorption of
   clothing is C++/config, with no script API.
 - Full TransportHit flow line by line: the `dayz-physics-engine` skill,
   `references/damage-and-transporthit.md`.

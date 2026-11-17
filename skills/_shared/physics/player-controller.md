@@ -2,7 +2,7 @@
 
 Covers the player's character controller: where it is simulated and what that means for collision, the calls script has on it, riding a moving platform, lifting the player from a command script, the ragdoll, and fall damage. The 1.30 changes are marked.
 
-The measured results below come from the source pack's in-game test mods; each names its build. They can't be checked on `P:\`, so confirm them in game before a design depends on one. The full write-ups are in `skills/dayz-physics-engine/SKILL.md` and `skills/dayz-physics-engine/references/ragdoll-and-fall-damage.md`.
+The measured results below come from in-game tests; each names its build where it is known. They can't be checked on `P:\`, so confirm them in game before a design depends on one. The full write-ups are in `skills/dayz-physics-engine/SKILL.md` and `skills/dayz-physics-engine/references/ragdoll-and-fall-damage.md`.
 
 ## The controller is not a rigid body
 
@@ -40,7 +40,7 @@ Measured in game (DayZDiag 1.29.163709, one client on localhost):
 
 ## Lifting the player from a command script
 
-Measured in game (DayZDiag 1.30.164014 experimental, the source pack's LFSkateboard test, 2026-10-06):
+Measured in game (DayZDiag 1.30.164014 experimental, 2026-10-06):
 
 - A `HumanCommandScript` that raises the player with `PrePhys_SetTranslation` (local space, `P:\scripts\3_game\human.c:1313`) gets no lift while controller gravity is on: the first air tick lost its whole upward step. With `PhysicsEnableGravity(false)` from take-off to landing the body followed the translation.
 - The command owns switching gravity back on at every exit, including a ride that ends in the air. Vanilla itself only ever calls `PhysicsEnableGravity(true)`, when a vehicle death's simulation ends (`P:\scripts\4_world\entities\dayzplayerimplement.c:32`).
@@ -49,15 +49,15 @@ Measured in game (DayZDiag 1.30.164014 experimental, the source pack's LFSkatebo
 
 ## Walking a player from script
 
-`OverrideMovementSpeed` and `OverrideMovementAngle` (`P:\scripts\3_game\human.c:253`, `:256`) move a client controlled player only when both the owner client and the server apply them on every move. Measured (DayZDiag 1.29, the dayz-mcp mod): set on the client only, the player moved 0.24 to 0.40 m in 1.5 s; applied on both sides every tick, 1.52 m/s with both ending at the same position.
+`OverrideMovementSpeed` and `OverrideMovementAngle` (`P:\scripts\3_game\human.c:253`, `:256`) move a client controlled player only when both the owner client and the server apply them on every move. Measured in game (DayZDiag 1.29): set on the client only, the player moved 0.24 to 0.40 m in 1.5 s; applied on both sides every tick, 1.52 m/s with both ending at the same position.
 
 ## Ragdoll
 
 - **1.30:** the calls are `PhysicsSetSimpleDeath(bool pEnable)` (new, `P:\scripts\3_game\human.c:1449`), `PhysicsSetRagdoll(bool pEnable)` (`:1451`) and `PhysicsIsRagdoll()` (`:1452`). An unconscious player's command has `IsRagdoll()` (`P:\scripts\3_game\human.c:647`).
-- **1.30:** the death branch that starts no death command now calls `PhysicsSetSimpleDeath(true)` (`P:\scripts\4_world\entities\dayzplayerimplement.c:745`); the source pack records that 1.29 called `PhysicsSetRagdoll(true)` there.
+- **1.30:** the death branch that starts no death command now calls `PhysicsSetSimpleDeath(true)` (`P:\scripts\4_world\entities\dayzplayerimplement.c:745`). 1.29 called `PhysicsSetRagdoll(true)` there (that build is not on `P:\`; the comment at `P:\scripts\3_game\human.c:1448` says the death state "was previously handled by PhysicsSetRagdoll").
 - **1.30:** the ragdoll's bodies are data: `RagdollDef` in `P:\DZ\characters\bodies\human.ragdoll:1`, 11 `RagdollBone` entries with a mass, capsule or sphere geometries on `flesh.bisurf`, and joint limits. The masses add up to 73.9 kg (pelvis `Mass 17` at `P:\DZ\characters\bodies\human.ragdoll:5`).
-- These calls are on `Human` only. Infected and animals inherit `DayZCreature`, which extends `EntityAI` (`P:\scripts\3_game\entities\dayzanimal.c:24`), so they have no ragdoll call; a contributor to the source pack reports that giving an infected a `ragdoll =` entry and player death clips did nothing in game (1.30.164078).
-- **A ragdoll on a living player works on the server only.** Measured (the source pack's LFSlidingFloor test, 2026-06-10): after `DisableSimulation(false)`, waking the body and `PhysicsSetRagdoll(true)`, an impulse took and the body slid 77.6 m on the server, but the owner's client kept a standing, controllable avatar. It needs custom position sync to be usable.
+- These calls are on `Human` only. Infected and animals inherit `DayZCreature`, which extends `EntityAI` (`P:\scripts\3_game\entities\dayzanimal.c:24`), so they have no ragdoll call. Giving an infected a `ragdoll =` entry and player death clips did nothing in game (seen on 1.30.164078; not checkable on `P:\`).
+- **A ragdoll on a living player works on the server only.** Measured in game (2026-06-10): after `DisableSimulation(false)`, waking the body and `PhysicsSetRagdoll(true)`, an impulse took and the body slid 77.6 m on the server, but the owner's client kept a standing, controllable avatar. It needs custom position sync to be usable.
 - **Waking too early buries the player.** In that test a wake at 0.5 s left the player 40 m under the terrain. Vanilla waits for `m_UnconsciousTime > 2` (`P:\scripts\4_world\entities\manbase\playerbase.c:3420`), and from 1.30 also refuses while `PhysicsIsFalling(false)` is true (`:3423`). Keep both guards in a custom wake.
 - Vanilla pushes a body from script only when it is dead: `RegisterTransportHit` calls `dBodyApplyImpulse` behind `IsDamageDestroyed()` (`P:\scripts\3_game\entities\entityai.c:4159`). A living player is moved by the collision itself. See `contact.md`.
 
@@ -74,4 +74,4 @@ Measured in game (DayZDiag 1.30.164014 experimental, the source pack's LFSkatebo
 - The curve is `CurveExp(low, high, value, power)`: the height's position between low and high, clamped to 0 to 1, raised to the power (`P:\scripts\4_world\entities\dayzplayerimplementfalldamage.c:92-97`).
 - `Randomize` returns a coefficient of 1 unchanged, so a lethal fall is not rolled back down (`P:\scripts\4_world\entities\dayzplayerimplementfalldamage.c:160-163`).
 - The damage is dealt with `ProcessDirectDamage` and the ammo `FallDamageHealth` and `FallDamageShock` (`FALL_DAMAGE_AMMO_HEALTH`, `P:\scripts\4_world\entities\dayzplayerimplementfalldamage.c:20`; applied at `:155`), both defined in `P:\DZ\weapons\melee\config.cpp:2182` (`FallDamageHealth`).
-- The source pack records the 1.29 values as health 5 to 14 m, shock 3 to 12 m and broken legs 5 to 9 m, on a straight line. A `modded class` that copies those constants and `Math.InverseLerp` compiles on 1.30 and silently brings the old, weaker curve back.
+- The 1.29 values were health 5 to 14 m, shock 3 to 12 m and broken legs 5 to 9 m, on a straight line (that build is not on `P:\`). A `modded class` that copies those constants and `Math.InverseLerp` compiles on 1.30 and silently brings the old, weaker curve back.

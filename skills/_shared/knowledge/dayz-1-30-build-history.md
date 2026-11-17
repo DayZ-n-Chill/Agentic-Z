@@ -41,7 +41,7 @@ A vanilla line number is only right for one build. The skills named in the Depth
 | The vital-parts check runs through `Transport.CheckVitalItemCallback`; `CarScript.CheckVitalItem` is obsolete. | `P:\scripts\3_game\vehicles\transport.c:420` | `dayz-aviation` |
 | `CanDismantlePart` and `CanDestroyPart` also require `SupportRemovalCheck`. | `P:\scripts\4_world\classes\constructionbase.c:741` | `dayz-basebuilding` |
 | `SurrenderDummyItem` is still declared, marked obsolete. 1.30 no longer puts it in the hands. | `P:\scripts\4_world\entities\itembase\surrenderdummyitem.c:1-2` | `dayz-animation-pipeline` |
-| `LocalTakeEntityAsAttachmentEx` is obsolete and `Man` no longer overrides it. | declared at `P:\scripts\3_game\entities\entityai.c:4881`; the obsolete mark is not yet checked on `P:\` | `enforce-script-reference` |
+| `LocalTakeEntityAsAttachmentEx` is obsolete and `Man` no longer overrides it. | the `[Obsolete]` mark and the declaration at `P:\scripts\3_game\entities\entityai.c:4880-4881`; `man.c` beside it holds no override | `enforce-script-reference` |
 | `THERMAL_BIAS` takes index 11 of the player stats. | not yet checked on `P:\` | `dayz-environment-hazards` |
 | The item sounds started in one frame go in one RPC. | not yet checked on `P:\` | `dayz-sound-system` |
 | The 1.29 `$AnimGraph 7` text graphs become a new file set (`.agr`, `.agf`, `.ast`, `.asi`). All 187 clips of the vanilla infected instance keep their 1.29 GUID. | data files, not yet checked on `P:\` | `dayz-animation-pipeline` |

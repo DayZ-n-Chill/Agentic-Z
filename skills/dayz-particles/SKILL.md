@@ -3,6 +3,9 @@ name: dayz-particles
 description: "Reference for creating and playing custom DayZ particle effects without Workbench: .ptc and .emat files, .edds sprites, the Particle, ParticleManager and SEffectManager script API, the vanilla particle catalog, contaminated area particle budgets (cfgeffectarea.json) and the DayZ 1.30 changes (dust, vehicle effects, sandstorm, the headless client check). Use when an agent needs to look up a particle format, API call or vanilla effect; the dayz-audio-fx-specialist agent reads it when it writes, changes or debugs an effect in a mod. Sound is not covered here; see dayz-sound-system."
 ---
 
+<!-- skill-dir-note -->
+> **Path note:** `<skill-dir>` in commands below is the absolute path of this skill's folder. When the agent loads this skill the harness exposes the skill's base directory; substitute it before running. Sibling skills are reached via `<skill-dir>\..\dayz-X\`.
+
 # DayZ particle effects
 
 Follow `skills/_shared/dayz-conventions.md`. This skill is reference only; it runs no scripts, so there is no preflight gate.
@@ -142,7 +145,7 @@ The table of what breaks in a 1.29 mod and the migration checklist are at the en
 
 ## On Linux
 
-Everything above is written for Windows and stays valid there. `.ptc` and `.emat` are text files written without Workbench, so nothing in this skill needs Windows. Workbench can be started under Proton with `dayz-proton.sh gui Workbench` (the script is `skills/_shared/scripts/dayz-proton.sh`); whether it runs there and whether its particle editor works is not yet checked. The Proton setup and its limits are in the Linux notes of the shared pack (`_shared/linux-proton.md`).
+Everything above is written for Windows and stays valid there. `.ptc` and `.emat` are text files written without Workbench, so nothing in this skill needs Windows. Workbench can be started under Proton with `dayz-proton.sh gui Workbench` (the script is `skills/_shared/scripts/dayz-proton.sh`); whether it runs there and whether its particle editor works is not yet checked. The Proton setup and its limits are in `skills/_shared/linux-proton.md`.
 
 ## Building, testing and publishing the mod
 

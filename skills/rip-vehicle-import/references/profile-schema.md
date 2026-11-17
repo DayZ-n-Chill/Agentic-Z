@@ -35,7 +35,7 @@ Everything in this file describes the import project and its measured cars. None
 |---|---|
 | `builder{}` | Builder v2 policies: `interior_out` (prox_int), `budget` (merge classes with an authored LOD; micro-classes verbatim plus auto-full by inflation), `negate_classes`, `skip`, `glass_int_policy`. |
 | `interior{viewpilot_subset, viewpilot_full}` | One interior (the prox_int pattern): full goes to resolution 1.0, a subset of at most 16k goes to resolution 1100. `viewpilot_full` is the BRZ decision (known lag); car number two uses the subset. |
-| `viewpilot_parts` | Deprecated (Task 11 R2). Do not use. |
+| `viewpilot_parts` | Deprecated. Do not use. |
 | `sedanwheel`, `crew_driver`, `crew_cargo` | Vanilla proxy paths, written without `.p3d`. |
 | `shadow{max_faces}` | Shadow LOD budget (at most 5000; 40 degree dissolve). |
 | `dual_tag` | componentNN dual-tag on. Mandatory; off only for the negative fixture. |

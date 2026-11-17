@@ -20,7 +20,7 @@ python "<skill-dir>\preflight.py"
 
 Run it before other DayZ skills, after a fresh clone, and after each reboot (`P:\` does not auto-mount). Build and deploy skills run it for you as a gate.
 
-One flow does not need a separate preflight run: the in-game test script `skills/dayz-test-ingame/templates/dayz-test.ps1` (the knowledge pack's orchestrator, kept for reference in the `dayz-test-ingame` skill) starts with its own checks (game exe, work drive, the `P:\Mods` junction, `allowFilePatching` in `serverDZ.cfg`, the Steam session, AddonBuilder for a build) and creates the junction when it is missing. Preflight is the report-and-warn check for everything else.
+One flow does not need a separate preflight run: the in-game test script `skills/dayz-test-ingame/templates/dayz-test.ps1` (the orchestrator of the `dayz-test-ingame` skill) starts with its own checks (game exe, work drive, the `P:\Mods` junction, `allowFilePatching` in `serverDZ.cfg`, the Steam session, AddonBuilder for a build) and creates the junction when it is missing. Preflight is the report-and-warn check for everything else.
 
 ## What it checks
 
@@ -90,7 +90,7 @@ A build needs only the checks above. Diagnosing a bug also needs the files to co
 2. The mod's own tree on `P:\` (`P:\<ModName>\`, the link `/dayz-new-mod` creates to `workspace/<ModName>/`) and, for a packed test, its PBOs under `P:\Mods\@<ModName>\Addons\`, to confirm what is actually in the build under test.
 3. The working reference mod the broken one is being compared with, when there is one.
 
-Without them a diagnosis falls back on memory and diffs. Preflight does not check items 2 and 3, because they depend on the mod. This rule comes from a vehicle mod debug session (the LFQuad quad bike, May 2026).
+Without them a diagnosis falls back on memory and diffs. Preflight does not check items 2 and 3, because they depend on the mod.
 
 ## References
 

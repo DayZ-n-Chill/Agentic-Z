@@ -26,7 +26,7 @@ for the car.**
 
 - **⚠ REFUTED — do NOT close the rim with an extruded skirt, and do NOT calibrate on the edge-on
   silhouette.** The first version of this entry canonized both, on the strength of an edge-on render
-  going 15.0% → 25.4% of frame against a vanilla control at 26.8%. The user's eye falsified it the
+  going 15.0% → 25.4% of frame against a vanilla control at 26.8%. The game falsified it the
   same day: the edge was still see-through in game, plus two new defects. Two mechanisms, both
   measured afterwards, and either one alone is fatal:
   1. **An extrusion is a flange, not a cap.** Welding a band to the rim closes that edge and opens

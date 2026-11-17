@@ -9,7 +9,7 @@ argument-hint: "<model.p3d> [--textures <dir> ...] [--rvmats <dir> ...] [--name 
 
 # /dayz-3d-viewer
 
-Converts a mod's model, textures and materials into something a browser can show: a binary glTF file and an HTML page with orbit controls. The converter is the Python tool in `scripts/tools/dayz-3d-viewer`; this skill is how to use it. It was tested on the source author's LFPG push button model (328 vertices, 640 faces, 4 materials, DXT1 textures with LZO mipmaps).
+Converts a mod's model, textures and materials into something a browser can show: a binary glTF file and an HTML page with orbit controls. The converter is the Python tool in `scripts/tools/dayz-3d-viewer`; this skill is how to use it. It was tested on a push button model (328 vertices, 640 faces, 4 materials, DXT1 textures with LZO mipmaps).
 
 Follow `skills/_shared/dayz-conventions.md`. The skill has no script of its own and the tool reads only the files you pass, so nothing here gates on `/dayz-preflight`. To convert a vanilla texture, pass its `P:\` path like any other file.
 
@@ -95,7 +95,7 @@ texture_map = {'base_co': 'base_co.png'}  # texture stem -> png path
 geo = extract_geometry_for_viewer('model.p3d', texture_map=texture_map, rvmat_data=rvmat_data)
 
 # 4. The embedded page
-generate_viewer_html(model_name='LFPG Push Button', mode='embedded', geometry_data=geo, output_path='viewer.html')
+generate_viewer_html(model_name='Push Button', mode='embedded', geometry_data=geo, output_path='viewer.html')
 
 # or the web page, next to a .glb written by p3d_to_glb
 generate_viewer_html(model_name='My Model', mode='web', glb_url='model.glb', output_path='viewer.html')

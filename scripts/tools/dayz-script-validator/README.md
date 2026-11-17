@@ -63,9 +63,9 @@ on a tree that compiles clean.
   case) used where only a type fits -- `Name.Method(`, `Name.Cast(`,
   `new Name`, a template argument, a typed declaration at the start of a line
   -- when no `class`, `enum` or `typedef` of that name exists in the addon,
-  in the vanilla scripts tree or in any `--external-scripts` root. Found on
-  TransferZ PR #12, which deleted a `4_World` class that `5_Mission` still
-  called: a guaranteed Mission compile failure the linter reported as WARN
+  in the vanilla scripts tree or in any `--external-scripts` root. The case
+  behind it: a change to a mod deleted a `4_World` class that `5_Mission` still
+  called, a guaranteed Mission compile failure the linter reported as WARN
   with 0 errors. The vanilla tree comes from `--vanilla-root`, then
   `DAYZ_VANILLA_ROOT`, then `P:\scripts`.
 
@@ -100,11 +100,11 @@ the 1.30.164014 Exp data, listed in
 
 Measured on 2026-09-19 with the first version of the rule: 33 003 references
 judged on the vanilla tree with no finding; over 161 addon roots under `P:\`
-it left 12 FAILs in 3 roots (one probable real bug, two recovered-source trees
+it left 12 FAILs in 3 roots (one probable real bug, two source trees
 that use a sibling mod they do not declare) and 32 SKIPs whose unresolved
 names all belong to mods. Reading the vanilla tree adds about 0.9 s per
 invocation (2.6 s against 1.7 s on a 23-file addon, four runs each). On
-2026-10-03, after the fixes from two rounds of cross-family review, the
+2026-10-03, after the fixes from two rounds of review, the
 vanilla tree gave the same 33 003 references and no finding; the 161 roots
 were not measured again.
 
@@ -114,7 +114,7 @@ were not measured again.
   made DayZDiag 1.29 refuse the module with `Variable name 'Debug' already
   used as type name`; a local `Widget map`
   failed the same way (`skills/enforce-script-reference/`,
-  `pitfalls-advanced.md`, SP-317). Only a member and a local are on record; a
+  `pitfalls-advanced.md`). Only a member and a local are on record; a
   parameter, an enum and
   a typedef are judged the same way without a failure on record. The match
   is exact case, so a member `debug` passes: identifiers are case-sensitive
@@ -122,7 +122,7 @@ were not measured again.
   of its own module and the modules below it (a 4_World local may be named
   like a 5_Mission class). A file outside any `N_Module` folder may compile
   in any module, so it is judged only against the types of 1_Core and those
-  of its own file; in a mod recovered without its module folders the rule
+  of its own file; in a mod laid out without its module folders the rule
   had reported a member against a 5_Mission class (mods pass of 2026-10-17).
   Positions are those of `ES-RESERVED-WORD-IDENTIFIER`;
   code that never compiles is not judged, and a type the addon or an external
@@ -151,9 +151,9 @@ were not measured again.
   vanilla tree that means every cast whose chain reaches a vanilla class.
 - `ES-UNDECLARED-STATIC-MEMBER` (FAIL): `ClassName.Member` or
   `ClassName.Member(` where no declaration of the class names `Member`. A
-  lane deleted `ANIM_SWAP_ENABLED` and its sibling consts from its own class
-  `LFSK_Constants` while seven call sites still read
-  `LFSK_Constants.ANIM_SWAP_ENABLED`, and DayZ refused the World module on
+  change deleted `ANIM_SWAP_ENABLED` and its sibling consts from its own class
+  `FX_Constants` while seven call sites still read
+  `FX_Constants.ANIM_SWAP_ENABLED`, and DayZ refused the World module on
   the first boot. Judged only for a class
   the addon owns end to end: declared in the addon, not modded and not a
   template there, declared nowhere (modded or not) in the vanilla tree or an
@@ -169,8 +169,8 @@ were not measured again.
 - `ES-PROTECTED-METHOD-CROSS-CLASS` (WARN): `recv.Method(` where `Method`
   is `protected` or `private` in the declared type of `recv` (or the addon
   ancestor that declares it) and the calling class is neither that class nor
-  derived from it. Shape of inbox fb-20261006-002741-28fa: `PlayerBase.OnRPC`
-  called `cmd.LFSK_OnServerState(...)`, protected in `LFSK_RideCommand`, in
+  derived from it. The shape comes from a mod: `PlayerBase.OnRPC`
+  called `cmd.FX_OnServerState(...)`, protected in `FX_RideCommand`, in
   the same module. WARN because the refusal is measured for a protected
   field (`Variable '...' is protected`, `ES-PROTECTED-CROSS-MODULE`) and not
   for a method. The receiver's type is looked up as in
@@ -186,12 +186,12 @@ were not measured again.
   hits, hitEntity, m_Human, true, false, ObjIntersectGeom)`, with
   `hitEntity` an `IEntity` at the `Object` parameter 6, made DayZ
   1.30.164014 server refuse the World module with `Cannot convert 'IEntity'
-  to 'Object' for argument '6' to method 'RaycastRV'` (inbox
-  fb-20261006-030019-e074; the compiler counts arguments from 0). DayZDiag
+  to 'Object' for argument '6' to method 'RaycastRV'` (the compiler
+  counts arguments from 0). DayZDiag
   1.30.164289 refused that call again, and an `Object` passed to the
   `EntityAI` parameter 0 of `ItemPreviewWidget.SetItem`, the shape the rule
   had found in a mod, with `Cannot convert 'Object' to 'EntityAI' for
-  argument '0' to method 'SetItem'` (inbox e074; a retail build is not
+  argument '0' to method 'SetItem'` (a retail build is not
   measured for it). Those two pairs, an `IEntity` where an `Object` is
   taken and an `Object` where an `EntityAI` is, are FAIL; any other is
   WARN, because no refusal of it is measured. Judged only when everything is
@@ -225,8 +225,8 @@ were not measured again.
 - `ES-UNDEFINED-BUILTIN-METHOD` (FAIL): a call to a method that the vanilla
   tree's class of a built-in type does not declare. `vector gU =
   gF.Cross(gR);`, with `gF` and `gR` vector locals, made a DayZ 1.30.164200
-  server refuse the World module with `Undefined function 'vector.Cross'`
-: the 1.30.164014 Exp scripts declare
+  server refuse the World module with `Undefined function 'vector.Cross'`:
+  the 1.30.164014 Exp scripts declare
   `vector.Cross` (`1_Core/proto/EnConvert.c:239-246`), the 1.30.164200 ones
   do not, and the validator had passed the call against either tree. The
   built-in types are `bool`, `int`, `float`, `vector`, `string`, `typename`,
@@ -258,9 +258,9 @@ were not measured again.
   the rule is a SKIP line. A verdict holds for the build the vanilla tree
   comes from: see `--game-root` below.
 
-  Measured on 2026-11-03 against the 1.30.164200 scripts: on the
-  LFSkateboard tree before its fix the rule reports `lfsk_playerbase.c:1957`
-  and `:1959` and nothing else (390 calls judged), and nothing on the fixed
+  Measured on 2026-11-03 against the 1.30.164200 scripts: on the tree of
+  the mod that failed, before its fix, the rule reports lines 1957 and 1959
+  of one file and nothing else (390 calls judged), and nothing on the fixed
   tree (388 judged). Nothing on the vanilla tree itself (8 870 calls judged),
   and the vanilla control still matches its baseline; nothing either on the
   1.30.164014 Exp tree or a 1.29 tree, each against itself (8 878 and 8 059
@@ -271,20 +271,20 @@ were not measured again.
   copy of that mod uses `IndexOf` instead. Before two fixes the same pass
   gave 19 false positives: 18 where the lookup read `map<string, int> m` as
   an array, its `<...>` running from an earlier parameter's `<`, and one on
-  `map.ClearFlags(` with a `Widget map` local. A cross-family review (Grok
-  4.7, 2026-11-03) built a third on a synthetic tree: a `(` that only one
+  `map.ClearFlags(` with a `Widget map` local. A review on 2026-11-03
+  built a third on a synthetic tree: a `(` that only one
   branch of an `#ifdef` opens hid every later member of `vector`, hence the
   names written before a `(`. It also listed the unjudged receivers above as
   missed calls; they stay unjudged. The rule takes about 1 s on
-  the 11-file LFSkateboard addon (about 2.5 s on the first call of a
+  that 11-file addon (about 2.5 s on the first call of a
   process) and about 6 s on the 3 056 files of the vanilla tree.
 
 ## Which build the vanilla tree is
 
 The rules that read the vanilla tree judge the addon against that tree, not
 against the game. A gate that read the 1.30.164014 Exp extract while the
-game was 1.30.164200 passed `vector.Cross`, which only the extract declares
-. `--game-root`, or `DAYZ_GAME_ROOT`, names
+game was 1.30.164200 passed `vector.Cross`, which only the extract declares.
+`--game-root`, or `DAYZ_GAME_ROOT`, names
 the DayZ install folder (or its `dta\scripts.pbo` itself), and the vanilla
 tree is compared with that PBO, `.c` file by `.c` file, by content, with
 names compared without case:
@@ -359,8 +359,8 @@ log, or from a broken file the validator passed:
   judged. Build the string in steps (`s = s + part;`).
 - `ES-UNBALANCED-BRACKETS` (FAIL): the first `(`, `[` or `{` never closed,
   or closed by another kind of bracket, and the first closer with nothing
-  to close. `m_Objects.Clear();` sabotaged to `m_Objects.Clear(;` got PASS
-. Brackets are counted on the text without
+  to close. `m_Objects.Clear();` sabotaged to `m_Objects.Clear(;` got PASS.
+  Brackets are counted on the text without
   comments and strings; this is no parser, so a file it passes can still
   fail to compile. Each branch of an `#ifdef`/`#ifndef`/`#if` block starts
   from the brackets open before it, so a header written once per branch
@@ -380,7 +380,7 @@ log, or from a broken file the validator passed:
   continuation. One measurement; FAIL since
   the vanilla control found nothing for it on 1.29.0.163451 and on
   1.30.164078 stable. The operator leading the next line is
-  the same parser rule (`skills/enforce-script-reference/SKILL.md`, SP-386) and is not
+  the same parser rule (`skills/enforce-script-reference/SKILL.md`) and is not
   reported here; neither is a call's argument list over two lines.
 
 Each finding is wrong wherever the code compiles, so code under another
@@ -411,14 +411,14 @@ under:
 
 | Cited as | Skill folder |
 |---|---|
-| `SKILL.md rule N`, `enforce-script-reference SKILL.md`, `SP-nnn`, `pitfalls-advanced.md`, `networking.md`, `memory-management.md` | `skills/enforce-script-reference/` (`SKILL.md` and `references/`) |
+| `SKILL.md rule N`, `enforce-script-reference SKILL.md`, `pitfalls-advanced.md`, `networking.md`, `memory-management.md` | `skills/enforce-script-reference/` (`SKILL.md` and `references/`) |
 | `dayz-ui-development SKILL.md`, `layout-format.md` | `skills/dayz-ui-development/` (`SKILL.md` and `references/`) |
 | `dayz-mod-workflow` | `skills/dayz-mod-workflow/` |
 | `dayz-p3d-audit/SKILL.md` | `skills/dayz-p3d-audit/` |
 
 A `file:line` in a message is the line the rule was written against. When
 the file or the line no longer matches, look the passage up in that skill
-folder by its rule number, its `SP-nnn` tag or its heading.
+folder by its rule number or its heading.
 
 ## Tests
 

@@ -3,7 +3,7 @@
 Each test was written to fail BEFORE its fix:
 
   1. _read_asciiz hung the process at EOF with no NUL, inherited from
-     upstream 7acd58b. This test carries its own timeout, so a missing fix
+     the bare codec. This test carries its own timeout, so a missing fix
      fails the test instead of hanging the whole suite.
   2. ERR_WINDING_INVERTED's message advised swapping vertices[1] and
      vertices[2], which inverts a triangle but CROSSES a quad.
@@ -80,7 +80,8 @@ def test_asciiz_without_nul_raises_instead_of_hanging():
 
 
 def test_valid_asciiz_still_works():
-    """The fix must not change the happy path: that is upstream's contract."""
+    """The fix must not change the happy path: that is the bare codec's
+    contract."""
     assert py3d._read_asciiz(io.BytesIO(b"hello\0rest")) == "hello"
     assert py3d._read_asciiz(io.BytesIO(b"\0")) == ""
     # a string longer than the 1024-byte read block
@@ -119,7 +120,7 @@ def test_winding_message_does_not_recommend_the_swap_that_crosses_quads():
 # ------------------------------------------------------------- FIX-3
 
 def test_global_inversion_of_all_lods_is_detected():
-    """The false negative that motivated the fork: everything inverted meant
+    """The false negative the absolute check was added for: everything inverted meant
     silence.
 
     With the check relative to the Visual LOD, inverting EVERY LOD leaves

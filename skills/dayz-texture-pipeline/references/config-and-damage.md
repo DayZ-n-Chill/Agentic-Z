@@ -20,7 +20,7 @@ hiddenSelectionsTextures[]=
 ```
 
 - Check the selection name in the model and in the config before using it.
-- Some selections show no geometry until a texture is assigned. One project's notes name `camoGround` as such a trap (a report, not checked on `P:\`). An empty string hides a selection on purpose: `_shared/textures/runtime-material-swaps.md`.
+- Some selections show no geometry until a texture is assigned. `camoGround` is one such selection (not checked on `P:\`). An empty string hides a selection on purpose: `_shared/textures/runtime-material-swaps.md`.
 
 ## Material swap through config
 

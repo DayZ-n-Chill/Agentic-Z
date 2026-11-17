@@ -160,8 +160,8 @@ class TestDiff(_Case):
         self.assertFalse(report["props_equal"])
 
     def test_few_entries(self):
-        # The source script told the entry table from the properties by size (more
-        # than 100 items): a PBO with 100 entries or fewer stopped it or swapped them.
+        # The entry table and the properties are never told apart by size: a PBO
+        # with one entry, or none, is read correctly.
         one = [("config.bin", b"\x00raP")]
 
         report, _ = self.diff(self.write("old.pbo", one), self.write("new.pbo", one))

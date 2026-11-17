@@ -18,11 +18,11 @@ The jobs in this table are **model knowledge**. The script side confirms the spl
 Two more jobs follow from script:
 
 - **The action cursor reads View Geometry, never the physics body.** Its ray is `RaycastRVProxy` (`P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:255`), whose parameters default to `ObjIntersectView` (`P:\scripts\3_game\global\dayzphysics.c:88`). An object with a working Geometry LOD and no View Geometry LOD collides but shows no action. Changing physics layers does not help; see `layers-and-raycasts.md`.
-- **Characters stand on Roadway faces, even where there is no Geometry.** Measured in game (the source pack's SecretRock elevator, DayZDiag 1.29.163709; not checkable on `P:\`): a lift cabin rode a player up through a shaft but left them standing in mid air on the way down, on Roadway faces of the building model that had not been cut out with the shaft. Cutting the shaft out of that Roadway LOD fixed it. No `RaycastRV` probe can show such a face, since `ObjIntersect` has no Roadway value (`P:\scripts\3_game\constants.c:31-38`), so check the model in Object Builder.
+- **Characters stand on Roadway faces, even where there is no Geometry.** Measured in game on a scripted lift (DayZDiag 1.29.163709; not checkable on `P:\`): a lift cabin rode a player up through a shaft but left them standing in mid air on the way down, on Roadway faces of the building model that had not been cut out with the shaft. Cutting the shaft out of that Roadway LOD fixed it. No `RaycastRV` probe can show such a face, since `ObjIntersect` has no Roadway value (`P:\scripts\3_game\constants.c:31-38`), so check the model in Object Builder.
 
 ## Rules for the collision LODs
 
-These come from the model pack (`skills/_shared/models/`) and the audit references. Check them on the mod's MLOD model with `/dayz-p3d-audit`; never on a vanilla ODOL model.
+These are set out in the model pack (`skills/_shared/models/`) and the audit references. Check them on the mod's MLOD model with `/dayz-p3d-audit`; never on a vanilla ODOL model.
 
 - The Geometry LOD exists and carries the mass (`p3d-killers.md` section 4; the audit prints the mass, see `mass-and-weight.md`).
 - Each component in Geometry, Fire Geometry and View Geometry is closed and convex, named `Component01`, `Component02` and so on with a capital C (`p3d-killers.md` sections 2, 8 and 9).

@@ -1,6 +1,6 @@
 # DayZ 1.30 — Enforce Script contract
 
-Consultation reference for `enforce-script-reference`. The line numbers are those of stable 1.30.164289, which can be newer than the build on `P:\`; how to read which build a citation is from is in `skills/_shared/knowledge/dayz-1-30-build-history.md` ("Which line a citation gives"). `[EXACT]` marks text copied from the cited file. `[DESIGN]` marks migration advice.
+Consultation reference for `enforce-script-reference`. Every line cited as `P:\...:N` was opened on `P:\`, whose extraction is a 1.30 build older than 1.30.164200 (it still declares `vector.Cross`, section 8.3). On a later build a line can have moved: find the symbol by name, and see `skills/_shared/knowledge/dayz-1-30-build-history.md` ("Which line a citation gives"). `[EXACT]` marks text copied from the cited file. `[DESIGN]` marks migration advice.
 
 Until 1.29: CE tick `OnCEUpdate()`, inventory hooked `ProcessInputData`, fill-bottle `ActionFillBottleBase`, 3rd-person `World.Is3rdPersonDisabled()`, storage `142`. Since 1.30: replacements below.
 

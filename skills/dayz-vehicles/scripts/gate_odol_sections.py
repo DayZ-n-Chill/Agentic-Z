@@ -39,7 +39,7 @@ import sys
 BACKEND_ENV = "DAYZ_ODOL_BACKEND_ROOT"
 HIDDEN_SELECTION_BIT = 0x20000
 
-# First-person and third-person visual LODs of a vehicle.
+# Third-person (0) and first-person (1100) visual LODs of a vehicle.
 DEFAULT_LODS = (0.0, 1100.0)
 # Substrings that mark a texture or material as worth listing in the overview.
 DEFAULT_KEYWORDS = ("gps", "marker", "cluster", "screen", "argb", "color", "dashboard", "cab_screen")
@@ -313,7 +313,7 @@ def print_lod(lod, want, selections, keywords):
 
 
 def read_lods(path, wanted, backend_root=None):
-    """Parse the wanted LODs of an ODOL. Returns (version, resolutions, model info, {resolution: lod})."""
+    """Parse the wanted LODs of an ODOL. Returns (version, resolutions, model info, address table, {resolution: lod})."""
     bis_reader_cls, lod_cls, model_info_cls = load_backend(backend_root)
     try:
         reader, ver, n, ress, mi, saved, file_size = open_odol(path, bis_reader_cls, model_info_cls)

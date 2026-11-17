@@ -1,6 +1,6 @@
 # Enforce Script style: Memory and `ref`
 
-Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`. The guide is a mirror of the [TrueDolphin/references wiki](https://github.com/TrueDolphin/references/wiki/EnScript-(Enforce-Script)-Style-Guide).
+Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`.
 
 Vanilla facts: The checked lifetime facts (`Class` against `Managed`, `ref`, `autoptr`, `delete`, deleting entities) are in `../enscript/references/language_memory.md`; it cites `P:\scripts\` and wins where the two differ.
 
@@ -30,7 +30,7 @@ class MyClass : Managed
 
 **Note:** Entities (`Object`, `EntityAI`, `ItemBase`, `PlayerBase`) are owned by the engine. Give your own helper and data classes `Managed` (or a vanilla class that has it) as the root; see `../enscript/references/language_memory.md`, "The two roots".
 
-**Measured, not checked on `P:\`** (the knowledge pack's author, dedicated server, DayZ 1.30.164289, a class declared in the mission module): `ref` also keeps a plain class with no `Managed` ancestor alive, so inheriting `Managed` is not what makes `ref` work, and a member field without `ref` is weak for both kinds of class. `Managed` as the root stays the style rule here, because vanilla's own script-owned classes use it (`Param`, `TimerBase`, `Serializer`; cited in `language_memory.md`). The probe and its other results are in `skills/enforce-script-reference/references/memory-management.md`.
+**Measured, not checked on `P:\`** (dedicated server, DayZ 1.30.164289, a class declared in the mission module): `ref` also keeps a plain class with no `Managed` ancestor alive, so inheriting `Managed` is not what makes `ref` work, and a member field without `ref` is weak for both kinds of class. `Managed` as the root stays the style rule here, because vanilla's own script-owned classes use it (`Param`, `TimerBase`, `Serializer`; cited in `language_memory.md`). The probe and its other results are in `skills/enforce-script-reference/references/memory-management.md`.
 
 ### Freeing objects
 

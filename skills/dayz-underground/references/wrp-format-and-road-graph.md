@@ -1,6 +1,6 @@
 # The `.wrp` world file: layout notes and road graph extraction
 
-Notes on the binary layout of a DayZ `.wrp` (OPRW) world file and on a pipeline that turns its road network into a road graph for a GPS style mod. The header facts were checked on the vanilla files on `P:\`. Everything else is measured work on third party maps by the author of the source notes (2026-05-14 to 2026-10-15) and is not checked on `P:\`; the pipeline's scripts are not in this repo.
+Notes on the binary layout of a DayZ `.wrp` (OPRW) world file and on a pipeline that turns its road network into a road graph for a GPS style mod. The header facts were checked on the vanilla files on `P:\`. Everything else was measured on third party maps (2026-05-14 to 2026-10-15) and is not checked on `P:\`; the pipeline's scripts are not in this repo.
 
 It lives in this skill because the terrain hole evidence (`terrain-holes-evidence.md`) leans on the same file format.
 
@@ -14,7 +14,7 @@ It lives in this skill because the terrain hole evidence (`terrain-holes-evidenc
 
 ## The extraction pipeline
 
-The scripts (`extract_wrp.py`, `get_worldname.py`, `build_road_graph.py`, `apply_connectivity_passes.py`, `validate_graph.py`, `visor_components.py`) belong to the source author's GPS project and are not shipped here. The steps are kept because they record what works:
+The scripts (`extract_wrp.py`, `get_worldname.py`, `build_road_graph.py`, `apply_connectivity_passes.py`, `validate_graph.py`, `visor_components.py`) are not shipped in this repo. The steps are kept because they record what works:
 
 1. Pull the `.wrp` out of the map's `world.pbo`.
 2. Find the real world name (below). The output file has to carry it.
@@ -23,7 +23,7 @@ The scripts (`extract_wrp.py`, `get_worldname.py`, `build_road_graph.py`, `apply
 5. Check the result by eye: one image of the graph, one image colored by connected component.
 6. Ship the graph as `<worldname>_roads.json` and add the world name to the list of maps the consuming mod knows.
 
-One lesson from the project: the connectivity pass scripts were lost once because they lived only in a temporary output folder. Anything reusable belongs in the project's own tool folder.
+Keep the connectivity pass scripts out of a temporary output folder, where they are easily lost. Anything reusable belongs in the project's own tool folder.
 
 ## The connectivity passes
 
@@ -31,17 +31,17 @@ One lesson from the project: the connectivity pass scripts were lost once becaus
 2. **Reclassify.** Edges with surface `other` whose model belongs to a road family the base classifier does not know (`city_*`, `town_*` and similar) become asphalt.
 3. **Stitch.** Node pairs in different components closer than 5 m get an edge, tagged `<stitch_road_5m>`. This sews up fine fragmentation that the 3D duplicate removal left.
 
-The output JSON records in an `extras` block what each pass added (keys such as `roads_v2.5_added`, `fase6_reclass` and `fase6_stitches`; "fase6" is the source project's own name for passes 2 and 3), and each pass keeps a backup of its input (`.bak_*_pre_*`).
+The output JSON records in an `extras` block what each pass added (keys such as `roads_v2.5_added`, `fase6_reclass` and `fase6_stitches`; "fase6" in a key means passes 2 and 3), and each pass keeps a backup of its input (`.bak_*_pre_*`).
 
 The rule behind them: never connect by distance alone. A real object from the `.wrp` has to justify each connection. A pass that bridged node pairs by maximum distance was rejected because it created false connections.
 
 ## World name is not the Workshop name
 
-A mod that loads `<GetWorldName()>_roads.json` needs the engine's world name, not the title of the Workshop item and not the file name of the `.wrp`. `GetWorldName()` is at `P:\scripts\3_game\global\game.c:934`. The name is the world's class: vanilla Livonia is `class Enoch: CAWorld` in `CfgWorlds` (`P:\DZ\worlds\enoch\world\config.cpp:115`). For a Workshop map, read the class from the `config.bin` of its `world.pbo` (the source notes read it from `CfgWorldList` there).
+A mod that loads `<GetWorldName()>_roads.json` needs the engine's world name, not the title of the Workshop item and not the file name of the `.wrp`. `GetWorldName()` is at `P:\scripts\3_game\global\game.c:934`. The name is the world's class: vanilla Livonia is `class Enoch: CAWorld` in `CfgWorlds` (`P:\DZ\worlds\enoch\world\config.cpp:115`). For a Workshop map, read the class from the `config.bin` of its `world.pbo` (it is listed in `CfgWorldList` there).
 
-- Two Workshop items can share one world name. "CBTONFORIN" and "Onforin STB" both resolve to `onforin`; they are two versions of one map and cannot be installed together.
-- Before writing code to tell two such items apart by version, compare the checksums of their `world.pbo` files. In that case the author had made both byte identical, and one graph file served both.
-- When the public PBOs carry no readable config (the Iztek map ships every `config.cpp` at 0 bytes, with `.pbo.zorro.bisign` signatures), fall back in this order: the prefix in the header of `world.pbo`, usually `<WorldClass>\world`; the internal name of the `.wrp`, which by convention is the class in lower case; and the internal paths in the `.wrp`, which start with `<worldname>\data\`. Then confirm in game by printing `GetWorldName()` on the first test, and rename the graph file if the guess was wrong.
+- Two Workshop items can share one world name. Two Workshop versions of one map can both resolve to the same world name, `onforin` in the measured case; they cannot be installed together.
+- Before writing code to tell two such items apart by version, compare the checksums of their `world.pbo` files. In the measured case both were byte identical, and one graph file served both.
+- When the public PBOs carry no readable config (one measured map, world name `iztek`, ships every `config.cpp` at 0 bytes), fall back in this order: the prefix in the header of `world.pbo`, usually `<WorldClass>\world`; the internal name of the `.wrp`, which by convention is the class in lower case; and the internal paths in the `.wrp`, which start with `<worldname>\data\`. Then confirm in game by printing `GetWorldName()` on the first test, and rename the graph file if the guess was wrong.
 
 ## The LZSS variant in PBO entries and rapified configs
 

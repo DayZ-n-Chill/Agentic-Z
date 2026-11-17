@@ -4,10 +4,10 @@ Every vanilla file the `dayz-motorbikes` skill and its references cite, with its
 
 ## Which build this is
 
-- The line counts below were counted on `P:\` when the material was brought in (text lines, counting a last line with no line break). Every script and animation file has exactly the count the knowledge pack recorded for DayZ Experimental 1.30.164014, so the vanilla data on `P:\` at that time matches that text.
-- The `config.cpp` files on `P:\` are unpacked in a longer layout than the one the knowledge pack counted (string arrays over several lines), so their counts differ while the content is the same; the tables in sections 1 and 5 give both counts.
-- Evidence level of the references: read in source (Enforce Script, `config.cpp` and the text animation graph), except where a line is marked `[UNVERIFIED]`. Nothing is claimed as tested in game unless it names the project that measured it.
-- The knowledge pack later re-read its citations on stable builds 1.30.164200 and 1.30.164289. What it reports as different on those builds is in section 7; not yet checked on `P:\`.
+- The line counts below were counted on `P:\` (text lines, counting a last line with no line break). They are the counts of DayZ 1.30.164014, the build the citations in the references were read on.
+- The `config.cpp` files on `P:\` are unpacked with string arrays over several lines. The same config unpacked with each array on one line is much shorter, so compare a `config.cpp` count only with a count taken in the same layout.
+- Evidence level of the references: read in source (Enforce Script, `config.cpp` and the text animation graph), except where a line is marked `[UNVERIFIED]`. Nothing is claimed as tested in game unless the line says it was measured in game.
+- What differs on the later stable builds 1.30.164200 and 1.30.164289 is in section 7; not yet checked on `P:\`.
 
 ## Where the motorbike sounds are
 
@@ -20,18 +20,18 @@ Every vanilla file the `dayz-motorbikes` skill and its references cite, with its
 
 ### 1. Engine and base scripts (3_Game)
 
-| File on `P:\` | Lines on `P:\` | Lines in the knowledge pack's layout | Symbols read |
-|---|---|---|---|
-| `P:\bin\config.cpp` | 11105 | 6287 | `class Motorbike: Transport`, `simulation = "motorbike"` |
-| `P:\scripts\3_game\vehicles\motorbike.c` | 370 | 370 | Motorbike `proto native` signatures, `MotorbikeOwnerState`, `MotorbikeMove`, sound and stability callbacks |
-| `P:\scripts\3_game\vehicles\transport.c` | 1205 | 1205 | `ETransportFluid`, `NeedElectricitySourceDevice`, `IsAnyCrewPresent`, `OnContact`, `m_ContactCache`, `VehicleContactData` |
-| `P:\scripts\3_game\vehicles\car.c` | 507 | 507 | `enum CarFluid : ETransportFluid` |
-| `P:\scripts\3_game\vehicles\boat.c` | 207 | 207 | `enum BoatFluid : ETransportFluid` |
-| `P:\scripts\3_game\constants.c` | 1168 | 1168 | `MOTORBIKES_CONTACT_DMG_*`, `ENVIRO_HEATCOMFORT_MOTORBIKE_*` |
-| `P:\scripts\3_game\human.c` | 1721 | 1721 | `HumanAnimInterface.IsTag()`, `HumanCommandVehicle.IsTransitioning()` |
-| `P:\scripts\3_game\dayzplayer.c` | 1413 | 1413 | Player constants |
-| `P:\scripts\3_game\dustkickupeffects.c` | 256 | 256 | Projectile dust effects singleton |
-| `P:\scripts\3_game\enums\evehiclevfxtypes.c` | 17 | 17 | `EVehicleVFXEffect`, `EVehicleVFXEffectGroup` |
+| File on `P:\` | Lines | Symbols read |
+|---|---|---|
+| `P:\bin\config.cpp` | 11105 | `class Motorbike: Transport`, `simulation = "motorbike"` |
+| `P:\scripts\3_game\vehicles\motorbike.c` | 370 | Motorbike `proto native` signatures, `MotorbikeOwnerState`, `MotorbikeMove`, sound and stability callbacks |
+| `P:\scripts\3_game\vehicles\transport.c` | 1205 | `ETransportFluid`, `NeedElectricitySourceDevice`, `IsAnyCrewPresent`, `OnContact`, `m_ContactCache`, `VehicleContactData` |
+| `P:\scripts\3_game\vehicles\car.c` | 507 | `enum CarFluid : ETransportFluid` |
+| `P:\scripts\3_game\vehicles\boat.c` | 207 | `enum BoatFluid : ETransportFluid` |
+| `P:\scripts\3_game\constants.c` | 1168 | `MOTORBIKES_CONTACT_DMG_*`, `ENVIRO_HEATCOMFORT_MOTORBIKE_*` |
+| `P:\scripts\3_game\human.c` | 1721 | `HumanAnimInterface.IsTag()`, `HumanCommandVehicle.IsTransitioning()` |
+| `P:\scripts\3_game\dayzplayer.c` | 1413 | Player constants |
+| `P:\scripts\3_game\dustkickupeffects.c` | 256 | Projectile dust effects singleton |
+| `P:\scripts\3_game\enums\evehiclevfxtypes.c` | 17 | `EVehicleVFXEffect`, `EVehicleVFXEffectGroup` |
 
 ### 2. Gameplay and entity scripts (4_World)
 
@@ -57,6 +57,9 @@ Every vanilla file the `dayz-motorbikes` skill and its references cite, with its
 | `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c` | 470 | Implementation of `DayZPlayerCamera3rdPersonVehicleMotorbike` with spring lag |
 | `P:\scripts\4_world\entities\manbase\playerbase.c` | 10144 | Engine start and stop actions registration |
 | `P:\scripts\4_world\entities\itembase\blowtorch.c` | 146 | Exclusive registration of chassis, engine, and bike part repair actions |
+| `P:\scripts\4_world\entities\core\inherited\inventoryitem.c` | 1377 | `ActionPickUpMotorbike` on the `Motorbike_02` side fairings |
+| `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c` | 1658 | `AddItemInHandsProfileIK` registrations, `DayZPlayerTypeRegisterItems`, animation instance preload |
+| `P:\scripts\3_game\entities\object.c` | 1467 | `GetBonePivotsForAnimationSource`, `GetBoneRotationMS` |
 
 ### 3. User actions (4_World)
 
@@ -76,28 +79,35 @@ Every vanilla file the `dayz-motorbikes` skill and its references cite, with its
 | `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c` | 159 | Directional mounting via lateral dot product |
 | `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetouttransport.c` | 274 | Jump out while moving at speed > 10 km/h |
 | `P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c` | 399 | Global action registration in the subsystem |
+| `P:\scripts\4_world\classes\useractionscomponent\actioninput.c` | 1035 | `ToggleVehicleLightsActionInput`, `ToggleLightsActionInput`, pre-1.30 horn input aliases |
+| `P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actionswitchlights.c` | 72 | `ActionSwitchLights.GetInputType()` |
+| `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\vehicles\actionfillfuel.c` | 69 | `FUEL_SELECTION_NAME = "refill"` |
+| `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\vehicles\actioncarhorn.c` | 361 | Pre-1.30 horn action names kept for compatibility |
 
 ### 4. HUD (5_Mission)
 
 | File on `P:\` | Lines | Symbols read |
 |---|---|---|
 | `P:\scripts\5_mission\gui\vehicles\motorbikehud.c` | 248 | Tachometer, speedometer, fuel gauge, disabled warning indicators (handbrake, temperature) |
+| `P:\scripts\5_mission\gui\ingamehud.c` | 1316 | `m_VehicleHudMap` entry `"VehicleTypeMotorbike"` |
 
 ### 5. Vehicle configs and animation files
 
-| File on `P:\` | Lines on `P:\` | Lines in the knowledge pack's layout | Symbols read |
-|---|---|---|---|
-| `P:\DZ\vehicles\singletrack\config.cpp` | 2375 | 1099 | Full vanilla motorbike contract (`MotorbikeScript`, `Motorbike_01`, `Motorbike_02`, wheels, proxies) |
-| `P:\DZ\vehicles\wheeled\config.cpp` | 24369 | 8357 | Vanilla car config, new wheel parameters (`tyreRoughness`, `tyreLongitudinalFriction`, `tyreLateralFriction`) |
-| `P:\DZ\anims\workspaces\player\player_main\vehicles.agf` | 3655 | 3655 | Enfusion animation graph in plain text, `MotorBikeB` node, `MotorBikeSTM` state machine |
-| `P:\DZ\anims\workspaces\player\player_main\player_main.ast` | 1268 | 1268 | `"Jawa_05"` and `"Jawa_Bitrak"` animation columns |
-| `P:\DZ\anims\workspaces\player\player_main\player_main.asi` | 6679 | 6679 | `.anm` clip mapping for motorbike riding poses |
-| `P:\DZ\sounds\hpp\config.cpp` | 523051 | 183928 | Real CfgSoundShaders and CfgSoundSets of motorbikes |
-| `P:\DZ\sounds\vehicles\config.cpp` | 10 | 31 | Exclusive CfgPatches without audio classes |
+| File on `P:\` | Lines | Symbols read |
+|---|---|---|
+| `P:\DZ\vehicles\singletrack\config.cpp` | 2375 | Full vanilla motorbike contract (`MotorbikeScript`, `Motorbike_01`, `Motorbike_02`, wheels, proxies) |
+| `P:\DZ\vehicles\wheeled\config.cpp` | 24369 | Vanilla car config, new wheel parameters (`tyreRoughness`, `tyreLongitudinalFriction`, `tyreLateralFriction`) |
+| `P:\DZ\anims\workspaces\player\player_main\vehicles.agf` | 3655 | Enfusion animation graph in plain text, `MotorBikeB` node, `MotorBikeSTM` state machine |
+| `P:\DZ\anims\workspaces\player\player_main\player_main.ast` | 1268 | `"Jawa_05"` and `"Jawa_Bitrak"` animation columns |
+| `P:\DZ\anims\workspaces\player\player_main\player_main.asi` | 6679 | `.anm` clip mapping for motorbike riding poses |
+| `P:\DZ\anims\workspaces\player\player_main\player_main_surrender.asi` | 296 | Header of a child `.asi` (`Template`, `ParentTemplates`) |
+| `P:\bin\constants.xml` | 938 | Input names `UAToggleHeadlight` and `UAToggleVehicleLights` |
+| `P:\DZ\sounds\hpp\config.cpp` | 523051 | Real CfgSoundShaders and CfgSoundSets of motorbikes |
+| `P:\DZ\sounds\vehicles\config.cpp` | 10 | Exclusive CfgPatches without audio classes |
 
 ### 6. The 1.29 to 1.30 diffs
 
-Statements in the references about what changed from 1.29 come from diffs the knowledge pack author made between a 1.29 and a 1.30 extraction. The diff files are not in this repo and 1.29 is not on `P:\`, so those statements are not yet checked on `P:\`. Their sizes, as recorded:
+Statements in the references about what changed from 1.29 come from diffs between a 1.29 and a 1.30 extraction. The diff files are not in this repo and 1.29 is not on `P:\`, so those statements are not yet checked on `P:\`. The sizes of the diffs:
 
 - `3_Game/human.c`: 88 diff lines
 - `3_Game/Vehicles/Transport.c`: 657 diff lines (+438 / -40)
@@ -107,9 +117,9 @@ Statements in the references about what changed from 1.29 come from diffs the kn
 - the `vehicles_wheeled` config: 785 diff lines
 - There is no diff for `vehicles_singletrack`: that PBO is new in 1.30.
 
-### 7. What the knowledge pack reports for build 1.30.164200
+### 7. What differs on build 1.30.164200
 
-Reported by the knowledge pack on 2026-10-28; not yet checked on `P:\`. Only these files have a different length on that build (the counts are in its own layout for the two `config.cpp` files):
+Not yet checked on `P:\`. Only these cited files have a different length on that build:
 
 | File | 1.30.164014 | 1.30.164200 |
 |---|---|---|
@@ -118,9 +128,9 @@ Reported by the knowledge pack on 2026-10-28; not yet checked on `P:\`. Only the
 | `inheritedmotorbikes\motorbike_01.c` | 171 | 168 |
 | `inheritedmotorbikes\motorbike_02.c` | 142 | 139 |
 | `dayzplayercameravehicles.c` | 470 | 473 |
-| `DZ\vehicles\singletrack\config.cpp` | 1099 | 1106 |
-| `DZ\sounds\hpp\config.cpp` | 183928 | 184740 |
 
-In the sound config of that build each `Motorbike_0*` group has one class more, because `Motorbike_02_Engine_Ext_Broken` became `Motorbike_02_Engine_Ext_Broken_High` and `Motorbike_02_Engine_Ext_Broken_Low`. The knowledge pack also reports that build 1.30.164289 changed none of the script files cited here and no data file's text. The differences in behaviour it found on 1.30.164200 are noted where they apply, in `actions-hud-lights-sounds.md` (light registrations, light profiles, particle cooldown) and in `skills/_shared/vehicles/motorbike-invariants.md` (status in 1.30).
+`P:\DZ\vehicles\singletrack\config.cpp` and `P:\DZ\sounds\hpp\config.cpp` also grow on that build: by 7 and 812 lines when unpacked with each array on one line, which is not the layout on `P:\`.
 
-When DayZ updates, re-run the repo integrity test: it flags every full `P:\` citation whose line no longer holds the symbol named beside it.
+In the sound config of that build each `Motorbike_0*` group has one class more, because `Motorbike_02_Engine_Ext_Broken` became `Motorbike_02_Engine_Ext_Broken_High` and `Motorbike_02_Engine_Ext_Broken_Low`. Build 1.30.164289 changed none of the script files cited here and no data file's text. The differences in behaviour on 1.30.164200 are noted where they apply, in `actions-hud-lights-sounds.md` (light registrations, light profiles, particle cooldown) and in `skills/_shared/vehicles/motorbike-invariants.md` (status in 1.30).
+
+When DayZ updates, re-run the repo integrity test (`python -m pytest -q scripts/dev/test_repo_integrity.py`): it flags every full `P:\` citation whose line no longer holds the symbol named beside it.

@@ -1,10 +1,10 @@
 """Module-agnostic synthetic model builders. No Bohemia Interactive
 assets are used or required.
 
-Every builder takes the py3d module `m` - this fork, or upstream loaded
-through PY3D_UPSTREAM_PATH - so the SAME in-memory model can be serialised
-by both for the byte-identity contract. It only uses API surface that
-exists in upstream master 7acd58b.
+Every builder takes the py3d module `m` - this library, or the bare codec
+loaded through PY3D_REFERENCE_PATH - so the SAME in-memory model can be
+serialised by both for the byte-identity contract. It only uses API surface
+that exists in the bare codec (plain py3d at revision 7acd58b).
 """
 
 import math
@@ -186,7 +186,7 @@ def build_memory_lod(m, named_points, resolution=1.0e15):
 
 
 def set_uv_set(m, lod, uv_id, fn=None):
-    """Attach UV set *uv_id* to every face vertex of *lod* (fork API 1.6.0:
+    """Attach UV set *uv_id* to every face vertex of *lod* (API added in 1.6.0:
     `Vertex.uv_sets`). *fn*(face index, vertex index, uv0) -> (u, v); the
     default derives a value that differs from set 0 per face and vertex, so
     a dropped, duplicated or shuffled set is detectable."""

@@ -174,9 +174,9 @@ Never fix just where the error appears. Trace back to find the original trigger.
 - **Include context:** directory, cwd, environment variables, timestamps.
 - **Capture the stack:** `new Error().stack` shows the complete call chain.
 
-## Real-world impact
+## Outcome of the example
 
-From a debugging session (2025-10-03):
+For the empty `projectDir` bug above:
 
 - Found the root cause through a 5-level trace.
 - Fixed at the source (getter validation).

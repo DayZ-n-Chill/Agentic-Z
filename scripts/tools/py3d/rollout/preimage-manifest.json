@@ -18,13 +18,13 @@
       "relative_path": "dayz-p3d-inspector/SKILL.md",
       "preimage_sha256": "bbad2180600feae1ff9974be35566cc9a0989bd4232ce58b367060b01874982b",
       "status": "not_applicable",
-      "reason": "The projection contains no delta attributable to py3d 1.4.0 and would lose SP-028."
+      "reason": "The projection contains no delta attributable to py3d 1.4.0."
     },
     {
       "relative_path": "dayz-p3d-audit/SKILL.md",
       "preimage_sha256": "9b2a05133a4207835924b62f174942db9b1a6b8cfd45a8fc49fcb9803eb30e9c",
       "status": "not_applicable",
-      "reason": "The projection brings nothing from py3d 1.4.0 and would lose SP-017, SP-051 and the count of 13 Silent Killers."
+      "reason": "The projection brings nothing from py3d 1.4.0 and would lose live rules and the count of 13 Silent Killers."
     },
     {
       "relative_path": "dayz-p3d-audit/scripts/audit_p3d.py",

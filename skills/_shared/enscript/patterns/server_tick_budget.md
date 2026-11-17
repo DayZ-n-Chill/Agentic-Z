@@ -1,6 +1,6 @@
 # Pattern: keeping periodic server work inside the tick
 
-How to stop many entities from doing the same expensive work on the same server tick: a work budget, staggering, backoff, events in place of polling, and compile-time side gates. The techniques are measured in third-party mods (Expansion's AI and a power grid mod), so they are marked as reported; the vanilla calls they are built from were opened on `P:\`. The full write-up with the quoted Expansion code is `skills/enforce-script-reference/references/server-performance.md`.
+How to stop many entities from doing the same expensive work on the same server tick: a work budget, staggering, backoff, events in place of polling, and compile-time side gates. The techniques are measured in third-party mods (Expansion's AI and a power grid mod), so they are marked as reported; the vanilla calls they are built from were opened on `P:\`. The fuller write-up is `skills/enforce-script-reference/references/server-performance.md`.
 
 See also: `scheduler.md` (timers and per tick allocation) and `../references/api_scheduling.md` (call categories and queues).
 
@@ -92,7 +92,7 @@ The same idea scales an interval with load: keep a running average of the frame 
 
 The cheapest scan is the one that never runs. Where changes are rare compared with ticks (a device moved, a wire cut, a player joined), let the producer tell the consumers: `ScriptInvoker` (`P:\scripts\2_gamelib\tools.c:115`) has `Insert` (`P:\scripts\2_gamelib\tools.c:120`), `Remove` (`P:\scripts\2_gamelib\tools.c:122`) and `Invoke` (`P:\scripts\2_gamelib\tools.c:118`). Add a debounce (the power grid mod waits 500 ms after the last change) when one change tends to be followed by more.
 
-Every `Insert` needs a matching `Remove` in the consumer's destructor, with a null check on the invoker (`singleton.md`, "`ScriptInvoker` shutdown null-guard"). When the value changes on every tick anyway, read it directly; an invoker fired every tick only adds the fan-out.
+Every `Insert` needs a matching `Remove` in the consumer's destructor, with a null check on the invoker (`singleton.md`, "Static `ScriptInvoker` shutdown crash"). When the value changes on every tick anyway, read it directly; an invoker fired every tick only adds the fan-out.
 
 ---
 

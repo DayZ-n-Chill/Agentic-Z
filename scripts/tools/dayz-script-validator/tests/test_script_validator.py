@@ -2355,7 +2355,7 @@ class TestReservedWordIdentifier(unittest.TestCase):
     def test_vanilla_closers_and_one_line_ifs_hide_no_word(self):
         # Vanilla closes a template with one `>` too
         # many (`map<string, int>> name;`, 3_game/global/ammotypes.c:80 on
-        # 1.30); E7, in `if (a < b) ... if (c > d)` no template runs from the
+        # 1.30); and in `if (a < b) ... if (c > d)` no template runs from the
         # `<` to the `>`.
         from detectors.es_reserved_word_identifier import (
             check_es_reserved_word_identifier,
@@ -3112,7 +3112,7 @@ class TestUndefinedClassRef(unittest.TestCase):
     def test_vanilla_closers_and_one_line_ifs_hide_no_variable(self):
         # Vanilla closes a template with one `>` too
         # many (`map<string, int>> name;`, 3_game/global/ammotypes.c:80 on
-        # 1.30); E7, in `if (a < b) ... if (c > d)` no template runs from the
+        # 1.30); and in `if (a < b) ... if (c > d)` no template runs from the
         # `<` to the `>`. A call on either variable is no static call on an
         # undefined class.
         from detectors.es_undefined_class_ref import (
@@ -3661,7 +3661,7 @@ class TestVariableNamedAsType(unittest.TestCase):
         # line_tests ran its #define/#undef
         # pattern over the whole text, and its \s* ran on across blank lines.
         # On two machines these 64 000 lines took 30 s and 31 s, and take 0.1 s.
-        # Wall time: on the owner's PC process_time() reads a fraction of the
+        # Wall time: on one of them process_time() reads a fraction of the
         # time the CPU spends.
         from shared.dead_branches import line_tests
 
@@ -3756,7 +3756,7 @@ class TestVariableNamedAsType(unittest.TestCase):
     def test_vanilla_closers_and_one_line_ifs_hide_no_name(self):
         # Vanilla closes a template with one `>` too
         # many (`map<string, int>> name;`, 3_game/global/ammotypes.c:80 on
-        # 1.30); E7, in `if (a < b) ... if (c > d)` no template runs from the
+        # 1.30); and in `if (a < b) ... if (c > d)` no template runs from the
         # `<` to the `>`.
         source = (
             "class C\n{\n"

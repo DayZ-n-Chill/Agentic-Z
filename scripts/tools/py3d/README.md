@@ -328,10 +328,18 @@ python -m pytest -q scripts/tools/py3d
 # skipped unless you point them at a checkout of it:
 PY3D_REFERENCE_PATH=/path/to/bare/py3d python -m pytest -q scripts/tools/py3d
 
-# The four integration tests run the companion scripts of the skills and are
-# skipped unless you point them at the skills folder:
-SKILLS_DIR=skills python -m pytest -q scripts/tools/py3d/tests/test_s2_integ.py
+# The four integration tests run companion scripts of the skills (the p3d
+# inspector's extract and build scripts, the p3d audit script and a
+# p3d_to_gltf.py viewer script) and are skipped unless SKILLS_DIR names a
+# skills folder that holds them:
+SKILLS_DIR=/path/to/skills python -m pytest -q scripts/tools/py3d/tests/test_s2_integ.py
 ```
+
+Those four tests expect the companion scripts as they stood when the recipe
+and audit code here was written. Against this repository's own `skills/` only
+the inspector round trip passes: the inspector's recipe has gained keys, the
+audit script now gates on `/dayz-preflight`, and the viewer script lives in
+`scripts/tools/dayz-3d-viewer`.
 
 The rollout tests under `rollout/tests/` need Windows PowerShell.
 

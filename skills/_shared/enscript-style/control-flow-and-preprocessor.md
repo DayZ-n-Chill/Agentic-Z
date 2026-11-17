@@ -1,6 +1,6 @@
 # Enforce Script style: Control flow and preprocessor
 
-Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`. The guide is a mirror of the [TrueDolphin/references wiki](https://github.com/TrueDolphin/references/wiki/EnScript-(Enforce-Script)-Style-Guide).
+Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`.
 
 Vanilla facts: Preprocessor defines (`SERVER`, `NO_GUI`, `DIAG_DEVELOPER`) are checked in `../enscript/references/language_compile.md`; `foreach` with an index is in `../enscript/references/language_types.md`.
 
@@ -30,7 +30,7 @@ else
 
 **Bitwise Operators in Conditions:**
 
-Unverified: the style guide reports that Enforce Script follows C/C++ operator precedence, where `==` binds tighter than `&`, so `a & b == b` would parse as `a & (b == b)`. This guide has not checked that against the compiler or a vanilla file. Parentheses make the intent explicit whatever the precedence is, so always use them:
+Unverified: Enforce Script is reported to follow C/C++ operator precedence, where `==` binds tighter than `&`, so `a & b == b` would parse as `a & (b == b)`. That has not been checked against the compiler or a vanilla file. Parentheses make the intent explicit whatever the precedence is, so always use them:
 
 ```
 int a = 1;
@@ -72,7 +72,7 @@ foreach (string stateName : stateNames)
 
 **Foreach with Getters:**
 
-Unverified: the style guide reports that `foreach` over a getter call calls the getter again on every iteration. This guide has not checked that against the compiler or a vanilla file. Assigning the result to a local first is correct either way, so prefer it:
+Unverified: `foreach` over a getter call is reported to call the getter again on every iteration. That has not been checked against the compiler or a vanilla file. Assigning the result to a local first is correct either way, so prefer it:
 
 ```
 class MyClass
@@ -127,7 +127,7 @@ while (condition)
 
 **Switch Default Case Issue:**
 
-Unverified: the style guide reports that the compiler can still ask for a return after a `switch` whose `default` case returns. This guide has not checked that against the compiler or a vanilla file, so treat it as reported compiler behaviour, not a confirmed rule. Writing the last return after the `switch` is safe either way:
+Unverified: the compiler is reported to still ask for a return after a `switch` whose `default` case returns. That has not been checked against the compiler or a vanilla file, so treat it as unconfirmed compiler behaviour, not a confirmed rule. Writing the last return after the `switch` is safe either way:
 
 ```
 // REPORTED (unverified): compiler may complain about a missing return
@@ -174,7 +174,7 @@ if (index >= 0 && index < list.Count())
 if (!list[index])
 ```
 
-`!list[index]` reads the element and tests its value, so it says nothing about whether `index` is in range. Unverified: the style guide reports that it is true for an out-of-range index. This guide has not checked what an out-of-range read does, so never use it as a bounds check.
+`!list[index]` reads the element and tests its value, so it says nothing about whether `index` is in range. Unverified: it is reported to be true for an out-of-range index. What an out-of-range read does has not been checked, so never use it as a bounds check.
 
 **Best Practice:** Use explicit index bounds checking: `if (index >= 0 && index < array.Count())`
 
@@ -210,7 +210,7 @@ Vanilla compiles `#ifdef` blocks that hold only a comment. `P:\scripts\4_world\c
 
 A comment-only block is therefore not a crash risk. Still delete blocks you no longer need, so the code stays readable.
 
-The original guide said that an empty `#ifdef` or `#ifndef` block segfaults even when it holds only comments. That was not reproduced. Measured, not checked on `P:\` (the knowledge pack's author, DayZDiag 1.30.164289, 2026-11-09, in a mod's `4_World` scripts): a block holding only a comment compiled and ran on the server and on the client, at file scope, in a class body and in a method body. Not measured: a block with nothing at all inside, a retail build, and DayZ 1.29.
+The claim that an empty `#ifdef` or `#ifndef` block segfaults even when it holds only comments was not reproduced. Measured in game, not checked on `P:\` (DayZDiag 1.30.164289, in a mod's `4_World` scripts): a block holding only a comment compiled and ran on the server and on the client, at file scope, in a class body and in a method body. Not measured: a block with nothing at all inside, a retail build, and DayZ 1.29.
 
 ### Defines
 

@@ -127,7 +127,7 @@ server-authoritative `CarScript`:
   1.5 s window in which both sides apply the SAME force (anti-gravity plus a lateral pulse on an axis
   nothing else in the model touches) while the server suspends its kinematic actuator; per-tick traces on
   both sides; an offline parser that returns YES, NO or INCONCLUSIVE. Harness traps: the abort must be
-  SYMMETRIC (engine, seat and flight state exits), suppression of the hijacked key goes UPSTREAM of every
+  SYMMETRIC (engine, seat and flight state exits), suppression of the hijacked key goes BEFORE every
   consumer of that channel, and any exit from the flight state clears the window.
 - Evidence status: all measured. Verdict of the spike flight: **YES**. Three clean pulses on the
   owner (local slope about 1.6 m/s2 against 1.5 theoretical, the gain retained, a transient reversal of at

@@ -2,7 +2,7 @@
 
 Reference for sound configs, the script that plays sounds, and how sound and particle effects are wired into a mod. Used by `dayz-audio-fx-specialist` and by any lead that needs a sound or an effect. Particle files themselves (`.ptc`, `.emat`, registering and playing particles) are in the `/dayz-particles` pack at `dayz-particles/SKILL.md`; this pack points there instead of repeating it.
 
-Every fact here was checked in the vanilla files on `P:\`. Each file cites the path and line. Line numbers are from the game version on `P:\` when the pack was written; if a line has moved, search for the class name.
+Facts here were checked in the vanilla files on `P:\`, except where a line says it is not checked on `P:\` (statements about 1.29, third-party mod behaviour and results measured in game). Each file cites the path and line. Line numbers are from the game version on `P:\` when the pack was written; if a line has moved, search for the class name.
 
 ## Which file to open
 

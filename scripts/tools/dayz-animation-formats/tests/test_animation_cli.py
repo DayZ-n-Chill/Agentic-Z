@@ -4,7 +4,6 @@ from pathlib import Path
 import subprocess
 import sys
 
-from jsonschema import Draft202012Validator
 import pytest
 
 
@@ -85,10 +84,22 @@ def test_inspect_cli_returns_deterministic_schema_valid_json(
     assert result.stdout == json.dumps(
         expected, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     ) + "\n"
-    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
-    Draft202012Validator(schema).validate(expected)
     assert str(FIXTURES) not in result.stdout
     assert "timestamp" not in result.stdout
+
+
+@pytest.mark.parametrize(
+    "filename", ["seanim-v1-full.seanim", "rtm-0101-mdat.rtm"]
+)
+def test_inspect_cli_output_validates_against_v1_schema(filename):
+    """Breaks if inspect output stops matching the published v1 schema."""
+    jsonschema = pytest.importorskip("jsonschema")
+    result = _run_cli("inspect", FIXTURES / filename)
+    assert result.returncode == 0
+    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    jsonschema.Draft202012Validator(schema).validate(
+        json.loads(result.stdout)
+    )
 
 
 def test_output_file_bytes_equal_stdout_bytes(tmp_path):

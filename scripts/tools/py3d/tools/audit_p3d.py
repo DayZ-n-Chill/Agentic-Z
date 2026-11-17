@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-DayZ P3D Audit Script - Complete model validator (fork-delegated).
+DayZ P3D Audit Script - Complete model validator (model checks delegated
+to py3d).
 
-The model checks now live in py3d (the DayZ fork, >= 1.2.0) behind
+The model checks now live in py3d (py3d-dayz >= 1.2.0) behind
 P3D.validate(); this script keeps the CLI, the required-LOD scan and the
 text-file checks. What was pruned:
   - LOD ids normalised to DayZ: ViewGeo=6e15, FireGeo=7e15; the
     GeoPhys/2e13 slot and the stale FireGeo~3e13 mentions are WITHDRAWN;
-  - the absolute-centroid winding check is WITHDRAWN: the fork applies the
+  - the absolute-centroid winding check is WITHDRAWN: py3d applies the
     RELATIVE cross-product check against the Visual LOD instead;
   - severities: ERROR -> CRITICAL, WARN -> WARNING.
 
@@ -17,8 +18,9 @@ Usage:
     python audit_p3d.py model.p3d --model-cfg path/to/model.cfg
     python audit_p3d.py --scan-dir path/to/mod/
 
-Requires: the py3d DayZ fork >= 1.2.0. NEVER `pip install py3d` - that
-name on PyPI belongs to an unrelated library.
+Requires: py3d-dayz >= 1.2.0, installed from the repository root with
+`python -m pip install -e scripts/tools/py3d`. NEVER `pip install py3d` -
+that name on PyPI belongs to an unrelated library.
 """
 
 import sys, os, re, glob, argparse
@@ -26,16 +28,17 @@ import sys, os, re, glob, argparse
 try:
     import py3d
 except ImportError:
-    print("ERROR: py3d (DayZ fork) not installed.")
-    print("Install the vendored wheel: pip install --break-system-packages "
-          "<skill>/wheels/py3d-*.whl")
+    print("ERROR: py3d (py3d-dayz) not installed.")
+    print("Install it from the repository root: python -m pip install -e "
+          "scripts/tools/py3d")
     sys.exit(1)
 
 if not getattr(py3d, "IS_DAYZ_FORK", False) or \
         tuple(int(x) for x in py3d.__version__.split(".")) < (1, 2, 0):
-    print("ERROR: wrong py3d (%r, %s). This audit requires the DayZ fork "
+    print("ERROR: wrong py3d (%r, %s). This audit requires py3d-dayz "
           ">= 1.2.0 - NEVER `pip install py3d` (PyPI = point-cloud lib). "
-          "Install the wheel vendored in the skill."
+          "From the repository root: python -m pip install -e "
+          "scripts/tools/py3d"
           % (getattr(py3d, "__version__", "?"),
              getattr(py3d, "__file__", "?")))
     sys.exit(1)
@@ -44,7 +47,7 @@ _SEV = {"ERROR": "CRITICAL", "WARN": "WARNING"}
 
 
 def classify_lod(resolution):
-    """Delegated to the fork (canonical DayZ map, single relative tolerance)."""
+    """Delegated to py3d (canonical DayZ map, single relative tolerance)."""
     kind = py3d.classify_lod_resolution(resolution)
     if kind is None:
         return "Other(%.1e)" % resolution
@@ -123,7 +126,7 @@ def audit_p3d(filepath):
 
     all_issues.extend(check_required_lods(lod_map))
 
-    # Model checks: delegated to the fork (refined parity).
+    # Model checks: delegated to py3d's P3D.validate().
     for f in p.validate():
         sev = _SEV.get(f.severity, f.severity)
         lod_tag = "" if f.lod is None else "LOD[%d] " % f.lod
@@ -173,7 +176,7 @@ def scan_directory(dirpath):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="DayZ P3D Audit - Complete Model Validator (py3d fork)")
+    parser = argparse.ArgumentParser(description="DayZ P3D Audit - Complete Model Validator (py3d-dayz)")
     parser.add_argument('files', nargs='*', help='.p3d files to audit')
     parser.add_argument('--config', help='config.cpp to check for path issues')
     parser.add_argument('--model-cfg', help='model.cfg to check')

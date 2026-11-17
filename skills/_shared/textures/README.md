@@ -2,7 +2,7 @@
 
 Tier 3 cookbook for DayZ textures (`.paa`) and materials (`.rvmat`): suffixes, sizes, shaders, stages and recipes for cloth, metal, glass and skin. Written for `dayz-asset-specialist`; any DayZ worker may load one file of it when a task needs it. Tier 1 and Tier 2 (`_shared/conventions/assets.md`) still apply on top.
 
-Every game fact here cites the vanilla file on `P:\` it came from, or `<DayZ Tools>\Bin\ImageToPAA\TexConvert.cfg` for how ImageToPAA packs a suffix. Counts come from a scan of the unpacked vanilla data under `P:\DZ`; damage and destruct variants are left out of them unless a line says otherwise. A line marked **tool knowledge** comes from Object Builder or Bohemia's shader notes, not from a vanilla text file, so confirm it on the screen.
+Every game fact here cites the vanilla file on `P:\` it came from, or `<DayZ Tools>\Bin\ImageToPAA\TexConvert.cfg` for how ImageToPAA packs a suffix. Counts come from a scan of the unpacked vanilla data under `P:\DZ`; damage and destruct variants are left out of them unless a line says otherwise. A line marked **tool knowledge** comes from Object Builder or Bohemia's shader notes, not from a vanilla text file, so confirm it on the screen. A block marked **measured in game** records a test run with no vanilla file behind it; repeat the test before a design depends on it.
 
 ## Which file to open
 
@@ -14,7 +14,7 @@ Every game fact here cites the vanilla file on `P:\` it came from, or `<DayZ Too
 | What to tell the user to look at in Object Builder and in game once the files are written | `checking-the-look.md` |
 | Which script call changes a texture or material, what health levels and wetness do to it, and why a material set from script does not show | `runtime-material-swaps.md` |
 
-Related packs: `dayz-p3d-audit/references/config-rvmat-checks.md` (the `.rvmat` checks the model audit makes), `_shared/wearables/references/color-variants.md` (hidden selections and one texture per color) `/dayz-pack-texture` (packs the images) and the `dayz-texture-pipeline` skill (`dayz-texture-pipeline/SKILL.md`: map conventions per suffix, the `.rvmat` cookbook, config and damage wiring, Multi materials, vehicle materials, baked atlases, the MatPBR `.emat` route, UI textures, and an `.rvmat` linter, template writer and normal map convention check).
+Related packs: `dayz-p3d-audit/references/config-rvmat-checks.md` (the `.rvmat` checks the model audit makes), `_shared/wearables/references/color-variants.md` (hidden selections and one texture per color), `/dayz-pack-texture` (packs the images) and the `dayz-texture-pipeline` skill (`dayz-texture-pipeline/SKILL.md`: map conventions per suffix, the `.rvmat` cookbook, config and damage wiring, Multi materials, vehicle materials, baked atlases, the MatPBR `.emat` route, UI textures, and an `.rvmat` linter, template writer and normal map convention check).
 
 ## Symptom to cause
 

@@ -2,7 +2,7 @@
 
 A plan for a viewer that plays a model's animations and swaps its materials (sliders for buttons, levers, doors and knobs; toggles for LED states), and the data each part comes from. Open it when extending the viewer tool or when working out by hand how a model's parts move.
 
-Status: planned, not built. The tool in `scripts/tools/dayz-3d-viewer` shows one static mesh and has no `config.cpp` or `model.cfg` parser. The worked examples are from LF PowerGrid (LFPG), the source author's own mod, not from vanilla. The vanilla side of each fact is cited where it appears; the rules for `model.cfg` animations (types, radians, value ranges, naming) are in `_shared/animation/model-cfg-animations.md` and the config sources in `_shared/animation/animation-sources.md`.
+Status: planned, not built. The tool in `scripts/tools/dayz-3d-viewer` shows one static mesh and has no `config.cpp` or `model.cfg` parser. The worked examples are from an example power grid mod (switches, logic gates, lamps), not from vanilla, and are not checked on `P:\`. The vanilla side of each fact is cited where it appears; the rules for `model.cfg` animations (types, radians, value ranges, naming) are in `_shared/animation/model-cfg-animations.md` and the config sources in `_shared/animation/animation-sources.md`.
 
 ## Architecture overview
 
@@ -33,7 +33,7 @@ groups of vertices and faces that can be animated or have their material swapped
 
 ```python
 # Selections overlap. A face can be in several selections.
-# Example from the LFPG push button:
+# Example from the push button of the example mod:
 #
 # Selection         | Points | Faces | Role
 # ------------------|--------|-------|------
@@ -65,7 +65,7 @@ These must match the selection names in the P3D exactly.
 | `selection` | string | P3D selection name to move |
 | `axis` | string | Memory LOD selection name (2 points defining the axis) |
 | `memory` | int | 1 = axis from the Memory LOD, 0 = from geometry |
-| `minValue` | float | Phase at which the animation starts. The LFPG models use 0 to 1; the range is the model's own choice (the vanilla fence gate runs 0 to 100, `GATE_ROTATION_ANGLE_DEG` at `P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:12`) |
+| `minValue` | float | Phase at which the animation starts. The example models use 0 to 1; the range is the model's own choice (the vanilla fence gate runs 0 to 100, `GATE_ROTATION_ANGLE_DEG` at `P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:12`) |
 | `maxValue` | float | Phase at which the animation ends |
 | `offset0` | float | Translation at minValue (relative to axis length) |
 | `offset1` | float | Translation at maxValue (relative to axis length) |
@@ -96,7 +96,7 @@ angle = lerp(angle0, angle1, t)    # radians
 # Rotate all selection vertices around axis_origin by angle along axis_dir
 ```
 
-**Sequential animations** (the LFPG AND gate lid):
+**Sequential animations** (the AND gate lid of the example mod):
 ```
 latches: minValue=0.0, maxValue=0.2, angle0=0, angle1=-0.5 rad (-28.6°)
 lid:     minValue=0.2, maxValue=1.0, angle0=0, angle1=-1.5 rad (-85.9°)
@@ -113,7 +113,7 @@ Vanilla example: the medium tent's `hiddenSelections[]` at `P:\DZ\gear\camping\c
 a vanilla `AnimationSources` block with `source="user"`, `initPhase` and `animPeriod` is at
 `P:\DZ\gear\containers\config.cpp:99` (the barrel lids).
 
-The textures and materials arrays are **index-aligned** with the selections. LFPG example:
+The textures and materials arrays are **index-aligned** with the selections. Example from the mod:
 
 ```
 hiddenSelections[]          = {"camo",           "switch",          "light_led"};
@@ -131,7 +131,7 @@ SetObjectTexture(0, "path\\to\\alt_co.paa");         // index 0 = camo
 ```
 
 The alternative materials are not listed in config. They come from script logic.
-For LEDs the LFPG convention is `led_off.rvmat`, `led_green.rvmat`, `led_red.rvmat`.
+For LEDs the example mod's convention is `led_off.rvmat`, `led_green.rvmat`, `led_red.rvmat`.
 The viewer should find these by file name pattern or take them as explicit input.
 
 ### Step 4: Memory LOD to axes
@@ -147,10 +147,10 @@ Animation axes are defined by 2 points in the Memory LOD sharing a named selecti
 ```
 
 Other Memory LOD selections are not axes:
-- 1 point = interaction point (in LFPG models: actionPos, cable_attach, ce_center, port_*)
+- 1 point = interaction point (in the example models: actionPos, cable_attach, ce_center, port_*)
 - 2 points = animation axis
 
-## Real examples from LFPG
+## Examples from the power grid mod
 
 ### Switch V1 (translation + LED)
 ```
@@ -326,8 +326,8 @@ if (newState !== 'off') {
 Extract from config.cpp for a given class name:
 ```python
 {
-    "class": "LFPG_PushButton",
-    "model": "\\LFPowerGrid\\data\\switch_v1\\switch_v1.p3d",
+    "class": "MyMod_PushButton",
+    "model": "\\MyMod\\data\\switch_v1\\switch_v1.p3d",
     "hiddenSelections": ["camo", "switch", "light_led"],
     "hiddenSelectionsTextures": ["switch_co.paa", "switch_co.paa", ""],
     "hiddenSelectionsMaterials": ["switch.rvmat", "switch.rvmat", "led_off.rvmat"],

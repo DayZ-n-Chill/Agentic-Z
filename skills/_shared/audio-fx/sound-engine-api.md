@@ -84,7 +84,7 @@ The calls, with their lines:
 
 The comment on `SetPosition` says it "Sets the position locally if parented" (line 123). `EffectSound` always sets the position right before it plays: it calls `SetCurrentLocalPosition` (`P:\scripts\3_game\effects\effectsound.c:172`) one line before `Play3D`, and its override passes the position on to `m_SoundObject.SetPosition` (`P:\scripts\3_game\effects\effectsound.c:746`).
 
-A measured case shows what happens when a hand-built sound skips that step. It comes from a third-party project (LFSkateboard, measured in game on DayZ 1.30 experimental on 2026-10-07) and is not checked on `P:\`: a roll loop built with `SoundParams`, `SoundObjectBuilder`, `SetKind(WaveKind.WAVEEFFECTEX)`, `SetParent` on the player and `Play3D` did play (its header loaded and the script logged it) but was barely audible, while one-shots of the same sound bases played through `PlaySoundSet` were loud. The loop had set no position and sat far from the rider. Calling `SetPosition` after `SetParent` and before `Play3D`, with a small offset in the parent's model space (0.1 m up), fixed it.
+A case measured in game on DayZ 1.30 experimental (not checked on `P:\`) shows what happens when a hand-built sound skips that step: a roll loop built with `SoundParams`, `SoundObjectBuilder`, `SetKind(WaveKind.WAVEEFFECTEX)`, `SetParent` on the player and `Play3D` did play (its header loaded and the script logged it) but was barely audible, while one-shots of the same sound bases played through `PlaySoundSet` were loud. The loop had set no position and sat far from the rider. Calling `SetPosition` after `SetParent` and before `Play3D`, with a small offset in the parent's model space (0.1 m up), fixed it.
 
 ## The wave handle
 
@@ -108,7 +108,7 @@ A measured case shows what happens when a hand-built sound skips that step. It c
 | 199 | `IsHeaderLoaded()` | True once the header is in. Ask before `GetLength()`. |
 | 201 | `GetEvents()` | The wave's `AbstractWaveEvents`. |
 
-`SetFrequency` takes a factor, not a frequency in Hz. In the LFSkateboard measurement above, `GetFrequency()` on a playing `.ogg` loop returned 1.0, so the value is a pitch multiplier. Set it relative to `GetFrequency()`, and only once `IsHeaderLoaded()` is true. This is a measured result from that project, not checked on `P:\`.
+`SetFrequency` takes a factor, not a frequency in Hz. In the measured case above, `GetFrequency()` on a playing `.ogg` loop returned 1.0, so the value is a pitch multiplier. Set it relative to `GetFrequency()`, and only once `IsHeaderLoaded()` is true. This was measured in game on 1.30 experimental and is not checked on `P:\`.
 
 The events of a wave are five `ScriptInvoker` members of `AbstractWaveEvents`: `Event_OnSoundWaveStarted` (line 148), `Event_OnSoundWaveStopped` (line 149), `Event_OnSoundWaveLoaded` (line 150), `Event_OnSoundWaveHeaderLoaded` (line 151) and `Event_OnSoundWaveEnded` (line 152). `EffectSound` uses the header event to wait before it asks for the length (`P:\scripts\3_game\effects\effectsound.c:181`).
 
@@ -138,4 +138,4 @@ The controller names, from the vanilla comment at line 34: `rain`, `night`, `mea
 
 `CreateSoundOnObject(Object source, string sound_name, float distance, bool looped, bool create_local = false)` on the game returns a `SoundOnVehicle` (`P:\scripts\3_game\global\game.c:692`). That is an entity class with one method, `GetSoundLength()` (`P:\scripts\3_game\entities\soundonvehicle.c:1`), not an `EffectSound`. `Object.PlaySound` and `Object.PlaySoundLoop` are thin wrappers around it (`P:\scripts\3_game\entities\object.c:1235`).
 
-It is still in the API, and some third-party mods use it for building sounds (the DoorLockSystem mod calls `building.PlaySound` and `building.PlaySoundLoop` in its unlock action; those are the `Object` methods above, not methods of the building class). For new work prefer the sound set helpers in `sound-script.md`, which return an `EffectSound` you can stop, fade and free.
+It is still in the API, and some third-party mods use it for building sounds (for example `building.PlaySound` and `building.PlaySoundLoop` in a door unlock action; those are the `Object` methods above, not methods of the building class). For new work prefer the sound set helpers in `sound-script.md`, which return an `EffectSound` you can stop, fade and free.

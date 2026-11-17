@@ -2,7 +2,7 @@
 
 Covers unwrapping the low-poly character and baking the high-poly detail into a tangent-space `_nohq` normal map and an ambient occlusion map in the new UV, with the traps a rigged mesh adds.
 
-How to read the marks: this file is Blender and texture tool behaviour, measured on the LFInfectedBig project in Blender headless (2026-06-25). None of it can be checked on `P:\`. The one vanilla fact, the texture suffixes, is cited.
+How to read the marks: this file is Blender and texture tool behaviour, measured on a custom giant infected test build (the "giant infected build") in Blender headless (2026-06-25). None of it can be checked on `P:\`. The one vanilla fact, the texture suffixes, is cited.
 
 After the mesh is rigged (`references/character-rigging.md`) you unwrap the low-poly and bake the high-poly surface into two maps. The suffixes the result ships under are the vanilla ones: a vanilla infected material names its normal map `hermit_nohq.paa` in `Stage1` (`P:\DZ\characters\zombies\data\hermit.rvmat:11`) and its specular map `hermit_smdi.paa` in `Stage5` (`P:\DZ\characters\zombies\data\hermit.rvmat:59`). Suffix rules are in `skills/_shared/textures/suffixes-and-sizes.md`.
 
@@ -26,7 +26,7 @@ Verify with numbers. Per triangle, `uv_area / world_area` normalized to its medi
 
 ## 2. The alignment trap: bake from a proxy in the pose before the conform
 
-The rig step conforms the low-poly's limbs to the canonical bind (`references/character-rigging.md` section 3; on LFInfectedBig the arms opened about 8 cm). The high-poly was never conformed, so after rigging the low and high no longer occupy the same space in the conformed regions. The tell: `low.dims.x` differs from `high.dims.x`. Baking high to low directly there gives rainbow noise (rays hit the wrong surface) and flat misses.
+The rig step conforms the low-poly's limbs to the canonical bind (`references/character-rigging.md` section 3; on the giant infected build the arms opened about 8 cm). The high-poly was never conformed, so after rigging the low and high no longer occupy the same space in the conformed regions. The tell: `low.dims.x` differs from `high.dims.x`. Baking high to low directly there gives rainbow noise (rays hit the wrong surface) and flat misses.
 
 A tangent-space normal map does not depend on the pose when topology and UV are identical; that is why normal maps survive skeletal animation. So bake in a pose where low and high do align (the retopology pose from before the conform), using the shipped low's topology and new UV, then apply the result to the conformed shipped low.
 
@@ -91,10 +91,10 @@ Image.merge("RGB", (r, ImageOps.invert(g), b)).save("nohq.png")
 
 Thin, self-intersecting internal meshes such as a scripted ribcage break Blender bone-heat (`ARMATURE_AUTO`) entirely, leaving every vertex without a weight. Two robust alternatives, in order:
 
-- **Weight by height along the spine chain** (used on LFInfectedBig). For each vertex take the two nearest of `Pelvis`, `Spine`, `Spine1`, `Spine2`, `Spine3`, `Neck`, `Neck1` by world Z and blend by inverse distance. Ribs hang from the spine, not the arms.
+- **Weight by height along the spine chain** (used on the giant infected build). For each vertex take the two nearest of `Pelvis`, `Spine`, `Spine1`, `Spine2`, `Spine3`, `Neck`, `Neck1` by world Z and blend by inverse distance. Ribs hang from the spine, not the arms.
 - **`DATA_TRANSFER` weights from the body mesh** (`POLYINTERP_NEAREST`, `layers_vgroup_select_src='ALL'`). It matches the skin above anatomically, but a wide ribcage picks up shoulder and arm weights from the chest skin near it, and the ribs swing with the arms. Use it only when you then strip the groups that are not spine and normalize again.
 
-Decimate first (`DECIMATE` collapse to about 15,000 faces; LFInfectedBig went from 95,000 to 15,800), parent with `type='ARMATURE'` (a modifier, no automatic weights), assign weights, then `vertex_group_limit_total(4)` and `normalize_all`. Pose test: pose the spine and confirm the ribs follow the torso (the dot product of the displacement direction with the chest skin's is about 1; LFInfectedBig measured 0.823) and stay inside the cavity. Set `arm.data.pose_position = 'POSE'` for the test (the mesh ships at rest, which is the bind); call `animation_data_clear()` if the FBX Action overrides the pose (`references/character-rigging.md` section 5).
+Decimate first (`DECIMATE` collapse to about 15,000 faces; the giant infected build's ribcage went from 95,000 to 15,800), parent with `type='ARMATURE'` (a modifier, no automatic weights), assign weights, then `vertex_group_limit_total(4)` and `normalize_all`. Pose test: pose the spine and confirm the ribs follow the torso (the dot product of the displacement direction with the chest skin's is about 1; the giant infected build measured 0.823) and stay inside the cavity. Set `arm.data.pose_position = 'POSE'` for the test (the mesh ships at rest, which is the bind); call `animation_data_clear()` if the FBX Action overrides the pose (`references/character-rigging.md` section 5).
 
 ## Failure to cause quick map
 

@@ -3,7 +3,6 @@ import json
 import os
 from pathlib import Path
 
-from jsonschema import Draft202012Validator
 import pytest
 
 from dayz_odol_strict.inspect import inspect_odol
@@ -48,8 +47,9 @@ BACKEND_ROOT = os.environ.get("DAYZ_ODOL_BACKEND_ROOT")
 def test_authorized_real_fixture_is_complete_and_schema_valid(
     filename, version, lod_count, sha256
 ):
+    jsonschema = pytest.importorskip("jsonschema")
     summary = inspect_odol(FIXTURES / filename, BACKEND_ROOT)
-    Draft202012Validator(SCHEMA).validate(summary)
+    jsonschema.Draft202012Validator(SCHEMA).validate(summary)
     assert summary["input_sha256"] == sha256
     assert summary["payload_sha256"] == sha256
     assert summary["container_offset"] == 0

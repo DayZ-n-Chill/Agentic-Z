@@ -22,7 +22,7 @@ it gated `IsServerOrOwner()` — vanilla runs it on the owner client, but in mod
 car: hook `EOnPostSimulate` for per-tick logic; `super.EOnSimulate` is the empty stub at
 `enentity.c:201-203`, so calling or skipping it does nothing either way — treat any comment claiming
 it "runs engine/fluids twice" as false. Custom solvers that add `SetEventMask(EntityEvent.SIMULATE)`
-and pump it by hand (aviation) → dayz-aviation preflight invariants.
+and pump it by hand (aviation) → `aviation-carscript-base.md` and the dayz-aviation skill.
 (These are 1.30 line numbers; `dayz-1-30-vehicles.md` covers what 1.30 changed.)
 
 ## Engine state on a non-owner occupant
@@ -63,8 +63,8 @@ of exactly `0.000` is a tautology signal, not precision.
 
 **The companion trap, on the inference side.** Over flat ground, "the visual Y is frozen at its
 take-off value" and "the transform is computed from a ground-referenced magnitude" produce **the same
-two signatures**: gap grows with height, gap returns to zero on landing. Arithmetic, confirmed by
-external review. So the flat-ground signature must never be used to EXCLUDE a family of causes — it
+two signatures**: gap grows with height, gap returns to zero on landing. This is plain
+arithmetic. So the flat-ground signature must never be used to EXCLUDE a family of causes — it
 identifies nothing. Discriminate by changing the regime, not by reasoning:
 
 - horizontal traverse at constant world Y over terrain ≥15 m lower — ground-referenced tracks the
@@ -88,7 +88,7 @@ PAIRS of twin events (the two EXIT lines gave a stable 33,99 s offset) and corre
 the owner's position series (FRAME p0) to date the divergence. Complements the Pawn ladder
 in `network-physics-ownership.md`.
 
-## Script visual state is not applied to a newly spawned vehicle, and the config default looks like a result (added 2026-09-10, SUB_BRZ s90)
+## Script visual state is not applied to a newly spawned vehicle, and the config default looks like a result (added 2026-09-10, SUB_BRZ)
 
 Visual code running from `OnVariablesSynchronized` **never executes** on a
 vehicle created with a bare spawn: has not synchronized anything yet. Car paints

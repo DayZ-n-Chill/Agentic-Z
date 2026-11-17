@@ -1,6 +1,8 @@
 # The vanilla `proto native` surface
 
-Status: source reading of build `119356`. Checked on `P:\` on 2026-11-17: every cited declaration sits on the cited line of `P:\scripts`. The counts differ slightly there, so `P:\` is not the same script tree as build `119356`: counted with the same line-start rule, `P:\scripts` carries 2,789 `proto native` declarations (`1_core` 565, `2_gamelib` 103, `3_game` 1,955, `4_world` 166, `5_mission` 0), 52 of them `owned` and 25 `proto native static`. The numbers in the body are the source note's, for build `119356`. The `[EXACT][CLAIM-...]` tags are claim IDs in `scripts/dev/knowledge-pack/sources/claims.json`.
+Covers how many `proto native` declarations the vanilla scripts carry and where, what the `owned` and `static` modifiers mean, and the exact call shape of `GetBoneMatrix` and `AudioSystem.BankLoad`.
+
+Status: source reading of build `119356`. Checked on `P:\` on 2026-11-17: every cited declaration sits on the cited line of `P:\scripts`. The counts differ slightly there, so `P:\` is not the same script tree as build `119356`: counted with the same line-start rule, `P:\scripts` carries 2,789 `proto native` declarations (`1_core` 565, `2_gamelib` 103, `3_game` 1,955, `4_world` 166, `5_mission` 0), 52 of them `owned` and 25 `proto native static`. The numbers in the body are for build `119356`, which is not on `P:\`.
 
 A `proto native` declaration is where Enforce Script ends and the engine begins: the script side states a name, a return type and a parameter list, and the native side supplies the body. The declaration is the whole contract, so it has to be read exactly.
 
@@ -8,11 +10,11 @@ This note maps that surface in the official DayZ scripts build `119356`: how man
 
 ## What the build declares
 
-Counting only declarations whose line begins with `proto native` (after optional whitespace), build `119356` carries 2,758 `proto native` declarations: 1,956 of them in `3_game`, 52 of them declared `owned`, and 25 of them declared `static` in the `proto native static` order. [EXACT][CLAIM-NATIVE-SURFACE-COUNTS]
+Counting only declarations whose line begins with `proto native` (after optional whitespace), build `119356` carries 2,758 `proto native` declarations: 1,956 of them in `3_game`, 52 of them declared `owned`, and 25 of them declared `static` in the `proto native static` order.
 
 The count is a count of declaration lines, not of callable APIs. A name declared in several classes, or declared more than once with different parameters, is counted once per line it is declared on, and a declaration inside a conditional-compilation block is counted like any other.
 
-Per top-level directory, the same line-start count gives the following distribution, and the `3_game` concentration — 1,956 of 2,758, roughly seven in ten — is the headline. [EXACT][CLAIM-NATIVE-SURFACE-DISTRIBUTION]
+Per top-level directory, the same line-start count gives the following distribution, and the `3_game` concentration — 1,956 of 2,758, roughly seven in ten — is the headline.
 
 | Top-level directory | `proto native` declarations |
 |---|---:|
@@ -31,7 +33,7 @@ The line-start rule is deliberate, and it defines what the numbers mean. Declara
 
 ## The modifiers
 
-Two modifiers are easy to misread, and both are part of the declaration itself: `owned` is a variable modifier on the return value — `P:\scripts\1_core\proto\proto.c:14-16` defines it as the modifier for returning internal functions and tells the script VM that the returned string or array must not be released — while `static` marks a type-level call, made through the class name with no instance at all. `owned` does not make a function an instance method and does not change the parameter list; instance versus type-level is decided by `static` and by the enclosing class, not by `owned`. [EXACT][CLAIM-NATIVE-SURFACE-MODIFIERS]
+Two modifiers are easy to misread, and both are part of the declaration itself: `owned` is a variable modifier on the return value — `P:\scripts\1_core\proto\proto.c:14-16` defines it as the modifier for returning internal functions and tells the script VM that the returned string or array must not be released — while `static` marks a type-level call, made through the class name with no instance at all. `owned` does not make a function an instance method and does not change the parameter list; instance versus type-level is decided by `static` and by the enclosing class, not by `owned`.
 
 `owned` — a return-value modifier, not a call shape. `GetObjectTexture` at `P:\scripts\3_game\entities\entityai.c:2882` is an instance call because it is declared inside `class EntityAI` without `static`, not because it is `owned`:
 
@@ -61,7 +63,7 @@ There is no instance to call through, so the call names the type: `AudioSystem.B
 
 ## Two representative call shapes
 
-**An array the native fills: `GetBoneMatrix`.** At `P:\scripts\1_core\proto\envisual.c:41` the build declares a free function (not a class method) that returns `bool` and fills a four-element `vector` array passed to it, so the caller declares `vector mat[4]`, passes that array, and reads the result out of it rather than receiving the matrix as the return value. [EXACT][CLAIM-NATIVE-SURFACE-BONE-MATRIX]
+**An array the native fills: `GetBoneMatrix`.** At `P:\scripts\1_core\proto\envisual.c:41` the build declares a free function (not a class method) that returns `bool` and fills a four-element `vector` array passed to it, so the caller declares `vector mat[4]`, passes that array, and reads the result out of it rather than receiving the matrix as the return value.
 
 ```c
 proto native bool	GetBoneMatrix(notnull IEntity ent, int bone, vector mat[4]);
@@ -100,4 +102,4 @@ The cited declarations resolve at `P:\scripts\1_core\proto\envisual.c:41` (`GetB
 
 ## Limits
 
-This note describes build `119356` only; another build's surface must be recounted, not assumed. Its counts are declaration lines under the line-start rule stated above: they include declarations inside conditional-compilation blocks (for example the `proto native` declarations under `#ifdef ENF_DONE` at `P:\scripts\1_core\proto\enentity.c:774-780`) and they include overloads and same-name declarations in different classes, so 2,758 is not a count of distinct callable APIs and not a public API promise. The build's scripts are the authority for every signature quoted here; a declaration proves the shape was declared, not that a call succeeds at runtime, and no runtime verification was performed for this note. No code was copied from the vanilla scripts into this note beyond the short declarations quoted as evidence. [EXACT][CLAIM-NATIVE-SURFACE-LIMITS]
+This note describes build `119356` only; another build's surface must be recounted, not assumed. Its counts are declaration lines under the line-start rule stated above: they include declarations inside conditional-compilation blocks (for example the `proto native` declarations under `#ifdef ENF_DONE` at `P:\scripts\1_core\proto\enentity.c:774-780`) and they include overloads and same-name declarations in different classes, so 2,758 is not a count of distinct callable APIs and not a public API promise. The build's scripts are the authority for every signature quoted here; a declaration proves the shape was declared, not that a call succeeds at runtime, and no runtime verification was performed for this note. No code was copied from the vanilla scripts into this note beyond the short declarations quoted as evidence.

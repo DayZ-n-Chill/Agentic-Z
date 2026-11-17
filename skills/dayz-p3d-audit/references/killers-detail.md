@@ -131,7 +131,7 @@ removed from the script for false positives.
 wound outward reads outward on every face. Never a `vertices[1]`/`[2]` swap, which inverts a
 triangle but turns a quad `[0,1,2,3]` into `[0,2,1,3]`, a crossed face (the py3d README under `scripts/tools/py3d/`).
 Do not reverse a collision LOD to match the Visual LOD: shipped collision LODs carry mixed
-whole-LOD signs, while seven debinarized vanilla models and four LFPG models wind 0 % outward per
+whole-LOD signs, while seven debinarized vanilla models and four LFPowerGrid models wind 0 % outward per
 component (`winding-absolute-check.md`, rule 7). Read the stored normals of the faces you
 reverse with the Check A table in `winding-diagnostics.md`: negate a face's normals in the same
 pass only if they pointed outward along with its winding (otherwise py3d's absolute check then
@@ -208,7 +208,7 @@ writes the same ODOL, byte for byte, with the name stored as `component01`.
 or Fire LOD that has faces outside its proxy triangles and no selection whose name starts with
 `component`, in any case; when there are such names but none is `Component` and a number (only
 `Component_01`, say) it raises `WARN_COMPONENT_NAMING` instead. An empty component selection
-counts as present there. Up to 1.8.0, the wheel pinned until 2026-10-02, it checked the Geometry LOD
+counts as present there. Up to py3d 1.8.0 it checked the Geometry LOD
 only ("No Component selection found"), and the same code also fired on a lowercase
 `component01`, which works, so that reading is a false positive.
 
@@ -310,10 +310,10 @@ parts raising the ERROR (an empty selection itself was not measured). On the thr
 the door tutorial in the dayz-doors skill it is silent on `Simple_Door` and `Door_w_Button` and raises the ERROR on
 the Geometry and Fire LODs of `Expert_Mode`, whose lever (18 faces, one closed piece: selection
 `lever` in Geometry, `door1_open` in Fire) is in no component there, though the tutorial's text
-lists the lever among the parts that take up space. The 1.10.1 wheel, pinned since 2026-10-03,
-runs this check unchanged. The 1.9.0 wheel, the pin from 2026-10-02 to 2026-10-03, raises every face in
+lists the lever among the parts that take up space. py3d 1.10.1, the version under
+`scripts/tools/py3d/`, runs this check unchanged. py3d 1.9.0 raises every face in
 no component as `WARN_COMPONENT_COVERAGE`, and its message says that a face left out beside covered
-ones was not measured: with that wheel, read a closed part it counts in no component as the
+ones was not measured: with that version, read a closed part it counts in no component as the
 measured case below.
 
 **Measured in game** (2026-10-02, DayZDiag 1.29.163709, driven by dayz-mcp): a pair of 2 m boxes,
@@ -337,11 +337,11 @@ components (the lever, a component in View only, was hit in View only). No RPT o
 named any of these models. Not measured: a part left out only in part, weapon fire, the action
 cursor, vehicles, DayZ 1.30 Exp.
 
-Up to 1.8.0, the wheel pinned until 2026-10-02, the check compared `Component01` alone with the
+Up to py3d 1.8.0 the check compared `Component01` alone with the
 whole Geometry LOD, so it fired on a healthy multi-component LOD: `gate_and.p3d`'s Geometry LOD
 holds six components of 8 points each (48 points, 36 faces) and reads "Component01 covers 8/48
 vertices", yet that model took every ray in game (`winding-absolute-check.md`, rule 6).
-With that wheel, count the union of the `ComponentNN` selections yourself.
+With that version, count the union of the `ComponentNN` selections yourself.
 
 *(Corrected 2026-10-02: titled "Incomplete Component01 Coverage", this entry read "`Component01`
 must include ALL vertices AND ALL faces of the Geometry LOD with weight=1." The first correction

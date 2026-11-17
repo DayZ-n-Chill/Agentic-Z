@@ -335,13 +335,13 @@ function New-ServerCfg {
 hostname        = "DEV $Mod";
 maxPlayers      = 10;
 verifySignatures = 0;          // dev: do not enforce .bisign
-allowFilePatching = 1;         // MANDATORY for -filePatching clients (infrastructure note, serverDZ.cfg section; BattlEye 0x00020005 otherwise)
+allowFilePatching = 1;         // required for -filePatching clients (infrastructure note, serverDZ.cfg section; BattlEye 0x00020005 otherwise)
 disableVoN      = 1;
 disable3rdPerson = 0;
 instanceId      = 1;
 storageAutoFix  = 1;
 serverTimePersistent = 0;
-vppDisablePassword = 1;        // VPP AdminTools: skip the admin password so a SuperAdmins.txt superadmin opens the menu directly. Verified vs VPP source missionServer.c:14 / PermissionManager.c (2026-06-09). Remove for password-protected testing.
+vppDisablePassword = 1;        // VPP AdminTools (third-party mod behaviour, not vanilla): skip the admin password so a SuperAdmins.txt superadmin opens the menu directly. VPP reads this key in its missionServer.c (checked 2026-06-09). Remove for password-protected testing.
 
 class Missions
 {
@@ -357,10 +357,10 @@ class Missions
 function Initialize-VppSuperadmin {
     # VPP superadmin seeding. Layouts differ across VPP versions:
     #   (a) <profiles>\VPPAdminTools\SuperAdmins.json -> {"SUPER_ADMINS":[...]}
-    #   (b) <profiles>\VPPAdminTools\Permissions\ (newer, the installed one here):
+    #   (b) <profiles>\VPPAdminTools\Permissions\ (the current layout):
     #       SuperAdmins\SuperAdmins.txt (one SteamID64 per line) + credentials.txt (login
-    #       password on line 1, hashed at first boot, raw then lost). Version (b) IGNORES the
-    #       JSON, so seed BOTH. SteamID: -AdminSteamId else retail config. (verified 2026-06-09)
+    #       password on line 1, hashed at first boot, raw then lost). Version (b) ignores the
+    #       JSON, so seed both. SteamID: -AdminSteamId else retail config. (verified 2026-06-09)
     if ((Get-ModString) -notlike '*VPPAdminTools*') { return }
     $vppDir = Join-Path $ServerProfiles 'VPPAdminTools'
 
@@ -384,7 +384,7 @@ function Initialize-VppSuperadmin {
         (@{ SUPER_ADMINS = @($ids) } | ConvertTo-Json) | Set-Content -Path $json -Encoding ASCII
     }
 
-    # (b) Permissions\ layout - what the installed VPP actually reads.
+    # (b) Permissions\ layout - what current VPP versions read.
     $saTxt = Join-Path $vppDir 'Permissions\SuperAdmins\SuperAdmins.txt'
     New-Item -ItemType Directory -Force -Path (Split-Path $saTxt) | Out-Null
     # Collect candidate IDs (existing file lines + resolved ids), keep ONLY clean 17-digit
@@ -438,7 +438,7 @@ function Invoke-Preflight {
     if (-not (Test-Path $WorkDrive)) { Die "Work drive $WorkDrive not mounted. Mount it with DayZ Tools or /dayz-workdrive." }
     Ok "work drive: $WorkDrive"
 
-    # P:\Mods MUST be a junction to <DayZ>\!Workshop so deployed PBOs land where the engine reads.
+    # P:\Mods has to be a junction to <DayZ>\!Workshop so deployed PBOs land where the engine reads.
     if (-not (Test-Path $ModsDir)) {
         Warn "$ModsDir missing. Creating junction -> $Workshop"
         & cmd /c mklink /J "$ModsDir" "$Workshop" | Out-Null
@@ -743,10 +743,12 @@ function Start-Offline {
 
 function Show-VppHint {
     if ((Get-ModString) -notlike '*VPPAdminTools*') { return }
-    $f = Join-Path $ServerProfiles 'VPPAdminTools\SuperAdmins.json'
+    # Point at the file current VPP versions read (see Initialize-VppSuperadmin); the root
+    # SuperAdmins.json is the old layout and is ignored by them.
+    $f = Join-Path $ServerProfiles 'VPPAdminTools\Permissions\SuperAdmins\SuperAdmins.txt'
     Info 'VPP admin tools loaded.'
     Write-Host "   superadmin file: $f" -ForegroundColor Cyan
-    Write-Host '   format: {"SUPER_ADMINS":["<SteamID64>"]} - restart the server after editing.' -ForegroundColor Cyan
+    Write-Host '   format: one SteamID64 per line - restart the server after editing.' -ForegroundColor Cyan
 }
 
 # ---------------------------------------------------------------------------

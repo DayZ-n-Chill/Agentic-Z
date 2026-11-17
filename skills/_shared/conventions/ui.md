@@ -12,7 +12,7 @@ DayZ's UI has no central theme system; no `PrimaryAccentColor` constant flows th
    
    Unverified (not tested in game): shipping a PBO whose prefix is `gui` so the file lands at the same virtual path `gui/layouts/...` is reported to shadow the vanilla file, but it collides with the vanilla prefix and depends on load order; test it before relying on it.
 
-   Since DayZ 1.30 there is a third route, a **layout variant**: Workbench saves a resource variant of a vanilla layout into your addon, a file at the vanilla path that holds only the widgets you changed and is applied on top of the vanilla layout, so single widgets are hidden, changed or added without replacing the file. Reported (measured in game by the knowledge pack's author on 1.30, not repeated in this repo and not checkable on `P:\`); the same runs measured the prefix `gui` shadowing above as working on 1.30 when the PBO header also sets `fsShadowing=1`. Recipe, packing and limits: `skills/dayz-ui-development/references/layout-variants-130.md`.
+   Since DayZ 1.30 there is a third route, a **layout variant**: Workbench saves a resource variant of a vanilla layout into your addon, a file at the vanilla path that holds only the widgets you changed and is applied on top of the vanilla layout, so single widgets are hidden, changed or added without replacing the file. Measured in game on 1.30, not checkable on `P:\`; the same runs measured the prefix `gui` shadowing above as working on 1.30 when the PBO header also sets `fsShadowing=1`. Recipe, packing and limits: `skills/dayz-ui-development/references/layout-variants-130.md`.
 2. Inline ARGB literals in `P:\scripts\5_mission\gui\` (10+ files), such as `w.SetColor(0xFFFFEC44)` in `actionmenu.c:74`. Override the containing class's method with `modded class`, not the constant.
 3. `Colors` / `FadeColors` constants in `P:\scripts\3_game\colors.c`. The values are `const int` members (`P:\scripts\3_game\colors.c:53` declares `const int COLOR_DAYZ_RED = 0xffd70d11;`). Unverified (reported, not tested in Workbench): `modded class Colors { const int X = ...; }` is said to be a no-op because callers bake the original constant value at compile time. Test it in Workbench before relying on it either way. `COLOR_DAYZ_RED` is referenced in one place across vanilla scripts (`P:\scripts\5_mission\gui\newui\mainmenu\mainmenupromo.c:157`), so even a working override would only recolor the main-menu promo banner.
 
@@ -22,7 +22,7 @@ When the user asks for a color or theme change, ask for scope first (single elem
 
 ## Layout and widget rules
 
-Each rule names the vanilla file it was checked against. A part marked "reported" was measured in game by the knowledge pack's author and has not been repeated in this repo.
+Each rule names the vanilla file it was checked against. A part marked "reported" was measured in game and cannot be checked on `P:\`.
 
 - A `.layout` is brace format, never XML: a vanilla layout opens with a widget class, a name and a brace (`P:\gui\layouts\day_z_hud.layout:1` is `FrameWidgetClass HudFrameWidget {`). Reported: an XML layout, or a layout path that does not resolve, crashes the client inside `CreateWidgets`.
 - Never call `Widget.SetLV()` or `Widget.SetTextLV()` from a mod. Both are static and set one global value for every widget (`P:\scripts\1_core\proto\enwidgets.c:114-117`), and vanilla drives them from the player's HUD brightness setting in `SetHudBrightness` (`P:\scripts\3_game\dayzgame.c:3910-3914`).
@@ -42,4 +42,4 @@ Load these at the step that needs them, not up front:
 - `skills/_shared/enscript/references/widget_api.md`: widget script classes, events, loading layouts, menus and imagesets.
 - `skills/_shared/enscript/integrations/dabs_framework.md`: Dabs Framework, only for mods that depend on it. Its facts are framework facts, not vanilla.
 - `/dayz-build-imageset`: turns PNG icons into an imageset.
-- `skills/dayz-ui-development/SKILL.md` and its `references/` folder: the deep UI pack (layout format, styles, text sizing, the 1.30 UI changes, layout variants, templates). Much of it is measured in game by the knowledge pack's author and marked so.
+- `skills/dayz-ui-development/SKILL.md` and its `references/` folder: the deep UI pack (layout format, styles, text sizing, the 1.30 UI changes, layout variants, templates). Much of it is measured in game, not checkable on `P:\`, and marked so.

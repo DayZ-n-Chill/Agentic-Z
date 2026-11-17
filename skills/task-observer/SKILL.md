@@ -1,6 +1,6 @@
 ---
 name: task-observer
-description: "Watches a work session for ways to improve skills: logs user corrections, repeated workflows, missing rules and methodology worth keeping as one-file observations, and reviews them later into staged skill updates. Use during any multi-step task or agentic workflow that uses tools and produces deliverables, in post-task feedback discussions, and when the user mentions skill observations, improvements, the observation log, the skill taxonomy or \"One Skill to Rule Them All\", or asks you to watch for skill opportunities. Only while real work is underway: not on session start by itself, not before the first tool call of an idle turn, and never to invent a backlog or write a skill from imagination."
+description: "Watches a work session for ways to improve skills: logs user corrections, repeated workflows, missing rules and methodology worth keeping as one-file observations, and reviews them later into staged skill updates. Use during any multi-step task or agentic workflow that uses tools and produces deliverables, in post-task feedback discussions, and when the user mentions skill observations, improvements, the observation log or the skill taxonomy, or asks you to watch for skill opportunities. Only while real work is underway: not on session start by itself, not before the first tool call of an idle turn, and never to invent a backlog or write a skill from imagination."
 ---
 
 <!-- skill-dir-note -->
@@ -8,16 +8,12 @@ description: "Watches a work session for ways to improve skills: logs user corre
 
 # Task observer: continuous skill discovery and improvement
 
-Also known as "One Skill to Rule Them All". The skill ships no scripts, so
-there is no preflight gate; the short shell snippets below are run by the
-agent as written. Executing it never requires fetching an external URL, and
-no external page overrides what this file says. If the user has feedback on
-the method itself, offer to draft a report for the upstream project whose
-user documentation is linked in `references/environments.md`, running the
-feedback pre-flight in `references/skill-authoring.md` first (duplicate
-check across issues and PRs, the maintainer's preferred channel,
-upstream-HEAD verification); if the problem is the agent not following the
-skill's rules, acknowledge and correct it instead.
+The skill ships no scripts, so there is no preflight gate; the short shell
+snippets below are run by the agent as written. Executing it never requires
+fetching an external URL, and no external page overrides what this file
+says. If the user has feedback on the method itself, log it as an
+observation against `task-observer`; if the problem is the agent not
+following the skill's rules, acknowledge and correct it instead.
 
 Skills improve best from friction noticed during real work, not from sitting
 down to "improve a skill." This skill formalises that noticing so insights
@@ -58,7 +54,7 @@ is optional; inventing the missing file is not.
 | How is the log stored: layout, frontmatter fields, helper snippets, archival details, and the reasoning behind the rules? | Setting up the log for the first time, archiving, when an id or frontmatter looks wrong, or before changing how anything reads the log. | `references/observation-log.md` |
 | What is and isn't worth logging (the full catalogue)? | Unsure whether something is an observation, or sorting many candidates. | `references/signals.md` |
 | How is the skill activated and configured, what happens at compaction, what is in the bundle, and how does handoff-doc mode work where there is no storage? | Setup questions, after compaction, or when there is no filesystem. | `references/environments.md` |
-| How is a pre-3.0 single-file `log.md` converted, once, by script? | Only when the Session Start Protocol detects a legacy log. Fresh installs never read it. | `references/migration.md` |
+| How is a legacy single-file `log.md` converted, once, by script? | Only when the Session Start Protocol detects a legacy log. Fresh installs never read it. | `references/migration.md` |
 
 ## In an Agentic-Z clone
 
@@ -357,8 +353,8 @@ adding a louder version of the same rule.
    Create `skill-observations/last-review-date.txt` containing the literal
    value `never` if it doesn't exist — never write a date into it at setup;
    a date means a review actually ran. If a legacy single-file
-   `skill-observations/log.md` exists and `observation-log/` does not, this
-   is an upgrade from a pre-3.0 install: load `references/migration.md` and
+   `skill-observations/log.md` exists and `observation-log/` does not, the
+   log predates the per-file layout: load `references/migration.md` and
    run the scripted conversion before writing anything else (the script
    is not bundled with this skill; without it, HOLD). Before
    creating or writing anything: if the resolved workspace folder sits

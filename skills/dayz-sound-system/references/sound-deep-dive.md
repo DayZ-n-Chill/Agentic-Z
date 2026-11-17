@@ -1,8 +1,8 @@
 # DayZ sound system: the full reference
 
-Every part of mod audio in one file: the pipeline, the config classes, the full script signatures, item and player sounds, sync patterns, music, the noise system, environment controllers, calls that do not exist, and recipes. Line numbers are from the 1.30 scripts on `P:\`. Statements about 1.29 come from the notes this file was built from and are not yet checked on `P:\`.
+Every part of mod audio in one file: the pipeline, the config classes, the full script signatures, item and player sounds, sync patterns, music, the noise system, environment controllers, calls that do not exist, and recipes. Line numbers are from the 1.30 scripts on `P:\`. `P:\` holds 1.30, so statements about 1.29 are not yet checked on `P:\`.
 
-Two third-party mods serve as worked examples: IMPWMODPart2 (weapon sounds) and DoorLockSystem (door sounds). Facts about them are from their own files and are not checked on `P:\`. The running example is a rolling stone item, `MyMod_RollingStone`, with a roll loop and an impact sound.
+The config examples are the sound config of a mod rifle, `MyMod_Rifle`; they show mod practice, and only the vanilla classes they inherit are checked on `P:\`. The running script example is a rolling stone item, `MyMod_RollingStone`, with a roll loop and an impact sound.
 
 The pack `skills/_shared/audio-fx/` holds the same systems as shorter how-to files. Open this file when you need a complete signature list.
 
@@ -21,7 +21,7 @@ The pack `skills/_shared/audio-fx/` holds the same systems as shorter how-to fil
 - [Calls that do not exist, and common wrong beliefs](#calls-that-do-not-exist-and-common-wrong-beliefs)
 - [Recipes](#recipes)
 - [DayZ 1.30: radios, vegetation, destructor](#dayz-130-radios-vegetation-destructor)
-- [Sources](#sources)
+- [Vanilla files](#vanilla-files)
 
 ## Summary
 
@@ -36,9 +36,9 @@ For the rolling stone, the simplest route is a sound set in config, played on th
 
 ### Formats
 
-- Vanilla samples are `.ogg` files; `P:\DZ\sounds\` holds them. The source notes add that `.wav` is accepted too and that mods in practice ship `.ogg` (not checked on `P:\`).
-- `.wss` is Bohemia's own compressed sound format. DayZ mods use `.ogg` directly (source notes, not checked on `P:\`).
-- A sample is named in `CfgSoundShaders` without its extension. Third-party example: `"IMPWMODPart2\Weapons\Automatic\F2000\Sounds\F2000_close"` in the F2000 sound config of IMPWMODPart2.
+- Vanilla samples are `.ogg` files; `P:\DZ\sounds\` holds them. `.wav` is accepted too, and mods in practice ship `.ogg` (not yet checked on `P:\`).
+- `.wss` is Bohemia's own compressed sound format. DayZ mods use `.ogg` directly (not yet checked on `P:\`).
+- A sample is named in `CfgSoundShaders` without its extension, for example `"MyMod_Rifle\Sounds\rifle_close"`. Vanilla does the same: `"DZ\sounds\weapons\firearms\Red9\Red9_close_shot_03"` (`P:\DZ\sounds\hpp\config.cpp:26479`).
 
 ### Where the files live in a mod
 
@@ -53,11 +53,11 @@ Paths in `samples[]` start at the mod's prefix, the same as model paths.
 
 ## Config
 
-The keys of both classes, with vanilla evidence for each, are in `skills/_shared/audio-fx/sound-config.md`. This section keeps the third-party examples.
+The keys of both classes, with vanilla evidence for each, are in `skills/_shared/audio-fx/sound-config.md`. This section shows the forms a mod config takes.
 
 ### CfgSoundShaders
 
-A shader names the audio files, the volume, the range and the fade curve. Keys seen in the IMPWMODPart2 weapon sound config:
+A shader names the audio files, the volume, the range and the fade curve. The keys a mod shader usually sets:
 
 | Key | Type | Meaning |
 |---|---|---|
@@ -67,12 +67,12 @@ A shader names the audio files, the volume, the range and the fade curve. Keys s
 | `rangeCurve[]` | list of `{distance, factor}` pairs | Fade over distance, written inline |
 | `rangeCurve` | string | The name of a predefined curve, such as `"closeShotCurve"` |
 
-A shader with no parent and an inline curve (IMPWMODPart2, `Weapons\Automatic\Sounds\config.cpp`):
+A shader with no parent and an inline curve. Vanilla writes inline curves the same way, for example in `reloadWeapon_SoundShader` (`P:\DZ\sounds\hpp\config.cpp:17078`):
 
 ```cpp
-class IMP_SoundShaderMid
+class MyMod_Rifle_midShot_SoundShader
 {
-    samples[] = {{"IMPWMODPart2\Weapons\Automatic\Sounds\Rifle1Mid", 1}};
+    samples[] = {{"MyMod_Rifle\Sounds\rifle_mid", 1}};
     volume = 0.56234133;
     range = 1500;
     rangeCurve[] =
@@ -85,13 +85,13 @@ class IMP_SoundShaderMid
 };
 ```
 
-A shader that inherits a vanilla base, the cleanest form for a mod (IMPWMODPart2, `Weapons\Automatic\F2000\Sounds\config.cpp`):
+A shader that inherits a vanilla base, the cleanest form for a mod:
 
 ```cpp
 class base_closeShot_SoundShader;   // declare the vanilla parent first
-class IMP_F2000_closeShot_SoundShader: base_closeShot_SoundShader
+class MyMod_Rifle_closeShot_SoundShader: base_closeShot_SoundShader
 {
-    samples[] = {{"IMPWMODPart2\Weapons\Automatic\F2000\Sounds\F2000_close", 1}};
+    samples[] = {{"MyMod_Rifle\Sounds\rifle_close", 1}};
     volume = 0.8;
 };
 ```
@@ -100,20 +100,20 @@ The vanilla parent `base_closeShot_SoundShader` is at `P:\DZ\sounds\hpp\config.c
 
 ### CfgSoundSets
 
-A set groups shaders under one name that script and config refer to. Its one required key is `soundShaders[]`, the list of shader names. The other keys (`sound3DProcessingType`, `volumeCurve`, `spatial` and more) were marked as unverified in the source notes; they are verified with vanilla lines in `skills/_shared/audio-fx/sound-config.md`.
+A set groups shaders under one name that script and config refer to. Its one required key is `soundShaders[]`, the list of shader names. The other keys (`sound3DProcessingType`, `volumeCurve`, `spatial` and more) are listed with their vanilla lines in `skills/_shared/audio-fx/sound-config.md`.
 
-A set that inherits a vanilla base (same IMPWMODPart2 file):
+A set that inherits a vanilla base:
 
 ```cpp
 class CfgSoundSets
 {
     class Rifle_Shot_Base_SoundSet;   // declare the vanilla parent first
-    class IMP_F2000_Shot_SoundSet: Rifle_Shot_Base_SoundSet
+    class MyMod_Rifle_Shot_SoundSet: Rifle_Shot_Base_SoundSet
     {
         soundShaders[] = {
-            "IMP_F2000_closeShot_SoundShader",
-            "IMP_F2000_midShot_SoundShader",
-            "IMP_F2000_distShot_SoundShader"
+            "MyMod_Rifle_closeShot_SoundShader",
+            "MyMod_Rifle_midShot_SoundShader",
+            "MyMod_Rifle_distShot_SoundShader"
         };
     };
 };
@@ -136,7 +136,7 @@ class CfgSoundSets
 ### Curves and 3D processing
 
 - `CfgSoundCurves` holds the named volume curves (`P:\DZ\sounds\hpp\config.cpp:59`). Mods refer to them by name.
-- The 3D processing classes are in `CfgSound3DProcessors` (`P:\DZ\sounds\hpp\config.cpp:2587`). The source notes called this class `CfgSound3DProcessingTypes` and could not find it; the key on a sound set is `sound3DProcessingType`, and the root class it points into is `CfgSound3DProcessors`.
+- The 3D processing classes are in `CfgSound3DProcessors` (`P:\DZ\sounds\hpp\config.cpp:2587`). There is no class named `CfgSound3DProcessingTypes`: the key on a sound set is `sound3DProcessingType`, and the root class it points into is `CfgSound3DProcessors`.
 
 ## Script API
 
@@ -353,7 +353,7 @@ bool PlaySoundSetAtMemoryPoint(out EffectSound sound, string soundSet, string me
 bool StopSoundSet(out EffectSound sound);
 ```
 
-`PlaySoundSet`, `PlaySoundSetLoop` and `StopSoundSet` do nothing on a dedicated server: the test is `g_Game && !g_Game.IsDedicatedServer()` (`P:\scripts\3_game\entities\object.c:1249`). The source notes said all four helpers have that test. `PlaySoundSetAtMemoryPoint` does not: its body goes straight to the memory point lookup and `SEffectManager.PlaySoundEnviroment` (`P:\scripts\3_game\entities\object.c:1294`), so guard it yourself, as `skills/_shared/audio-fx/sound-script.md` says.
+`PlaySoundSet`, `PlaySoundSetLoop` and `StopSoundSet` do nothing on a dedicated server: the test is `g_Game && !g_Game.IsDedicatedServer()` (`P:\scripts\3_game\entities\object.c:1249`). `PlaySoundSetAtMemoryPoint` has no such test: its body goes straight to the memory point lookup and `SEffectManager.PlaySoundEnviroment` (`P:\scripts\3_game\entities\object.c:1294`), so guard it yourself, as `skills/_shared/audio-fx/sound-script.md` says.
 
 `PlaySoundSet` on `Object` kept the dedicated server test in 1.30. The item and player sound handlers moved to `IsHeadlessOrDedicatedServer()`.
 
@@ -490,7 +490,7 @@ class PlayerSoundManagerBase
 }
 ```
 
-There is one handler class per state: stamina, hunger, injury and thirst, each with a server and a client form, all extending `SoundHandlerBase` (`P:\scripts\4_world\classes\staminasoundhandler.c:32`). A freezing handler class exists (`P:\scripts\4_world\classes\soundhandlers\freezingsoundhandler.c:2`) but its registration is commented out.
+There is one handler class per state: stamina, hunger, injury and thirst, each with a server and a client form, all extending `SoundHandlerBase` (`P:\scripts\4_world\classes\staminasoundhandler.c:32`). A freezing handler is written (`P:\scripts\4_world\classes\soundhandlers\freezingsoundhandler.c:2`), but the whole file is inside a block comment and the line that registers `FreezingSoundHandlerClient` is commented out too (`P:\scripts\4_world\classes\soundhandlers\playersoundmanager.c:99`).
 
 ### Steps
 
@@ -503,7 +503,7 @@ There is one handler class per state: stamina, hunger, injury and thirst, each w
 
 ### Related files
 
-- The sound tables of the player are registered in `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgsounds.c`. The source notes could not confirm that this file exists; it does, and since 1.30 its step and attachment sound tables are registered only when `IsHeadlessOrDedicatedServer()` is false (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgsounds.c:335`).
+- The sound tables of the player are registered in `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgsounds.c`. Since 1.30 its step and attachment sound tables are registered only when `IsHeadlessOrDedicatedServer()` is false (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgsounds.c:335`).
 - Voice uses `SetSpeechExVolume` on the sound scene and `WaveKind.WAVESPEECHEX`.
 
 ### HEAVY_BREATHING (1.30)
@@ -573,8 +573,8 @@ void AddNoise(NoiseParams noisePar, float noiseMultiplier = 1.0)
 
 - Up to 1.29 the multiplier was lowered for rain and wind with `NoiseAIEvaluate.GetNoiseReduction(g_Game.GetWeather())` (1.29, not yet checked on `P:\`).
 - Since 1.30 that is obsolete. `GetEnvironmentNoiseReduction(pos)` is the single source of truth for the AI, steps pass only `GetNoiseMultiplier(this)`, infected pass no multiplier, and `class AIParams` in config holds the weather multipliers. The lines are in `skills/_shared/audio-fx/noise-for-ai.md`. Do not pass a multiplier that already includes weather; the engine would damp the noise a second time.
-- Steps use the noise parameters of the player type, `GetNoiseParamsLandLight()` and `GetNoiseParamsLandHeavy()` (`P:\scripts\4_world\entities\dayzplayerimplement.c:2530`).
-- A shot uses `class NoiseShoot { strength = 82; type = "shot"; }` in the weapon config (third-party example from IMPWMODPart2, its MCX Spear rifle).
+- Steps use the noise parameters of the player type for the stance: `GetNoiseParamsStand()`, `GetNoiseParamsCrouch()` or `GetNoiseParamsProne()` (`P:\scripts\4_world\entities\dayzplayerimplement.c:3461`). Landing after a fall uses `GetNoiseParamsLandLight()` or `GetNoiseParamsLandHeavy()` (`P:\scripts\4_world\entities\dayzplayerimplement.c:2530`).
+- A shot uses the `NoiseShoot` class of the weapon config; the vanilla M4 has `strength=80; type="shot";` (`P:\DZ\weapons\firearms\M4\config.cpp:88`). The weapon names its shot sound sets in `soundSetShot[]` of each fire mode (`P:\DZ\weapons\firearms\M4\config.cpp:100`).
 
 `AddNoiseTarget` makes a decoy: a noise at a fixed position, with a lifetime and no entity. It suits stun grenades and distraction devices.
 
@@ -671,7 +671,7 @@ dmp.RegisterDynamicLocation(this, DynamicMusicLocationTypes.CONTAMINATED_ZONE, 1
 dmp.UnregisterDynamicLocation(this);
 ```
 
-The source notes marked `GetGame().GetMission().GetDynamicMusicPlayer()` as unverified. It is the vanilla call: the mission declares it (`P:\scripts\3_game\gameplay.c:752`) and the contaminated area uses it exactly this way (`P:\scripts\4_world\classes\contaminatedarea\contaminatedarea.c:21`).
+`GetGame().GetMission().GetDynamicMusicPlayer()` is the vanilla call: the mission declares it (`P:\scripts\3_game\gameplay.c:752`) and the contaminated area uses it exactly this way (`P:\scripts\4_world\classes\contaminatedarea\contaminatedarea.c:21`).
 
 ### D. A noise for infected
 
@@ -682,7 +682,7 @@ np.Load("ZombieRoarNoise");    // a class of CfgNoises, vanilla or your own
 g_Game.GetNoiseSystem().AddNoise(this, np, 2.0);  // twice the config strength
 ```
 
-The source notes loaded `"Footstep_Heavy"` here. That name is not a class of `CfgNoises` on `P:\`; the vanilla classes are `DeerStepNoise`, `DeerRoarNoise`, `WolfStepNoise`, `WolfRoarNoise`, `ZombieStepNoise` and `ZombieRoarNoise` (`P:\DZ\AI\config.cpp:6903`). Since 1.30, do not multiply the `2.0` by a weather factor worked out in script; the engine damps the noise at that position itself.
+The name must be a class of `CfgNoises`. A name such as `"Footstep_Heavy"` is not one on `P:\`; the vanilla classes are `DeerStepNoise`, `DeerRoarNoise`, `WolfStepNoise`, `WolfRoarNoise`, `ZombieStepNoise` and `ZombieRoarNoise` (`P:\DZ\AI\config.cpp:6903`). Since 1.30, do not multiply the `2.0` by a weather factor worked out in script; the engine damps the noise at that position itself.
 
 ## DayZ 1.30: radios, vegetation, destructor
 
@@ -692,7 +692,7 @@ The quoted lines are in `dayz-1-30-sound.md`.
 - Static vegetation: `StaticObjectType` reads `CfgNonAIVehicles <Name> VegetationSounds` (`P:\scripts\3_game\entities\staticobjecttype.c:13`). The macro `CUSTOM_PLAYER_MOVEMENT_SOUNDSETS` is at `P:\DZ\data\basicdefines.hpp:310`.
 - The event destructor: `~SoundEventBase` runs `if (g_Game) Stop();` (`P:\scripts\4_world\classes\soundevents\soundevents.c:12`). Do not write a 1.29 style destructor in a subclass of `InfectedSoundEventBase`.
 
-## Sources
+## Vanilla files
 
 | File | What it holds |
 |---|---|
@@ -712,7 +712,5 @@ The quoted lines are in `dayz-1-30-sound.md`.
 | `P:\scripts\4_world\entities\dayzplayerimplement.c` | `AddNoise`, `OnStepEvent` |
 | `P:\scripts\3_game\entities\staticobjecttype.c` | `StaticObjectType` and `VegetationSounds` (1.30) |
 | `P:\scripts\4_world\entities\itembase\transmitterbase.c` | `SOUND_BUNKER_STATIC_NOISE` |
-| IMPWMODPart2, `Weapons\Automatic\Sounds\config.cpp` | Third-party: shaders with an inline `rangeCurve[]` |
-| IMPWMODPart2, `Weapons\Automatic\F2000\Sounds\config.cpp` | Third-party: inheriting the vanilla shot bases |
-| IMPWMODPart2, `Weapons\Automatic\MCXSpear\config.cpp` | Third-party: `soundSetShot` in a fire mode, and `NoiseShoot` |
-| DoorLockSystem, `ActionUnlockDLSDoor.c` | Third-party: `building.PlaySound` and `building.PlaySoundLoop` |
+| `P:\DZ\sounds\hpp\config.cpp` | `CfgSoundCurves`, `CfgSound3DProcessors`, the vanilla shaders and sets |
+| `P:\DZ\weapons\firearms\M4\config.cpp` | `soundSetShot[]` in a fire mode, and `NoiseShoot` |

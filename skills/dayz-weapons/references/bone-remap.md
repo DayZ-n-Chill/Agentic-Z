@@ -2,7 +2,7 @@
 
 Which weapon selection maps to which player bone, when a remap is needed, and the rule that the selection must cover the part first. How the bone moves is animation work and belongs to the dayz-animation-pipeline skill.
 
-Marks: `[VERIFIED in-game]` means a real in-game test recorded in one of the author's projects (third-party, not on `P:\`), `[VERIFIED-vanilla]` means read in the cited vanilla file, `[UNVERIFIED]` means inferred.
+Marks: `[VERIFIED in-game]` means measured in game on a custom 9x19 SMG build that inherits a third-party weapon pack (third-party mod behaviour, not vanilla; its files are not on `P:\`), `[VERIFIED-vanilla]` means read in the cited vanilla file, `[UNVERIFIED]` means inferred.
 
 ## The API
 
@@ -31,9 +31,9 @@ The fifth argument, `pWeaponStates`, is the weapon state `.anm` that drives `Wea
 
 Both are called from a `modded class ModItemRegisterCallbacks` that overrides a `Register*` method and calls `super` first. `RegisterFireArms` is declared at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:321`.
 
-## A real remap: SR2M
+## A real remap: a custom SMG
 
-`[VERIFIED in-game]` `A6_SR2M\scripts\4_World\Entities\ManBase\DayZPlayer\DayZPlayerCfgBase.c:26-27` registers the pairs `bolt` to `Weapon_Bolt` and `trigger` to `Weapon_Trigger` for the class `A6_SR2M_Base`, inside `override void RegisterFireArms(DayZPlayerType pType, DayzPlayerItemBehaviorCfg pBehavior)` (`:7`), after `super.RegisterFireArms(...)` (`:9`), next to the `AddItemInHandsProfileIK` call for `A6_SR2M_Base` (`:19`) that binds the weapon state animation `A6_SR2M/animations/w_sr2m_states.anm`. Written fresh for your own class, the shape is:
+`[VERIFIED in-game]` (2026-06-30) The SMG's `DayZPlayerCfgBase.c` registers the pairs `bolt` to `Weapon_Bolt` and `trigger` to `Weapon_Trigger` for the weapon's base class, inside `override void RegisterFireArms(DayZPlayerType pType, DayzPlayerItemBehaviorCfg pBehavior)`, after `super.RegisterFireArms(...)`, next to the `AddItemInHandsProfileIK` call for the same class that binds the weapon's own weapon state `.anm`. Written for your own class, the shape is:
 
 ```c
 modded class ModItemRegisterCallbacks
@@ -49,26 +49,21 @@ modded class ModItemRegisterCallbacks
 ```
 
 - `Weapon_Bolt` is driven by the weapon state `.anm` (the fifth `AddItemInHandsProfileIK` argument).
-- `Weapon_Trigger` is driven by the vanilla player fire and reload animations. The SR2M note at `:22-24` records that this was seen animated in `p_erc_fire_*_ras` and `p_erc_reload_action_pm73_ras`, and that without the remap the trigger does nothing on fire.
-- `magazine` is left out of the remap on purpose: it rides the `model.cfg` animation sources (`:25`), so it is not driven twice.
-
-The SR2M handoff (`2026-06-30-handoff-bolt-trigger-fix.md:13`) cites the remap at `:22-23`, an older line number; the project file has it at `:26-27`.
+- `Weapon_Trigger` is driven by the vanilla player fire and reload animations. On the SMG it was seen animated in `p_erc_fire_*_ras` and `p_erc_reload_action_pm73_ras`; without the remap the trigger does nothing on fire.
+- `magazine` is left out of the remap on purpose: on the SMG it rides the `model.cfg` animation sources, so it is not driven twice.
 
 ## When a remap is needed
 
-- **Needed** only when the weapon's bolt or trigger must be animated by the player skeleton, that is, when you inherit vanilla fire, reload or chamber animations that move the `Weapon_*` bones. `[VERIFIED in-game]` SR2M.
-- **Not needed** when a part animates only through `model.cfg` animation sources (the magazine on SR2M).
+- **Needed** only when the weapon's bolt or trigger must be animated by the player skeleton, that is, when you inherit vanilla fire, reload or chamber animations that move the `Weapon_*` bones. `[VERIFIED in-game]` on the SMG.
+- **Not needed** when a part animates only through `model.cfg` animation sources (the magazine on the SMG).
 
-Condition learned the hard way (W-SEL1): the selection must really cover the part (`p3d-selection-contract.md`), and the weapon must have a `weaponStateAnim` whose bolt channel exists. SR2M kept the AKS74U weapon states (`A6_SR2M\config.cpp:823`) and `onlyIfBoltIsOpen=1` (`:947`, per the handoff), so the state machine was ready; only the remap and a correct selection were missing (`...bolt-trigger-fix.md:17`).
+Condition learned the hard way (W-SEL1): the selection must really cover the part (`p3d-selection-contract.md`), and the weapon must have a `weaponStateAnim` whose bolt channel exists. The SMG kept the AKS74U weapon states as its `weaponStateAnim` and `onlyIfBoltIsOpen=1` in its config, so the state machine was ready; only the remap and a correct selection were missing.
 
 ## Bone remap is the standard pattern
 
 `[VERIFIED-vanilla]` Vanilla registers a remap per weapon base: `Rifle_Base` with `bolt`, `magazine`, `trigger`, `charging`, `bullet`, `mag_release` and `boltrelease` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1579-1580`), `BoltActionRifle_Base` (`:1591-1592`), and single weapons after the "Specific weapons" comment at `:1594`.
 
-Third-party weapon packs do the same, per weapon class (reported by the knowledge pack from those mods' own scripts; not on `P:\`, so read the file before quoting an exact array):
-
-- The A6 weapon pack, `A6_Weapons\WeaponScripts\WeaponScripts\4_world\Entities\ManBase\DayZPlayer\DayZPlayerCfgBase.c:267-271`, remaps each shotgun class (`A6_Mossberg_590_Base`, `A6_KSG_Base`, `A6_MP153_Base`, `A6_Spas12_Base`, `A6_Benelli_Base`) to named arrays `ShotgunBoneRemapNew` and `SemiShotgunBoneRemapNew`.
-- IMPWMOD, `IMPWMODPart2\Scripts\4_World\Pistol\AnimationsPistol.c:60` and `:63`, uses the same shape.
+Third-party weapon packs do the same, per weapon class (third-party mod behaviour, not vanilla, and not on `P:\`, so read the pack's own script before quoting an exact array). One pack registers each of its pump and semi-automatic shotgun base classes against two shared named arrays, one per mechanism; another registers its pistols the same way from its own `4_World` script.
 
 ## Boundary
 

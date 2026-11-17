@@ -130,7 +130,7 @@ The per-mod breakdowns live in the `dayz-aviation` skill's `references/` folder;
 |---|---|
 | The RFFS integrator, config framework, damage zones, actions and HUD | `helicopter-rffs.md` |
 | The MH6 force model, Pawn replication, auto hover and auto land | `helicopter-mh6.md` |
-| The SIB simple model, its JSON store, and what was not recovered | `helicopter-sib.md` |
+| The SIB simple model, its JSON store, and what is missing from it | `helicopter-sib.md` |
 | The Expansion module system, aerofoil and rotor module | `helicopter-expansion.md` |
 | The five way comparison, trade-offs and player feel in full | `helicopter-model-comparison.md` |
 | Which Workshop PBO holds readable flight scripts | `mod-sources.md` |

@@ -2,7 +2,7 @@
 
 How a PBO extraction project keeps its state: the four ledger files, how a finding is classified and where it goes, how to run the work one unit per turn, and what the closing document holds.
 
-Not yet checked on `P:\`: this is a working method, not a statement about vanilla data. Counts and examples come from the LM_Planes extraction project (Workshop item 3730564764) as the knowledge pack's author recorded them. A finding about a mod is a fact about that mod; compare it with vanilla before using it as a rule, for example the base class `CarScript` at `P:\scripts\4_world\entities\vehicles\carscript.c:94`.
+Not yet checked on `P:\`: this is a working method, not a statement about vanilla data. The counts and examples are measurements on a third-party aircraft mod, not vanilla. A finding about a mod is a fact about that mod; compare it with vanilla before using it as a rule, for example the base class `CarScript` at `P:\scripts\4_world\entities\vehicles\carscript.c:94`.
 
 All four files live in `output/<project>-extraction/_state/`.
 
@@ -41,7 +41,7 @@ Append-only, one finding per line:
 }
 ```
 
-Use forward slashes in evidence paths (`LM_Planes/Scripts/4_World/file.c`): a JSON parser rejects an unescaped backslash.
+Use forward slashes in evidence paths (`TheirMod/Scripts/4_World/file.c`): a JSON parser rejects an unescaped backslash.
 
 ## `skill_changes.md`
 
@@ -73,22 +73,22 @@ A good finding:
 
 ```
 "pattern": "DC_3 OnDebugSpawn creates 4 wheels but attachments[] allows only 3 slots. The fourth ends up in the player's cargo."
-"evidence": "LM_DC_3.c:79-86 vs LM_DC_3/config.cpp:134"
+"evidence": "DC_3.c:79-86 vs DC_3/config.cpp:134"
 ```
 
 A bad one (assumed, not cited):
 
 ```
 "pattern": "DC_3 spare wheel system"
-"evidence": "LM_DC_3.c"  // line missing
+"evidence": "DC_3.c"  // line missing
 ```
 
-A well-extracted finding (LM_Planes `f_037`):
+A well-extracted finding (`f_037` of the aircraft mod):
 
 ```json
 {
   "pattern": "Real aerodynamics in Enforce Script: the lift coefficient is a cubic polynomial Cl=ClCoef3*aoaRad^3 + ClCoef2*aoaRad^2 + ClCoef1*aoaRad + ClCoef0 with stall transition smoothing. The drag coefficient is parabolic plus induced drag Cd_i = Cl^2/(pi*AR*Oswald). Dynamic pressure q = 0.5*density*v^2. Forces are applied through SafeApplyForce / SafeApplyTorque. The lift direction is computed as (velocityNorm * up) * velocityNorm (perpendicular to the velocity).",
-  "evidence": "LM_Planes_extracted/LM_Planes/Scripts/4_World/entities/LlamaPlaneScript.c:906-940,1020-1100",
+  "evidence": "TheirMod_extracted/TheirMod/Scripts/4_World/entities/PlaneScript.c:906-940,1020-1100",
   "novelty": "new",
   "skill_target": "new:dayz-aviation"
 }
@@ -110,7 +110,7 @@ Is there a skill or pack whose scope covers this domain?
          └─ No (fewer than 7) → ADD to the closest skill, or write a note
 ```
 
-Relaxing the threshold: for a domain that is truly orthogonal (no existing skill could plausibly hold the patterns), create the skill even with fewer than 7 findings. Domain coherence wins over the count for a unique format. The particles skill was created from only 6 findings, because the Enfusion `.ptc` format is orthogonal to everything else; the aviation skill is an example of one created through the full workflow.
+Relaxing the threshold: for a domain that is truly orthogonal (no existing skill could plausibly hold the patterns), create the skill even with fewer than 7 findings. Domain coherence wins over the count for a unique format. Six findings are enough for a particles skill, for example, because the Enfusion `.ptc` format is orthogonal to everything else.
 
 In this repo both actions change versioned files, so they need the user's request first, and a new skill follows `docs/prompt-conventions.md`.
 
@@ -136,7 +136,7 @@ output/<project>-extraction/notes/
 ├── <author>-3d-source-catalog.md       # inventory of the source asset PBOs
 ```
 
-Always link a finding to its evidence path. The notes are what answers a later "what did this author do with X?". In LM_Planes about 20% of the findings fitted no skill but were valuable reference (style fingerprints, anti-patterns, jokes, telling decisions). Do not lose them.
+Always link a finding to its evidence path. The notes are what answers a later "what did this author do with X?". In the measured aircraft mod about 20% of the findings fitted no skill but were valuable reference (style fingerprints, anti-patterns, jokes, telling decisions). Do not lose them.
 
 ## Loop mode for multi-day work
 

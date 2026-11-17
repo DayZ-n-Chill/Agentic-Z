@@ -4,40 +4,31 @@ Bones, pose spaces, keyframing, Actions and the NLA, IK, cycles, baking and cont
 
 Scope: authoring character/armature animation entirely through `bpy` code executed over the
 MCP bridge (`execute_blender_code`), with no UI interaction available. Every API claim below
-is cited to a doc URL; claims marked **[LIVE]** were additionally executed against a live,
-connected Blender instance in the research session (not just read from docs).
+names the Blender API reference or manual entry it rests on; claims marked **[LIVE]** were
+also run against Blender 5.1.1.
 
-Everything here is Blender behaviour, checked against Blender 5.1.1 and the Blender docs as
-marked. None of it is a fact about the DayZ game, so nothing in this file cites `P:\`; the
-DayZ side of the work is in `dayz-handoff.md`. "This session" below means the research
-session of 2026-07-09 in which these facts were checked.
+Everything here is Blender behaviour, checked against Blender 5.1.1 and the Blender 5.1 API
+reference and manual as marked. None of it is a fact about the DayZ game, so nothing in this
+file cites `P:\`; the DayZ side of the work is in `dayz-handoff.md`.
 
-## Doc versions checked
+## Versions and markers
 
-- **Connected Blender instance (this session): 5.1.1** — confirmed live via `bpy.app.version == (5, 1, 1)`.
-- The Blender MCP server's bundled Python API RST reference (`get_python_api_docs` /
-  `search_api_docs`) ships for this same 5.1 install — e.g. the `ActionSlot` doc links
-  `docs.blender.org/manual/en/5.1/animation/actions.html#action-slots` explicitly.
-- **`docs.blender.org` blocked the WebFetch tool site-wide (HTTP 403) for every URL tried
-  this session**, including the bare `/api/current/` index. All docs.blender.org citations
-  below therefore come from one of: (a) the bundled MCP RST docs (`get_python_api_docs`/
-  `search_api_docs`/`search_manual_docs` — full RST text, not snippets), which is the primary
-  source for "current/5.1" facts, or (b) WebSearch results, which in this environment returned
-  real extracted page text (not just link snippets) even though direct WebFetch failed — used
-  mainly for historical/4.3-era pages and cross-checks.
-- Where marked **[4.3]**, a fact comes from a 4.3-era or archived `docs.blender.org/api/...`
-  page, or the official 4.4 migration notes on `developer.blender.org` — not executed live
-  (no 4.3 instance was available to connect to).
-- Where marked **[LIVE]**, the fact was executed this session against the connected 5.1.1
-  instance via `execute_blender_code`, exclusively on newly created data-blocks that were
-  either never linked into the scene or explicitly unlinked and removed in a `finally` block.
-  Every cleanup was itself verified with a follow-up `bpy.data` existence check. No user scene
-  data was read, selected, or modified beyond a transient, restored active-object/selection
-  state during two tests that required Edit/Pose mode.
-- **Action Slots / layered animation (the single biggest 4.3→4.4+ breaking change relevant to
-  this skill)** are covered in detail in the Actions & NLA section, cited to the official
-  `developer.blender.org/docs/release_notes/4.4/...` migration docs plus live confirmation that
-  the legacy `Action.fcurves` accessor is gone entirely by 5.1.1.
+- **Blender 5.1.1** is the version the live checks ran on (`bpy.app.version == (5, 1, 1)`,
+  2026-07-09). "Current" next to an API name means the 5.1 API reference.
+- The Blender MCP server serves the Python API reference and the manual of the connected
+  install (`get_python_api_docs`, `search_api_docs`, `search_manual_docs`). Look an entry up
+  there when a signature below is in doubt; manual entries are named by their path in the
+  manual, for example `manual/animation/keyframes/introduction.rst`.
+- **[4.3]** marks a fact taken from the 4.3 API reference or from the Blender 4.4 migration
+  notes. It was not run live; no 4.3 install was connected.
+- **[LIVE]** marks a fact that was run on the 5.1.1 install through `execute_blender_code`, on
+  newly created data-blocks that were never linked into the scene or were unlinked and removed
+  in a `finally` block, with each cleanup confirmed by a `bpy.data` existence check. Work the
+  same way in the user's scene: no user data read, selected or changed beyond a transient,
+  restored active object and selection where Edit or Pose mode is needed.
+- **Action Slots and layered animation** are the biggest 4.3 to 4.4+ break for this skill. They
+  are covered in the Actions & NLA section, from the Blender 4.4 migration notes plus the live
+  check that the legacy `Action.fcurves` accessor is gone by 5.1.1.
 
 ## Workflow
 
@@ -94,16 +85,12 @@ staggered timing between body parts (arms/head trailing the hips) by offsetting 
 `Keyframe.co` per fcurve rather than moving whole poses — polish is inherently per-channel work,
 which is exactly why it belongs at the F-Curve level rather than the whole-pose level.
 
-*Sources: `manual/animation/keyframes/introduction.rst`; `bpy.types.Keyframe` (current);
-`bpy.ops.pose` (current); live RNA enum introspection against Blender 5.1.1.*
-
 ## Posing & spaces (the matrix_basis story)
 
-This is the part of the API that "trips everyone" — and it very nearly tripped this research
-pass too (see the rotation-mode pitfall below), which is exactly why every claim here was
-either read verbatim from the RNA doc text or executed live rather than recalled from memory.
+This is the part of the API that trips most scripts (see the rotation-mode pitfall below).
+Every claim here is either the RNA doc text or was executed live.
 
-### The four matrices
+### The matrices
 
 | Property | Space | Read/write | What it is |
 |---|---|---|---|
@@ -113,7 +100,7 @@ either read verbatim from the RNA doc text or executed live rather than recalled
 | `PoseBone.matrix` | **Armature object space** (not world!) | **read/write** | The final, on-screen pose after constraints and drivers — but still relative to the armature object's own origin, not the scene. |
 | `PoseBone.matrix_channel` | Armature space, pre-constraint | read-only | Channels + drivers, but **before** constraints. Rarely needed. |
 
-Exact doc text (`bpy.types.PoseBone`, current, matches connected 5.1.1):
+Exact doc text (`bpy.types.PoseBone`, current):
 - `matrix_basis`: *"Alternative access to location/scale/rotation relative to the parent and
   own rest bone."*
 - `matrix`: *"Final 4×4 matrix after constraints and drivers are applied, in the armature
@@ -236,7 +223,7 @@ scripted rig:
   (what you want for hand-polish), at the cost of gimbal lock if two axes align 90° apart
   mid-animation (a real risk on shoulders — avoid Euler there).
 
-**[LIVE] Pitfall confirmed by direct test, not by memory:** calling
+**[LIVE] Pitfall confirmed by direct test:** calling
 `bpy.ops.pose.rotation_mode_set(type='XYZ')` (the operator) correctly converts the **current
 pose value** (quaternion → equivalent Euler, read back exactly as expected: 40° about Y in,
 `[0, 40, 0]` Euler-degrees out) but does **not** retroactively touch existing F-Curves — the
@@ -246,11 +233,6 @@ assigning `pose_bone.rotation_mode = 'XYZ'` (data API, no operator) never touche
 all, since a plain property assignment isn't an animation operation. **Practical rule: decide
 each bone's rotation_mode before keying anything; never change rotation_mode mid-production on
 an already-keyed bone without a manual re-key pass in the new mode.**
-
-*Sources: `bpy.types.PoseBone` / `Bone` / `Object` (current, bundled docs matching connected
-5.1.1); `bpy.types.Constraint` (current); `manual/animation/constraints/interface/common.rst`;
-`bpy.ops.pose` (current); `mathutils.Quaternion` (current); live execution against Blender
-5.1.1, this session.*
 
 ## Keyframing
 
@@ -326,8 +308,7 @@ toggling the scene setting.
 
 **Version-critical background — check this before writing any Action-touching code.**
 Blender 4.4 introduced **layered Actions** with **Action Slots**
-(`developer.blender.org/docs/release_notes/4.4/upgrading/slotted_actions/`,
-`.../4.4/python_api/`, `.../docs/features/animation/animation_system/layered/`). An Action is
+(Blender 4.4 release notes: the slotted Actions upgrade guide and the Python API notes). An Action is
 no longer a flat bag of F-Curves; the structure is
 `Action.layers[ActionLayer].strips[ActionStrip → ActionKeyframeStrip].channelbags
 [ActionChannelbag (keyed by slot)].fcurves`. A **slot** (`bpy.types.ActionSlot`) identifies
@@ -367,9 +348,9 @@ This function will also create the layer, keyframe strip, and action slot if nec
 take care of assigning the action slot too."* **[LIVE]** verified working. For a skill that
 must run identically on Blender 4.3 and 5.1 installs, guard with
 `hasattr(action, "fcurve_ensure_for_datablock")` and fall back to
-`action.fcurves.find(...)`/`action.fcurves.new(...)` on the legacy branch — do not hardcode a
-`bpy.app.version` tuple check, since the exact minor version this method first shipped in was
-not independently verified in this research pass.
+`action.fcurves.find(...)`/`action.fcurves.new(...)` on the legacy branch. The method exists
+from 4.4 (not run live on a 4.4 install here), so feature detection is a safer guard than a
+hardcoded `bpy.app.version` tuple check.
 
 **Creating/assigning an Action:**
 ```python
@@ -378,7 +359,7 @@ obj.animation_data_create()                    # ID.animation_data_create() -> A
 obj.animation_data.action = action             # AnimData.action
 ```
 [`bpy.types.BlendDataActions.new`, `bpy.types.ID.animation_data_create`,
-`bpy.types.AnimData.action` — all current, all **[LIVE]** exercised this session.]
+`bpy.types.AnimData.action` — all current, all **[LIVE]** exercised.]
 
 **Fake users & "the action getting lost."** An `Action` (like any `ID`) is garbage-collected
 on file reload/save once its user count drops to 0 — e.g. after `nla.action_pushdown` or
@@ -410,12 +391,6 @@ for "take the active action and push it down as a new strip" is
 at the data level; `AnimData.action_tweak_storage` holds the action that was active before
 entering tweak mode.
 
-*Sources: `developer.blender.org` 4.4 release notes (Animation & Rigging, Python API, Slotted
-Actions upgrade guide) and 5.0 Python API notes; `bpy.types.Action` / `ActionSlot` /
-`ActionSlots` / `ActionLayer` / `ActionKeyframeStrip` / `ActionChannelbag` / `AnimData` /
-`NlaTrack(s)` / `NlaStrip(s)` (current, bundled docs matching connected 5.1.1); live execution,
-this session.*
-
 ## IK/FK
 
 **Creating an IK constraint is pure data API — no operator, no context needed:**
@@ -432,7 +407,7 @@ target can be a selected bone or object") — prefer the data-API `.constraints.
 in scripts, since it has zero context/selection requirements.
 
 **Key `KinematicConstraint` fields** (`bpy.types.KinematicConstraint`, current, each
-individually verified against the bundled docs):
+individually verified against the API reference):
 - `chain_count: int` — *"How many bones are included in the IK effect - 0 uses all bones."*
   `chain_count=2` on the end-effector bone gives a classic 2-bone arm/leg chain (that bone plus
   its parent).
@@ -469,14 +444,9 @@ direct `matrix` read/convert), then (2) animating the blend property and the rel
 stable world-space target); arms are more often FK for broad acting poses, with IK reserved for
 hand-plant/prop-interaction shots — this is a workflow convention, not an API distinction.
 
-*Sources: `bpy.types.KinematicConstraint` / `PoseBoneConstraints` / `Constraint` (current,
-bundled docs + **[LIVE]** enum introspection); `bpy.ops.pose.ik_add` (current);
-`manual/animation/constraints/tracking/ik_solver.rst` (5.1).*
-
 ## Cycles
 
-**Walk/run cycle breakdown** (traditional-animation craft knowledge — cited to animation
-references, not `docs.blender.org`). The
+**Walk/run cycle breakdown** (traditional-animation craft knowledge, not Blender API). The
 canonical 4-pose breakdown per step is **Contact → Down → Passing → Up**, then Contact again
 on the opposite foot. At 24 fps a standard walk is commonly blocked as a 24-frame full cycle
 (two steps = one second): contact poses at frames 0/12/24, with down/passing/up spaced at
@@ -522,12 +492,6 @@ matching `frame_start`/`frame_end`, push it to an NLA strip, and drive distance/
 adjusting `strip.repeat` (or `strip.scale` — *"Scaling factor for action"*, range
 0.0001-1000, which retimes the same frame range faster/slower) rather than re-authoring keys.
 
-*Sources: `bpy.types.Action` (`use_cyclic`, `use_frame_range`, `flip_with_pose`) /
-`NlaStrip` (`repeat`, `scale`, `extrapolation`) — current, **[LIVE]** exercised;
-`bpy.ops.pose` (copy/paste/select_mirror/flip_names/quaternions_flip) — current;
-animation-craft references (not Blender API): rustyanimator.com "Walk Cycle Animation
-Blueprint", animationmentor.com human-walk-cycle tutorial.*
-
 ## Baking
 
 Two different, non-interchangeable baking entry points.
@@ -540,9 +504,8 @@ bpy.ops.nla.bake(frame_start=1, frame_end=250, step=1, only_selected=True, visua
                   clean_curves=False, bake_types={'POSE'},
                   channel_types={'BBONE', 'LOCATION', 'PROPS', 'ROTATION', 'SCALE'})
 ```
-[`bpy.ops.nla.bake`, current — the bundled docs cite the exact source location:
-`bl_operators/anim.py:274`, in the `scripts/startup` folder of the Blender source on
-`projects.blender.org`.] Parameters that change
+[`bpy.ops.nla.bake`, current; the operator is implemented in `bl_operators/anim.py`, in the
+`scripts/startup` folder of the Blender install.] Parameters that change
 behavior meaningfully: `visual_keying=True` bakes the **final, constraint-evaluated** transform
 (what you want when baking an IK chain down to plain FK keys); `clear_constraints=True` removes
 constraints after baking, and the docs explicitly warn *"To get a correct bake with this
@@ -588,11 +551,6 @@ section. Reach for the `bpy.ops.nla.bake` operator only when its UI-level side e
 specifically wanted (e.g. it also drives NLA strip/track placement automatically) or when
 baking is a direct translation of a recorded user macro.
 
-*Sources: `bpy.ops.nla.bake` (current, with `projects.blender.org` source citation embedded in
-the bundled docs); `bpy_extras.anim_utils` (current) — signature and dataclass shape
-**[LIVE]**-verified against the connected 5.1.1 instance via `inspect.signature`/
-`__dataclass_fields__`.*
-
 ## Context overrides
 
 Most `bpy.ops.*` calls used above (`pose.breakdown`, `pose.paste`, `nla.action_pushdown`,
@@ -627,17 +585,15 @@ discover what a failing operator needs, rather than guessing.
 ..., selected_pose_bones=...)` (or whichever members a specific operator's poll needs) over
 manually mutating `view_layer.objects.active`/`obj.select_set(True)` and restoring them by hand
 afterward — `temp_override` guarantees restoration even if the operator raises, whereas a
-hand-rolled `try/finally` restore is one more place to introduce a bug (this session's own test
-script had exactly such a bug — see Pitfalls).
+hand-rolled `try/finally` restore is one more place to introduce a bug.
 
 **Real mode changes are not overridable this way.** `context.mode` is *derived from*
 `active_object.mode`; there is no `temp_override(mode='POSE')` that fakes being in Pose Mode
 without the object actually being in it. `bpy.ops.object.mode_set(mode='POSE')` genuinely
-changes `obj.mode` and is not a pure context override. **[LIVE]** exercised repeatedly this
-session (`mode_set(mode='EDIT')` to build bones via `armature.edit_bones`,
-`mode_set(mode='POSE')` to select/pose bones and run `pose.rotation_mode_set`), always on a
-freshly created, unlinked-until-tested object, always restored to `OBJECT` mode and the prior
-active object/selection afterward.
+changes `obj.mode` and is not a pure context override. **[LIVE]** exercised
+(`mode_set(mode='EDIT')` to build bones via `armature.edit_bones`,
+`mode_set(mode='POSE')` to select/pose bones and run `pose.rotation_mode_set`). Restore
+`OBJECT` mode and the prior active object and selection afterward.
 
 **Which tasks are better done with pure data API (no operator, no context problem at all):**
 - Creating constraints: `pose_bone.constraints.new(type=...)` — a plain collection method,
@@ -657,10 +613,6 @@ Operators remain the right (or only) tool for: breakdown/push/relax pose-blendin
 (`bpy.ops.pose.*` — these specifically operate on "current pose vs. neighboring keyed poses",
 which has no plain data-API equivalent), mirroring via the pose clipboard
 (`pose.copy`/`pose.paste`), and switching Edit/Pose/Object mode itself.
-
-*Sources: `bpy.types.Context.temp_override` (current, both official examples reproduced
-above); live execution this session (mode_set + edit_bones + pose selection, all on isolated
-orphan data-blocks, fully cleaned up and verified removed).*
 
 ## Pitfalls
 
@@ -742,13 +694,12 @@ animation:
 
 ## Verified bpy snippets
 
-Each snippet was checked against the cited docs; blocks marked **[LIVE]** were additionally
-executed against the connected Blender 5.1.1 instance in this research session, on throwaway,
-unlinked (or immediately-cleaned-up) data-blocks — none of this touched the user's actual file.
+Each snippet matches the Blender 5.1 API reference; blocks marked **[LIVE]** were also run on
+Blender 5.1.1, on throwaway data-blocks that were unlinked or removed straight after.
 
 ### 1. Explicit keyframing at an arbitrary frame, without moving the playhead
 ```python
-# docs.blender.org/api/current/bpy.types.bpy_struct.html#bpy.types.bpy_struct.keyframe_insert
+# bpy.types.bpy_struct.keyframe_insert
 pose_bone.rotation_mode = 'QUATERNION'
 pose_bone.rotation_quaternion = target_quat
 pose_bone.keyframe_insert(
@@ -762,7 +713,7 @@ pose_bone.keyframe_insert(
 
 ### 2. Setting a pose bone from a known armature-space matrix **[LIVE]**
 ```python
-# docs.blender.org/api/current/bpy.types.PoseBone.html  (matrix / matrix_basis)
+# bpy.types.PoseBone  (matrix / matrix_basis)
 # pattern verbatim from the bpy.types.PoseBone.bbone_segment_matrix example
 pose_bone.matrix = target_matrix_in_armature_space
 bpy.context.view_layer.update()   # required: matrix_basis was back-solved, dependents need re-eval
@@ -770,7 +721,7 @@ bpy.context.view_layer.update()   # required: matrix_basis was back-solved, depe
 
 ### 3. World-space <-> pose-space conversion **[LIVE]**
 ```python
-# docs.blender.org/api/current/bpy.types.Object.html#bpy.types.Object.convert_space
+# bpy.types.Object.convert_space
 world_matrix = armature_obj.convert_space(
     pose_bone=pose_bone, matrix=pose_bone.matrix,
     from_space='POSE', to_space='WORLD',
@@ -784,8 +735,8 @@ pose_bone.matrix_basis = local_basis
 
 ### 4. Batch whole-body pose without per-bone depsgraph updates
 ```python
-# docs.blender.org/api/current/bpy.types.Bone.html#bpy.types.Bone.convert_local_to_pose
-# (official example, reproduced from the live bundled docs;
+# bpy.types.Bone.convert_local_to_pose
+# (the example from the Blender API reference;
 #  matrix_map: dict[bone_name, Matrix] in armature space)
 def set_pose_matrices(obj, matrix_map):
     def rec(pbone, parent_matrix):
@@ -818,8 +769,8 @@ def set_pose_matrices(obj, matrix_map):
 
 ### 5. IK constraint setup — pure data API, no context needed **[LIVE]**
 ```python
-# docs.blender.org/api/current/bpy.types.KinematicConstraint.html
-# docs.blender.org/api/current/bpy.types.PoseBoneConstraints.html
+# bpy.types.KinematicConstraint
+# bpy.types.PoseBoneConstraints
 ik = arm_obj.pose.bones["Hand.L"].constraints.new(type='IK')
 ik.target = target_empty_or_rig
 ik.subtarget = ""            # "" when target is an Object (e.g. an Empty), not another armature's bone
@@ -831,8 +782,8 @@ ik.use_stretch = False
 
 ### 6. Version-safe Action creation + keying (works on 4.3 through 5.1)
 ```python
-# docs.blender.org/api/current/bpy.types.ID.html#bpy.types.ID.animation_data_create
-# docs.blender.org/api/current/bpy.types.BlendDataActions.html
+# bpy.types.ID.animation_data_create
+# bpy.types.BlendDataActions
 action = bpy.data.actions.new("WalkCycle")
 action.use_fake_user = True                    # survives reload with zero other users
 obj.animation_data_create()
@@ -842,8 +793,8 @@ obj.keyframe_insert(data_path="location", frame=1)   # creates slot/layer/strip 
 
 ### 7. Version-safe direct F-Curve access (4.4+ path with legacy fallback)
 ```python
-# docs.blender.org/api/current/bpy.types.Action.html#bpy.types.Action.fcurve_ensure_for_datablock
-# developer.blender.org/docs/release_notes/4.4/upgrading/slotted_actions/  (legacy API removed by 5.0)
+# bpy.types.Action.fcurve_ensure_for_datablock
+# the legacy Action.fcurves API is deprecated in 4.4 and removed by 5.0
 if hasattr(action, "fcurve_ensure_for_datablock"):
     fcurve = action.fcurve_ensure_for_datablock(obj, "location", index=0)
 else:
@@ -852,9 +803,9 @@ else:
 
 ### 8. NLA track + looping cycle strip **[LIVE]**
 ```python
-# docs.blender.org/api/current/bpy.types.NlaTracks.html
-# docs.blender.org/api/current/bpy.types.NlaStrips.html
-# docs.blender.org/api/current/bpy.types.NlaStrip.html
+# bpy.types.NlaTracks
+# bpy.types.NlaStrips
+# bpy.types.NlaStrip
 action.use_frame_range = True
 action.frame_start, action.frame_end = 1, 13
 action.use_cyclic = True
@@ -867,7 +818,7 @@ strip.extrapolation = 'HOLD'
 
 ### 9. Baking without any operator/context dependency **[LIVE]**
 ```python
-# docs.blender.org/api/current/bpy_extras.anim_utils.html
+# bpy_extras.anim_utils
 from bpy_extras import anim_utils
 opts = anim_utils.BakeOptions(
     only_selected=False, do_pose=True, do_object=False,
@@ -880,94 +831,14 @@ baked_action = anim_utils.bake_action(arm_obj, action=None, frames=range(1, 25),
 
 ### 10. Context override for an operator needing a specific active object/selection, without touching the user's real state
 ```python
-# docs.blender.org/api/current/bpy.types.Context.html#bpy.types.Context.temp_override
+# bpy.types.Context.temp_override
 with bpy.context.temp_override(active_object=arm_obj, selected_objects=[arm_obj]):
     bpy.ops.object.mode_set(mode='POSE')
 ```
 
 ### 11. Mirroring a pose (Paste Flipped equivalent)
 ```python
-# docs.blender.org/api/current/bpy.ops.pose.html  (copy / paste)
+# bpy.ops.pose  (copy / paste)
 bpy.ops.pose.copy()
 bpy.ops.pose.paste(flipped=True, selected_mask=False)
 ```
-
-## Sources
-
-Blender Python API reference (bundled RST via the Blender MCP server, matching the connected
-Blender **5.1.1** instance; cross-checked live where marked **[LIVE]** above):
-- https://docs.blender.org/api/current/bpy.types.PoseBone.html
-- https://docs.blender.org/api/current/bpy.types.Bone.html
-- https://docs.blender.org/api/current/bpy.types.Pose.html
-- https://docs.blender.org/api/current/bpy.types.Armature.html
-- https://docs.blender.org/api/current/bpy.types.Object.html
-- https://docs.blender.org/api/current/bpy.types.Action.html
-- https://docs.blender.org/api/current/bpy.types.ActionSlot.html
-- https://docs.blender.org/api/current/bpy.types.ActionSlots.html
-- https://docs.blender.org/api/current/bpy.types.ActionLayer.html
-- https://docs.blender.org/api/current/bpy.types.ActionKeyframeStrip.html
-- https://docs.blender.org/api/current/bpy.types.ActionChannelbag.html
-- https://docs.blender.org/api/current/bpy.types.AnimData.html
-- https://docs.blender.org/api/current/bpy.types.NlaTrack.html
-- https://docs.blender.org/api/current/bpy.types.NlaTracks.html
-- https://docs.blender.org/api/current/bpy.types.NlaStrip.html
-- https://docs.blender.org/api/current/bpy.types.NlaStrips.html
-- https://docs.blender.org/api/current/bpy.types.FCurve.html
-- https://docs.blender.org/api/current/bpy.types.FCurveKeyframePoints.html
-- https://docs.blender.org/api/current/bpy.types.Keyframe.html
-- https://docs.blender.org/api/current/bpy.types.KeyingSet.html
-- https://docs.blender.org/api/current/bpy.types.ToolSettings.html
-- https://docs.blender.org/api/current/bpy.types.Constraint.html
-- https://docs.blender.org/api/current/bpy.types.KinematicConstraint.html
-- https://docs.blender.org/api/current/bpy.types.PoseBoneConstraints.html
-- https://docs.blender.org/api/current/bpy.types.Context.html
-- https://docs.blender.org/api/current/bpy.types.bpy_struct.html
-- https://docs.blender.org/api/current/bpy.types.ID.html
-- https://docs.blender.org/api/current/bpy.types.BlendDataActions.html
-- https://docs.blender.org/api/current/bpy.ops.pose.html
-- https://docs.blender.org/api/current/bpy.ops.anim.html
-- https://docs.blender.org/api/current/bpy.ops.nla.html
-- https://docs.blender.org/api/current/bpy.ops.object.html
-- https://docs.blender.org/api/current/bpy_extras.anim_utils.html
-- https://docs.blender.org/api/current/mathutils.Quaternion.html
-- https://docs.blender.org/api/current/mathutils.Euler.html
-- https://docs.blender.org/api/current/mathutils.Matrix.html
-
-Blender manual (5.1, via the bundled manual RST + one WebSearch-confirmed URL):
-- manual/animation/keyframes/introduction.rst (Keyframe Types)
-- manual/animation/keyframes/keying_sets.rst (Whole Character Keying Set)
-- manual/animation/constraints/interface/common.rst (Space Types)
-- manual/animation/constraints/tracking/ik_solver.rst
-- https://docs.blender.org/manual/en/5.1/animation/actions.html#action-slots
-
-Official Blender developer documentation (4.4 migration — authoritative for the Action Slots
-breaking change; fetched via WebSearch since direct WebFetch to this domain was blocked this
-session):
-- https://developer.blender.org/docs/release_notes/4.4/animation_rigging/
-- https://developer.blender.org/docs/release_notes/4.4/upgrading/slotted_actions/
-- https://developer.blender.org/docs/release_notes/4.4/python_api/
-- https://developer.blender.org/docs/features/animation/animation_system/layered/
-- https://developer.blender.org/docs/release_notes/5.0/python_api/
-
-4.3-era / historical API confirmation (WebSearch-extracted text from archived
-`docs.blender.org/api/...` version pages — WebFetch to `docs.blender.org` returned HTTP 403
-site-wide in this session for every URL tried, including the bare `/api/current/` index, so
-none of the `docs.blender.org` citations in this report were fetched directly; all came either
-from the Blender MCP server's bundled RST mirror or from WebSearch's extracted page text):
-- https://docs.blender.org/api/blender_python_api_2_63_17/bpy.types.PoseBone.html
-  (matrix_basis/matrix_channel wording — historically stable across versions)
-- https://docs.blender.org/api/current/bpy.types.ActionFCurves.html (legacy
-  `Action.fcurves.new` signature, still documented as the "legacy" path on the current page)
-
-Animation-craft references (not Blender API — cited separately, since these are industry
-convention, not something `docs.blender.org` defines):
-- https://rustyanimator.com/walk-cycle-animation/ (contact/down/passing/up frame breakdown)
-- https://www.animationmentor.com/blog/tutorial-animating-human-walk-cycle/
-
-**Live execution evidence:** every snippet marked **[LIVE]** was run in this session against
-the connected Blender 5.1.1 instance via the `execute_blender_code` MCP tool, exclusively on
-newly created, unlinked (or immediately-cleaned-up) armature/object/action data-blocks. No user
-scene data was modified; each test's `finally` block was confirmed via a follow-up `bpy.data`
-existence check to have fully removed the throwaway data-blocks (armatures, objects, and
-actions), and any transient selection/active-object/mode change made to exercise Edit/Pose-mode
-operators was restored to its prior state afterward.

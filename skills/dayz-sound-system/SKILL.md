@@ -23,7 +23,7 @@ Line numbers are from the 1.30 scripts on `P:\`.
 | Make infected and animals hear something; the 1.30 weather damping | `skills/_shared/audio-fx/noise-for-ai.md` |
 | Add a music zone or the music of a custom world; radio static on the bunker frequency | `skills/_shared/audio-fx/music-and-radio.md` |
 | Put a sound and a particle on one device; weapon and item sounds named in config | `skills/_shared/audio-fx/effects-wiring.md` |
-| See every signature in one place, the third-party config examples and the full recipes | `references/sound-deep-dive.md` |
+| See every signature in one place, the mod config examples and the full recipes | `references/sound-deep-dive.md` |
 | Move a mod to DayZ 1.30: quoted vanilla lines, what breaks, the checklist | `references/dayz-1-30-sound.md` |
 
 ## The one rule behind most sound bugs
@@ -46,7 +46,7 @@ Since 1.30 the item and player sound handlers test `IsHeadlessOrDedicatedServer(
 | An item sound the server starts and every client hears | `StartItemSoundServer(id)` and `StopItemSoundServer(id)` |
 | A sound at a memory point of the model | `PlaySoundSetAtMemoryPoint(...)`; it has no server test of its own, so guard it |
 | Steps, gestures and other animation sounds | Animation events in config; the engine plays them on each client |
-| A door or alarm sound on a building, the old way | `PlaySound` and `PlaySoundLoop` on the object, which return a `SoundOnVehicle` (third-party example: DoorLockSystem). Prefer a sound set |
+| A door or alarm sound on a building, the old way | `PlaySound` and `PlaySoundLoop` on the object, which return a `SoundOnVehicle` (`P:\scripts\3_game\entities\object.c:1235`). Prefer a sound set |
 | Something infected and animals should hear | `GetGame().GetNoiseSystem().AddNoise`, `AddNoisePos` or `AddNoiseTarget`, on the server |
 | A zone with its own music | `RegisterDynamicLocation` on the dynamic music player |
 | Fixed music zones of a custom world (1.30) | A subclass of `DynamicMusicPlayerRegistry` that calls `RegisterTrackLocationStaticMultiRectangle` |
@@ -168,16 +168,16 @@ The quoted vanilla lines, what breaks and the full checklist are in `references/
 
 ## On Linux
 
-Everything above is written for Windows and stays valid there. Sound configs, `.ogg` files and scripts are the same on Linux. What changes is packing and the tools around it. The notes below are from the source this skill was built from and are not checked here:
+Everything above is written for Windows and stays valid there. Sound configs, `.ogg` files and scripts are the same on Linux. What changes is packing and the tools around it. None of the points below was run for this skill:
 
-- Pack, sign and binarize with dayzmake 1.0.0 or later, a DayZ fork of armake2 (https://github.com/bzed/dayzmake), pinned to release `v1.0.0`: either the release binary `dayzmake-v1.0.0-debian-trixie-x86_64.tar.gz` from its releases page, or `cargo install --git https://github.com/bzed/dayzmake --tag v1.0.0`. The commands are `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where a model needs it.
-- Upstream armake2 is not a substitute: it is built for Arma, its V3 file hash leaves out `*.c` files (dayzmake `v1.0.0` includes them), and it lacks the DayZ only functions dayzmake keeps adding.
-- A wrapper script, `skills/_shared/scripts/dayz-mod-pack.sh`, runs those commands as `init`, `keygen`, `build [--binarize-models]`, `check` and `publish-hint`. The dayzmake reference is `skills/dayz-build-pbo/references/dayzmake-linux.md`.
-- One comparison is on record: on 2026-11-03 a textured cube binarized through dayzmake (fork commit `7dcb3cf`, when the fork was still named armake2; `v1.0.0` contains it) matched Bohemia's binarize from a `P:` root byte for byte. That is a file comparison, not a check of the model in game.
+- Pack, sign and binarize with dayzmake, the DayZ build of armake2. The version to install and how to install it are in `skills/dayz-build-pbo/references/dayzmake-linux.md`. The commands are `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where a model needs it.
+- The original armake2 is not a substitute: it is built for Arma, its V3 file hash leaves out `*.c` files (dayzmake includes them), and it lacks the DayZ only functions of dayzmake.
+- A wrapper script, `skills/_shared/scripts/dayz-mod-pack.sh`, runs those commands as `init`, `keygen`, `build [--binarize-models]`, `check` and `publish-hint`.
+- A textured cube binarized through dayzmake matched Bohemia's binarize from a `P:` root byte for byte. That is a file comparison, not a check of the model in game.
 - `P:\` is a plain folder mapped by the Proton setup script (`dayz-proton.sh init <dir>`, `skills/_shared/scripts/dayz-proton.sh`), so a `P:\<Mod>\...` path in this skill is `<dir>/<Mod>/...`.
 - Object Builder and TexView start under Proton: `dayz-proton.sh gui ObjectBuilder <p3d>` and `dayz-proton.sh gui TexView <paa>`. Object Builder opened and showed a model; editing in it was not tried.
 - The offline Python tools (`scripts/tools/py3d/`, `scripts/tools/dayz-model-preflight/`, `scripts/tools/dayz-3d-viewer/`) run natively on Linux.
-- The Proton setup, the measured tool matrix and the limits are in the Linux notes of the shared pack (`_shared/linux-proton.md`), and the in-game checks on Linux in the dayz-test-ingame skill.
+- The Proton setup, the measured tool matrix and the limits are in `skills/_shared/linux-proton.md`, and the in-game checks on Linux in `skills/dayz-test-ingame/references/linux.md`.
 
 ## Building, testing and publishing the mod
 

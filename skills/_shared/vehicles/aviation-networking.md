@@ -47,14 +47,14 @@ What works is the full Pawn pipeline:
 
 LM_Planes, MH6 and Expansion ship this pattern (state and move classes on `CarScriptOwnerState` and `CarScriptMove`); their layouts are in the `dayz-aviation` skill's `references/fixed-wing-lm-planes.md`, `references/helicopter-mh6.md` and `references/helicopter-expansion.md`. RFFS and SIB sync with plain net sync variables and a server only solver instead.
 
-Rules for the replay (LFHeli lessons; full text in the skill's `references/flight-testing-and-measurement.md`): class every field the solver reads during a replay as restored, recomputed after the handshake, or always initialised, and never initialise gains or derived tables only on the server; retry the handshake until it is acknowledged, because crew, possession and spawn are asynchronous; and use the move itself as the scripted pilot channel instead of a second RPC.
+Rules for the replay (measured in LFHeli; full text in the skill's `references/flight-testing-and-measurement.md`): class every field the solver reads during a replay as restored, recomputed after the handshake, or always initialised, and never initialise gains or derived tables only on the server; retry the handshake until it is acknowledged, because crew, possession and spawn are asynchronous; and use the move itself as the scripted pilot channel instead of a second RPC.
 
 ## ForceCorrection corrects the vehicle, never a seated character
 
 `ForceCorrection` is documented as "Force a correction to the owner as a server only event was called (called on authority only)" (`P:\scripts\3_game\entities\pawn.c:205-206`). The state it rewinds is the vehicle's `TransportOwnerState`: transform, velocities and buoyancy (`P:\scripts\3_game\vehicles\transport.c:11-23`). Vanilla never calls it: the declaration is its only occurrence in `P:\scripts`.
 
 - A character's get-out pose comes from `GetOutVehicle()` or `JumpOutVehicle()` on the vehicle command (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetouttransport.c:183-185`), not from a correction.
-- `Synchronize()` on `Transport` "synchronizes car's state in case the simulation is not running" (`P:\scripts\3_game\vehicles\transport.c:171-172`). No vanilla script on `P:\` calls it on a vehicle.
+- `Synchronize()` on `Transport` "synchronizes car's state in case the simulation is not running" (`P:\scripts\3_game\vehicles\transport.c:171-172`). Vanilla calls it on the server after a part is attached or detached (`Synchronize` at `P:\scripts\4_world\entities\vehicles\carscript.c:515` and `P:\scripts\4_world\entities\vehicles\carscript.c:594`); it does not correct an owner's prediction.
 
 ## The RFFS client pump is not a smoothing mechanism
 
@@ -62,7 +62,7 @@ RFFS re-enters `EOnSimulate(0.025)` from `EOnFrame` on the client (`RFFSHeli_Cor
 
 ## Never smooth the pilot's own camera
 
-Refuted in LFHeli with data and with feel in two iterations (2026-08-03). A spring or spike filter on the seat camera delays exactly the feedback the pilot steers by: the pitch response lagged ("one tap dropped the nose hard", as the pilot put it) and the jerk distribution became more intermittent (the 95th percentile of the root delta rose 14.65 percent with a 0.14 s spring).
+Refuted in LFHeli with data and with feel in two iterations (2026-08-03). A spring or spike filter on the seat camera delays exactly the feedback the pilot steers by: the pitch response lagged (one tap dropped the nose hard) and the jerk distribution became more intermittent (the 95th percentile of the root delta rose 14.65 percent with a 0.14 s spring).
 
 It also stacks with a lag vanilla already has: the third person vehicle camera smooths its offset and orientation with `Math.SmoothCD` and `Math.SmoothCDPI2PI` over 0.3 s (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:142-148`), so a custom smoother is a second spring fighting the first.
 

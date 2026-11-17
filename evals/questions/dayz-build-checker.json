@@ -56,7 +56,7 @@
         "re:P:\\\\+Mods\\\\+@MyVest\\\\+Addons\\\\+MyVest\\.pbo|P:/Mods/@MyVest/Addons/MyVest\\.pbo"
       ],
       "must_not_include": [],
-      "verified": "agents/dayz-build-checker.md step 3 (P:\\Mods\\@<ModName>\\Addons\\<ModName>.pbo); skills/dayz-build-pbo/build.py:1 and :373 (pbo_path = target_dir / f\"{args.modname}.pbo\" under P:\\Mods\\@<ModName>\\Addons)"
+      "verified": "agents/dayz-build-checker.md step 3 (P:\\Mods\\@<ModName>\\Addons\\<ModName>.pbo); skills/dayz-build-pbo/build.py:1 (module docstring) and its line pbo_path = target_dir / f\"{args.modname}.pbo\", where target_dir is P:\\Mods\\@<ModName>\\Addons"
     },
     {
       "id": "build-artifact-postcondition",
@@ -68,7 +68,7 @@
       "must_not_include": [
         "re:\\A\\W*PASS\\b"
       ],
-      "verified": "skills/dayz-build-pbo/SKILL.md step 13 'Verify output' (the PBO exists and is newer than the build start; AddonBuilder can exit 0 while leaving an old PBO in place, and that case fails as a stale PBO); skills/dayz-build-pbo/build.py function with the docstring 'Return a failure message if the build did not produce a fresh PBO'; agents/dayz-build-checker.md step 3 (/dayz-build-pbo must succeed)"
+      "verified": "skills/dayz-build-pbo/SKILL.md step 15 'Verify output' (the PBO exists and is newer than the build start; AddonBuilder can exit 0 while leaving an old PBO in place, and that case fails as a stale PBO); skills/dayz-build-pbo/build.py function with the docstring 'Return a failure message if the build did not produce a fresh PBO'; agents/dayz-build-checker.md step 3 (/dayz-build-pbo must succeed)"
     }
   ]
 }

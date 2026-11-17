@@ -70,7 +70,7 @@ class TestRead(_Case):
 
         self.assertEqual([(x, z) for z in range(3) for x in range(4)], [(t.x, t.z) for t in mesh.tiles])
 
-    def test_record_json_has_the_source_fields(self):
+    def test_record_json_fields(self):
         mesh = read_navmesh(self.nm(1, 1, 50.0))
 
         self.assertEqual(

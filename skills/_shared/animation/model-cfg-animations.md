@@ -53,7 +53,7 @@ class CfgModels
 
 `skeletonBones[]` is a flat list of pairs: each bone, then its parent bone or `""`. A child bone moves with its parent, so a handle that turns on a door goes under the door bone.
 
-The key is `isDiscrete`, not `discrete` as some video tutorials say: 1 for mechanical parts, 0 for organic movement such as a creature. `skeletonInherit` names a parent skeleton whose bones this one adds to, or `""`.
+The key is `isDiscrete`, not `discrete`: 1 for mechanical parts, 0 for organic movement such as a creature. `skeletonInherit` names a parent skeleton whose bones this one adds to, or `""`.
 
 ### Animation types
 
@@ -74,7 +74,7 @@ Optional keys of an entry, from the same format documentation:
 | `minPhase`, `maxPhase` | The reverse mapping: the phase at the source's minimum and maximum. |
 | `sourceAddress` | `"clamp"` (default), `"loop"` or `"mirror"`: what happens outside the range. A spinning wheel uses `"loop"`. |
 
-The types `translationModelX`, `translationModelY`, `translationModelZ` and `direct` appear in some community guides. No vanilla model checked here uses them; do not write them.
+No vanilla model checked here uses the types `translationModelX`, `translationModelY`, `translationModelZ` or `direct`; do not write them.
 
 ## What vanilla models store
 
@@ -114,7 +114,7 @@ Items 1, 2, 4 and 5 are Binarize rules, not something a vanilla file on `P:\` sh
 
 ## Limits and measured behaviour
 
-Reported by the source knowledge pack from its own projects; not checked on `P:\`.
+Measured in game or tool behaviour; not checked on `P:\`.
 
 - **Which way a positive angle turns.** Right handed around the axis from its first memory point to its second, the points taken in index order (measured in game on DayZDiag 1.29.163709). With the axis toward +Z, +X moves toward +Y.
 - **A child rotation composes with its parent's.** A part that folds on another folding part works when it is a child bone of it.

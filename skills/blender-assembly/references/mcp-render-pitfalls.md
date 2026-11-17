@@ -1,6 +1,6 @@
 # Render pitfalls when driving Blender over MCP
 
-Two traps that make a render over the Blender MCP disagree with the mesh data: a render depsgraph that keeps serving the mesh from before an in-place edit, and a scene that silently changes between calls. It is Blender tool behaviour, measured by the source author (added 2026-06-11, verified 2026-06-10); nothing here is a statement about the game.
+Two traps that make a render over the Blender MCP disagree with the mesh data: a render depsgraph that keeps serving the mesh from before an in-place edit, and a scene that silently changes between calls. It is Blender tool behaviour, measured with Blender driven over MCP; nothing here is a statement about the game.
 
 ## The render depsgraph goes stale after in-place mesh edits
 
@@ -12,7 +12,7 @@ When the host Blender is driven over MCP, `obj.data.transform()` and other low-l
 
 **Fix.** Write the edited geometry to a new mesh datablock with `bm.to_mesh(new_mesh)`, link it on a new object, and remove the old object and mesh.
 
-**Cost of not knowing.** Phantom renders that contradict your measurements. On the A6_MK47 model this nearly led to diagnosing a correct orientation as wrong.
+**Cost of not knowing.** Phantom renders that contradict your measurements. On one weapon model this nearly led to diagnosing a correct orientation as wrong.
 
 **Diagnosis: the marker-sphere test.** Add primitive spheres at known coordinates and render. Markers in the right place with a stale mesh means this cache, not your math.
 

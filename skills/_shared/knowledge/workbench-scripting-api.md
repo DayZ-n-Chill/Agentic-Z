@@ -1,16 +1,18 @@
 # Workbench Enforce scripting API
 
-Status: source reading of build `119356`. Not yet checked on `P:\`: the `P:\scripts` tree this repo checks against has no `1_core\workbenchapi\` folder, so the `path:line` citations in the body cannot be opened there. What `P:\` does hold is listed under "What `P:\` holds" at the end, and it differs from this note. The `[EXACT][CLAIM-...]` tags are claim IDs in `scripts/dev/knowledge-pack/sources/claims.json`.
+Covers the Enforce Script surface that extends Workbench itself: the `Workbench` entry points, the `ResourceManager` and `ScriptEditor` modules, plugin events, the progress dialog, `MetaFile` and `GeneratedResources`, and the `#ifdef WORKBENCH` guard around them.
+
+Status: source reading of build `119356`. Not yet checked on `P:\`: the `P:\scripts` tree this repo checks against has no `1_core\workbenchapi\` folder, so the `path:line` citations in the body cannot be opened there. What `P:\` does hold is listed under "What `P:\` holds" at the end, and it differs from this note.
 
 Workbench scripting extends the editor itself: it opens modules, runs external tools, registers and rebuilds resources, and reacts to resource events. This note maps that Enforce surface for tool authors who extend Workbench. It is not a gameplay tutorial and does not cover the Python tools under `scripts/tools/` or the language rules in `enforce-script-reference`. Everything below is source-verified against build `119356` (`scripts/1_core/workbenchapi/` and `scripts/1_core/workbenchapi.c`). No runtime behaviour is claimed; a `proto` declaration proves the signature exists, not that a given build links a native behind it. No vanilla code is copied.
 
 ## The guard boundary
 
-`Workbench` and the module classes exist only in Workbench builds: `scripts/1_core/workbenchapi/workbench.c:1` opens `#ifdef WORKBENCH` (closed at `workbench.c:63`), and the same guard wraps the module, dialog, metafile, generated-resources, build-context and attribute files (`scripts/1_core/workbenchapi.c:6-93`). [EXACT][CLAIM-WORKBENCH-GUARD] `WorkbenchPlugin` is the exception: `plugins/workbenchplugin.c:2` declares `class WorkbenchPlugin : Managed` with no guard, while `plugins/resourcemanagerplugin.c:7` sits inside the guard. A game-side script can name `WorkbenchPlugin`, but `Workbench.GetModule` and every module method below vanish outside a Workbench build. Recipe: keep the plugin class unguarded if the file must compile in game modules, and wrap every call into `Workbench`, `ResourceManager`, `ScriptEditor`, `WBProgressDialog`, `MetaFile` or `GeneratedResources`, and every use of `[WorkbenchPluginAttribute]` or `WBModuleDef`, in `#ifdef WORKBENCH`. An unguarded call is a compile error in the game module, not a runtime null.
+`Workbench` and the module classes exist only in Workbench builds: `scripts/1_core/workbenchapi/workbench.c:1` opens `#ifdef WORKBENCH` (closed at `workbench.c:63`), and the same guard wraps the module, dialog, metafile, generated-resources, build-context and attribute files (`scripts/1_core/workbenchapi.c:6-93`). `WorkbenchPlugin` is the exception: `plugins/workbenchplugin.c:2` declares `class WorkbenchPlugin : Managed` with no guard, while `plugins/resourcemanagerplugin.c:7` sits inside the guard. A game-side script can name `WorkbenchPlugin`, but `Workbench.GetModule` and every module method below vanish outside a Workbench build. Recipe: keep the plugin class unguarded if the file must compile in game modules, and wrap every call into `Workbench`, `ResourceManager`, `ScriptEditor`, `WBProgressDialog`, `MetaFile` or `GeneratedResources`, and every use of `[WorkbenchPluginAttribute]` or `WBModuleDef`, in `#ifdef WORKBENCH`. An unguarded call is a compile error in the game module, not a runtime null.
 
 ## Workbench entry points
 
-`Workbench` is `sealed class Workbench` with a private constructor (`workbench.c:5-8`); every entry point is `static proto`. The exact signatures in `scripts/1_core/workbenchapi/workbench.c:10-60` are: [EXACT][CLAIM-WORKBENCH-ENTRYPOINTS]
+`Workbench` is `sealed class Workbench` with a private constructor (`workbench.c:5-8`); every entry point is `static proto`. The exact signatures in `scripts/1_core/workbenchapi/workbench.c:10-60` are:
 
 | Method | Exact signature |
 |---|---|
@@ -41,11 +43,11 @@ Workbench scripting extends the editor itself: it opens modules, runs external t
 | `GetWBScriptModule` | `static proto ref ScriptModule GetWBScriptModule()` |
 | `GetWBGameScriptModule` | `static proto ref ScriptModule GetWBGameScriptModule()` |
 
-`ProcessHandle` is `typedef int[] ProcessHandle` (`workbench.c:3`). `RunCmd` runs a command line, optionally blocks (`wait = false` by default) and returns an `int`. `RunProcess` starts a process and returns a `ProcessHandle` immediately; lifetime is then explicit: `IsRunningProcess` polls, `WaitProcess` blocks with a millisecond timeout (`-1` by default), `KillProcess` kills and closes the handle, and `FinishProcess` closes the handle without killing. Pair every `RunProcess` with exactly one `KillProcess` or `FinishProcess`. The `out` methods write through the argument: `GetCwd`, `GetUserName` and `GetExecutableFilePath` take only an `out string`, while `GetAbsolutePath` returns `bool` and also writes `out string absPath`; `mustExist` defaults to `true`, so a path that need not exist yet requires an explicit `false`. `SearchResources(string filter, func callback)` declares its callback only as bare `func` in `workbench.c:15`, but the vanilla Workbench plugins pass `void(string file)` callbacks (`editor/workbench/resavetool.c:8,20,33` and `editor/workbench/checkloctool.c:27,43`), so the parameter shape is visible in source even though the header does not type it. [EXACT][CLAIM-WORKBENCH-SEARCHRESOURCES]
+`ProcessHandle` is `typedef int[] ProcessHandle` (`workbench.c:3`). `RunCmd` runs a command line, optionally blocks (`wait = false` by default) and returns an `int`. `RunProcess` starts a process and returns a `ProcessHandle` immediately; lifetime is then explicit: `IsRunningProcess` polls, `WaitProcess` blocks with a millisecond timeout (`-1` by default), `KillProcess` kills and closes the handle, and `FinishProcess` closes the handle without killing. Pair every `RunProcess` with exactly one `KillProcess` or `FinishProcess`. The `out` methods write through the argument: `GetCwd`, `GetUserName` and `GetExecutableFilePath` take only an `out string`, while `GetAbsolutePath` returns `bool` and also writes `out string absPath`; `mustExist` defaults to `true`, so a path that need not exist yet requires an explicit `false`. `SearchResources(string filter, func callback)` declares its callback only as bare `func` in `workbench.c:15`, but the vanilla Workbench plugins pass `void(string file)` callbacks (`editor/workbench/resavetool.c:8,20,33` and `editor/workbench/checkloctool.c:27,43`), so the parameter shape is visible in source even though the header does not type it.
 
 ## Modules
 
-Modules are reached by type: `Workbench.GetModule(ResourceManager)` returns the `WBModuleDef`, which the caller casts to the module class. `WBModuleDef` is `sealed class WBModuleDef` (`modules/wbmoduledef.c:4`) with `SetOpenedResource`, `GetContainer`, `GetNumContainers`, `Save`, `GetCmdLine`, `Close`, `ExecuteAction` and `GetPlugin(typename pluginType)` (`modules/wbmoduledef.c:6-13`). `ResourceManager` is `sealed class ResourceManager: WBModuleDef` (`modules/resourcemanager.c:4`). Its exact methods in `scripts/1_core/workbenchapi/modules/resourcemanager.c:6-38` are: [EXACT][CLAIM-WORKBENCH-MODULES]
+Modules are reached by type: `Workbench.GetModule(ResourceManager)` returns the `WBModuleDef`, which the caller casts to the module class. `WBModuleDef` is `sealed class WBModuleDef` (`modules/wbmoduledef.c:4`) with `SetOpenedResource`, `GetContainer`, `GetNumContainers`, `Save`, `GetCmdLine`, `Close`, `ExecuteAction` and `GetPlugin(typename pluginType)` (`modules/wbmoduledef.c:6-13`). `ResourceManager` is `sealed class ResourceManager: WBModuleDef` (`modules/resourcemanager.c:4`). Its exact methods in `scripts/1_core/workbenchapi/modules/resourcemanager.c:6-38` are:
 
 | Method | Exact signature |
 |---|---|
@@ -59,7 +61,7 @@ Note the singular/plural split: `RebuildResourceFile` takes one path plus a `sel
 
 ## Plugins
 
-A plugin extends `WorkbenchPlugin` and overrides `event` methods; the engine calls them, the plugin does not invoke them itself. `WorkbenchPlugin` events in `scripts/1_core/workbenchapi/plugins/workbenchplugin.c:7-10` are: [EXACT][CLAIM-WORKBENCH-PLUGINS]
+A plugin extends `WorkbenchPlugin` and overrides `event` methods; the engine calls them, the plugin does not invoke them itself. `WorkbenchPlugin` events in `scripts/1_core/workbenchapi/plugins/workbenchplugin.c:7-10` are:
 
 | Event | Exact signature |
 |---|---|
@@ -72,7 +74,7 @@ A plugin extends `WorkbenchPlugin` and overrides `event` methods; the engine cal
 
 ## Progress, MetaFile, GeneratedResources
 
-`WBProgressDialog` is `sealed class WBProgressDialog: Managed` (`wbprogressdialog.c:33`). Its exact surface in `scripts/1_core/workbenchapi/wbprogressdialog.c:35-51` is: [EXACT][CLAIM-WORKBENCH-PROGRESS]
+`WBProgressDialog` is `sealed class WBProgressDialog: Managed` (`wbprogressdialog.c:33`). Its exact surface in `scripts/1_core/workbenchapi/wbprogressdialog.c:35-51` is:
 
 | Member | Exact signature |
 |---|---|
@@ -81,7 +83,7 @@ A plugin extends `WorkbenchPlugin` and overrides `event` methods; the engine cal
 | `SetMainTitle` | `proto external void SetMainTitle(string text)` |
 | `SetActionTitle` | `proto external void SetActionTitle(string text)` |
 
-`SetProgress` takes a fraction in `[0.0, 1.0]`, not a percentage, and the constructor takes the owning module window. `MetaFile` carries a name collision: `metafile.c:3` declares `typedef int[] MetaFile` and `metafile.c:4` declares `sealed class MetaFile: BaseContainer`. The class surface in `scripts/1_core/workbenchapi/metafile.c:4-9` is: [EXACT][CLAIM-WORKBENCH-METAFILE]
+`SetProgress` takes a fraction in `[0.0, 1.0]`, not a percentage, and the constructor takes the owning module window. `MetaFile` carries a name collision: `metafile.c:3` declares `typedef int[] MetaFile` and `metafile.c:4` declares `sealed class MetaFile: BaseContainer`. The class surface in `scripts/1_core/workbenchapi/metafile.c:4-9` is:
 
 | Member | Exact signature |
 |---|---|
@@ -89,7 +91,7 @@ A plugin extends `WorkbenchPlugin` and overrides `event` methods; the engine cal
 | `GetSourceFilePath` | `proto external string GetSourceFilePath()` |
 | `Save` | `proto external void Save()` |
 
-`ResourceManager.GetMetaFile` returns this `MetaFile` class, while `ResourceManagerPlugin.OnRegisterResource` receives the meta file as a plain `BaseContainer`; the typed API (`GetResourceID`, `GetSourceFilePath`, `Save`) needs the `GetMetaFile` result (or a cast), not the event argument as declared. `GeneratedResources` is `sealed class GeneratedResources: Managed` (`generatedresources.c:14`). Its only method, in `scripts/1_core/workbenchapi/generatedresources.c:16`, is: [EXACT][CLAIM-WORKBENCH-GENERATED-RESOURCES]
+`ResourceManager.GetMetaFile` returns this `MetaFile` class, while `ResourceManagerPlugin.OnRegisterResource` receives the meta file as a plain `BaseContainer`; the typed API (`GetResourceID`, `GetSourceFilePath`, `Save`) needs the `GetMetaFile` result (or a cast), not the event argument as declared. `GeneratedResources` is `sealed class GeneratedResources: Managed` (`generatedresources.c:14`). Its only method, in `scripts/1_core/workbenchapi/generatedresources.c:16`, is:
 
 | Member | Exact signature |
 |---|---|
@@ -120,7 +122,6 @@ Read the thirteen source files cited below, in build `119356`:
 - `editor/workbench/checkloctool.c` — second `SearchResources` callback example.
 
 Each table above names its file and line range.
-Every `[EXACT]` marker sits on the claim those lines verify.
 
 ## Limits
 

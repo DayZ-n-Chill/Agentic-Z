@@ -18,9 +18,9 @@ Script and config citations were checked on `P:\` (DayZ 1.30). **Nothing in this
 
 | Question | File |
 |---|---|
-| What is the evidence for the hole format, the cell size and where holes are stored? What do outside sources say? | `references/terrain-holes-evidence.md` |
+| What is the evidence for the hole format, the cell size and where holes are stored? What do Terrain Builder 1.30 and the FTT tool add? | `references/terrain-holes-evidence.md` |
 | What are all the fields of `cfgundergroundtriggers.json`, how is it loaded and synced, how do I tie a trigger to my bunker? | `references/underground-triggers.md` |
-| How is a `.wrp` world file laid out, and how was a road graph pulled out of one? | `references/wrp-format-and-road-graph.md` |
+| How is a `.wrp` world file laid out, and how is a road graph pulled out of one? | `references/wrp-format-and-road-graph.md` |
 
 Work that belongs elsewhere:
 
@@ -89,16 +89,16 @@ This is a cross check by fit: the cell size was not read from the header of the 
 
 ### Where the data lives
 
-- Both vanilla `.wrp` files on `P:\` are OPRW version 32. The source notes measured version 29 in 1.29 and the same 5 % growth on both maps, although only one has `Holes`. That change is a format change; holes live in the world config (cross checked, see the evidence file).
+- Both vanilla `.wrp` files on `P:\` are OPRW version 32. In 1.29 both were version 29 (not on `P:\`), and both grew by the same 5 % although only one has `Holes`. That change is a format change; holes live in the world config (cross checked, see the evidence file).
 
 ## Authoring workflow
 
 - Buldozer 1.30 has four new inputs: `UABuldLinkCamToTerrain`, `UABuldCopyTileCoord`, `UABuldMarkUnderground` and `UABuldRemoveUnderground` (`P:\bin\constants.xml:282` to `:285`).
-- From the 1.30 changelog, Terrain Builder section: the Buldozer camera can be unlinked from the terrain height to edit below the surface (key 8 by default), and each object has an "underground" flag that stops a static object below the terrain from being hidden by occlusion when it should be visible.
+- New in Terrain Builder 1.30 (not checked on `P:\`): the Buldozer camera can be unlinked from the terrain height to edit below the surface (key 8 by default), and each object has an "underground" flag that stops a static object below the terrain from being hidden by occlusion when it should be visible.
 - That flag belongs to Terrain Builder. There is no script equivalent for objects created by Object Spawner or `CreateObject`, and whether those objects are occluded below the terrain is not measured.
-- A stable DayZ Tools from April 2026 has no hole strings and no flag strings (measured by the source notes, 2026-09-24): a later Terrain Builder is needed.
-- Third party tool: Flynn's Terrain Tools (FTT, released 2026-09-19). Not checked here:
-  - it marks cells and writes `holes.cfg` next to `layers.cfg`, where its guide says Terrain Builder and Buldozer read it;
+- A stable DayZ Tools from April 2026 has no hole strings and no flag strings (measured on 2026-09-24, not on `P:\`): a later Terrain Builder is needed.
+- Third party tool: FTT, a terrain tool released 2026-09-19. Third-party tool behaviour, not checked here:
+  - it marks cells and writes `holes.cfg` next to `layers.cfg`, where Terrain Builder and Buldozer are meant to read it;
   - it adds the `#include` to the terrain's `config.cpp`;
   - Buldozer reads the file again on each alt-tab;
   - this matches the `\holes.cfg` string the engine uses while loading a world, but the exact path and the reload behavior are not verified.
@@ -108,7 +108,7 @@ This is a cross check by fit: the cell size was not read from the header of the 
 - File: `$mission:cfgundergroundtriggers.json`; when that is missing, `dz/worlds/<world>/ce/cfgundergroundtriggers.json` (`GetData`, `P:\scripts\3_game\undergroundarealoader.c:105` to `:125`).
 - The server creates the boxes (`UndergroundTriggerCarrier`) when the mission starts (`SpawnAllTriggerCarriers`, `P:\scripts\5_mission\mission\missionserver.c:91`) and sends the whole JSON to each client that connects (`SyncDataSend`, `P:\scripts\3_game\undergroundarealoader.c:174` to `:177`). A custom mission JSON works without the client having the file.
 - Trigger type (`P:\scripts\4_world\entities\scriptedentities\triggers\undergroundtrigger.c:100` to `:118`): with `Breadcrumbs` it is `TRANSITIONING` (at most 32); without them, `EyeAccommodation == 1.0` gives `OUTER`; any other value gives `INNER`.
-- Limit of 4096 triggers per JSON: `m_TriggerIndex` is synchronized in -1 to 4095 (`P:\scripts\4_world\entities\scriptedentities\triggers\undergroundtrigger.c:10`). The source notes report -1 to 255 for 1.29.
+- Limit of 4096 triggers per JSON: `m_TriggerIndex` is synchronized in -1 to 4095 (`P:\scripts\4_world\entities\scriptedentities\triggers\undergroundtrigger.c:10`). In 1.29 the range was -1 to 255 (not on `P:\`).
 - A trigger can be tied to an object (`CustomSpawn`), through `ParentNetworkId` for a map object or through `Tag` for an object placed by Object Spawner. The vanilla pattern, the schema and a mod recipe are in `references/underground-triggers.md`.
 - In-game editor, new in 1.30: `LCTRL+/` (`KC_SLASH`, `P:\scripts\4_world\plugins\pluginbase\pluginkeybinding.c:55`). It exists only in the diag build (`P:\scripts\4_world\plugins\pluginbase\pluginundergroundtriggermanager.c:1` is `#ifdef DIAG_DEVELOPER`) and `EditorToggle` returns at once in multiplayer (`pluginundergroundtriggermanager.c:358` to `:360`).
   - A double click creates a trigger (`Event_OnDoubleClick`, `pluginundergroundtriggermanager.c:305`); boxes and breadcrumbs can be edited.
@@ -117,7 +117,7 @@ This is a cross check by fit: the cell size was not read from the header of the 
 ## Underground presence
 
 - `EUndergroundPresence` has `NONE`, `OUTER`, `TRANSITIONING` and `FULL` (`P:\scripts\4_world\classes\undergroundhandlerclient.c:1` to `:7`). The client works it out from the trigger it is in (`SetUndergroundPresence`, `undergroundhandlerclient.c:464` to `:476`).
-- In 1.30 the client sends it to the server: `SetUnderground` writes `INPUT_UDT_UNDERGROUND_SYNC` (`P:\scripts\4_world\entities\manbase\playerbase.c:2853` to `:2865`), and the server takes it in `OnInputUserDataProcess` with only a range check (`P:\scripts\4_world\entities\manbase\playerbase.c:6557` to `:6564`). The source notes report that in 1.29 the value existed only on the client.
+- In 1.30 the client sends it to the server: `SetUnderground` writes `INPUT_UDT_UNDERGROUND_SYNC` (`P:\scripts\4_world\entities\manbase\playerbase.c:2853` to `:2865`), and the server takes it in `OnInputUserDataProcess` with only a range check (`P:\scripts\4_world\entities\manbase\playerbase.c:6557` to `:6564`). In 1.29 the value existed only on the client (not on `P:\`).
 - Consequence: the server now knows the presence. Before, a server side check that read it saw `NONE`.
 - One such check is `CanPlaceItem` (`P:\scripts\4_world\entities\manbase\playerbase.c:2834` to `:2846`, called from `P:\scripts\4_world\classes\hologram.c:438`): inside a trigger it refuses the types in `disallowedTypesInUnderground`.
   - The defaults are `FenceKit`, `TerritoryFlagKit` and `WatchtowerKit` (`P:\scripts\3_game\cfggameplaydatajson.c:229` to `:232`).
@@ -128,11 +128,11 @@ This is a cross check by fit: the cell size was not read from the header of the 
 
 - **Bunkers announced by radio.**
   - The classes are `Land_Bunker_Basement_Civilian`, `Land_Bunker_Basement_Storage`, `Land_Bunker_Basement_Medical` and the three `Land_Bunker_Shelter_*` ones (`P:\scripts\4_world\entities\building\bunker.c:331` to `:336`), each with a code lock.
-  - The radio broadcasts coordinates and the code in Morse (from the developers' announcement; the broadcast was not heard in game).
+  - The radio broadcasts coordinates and the code in Morse (not on `P:\`; the broadcast was not heard in game).
   - It is configured in `cfgbunkerbroadcast.json`, in `$mission:` or in `dz/worlds/<world>/ce/` (`m_ConfigFilePath`, `P:\scripts\3_game\cfgbunkerbroadcasthandler.c:5`, `:26` to `:27`), plus `bunkerBroadcastEnabled` in `cfggameplay.json` (`P:\scripts\3_game\cfggameplaydatajson.c:193`).
 - **Irrigation tunnel.** `Land_IrrigationTunnel_Entrance_01` sits in the `rebuildable` script folder (`P:\scripts\4_world\entities\building\rebuildable\irrigationtunnel_entrance.c:1`): the entrance can be rebuilt, and its debug spawn fills it with sticks and rope.
-- From the source notes, not on `P:\`: the first 1.30 build shipped only Nasdara's scripts. Stable 1.30.164200 installs `nasdara\addons\` with 24 PBOs (structures, Central Economy, navmesh, world data) and the world in the encrypted `worlds_nasdara.ebo`; what they hold underground was not read.
-- From the developers (Dev Blog Recap 2, Steam, 2026-09-22): the Badlands underground facilities use the terrain holes system, which will be available for other maps and for the modding community.
+- Not on `P:\`: the first 1.30 build shipped only Nasdara's scripts. Stable 1.30.164200 installs `nasdara\addons\` with 24 PBOs (structures, Central Economy, navmesh, world data) and the world in the encrypted `worlds_nasdara.ebo`; what they hold underground was not read.
+- Announced for Badlands on 2026-09-22, not checked on `P:\`: the Badlands underground facilities use the terrain holes system, which will be available for other maps and for mods.
 
 ## Verification status
 
@@ -143,7 +143,7 @@ This is a cross check by fit: the cell size was not read from the header of the 
 | Holes live in the config, not in the `.wrp` | cross checked (the `.wrp` grows the same with and without holes) |
 | How a hole renders and collides, what happens when something falls through, AI and navmesh | not verified |
 | A config only mod opens holes in a vanilla map | not verified (a hypothesis) |
-| `holes.cfg` next to `layers.cfg`, and the reload on alt-tab | not verified (third party claim, FTT) |
+| `holes.cfg` next to `layers.cfg`, and the reload on alt-tab | not verified (third-party tool behaviour, FTT) |
 | The effect of `ECE_OBJECT_SPAWNER` on an object under a hole | not verified |
 
 ## Before designing with holes
@@ -165,7 +165,7 @@ Each test moves one row of "Verification status". Together they fit in one diag 
 
 ## On Linux
 
-Everything above is the Windows workflow. The Proton setup and its limits are in the Linux notes of the shared pack (`_shared/linux-proton.md`). For this skill only two things change: Terrain Builder was not started under Proton, so treat any `.wrp` step as Windows only until it is measured; and string searches in the game executable work natively with `strings` and `strings -el` (UTF-16).
+Everything above is the Windows workflow. The Proton setup and its limits are in the shared Linux notes (`_shared/linux-proton.md`). For this skill only two things change: Terrain Builder was not started under Proton, so treat any `.wrp` step as Windows only until it is measured; and string searches in the game executable work natively with `strings` and `strings -el` (UTF-16).
 
 ## Building and testing the mod
 

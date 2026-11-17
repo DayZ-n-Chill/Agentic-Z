@@ -70,11 +70,11 @@ Two further measurements bound the claim, so do not sell the property as a fix:
   predicted offline. Adjudicating it needs an isolated in-game A/B: two PBOs differing only in the
   property, with a reproducible camera pose.
 
-## A winding gate must measure the WHOLE piece, ALL render LODs, and twin pairs (added 2026-08-06, SUB_BRZ B-1)
+## A winding gate must measure the WHOLE piece, ALL render LODs, and twin pairs (added 2026-08-06, SUB_BRZ)
 
 Three blind spots, each one bit us in the same door:
 
-1. **Whole piece, not the touched subset.** The U-2 fix flipped only
+1. **Whole piece, not the touched subset.** A first fix flipped only
    `brz_paint` and its gate measured only paint (97.9-99.5% green) while
    `brz_black` (4,460/door) and `brz_mirror` (315/door) stayed inverted. A
    winding gate censuses EVERY material of the piece (b1_door_census.py
@@ -96,18 +96,18 @@ non-tautological at the mechanism level: contrast flipped-per-material counts
 against an INDEPENDENT pre-fix census prediction; the oracle itself (stored
 normals sane) is only adjudicated in-game.
 
-## Game winding is the INVERSE of MLOD geometric winding; fix winding per CONNECTED COMPONENT, never per face (added 2026-08-07, SUB_BRZ D-1; refines the section above)
+## Game winding is the INVERSE of MLOD geometric winding; fix winding per CONNECTED COMPONENT, never per face (added 2026-08-07, SUB_BRZ; refines the section above)
 
 Measured twice in-game with a positive control: a face renders in game when
 its MLOD geometric winding looks into the BLOCKED side of its shell (the
 pipeline transform is a reflection; the rasterizer sees mirrored
 winding, while stored normals pass through UNCHANGED for lighting). The body
-works because its rip normals came out mirrored too and the F5 builder aligned
+works because its rip normals came out mirrored too and the body builder aligned
 winding to them - an accidental double compensation. Any part built by a
-different path (the doors came from the s42 cut) breaks the compensation and
+different path (the doors came from a later cut) breaks the compensation and
 no per-material / per-stored-normal / per-face flip converges: SUB_BRZ burned
-FOUR in-game cycles (U-2 by material, B-1 by stored-normal concordance, C-1
-per-face BVH, D-1 per component) before the method below closed it.
+FOUR in-game cycles (by material, by stored-normal concordance, per-face BVH,
+per component) before the method below closed it.
 
 The method that converges (script names are those of the SUB_BRZ build's tooling):
 1. `c1_export_meshes_json.py` + `c1_bvh_classify.py` (Blender BVH
@@ -131,12 +131,12 @@ Concave sub-objects (mirror housings) defeat ray classification: restore them
 to their last in-game-good state and ASSERT the reverted count against the
 recorded count of the pass that broke them (664/666 here).
 
-Bonus lesson (D-2): a grey band over the windshield in 1PP was the interior's
+A related lesson: a grey band over the windshield in 1PP was the interior's
 sun-visor edge seen because the seated camera rides high - legitimate
 geometry. Adjudicate WHAT the camera sees with a ray fan (d2_band_probe.py)
 BEFORE cutting anything; the fix was posture (crew proxy -5mm), not trimming.
 
-## Face surgery on a .p3d: a criterion along ONE axis splits quads crossing that axis (added 2026-08-07, LFHeli V1)
+## Face surgery on a .p3d: a criterion along ONE axis splits quads crossing that axis (added 2026-08-07, LFHeli)
 
 When deleting faces of a selection by side ("remove duplicate port-side glass"), the natural
 criterion is to classify each FACE by the sign of its X centroid. It is correct for faces living
@@ -144,7 +144,7 @@ entirely on one side and **silently destructive** for any surface CROSSING the a
 flat panel is usually a quad of 2 triangles, and if the quad crosses X=0, one triangle's centroid
 falls on one side and the other's on the other. The criterion removes half the panel and leaves half a quad.
 
-Exact visual signature reported by the user: "they look half triangles half triangular gaps".
+Exact visual signature in game: the panels look half triangles, half triangular gaps.
 Measured afterwards (LFHeli 2026-08-07): 9 canopy panels with 2 faces each; in the deployed
 file 1 of each pair remained. The ISLAND count does not betray it (still was 17); only the
 FACE count per island.
@@ -205,7 +205,7 @@ selection is manageable; 90% turns it into something else.
 the entire LOD, and orphans are EVIDENCE, not garbage (the corollary of the section above).
 
 **Check how many LODs the part has BEFORE considering deletion done.** The headliner fix
-(s43) had to be applied in visual LOD AND in ViewPilot 1100, or it reappeared in first
+on the same car had to be applied in visual LOD AND in ViewPilot 1100, or it reappeared in first
 person. In the case of this windshield the chunk had A SINGLE LOD and did not apply — but that is
 checked, not assumed.
 

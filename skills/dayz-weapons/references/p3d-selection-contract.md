@@ -2,7 +2,7 @@
 
 Which selections and memory points a firearm model must have, what each must cover, and how to check that before a test. How those parts move is animation work and belongs to the dayz-animation-pipeline skill.
 
-Marks: `[VERIFIED in-game]` means confirmed by a real in-game test recorded in one of the author's projects (A6_SR2M, A6_MK47; third-party, not on `P:\`), `[VERIFIED-vanilla]` means read in the cited vanilla file, `[UNVERIFIED]` means inferred. Facts read in a debinarized vanilla model are marked as not yet checked on `P:\`, because the vanilla models there are binarized and cannot be read. The vanilla names config and script ask for by name are listed, with their `P:\` lines, in `skills/_shared/weapons/model-selections.md`.
+Marks: `[VERIFIED in-game]` means measured in game on one of two custom weapon builds, a 9x19 SMG and a 7.62x39 rifle that inherit a third-party weapon pack (third-party mod behaviour, not vanilla; their files are not on `P:\`), `[VERIFIED-vanilla]` means read in the cited vanilla file, `[UNVERIFIED]` means inferred. Facts read in a debinarized vanilla model are marked as not yet checked on `P:\`, because the vanilla models there are binarized and cannot be read. The vanilla names config and script ask for by name are listed, with their `P:\` lines, in `skills/_shared/weapons/model-selections.md`.
 
 ## Named selections: the three that matter for a rifle or SMG
 

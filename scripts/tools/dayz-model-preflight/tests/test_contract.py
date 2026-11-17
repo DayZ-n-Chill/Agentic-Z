@@ -5,7 +5,6 @@ import math
 from pathlib import Path
 from types import SimpleNamespace
 
-from jsonschema import Draft202012Validator
 import pytest
 
 from dayz_model_preflight.contract import load_contract, require_dayz_py3d
@@ -58,9 +57,15 @@ def write_contract(tmp_path, value):
     return path
 
 
-def test_tracked_schema_accepts_complete_v1_contract():
+def _schema_validator():
+    """Build the schema validator, skipping the test without jsonschema."""
+    jsonschema = pytest.importorskip("jsonschema")
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
-    Draft202012Validator(schema).validate(valid_contract())
+    return jsonschema.Draft202012Validator(schema)
+
+
+def test_tracked_schema_accepts_complete_v1_contract():
+    _schema_validator().validate(valid_contract())
 
 
 @pytest.mark.parametrize(
@@ -92,10 +97,10 @@ def test_tracked_schema_accepts_complete_v1_contract():
 def test_schema_rejects_missing_unknown_or_structurally_invalid_fields(
     mutation
 ):
-    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    validator = _schema_validator()
     value = valid_contract()
     mutation(value)
-    assert list(Draft202012Validator(schema).iter_errors(value))
+    assert list(validator.iter_errors(value))
 
 
 def test_load_contract_normalizes_scalar_tolerance_and_resolves_source(
@@ -228,7 +233,7 @@ def test_dependency_gate_rejects_missing_py3d(monkeypatch):
         SimpleNamespace(IS_DAYZ_FORK=True, __version__="not-a-version"),
     ],
 )
-def test_dependency_gate_rejects_upstream_old_or_unversioned_py3d(module):
+def test_dependency_gate_rejects_other_old_or_unversioned_py3d(module):
     with pytest.raises(PreflightError) as raised:
         require_dayz_py3d(module)
     assert raised.value.code == "PREFLIGHT_PY3D_UNAVAILABLE"

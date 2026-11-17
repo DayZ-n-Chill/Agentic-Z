@@ -1,28 +1,21 @@
-# DayZ official wiki systems reference: gameplay, environment and server
+# DayZ gameplay, environment and server configuration reference
 
-Status: wiki-sourced facts. Not yet checked on `P:\`, except the lines listed under "Checked on `P:\`" at the end; each section names the wiki page it came from.
+Covers the configuration systems of a DayZ server and mission: contaminated areas, weather, underground darkness, wildlife spawners, stamina and temperature keys, surfaces and clutter, server launch parameters, the diag menu, object and gear spawners, and the DayZ Tools licence limits.
 
-> From "Wiki Sweep #2" (research 2026-07). Covers DayZ configuration systems documented on
-> `community.bistudio.com`. **`[TBD-verify]` by default**: wiki-sourced, NOT verified against local
-> vanilla (except where noted). DZ-R2.1: treat each data point as hint until confirmed against vanilla
-> `cfggameplay.json`/`.xml` or `BohemiaInteractive/DayZ-Central-Economy` repo. Low reuse for
-> 3D/vehicle modding, but captured at user request to avoid re-investigating.
->
-> **Guardrail**: for any Enforce/config identifier, require a `community.bistudio.com` URL
-> before stating it as fact. `dayzexplorer.zeroy.com` / `diff.yadz.app` / fandom = "plausible,
-> unverified" — label as such.
+Status: not yet checked on `P:\`, except the lines listed under "Checked on `P:\`" at the end. These are mission-file and server-config facts as Bohemia Interactive documents them; the script tree on `P:\` cannot confirm most of them. Treat each data point as a lead until it is confirmed against the vanilla mission files (`cfggameplay.json`, the XML files) or the server you run.
+
+**Guardrail**: before stating an Enforce Script or config identifier from this note as fact, confirm it on `P:\` or in Bohemia's official documentation. Third-party mirrors and fan wikis are leads only; `public-wiki-harvest.md` says how far each kind of page can be trusted.
 
 ## Standing errata (corrected or downgraded): do not reintroduce
 
-- **`CfgStamina` is NOT a vanilla class.** Verified 2026-07-06: NOTHING in user skills/vault/repo
-  asserts it (grep empty); `enforce-script-reference` cites actual vanilla `staminahandler.c:797`
-  (legitimate, distinct). Stamina/temperature/wetness are configured via **`cfggameplay.json` keys** +
-  `globals.xml WorldWetTempUpdate`, not via a `CfgStamina` class.
-- `Stamina.c` / `StaminaHandler.c` / `environment.c` / `m_HeatComfort` / `UniversalTemperatureSource`
-  as "documented in wiki" = **false**: they only appear on third-party mirrors. (Note: they are REAL
-  vanilla APIs in decompiled code — what is false is attributing them to the wiki, not their existence.)
-- `vonCodecQuality` range **0–30**: the `serverDZ.cfg` shipped with the Steam DayZServer says `(values 0-30)`
-  (read 2026-11-09 on 1.30.164200); some host docs say 0–10 or 0–20.
+- **`CfgStamina` is NOT a vanilla class.** Stamina, temperature and wetness are configured via
+  **`cfggameplay.json` keys** and `globals.xml` `WorldWetTempUpdate`, not via a `CfgStamina` class.
+  The stamina script is `P:\scripts\4_world\classes\staminahandler.c`.
+- `StaminaHandler`, the environment script (`P:\scripts\4_world\classes\environment\environment.c`),
+  `m_HeatComfort` and `UniversalTemperatureSource` are real vanilla script APIs, but they are not part of
+  Bohemia's published configuration documentation. Read them on `P:\scripts`, not from a description of them.
+- `vonCodecQuality` range **0–30**: the `serverDZ.cfg` shipped with the Steam DayZ Server says `(values 0-30)`
+  (read 2026-11-09 on 1.30.164200). Ranges of 0–10 or 0–20 quoted elsewhere are wrong for that build.
 
 ## 1. Environment and hazards
 
@@ -33,32 +26,30 @@ Status: wiki-sourced facts. Not yet checked on `P:\`, except the lines listed un
   `ParticleName` e.g. `contaminated_area_gas_bigass`), `PlayerData` (`PPERequesterType`
   `PPERequester_ContaminatedAreaTint`). Many `Data` accept `-1`=default. **v1.28**: helper
   `FillWithParticles(pos, areaRadius, outwardsBleed, partSize, partId)` + **clamp 1000 emitters/zone**.
-  Empty `{ }` = disables. URL: `/wiki/DayZ:Contaminated_Areas_Configuration`. (Particles → skill
-  `dayz-particles`.)
+  Empty `{ }` = disables. (Particles → skill `dayz-particles`.)
 - **Weather — `cfgweather.xml`** (mission folder; **XML not JSON**, see `environment-and-infra.md`). Root
   `<weather reset="0" enable="1">`. Elements `<overcast>/<fog>/<rain>/<wind>/<storm>` with children
   `<current actual= time= duration=>`, `<limits min= max=>` (0..1), `<timelimits>`, `<changelimits>`.
   `<rain>` + `<thresholds min= max= end=>`; `<wind><maxspeed>` m/s; `<storm density= threshold= timeout=>`.
-  Mirrors `3_Game\Weather.c` API. 3 weather avenues: scripted state machine
+  Mirrors the `Weather` script API. 3 weather avenues: scripted state machine
   (`WorldData::WeatherOnBeforeChange` in `Enoch.c`), `MissionWeather(true)`+API, or XML.
-  Known limitation (Feedback T162322, NOT official): with active file weather tends toward extremes;
-  reliable mainly to DISABLE weather. URL: `/wiki/DayZ:Weather_Configuration`.
+  Known limitation (Bohemia feedback tracker T162322, not officially confirmed): with the file active, weather tends toward extremes;
+  reliable mainly to DISABLE weather.
 - **Underground darkness — `cfgundergroundtriggers.json`** ("eye accommodation" 0=dark,1=normal).
   Outer/Transitional/Inner triggers + Breadcrumbs (points with radius and weight by proximity). Trigger:
   `Position`, `Orientation`, `Size`, `EyeAccommodation`, `Breadcrumbs[]`, `InterpolationSpeed`. Diag
-  (v1.20+): `Script > Underground Areas > Show Breadcrumbs / Disable Darkening`. Ref working file:
-  `dayzOffline.enoch`. URL: `/wiki/DayZ:Underground_Areas_Configuration`. (Namalsk/underground niche.)
+  (v1.20+): `Script > Underground Areas > Show Breadcrumbs / Disable Darkening`. Working reference file:
+  the one in the vanilla `dayzOffline.enoch` mission.
 
 ## 2. Wildlife / animal AI
 - Ambient animal spawner = CE dynamic event (`db/events.xml`, events starting with `Animal`/
   `Infected`; `<child type="Animal_VulpesVulpes"/>`, `<territory>`, `<zone>`). Toggleable.
-  URL: `/wiki/DayZ:CE:_Ambient_Spawner`.
 - Footstep sounds: macros `ANIMAL_STEP_SOUNDTABLE(Bird,Walk)` in Surfaces config.
-- Fishing: **no official modding page** (fan wikis only) → non-authoritative. Fish/bait items in CE
+- Fishing: **no official modding documentation exists**; treat anything read elsewhere as unverified. Fish/bait items in CE
   (`cfgspawnabletypes.xml`).
 
 ## 3. Player systems
-- **Stamina** (`cfggameplay.json`, verified verbatim in CE repo): `staminaMax=100.0`,
+- **Stamina** (`cfggameplay.json` defaults; the script constants behind three of them are under "Checked on `P:\`"): `staminaMax=100.0`,
   `staminaWeightLimitThreshold=6000.0`, `staminaKgToStaminaPercentPenalty=1.75`, `staminaMinCap=5.0`;
   modifiers (float, default 1.0): `sprintStaminaModifierErc/Cro`, `sprintSwimmingStaminaModifier`,
   `sprintLadderStaminaModifier`, `meleeStaminaModifier`, `obstacleTraversalStaminaModifier`,
@@ -66,7 +57,7 @@ Status: wiki-sourced facts. Not yet checked on `P:\`, except the lines listed un
 - **Temp/wetness** (`cfggameplay.json` + `globals.xml`): `environmentMinTemps[12]`,
   `environmentMaxTemps[12]` (monthly arrays), `wetnessWeightModifiers[1.0,1.0,1.33,1.66,2.0]` (5
   states DRY..DRENCHED). `WorldWetTempUpdate` (globals.xml, master toggle). Enable:
-  `enableCfgGameplayFile=1` in serverDZ.cfg. URL: `/wiki/DayZ:Gameplay_Settings`.
+  `enableCfgGameplayFile=1` in serverDZ.cfg.
 - **VOIP** (serverDZ.cfg): `disableVoN` (0/1), `vonCodecQuality` (0–**30**).
 
 ## 4. Surfaces / clutter / projection (terrain authoring — low reuse)
@@ -74,26 +65,24 @@ Status: wiki-sourced facts. Not yet checked on `P:\`, except the lines listed un
   `friction`, `restitution`, `soundEnviron` (hard_ground/metal/wood/concrete/tyre/water…), `soundHit`,
   `character` (→`CfgSurfaceCharacters`, terrain only), `footDamage`, `audibility`, `isDigable`,
   `isFertile`, `impact`, `deflection`. Roadway flattens clutter except `DZ\data\data\surfaces\clutter.rvmat`.
-  URL: `/wiki/DayZ:Surfaces`. (`isDigable`/`isFertile` already in `dayz-physics-engine`.)
+  (`isDigable`/`isFertile` are also in the `dayz-physics-engine` skill.)
 - **Grass-clutter**: single-sided model res LODs; wind via rvmat `plantWind[]={speed,stiffness,
   smoothness,light}` (stiffness 0 = static). Config `class Clutter` in `CfgWorlds` (model/scaleMin/
   scaleMax/noSatColor) + `clutterGrid`/`clutterDist`. NOT previewable in Buldozer with grass shader.
-  URLs: `/wiki/DayZ:Grass-clutter_modelling` + `_configuration`.
 - **Projection Layer** (directional snow/moss, Sakhal): Supershader/Multishader params
   `multiTopProjectionLayer`, `degAngleTopProjectionStart/End`, `multiTopProjectionBlend`,
-  `multiTopProjectionLayerNormal`; alpha of a `_CA` masks. URL: `/wiki/DayZ:Projection_Layer`.
+  `multiTopProjectionLayerNormal`; alpha of a `_CA` masks.
   (→ skill `dayz-texture-pipeline` if touched.)
 
 ## 5. Server — launch params and config (see also `environment-and-infra.md`)
 - Core: `-config=`, `-port=` (2302 UDP), `-profiles=`, `-mission=` (absolute), `-mod=` (client+server,
   `;`-sep, absolute), `-serverMod=` (server only).
-- `steamQueryPort = 2305;` in serverDZ.cfg — fix for "server not visible in browser" (wiki uses explicit
-  key, NOT the myth "game port +1"). Does not contradict "2302 is UDP" (it is the game port, another thing).
+- `steamQueryPort = 2305;` in serverDZ.cfg — fix for "server not visible in browser" (set the
+  key explicitly; "game port +1" is a myth). Does not contradict "2302 is UDP" (that is the game port, another thing).
 - **`-par=<file>`** — reads params from a file (one option/line; supports C++ comments/#define). Fix for
-  Windows **8192-char command-line limit** when stacking many mods (Feedback T180950).
-  Useful when a launch stacks many mods (for example `@CF;@Dabs;@VPP;@<Mod>_deps;@DayZ_MCP…` with absolute paths). `[TBD-verify]`: 
-  source traces to T180950, not wiki body → test a `.par` before relying on it.
-  Generic URL: `/wiki/Startup_Parameters_Config_File`.
+  Windows **8192-char command-line limit** when stacking many mods (Bohemia feedback tracker T180950).
+  Useful when a launch stacks many mods (for example `@CF;@Dabs;@VPP;@<Mod>_deps;@DayZ_MCP…` with absolute paths). `[TBD-verify]`:
+  known only from that tracker entry, not from the official parameter documentation → test a `.par` before relying on it.
 - Diag/logging: `-doLogs`, `-adminLog`, `-netLog`, `-freezeCheck`, `-filePatching`, `-cpuCount=`
   (≤ logical cores), `-limitFPS=` (cap, max 200). `priority.txt` (SteamIDs `;`-sep, login queue).
 - BattlEye: `BEServer_x64.cfg` next to `BEServer_x64.dll`; `-bePath`; `RConPassword`, `RestrictRCon 1`.
@@ -102,45 +91,44 @@ Status: wiki-sourced facts. Not yet checked on `P:\`, except the lines listed un
   `beserver_x64_active_*.cfg` copy and took `RConPort` from that cfg on every start (moved from 27331 to
   27332 between two runs, RCon listened on 27332).
 - Linux server: `./DayZServer` binary (SteamCMD app 223350; client 221100; DayZ Tools 830640); mods by
-  workshop ID via symlinks; NOT as root; systemd unit. Discrepancy: wiki documents native Linux
-  binary, but independent host-docs state stable runs Windows-under-compat → flag.
-  URL: `/wiki/DayZ:Server_Configuration`, `/wiki/DayZ:Hosting_a_Linux_Server`.
+  workshop ID via symlinks; NOT as root; systemd unit. Unresolved: Bohemia documents a native Linux
+  server binary, while some hosts run the Windows server under a compatibility layer; check which one
+  your host uses.
 
 ## 6. Diag menu / spawners (DayZDiag_x64)
 - Diag: Win+Alt (or Ctrl+Win, conflicts with Win11). Categories: Statistics (Script Profiler flags
   SPF_RECURSIVE/RESET/NONE, modules CORE/GAMELIB/GAME/WORLD/MISSION; `-profile` forces), Enfusion
   Renderer/World, DayZ render, Game (Weather, Free Camera, Vehicles, Combat DE*, **Central Economy**
   debug: Loot Spawn Edit, Force Save, Dynamic Events…), AI (NavMesh/Pathgraph), Sounds.
-  ⚠️ **DO NOT capture `-debugweather`** — research saw it in snippet but NOT confirmed in body of
-  page (G2/DZ-R2.1). URL: `/wiki/DayZ:Diag_Menu`.
+  Do not rely on a `-debugweather` launch parameter: it is unconfirmed.
 - **Object Spawner** (`spawnerData.json`, mission folder; requires cfgGameplay): static objects
   (pos+orient) at startup. Missing class → "Object spawner failed to spawn" in RPT.
-  URL: `/wiki/DayZ:Object_Spawner`.
 - **Spawning Gear** (`cfgGameplay.json` → `PlayerData.spawnGearPresetFiles`): server-side override of
   spawn; presets with `spawnWeight`, `characterTypes` (`SurvivorM_Mirek`), `attachmentSlotItemSets`,
-  `discreteUnsortedItemSets`. Total override of `StartingEquipSetup()`. URL:
-  `/wiki/DayZ:Spawning_Gear_Configuration`.
+  `discreteUnsortedItemSets`. Total override of `StartingEquipSetup()`.
 
-## 7. License and EULA (guardrail)
-Assets built with **DayZ Tools are non-commercial** (DayZ Tools EULA); reuse of BI game
-data falls under the "Arma & DayZ Only, Noncommercial" license; content cannot be behind a paywall
+## 7. DayZ Tools licence limits (guardrail)
+Assets built with **DayZ Tools are non-commercial** (DayZ Tools EULA); reuse of Bohemia game
+data falls under the "Arma & DayZ Only, Noncommercial" terms; content cannot be behind a paywall
 (voluntary donations, free content). Relevant to work that uses source-game rips and AI-generated
-assets. URLs: `/wiki/DayZ:End_User_License_Agreement_for_DayZ_Tools`, `bohemia.net/monetization`.
+assets. Read Bohemia's current EULA and monetization rules before publishing.
 
 ## Cross-ref
-- The Object Builder LOD conventions note, now in `skills/_shared/models/building-selections.md` — doors/ladders/LOD (MODELING part, verified vanilla).
+- `skills/_shared/models/building-selections.md` — doors, ladders and LODs (the modelling side, checked against vanilla).
 - `environment-and-infra.md` — operational server infra (launch, ports, BattlEye, allowFilePatching).
+- `stardz-dzconfig-distill.md` — Central Economy files and `types.xml` semantics.
 - Skills: `enforce-script-reference` (config.cpp, vanilla stamina APIs), `dayz-particles`,
   `dayz-texture-pipeline`, `dayz-physics-engine`.
-- Origin: session 2026-07-06 (deep-research Wiki Sweep #2).
 
 ## Checked on `P:\`
 
 Opened on 2026-11-17. A line here confirms only what it says.
 
 - Errata: no `CfgStamina` occurs anywhere in `P:\scripts`. The defaults behind the stamina keys are constants: `STAMINA_MAX` = 100 at `P:\scripts\3_game\constants.c:749`, `STAMINA_WEIGHT_LIMIT_THRESHOLD` = 6000 at `P:\scripts\3_game\constants.c:746` and `STAMINA_KG_TO_STAMINAPERCENT_PENALTY` = 1.75 at `P:\scripts\3_game\constants.c:732`.
+- Errata: `m_HeatComfort` is a member at `P:\scripts\4_world\classes\environment\environment.c:97`, and `class UniversalTemperatureSource` is at `P:\scripts\3_game\systems\universaltemperaturesource\universaltemperaturesource.c:66`.
 - Section 1: contaminated areas load from `$mission:cfgeffectarea.json` (`P:\scripts\4_world\classes\contaminatedarea\contaminatedarealoader.c:4`).
+- Section 1: `FillWithParticles(vector pos, float areaRadius, float outwardsBleed, float partSize, int partId)` is declared at `P:\scripts\4_world\classes\contaminatedarea\effectarea.c:335`.
 - Section 1: underground triggers load from `$mission:cfgundergroundtriggers.json` (`P:\scripts\3_game\undergroundarealoader.c:105`).
-- Section 1: `class Weather` is declared at `P:\scripts\3_game\weather.c:167`.
+- Section 1: `class Weather` is declared at `P:\scripts\3_game\weather.c:167`, and the Livonia weather state machine overrides `WeatherOnBeforeChange` at `P:\scripts\4_world\classes\worlds\enoch.c:138`.
 - Section 3: `cfggameplay.json` is read only when `enableCfgGameplayFile` is set (`P:\scripts\3_game\cfggameplayhandler.c:53`).
 - Section 6: `spawnGearPresetFiles` is a member of the gameplay JSON data at `P:\scripts\3_game\cfggameplaydatajson.c:91`.

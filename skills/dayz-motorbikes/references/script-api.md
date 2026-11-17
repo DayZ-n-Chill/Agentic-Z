@@ -171,7 +171,7 @@ proto native void Fill(MotorbikeFluid fluid, float amount);
 ### Central Economy and Persistence
 - `override void EEOnCECreate()` (`motorbikescript.c:440-447`): Assigns random initial fuel between 0.0 and 35% of capacity:
   `float maxVolume = GetFluidCapacity( MotorbikeFluid.FUEL );`, `float amount = Math.RandomFloat(0.0, maxVolume * 0.35 );` and `Fill( MotorbikeFluid.FUEL, amount );` (`motorbikescript.c:443-446`).
-- **Persistence (`OnStoreSave`/`OnStoreLoad`)**: `motorbikescript.c` does **NOT** implement these methods; it has no `OnStoreSave` or `OnStoreLoad` of its own (0 occurrences in the file), so saving is left to `Transport` and `EntityAI`.
+- **Persistence (`OnStoreSave`/`OnStoreLoad`)**: `motorbikescript.c` does not implement these methods; it has no `OnStoreSave` or `OnStoreLoad` of its own (0 occurrences in the file), so saving is left to `Transport` and `EntityAI`.
 
 ---
 
@@ -188,7 +188,7 @@ Located in `P:\scripts\3_game\constants.c`:
 
 ---
 
-## 5. Table of What Does NOT Exist in Motorbikes vs CarScript
+## 5. What does not exist in motorbikes compared with CarScript
 
 | Car Subsystem | Status in Motorbike (`MotorbikeScript`) | Alternative or Behavior |
 |---|---|---|

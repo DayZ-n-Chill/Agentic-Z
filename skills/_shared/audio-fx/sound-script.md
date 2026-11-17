@@ -72,7 +72,7 @@ The manager keeps a strong reference to every effect it registers (warning at li
 | 274 | `bool IsSoundPlaying()` | Whether the wave is playing. |
 | 847 | `float GetSoundWaveLength()` | Length of the wave. |
 
-A sound with a fade in starts silent in 1.30. When the wave starts and the fade in time is above zero, `Event_OnSoundWaveStarted` calls `SetSoundVolume(0)` (`P:\scripts\3_game\effects\effectsound.c:549`). The notes this pack was built from say 1.29 had no such line and a faded loop could play its first frame at full volume (1.29, not yet checked on `P:\`). If a mod's levels were tuned around that first frame, listen to them again.
+A sound with a fade in starts silent in 1.30. When the wave starts and the fade in time is above zero, `Event_OnSoundWaveStarted` calls `SetSoundVolume(0)` (`P:\scripts\3_game\effects\effectsound.c:549`). 1.29 had no such line and a faded loop could play its first frame at full volume (1.29, not yet checked on `P:\`). If a mod's levels were tuned around that first frame, listen to them again.
 
 `EffectSound` keeps its wave in a protected member, so the pitch of a sound started with these helpers cannot be changed from outside. To set the pitch or build a sound step by step, see `sound-engine-api.md`.
 

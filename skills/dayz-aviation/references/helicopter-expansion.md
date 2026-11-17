@@ -2,7 +2,7 @@
 
 How the DayZ Expansion vehicle framework flies helicopters and planes: a `CarScript` entity that hosts physics modules, the `ExpansionPhysicsState` force and torque accumulator, the config driven aerofoil module, the rotor module (rotor disc, autorotation, vortex ring state, retreating blade stall, ground effect), the legacy `Transport` based stack, and how one base serves many aircraft. Open it when a task targets Expansion aircraft or weighs a module system against one flight loop.
 
-Third-party material, not yet checked on `P:\`. The mod is not obfuscated (DayZ Expansion Mod Team; its scripts are published under CC BY-NC-ND, so read them for the pattern and do not copy them). Every claim below was read from the mod's own vehicle scripts, which are not in this repo. Citations are `file:line` into those files: `ExpansionVehicleHelicopter.c` is the rotor module, `CarScript.c` is Expansion's `modded class CarScript`, `ExpansionHelicopterScript.c` is the heli entity, the rest are named in full. Tags: `[VERIFIED-EXP]` read from that source, `[UNVERIFIED]` not read line by line or not in the copies, so do not invent it. Learn the pattern from it and write the mod's own code; `skills/_shared/vehicles/helicopters.md` says which model to build from.
+Third-party mod behaviour (DayZ Expansion), not vanilla. Not yet checked on `P:\`. The mod's scripts are not obfuscated; read them for the pattern and do not copy them. Every claim below describes the mod's own vehicle scripts, which are not in this repo. Citations are `file:line` into those files: `ExpansionVehicleHelicopter.c` is the rotor module, `CarScript.c` is Expansion's `modded class CarScript`, `ExpansionHelicopterScript.c` is the heli entity, the rest are named in full. A section or bullet marked `[UNVERIFIED]` was not read line by line or its file was not available, so do not invent it; everything else was read in those scripts. Learn the pattern from it and write the mod's own code; `skills/_shared/vehicles/helicopters.md` says which model to build from.
 
 **This is the fifth aircraft implementation and the first that is a general vehicle-physics
 *framework* rather than one bespoke flight loop.**
@@ -15,7 +15,7 @@ via `dBodyApplyForce`/`dBodyApplyTorque`. One core serves cars, boats, planes an
 
 ## 1. Architecture — entity `: CarScript` + module system + physics-state accumulator
 
-[VERIFIED-EXP] Same **CarScript-as-aviation** hack as the other four, but organised as a framework:
+Same **CarScript-as-aviation** hack as the other four, but organised as a framework:
 
 | Layer | Role | Cite |
 |---|---|---|
@@ -24,14 +24,14 @@ via `dBodyApplyForce`/`dBodyApplyTorque`. One core serves cars, boats, planes an
 | `ExpansionVehicleHelicopter : ExpansionVehicleModule` | the **rotor module** itself — collective/cyclic/anti-torque → rotor thrust + torque; a *special module*, not one-aerofoil-per-blade | `ExpansionVehicleHelicopter.c:223` |
 | `ExpansionGyrocopter : ExpansionHelicopterScript`, `ExpansionBigGyrocopter : ExpansionGyrocopter` | concrete inherited aircraft — pure config/subclass on the shared base | `ExpansionGyrocopter.c:25,256` |
 
-[VERIFIED-EXP] **Pawn replication** (client-prediction + server reconciliation, same family as MH6 and
+**Pawn replication** (client-prediction + server reconciliation, same family as MH6 and
 LM_Planes): `ExpansionHelicopterScriptMove : CarScriptMove` + `ExpansionHelicopterScriptOwnerState :
 CarScriptOwnerState` carry the flight state (`m_RotorSpeed`, `m_Collective`, `m_AntiTorque`,
 `m_CyclicForward`, `m_CyclicSide` + their targets; `ExpansionVehicleHelicopter.c:3-110`).
 
 ### 1a. The per-tick pipeline (`CarScript.c EOnSimulate`, `:2282-2447`)
 
-[VERIFIED-EXP] Server-authoritative / physics-host-gated (`m_IsPhysicsHost = IsOwner()` on client,
+Server-authoritative / physics-host-gated (`m_IsPhysicsHost = IsOwner()` on client,
 always true on server, `:2300-2344`). When active and simulating (`:2403-2418`):
 
 ```
@@ -52,7 +52,7 @@ overridables) is `ExpansionVehicleModule` (`ExpansionVehicleModule.c:94-112`) �
 
 ### 1b. The accumulator — `ExpansionPhysicsState`
 
-[VERIFIED-EXP] This is the shared force/torque sink every module writes into:
+This is the shared force/torque sink every module writes into:
 - `SetupSimulation(pDt)` (`ExpansionPhysicsState.c:178-207`): caches `m_Transform`, `m_Mass =
   dBodyGetMass`, world **and** model-space linear/angular velocity + acceleration; **zeroes `m_Force` and
   `m_Torque`** (`:188-189`).
@@ -67,7 +67,7 @@ explosion pop when a vehicle is destroyed, not the flight applicator.
 
 ## 2. The aerofoil module — real aerodynamics, config-driven, geometry-placed
 
-[VERIFIED-EXP] `ExpansionVehicleAerofoil : ExpansionVehicleModule` (`ExpansionVehicleAerofoil.c:17`) is
+`ExpansionVehicleAerofoil : ExpansionVehicleModule` (`ExpansionVehicleAerofoil.c:17`) is
 the base of the whole aerodynamic system — a self-contained lifting surface. This is what makes the
 framework *data-driven*: an aerofoil auto-configures itself from config and needs no code.
 
@@ -88,7 +88,7 @@ framework *data-driven*: an aerofoil auto-configures itself from config and need
   aileron/elevator/rudder purely by config `type`** (`:158-178`).
 - Angle of attack `= Asin(dot(m_Up, airflowNormal)) · RAD2DEG` (`:183`).
 - Dynamic pressure `m_PressureCoef = area · 0.5 · Expansion_GetDensity(altitude) · v²` (`:187`) — real
-  air-density falloff by altitude (`Expansion_GetDensity` is external to this copy, [UNVERIFIED] body but
+  air-density falloff by altitude (`Expansion_GetDensity` is defined outside the scripts read, [UNVERIFIED] body but
   named/called here).
 - Lift coefficient with stall: `sin(liftAngle · π/2 / stallAngle) · 2`, forced to 0 once
   `|liftAngle| > 2·stallAngle` — a real stall curve (`:191-193`).
@@ -101,7 +101,7 @@ force *= m_DeltaTime
 pState.m_Force  += force.Multiply3(pState.m_Transform)            // local force -> world, accumulate
 pState.m_Torque += (position * force).Multiply3(pState.m_Transform)  // r x F -> world torque, accumulate
 ```
-[VERIFIED-EXP] **The pitching/rolling/yawing moment falls out of the geometry**: torque is `position ×
+**The pitching/rolling/yawing moment falls out of the geometry**: torque is `position ×
 force` where `position` is the module's own location on the airframe (`:230`). A rudder placed at the
 tail produces yaw *because it is at the tail* — no hand-tuned lever-arm constant. `Animate`
 (`:233-236`) drives the control-surface animation phase off `m_Input`. `ExpansionVehicleHelicopterAerofoil
@@ -110,7 +110,7 @@ reuse the fixed-wing aerofoil unchanged for any body lifting surfaces.
 
 ## 3. The rotor module — collective / cyclic / anti-torque / autorotation
 
-[VERIFIED-EXP] The rotor is **its own module** (`ExpansionVehicleHelicopter : ExpansionVehicleModule`,
+The rotor is **its own module** (`ExpansionVehicleHelicopter : ExpansionVehicleModule`,
 `ExpansionVehicleHelicopter.c:223`), not an aerofoil-per-blade (that would be far too expensive). It is a
 large, physically-sophisticated model — 3234 lines total; the parts below are read directly, the
 remainder is [UNVERIFIED] (see §6). Confirmed structure:
@@ -142,8 +142,7 @@ remainder is [UNVERIFIED] (see §6). Confirmed structure:
 - **Autorotation** (`:1662-1667`): if the heli is descending and the rotor is off
   (`goingDown > 0 && m_RotorSpeedTarget < 0.1`), `m_RotorSpeed` is driven *up* from the falling airflow
   (`change = (min(goingDown,1) - m_RotorSpeed)·0.08·pDt`) — the descending air spins the freewheeling
-  rotor, exactly the real autorotation energy source (comment cites the Wikipedia autorotation diagram,
-  `:1662`).
+  rotor, exactly the real autorotation energy source.
 - **Translating tendency** (`Simulate_Common`, `:1823-1830`): the lateral hover drift a real tail rotor
   induces (pushes right for a CCW main rotor), full at hover, gone by ETL.
 
@@ -154,7 +153,7 @@ autorotation) rather than a lumped lift force. The trade-off is size and couplin
 
 ## 4. The legacy era — `ExpansionVehicleBase : ExpansionVehicleBaseBase : Transport` (its own physics)
 
-[VERIFIED-EXP] Before Expansion re-based its vehicles on `CarScript`, it had a **parallel physics stack
+Before Expansion re-based its vehicles on `CarScript`, it had a **parallel physics stack
 that inherited `Transport` directly**, bypassing CarScript entirely:
 `ExpansionVehicleBase : ExpansionVehicleBaseBase` (`ExpansionVehicleBase.c:13`) and
 `ExpansionVehicleBaseBase : Transport` (`ExpansionVehicleBase_Towing.c:1`). It carries its **own**
@@ -166,7 +165,7 @@ ctor, `ExpansionVehicleModule.c:36-42`) still binds to *either* base: it casts t
 one** (`ExpansionHelicopterScript : CarScript`); the `Transport`-based `ExpansionVehicleBase` is the
 legacy era, kept for towing/compatibility.
 
-Current state (`salutesh/DayZ-Expansion-Scripts@14fd692`, 2026-10-15): the vehicle classes Expansion still
+Current state (DayZ Expansion scripts as of 2026-10-15): the vehicle classes Expansion still
 builds on are `CarScript` children, `ExpansionHelicopterScript : CarScript` and `ExpansionBoatScript : CarScript`
 (`DayZExpansion/Vehicles/Scripts/4_World/DayZExpansion_Vehicles/Entities/Vehicles/expansionhelicopterscript.c:17`,
 `expansionboatscript.c:16`). `ExpansionVehicleBase` survives only as a stub in an `OBSOLETE/` folder that derives
@@ -176,15 +175,15 @@ third-party mods that still name the type keep compiling; its methods are `[Obso
 
 ## 5. Clean inheritance — one base, many aircraft
 
-[VERIFIED-EXP] Concrete aircraft are thin subclasses of `ExpansionHelicopterScript` carrying almost only
+Concrete aircraft are thin subclasses of `ExpansionHelicopterScript` carrying almost only
 config: `ExpansionGyrocopter : ExpansionHelicopterScript` and `ExpansionBigGyrocopter : ExpansionGyrocopter`
-(`ExpansionGyrocopter.c:25,256`) are the two present in the research copy. Expansion ships more helis on
+(`ExpansionGyrocopter.c:25,256`) are the two in the scripts read. Expansion ships more helis on
 the same base (the Merlin and an MH-6 are referenced in comments — big-heli ground-clip handling
 `ExpansionVehicleHelicopter.c:2433`, rocket-damage thresholds `ExpansionHelicopterScript.c:450`), and the
 `REFERENCE_MASS = 1700 //! MH6` tuning anchor (`ExpansionVehicleHelicopter.c:228`) confirms the framework
 is authored against an MH-6-class reference and scaled per-heli by mass/bounding-radius. **This is the
 payoff of the modular design: a new aircraft is a config + a subclass, not a new flight loop.** [UNVERIFIED]
-the concrete `CfgVehicles` classes of Merlin/UH1H/HatchBird — not in the research copy.
+the concrete `CfgVehicles` classes of Merlin/UH1H/HatchBird — not in the scripts read.
 
 ## 6. Not read / [UNVERIFIED] — do not fabricate
 
@@ -196,10 +195,10 @@ the concrete `CfgVehicles` classes of Merlin/UH1H/HatchBird — not in the resea
   `ExpansionHelicopterScriptRotor` callback (`:117`), and networking — are **[UNVERIFIED]** (not read line
   by line).
 - **`Expansion_GetDensity(altitude)`** — called by the aerofoil (`ExpansionVehicleAerofoil.c:187`) and the
-  ISA/altitude atmosphere generally; its definition is outside these copies. [UNVERIFIED] body.
+  ISA/altitude atmosphere generally; its definition is outside the scripts read. [UNVERIFIED] body.
 - **`config.cpp` / `SimulationModule` blocks** — the `Aerofoils`/rotor/wheel config the modules read
   (`CfgVehicles <veh> SimulationModule ...`) is [UNVERIFIED] as on-disk config; confirmed only as the
   config *paths* the script reads.
 - **`.p3d` + `model.cfg`** — memory points (aerofoil `min`/`max`, rotor selections) confirmed as *names*
   the script reads; [UNVERIFIED] as actual model data.
-- **Concrete non-Gyrocopter aircraft classes** (Merlin/MH-6/UH1H) — referenced, not in the copy.
+- **Concrete non-Gyrocopter aircraft classes** (Merlin/MH-6/UH1H) — referenced, not in the scripts read.

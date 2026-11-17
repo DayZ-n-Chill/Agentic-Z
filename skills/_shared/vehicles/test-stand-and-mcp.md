@@ -35,8 +35,8 @@ Also: `camera_set` refuses with `camera_unavailable_vehicle` while
 rolls away traps the camera. Set the static camera BEFORE getting in - it survives the
 get-in and gives the external view of a seated rider.
 **And it can be worse than a refusal: `camera_set` can leave the client RENDER frozen while
-simulation, audio and input keep running** (measured again 2026-09-10, this time on a user's
-live session). The player walks, hears their own footsteps, and their server position
+simulation, audio and input keep running** (measured again 2026-09-10, this time in a live
+play session). The player walks, hears their own footsteps, and their server position
 advances, but the picture never changes. The signal is in `capture_screenshot`:
 `distinct_frames: 1` with `max_adjacent_delta: 0` over several frames, while
 `query_player_state` shows the position moving. There is NO recovery short of
@@ -60,7 +60,7 @@ then measure a vanilla control in the same session" impossible without a relaunc
 
 ## Automated vehicle stand: measured invariants (added 2026-08-24)
 
-Measured on dayz-mcp stand (DayZDiag 1.29.163709, CivilianSedan), ABBA G0 session
+Measured on dayz-mcp stand (DayZDiag 1.29.163709, CivilianSedan), ABBA session
 (the frictions below aborted 3 attempts):
 
 - **Get-out**: `ActionGetOutTransport.ActionCondition` = `!IsTransitioning() && crewIndex >= 0 && CrewCanGetThrough && IsAreaAtDoorFreeDiag` (actiongetouttransport.c:70-79; 1.29 had no transition check and `IsAreaAtDoorFree`, 1.29 actiongetouttransport.c:68-77; `CCTNone` — target does not participate). A car stopped AGAINST statics leaves door blocked and action in `condition_failed`; stand control surface has no reverse gear (throttle 0..1) — site becomes unrecoverable. Design site with >=150 m clear IN DRIVING DIRECTION and graceful cleanup: deleting fixture with player inside cleanly ejects (4/4 measured).

@@ -16,7 +16,7 @@ This is a snapshot of the skill body as it stood on 2026-08-05. It is not the ha
    - Movable parts (doors, hood, trunk) are their own models, already cut in the rip, with the axis in `Locators.xml`. Classify them into their own lane from day 1; never merge them into the body or plan a manual cut (see the doors section of `history-family-b-runbook.md`).
 4. Material map per mesh (`rip_material_map.py`): the type comes from the materialbin folder. The instance name lies (the rollcage "leather_MGL" is metal). Several materials on one part is normal (50 of 84 on the BRZ), so the map is per mesh; per part is only a hint.
 5. Colour: `ManufacturerColors.bin` entry[0] (decoder `decode_color2.py`), never by eye.
-6. Mass, drivetrain and distribution: public FH6 stats (game8, kudosprime, calculators.games). The GameDB is encrypted: do not mine it and do not upload it to third-party backends. Cross-checking the wheelbase from `Locators.xml` against the real specs validates the axes and units.
+6. Mass, drivetrain and distribution: public FH6 stats. The GameDB is encrypted: do not mine it and do not upload it to third-party backends. Cross-checking the wheelbase from `Locators.xml` against the real specs validates the axes and units.
 7. Dimensions and memory points: `Locators.xml` `SceneTransform _41/_42/_43` are x, y and z (y up, z along the car).
 8. Intake gate: `lod_plan.json` (an authored LOD per part that meets the budget). It fails when no combination fits the budget. Pending decisions (stock or widebody variant, seats, extras) go to `pending_decisions[]` and must be asked; there are no defaults.
 

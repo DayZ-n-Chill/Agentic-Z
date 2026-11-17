@@ -1,6 +1,6 @@
 # Thermal bias, heat stroke, shade and cooling
 
-How 1.30 turns sustained heat into heat stroke: the thermal bias value, what feeds and drains it, the four heat stroke phases, washing the head, shade, and wind on a motorbike or boat. Checked on `P:\` (DayZ 1.30). Values the source notes report for build 1.30.164289 are marked "reported for 1.30.164289"; they are not on `P:\` and were not checked here.
+How 1.30 turns sustained heat into heat stroke: the thermal bias value, what feeds and drains it, the four heat stroke phases, washing the head, shade, and wind on a motorbike or boat. Checked on `P:\` (DayZ 1.30). Values for the later build 1.30.164289 are marked "build 1.30.164289, not checked on `P:\`".
 
 ## `ThermalBiasHandler`
 
@@ -55,7 +55,7 @@ A second block then depends on water (`heatcomfortmdfr.c:84` to `:111`):
 
 Constants (`P:\scripts\3_game\playerconstants.c:203` to `:210`):
 
-| Symbol | On `P:\` | Reported for 1.30.164289 |
+| Symbol | On `P:\` | Build 1.30.164289, not checked on `P:\` |
 |---|---|---|
 | `THERMAL_BIAS_WASH_HEAD_DECREMENT` | 0.175 | same |
 | `THERMAL_BIAS_WASH_HEAD_TEMPORARY_RESISTANCE_TIME` | 30.0 s | same |
@@ -64,7 +64,7 @@ Constants (`P:\scripts\3_game\playerconstants.c:203` to `:210`):
 | `THERMAL_BIAS_POSITIVE_HC_MEDIUM_INCREMENT` | 0.00032 | same |
 | `THERMAL_BIAS_POSITIVE_HC_HIGH_INCREMENT` | 0.00050 | same |
 
-Reported for 1.30.164289, not checked on `P:\`: above the warning threshold, a player with water at or above `SL_WATER_HIGH` and heat comfort at or below `THRESHOLD_HEAT_COMFORT_PLUS_CRITICAL` loses bias through a new `RecoverThermalBias` method, and a conscious player with water between `SL_WATER_NORMAL` and `SL_WATER_HIGH` gains bias below 0.38 (0.4 minus a new `STAGE_DEACTIVATION_BUFFER` of 0.02) and loses it at or above. That holds the bias near 0.38 only while heat comfort stays at or below the critical threshold; above it the first feed adds 0.00032 or 0.0005 per second, more than the 0.0002 taken off, so the bias still rises.
+Build 1.30.164289, not checked on `P:\`: above the warning threshold, a player with water at or above `SL_WATER_HIGH` and heat comfort at or below `THRESHOLD_HEAT_COMFORT_PLUS_CRITICAL` loses bias through a new `RecoverThermalBias` method, and a conscious player with water between `SL_WATER_NORMAL` and `SL_WATER_HIGH` gains bias below 0.38 (0.4 minus a new `STAGE_DEACTIVATION_BUFFER` of 0.02) and loses it at or above. That holds the bias near 0.38 only while heat comfort stays at or below the critical threshold; above it the first feed adds 0.00032 or 0.0005 per second, more than the 0.0002 taken off, so the bias still rises.
 
 ## Heat stroke: four phases by threshold
 
@@ -83,11 +83,11 @@ The modifier IDs are `MDF_HEAT_STROKE1` to `MDF_HEAT_STROKE4` (`P:\scripts\4_wor
 | 3, `HeatStrokePhase3Mdfr` (`heatstroke.c:140`) | above 0.6, off below 0.6 (`<`, not `<=`, `:164` to `:167`) | The vanilla comment says it stays active together with phase 4 (`:139`). Water 0.75 per second, random `SYMPTOM_VOMIT` that takes 70 water and 55 energy, then the `VOMIT_EXHAUSTION` stamina modifier (`:186` to `:216`). `OnReconnect` runs `OnActivate` again (`:175` to `:178`). |
 | 4, `HeatStrokePhase4Mdfr` (`heatstroke.c:233`) | above 0.85 | Health loss per second remapped from `HEALTH_DAMAGE_MIN` 0.01 to `HEALTH_DAMAGE_MAX` 0.35 between bias 0.85 and 1.0, through `AddHealth` (`:27`, `:28`, `:308` to `:309`). `SYMPTOM_FAINT` (`:275`). Above a bias of 0.75 and with shock above 90, unconsciousness for 5 to 10 s every 60 to 120 s, with shock set to 25 (`:19` to `:24`, `:369` to `:383`). |
 
-Reported for 1.30.164289, not checked on `P:\`: `HEALTH_DAMAGE_MAX` is 0.15; phase 2 turns off below 0.38 and runs `OnActivate` again in `OnReconnect`; phase 1's `OnDeactivate` is empty and phase 2's `OnDeactivate` calls `DecreaseDiseaseCount`.
+Build 1.30.164289, not checked on `P:\`: `HEALTH_DAMAGE_MAX` is 0.15; phase 2 turns off below 0.38 and runs `OnActivate` again in `OnReconnect`; phase 1's `OnDeactivate` is empty and phase 2's `OnDeactivate` calls `DecreaseDiseaseCount`.
 
 ### The sickness badge bug on this build
 
-On `P:\` the only `IncreaseDiseaseCount` is in phase 2's `OnActivate` and the only `DecreaseDiseaseCount` is in phase 1's `OnDeactivate`. The counter balances only when phase 2 activates exactly once per phase 1 episode: phase 1 alone nets minus 1, and each further phase 2 activation nets plus 1. `ImmuneSystemMdfr` refreshes the sick notifier only when `HasDisease()` changes (`P:\scripts\4_world\classes\playermodifiers\modifiers\immunesystem.c:44` to `:55`; `HasDisease` is at `P:\scripts\4_world\entities\manbase\playerbase.c:1119`), so the icon can stay wrong. The source notes report this fixed in 1.30.164289. When modding the phases, keep each `IncreaseDiseaseCount` and its `DecreaseDiseaseCount` in the same phase.
+On `P:\` the only `IncreaseDiseaseCount` is in phase 2's `OnActivate` and the only `DecreaseDiseaseCount` is in phase 1's `OnDeactivate`. The counter balances only when phase 2 activates exactly once per phase 1 episode: phase 1 alone nets minus 1, and each further phase 2 activation nets plus 1. `ImmuneSystemMdfr` refreshes the sick notifier only when `HasDisease()` changes (`P:\scripts\4_world\classes\playermodifiers\modifiers\immunesystem.c:44` to `:55`; `HasDisease` is at `P:\scripts\4_world\entities\manbase\playerbase.c:1119`), so the icon can stay wrong. Build 1.30.164289 fixes this (not checked on `P:\`). When modding the phases, keep each `IncreaseDiseaseCount` and its `DecreaseDiseaseCount` in the same phase.
 
 ## Washing the head and wet clothing
 
@@ -98,7 +98,7 @@ On `P:\` the only `IncreaseDiseaseCount` is in phase 2's `OnActivate` and the on
 - `ApplyWetnessToClothes`, with one wetness table for a container (`s_WetnessContainer`) and one for a water surface (`s_WetnessSurface`) (`actionwashheadwettingclothesbase.c:10` to `:43`).
 - A wash stopped early applies the same three scaled by progress in `OnEndServer`, without the resistance (`actionwashheadwettingclothesbase.c:59` to `:67`).
 
-Reported for 1.30.164289, not checked on `P:\`: the bias drop and the resistance happen only when `GetTemporaryResistance()` is 0, so a wash inside the 30 s no longer restarts them, while the irritation drop and the wetting still happen.
+Build 1.30.164289, not checked on `P:\`: the bias drop and the resistance happen only when `GetTemporaryResistance()` is 0, so a wash inside the 30 s no longer restarts them, while the irritation drop and the wetting still happen.
 
 `ActionWashHeadItemContinuous.ActionCondition` accepts any liquid except gasoline (`actionwashheaditemcontinuous.c:32` to `:39`) and has no `IsFrozen()` check, which matches the frozen bottle entry in the 1.30 changelog's known issues.
 

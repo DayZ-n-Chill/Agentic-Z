@@ -1,9 +1,9 @@
-"""Tests for the eval material imported with the knowledge pack.
+"""Tests for the eval case files under evals/cases/ and evals/live/.
 
 Covers evals/cases/ (mechanical cases with canned answers), evals/live/ (live
 cases, their schema and the Claude Code adapter) and the link from every
-imported case to the question it became in evals/questions/. Nothing here
-calls claude.
+case to the question it became in evals/questions/. Nothing here calls
+claude.
 
 Run with: py -m pytest scripts/dev/test_kp_evals.py
 """
@@ -23,8 +23,8 @@ CASES = sorted((EVALS / "cases").glob("*.json"))
 LIVE_CASES = sorted((EVALS / "live" / "cases").glob("*.json"))
 ADAPTER = EVALS / "live" / "runners" / "claude-code.py"
 
-# Each imported case and the question ids it became. stardz-negatives held six
-# claims, so it became six questions.
+# Each case and the question ids it became. One case held six claims, so it
+# became six questions.
 CASE_QUESTIONS = {
     "api-enforce": ("dayz-script-specialist", ["api-enforce"]),
     "api-index-liveness": ("dayz-script-specialist", ["api-index-liveness"]),
@@ -51,7 +51,7 @@ def _load(path: Path) -> dict:
 
 
 def _adapter():
-    spec = importlib.util.spec_from_file_location("kp_live_eval_claude_code", ADAPTER)
+    spec = importlib.util.spec_from_file_location("live_eval_claude_code", ADAPTER)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -194,12 +194,12 @@ def test_adapter_refuses_to_run_without_a_model_and_effort(monkeypatch, capsys):
 
 # The link to our question format
 
-def test_every_imported_case_is_listed():
+def test_every_case_is_listed():
     assert {p.stem for p in CASES + LIVE_CASES} == set(CASE_QUESTIONS)
 
 
 @pytest.mark.parametrize("case_id", sorted(CASE_QUESTIONS))
-def test_imported_case_has_its_questions(case_id):
+def test_case_has_its_questions(case_id):
     agent, ids = CASE_QUESTIONS[case_id]
     questions = _questions(agent)
     for qid in ids:
@@ -209,8 +209,8 @@ def test_imported_case_has_its_questions(case_id):
         assert q.get("verified") and q.get("must_include")
 
 
-def test_unrun_imported_questions_are_not_claimed_as_passed_without_a_run():
-    """The baseline may list an imported question as passed only after a real run has stamped a newer date."""
+def test_unrun_case_questions_are_not_claimed_as_passed_without_a_run():
+    """The baseline may list a case question as passed only after a real run has stamped a newer date."""
     baseline = _load(EVALS / "baseline.json")
     for agent, ids in CASE_QUESTIONS.values():
         entry = baseline[agent]
@@ -218,7 +218,7 @@ def test_unrun_imported_questions_are_not_claimed_as_passed_without_a_run():
         assert not claimed or entry["recorded"] > "2026-11-17", f"{agent}: {sorted(claimed)}"
 
 
-def test_imported_eval_files_are_english_ascii_text():
+def test_eval_case_files_are_english_ascii_text():
     # The multiplication sign sits inside one grader regex, the dash inside two canned evidence lines.
     allowed = {"×", "—"}
     for path in CASES + LIVE_CASES + [ADAPTER, EVALS / "schema.json", EVALS / "live" / "schema.json"]:

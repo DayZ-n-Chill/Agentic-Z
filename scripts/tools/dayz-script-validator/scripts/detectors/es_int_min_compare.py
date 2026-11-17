@@ -8,9 +8,9 @@ ES_INT_MIN_COMPARE_RULE_ID = "ES-INT-MIN-COMPARISON"
 # integer overflow in the comparison operator. Detect comparisons against
 # either the symbolic `int.MIN` or its literal value `-2147483648`.
 #
-# Note: `-2147483647` is the example shown in the source ("also returns TRUE")
-# but is NOT actually int.MIN (which is -2147483648). We flag both because the
-# source explicitly demonstrates both as broken.
+# Note: `-2147483647` is the example pitfalls-advanced.md shows ("also returns
+# TRUE") but is NOT actually int.MIN (which is -2147483648). Both are flagged
+# because that passage shows both as broken.
 ES_INT_MIN_COMPARE_RE = re.compile(
     r"""
     (?:

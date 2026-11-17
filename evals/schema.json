@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/dayz-modding-knowledge-pack/eval.schema.json",
-  "title": "DayZ Modding Knowledge Pack mechanical evaluation case",
+  "$id": "https://example.invalid/agentic-z/eval.schema.json",
+  "title": "Agentic-Z mechanical evaluation case",
   "type": "object",
   "additionalProperties": false,
   "required": [

@@ -25,7 +25,7 @@ A fifth piece is the bone remap, which lets player clips move the weapon's parts
 
 Lines have the form `WeaponOperations.<stance>.<state>`. `ErcRas` is erect with the weapon raised and `PneRas` is prone and raised; a weapon instance lists each state under both (`P:\DZ\anims\workspaces\player\player_main\weapons\player_main_1911.asi:19` and `:70` for `FireCocked`).
 
-| Tutorials call it | Real state | Where |
+| Often called | Real state | Where |
 |---|---|---|
 | "weapon cocked" | `FireCocked` | `P:\DZ\anims\workspaces\player\player_main\weapons\player_main_1911.asi:19` |
 | "mag remove" | `ReloadMagazineDetach` | `P:\DZ\anims\workspaces\player\player_main\weapons\player_main_1911.asi:52` |
@@ -53,26 +53,26 @@ These are graph settings. They are not keys of `config.cpp`, `model.cfg` or the 
 
 ## A custom weapon without a graph replacement
 
-A mod weapon that inherits a registered vanilla class reuses that class's profile (`weapon-classes.md`). To give it its own clips, a mod adds its own instance file, a child of a vanilla one that lists only the states it changes, and registers the weapon class with that instance in `ModItemRegisterCallbacks.RegisterFireArms` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:321`). Because that binds one item class and replaces no graph file, several weapon mods can each do it. That a mod's own instance and clips play this way is the source pack's in-game result, not something vanilla files can show; the walkthrough is in the dayz-animation-pipeline skill.
+A mod weapon that inherits a registered vanilla class reuses that class's profile (`weapon-classes.md`). To give it its own clips, a mod adds its own instance file, a child of a vanilla one that lists only the states it changes, and registers the weapon class with that instance in `ModItemRegisterCallbacks.RegisterFireArms` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:321`). Because that binds one item class and replaces no graph file, several weapon mods can each do it. That a mod's own instance and clips play this way was measured in game and is not something vanilla files can show; the walkthrough is in the dayz-animation-pipeline skill.
 
-When changing or adding one animation for a custom item or weapon, the working habit reported by the animation workshop videos the source pack drew on:
+When changing or adding one animation for a custom item or weapon, the working habit (practice, not checked on `P:\`):
 
 1. Find the vanilla instance closest to what is wanted.
 2. Inherit it; do not write an instance from scratch.
 3. Change only the state, clip or line that must change. Locomotion and additive lines inherited from the parent are delicate and break easily when overwritten.
 4. Watch states with very few frames: a state whose clip ends on its second frame leaves the engine showing two frames.
 
-Reported unsolved in those videos (March 2024, not rechecked): holding two weapons at once, the full bow mechanic, and custom additive locomotion.
+Unsolved as of March 2024 (not rechecked): holding two weapons at once, the full bow mechanic, and custom additive locomotion.
 
 ## The three clips of a weapon
 
 | Clip | What it holds | Notes |
 |---|---|---|
 | IK pose | One pose of hands and fingers on the weapon. | Named by the `IkPose` line of the weapon's instance and by the call above. Poses are shared: the AKM's instance names the `izh18` pose (`P:\DZ\anims\workspaces\player\player_main\weapons\player_main_akm.asi:6`). |
-| Weapon states | Only the `Weapon_` bones, one frame per start state. | The engine picks a frame with `SetInitState(int pFrameIndex)`; the comment above it says each frame of the animation is one init state (`P:\scripts\3_game\human.c:1108` to `:1112`). The authoring intent is three frames (closed, open, jammed). The source pack read 2 to 4 stored keys per channel in the vanilla clips, because Workbench drops keys that are nearly equal; `w_akm_states.anm` has 2. |
-| Action clips | Reload, fire, chamber, jam. | Mapped per state in the instance's `Lines`. They play over the states clip, so an unjam clip must start on the jammed frame's bolt position or the bolt jumps (measured by the source pack). |
+| Weapon states | Only the `Weapon_` bones, one frame per start state. | The engine picks a frame with `SetInitState(int pFrameIndex)`; the comment above it says each frame of the animation is one init state (`P:\scripts\3_game\human.c:1108` to `:1112`). The authoring intent is three frames (closed, open, jammed). The vanilla clips store 2 to 4 keys per channel, because Workbench drops keys that are nearly equal; `w_akm_states.anm` has 2 (read from the binary clips; not checked on `P:\`). |
+| Action clips | Reload, fire, chamber, jam. | Mapped per state in the instance's `Lines`. They play over the states clip, so an unjam clip must start on the jammed frame's bolt position or the bolt jumps (measured in game). |
 
-All vanilla AKM clips the source pack extracted run at 30 frames per second: fire 11 frames, magazine removal 22, charging handle 44, full magazine swap 55, chambering 107, jam clearing 230.
+The vanilla AKM clips run at 30 frames per second: fire 11 frames, magazine removal 22, charging handle 44, full magazine swap 55, chambering 107, jam clearing 230 (read from the binary clips; not checked on `P:\`).
 
 The `WeaponOperations` group has 42 states and exactly two columns, `ErcRas` and `PneRas` (`P:\DZ\anims\workspaces\player\player_main\player_main.ast:1262` to `:1265`). There is no crouch column; do not invent `WeaponOperations.CroRas`. The names `Jamming Cancel` and `Jamming Check` contain a space (`P:\DZ\anims\workspaces\player\player_main\player_main.ast:1245`, `:1246`). The column is chosen by the graph from the stance: `WeaponStancePne` starts on `Stance == 2` (`P:\DZ\anims\workspaces\player\player_main\combat.agf:1169` to `:1172`).
 
@@ -84,41 +84,37 @@ The `WeaponOperations` group has 42 states and exactly two columns, `ErcRas` and
 
 Unjamming is driven by a timer, not by the clip's length. `WeaponUnjamming` sets `m_jamTime = 5.0` (`P:\scripts\4_world\entities\firearms\fsm\states\weaponunjamming.c:218`); `WeaponUnjamming_Start` counts in `OnUpdate` and posts the timeout once `m_dtAccumulator >= m_jamTime` (`P:\scripts\4_world\entities\firearms\fsm\states\weaponunjamming.c:27` to `:42`), and the following state calls `SetJammed(false)` (`P:\scripts\4_world\entities\firearms\fsm\states\weaponunjamming.c:87`). Releasing the key first interrupts it and the weapon stays jammed.
 
-The source pack traced, and for the working case measured in game, that a custom unjam clip must carry `LoopStart` and `LoopEnd` notes so the gesture keeps looping while the timer runs. Without them the clip ends, the action reads as finished and the weapon returns to jammed. Structure and note format: `skills/dayz-animation-pipeline/references/weapon-anim-blender-complete.md`.
+A custom unjam clip must carry `LoopStart` and `LoopEnd` notes so the gesture keeps looping while the timer runs (the working case was measured in game). Without them the clip ends, the action reads as finished and the weapon returns to jammed. Structure and note format: `skills/dayz-animation-pipeline/references/weapon-anim-blender-complete.md`.
 
 ## Model rules that keep inherited hands and sights right
 
-Measured by the source pack on generated rifles checked against a debinarized AKM; the point names occur in `P:\DZ\weapons\firearms\akm\akm.p3d`, the coordinates are not checkable there. What each name is read for is in `model-selections.md`.
+The weapon model has no hand points. The hands come from the player's clips, so a custom weapon is fitted by moving the whole model with one offset until its bore and grip have the reference's relation to the origin (measured in game on generated rifles checked against a debinarized AKM; not checkable on `P:\`). The checker for this is `skills/dayz-animation-pipeline/scripts/weapon_grip_viewer.py`.
 
-- `usti hlavne` and `konec hlavne` share Y and Z, so the bore is level. A rear point 4.6 cm high tilted one build's line of fire by 6.3 degrees.
-- `bolt_axis` is parallel to the bore.
-- `eye` sits about as high over the bore as on the reference weapon (5.2 cm on the AKM).
-- The ejection direction (`nabojnicestart` to `nabojniceend`) is within about 25 degrees of the reference.
-- The weapon model has no hand points. The hands come from the player's clips, so a custom weapon is fitted by moving the whole model with one offset until its bore and grip have the reference's relation to the origin. The checker for this is `skills/dayz-animation-pipeline/scripts/weapon_grip_viewer.py`.
+The memory point checks that go with it (level bore, `bolt_axis` parallel to the bore, `eye` height, ejection direction) are in `model-selections.md`, "Points in the AKM memory LOD".
 
 ## Authoring notes for the hands
 
-From the same videos; practice, not checked on `P:\`:
+Practice, not checked on `P:\`:
 
 - Moving `RightHand_Dummy` moves the weapon. Lining up the stock with the collarbone and getting the forearm angles right is the most sensitive part of the rig.
-- The left hand follows the magazine during a reload through `LeftHand` and `LeftHand_Dummy`. The older `Magazine`, `Bullets_Magazine` and `Bullets_holder` bones in the skeleton XML sit in a group marked for removal (`P:\DZ\anims\cfg\skeletons.anim.xml:293` to `:300`). Helper bones for the magazine's path live only in the author's Blender file.
+- The left hand follows the magazine during a reload through `LeftHand` and `LeftHand_Dummy`. The older `Magazine`, `Bullets_Magazine` and `Bullets_holder` bones in the skeleton XML sit in a group marked for removal (`P:\DZ\anims\cfg\skeletons.anim.xml:293` to `:300`). Helper bones for the magazine's path live only in the animator's Blender file.
 - The fire IK looks confusing in the animation editor; having the weapon model in the Blender rig helps.
 - Constraints and numbers in Blender help with posing but are not exported as they are. Export, look at the elbow, shoulder and grip gaps in game, and repeat.
 
 ## Making the support hand close on a custom weapon
 
-All of this section was measured in game by the source pack's A6_SR2M project (a custom submachine gun using the AKS-74U animations, June 2026), and by its reading of a working third party mod. None of it is checked on `P:\`.
+All of this section was measured in game on a custom submachine gun using the AKS-74U animations (June 2026), and read from a working third-party mod. None of it is checked on `P:\`.
 
 **Turning the wrist in the IK pose does not turn the support hand.** On a custom weapon with no hand memory points, four variants of the IK pose with the `LeftHand` bone turned 90 degrees about different axes rendered the same in game. A 180 degree roll changed the hand area of a screenshot less (RMS 7.8) than a change of finger curl did (RMS 11). The only part of the IK pose that visibly applied was the finger curl (the `LeftHand` finger bones).
 
-**Why.** The support hand is posed by the reference animation, anchored to the weapon's origin (`Weapon_Root` under `RightHand_Dummy`). The vanilla AKM has no hand memory points at all. What decides where and how the hand lands is how closely the custom weapon's geometry matches the weapon the animation was made for, not the IK pose. The project's `weapon_grip_viewer.py` measures that gap: against the AKS-74U its weapon's bore was aligned, but the weapon sat about 3 cm lower with a shorter barrel, so the hand landed high and forward with a flat palm instead of an upright one.
+**Why.** The support hand is posed by the reference animation, anchored to the weapon's origin (`Weapon_Root` under `RightHand_Dummy`). The vanilla AKM has no hand memory points at all. What decides where and how the hand lands is how closely the custom weapon's geometry matches the weapon the animation was made for, not the IK pose. `weapon_grip_viewer.py` measures that gap: against the AKS-74U the custom weapon's bore was aligned, but the weapon sat about 3 cm lower with a shorter barrel, so the hand landed high and forward with a flat palm instead of an upright one.
 
-**This corrects an earlier over-generalisation.** Two vanilla IK poses of one weapon (the OTS-14 held by the handguard and by its forward grip) differ by 24.8 degrees on `LeftHand`. That difference exists because both poses were authored against a weapon whose geometry matches. It does not mean that turning `LeftHand` on a weapon that does not match will reproduce the orientation. For an upright palm on a custom foregrip, match the geometry to an animation whose hand already lands upright, or adjust the weapon's geometry or offset.
+**Do not generalise from the vanilla poses.** Two vanilla IK poses of one weapon (the OTS-14 held by the handguard and by its forward grip) differ by 24.8 degrees on `LeftHand`. That difference exists because both poses were authored against a weapon whose geometry matches. It does not mean that turning `LeftHand` on a weapon that does not match will reproduce the orientation. For an upright palm on a custom foregrip, match the geometry to an animation whose hand already lands upright, or adjust the weapon's geometry or offset.
 
 **What worked: raise the weapon to the hand.** The lever was moving the whole weapon model up to where the animation puts the support hand.
 
-- The working third party mod (KarmaKrew, Workshop 2864245850; its Vikhr and SR-2M) gets its grip with vanilla IK poses (`Vikhr.anm`, `pm73_IK.anm`, both registered in vanilla at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:434`, `:425`), the firearm behaviour and matching geometry. It has no player animation replacement, no changed base pose and no scripted bones.
-- The number: the project's bore was 2.4 cm lower above the weapon's origin than the reference (0.066 m against 0.090 m), so the animation's hand landed on top of the barrel. Moving the whole model up 0.024 m closed the grip.
+- The working third-party mod (its Vikhr and SR-2M) gets its grip with vanilla IK poses (`Vikhr.anm`, `pm73_IK.anm`, both registered in vanilla at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:434`, `:425`), the firearm behaviour and matching geometry. It has no player animation replacement, no changed base pose and no scripted bones.
+- The number: the custom weapon's bore was 2.4 cm lower above the weapon's origin than the reference (0.066 m against 0.090 m), so the animation's hand landed on top of the barrel. Moving the whole model up 0.024 m closed the grip.
 - The rule of thumb: when the animation's levers (IK pose position or rotation, behaviour, forward kinematics on `LeftHand`) turn out to do nothing, move the weapon, not the animation.
 - It closed both stances. The IK pose is shared between the lowered and the aiming stance, and the worry was that fixing one would open the other. The same raised weapon closed the lowered stance (shipped) and the aiming stance (third person). A per stance instance override remains a fallback that was not needed.
 

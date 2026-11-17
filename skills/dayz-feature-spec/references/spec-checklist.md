@@ -45,7 +45,7 @@ Measurable is not the same as hard to fake. CHK001 to CHK003 cannot do the job o
 - [ ] CHK017 For every success criterion, the false implementation has been named: a broken or trivial build that would satisfy it anyway. If none exists, say so explicitly. A criterion that was never attacked this way is untested, not safe.
 - [ ] CHK018 Every criterion inherited from an earlier version with a different architecture has been derived again, not migrated: ask "which different implementations produce this same observable now?". If the answer includes the architecture just discarded, the criterion is dead even though it is still true.
 
-Why both exist (lesson LL-282, measured on the knowledge pack author's LFLiveContent project): a spec passed the first 16 checks, and an adversarial review then found nine criteria that a broken implementation satisfied, plus one inherited criterion that stopped discriminating after a redesign. "The criterion is measurable" and "the criterion is falsifiable" are different properties.
+Why both exist: a spec can pass the first 16 checks and still hold criteria that a broken implementation satisfies, or an inherited criterion that stopped discriminating after a redesign. "The criterion is measurable" and "the criterion is falsifiable" are different properties.
 
 ## Result
 

@@ -181,7 +181,7 @@ void Test()
 }
 ```
 
-**Trap 3: a `map<Widget, T>` that crashed at run time** (reported in one third-party mod, cause not isolated; vanilla keys maps by `Widget`, see entry 9 in `pitfalls-advanced.md`)
+**Trap 3: a `map<Widget, T>` that crashed at run time** (seen in one third-party mod, cause not isolated; vanilla keys maps by `Widget`, see entry 9 in `pitfalls-advanced.md`)
 ```
 // Compiled, then crashed at run time in that mod
 ref map<Widget, int> m_WidgetMap;

@@ -1,10 +1,10 @@
 # Verified API catalog
 
-A catalog to look things up in (not rules): reflection and introspection, global functions, string, math and config-lookup patterns, attachment hooks, and the 1.30 engine, inventory, action and mission surface. "Verified" in a heading means the knowledge pack saw the call work in a production mod (it names the mod). A line cited as `P:\...:N` was opened on `P:\` (game storage version 144).
+A catalog to look things up in (not rules): reflection and introspection, global functions, string, math and config-lookup patterns, attachment hooks, and the 1.30 engine, inventory, action and mission surface. "Verified" in a heading means the call was seen working in a production mod. A line cited as `P:\...:N` was opened on `P:\` (game storage version 144).
 
 ---
 
-## REFLECTION & INTROSPECTION (verified from LBmaster_Core production)
+## REFLECTION & INTROSPECTION (verified in production use)
 
 Enforce Script has a powerful reflection system used by production mods for
 data binding, auto-registration, and dynamic dispatch.
@@ -72,16 +72,16 @@ caller.Invoke();
 [MyManager.Register(SomeParam)]
 static ref SomeType myField;
 
-// Real example (LBmaster test framework):
-[LBTestManager.StartTest(ScriptCaller.Create(MyTest))]
+// Example (a test framework that registers each test at class load):
+[MyTestManager.StartTest(ScriptCaller.Create(MyTest))]
 private static void MyTest() {
-    LBTest<int>.Assert(1 + 1, 2);
+    MyTestAssert<int>.Assert(1 + 1, 2);
 }
 ```
 
 ---
 
-## VERIFIED GLOBAL FUNCTIONS (from LBmaster_Core production)
+## VERIFIED GLOBAL FUNCTIONS (seen working in production)
 
 ### Screen & Mouse
 
@@ -171,9 +171,9 @@ NotificationSystem.SendNotificationToPlayerIdentityExtended(identity, showTime, 
 NotificationSystem.AddNotificationExtended(showTime, title, msg, icon);
 ```
 
-### Popup from server to client without a client mod (SP-287)
+### Popup from server to client without a client mod
 
-`NotificationSystem.SendNotificationToPlayerIdentityExtended(identity, show_time, title, detail, icon)` (`P:\scripts\3_game\client\notifications\notificationsystem.c:141-151`; `identity == null` = broadcast) sends `RPC_SEND_NOTIFICATION_EXTENDED` and the VANILLA client renders it. Calling the LOCAL `NotificationSystem` on the server (`AddNotification*`, for example `AddNotificationExtended` at `P:\scripts\3_game\client\notifications\notificationsystem.c:215`) notifies NOBODY: it is client-side. (Measured in the ControlPlane mod, where it resolved a contradiction between two earlier notes.)
+`NotificationSystem.SendNotificationToPlayerIdentityExtended(identity, show_time, title, detail, icon)` (`P:\scripts\3_game\client\notifications\notificationsystem.c:141-151`; `identity == null` = broadcast) sends `RPC_SEND_NOTIFICATION_EXTENDED` and the vanilla client renders it. Calling the local `NotificationSystem` on the server (`AddNotification*`, for example `AddNotificationExtended` at `P:\scripts\3_game\client\notifications\notificationsystem.c:215`) notifies nobody: it is client-side. (Measured in game.)
 
 ### Online Players
 
@@ -192,9 +192,9 @@ if (ClientData.m_PlayerList && ClientData.m_PlayerList.m_PlayerList) {
 }
 ```
 
-### `GetObjectsAtPosition3D` returns terrain statics mixed with dynamics (SP-287)
+### `GetObjectsAtPosition3D` returns terrain statics mixed with dynamics
 
-`GetObjectsAtPosition3D(pos, r, out objs, out cargos)` (`P:\scripts\3_game\global\game.c:930`) returns terrain statics (bushes, `Object` with empty `GetType()`) IN ADDITION to dynamics (players, items, vehicles, infected): filter by type if you only want entities. Radius 30 in open field = 38 objects (one measurement, from the DayZ-MCP bridge mod).
+`GetObjectsAtPosition3D(pos, r, out objs, out cargos)` (`P:\scripts\3_game\global\game.c:930`) returns terrain statics (bushes, `Object` with empty `GetType()`) in addition to dynamics (players, items, vehicles, infected): filter by type if you only want entities. Radius 30 in open field = 38 objects (one measurement in game).
 
 ### JSON Serialization
 
@@ -211,8 +211,8 @@ JsonFileLoader<MyClass>.SaveFile(path, instance, error);
 
 // LoadFile returns bool — check it to detect failure (unlike JsonLoadFile which returns void).
 // DEPRECATED: JsonLoadFile(path, out instance) / JsonSaveFile(path, instance) return void with no error signal.
-//   Keep for reading legacy code only; do NOT use in new code.
-// WARNING: JSON file I/O is SYNCHRONOUS (blocks the main thread). Never call in OnUpdate().
+//   Keep for reading legacy code only; do not use in new code.
+// WARNING: JSON file I/O is synchronous (blocks the main thread). Never call in OnUpdate().
 ```
 
 ### Per-Frame Callbacks
@@ -317,7 +317,7 @@ TIntArray itemSize = new TIntArray;
 GetGame().ConfigGetIntArray(cfgPathItem, itemSize);
 ```
 
-[EXACT][CLAIM-ENF-CONFIGISEXISTING-TRAILING-SPACE] A trailing space after the class name
+A trailing space after the class name
 (`"CfgVehicles " + className + " "`) still finds the class: measured on DayZDiag 1.29.163709, a currency
 catalog checked that way passed with its four real classes. Vanilla builds the path without it
 (`ConfigIsExisting(CFG_VEHICLESPATH+" "+type_name)`, `P:\scripts\4_world\systems\inventory\attachmentsoutofreach.c:82`), and so should new code. Not tested: a class
@@ -341,13 +341,13 @@ string sub = full.Substring(0, 5); // "Hello"
 // IndexOf (-1 if not found)
 int pos = full.IndexOf("World"); // 6
 
-// IndexOfFrom — search from position (VERIFIED working):
+// IndexOfFrom — search from position (seen working):
 int second = full.IndexOfFrom(first, ":");
 
-// LastIndexOf (VERIFIED working):
+// LastIndexOf (seen working):
 int idx = path.LastIndexOf("\\");
 
-// Hash — returns int (VERIFIED working):
+// Hash — returns int (seen working):
 int h = myString.Hash();
 
 // Replace — mutates string, returns count of replacements:
@@ -367,10 +367,10 @@ float f = str.ToFloat();
 
 ### Math Operations
 
-`Math.Clamp` is at `P:\scripts\1_core\proto\enmath.c:540`, `VectorToAngles` at `P:\scripts\1_core\proto\enconvert.c:374`, `GetScreenPos` at `P:\scripts\3_game\global\game.c:963`. `types_collections.md` in the pack lists the rest of `Math` and `vector`.
+`Math.Clamp` is at `P:\scripts\1_core\proto\enmath.c:540`, `VectorToAngles` at `P:\scripts\1_core\proto\enconvert.c:374`, `GetScreenPos` at `P:\scripts\3_game\global\game.c:963`. `skills/_shared/enscript/references/types_collections.md` lists the rest of `Math` and `vector`.
 
 ```
-// Math.Clamp EXISTS (verified in LBGroups production):
+// Math.Clamp exists (seen working in production):
 float clamped = Math.Clamp(value, 0, 1.0);
 int clamped2 = Math.Clamp(intVal, 0, 255);
 
@@ -452,37 +452,36 @@ override void OnWasDetached(EntityAI parent, int slot_id)
     HideSelection("attached");
 }
 ```
-This is a community technique (shown in the YouTube video "How to change the model of a proxy
-attachment", 2026). The two selections live in the .p3d; model.cfg pairs them via an
+The two selections live in the .p3d; model.cfg pairs them via an
 AnimationSource. The model and LOD side is in the `dayz-animation-pipeline` skill,
 `references/item-ik-and-hide.md` (Pattern C). The script APIs above are checked on `P:\`; the exact
 model.cfg AnimationSource wiring is not: check it against a vanilla two-model item (for example the flag).
 
 
-### Slot enumeration — which API pair to use (SP-361; verified vs vanilla 2026-07-29)
-Two `GameInventory` pairs look nearly identical but do the OPPOSITE:
+### Slot enumeration — which API pair to use (verified vs vanilla 2026-07-29)
+Two `GameInventory` pairs look nearly identical but do the opposite:
 
 | Pair | What it answers | Cite |
 |---|---|---|
-| `GetSlotIdCount()` / `GetSlotId(i)` | "number of slots **this item can belong to**" — where THIS item can attach **on another parent** | `P:\scripts\3_game\systems\inventory\inventory.c:167-175` |
+| `GetSlotIdCount()` / `GetSlotId(i)` | "number of slots **this item can belong to**" — where this item can attach **on another parent** | `P:\scripts\3_game\systems\inventory\inventory.c:167-175` |
 | `GetAttachmentSlotsCount()` / `GetAttachmentSlotId(i)` | "number of slots **for attachments**" — slots the container **declares** | `P:\scripts\3_game\systems\inventory\inventory.c:176-184` |
 
 **Rule**: "what attachment slots does this entity declare?" → always `GetAttachmentSlotsCount()` / `GetAttachmentSlotId(i)`.
-`GetSlotIdCount()` / `GetSlotId(i)` only answer "where can THIS item be attached".
+`GetSlotIdCount()` / `GetSlotId(i)` only answer "where can this item be attached".
 
-**Silent failure**: wrong pair on a container/vehicle does NOT throw. `CivilianSedan` (attaches to nothing)
+**Silent failure**: the wrong pair on a container or vehicle does not throw. `CivilianSedan` (attaches to nothing)
 returns count=1, invalid id; `InventorySlots.GetSlotName(id)` (`P:\scripts\3_game\systems\inventory\inventoryslots.c:48`) returns `""`.
 Result: `[""]` — one empty element, no exception, no empty list. Looks like a data bug; is an API-pair bug.
 
 **Tell you picked the wrong pair**: `[""]` or empty slot names on an entity that clearly has attachments.
 
-### Hidden-selection texture and material getters (SP-210, added 2026-08-31)
+### Hidden-selection texture and material getters
 
 There is no Enforce method named `GetObjectTextures()` (plural). Runtime texture and material state is singular and index-based: `GetObjectTexture(int)` / `GetObjectMaterial(int)` (`P:\scripts\3_game\entities\entityai.c:2882-2885`). Iterate from zero to `GetHiddenSelections().Count() - 1` when a per-selection snapshot is required.
 
 The config-array getters are `GetHiddenSelectionsTextures()` and `GetHiddenSelectionsMaterials()` (`P:\scripts\3_game\entities\object.c:125-140`). For the embedded material list of a vobject, use `GetObjectMaterials(vobject, out string[])` (`P:\scripts\1_core\proto\envisual.c:6-27`). Do not invent a plural runtime getter; an undefined call prevents the whole script module from compiling.
 
-### Reflection limits and fail-closed test fixtures (SP-175, added 2026-08-31)
+### Reflection limits and fail-closed test fixtures
 
 Correction to the broad `SetClassVar` guidance above: production use proves access to a `private bool`, but does **not** prove that reflection can replace a `ref` collection field. `EnScript.GetClassVar` and `EnScript.SetClassVar` return `1` on success. Eight runtime attempts to replace a `protected ref TManagedRefArray` returned `0`; there is no demonstrated reflection write for that field shape, so do not recommend it as a general test-hook technique.
 
@@ -504,7 +503,7 @@ The 1.30 additions, each opened on `P:\`:
 - (through 1.29: `TakeEntityToCargo` / `TakeEntityToCargoEx` / `TakeEntityAsAttachment` / `TakeEntityAsAttachmentEx`). (since 1.30: all four `[Obsolete]` at `P:\scripts\3_game\systems\inventory\inventory.c:1345-1386`. Use `TakeEntityToTargetCargo` `:1077`, `TakeEntityToTargetCargoEx` `:1084`, `TakeEntityAsTargetAttachmentEx` `:1100`, `TakeEntityAsTargetAttachment` `:1142`.)
 - (through 1.29: `World.Is3rdPersonDisabled()` bool). (since 1.30: `[Obsolete]`; `GetThirdPersonViewMode()` returns `ThirdPersonMode` {`DISABLED`,`ENABLED`,`VEHICLES_ONLY`}: `P:\scripts\3_game\global\world.c:177`, `:291-305`.)
 - (through 1.29: `Weather.GetNoiseReductionByWeather()`). (since 1.30: **not deleted**. It is `[Obsolete]` in favour of `GetNoiseReductionByWeatherEx(notnull Object object)` at `P:\scripts\3_game\weather.c:407-408`, itself `[Obsolete]` "Kept for HUD and old mods" because AI damping is native AIParams. Vanilla still calls `GetNoiseReductionByWeatherEx`: `P:\scripts\4_world\static\sensesaievaluate.c:23`.)
-- `vector.Cross(vector v)` is a script method in the scripts unpacked on `P:\` (`P:\scripts\1_core\proto\enconvert.c:239-246`), as it was in 1.30.164014 Exp and 1.30.164078. The knowledge pack reports that 1.30.164200 stable removed it; that could not be confirmed on `P:\`, where the method is present. If a mod must compile on both, inline the cross product instead of calling `Cross`.
+- `vector.Cross(vector v)` is a script method in the scripts unpacked on `P:\` (`P:\scripts\1_core\proto\enconvert.c:239-246`), as it was in 1.30.164014 Exp and 1.30.164078. Whether a later 1.30 stable build removed it is not confirmed on `P:\`, where the method is present. If a mod must compile on every 1.30 build, inline the cross product instead of calling `Cross`.
 - `array<T>.Slice(int from, int to)` with an inclusive `to` (`P:\scripts\1_core\proto\enscript.c:720-727`).
 - `typename.EnumFlagsToString` / `EnumTools.EnumFlagsToString` (`P:\scripts\1_core\proto\enconvert.c:614`, `:704`).
 - `class DoOnce` (`P:\scripts\3_game\doonce.c:1`); `DayZPlayer.IsFirstRenderFrame()` (`P:\scripts\3_game\dayzplayer.c:1186-1189`); `Entity.DisableSimulation` / `GetIsSimulationDisabled` (`P:\scripts\3_game\entities\entity.c:3-6`).
@@ -514,8 +513,8 @@ The full bodies are in `dayz-1-30-enforce-script.md`.
 
 ## DayZ 1.30.164289: language limits, typedefs, weather, players, inventory, actions, mission hooks
 
-The knowledge pack read these from the vanilla scripts of DayZ 1.30.164289 (Steam build 26220720 of the
-dedicated server); each line cited below was opened again on `P:\`, and where `P:\` had the symbol a few lines away, the `P:\` line is the one given. "Measured" below means measured at runtime by the knowledge pack's author in a dedicated server's mission `init.c` on that build (the probe is not in this repo).
+These are from the vanilla scripts of DayZ 1.30.164289 (Steam build 26220720 of the
+dedicated server); each line cited below was opened on `P:\`, and the line given is the `P:\` line. "Measured" below means measured at runtime in a dedicated server's mission `init.c` on that build (the probe is not in this repo, and the measurements were not re-run here).
 
 ### Language limits and built-ins
 
@@ -575,7 +574,7 @@ server: overcast 0.484, rain 0, fog 0, wind speed 10.
   InventoryLocation loc)` `:276`, `CreateEntityInCargo(string)` `:143`, `CreateAttachment(string)` `:209`,
   `CreateInInventory(string)` `:876`, `AttachmentCount()` `:205`, `GetAttachmentFromIndex(int)` `:220`,
   `GetCargo()` `:138` (a `CargoBase` with `GetItemCount()` / `GetItem(int)`, `P:\scripts\3_game\systems\inventory\cargo.c:28`, `:32`), and
-  `TakeEntityToInventory(InventoryMode mode, FindInventoryLocationType flags, EntityAI item)` `:1013`.
+  `TakeEntityToInventory(InventoryMode mode, FindInventoryLocationType flags, EntityAI item)` at `P:\scripts\3_game\systems\inventory\inventory.c:1013`.
 - `InventoryMode` is `PREDICTIVE`, `LOCAL`, `JUNCTURE`, `SERVER` (`P:\scripts\3_game\systems\inventory\inventory.c:21-27`; `SERVER` only for code
   that runs on the server alone). `FindInventoryLocationType` is `ATTACHMENT`, `CARGO`, `HANDS`, `PROXYCARGO`,
   `ANY_CARGO`, `ANY`, `NO_SLOT_AUTO_ASSIGN` (`P:\scripts\3_game\systems\inventory\inventorylocation.c:17-26`).
@@ -605,7 +604,7 @@ server: overcast 0.484, rain 0, fog 0, wind speed 10.
   `CCINotPresent`, `CCINonRuined`, `CCINotEmpty`, `CCINotRuinedAndEmpty`, `CCINotRuinedAndDry`. Target
   conditions in `TargetConditionsComponents/`: `CCTNone`, `CCTDummy`, `CCTSelf`, `CCTMan`, `CCTObject(dist)`,
   `CCTParent`, `CCTCursor(dist)` and its `NoRuinCheck` / `Inherited` / `Parent` / `NoObject` variants,
-  `CCTNonRuined`, `CCTSurface`, `CCTTree`, `CCTWaterSurface` ([EXACT][CLAIM-CCTWATER-OBSOLETE] `[Obsolete("1.30: replaced by CCTLiquid")]` at `P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctwatersurface.c:2` in 164200; use `CCTLiquid`), `CCTWaterSurfaceEx`, `CCTLiquid`. Distances come
+  `CCTNonRuined`, `CCTSurface`, `CCTTree`, `CCTWaterSurface` (`[Obsolete("1.30: replaced by CCTLiquid")]` at `P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctwatersurface.c:2`; use `CCTLiquid`), `CCTWaterSurfaceEx`, `CCTLiquid`. Distances come
   from `UAMaxDistances` (`P:\scripts\4_world\classes\useractionscomponent\actions\actionconstants.c:111-122`: `SMALL` 1.3, `DEFAULT` 2.0, `REPAIR` 3.0,
   `LARGE` 8.0, ...).
 - Overrides: `GetText()` (returns `m_Text`, `P:\scripts\4_world\classes\useractionscomponent\actionbase.c:330-333`), `ActionCondition(PlayerBase, ActionTarget,
@@ -627,7 +626,7 @@ server: overcast 0.484, rain 0, fog 0, wind speed 10.
 
 ### `MissionServer` hooks (`5_mission\mission\missionserver.c`)
 
-[EXACT][CLAIM-MISSIONSERVER-CREATED] `MissionServer` is created by the server from `P:\scripts\5_mission\somemission.c:1-9` and declared at `P:\scripts\5_mission\mission\missionserver.c:5`.
+`MissionServer` is created by the server from `P:\scripts\5_mission\somemission.c:1-9` and declared at `P:\scripts\5_mission\mission\missionserver.c:5`.
 
 `OnEvent` (`P:\scripts\5_mission\mission\missionserver.c:309`) dispatches the client events: `OnClientPrepareEvent` `:449`; `OnClientNewEvent` `:549` (which
 calls `CreateCharacter(PlayerIdentity, vector pos, ParamsReadContext, string characterName)` `:499`, returning the

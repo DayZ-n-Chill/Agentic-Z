@@ -3,7 +3,6 @@ import hashlib
 import json
 from pathlib import Path
 
-from jsonschema import Draft202012Validator
 import pytest
 
 from dayz_odol_strict.errors import OdolStrictError
@@ -71,10 +70,16 @@ def _worker():
     }
 
 
-def test_complete_worker_result_becomes_schema_valid_deterministic_anatomy():
+def test_complete_worker_result_is_schema_valid():
+    """Skips when the optional jsonschema package is not installed."""
+    jsonschema = pytest.importorskip("jsonschema")
     summary = build_strict_summary(_preflight(), _worker(), _backend())
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
-    Draft202012Validator(schema).validate(summary)
+    jsonschema.Draft202012Validator(schema).validate(summary)
+
+
+def test_complete_worker_result_becomes_deterministic_anatomy():
+    summary = build_strict_summary(_preflight(), _worker(), _backend())
     assert summary["schema_version"] == "dayz-odol-strict-v1"
     assert summary["lod_count"] == 2
     assert [lod["index"] for lod in summary["lods"]] == [0, 1]

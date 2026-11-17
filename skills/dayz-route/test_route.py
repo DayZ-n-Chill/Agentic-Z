@@ -500,7 +500,7 @@ def test_every_user_facing_dayz_skill_is_a_target():
     assert sorted(skills - not_targets - set(CFG["targets"])) == []
 
 
-# The tool skills of the knowledge pack: a request for the tool itself goes to the skill.
+# The model, texture, animation and test tool skills: a request for the tool itself goes to the skill.
 @pytest.mark.parametrize(
     "text, expected",
     [
@@ -530,7 +530,7 @@ def test_every_user_facing_dayz_skill_is_a_target():
         ("how do I run a headless client under Proton", "dayz-test-ingame"),
     ],
 )
-def test_knowledge_pack_tool_skills_route_confidently(text, expected):
+def test_domain_tool_skills_route_confidently(text, expected):
     _assert_confident(text, expected, None)
 
 
@@ -554,11 +554,11 @@ def test_knowledge_pack_tool_skills_route_confidently(text, expected):
         ("open the weapons reference", "dayz-weapons"),
     ],
 )
-def test_knowledge_pack_reference_skills_route_confidently(text, expected):
+def test_reference_skills_route_confidently(text, expected):
     _assert_confident(text, expected, None)
 
 
-# Doing the work a knowledge pack describes still goes to the specialist that reads it.
+# Doing the work a reference skill describes still goes to the specialist that reads it.
 @pytest.mark.parametrize(
     "text, expected",
     [
@@ -575,7 +575,7 @@ def test_knowledge_pack_reference_skills_route_confidently(text, expected):
         ("unwrap my crate into a clean UV atlas", "dayz-object-builder"),
     ],
 )
-def test_knowledge_pack_work_goes_to_the_specialist(text, expected):
+def test_reference_skill_work_goes_to_the_specialist(text, expected):
     d = decide(text)
     assert d["route"] == expected
     assert d["kind"] == "agent"

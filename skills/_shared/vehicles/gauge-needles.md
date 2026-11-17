@@ -2,7 +2,7 @@
 
 How to build a working speedometer, tachometer and fuel gauge on a vehicle model: the needle part, the dial frame and its mirror traps, deriving `angle0` and `angle1`, the wiring in `model.cfg`, a fuel panel from scratch, and a complete recipe with an offline gate per step.
 
-> Status: field notes measured on third-party mods (LFQuad3 from 2026-09-03 to 2026-09-07, then LFQuad2 and SUB_BRZ), each named in its entry. Those measurements were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. A citation without `P:\` keeps the line number the note was written with, for the DayZ build that entry names, and is not yet checked on `P:\`: Grep for the symbol before relying on the number. The two vanilla script lines this file names (`car.c:102` and `actiongetouttransport.c:34`) and `carscript.c:230-231` were opened and match this repo's `P:\` (a 1.30 build). The table of vanilla cluster animations in trap 5 was read by the notes' author from DayZ 1.29 models with an external ODOL reader; the models on `P:\` are ODOL version 56, which this repo cannot parse, so the table was not read again. Tags such as SP-400 or LL-464 are the notes' own lesson numbers, and `[EXACT]` and `[ASSUMPTION]` are the notes' own evidence labels. Script names such as `assemble_lfquad3.py`, `dial_derive_final.py` or `normal_sign.py`, the folder `_shared_parts\gauge_needles\` and files such as `generated/model.cfg` belong to those mods' work folders, which are not part of this repo; the rules they implement are written out below. The OBJ object names `aguja_derecha` and `aguja_izquierda` are the source model's own (Spanish for "right needle" and "left needle"). "Trap N" numbers the eighteen traps of this file; they are not the numbered invariants of the vehicle pack.
+> Status: the measurements below were taken on three mod test vehicles (the LFQuad3 quad from 2026-09-03 to 2026-09-07, then the LFQuad2 quad and the SUB_BRZ car), named in each entry; they are mod behaviour, not vanilla, and were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo (a 1.30 build). The table of vanilla cluster animations in trap 5 was read from DayZ 1.29 models with an ODOL reader; the models on `P:\` are ODOL version 56, which this repo cannot parse, so the table is not yet checked on `P:\`. `[ASSUMPTION]` marks a statement that was not measured. Script names such as `assemble_lfquad3.py`, `dial_derive_final.py` or `normal_sign.py`, the folder `_shared_parts\gauge_needles\` and files such as `generated/model.cfg` belong to those vehicles' build folders, which are not part of this repo; the rules they implement are written out below. The OBJ object names `aguja_derecha` and `aguja_izquierda` are the source model's own (Spanish for "right needle" and "left needle"). "Trap N" numbers the eighteen traps of this file; they are not the numbered invariants of the vehicle pack.
 
 Related file in this pack: `animation-sign-and-axis.md` (the general rule for whether a wheel, steering, door or dial animation turns the right way).
 
@@ -16,11 +16,11 @@ Related file in this pack: `animation-sign-and-axis.md` (the general rule for wh
 
 ## What was accepted in game, and what was not broken down
 
-The LFQuad3 dashboard was accepted as good in game on 2026-09-06: "dashboard is good now" (the user's verdict in chat, recorded in `LFQuad3_dev\HANDOFF.md`; build `5ac339d3`). That verdict is global; it was not broken down per gauge. Three things were still not checked one by one: that the fuel needle moves with the tank; that the painted dial does not rotate with the needles (the object's original disc travels in the animated selection; [ASSUMPTION] it stays occluded); and that the rest position lands exactly on the printed zero (measured offline with the gate, not checked in game). LFQuad2 was confirmed in game on 2026-09-07 00:15 (by the agent, build `77303210b92d63bd`); see the table "Confirmation status".
+The LFQuad3 dashboard was accepted as good in game on 2026-09-06 with the verdict "dashboard is good now" (build `5ac339d3`). That verdict is global; it was not broken down per gauge. Three things were still not checked one by one: that the fuel needle moves with the tank; that the painted dial does not rotate with the needles (the object's original disc travels in the animated selection; [ASSUMPTION] it stays occluded); and that the rest position lands exactly on the printed zero (measured offline with the gate, not checked in game). LFQuad2 was confirmed in game on 2026-09-07 00:15 (build `77303210b92d63bd`); see the table "Confirmation status".
 
 ## The part: `_shared_parts/gauge_needles/`
 
-The author's shared parts folder `_shared_parts\gauge_needles\` (not part of this repo) holds `needle_large` and `needle_small`,
+The shared parts folder `_shared_parts\gauge_needles\` of those builds (not part of this repo) holds `needle_large` and `needle_small`,
 each in `.p3d` (to drop in) and `.obj` (to edit), plus their README.
 
 | | length | width | thickness | tris |
@@ -33,8 +33,7 @@ applies uniform scaling, multiply.
 
 **Official dial faces** in `dial_faces/`: `dial_kmh_official.png`
 (0-150 km/h), `dial_rpm_official.png` (0-6 x1000, with red from 5 to 6), and
-`dial_fuel_official.png` (E / mid / F panel). Project's own art, not
-imported; they replace dials of original ATV, which were printed 0-120
+`dial_fuel_official.png` (E / mid / F panel). They replace dials of original ATV, which were printed 0-120
 and 0-8, with the latter **counterclockwise** — hence a needle rotating
 counterclockwise over it may be correct. **Check the direction in which face
 is PRINTED before touching any angle.**
@@ -119,7 +118,7 @@ Cross product alone is not enough either. LFQuad3 generator constructed
 points to observer". On this model that `u` comes out +X and driver's right
 is -X: model itself says so, writing `light_left` at x +0.373
 and `light_right` at x -0.374 (`memory_lod`, `assemble_lfquad3.py`). That is the
-root of mirror that survived three cycles (LL-464): verification render
+root of mirror that survived three cycles: verification render
 mounted its frame with SAME expression, reproduced failure and called it
 correct.
 
@@ -163,8 +162,8 @@ V render came out good and game bad.
 > ending up in `.p3d` is `1 - v_obj`, and dials only need to be
 > consistent with it.
 >
-> Countermeasure from another session on LFQuad2, whose UVs are from Bohemia's
-> artist in an Arma 2 MLOD and never pass through that `1-v`: with V as-is
+> Counter-case on LFQuad2, whose UVs come from an
+> Arma 2 MLOD and never pass through that `1-v`: with V as-is
 > art comes out upright and readable, and with `1-v` model samples **another region
 > of the atlas**, not a mirror. They do not contradict each other: they are different pipelines, and the
 > engine only has one convention.
@@ -184,13 +183,13 @@ V render came out good and game bad.
 > checked against headlights on 2026-09-06 (`light_left` x +0.3011,
 > `light_right` x -0.3131, right = -X; `<u, light_right - light_left>` =
 > -0.6142; det +164.81 on both disks): MIRRORED, same root as here, and
-> LL-464 goes from one observation to two, in different models and pipelines. Negating
+> the mirrored-frame finding goes from one observation to two, in different models and pipelines. Negating
 > `angle0`/`angle1` on Sep 4 was a self-consistent compensation:
 > needles nailed to correct number on a face written backwards. That
 > session corrected and deployed it (UVs of 64 wedges rewritten in all three LODs
 > with right read from model and fatal guard; det -164.81; `LFQuad2.pbo`
-> sha `77303210b92d63bd`). Confirmed in game on 2026-09-07 00:15 (agent,
-> cycle with `@CF` + `@VPPAdminTools` + `@SurvivorAnims`): speedometer 0-150
+> sha `77303210b92d63bd`). Confirmed in game on 2026-09-07 00:15 (cycle
+> with `@CF` + `@VPPAdminTools` + `@SurvivorAnims`): speedometer 0-150
 > CLOCKWISE, readable "km/h", red to the RIGHT, needle at 0; tachometer
 > 0-6 CLOCKWISE, readable "RPM x1000", red to the right, needle at 0. User
 > verdict on that build names three other defects (missing fuel,
@@ -205,10 +204,10 @@ invalid — does not carry UVs written by model. In LFQuad3 that closure is
 `dial_gate_final.py`, which takes right from `LIGHT_RIGHT_MINUS_LEFT`.
 `dial_render_v5.py` (and its Sep 4 `view_all_fix.png`) mounted frame with
 `cross(-axis, up)`, same expression as generator: reproduced failure and
-called it correct (LL-464). Does not count as closure.
+called it correct. Does not count as closure.
 
 **Chirality rule for a NEW part** (measured 2026-09-07, LFQuad2).
-LFQuad2 reintroduced LL-464 mirror in its own code when mounting
+LFQuad2 reintroduced the same mirror in its own code when mounting
 panel frame: it did `Up = cross(Np, Rp)` and, if Up came out inverted,
 flipped Up AND recalculated Rp, which dragged Rp to driver's
 left (`<Rp, right> = -1.0000`); caught by a guard, not an eye. The frame
@@ -341,10 +340,10 @@ class IndicatorFuel
 **radians** while the rest of the file is in degrees: `30` ends up being 1718
 degrees.
 
-**Source units**: `speed` is **km/h** — `scripts/3_game/vehicles/car.c:102`
-declares `proto native float GetSpeedometer()` and
-`4_World/classes/useractionscomponent/actions/interact/actiongetouttransport.c:34`
-documents unit when comparing against `GetSpeedometerAbsolute()`. `rpm` comes
+**Source units**: `speed` is **km/h** — `P:\scripts\3_game\vehicles\car.c:102`
+declares `proto native float GetSpeedometer()` and the comment on `CAR_JUMPOUT_THRESHOLD` at
+`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetouttransport.c:34`
+gives the unit; the action compares it against `GetSpeedometerAbsolute()`. `rpm` comes
 normalized 0..1 over `rpmMax` (in LFQuad3 the last point of `torqueCurve`
 is 6400; dial prints up to 6000, so `maxValue 1.0` is 6.4 printed
 units and `angle1` comes from theta(6.4)).
@@ -359,8 +358,7 @@ of their cluster animations passes through script `AnimationSources`.
 > as engine source, because in scripts only `GetFluidFraction()` appears. It was
 > false, and contradicted a table that was already measured in the same project.
 > **Absence on the script side is not absence in the engine**: `model.cfg`
-> sources are native and do not have to show up in Enforce. The warning already cost a
-> retraction in another session, which repeated it to user before checking it.
+> sources are native and do not have to show up in Enforce.
 
 LFQuad3 carries `source = "fuel"` and the user accepted the cluster as good, but the
 movement of that needle **is not broken down** in game.
@@ -426,11 +424,11 @@ Reproducible in two minutes on
 
 In LFQuad3 this convention (axis towards driver, `angle0 = rest - theta(min)`)
 is that of cluster approved in game on 2026-09-06. If a cluster with this
-rule rests off zero, first suspect is frame (LL-464), not vanilla
+rule rests off zero, first suspect is frame (trap 2), not vanilla
 rule. Cheap check: `light_left` and `light_right` of Memory
 LOD and sign of `<u_of_frame, light_right - light_left>`; negative = mirrored
 frame. LFQuad2 confirms it for a second time, now in game
-(2026-09-07 00:15, agent, build `77303210b92d63bd`, cycle with
+(2026-09-07 00:15, build `77303210b92d63bd`, cycle with
 `@SurvivorAnims`): speedometer 0-150 CLOCKWISE, legible "km/h", red to the
 RIGHT, needle at 0; tachometer 0-6 CLOCKWISE. On 2026-09-06
 speedometer was below 0 and tachometer above, negated sign
@@ -595,7 +593,7 @@ edge — and that bodywork has cycles seen in game without anyone saying
 texture is flipped. That is anchor. In another toolchain (LFQuad2, Arma 2 MLOD
 without that `1-v`) anchor is different: **look at what rest of model does,
 not what this page says**. Confirmed in game 2026-09-07 00:15
-(agent, build `77303210b92d63bd`): upright and legible art, clockwise, red
+(build `77303210b92d63bd`): upright and legible art, clockwise, red
 to the right. User verdict on that build names three other
 defects, none regarding frame. What discriminated previous mirror was
 measurement against headlights.
@@ -639,8 +637,8 @@ Calibration of the instrument against two known states (LFQuad3):
 | (+U,-V) | anchored to headlights | 0 bottom-left, clockwise, red to right | fix; in game only global verdict of Sep 6 |
 
 Mappings are named in frame of their `u`: (+U,-V) with mirrored basis and
-(+U,-V) with anchored basis are DISTINCT mappings (LFQuad3 HANDOFF calls them
-(+U,-V) and (-U,-V) in unflipped frame). That is why basis is a column.
+(+U,-V) with anchored basis are DISTINCT mappings (in the unflipped frame they are
+(+U,-V) and (-U,-V)). That is why basis is a column.
 
 Reproducing BOTH known states turns instrument into authority; one
 only distinguishes reachable from unreachable, not good from bad. Hypotheses
@@ -650,7 +648,7 @@ driver does NOT see rear face of disc (88 faces at +Y vs 16); axis does NOT
 point inward (`<driver - p0, axis>` = +0.0210 kmh and +0.0203 rpm);
 inverted winding upon binarizing is format convention, not a bug.
 
-Three rules from LL-464:
+Three rules from the mirrored frame:
 
 1. Frame is ANCHORED to something artifact says about itself, not deduced from
    a handedness convention requiring argument.
@@ -708,7 +706,7 @@ two anisotropies cancel out.
 face already brings good UV (exact [0,1] window, no mirror, negative det) and only issue
 is non-isotropic mapping, there is NO need to reassign host model UVs:
 simply compose art already deformed by INVERSE factor and both anisotropies cancel
-on face. SUB_BRZ s77: real panel measures 264.78 x 105.61 mm (2.5072:1) against a
+on face. SUB_BRZ: real panel measures 264.78 x 105.61 mm (2.5072:1) against a
 2:1 texture, so art was composed PRE-COMPRESSED horizontally by 0.797711; face
 isotropy gate 1.0000 / 1.0053 / 0.9947. This avoids reassigning UVs of a 20 MB `.p3d`
 not yours: same result with an order of magnitude less scope.
@@ -894,7 +892,7 @@ Fit the affine map (driver-screen x,y) -> (U,V) over the dial faces of the built
 model. Image V grows **down** and screen y grows **up**, so an unmirrored texture
 gives a **negative** determinant. Positive means mirrored, whatever the numbers
 "look like" in a small render. That sign is valid only in a frame whose +right
-is the model's real right (LL-464). In LFQuad3 the instrument first shared the
+is the model's real right (trap 2). In LFQuad3 the instrument first shared the
 generator's frame (`u = cross(w, axis)`, pointing +X while the driver's right is
 -X): on 4 September it read +512/+491 for the round dials with the (-U,-V) mapping and
 -1290 for the fuel panel, and once the mapping went to (+U,-V) it read all three
@@ -903,7 +901,7 @@ frame anchored to `light_left`/`light_right`, that same mirrored build reads
 +513 / +491 / +1290 and the fixed build -513 / -491 / -1290. The sign became
 evidence only once the frame was anchored; the bug was the frame.
 
-  ★ Corollary about evidence (LL-456): two user reports of the same defect are not two
+  ★ Corollary about evidence: two user reports of the same defect are not two
   observations of two states. Check the **build timestamp** before inferring a
   sign from a sequence of reports. Here "upside down" and "mirrored" both
   described the same deployed PBO (14:32); at that moment the intermediate fix
@@ -911,7 +909,7 @@ evidence only once the frame was anchored; the bug was the frame.
   render then disproved. The 16:28 build shipped later and was seen on 6 September
   ("still mirrored"): that is the second calibration point of trap 10, not a
   second observation of the 14:32 build.
-  LL-464 amends the ending: that lesson stands, but the sign taken from the
+  Trap 2 amends the ending: that lesson stands, but the sign taken from the
   determinant was measured in a mirrored frame, so the correction that followed
   from it was wrong.
 
@@ -993,12 +991,12 @@ the symptom.
 
 Stamps and backups residing inside mod tree end up
 in PBO if packaging copies entire tree (95.7 MB instead of 21.8, with
-"Build Successful"); `pack_lfquad3.py` filters using `ignore_patterns` (LL-467).
+"Build Successful"); `pack_lfquad3.py` filters using `ignore_patterns`.
 
 ## Trap 14 — a count is not a shape: three fake fuel needles
 
 LFQuad3's fuel needle went through probes three times with three different
-shapes, none of which was a needle (LL-466). Topology: see trap 1.
+shapes, none of which was a needle. Topology: see trap 1.
 
 **Shape 1** (Sep 4 build): filter by angular width seen from hub,
 cutoff at 5 degrees. A blade triangle close to pivot spans a wide angle
@@ -1035,7 +1033,7 @@ tris (cap 30 + octagons 12 + 76 from quads), tip at r 0.0122 on
 arc, 0 vertices behind panel, rest 0.90 with 0 ring points, angles
 -129.1/-47.6 unchanged.
 
-Four lessons from LL-466: a count is not a shape (ask what else produces
+Four lessons from the three fake needles: a count is not a shape (ask what else produces
 that number; if it is "the entire object", criterion does not discriminate); reviewer
 inherits brief's criterion; measure ALL dimensions user sees (depth
 relative to what it occludes); look at the part (a 60 KB drawing was worth
@@ -1052,7 +1050,7 @@ do rotate)".
 
 Fix: place faces AND their points into animated selection (`drivewheel`)
 across ALL LODs containing dials. Build `4034b2e35a9fbb96` (00:33):
-agent sees dials turn WITH handlebars.
+dials turn WITH handlebars.
 
 Generalizable: new geometry inherits no selection, and symptom
 only appears when TURNING; no static screenshot reveals it. It is symmetric
@@ -1114,8 +1112,8 @@ both the other sign was correct:
 - **LFQuad2, stored normal.** Correct winding on all four parts (`<cross, axis>`
   = -1.000, like discs), but fuel panel and needle with stored normal at
   +1.000, written "towards driver". By day they looked identical to dials; at NIGHT they did
-  not shine under same rvmat. Measured by LFQuad2 on its `.p3d`; reproduced here with
-  another instrument on `.p3d` of its deployed PBO (`3670fe455648c1ac`: 1 + 1 faces
+  not shine under same rvmat. Measured on the LFQuad2 `.p3d` and reproduced with
+  a second instrument on `.p3d` of its deployed PBO (`3670fe455648c1ac`: 1 + 1 faces
   with `<normal, cross> < 0` in each visual LOD) and on its fixed tree
   (`5f49257c4380280d`: 0). Its PBO carries it since 02:10 (`bea1b889b3ecedae`, body
   `5f47e2cbf8ea323f`, 0 with this instrument); NIGHT inspection remains pending.
@@ -1135,25 +1133,25 @@ smoothing never drops below 0.5). Both columns come from `normal_sign.py` (LFQua
 measurement tools): groups cluster faces by selection + texture against nearest Memory
 axis. Positive control: `--control <sel>` negates in memory the
 normals of a selection and all its faces must be flagged. Independent control:
-LFQuad2 PBO above, which is a real defect from another hand. The instrument also provides
+LFQuad2 PBO above, which is a real defect made independently. The instrument also provides
 winding verdict: each gauge group (needle selections, dial textures,
 numbers and needles) against average sign of painted discs. Functional LODs
 (Geometry 1e13, ViewGeometry 6e15, FireGeometry 7e15) are excluded unless `--all-lods`:
 they carry 1-2 untextured faces with normal at +0.6 that are not rendered and which a blind
-counter reads as "5 discrepancies" on a clean model (noise documented by LFQuad2). And normal
+counter reads as "5 discrepancies" on a clean model (noise measured on LFQuad2). And normal
 counter sums only gauge groups: rest of cluster is reported separately,
 informational, because decimated LODs of a base model ship with some face having
 smoothed normal against its cross (LFQuad2, LOD 1-3: 5-7 faces each).
 
 **And in-game, inspect cluster also at NIGHT** or with dash lights turned on
-(`dashboardMatOn`, the material of the `DashboardOn` selection that 1.30 registers on `light_dashboard`,
-`carscript.c:230-231`; on 1.29 `DashboardShineOn` applied it, 1.29 `carscript.c:2481-2497`): normal defect only surfaces in low light. Winding defect is
+(`dashboardMatOn`, the material that 1.30 registers on the `DashboardOn` selection,
+`P:\scripts\4_world\entities\vehicles\carscript.c:230`; on 1.29 `DashboardShineOn` applied it, at `carscript.c:2481-2497` of the 1.29 build, which is not on `P:\`): normal defect only surfaces in low light. Winding defect is
 visible at any hour, but only when inspecting THAT specific part: global verdict does not break it down.
 
 **And winding instrument has its own failure mode: radial metric does not decide on
 a shell.** Counting what fraction of faces has cross pointing OUTWARD from
 mesh centroid works on a convex solid and means nothing in a cockpit. Inside
-SUB_BRZ (s77) that metric gave **0.0% of faces "towards driver"** and looked like
+SUB_BRZ that metric gave **0.0% of faces "towards driver"** and looked like
 entire model reversed. It was not. A cockpit is a shell viewed from INSIDE and
 a cluster is almost a torus: centroid falls outside material, so radius is no
 reference for anything. Signed volume also failed to arbitrate: negative in BOTH
@@ -1168,16 +1166,16 @@ defect believed to be fixed. Rule: winding witness is a VISIBLE neighboring
 face of known normal; centroid statistics only apply to convex shapes, and signed
 volume only to watertight meshes, which must be verified BEFORE citing it.
 
-## Trap 18 — a verdict on a STATIC cluster does not accredit needle motion (SP-400, added 2026-10-01, SUB_BRZ s77/s94)
+## Trap 18 — a verdict on a STATIC cluster does not accredit needle motion (added 2026-10-01, SUB_BRZ)
 
-The interior proxy carried the three needles with their `Indicator*` classes. [EXACT] The user's
+The interior proxy carried the three needles with their `Indicator*` classes. The user's
 verdict on that build was "driver dash correct", and the turn sign was taken as proven from it;
-in s94, watching the moving car, the needles had NEVER moved - frozen at full left. The sources were
+in a later session, watching the moving car, the needles had NEVER moved - frozen at full left. The sources were
 the same ones that move on the quad control car and the wiring chain was identical: they had never
 animated at all (measured in game, DayZ 1.30.164014 Exp). A global verdict on a static cluster
 accredits neither movement nor turn sign: ask to move the car and look at the needle before closing
 a gauge task. Needles and their `Indicator*` classes live in the VEHICLE model, never in a static
-proxy (SP-192).
+proxy.
 
 ## Complete recipe for a new cluster, in order
 
@@ -1223,7 +1221,7 @@ numbers.
    size (stamps do not travel; trap 13). LFQuad3: `emit` in
    `convert_textures.py`, `ignore_patterns` in `pack_lfquad3.py`.
 8. **Before trusting a new render**, reproduce two known states
-   (trap 10, LL-464). A single green does not tell good from bad.
+   (trap 10). A single green does not tell good from bad.
 9. **In-game**, inspect: all three gauges unmirrored and with new faces; fuel
    needle visible and between E and F, moving with tank; with engine
    running, kmh/rpm moving and painted dial NOT rotating
@@ -1239,7 +1237,7 @@ numbers.
 | | signed off in-game | not itemized / open |
 |---|---|---|
 | LFQuad3 | "dashboard is good now" (2026-09-06, build `5ac339d3`) | fuel motion; original disc in animated selection; exact zero (offline gate); fuel needle: in `5ac339d3` its 182 tris have winding reversed relative to rest of cluster (culled from seat, measured 2026-09-07, trap 17), fixed in generator and UNCONFIRMED in-game |
-| LFQuad2 `77303210b92d63bd` | agent 2026-09-07 00:15, cycle `@CF` + `@VPPAdminTools` + `@SurvivorAnims`, 1st person: speedometer 0-150 CLOCKWISE, "km/h" legible, red on RIGHT, needle at printed 0; tachometer 0-6 CLOCKWISE, "RPM x1000" legible, red on right, needle at 0; both dials visible from seat. Verbatim user verdict: "nothing seen on fuel gauge, plus when turning the part, dash does not turn with it, both circles stay behind (needles do rotate). On the other hand, as you can see, texture is pixelated, must be fixed". LL-464: second confirmation in-game, on another model. What discriminated prior mirroring was measurement against headlights (det +164.81). Deployed as `LFQuad2.pbo` `77303210b92d63bd` + `model.cfg` `1a2df84507870fc8`. | fuel: none; discs outside drivewheel (trap 15); pixelated texture = screen resolution limit (trap 9). None of the three stems from frame. |
-| LFQuad2 `4034b2e35a9fbb96` | agent 2026-09-07 00:33 (R 0.038 and discs in drivewheel): dials turn WITH handlebars; legible numbers; unmirrored faces; needles at 0. User verdict: PENDING. | user verdict pending; fuel: none. |
-| LFQuad2 batch 2 (fuel panel + driver 1 cm forward; PBO 12,632,912 B; 2026-09-07) | offline gate green: actual UVs from .p3d rasterized against texture with frame anchored to headlights, needle drawn at E, 1/2, and F, det -231.92 direct, anisotropy 1.0049, residual 5.0e-07; deployed and verified by content inside PBO. CONFIRMED IN-GAME by agent (2026-09-07 01:16, clean cycle, cycled storage, new character, frame_stale=false): panel visible above gauges, centered, FUEL / E / 1-2 / F legible and unmirrored; needle built pointing UP (rest 90) points in-game to F with fuel = 1.0: engine rotated it +41.5 = its angle1. First WIRING test of recipe, not just drawing. | user verdict on LFQuad2 in that window: hands and handlebar separate when turning ("handlebar moves slightly upward and hand animation slightly downward"), defect unrelated to cluster (handlebar axis with 3.4 degrees rake, under study); no recorded objection to panel or mirroring. |
-| SUB_BRZ s77 `AF365A3C` (2026-09-07) | **CONFIRMED IN-GAME by user** on 2026-09-07, manually launched cycle (`@DayZ_MCP;@CF;@VPPAdminTools;@SurvivorAnims;@SUB_BRZ`, Chernarus). Verbatim verdict: "Driver dash correct, leaving it like this now". Confirms along the way that rotation SIGN, which was DERIVED and not measured, was correct: reversed it would have swept backward. Third model confirmed under recipe, and first with all three custom dials. | ENTIRE cluster. Built offline: three custom dials (km/h 0-220, rpm 0-8, fuel E-F) in `brz_cluster_co.paa` DXT1 2048x1024 across the 42 faces of `light_dashboard`, which already had an exact [0,1] UV window and native emissive swap `dashboardMatOn/Off`; three canonical 182-tri needles in BOTH visual LODs of interior proxy (1.0 and 1100 = first person); `mph` -> `kmh`; `IndicatorSpeed maxValue` 60 -> 220, which was a REAL defect (needle stuck at 60 km/h and rest of scale was dead). Verified INSIDE PBO: binarized ODOL of interior contains `kmh`/`kmh_axis`/`rpm`/`rpm_axis`/`fuel_1`/`fuel_1_axis` and zero `mph`. **Rotation SIGN is DERIVED** (right hand + `DrivingWheel` from same file), not measured: if it sweeps backwards, it is a sign. Inherited trap R7: BODY (`sub_brz.p3d`, byte-for-byte identical to pre-s77) retains obsolete `mph`/`rpm`/`fuel_1` memory points with PURE +-Z axes vs inclined interior axes; `model.cfg` does not reference them, but car #2 could be wired to wrong pair. |
+| LFQuad2 `77303210b92d63bd` | 2026-09-07 00:15, cycle `@CF` + `@VPPAdminTools` + `@SurvivorAnims`, 1st person: speedometer 0-150 CLOCKWISE, "km/h" legible, red on RIGHT, needle at printed 0; tachometer 0-6 CLOCKWISE, "RPM x1000" legible, red on right, needle at 0; both dials visible from seat. Verbatim user verdict: "nothing seen on fuel gauge, plus when turning the part, dash does not turn with it, both circles stay behind (needles do rotate). On the other hand, as you can see, texture is pixelated, must be fixed". Second in-game confirmation of the mirrored-frame finding, on another model. What discriminated prior mirroring was measurement against headlights (det +164.81). Deployed as `LFQuad2.pbo` `77303210b92d63bd` + `model.cfg` `1a2df84507870fc8`. | fuel: none; discs outside drivewheel (trap 15); pixelated texture = screen resolution limit (trap 9). None of the three stems from frame. |
+| LFQuad2 `4034b2e35a9fbb96` | 2026-09-07 00:33 (R 0.038 and discs in drivewheel): dials turn WITH handlebars; legible numbers; unmirrored faces; needles at 0. User verdict: PENDING. | user verdict pending; fuel: none. |
+| LFQuad2 batch 2 (fuel panel + driver 1 cm forward; PBO 12,632,912 B; 2026-09-07) | offline gate green: actual UVs from .p3d rasterized against texture with frame anchored to headlights, needle drawn at E, 1/2, and F, det -231.92 direct, anisotropy 1.0049, residual 5.0e-07; deployed and verified by content inside PBO. CONFIRMED IN-GAME (2026-09-07 01:16, clean cycle, cycled storage, new character, frame_stale=false): panel visible above gauges, centered, FUEL / E / 1-2 / F legible and unmirrored; needle built pointing UP (rest 90) points in-game to F with fuel = 1.0: engine rotated it +41.5 = its angle1. First WIRING test of recipe, not just drawing. | user verdict on LFQuad2 in that window: hands and handlebar separate when turning ("handlebar moves slightly upward and hand animation slightly downward"), defect unrelated to cluster (handlebar axis with 3.4 degrees rake, under study); no recorded objection to panel or mirroring. |
+| SUB_BRZ `AF365A3C` (2026-09-07) | **CONFIRMED IN-GAME by user** on 2026-09-07, manually launched cycle (`@DayZ_MCP;@CF;@VPPAdminTools;@SurvivorAnims;@SUB_BRZ`, Chernarus). Verbatim verdict: "Driver dash correct, leaving it like this now". Confirms along the way that rotation SIGN, which was DERIVED and not measured, was correct: reversed it would have swept backward. Third model confirmed under recipe, and first with all three custom dials. | ENTIRE cluster. Built offline: three custom dials (km/h 0-220, rpm 0-8, fuel E-F) in `brz_cluster_co.paa` DXT1 2048x1024 across the 42 faces of `light_dashboard`, which already had an exact [0,1] UV window and native emissive swap `dashboardMatOn/Off`; three canonical 182-tri needles in BOTH visual LODs of interior proxy (1.0 and 1100 = first person); `mph` -> `kmh`; `IndicatorSpeed maxValue` 60 -> 220, which was a REAL defect (needle stuck at 60 km/h and rest of scale was dead). Verified INSIDE PBO: binarized ODOL of interior contains `kmh`/`kmh_axis`/`rpm`/`rpm_axis`/`fuel_1`/`fuel_1_axis` and zero `mph`. **Rotation SIGN is DERIVED** (right hand + `DrivingWheel` from same file), not measured: if it sweeps backwards, it is a sign. Inherited trap: BODY (`sub_brz.p3d`, byte-for-byte identical to the build before it) retains obsolete `mph`/`rpm`/`fuel_1` memory points with PURE +-Z axes vs inclined interior axes; `model.cfg` does not reference them, but car #2 could be wired to wrong pair. |

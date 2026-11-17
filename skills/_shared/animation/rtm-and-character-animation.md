@@ -16,7 +16,7 @@ For a mod, `.rtm` work means a new face pose or a small animal state in the same
 
 ### The format and its tools
 
-Not checked on `P:\`, which holds no `.rtm` files; from the source knowledge pack's reading of community pages. The format is reverse engineered: the Bohemia community wiki page for it carries a notice that it describes internal, undocumented structures. An unbinarized file is an optional `RTM_MDAT` block of frame properties followed by `RTM_0101`: a motion vector, the frame and bone counts, bone names of a fixed 32 bytes, and one 4 by 3 matrix per bone and frame. A binarized form also exists. The user writes `.rtm` from Blender with the Arma 3 Object Builder addon or converts FBX with `FBXToRTMGui.exe` from DayZ Tools; the source and the converter must use the same frame rate, or the clip's speed drifts. Never use `.rtm` for a player weapon animation. Tools and traps: `skills/dayz-animation-pipeline/references/skeletal-rtm.md`.
+Not checked on `P:\`, which holds no `.rtm` files. The format has no official specification; the layout below is reverse engineered and describes internal, undocumented structures. An unbinarized file is an optional `RTM_MDAT` block of frame properties followed by `RTM_0101`: a motion vector, the frame and bone counts, bone names of a fixed 32 bytes, and one 4 by 3 matrix per bone and frame. A binarized form also exists. The user writes `.rtm` from Blender with the Arma 3 Object Builder addon or converts FBX with `FBXToRTMGui.exe` from DayZ Tools; the source and the converter must use the same frame rate, or the clip's speed drifts. Never use `.rtm` for a player weapon animation. Tools and traps: `skills/dayz-animation-pipeline/references/skeletal-rtm.md`.
 
 ## Player and infected use `.anm` graphs instead
 

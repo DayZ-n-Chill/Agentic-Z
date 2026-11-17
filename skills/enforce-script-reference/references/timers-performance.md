@@ -29,30 +29,30 @@ GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).Remove(MyCallback);
 - `CALL_CATEGORY_GAMEPLAY`: standard gameplay. The vanilla comment is "runs unless ingame menu is opened"; in practice it ticks only while a mission runs and is not paused, so it is also paused during loading (traced in `skills/_shared/enscript/references/api_scheduling.md`)
 - `CALL_CATEGORY_GUI`: UI updates, "runs always (on client)"; it never ticks on a dedicated server
 
-**Rule 21b. `CallLater` re-queued from within its own callback never fired again on client diag 1.29** (chain pattern: `fn` re-enqueues itself) — zero RPT errors, chain dies silently after the first step; the same `CallLater` fired from OUTSIDE the queue works normally. Remedy: `Timer(CALL_CATEGORY_GAMEPLAY).Run(s, this, "fn", null, true)` + `Stop()` on completion. Measured on client diag 1.29 (2026-08-19): the `CallLater` chain died after its first step, and the same chain on a `Timer` completed all five steps. Not reproduced on the retail DayZServer 1.30.164289 (2026-11-10): two chains that re-queue themselves from their own callback with `CallLater(fn, 500, false, …)`, one on `CALL_CATEGORY_SYSTEM` and one on `CALL_CATEGORY_GAMEPLAY`, both ran all six steps; the first queued step fired 14.3 s after `OnMissionStart` in both categories, the rest about 0.5 s apart.
+**A `CallLater` re-queued from within its own callback never fired again on client diag 1.29** (chain pattern: `fn` re-enqueues itself) — zero RPT errors, chain dies silently after the first step; the same `CallLater` fired from outside the queue works normally. Remedy: `Timer(CALL_CATEGORY_GAMEPLAY).Run(s, this, "fn", null, true)` + `Stop()` on completion. Measured on client diag 1.29 (2026-08-19): the `CallLater` chain died after its first step, and the same chain on a `Timer` completed all five steps. Not reproduced on the retail DayZServer 1.30.164289 (2026-11-10): two chains that re-queue themselves from their own callback with `CallLater(fn, 500, false, …)`, one on `CALL_CATEGORY_SYSTEM` and one on `CALL_CATEGORY_GAMEPLAY`, both ran all six steps; the first queued step fired 14.3 s after `OnMissionStart` in both categories, the rest about 0.5 s apart.
 
 #### THE CALLLATER BUG — 4.5 Hour Precision Loss
 
 **Reported engine bug** (reported as still present in DayZ 1.28 and later). It cannot be checked on `P:\`, because `CallLater` is a `proto` with no script body (rule 21 in `hard-rules.md`; `skills/_shared/enscript/patterns/scheduler.md` treats it as unverified):
 
-After ~4.5 hours of server runtime, `CallLater` intervals become increasingly
-inaccurate. Root cause: internal time is stored as 32-bit float. After 16,200
-seconds (4.5h), integer values above 16,777,216 lose precision due to IEEE 754
+The report: after ~4.5 hours of server runtime, `CallLater` intervals become increasingly
+inaccurate. The cause it gives: internal time is stored as a 32-bit float, and after 16,200
+seconds (4.5h) integer values above 16,777,216 lose precision due to IEEE 754
 mantissa limits.
 
-**Symptoms:**
+**Reported symptoms:**
 - Callbacks scheduled every 5s start firing every 7s, 10s, 15s...
 - After 8+ hours, some callbacks never fire at all
-- Affects ALL mods using `CallLater` with `repeat=true`
+- Affects all mods using `CallLater` with `repeat=true`
 
 **Workarounds:**
 1. **Server restart schedule** — restart every 3-4 hours
-2. **Timer class** — uses different internal mechanism, not affected
+2. **Timer class** — keeps its own clock (next section), reported not affected
 3. **Manual tick counter** — count frames in OnUpdate, fire when threshold reached
 
 ### Timer Class (Alternative)
 
-The `Timer` class is reported NOT to be affected by the CallLater bug but is heavier on resources. It is script, so its clock can be read: each timer adds the frame's `timeslice` to its own `m_time` (`P:\scripts\3_game\tools\tools.c:277`) and never compares against the absolute uptime. `Timer` is declared at `:576` and `Run(duration, obj, fn_name, params, loop)` at `:595`.
+The `Timer` class is reported not to be affected by the CallLater bug but is heavier on resources. It is script, so its clock can be read: each timer adds the frame's `timeslice` to its own `m_time` (`P:\scripts\3_game\tools\tools.c:277`) and never compares against the absolute uptime. `Timer` is declared at `:576` and `Run(duration, obj, fn_name, params, loop)` at `:595`.
 
 ```
 class MyManager
@@ -216,7 +216,7 @@ parameter is `immediate`, not a "global" switch: global functions use the `G` va
 ```
 EnProfilerFlags.NONE        // Data accumulates across frames; only the current module is sorted
 EnProfilerFlags.RESET       // Data is reset after each sort
-EnProfilerFlags.RECURSIVE   // All modules are sorted, not only the current one
+EnProfilerFlags.RECURSIVE   // Child modules are profiled too, not only the current one
 EnProfilerFlags.ALL         // RESET | RECURSIVE (the default)
 ```
 

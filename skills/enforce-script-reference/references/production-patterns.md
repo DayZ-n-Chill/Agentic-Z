@@ -1,8 +1,8 @@
 # Production UI patterns: Enforce Script best practices
 
-Patterns taken from production Enforce Script mods and audits of them (mostly the LFPowerGrid mod). They address common issues in UI state management, view binding, animation, memory, and event handling that cause crashes, leaks, or visual bugs in production.
+Patterns for UI code in production Enforce Script mods. They address common issues in UI state management, view binding, animation, memory, and event handling that cause crashes, leaks, or visual bugs in production.
 
-The snippets are design patterns from those mods, not vanilla code. `ScriptView`, `ViewController`, `ViewBinding`, `ObservableCollection` and `NotifyPropertyChanged` belong to the third-party Dabs Framework (`skills/_shared/enscript/integrations/dabs_framework.md`), and `WidgetAnimator` is not a vanilla class (no hit under `P:\scripts\`): treat it as the mod's own helper. A line cited as `P:\...:N` was opened on `P:\`.
+The snippets are third-party mod design patterns, not vanilla code. `ScriptView`, `ViewController`, `ViewBinding`, `ObservableCollection` and `NotifyPropertyChanged` belong to the third-party Dabs Framework (`skills/_shared/enscript/integrations/dabs_framework.md`), and `WidgetAnimator` is not a vanilla class (no hit under `P:\scripts\`): treat it as the mod's own helper. A line cited as `P:\...:N` was opened on `P:\`.
 
 ---
 
@@ -33,7 +33,7 @@ void CacheColor(Widget wid, int color)
 }
 
 // On hover enter
-void OnMouseEnter()
+bool OnMouseEnter()
 {
     if (!m_IsOpen)
         return false;
@@ -43,8 +43,8 @@ void OnMouseEnter()
     if (target)
     {
         // Fetch original color from cache
-        int originalCol = FindCachedColor(target);
-        if (originalCol >= 0)
+        int originalCol;
+        if (FindCachedColor(target, originalCol))
         {
             int hoverCol = ModifyColor(originalCol, 0.8f); // brighten or adjust
             target.SetColor(hoverCol);
@@ -55,15 +55,15 @@ void OnMouseEnter()
 }
 
 // On hover exit
-void OnMouseLeave()
+bool OnMouseLeave()
 {
     if (!m_IsOpen)
         return false;
 
     if (m_HoveredWidget)
     {
-        int restoreCol = FindCachedColor(m_HoveredWidget);
-        if (restoreCol >= 0)
+        int restoreCol;
+        if (FindCachedColor(m_HoveredWidget, restoreCol))
         {
             m_HoveredWidget.SetColor(restoreCol);
         }
@@ -72,17 +72,14 @@ void OnMouseLeave()
     return true;
 }
 
-// Helper: look up cached color
-protected int FindCachedColor(Widget wid)
+// Helper: look up cached color; returns false when the widget has none.
+// Do not signal "not found" with -1: an opaque ARGB color is a negative int, and 0xFFFFFFFF is -1.
+protected bool FindCachedColor(Widget wid, out int color)
 {
     if (!m_HoverColorCache || !wid)
-        return -1;
+        return false;
 
-    int cached = -1;
-    if (m_HoverColorCache.Find(wid, cached))
-        return cached;
-
-    return -1;
+    return m_HoverColorCache.Find(wid, color);
 }
 ```
 
@@ -117,8 +114,8 @@ protected void SetControlsEnabled(bool enabled)
 
         if (enabled)
         {
-            int originalCol = FindCachedColor(ctrl);
-            if (originalCol >= 0)
+            int originalCol;
+            if (FindCachedColor(ctrl, originalCol))
             {
                 ctrl.SetColor(originalCol);
             }
@@ -220,7 +217,7 @@ When ObservableCollection holds views that reference back to the controller, you
 // In tag view that references controller
 class TagView extends ScriptView
 {
-    protected ref LFPG_SorterController m_OwnerController;
+    protected ref SorterController m_OwnerController;
 
     void ~TagView()
     {
@@ -258,7 +255,7 @@ class SorterView extends ScriptView
         m_IsOpen = false;
 
         // Clear collections BEFORE hiding panel
-        LFPG_SorterController ctrl = LFPG_SorterController.Cast(GetController());
+        SorterController ctrl = SorterController.Cast(GetController());
         if (ctrl)
         {
             ctrl.ClearCollections();
@@ -497,7 +494,7 @@ class DataManager extends ScriptView
 }
 ```
 
-The knowledge pack's snippet called `GetGame().GetWorld().QueryEntitiesInRange(...)` here, which does not exist in vanilla (no hit under `P:\scripts\`); the query above is the vanilla `GetObjectsAtPosition` (`P:\scripts\3_game\global\game.c:923`).
+There is no `GetGame().GetWorld().QueryEntitiesInRange(...)` in vanilla (no hit under `P:\scripts\`); the query above is the vanilla `GetObjectsAtPosition` (`P:\scripts\3_game\global\game.c:923`).
 
 **Bad pattern**:
 ```
@@ -673,7 +670,7 @@ class ModalView extends ScriptView
 }
 ```
 
-`ChangeGameFocus(int add, ...)` adds its argument to a focus counter; it does not set a mode (`P:\scripts\3_game\tools\input.c:18`). So the knowledge pack's original close call, `ChangeGameFocus(0)`, changed nothing and left the lock on. Pair each `ChangeGameFocus(1)` with a `ChangeGameFocus(-1)`, as vanilla's `UIScriptedMenu` does in `LockControls` and `UnlockControls` (`P:\scripts\3_game\tools\uiscriptedmenu.c:89`, `:113`), or call `ResetGameFocus()` to set the counter to 0 (`P:\scripts\3_game\tools\input.c:27`). The original also called `GetGame().GetInput().SetDisabled(...)`; the `Input` class has no such method. `SetDisabled` is on `HumanInputController` (`P:\scripts\3_game\human.c:22`), reached through the player's `GetInputController()` (`:1458`), if you also need to freeze the character's own input.
+`ChangeGameFocus(int add, ...)` adds its argument to a focus counter; it does not set a mode (`P:\scripts\3_game\tools\input.c:20`). So a close call of `ChangeGameFocus(0)` changes nothing and leaves the lock on. Pair each `ChangeGameFocus(1)` with a `ChangeGameFocus(-1)`, as vanilla's `UIScriptedMenu` does in `LockControls` and `UnlockControls` (`P:\scripts\3_game\tools\uiscriptedmenu.c:89`, `:113`), or call `ResetGameFocus()` to set the counter to 0 (`P:\scripts\3_game\tools\input.c:27`). `GetGame().GetInput().SetDisabled(...)` does not compile: the `Input` class has no such method. `SetDisabled` is on `HumanInputController` (`P:\scripts\3_game\human.c:22`), reached through the player's `GetInputController()` (`:1458`), if you also need to freeze the character's own input.
 
 **Key rules**:
 1. Lock in Open, unlock in Close.

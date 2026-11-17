@@ -446,7 +446,7 @@ has no `Repeat` line, the evidence is that vanilla stops it explicitly.
 | Geyser | Geyser normal | `GEYSER_NORMAL` | Yes. `Repeat 1` |
 | Menu evaporation | Main-menu evaporation | `EVAPORATION` | No. `Repeat 0`; vanilla plays it only in the menu |
 
-Sources, one per row with a `Repeat` claim:
+The vanilla lines behind each row:
 
 - `SMOKING_BARREL_STEAM` registers `smoking_barrel_steam` (`P:\scripts\3_game\particles\particlelist.c:203`), which loops (`Repeat 1` at `P:\graphics\particles\smoking_barrel_steam.ptc:47`).
 - `SMOKING_BARREL_STEAM_SMALL` registers `smoking_barrel_steam_small` (`P:\scripts\3_game\particles\particlelist.c:204`), which loops (`Repeat 1` at `P:\graphics\particles\smoking_barrel_steam_small.ptc:49`).
@@ -541,7 +541,7 @@ Where LFPG code differs from the patterns above, and which form to keep:
 - `#ifndef SERVER` around client code. LFPG wraps the bodies of Patterns B to D in `#ifndef SERVER` and the server part of `LFPG_OnWiresCut` in `#ifdef SERVER`. The define removes the code from a dedicated server build only. It does not skip a headless client, and in a test run where one diagnostic executable is both server and client it separates nothing (`SKILL.md`, pitfall 1). Keep the runtime check.
 - One-shot sparks. LFPG plays them with the legacy `Particle.PlayOnObject(sparkId, this, sparkPos)`. Pattern C uses the pool, `ParticleManager.GetInstance().PlayOnObject`, as vanilla barbed wire does. Both delete a non-looping particle for you.
 - Destroying the furnace smoke. LFPG calls `SEffectManager.DestroyEffect(m_SmokeEffect)` and leaves the member as it is. Pattern D also sets the member to null, so the next start creates a fresh effect.
-- Stopping a loop sound. The LFPG cleanup template calls `m_LoopSound.SoundStop()` and then sets `m_LoopSound = null`. `StopSoundSet(m_LoopSound)`, used in the template above, does both (`P:\scripts\3_game\entities\object.c:1314`).
-- The device table. LFPG lists `CAMP_STEAM_EXTINGUISH_START` for a steam vent, marked as untested, and `EVAPORATION` as a looping dust effect for a searchlight. On `P:\` the first is the placeholder particle and the second is a one-shot, as the table above and its sources show. Use `SMOKING_BARREL_STEAM` for the vent, and pick another looping effect for the searchlight.
+- Stopping a loop sound. LFPG cleanup code calls `m_LoopSound.SoundStop()` and then sets `m_LoopSound = null`. `StopSoundSet(m_LoopSound)`, used in the template above, does both (`P:\scripts\3_game\entities\object.c:1314`).
+- Particle choices. Where LFPG device code plays `CAMP_STEAM_EXTINGUISH_START` for a steam vent or `EVAPORATION` as a looping dust effect for a searchlight, replace them. On `P:\` the first is the placeholder particle and the second is a one-shot, as the table above and the vanilla lines under it show. Use `SMOKING_BARREL_STEAM` for the vent, and pick another looping effect for the searchlight.
 
 Since 1.30, vanilla vehicle effects do not retune a particle with separate `SetParameter` calls after playing it, as Pattern E does. They override `ParticleParamsOverride(ParticleParamsOverrideData)` on the effect class (`P:\scripts\3_game\effects\effectparticle.c:619`). Pattern E still works for a device; the vehicle form is in `dayz-1-30-particles.md`.

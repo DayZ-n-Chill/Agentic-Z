@@ -31,7 +31,7 @@ modded class PlayerBase { }
 
 The base class is implicit; do not write it. None of the vanilla `modded class` examples above has an `extends`.
 
-**Reported, not checked on `P:\`** (the compiler is native, and vanilla compiles no `modded class` to read): `modded class Foo extends Foo` (or `extends` anything) compiles cleanly and produces no warnings, but the class never joins the merged stack, so the override never runs. Modders report it as the most common cause of *"my override isn't running"*. Test it in your own mod before you rely on the exact behavior; the rule (no `extends`) holds either way.
+**Reported, not checked on `P:\`** (the compiler is native, and vanilla compiles no `modded class` to read): `modded class Foo extends Foo` (or `extends` anything) compiles cleanly and produces no warnings, but the class never joins the merged stack, so the override never runs. It is reported as the most common cause of *"my override isn't running"*. Test it in your own mod before you rely on the exact behavior; the rule (no `extends`) holds either way.
 
 ---
 

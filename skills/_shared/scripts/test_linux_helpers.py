@@ -330,7 +330,7 @@ def _valid_mod_project(tmp_path: Path, mod_name: str = "MyMod") -> tuple[Path, d
 
 
 def _pbo_bytes(prefix: bytes | None = b"scripts", extra: bytes = b"") -> bytes:
-    """The leading bytes of a PBO as dayzmake v1.0.0 writes and reads them (src/pbo.rs): a version header (empty name,
+    """The leading bytes of a PBO as dayzmake v1.0.0 writes and reads them (src/pbo.rs in the dayzmake source): a version header (empty name,
     packing method 'Vers' = 0x56657273 little-endian, four zero u32), its key/value C strings, the empty key that ends
     them. extract-dayz-sources.sh reads the prefix from these bytes; the fake `inspect` listing gives the entries.
     prefix=None: the first header is a file entry, so there is no version header and no prefix."""
@@ -424,8 +424,8 @@ def test_extract_reads_the_prefix_from_the_pbo_header(tmp_path: Path) -> None:
 
 
 def test_extract_keeps_dayzmakes_decoding_of_a_non_utf8_prefix(tmp_path: Path) -> None:
-    # Stored bytes 'Mod\xe9' are not UTF-8; dayzmake decodes them as windows-1252 ('Modé', src/pbo.rs
-    # decode_name) and prints that text in UTF-8. The extraction and pbo-map.tsv must carry the same text, so that
+    # Stored bytes 'Mod\xe9' are not UTF-8; dayzmake decodes them as windows-1252 ('Modé', decode_name in
+    # src/pbo.rs of the dayzmake source) and prints that text in UTF-8. The extraction and pbo-map.tsv must carry the same text, so that
     # build-api-index.py, which reads the map as text, still works.
     bin_dir = _fake_dayzmake(tmp_path, {r"3_Game\a.c": ("content", "class A {}\n")})
     (tmp_path / "listing.txt").write_bytes(

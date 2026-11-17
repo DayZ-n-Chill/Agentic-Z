@@ -91,18 +91,18 @@ def test_faceless_lod_writes_the_empty_uvset_tag(fork):
     assert list(reread.lods[0].selections) == ["pos center"]
 
 
-def test_upstream_reads_the_empty_uvset_tag(fork, upstream):
-    """Object Builder parity must not break the upstream reader."""
+def test_bare_codec_reads_the_empty_uvset_tag(fork, bare):
+    """Object Builder parity must not break the bare codec's reader."""
     p3d = fork.P3D()
     p3d.lods.append(build_memory_lod(fork, [("pos center", (0.0, 0.0, 0.0))]))
-    up = read_p3d(upstream, write_bytes(p3d))
+    up = read_p3d(bare, write_bytes(p3d))
     assert len(up.lods) == 1 and len(up.lods[0].points) == 1
     assert list(up.lods[0].selections) == ["pos center"]
     assert up.lods[0].resolution == f32(1.0e15)
 
 
 def test_set_zero_tag_stays_ignored_on_read(fork):
-    """The face record is the source of set 0 (upstream behaviour kept): a
+    """The face record is the source of set 0 (the bare codec's behaviour, kept): a
     #UVSet# id 0 payload that disagrees with the faces does not override
     them, and the next write emits the face values again."""
     p3d = build_cube_p3d(fork)

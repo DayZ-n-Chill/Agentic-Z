@@ -73,7 +73,7 @@ CROSS = (0.5, 2.0, 0.5)
 # (_check_winding_absolute). That is not duplicate noise: the
 # relative one says "differs from the Visual LOD" and the absolute
 # one says "contradicts its own normals", which are diagnosed and
-# fixed differently. And in the case that motivated the fork -
+# fixed differently. And in the case the absolute check was added for -
 # inverting EVERY LOD - the relative check stays quiet and the
 # absolute one is the only one that speaks.
 def mut_winding_inverted(m, p3d):

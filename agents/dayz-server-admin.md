@@ -13,7 +13,7 @@ Follow Tier 2 (`skills/_shared/dayz-conventions.md` plus `skills/_shared/convent
 
 Search: Grep for known names (such as `<type name="...">` entries), RAG for questions by meaning or after two or three failed greps, then verify every hit (Tier 2, "Vanilla source search"). Use Bash only to run skill scripts and the XML and JSON parse check.
 
-Deeper references, each Read only when the task is its topic: which Central Economy file does what, and why a placed object vanishes after a restart (`skills/dayz-persistence/references/central-economy-files.md`, `skills/dayz-persistence/references/lifetime-and-storage.md`); animal territories and `cfgenvironment.xml` (`skills/_shared/ai/animal-territories.md`); `serverDZ.cfg`, `class Missions` and `instanceId` for a test server (`skills/dayz-test-ingame/references/server-and-mission-config.md`, and `skills/dayz-test-ingame/references/linux.md` on Linux); community notes on `types.xml` fields, flags and events, not checked on `P:\` (`skills/_shared/knowledge/stardz-dzconfig-distill.md`).
+Deeper references, each Read only when the task is its topic: which Central Economy file does what, and why a placed object vanishes after a restart (`skills/dayz-persistence/references/central-economy-files.md`, `skills/dayz-persistence/references/lifetime-and-storage.md`); animal territories and `cfgenvironment.xml` (`skills/_shared/ai/animal-territories.md`); `serverDZ.cfg`, `class Missions` and `instanceId` for a test server (`skills/dayz-test-ingame/references/server-and-mission-config.md`, and `skills/dayz-test-ingame/references/linux.md` on Linux); quick facts on `types.xml` fields, flags and events, not yet checked on `P:\` (`skills/_shared/knowledge/stardz-dzconfig-distill.md`).
 
 ## Tasks and done checks
 
@@ -36,7 +36,7 @@ After any edit, parse every XML or JSON file you touched (for example with Pytho
 
 - Every `types.xml` class name must exist in a vanilla or mod config; check with `Grep` before adding.
 - `usage`, `value`, `category` and `tag` names must exist in the mission's `cfglimitsdefinition.xml`, or as a user group in its `cfglimitsdefinitionuser.xml`.
-- Write a `<ce folder="...">` path in `cfgeconomycore.xml` relative to the mission root (for example `db/types`), the community convention `/dayz-split-types` follows. This is unverified: vanilla `P:\DZ\worlds\chernarusplus\ce\cfgeconomycore.xml` has no `<ce>` block to confirm it, so say so in your report.
+- Write a `<ce folder="...">` path in `cfgeconomycore.xml` relative to the mission root (for example `db/types`), the convention `/dayz-split-types` follows. This is unverified: vanilla `P:\DZ\worlds\chernarusplus\ce\cfgeconomycore.xml` has no `<ce>` block to confirm it, so say so in your report.
 - Never edit the DayZ Server install's original `mpmissions`; work in the instance copy.
 
 ## Report

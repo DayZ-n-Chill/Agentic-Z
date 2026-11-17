@@ -28,7 +28,7 @@ a DIESEL car (Offroad_02) mirrors it — `IsVitalSparkPlug()→false` (`offroad_
 must declare ONLY the vital plug and `OnDebugSpawn` must attach THAT part. "Engine won't start" with a
 SparkPlug already attached = the un-overridden GlowPlug, **NOT** a removed requirement — `IsVitalGlowPlug→false`
 IS the vanilla petrol pattern (the car still requires its SparkPlug). Seen on SUB_BRZ (a petrol car defaulted
-to needing a GlowPlug it had no slot for; framing the fix as "remove the check" gets it backwards). → `vehicle-config-and-modelcfg.md` §engine parts.
+to needing a GlowPlug it had no slot for; framing the fix as "remove the check" gets it backwards). → `vehicle-config-and-modelcfg.md` §15 (engine will not start).
 
 ## Invariant 9: the engine starts then stalls when the Engine and FuelTank damage zones are missing
 

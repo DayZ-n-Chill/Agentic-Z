@@ -16,7 +16,7 @@ skill-observations/
     0002-short-slug.md
     archive/             # resolved observations, moved here after the grace period
       .id-floor          # highest id ever issued; the counter never drops below it
-      log-YYYY-MM-DD.md  # legacy monolithic archives from pre-3.0 installs, if any
+      log-YYYY-MM-DD.md  # legacy monolithic archives from a single-file log, if any
   cross-cutting-principles.md
   skill-families.md      # declared families: members, shared vs member-specific,
                          #   coherence model (created when the first family is named)
@@ -46,7 +46,7 @@ means this directory.
 | `area` | The part of the skill or workflow concerned. |
 | `date` | Date logged, `YYYY-MM-DD`. |
 | `session_context` | What was being worked on. |
-| `resolved` | Resolution date; set only when status is `actioned` or `declined`. Archival is gated on it. |
+| `resolved` | Resolution date; set only when status is `actioned`, `declined` or `superseded`. Archival is gated on it. |
 | `resolution` | What was done, or why declined. |
 | `reference` | Optional path to saved session-local evidence. |
 | `skill_qualifiers` | Optional map: skill name → the section or part of that skill meant. |
@@ -248,7 +248,7 @@ one and logs a meta-observation.
 Status changes and archival touch exactly one file. Re-read that file
 immediately before editing it (a parallel review may have resolved it),
 then edit only the frontmatter fields you are changing (`status`,
-`resolved`, `resolution`). Never rewrite a file you don't own, and never
+`parked_until`, `resolved`, `resolution`). Never rewrite a file you don't own, and never
 batch-rewrite the whole directory — it is not needed, and it reintroduces
 the multi-entry hazard the layout exists to remove.
 
@@ -316,7 +316,7 @@ older_than_today() {   # $1 = a YYYY-MM-DD date
 
 The archive is flat: the resolution date lives in each file, so no dated
 archive filename is needed. Legacy `log-YYYY-MM-DD.md` files from a
-pre-3.0 install sit beside the per-file archive untouched; they are not
+single-file log sit beside the per-file archive untouched; they are not
 converted (see `migration.md`) and are not scanned.
 
 ## Referencing observations

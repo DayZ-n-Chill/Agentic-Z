@@ -16,7 +16,7 @@ This skill prevents geometry errors when building 3D models in Blender over MCP,
 4. **Bare-box output.** Nothing in the workflow asked for detail, so none was built. Phase 1.5 and Rules 6 to 11 fix this.
 5. **Broken meshes.** Booleans and joins leave non-manifold edges, duplicate vertices and degenerate faces that bounding-box checks never see. The integrity gate in Phase 3 catches them.
 
-This is a Blender method, not a statement about the game. Where it touches DayZ (the `_nohq` convention, LOD budgets) it says who measured the fact; none of those can be checked against the vanilla files on `P:\`.
+This is a Blender method, not a statement about the game. Where it touches DayZ (the `_nohq` convention, LOD budgets) the facts are not checked against the vanilla files on `P:\` here; the skills it points to carry the evidence.
 
 ## What to read
 
@@ -28,7 +28,7 @@ This is a Blender method, not a statement about the game. Where it touches DayZ 
 
 ## Helper library
 
-All helper functions live in `blender_helpers.py`, next to this file, with a version in its docstring. At session start, read that file and execute it whole through the Blender MCP instead of pasting individual functions again: this stops copies drifting apart. A new helper enters the library only after surviving its fixtures. The module docstring records the 2026-06-10 validation against Blender 5.1.1 (fixtures F1 to F3, F5 and F6, run by the library's author); the section banners of the v2 helpers still read PENDING FIXTURES from before that run.
+All helper functions live in `blender_helpers.py`, next to this file, with a version in its docstring. At session start, read that file and execute it whole through the Blender MCP instead of pasting individual functions again: this stops copies drifting apart. A new helper enters the library only after it passes a test in Blender. The library was validated on Blender 5.1.1; the module docstring records that.
 
 ## Routing: build it, or generate it?
 
@@ -184,7 +184,7 @@ Booleans are the main source of broken meshes. Three rules, then cleanup:
 
 `boolean_cut(target, cutter, op)` enforces all three plus the cleanup (`remove_doubles` and `dissolve_degenerate`). After every boolean, run `verify_mesh_integrity` before building anything on top. A broken mesh found three parts later costs the whole session.
 
-Point 2 is a strong recommendation, not an absolute (adjusted 2026-06-10, fixture F3, LL-119). Blender 5.1 EXACT handled an exactly flush, axis-aligned cutter without breaking the mesh: the open pocket and the volume were identical to the overshoot cut and the hard counters were clean; only the layout of the ring ngons differed. Keep the 1 mm overshoot as the default for robustness (float drift, oblique cuts), but a flush cut that passes the integrity gate and the visual checkpoint is acceptable, not an automatic fail. The gate reports ngons as warnings, never as failures (LL-120).
+Point 2 is a strong recommendation, not an absolute. Measured on Blender 5.1.1: the EXACT solver handled an exactly flush, axis-aligned cutter without breaking the mesh: the open pocket and the volume were identical to the overshoot cut and the hard counters were clean; only the layout of the ring ngons differed. Keep the 1 mm overshoot as the default for robustness (float drift, oblique cuts), but a flush cut that passes the integrity gate and the visual checkpoint is acceptable, not an automatic fail. The gate reports ngons as warnings, never as failures.
 
 ### Rule 10: loft cross-sections for compound shapes
 
@@ -202,11 +202,11 @@ Knurling, grip stippling, screw threads, stamped text, fine panel seams: modeled
 2. Unwrap the low mesh: `smart_uv(obj)`. Smart UV Project is acceptable for hard surface, and the islands need a margin or the bake bleeds. It also shatters the mesh into tiny islands (a median of 2 to 4 faces per island is the classic failure), which makes an atlas nobody can paint detail on. For a DayZ visual asset, unwrap by logical sections with contiguous islands and an atlas a person can read; the gate is a person reading the atlas. The full reference and the audit scripts are in the `uv-clean-atlas` skill.
 3. Bake from high to low with `bake_map(high, low, 'NORMAL', ...)` and `bake_map(high, low, 'AO', ...)` (Cycles, selected to active).
 
-Known pitfalls, all reproduced in community reports and all controllable:
+Known pitfalls, all controllable:
 
 - No UVs on the low mesh is a hard error. Run `smart_uv` first.
-- High and low not occupying the same space, or `ray` too small or too large, gives patchy garbage in the map. Set `max_ray_distance` slightly above the largest gap between the high and low surfaces; use a cage for parts with deep recesses. The default `ray=0.01` was validated by fixture F6 (clean 1024 px NORMAL and AO bakes at a gap of about 4 mm).
-- Blender bakes tangent normals in the OpenGL convention (Y+). DayZ's `_nohq` is the DirectX convention (Y-): invert the green channel (G' = 255 - G) on every Cycles bake before export. The source author resolved this on 2026-06-10 with fixture F7, a calibration against a vanilla `_nohq` (LL-123, LL-125); it is not checked on `P:\` here. Before F7 this rule said to verify the convention empirically and not to guess. The same verdict notes that a `.paa` `_nohq` stores X in alpha (the DXT5nm swizzle), so un-swizzle before auditing a converted map; the full verdict and the calibration chain are in the `dayz-texture-pipeline` skill (`references/map-conventions.md`).
+- High and low not occupying the same space, or `ray` too small or too large, gives patchy garbage in the map. Set `max_ray_distance` slightly above the largest gap between the high and low surfaces; use a cage for parts with deep recesses. The default `ray=0.01` gave clean 1024 px NORMAL and AO bakes at a gap of about 4 mm (measured on Blender 5.1.1).
+- Blender bakes tangent normals in the OpenGL convention (Y+). DayZ's `_nohq` is the DirectX convention (Y-): invert the green channel (G' = 255 - G) on every Cycles bake before export. The convention was measured by calibration against a vanilla `_nohq`; it is not checked on `P:\` here. A `.paa` `_nohq` stores X in alpha (the DXT5nm swizzle), so un-swizzle before auditing a converted map. The evidence and the calibration method are in the `dayz-texture-pipeline` skill (`references/map-conventions.md`).
 
 The output feeds `dayz-model-pipeline` and `/dayz-pack-texture`: the normal PNG becomes `_nohq.paa`, and the AO PNG becomes a multiply layer in the `_co` composite.
 
@@ -229,7 +229,7 @@ A failed gate means stop and fix before the next part. The discipline and the re
 
 **Component checkpoint.** For complex parts (lofts, pieces with many booleans), also take one quick visual capture of the part alone before building on top of it (`blender-visual-review`). Numbers verify topology; only eyes verify intent.
 
-**Moving mechanisms: check the fit over the whole travel and the whole length** (SP-451, added 2026-10-01, measured offline). A vertical mechanism checked on one representative section failed twice on the SecretRock R7 model: standing leaves checked only at their widest section (y = 0.8) stuck out of the rock by up to 0.96 m elsewhere, and a platform checked only at the top touched the lining at the hangar end by up to 1.1 m.
+**Moving mechanisms: check the fit over the whole travel and the whole length** (measured offline). A vertical mechanism checked on one representative section failed twice on one model: standing leaves checked only at their widest section (y = 0.8) stuck out of the rock by up to 0.96 m elsewhere, and a platform checked only at the top touched the lining at the hangar end by up to 1.1 m.
 
 **Sampling once per frame skips short collisions** (measured offline). Folding a 2.46 m leaf hinged on its top edge brings each lower corner 4.7 mm closer in the first degrees, a collision shorter than one frame. Sweep the kinematics with angles set by hand and a fine step near 0 degrees, with the actions unhooked so the depsgraph does not override the angles. Keyframe clearance in presentation renders is covered in `blender-visual-review`, checklist A, "Animated parts".
 
@@ -237,19 +237,17 @@ A failed gate means stop and fix before the next part. The discipline and the re
 
 Apply to every mesh object: `finalize(name)` (transforms applied, origin set, shade smooth), then `audit_all()` to confirm rotation (0,0,0) and scale (1,1,1) across the whole scene. Both are in the helper library.
 
-## Rules from the author's lessons log (added 2026-07-27)
+## Further rules
 
-Each rule keeps the `LL-NNN` number of the lesson it came from. The lessons log itself (symptom, origin, evidence) is the author's private file and is not in this repo.
-
-- **LL-065.** Do not use booleans to carve open or non-watertight organic meshes; prefer extruding the boundary loop or bridging by hand. If you do use a boolean, operate between closed solids and validate raycast, boundary and non-manifold before continuing.
-- **LL-121.** After changing `location`, `rotation` or `scale` through the API, call `bpy.context.view_layer.update()` before reading `matrix_world`. Put the update in the helper that reads, and use fixtures that vary all axes.
-- **LL-122.** For closed tubes, enable `use_fill_caps`, convert to mesh and weld with `remove_doubles(1e-5)`. Keep the `require_closed` gate; do not lower it for boundary edges.
-- **LL-126.** Always call `transform_apply(location=False, rotation=<bool>, scale=<bool>)` with all three arguments explicit. Create copy sources at the world origin before baking transforms.
-- **LL-127.** Call `finalize()` immediately on the newly created active object; do not loop over names expecting the helper to look them up. Check the helper's real contract, and confirm name to bounding box after renaming.
-- **LL-128.** For planar curved pieces, build a 2.5D loft with a fixed width on a world axis and the depth derived from the planar tangent. Run `remove_doubles` and `dissolve_degenerate` after each loft.
-- **LL-129.** In hollow pieces, size each cutter to cross only the target wall, overshooting into the hollow without reaching the opposite wall. Run the integrity gate after each boolean.
-- **LL-132.** Keep the components of each cutter disjoint, and apply circles and slots in separate passes. Make the gate fail if a mesh is left with zero vertices, and raise an alert if successive operations produce identical signatures.
-- **LL-133.** Do not use `panel_recess` on loft caps or ngons; use an oriented boolean or leave the detail to the bake. Position cutters from the analytical path, scales and profile, never by sampling bands of the resulting mesh.
+- **Organic meshes.** Do not use booleans to carve open or non-watertight organic meshes; prefer extruding the boundary loop or bridging by hand. If you do use a boolean, operate between closed solids and validate raycast, boundary and non-manifold before continuing.
+- **Stale matrices.** After changing `location`, `rotation` or `scale` through the API, call `bpy.context.view_layer.update()` before reading `matrix_world`. Put the update in the helper that reads, and use fixtures that vary all axes.
+- **Closed tubes.** For closed tubes, enable `use_fill_caps`, convert to mesh and weld with `remove_doubles(1e-5)`. Keep the `require_closed` gate; do not lower it for boundary edges.
+- **Explicit `transform_apply`.** Always call `transform_apply(location=False, rotation=<bool>, scale=<bool>)` with all three arguments explicit. Create copy sources at the world origin before baking transforms.
+- **`finalize()` contract.** Call `finalize()` immediately on the newly created active object; do not loop over names expecting the helper to look them up. Check the helper's real contract, and confirm name to bounding box after renaming.
+- **Planar curved pieces.** For planar curved pieces, build a 2.5D loft with a fixed width on a world axis and the depth derived from the planar tangent. Run `remove_doubles` and `dissolve_degenerate` after each loft.
+- **Hollow pieces.** In hollow pieces, size each cutter to cross only the target wall, overshooting into the hollow without reaching the opposite wall. Run the integrity gate after each boolean.
+- **Compound cutters.** Keep the components of each cutter disjoint, and apply circles and slots in separate passes. Make the gate fail if a mesh is left with zero vertices, and raise an alert if successive operations produce identical signatures.
+- **Recesses on caps and ngons.** Do not use `panel_recess` on loft caps or ngons; use an oriented boolean or leave the detail to the bake. Position cutters from the analytical path, scales and profile, never by sampling bands of the resulting mesh.
 
 ## Workflow checklist
 

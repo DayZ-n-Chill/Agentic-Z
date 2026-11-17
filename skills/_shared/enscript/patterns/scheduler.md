@@ -8,7 +8,7 @@ See also: `examples/09_scheduler_timer.c` for full `CallLater`/`Timer`/`OnSchedu
 
 ## Unverified: `CallLater` drifting after about 4.5 hours
 
-Some modders report that a repeating `CallLater` drifts or stalls after about 4.5 hours of uptime, and blame a 32 bit float due time. This cannot be checked on `P:\`: `ScriptCallQueue.CallLater` is `proto` (engine code) and takes its delay as an `int` of milliseconds (`P:\scripts\2_gamelib\tools.c:61`). Treat it as a rumour, not a rule.
+A repeating `CallLater` is reported to drift or stall after about 4.5 hours of uptime, with a 32 bit float due time given as the cause. This cannot be checked on `P:\`: `ScriptCallQueue.CallLater` is `proto` (engine code) and takes its delay as an `int` of milliseconds (`P:\scripts\2_gamelib\tools.c:61`). Treat it as a rumour, not a rule.
 
 For long lived recurring work, a `Timer` is the scripted alternative. `TimerBase` (`P:\scripts\3_game\tools\tools.c:219`) keeps its own elapsed time, and `Timer` (`:576`) adds `Run(duration, obj, fn_name, params, loop)` (`:595`).
 

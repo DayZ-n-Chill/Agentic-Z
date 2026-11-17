@@ -86,7 +86,7 @@ modded class MissionGameplay {
         super.OnUpdate(timeslice);
         // HUD visibility needs IngameHud (5_Mission only):
         IngameHud hud = IngameHud.Cast(GetGame().GetMission().GetHud());
-        bool hudVisible = hud && hud.LBIsHudVisible();
+        bool hudVisible = hud && hud.MyMod_IsHudVisible();
         MyMod_PhoneHUD.Get().Show(hudVisible && playerAlive);
         if (hudVisible)
             MyMod_PhoneHUD.Get().UpdateFrame();
@@ -96,7 +96,7 @@ modded class MissionGameplay {
 
 The `5_Mission` bridge does the `IngameHud` check and passes the result (a `bool`) down to `4_World`. The `4_World` class never names `IngameHud`.
 
-`LBIsHudVisible()` in the example is a method a third-party mod adds to `IngameHud`; it is not vanilla. In the vanilla scripts on `P:\`, `IngameHud.IsHudVisible()` is a stub that returns `false` (`P:\scripts\5_mission\gui\ingamehud.c:1313`), and the live state is behind `GetHudVisibility()` (`P:\scripts\5_mission\gui\ingamehud.c:876`), which returns an `IngameHudVisibility` (`P:\scripts\5_mission\gui\ingamehudvisibility.c:33`). Read the visibility from there in a mod that does not depend on that one.
+`MyMod_IsHudVisible()` in the example stands for a helper the mod adds to `IngameHud` with a `modded class`; it is not vanilla. In the vanilla scripts on `P:\`, `IngameHud.IsHudVisible()` is a stub that returns `false` (`P:\scripts\5_mission\gui\ingamehud.c:1313`), and the live state is behind `GetHudVisibility()` (`P:\scripts\5_mission\gui\ingamehud.c:876`), which returns an `IngameHudVisibility` (`P:\scripts\5_mission\gui\ingamehudvisibility.c:33`). Build the helper on that object.
 
 ## Mistakes to avoid
 

@@ -36,9 +36,9 @@ vs `switch_v2_remote.p3d`, memory points: `switch_axis` (-0.0407, 0.0288, -0.147
 → (-0.0407, 0.1472, 0.0288); `ce_center` (0.0001, 0.0366, -0.1286) → (0.0001,
 0.1286, 0.0366); `boundingbox_max` (0.1833, 0.1039, -0.3665) → (0.1833, 0.3665,
 0.1039); Geometry LOD 0.293/0.0911/0.4185 → 0.293/0.4185/0.0911. It refuted a review finding that a pitch had been
-forgotten on one kit: applying the "forgotten" pitch would have PRODUCED the symptom it was meant to cure. MLOD
-parser used (memory points + extents per LOD, PowerShell, without py3d) is
-reusable. See also the model pipeline skill (`dayz-model-pipeline`).
+forgotten on one kit: applying the "forgotten" pitch would have PRODUCED the symptom it was meant to cure. The
+comparison needs only the memory points and the extents per LOD, which any MLOD
+reader gives (py3d included). See also the model pipeline skill (`dayz-model-pipeline`).
 
 ## UV audit step (added 2026-07-06)
 
@@ -85,7 +85,7 @@ gate passed; it still does not replace the in-game spawn gate (`winding-diagnost
 
 ## Trusting a FAIL from a new gate on a binarized ODOL: run the control piece first (added 2026-09-28)
 
-[DESIGN] Before trusting a FAIL from a new ODOL gate, run the gate on a piece that already works in game (here `drivewheel`): if the control also fails, the gate is wrong, not the model — two rebuild cycles stopped on a bad gate while the model was fine. [EXACT] In a binarized ODOL the named selections of the VISUAL LODs are stored as faces (also `drivewheel` and `damper_1`, which do move in game); read their vertices through the face corner indices. Memory and Geometry LOD selections list vertices. And write gate expressions against the tool's real output, not its vocabulary: the anatomy dump writes animation types as numbers (0 rotation, 4 translation), so an expression matching the string `rotation` never fires.
+Before trusting a FAIL from a new ODOL gate, run the gate on a piece that already works in game (here `drivewheel`): if the control also fails, the gate is wrong, not the model — two rebuild cycles stopped on a bad gate while the model was fine. In a binarized ODOL the named selections of the VISUAL LODs are stored as faces (also `drivewheel` and `damper_1`, which do move in game); read their vertices through the face corner indices. Memory and Geometry LOD selections list vertices. And write gate expressions against the tool's real output, not its vocabulary: the anatomy dump writes animation types as numbers (0 rotation, 4 translation), so an expression matching the string `rotation` never fires.
 
 ## The resolved-vertex budget
 

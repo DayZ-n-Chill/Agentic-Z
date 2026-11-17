@@ -52,8 +52,8 @@ Use this when a moving part shows a state that clients must see and saves must k
 - Change state on the server. The user action runs `OnExecuteServer` or `OnStartServer`.
 - Clients must end with the same phase. Pattern 1 does that by calling the same method in `OnVariablesSynchronized`.
 - Sounds tied to the move play on clients only (`fence.c:516`, `if (!g_Game.IsHeadlessOrDedicatedServer())`).
-- Two writers of one source, the owning client locally and the server through sync, only coexist when they write the same target. For a part that follows a long action, let the server write the start and the end and the owning client the states between (measured by the source knowledge pack on 1.30; method in `skills/dayz-animation-pipeline/references/item-ik-and-hide.md`).
-- A steering part is not a script job at all: use the engine's `steeringwheel` source in `model.cfg`. The source knowledge pack reports that a steering visual set from the client through a `user` source snapped back to 0 in multiplayer.
+- Two writers of one source, the owning client locally and the server through sync, only coexist when they write the same target. For a part that follows a long action, let the server write the start and the end and the owning client the states between (measured in game on 1.30; method in `skills/dayz-animation-pipeline/references/item-ik-and-hide.md`).
+- A steering part is not a script job at all: use the engine's `steeringwheel` source in `model.cfg`. A steering visual set from the client through a `user` source snapped back to 0 in multiplayer (measured in game, not checked on `P:\`).
 
 ## The player's own animation
 
@@ -69,9 +69,9 @@ For a test that has to measure what the game really shows, not what was sent:
 
 | Call | Where | Use |
 |---|---|---|
-| `GetBoneIndexByName(string pBoneName)` | `Human`, `P:\scripts\3_game\human.c:1417` | A skeleton bone's id. Vanilla uses it for `RightHand_Dummy` (`P:\scripts\4_world\entities\dayzplayerimplement.c:628`). The source pack measured on 1.30 that valid ids can be negative (`RightHand` among them); only −1 means the bone is missing. |
+| `GetBoneIndexByName(string pBoneName)` | `Human`, `P:\scripts\3_game\human.c:1417` | A skeleton bone's id. Vanilla uses it for `RightHand_Dummy` (`P:\scripts\4_world\entities\dayzplayerimplement.c:628`). Measured in game on 1.30: valid ids can be negative (`RightHand` among them); only −1 means the bone is missing. |
 | `GetBonePositionMS(int pivot)`, `GetBoneRotationMS(int pivot, out float quaternion[4])` | `Object`, `P:\scripts\3_game\entities\object.c:237`, `:242` | A bone's position and rotation in model space, which does not depend on where the entity stands or faces. |
 | `GetBonePivotsForAnimationSource(int level, string animationSource, out TIntArray pivots)` | `Object`, `P:\scripts\3_game\entities\object.c:233` | The bones a `model.cfg` animation source moves, so the part's real angle can be read with `GetBoneRotationMS`. Vanilla uses it for the motorbike's sounds (`P:\scripts\4_world\entities\vehicles\motorbikescript.c:292`). |
 | `OverrideRaise(HumanInputControllerOverrideType overrideType, bool value)` | `HumanInputController`, `P:\scripts\3_game\human.c:268` | Holds the weapon raised for a capture. `ENABLED` stays until `DISABLED` is passed (`P:\scripts\3_game\human.c:10`). |
 
-Two results from the source pack's in-game tests on 1.30: a raise forced only on the server does not change the pose the owning client renders, so force it on the client; and a dedicated server placed a rider's hand 0.35 m from where the client did while pelvis and head agreed, so measure hand placement on the client. Methods: `skills/dayz-animation-pipeline/references/weapon-in-hands.md` and `skills/dayz-animation-pipeline/references/vehicle-rider-ik-pose.md`.
+Two results measured in game on 1.30: a raise forced only on the server does not change the pose the owning client renders, so force it on the client; and a dedicated server placed a rider's hand 0.35 m from where the client did while pelvis and head agreed, so measure hand placement on the client. Methods: `skills/dayz-animation-pipeline/references/weapon-in-hands.md` and `skills/dayz-animation-pipeline/references/vehicle-rider-ik-pose.md`.

@@ -61,7 +61,7 @@ VertexShaderID="Super";
 More on two of these keys:
 
 - A light that switches on and off is two materials that differ in the last number of `emmisive[]`: the sedan's lit lights have `emmisive[]={1,1,1,120}` (`P:\DZ\vehicles\wheeled\sedan_02\data\sedan_02_lights_e.rvmat:4`) and the unlit ones `emmisive[]={1,1,1,0}` (`P:\DZ\vehicles\wheeled\sedan_02\data\sedan_02_lights.rvmat:4`). The vehicle config names the pair.
-- Of the Super materials under `P:\DZ`, 154 set `renderFlags[]` to `"nozwrite"` alone and 24 to `"addblend"` with `"nozwrite"`. A decal with alpha that lies on paint uses it, as the offroad's stickers do (`P:\DZ\vehicles\wheeled\offroad_02\data\offroad_02_decals.rvmat:7-12`). A window does not need it: `P:\DZ\vehicles\wheeled\data\auta_skla.rvmat` has no `renderFlags[]`.
+- Of the Super materials under `P:\DZ`, 154 set `renderFlags[]` to `"nozwrite"` alone and 25 to `"addblend"` with `"nozwrite"`. A decal with alpha that lies on paint uses it, as the offroad's stickers do (`P:\DZ\vehicles\wheeled\offroad_02\data\offroad_02_decals.rvmat:7-12`). A window does not need it: `P:\DZ\vehicles\wheeled\data\auta_skla.rvmat` has no `renderFlags[]`.
 
 ## Super stages
 

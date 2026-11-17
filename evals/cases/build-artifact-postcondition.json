@@ -67,8 +67,8 @@
   "variants": [
     {
       "variant_id": "approved",
-      "skill_revision": "r21-prior-art-approved",
-      "baseline_revision": "r21-pre-prior-art",
+      "skill_revision": "r21-current",
+      "baseline_revision": "r21-baseline",
       "runner_id": "fixture",
       "expected_verdict": "PASS",
       "response": "Fail closed: exit_0_is_not_build_success. Require a fresh_pbo tied to this run-bound staging result or to a validated full-key cache hit, inspect header_prefix and expected entries, apply the fatal_log gate, and publish transactionally so a failure leaves previous_artifact_unchanged.",
@@ -80,8 +80,8 @@
     },
     {
       "variant_id": "baseline",
-      "skill_revision": "r21-pre-prior-art",
-      "baseline_revision": "r21-pre-prior-art",
+      "skill_revision": "r21-baseline",
+      "baseline_revision": "r21-baseline",
       "runner_id": "fixture",
       "expected_verdict": "FAIL",
       "response": "AddonBuilder returned zero and the target exists, so existing_pbo_is_enough and the build passed.",

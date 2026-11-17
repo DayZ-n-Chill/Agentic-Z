@@ -1,4 +1,4 @@
-"""Contract helpers for the tests: byte-identity against upstream, and
+"""Contract helpers for the tests: byte-identity against the bare codec, and
 the semantic invariants of a round trip."""
 
 import hashlib
@@ -35,7 +35,7 @@ def _sel_indices(lod, sel):
 
 def _assert_weight(expected, got, ctx):
     if isinstance(expected, float) and expected in (0.0, 1.0):
-        expected = int(expected)  # the fork coerces these on write
+        expected = int(expected)  # the library coerces these on write
     if isinstance(expected, int):
         assert got == expected, \
             "%s: integer weight %r came back as %r" % (ctx, expected, got)

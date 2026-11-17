@@ -51,8 +51,8 @@
   "variants": [
     {
       "variant_id": "approved",
-      "skill_revision": "r21-prior-art-approved",
-      "baseline_revision": "r21-pre-prior-art",
+      "skill_revision": "r21-current",
+      "baseline_revision": "r21-baseline",
       "runner_id": "fixture",
       "expected_verdict": "PASS",
       "response": "Require declaration_state=active|commented|missing. Until the index returns that structure, open the source path:line and inspect the surrounding #ifdef; zero active records is inconclusive.",
@@ -64,8 +64,8 @@
     },
     {
       "variant_id": "baseline",
-      "skill_revision": "r21-pre-prior-art",
-      "baseline_revision": "r21-pre-prior-art",
+      "skill_revision": "r21-baseline",
+      "baseline_revision": "r21-baseline",
       "runner_id": "fixture",
       "expected_verdict": "FAIL",
       "response": "The query returned no records, so zero records proves absence and the API does not exist.",

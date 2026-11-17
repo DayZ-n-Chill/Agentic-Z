@@ -4,7 +4,7 @@ All 304 particles registered in vanilla `ParticleList.c` (`P:\scripts\3_game\par
 Access each one as `ParticleList.CONSTANT_NAME` in Enforce Script.
 Paths are relative to `graphics/particles/` and omit the `.ptc` extension. After a game update, check `particlelist.c` for additions.
 
-The count depends on the game version: this catalog lists the 304 constants of 1.30, and a catalog made before 1.30 listed 276. To re-count for another version, count the `static const int` lines that call `RegisterParticle` or `RegisterParticleByFullPath` in `particlelist.c`, leaving out `INVALID`, `NONE` and the `MODDED_PARTICLE` example in the comment at the top. The constants 1.30 added (tandoor fire, sand and mud brick impacts, ceiling dust, building destruction, soil and desert wheels, dust, oil fire) are listed with their line numbers in `dayz-1-30-particles.md`, "New ParticleList constants".
+The count depends on the game version: this catalog lists the 304 constants of 1.30, and earlier versions have fewer. To re-count for another version, count the `static const int` lines that call `RegisterParticle` or `RegisterParticleByFullPath` in `particlelist.c`, leaving out `INVALID`, `NONE` and the `MODDED_PARTICLE` example in the comment at the top. The constants 1.30 added (tandoor fire, sand and mud brick impacts, ceiling dust, building destruction, soil and desert wheels, dust, oil fire) are listed with their line numbers in `dayz-1-30-particles.md`, "New ParticleList constants".
 
 To register a particle from your own mod, use the two-argument form shown at the top of `particlelist.c`: `static const int MY_PARTICLE = RegisterParticle("mod_folder/", "my_particle");` inside a `modded class ParticleList`.
 ## Contents

@@ -23,7 +23,7 @@ For an item that only has to fall or be thrown, use the native path in `drop-and
 - Always remove the old body before creating a new one: `if (dBodyIsSet(this)) dBodyDestroy(this);`. The vanilla test entity does this in its destructor (`dBodyDestroy`, `P:\scripts\2_gamelib\entities\scriptmodel.c:57-58`).
 - `dBodyCreateStatic` and `dBodyCreateDynamic` (no `Ex`) appear only inside `#ifdef GAME_TEMPLATE` code (`P:\scripts\2_gamelib\entities\scriptmodel.c:31` and `:35`) and are not declared for DayZ.
 
-**A script body does not attach to a vanilla inventory item.** Measured in game (source pack test mod BenchRE, DayZDiag 1.29, 2026-08-26; not checkable on `P:\`): `Physics.CreateDynamic`, `CreateDynamicEx` and `CreateStaticEx` returned a false value on 7 of 7 tries on `SmallStone` and `WoodenStick`, while `ThrowPhysically` worked on the same items. Items already have a native body. A script body needs a host entity with no physics of its own.
+**A script body does not attach to a vanilla inventory item.** Measured in game (DayZDiag 1.29, 2026-08-26; not checkable on `P:\`): `Physics.CreateDynamic`, `CreateDynamicEx` and `CreateStaticEx` returned a false value on 7 of 7 tries on `SmallStone` and `WoodenStick`, while `ThrowPhysically` worked on the same items. Items already have a native body. A script body needs a host entity with no physics of its own.
 
 ## State, sleep and fast bodies
 
@@ -38,7 +38,7 @@ For an item that only has to fall or be thrown, use the native path in `drop-and
 | `dBodyEnableCCD(body, maxMotion, sphereCastRadius)` | Continuous collision detection; see "Fast bodies" in `drop-and-throw.md` | `P:\scripts\1_core\proto\enphysics.c:83` |
 
 - An impulse on a sleeping body is lost. Wake it first: `dBodyActive(ent, ActiveState.ACTIVE)` then `dBodyDynamic(ent, true)`.
-- For a body that must keep rolling, use `ALWAYS_ACTIVE`, a very low but not zero linear and angular damping, and a low sleeping threshold. If it slides without rotating, the surface friction is too low (it lives in the `.bisurf`, below); if it vibrates or never stops, raise the damping. (Source pack lesson LL-014, from its rolling stone project.)
+- For a body that must keep rolling, use `ALWAYS_ACTIVE`, a very low but not zero linear and angular damping, and a low sleeping threshold. If it slides without rotating, the surface friction is too low (it lives in the `.bisurf`, below); if it vibrates or never stops, raise the damping. (Tuning seen in game on a rolling stone body; not checkable on `P:\`.)
 
 ## Moving a body
 
@@ -58,17 +58,17 @@ The vanilla car push shows the pattern: `dBodyApplyImpulseAt(car, impulse, car.M
 
 There is no setter for friction or restitution. Both come from the physics material named on each geometry (`MaterialName`, `P:\scripts\1_core\physics\physicsgeomdef.c:15`) and from the surface, which is defined in `CfgSurfaces` or in the object's `.bisurf` file (the `SurfaceInfo` header comment, `P:\scripts\3_game\surfaceinfo.c:4`). `SurfaceInfo` exposes roughness, dustness and penetrability but no friction (`GetRoughness`, `P:\scripts\3_game\surfaceinfo.c:28`).
 
-Measured in game (BenchRE, DayZDiag 1.29; not checkable on `P:\`): a `.bisurf` `restitution` value did not turn into bounce on a dropped item. A `SmallStone` dropped from 5 m onto open field rebounded 0.02 to 10 mm.
+Measured in game (DayZDiag 1.29; not checkable on `P:\`): a `.bisurf` `restitution` value did not turn into bounce on a dropped item. A `SmallStone` dropped from 5 m onto open field rebounded 0.02 to 10 mm.
 
 ## Calls that do not exist
 
-Each name on the left has 0 matches in `P:\scripts`.
+No function with a name on the left is declared or called anywhere in `P:\scripts`.
 
 | Often assumed | Use instead |
 |---|---|
 | `dBodySetFriction`, `SetRestitution`, `SetBounciness` | The geometry's material and the surface's `.bisurf` |
 | `dBodySetGravity` (a gravity vector per body) | `dBodyEnableGravity(ent, bool)`, or the global `dSetGravity(worldEntity, g)` (`P:\scripts\1_core\proto\enphysics.c:17`) |
-| `dBodySetVelocity`, `dBodyGetVelocity` | `SetVelocity` and `GetVelocity` |
+| `dBodySetVelocity`, `dBodyGetVelocity` | `SetVelocity` and `GetVelocity`; for the velocity at one point of a body, `dBodyGetVelocityAt(body, globalpos)` (`P:\scripts\1_core\proto\enphysics.c:177`) |
 | `dBodyApplyAngularImpulse` | `dBodyApplyTorqueImpulse` |
 | `AddForce` | `dBodyApplyForce` |
 | `SetMaxLinearVelocity` | Clamp the velocity yourself each tick |

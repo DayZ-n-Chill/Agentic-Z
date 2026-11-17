@@ -2,7 +2,7 @@
 
 The four-link condition chain behind the get-in prompt, the two registrations a cursor-targeted vehicle action needs, the `Geometry` and `autocenter=0` gate for a submodel placed by proxy, where the occupant's pose really comes from, and why a part's `model=` governs both the fitted part and the loose item.
 
-> Status: field notes measured on third-party mods (LFHeli, LFQuad, LFQuad2, SUB_BRZ), each named in its entry. Those measurements were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. A citation without `P:\` keeps the line number the note was written with, for the DayZ build that entry names, and is not yet checked on `P:\`: Grep for the symbol before relying on the number. Where they were opened, the notes' `carscript.c`, `actiongetintransport.c`, `actionconstructor.c` and `playerbase.c` numbers matched this repo's `P:\` (a 1.30 build); the `transport.c` numbers sit 3 to 9 lines lower on `P:\` than written (`:179` for `:180-182`, `:724` for `:727`, `:672` for `:675`), and the `DZ\vehicles\wheeled\config.cpp` numbers differ (the `P:\` lines are in the list below). Tags such as SP-205 or LL-464 are the notes' own lesson numbers, and `[EXACT]`, `[DESIGN]` and `[CLAIM-...]` are the notes' own evidence labels. Paths such as `<vehicle-import>\...` point into those mods' work folders, which are not part of this repo. "Invariant N", "preflight #N" and "#N" mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number. The symptom-first version of the get-in checks is in `invariants-get-in-and-seats.md` and in `attachments-and-crew.md` ("When a seat or door action does not appear"); the 1.30 changes to the condition are in `dayz-1-30-vehicles.md`, section 5.
+> Status: the measurements below were taken on mod test vehicles (LFHeli, LFQuad, LFQuad2, SUB_BRZ), named in each entry; they are mod behaviour, not vanilla, and were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo (a 1.30 build); a bare `file.c:N` repeats a full citation from the anchors list below. A number marked 1.29 belongs to the 1.29 build, which is not on `P:\`. "Invariant N", "preflight #N" and "#N" mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number. The symptom-first version of the get-in checks is in `invariants-get-in-and-seats.md` and in `attachments-and-crew.md` ("When a seat or door action does not appear"); the 1.30 changes to the condition are in `dayz-1-30-vehicles.md`, section 5.
 
 Related files in this pack: `proxies-and-get-in.md` (proxy placement and the contract of detachable parts) and `invariants-get-in-and-seats.md` (the numbered get-in checks).
 
@@ -12,6 +12,7 @@ Related files in this pack: `proxies-and-get-in.md` (proxy placement and the con
 - It then asks `CrewCanGetThrough` and `IsAreaAtDoorFreeDiag`: `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:54`.
 - It ends by calling `CanReachSeatFromDoors` with 1.0 from script: `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:64`.
 - `CrewPositionIndex` maps a component to a crew index: `P:\scripts\3_game\vehicles\transport.c:179`.
+- `CanGetIn` returns `true` on `Transport`: `P:\scripts\3_game\vehicles\transport.c:672`.
 - `CrewCanGetThrough` returns `false` on `Transport` unless `CFGMODS_DEFINE_TEST` is defined: `P:\scripts\3_game\vehicles\transport.c:724`.
 - `IsAreaAtDoorFree` with its default extents: `P:\scripts\3_game\vehicles\transport.c:889`.
 - `GetDoorConditionPointFromSelection` maps a seat selection to a `seat_con_*` point: `P:\scripts\4_world\entities\vehicles\carscript.c:2141`.
@@ -23,6 +24,9 @@ Related files in this pack: `proxies-and-get-in.md` (proxy placement and the con
 - `Hatchback_02_Door_1_1` is declared at `P:\DZ\vehicles\wheeled\config.cpp:9019`.
 - `Hatchback_02_Door_2_1` is declared at `P:\DZ\vehicles\wheeled\config.cpp:9144`.
 - `Hatchback_02_Door_1_2` is declared at `P:\DZ\vehicles\wheeled\config.cpp:9155`.
+- `OffroadHatchback` overrides `GetDoorConditionPointFromSelection`: `P:\scripts\4_world\entities\vehicles\inheritedcars\offroadhatchback.c:364`.
+- `Van_01` overrides `GetDoorConditionPointFromSelection`: `P:\scripts\4_world\entities\vehicles\inheritedcars\van_01.c:269`.
+- `Motorbike_01_ColorBase` overrides `CanGetIn`: `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:92`.
 
 ## Three layers that are easy to conflate
 
@@ -32,7 +36,7 @@ of a `.p3d` instantiated by proxy.
 
 ## Get-in prompt: four ordered gates
 
-[EXACT][CLAIM-R21-VEHICLE-GETIN-CHAIN] `ActionGetInTransport.ActionCondition`
+`ActionGetInTransport.ActionCondition`
 accepts a seat only when all four links pass:
 
 1. The cursor-hit ViewGeometry component maps through
@@ -51,25 +55,20 @@ accepts a seat only when all four links pass:
    distance and applies a default 1 m horizontal limit.
 
 (until 1.29: the four gates above, with door clearance via `IsAreaAtDoorFree`.)
-(since 1.30: `ActionGetInTransport.ActionCondition` first rejects when `!transport.CanGetIn()` (`ActionGetInTransport.c:36`; default `true` on `Transport` at `exp\scripts\scripts\3_Game\Vehicles\Transport.c:675-678`). Gate 3 in this build is `IsAreaAtDoorFreeDiag(crewIndex)` combined with `CrewCanGetThrough` (`ActionGetInTransport.c:54`). Gate 4 **is called from script** — see the block after the 1.29 anchors. Motorbikes that inherit `Motorbike_01_ColorBase` additionally require `GetAnimationPhase("SeatDriver") == 0.0` inside `CanGetIn()` (`Motorbike_01.c:89-95`).)
+(since 1.30: `ActionGetInTransport.ActionCondition` first rejects when `!transport.CanGetIn()` (`actiongetintransport.c:36`; default `true` on `Transport` at `transport.c:672`). Gate 3 in this build is `IsAreaAtDoorFreeDiag(crewIndex)` combined with `CrewCanGetThrough` (`actiongetintransport.c:54`). Gate 4 **is called from script** — see the section on the 1 m limit below. Motorbikes that inherit `Motorbike_01_ColorBase` additionally require `GetAnimationPhase("SeatDriver") == 0.0` inside `CanGetIn()` (`motorbike_01.c:92`).)
 
 Inspect and fix them in that order. Rebuilding `seat_con_*` cannot help while
 the cursor resolves an envelope component, and script changes cannot help while
 the model lacks the final memory point.
 
-Source anchors (1.30.164200 line numbers; on 1.29.0.163451 the condition was 1.29 `actiongetintransport.c:26-80`):
+Source anchors (line numbers of the 1.30 build on `P:\`; on 1.29 the condition was `actiongetintransport.c:26-80` of that build):
 
-- `scripts/4_world/classes/useractionscomponent/actions/interact/actiongetintransport.c:26-69`
-- `scripts/3_game/vehicles/transport.c:180-182,727-734,853-895`
-- `scripts/4_world/entities/vehicles/carscript.c:2141-2160,2177-2199`
-
-(since 1.30, re-opened 2026-09-17:)
-
-- `exp\scripts\scripts\4_World\Classes\UserActionsComponent\Actions\Interact\ActionGetInTransport.c:26-69`
-- `CanGetIn` default: `exp\scripts\scripts\3_Game\Vehicles\Transport.c:675-678`
+- The whole condition: `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:26` to `:69`.
+- `CrewPositionIndex` at `P:\scripts\3_game\vehicles\transport.c:179`, `CrewCanGetThrough` at `:724` to `:731`, and the two `IsAreaAtDoorFree` overloads at `:844` to `:899`.
+- `GetDoorConditionPointFromSelection` at `P:\scripts\4_world\entities\vehicles\carscript.c:2141` to `:2160`, and `CanReachSeatFromDoors` at `:2177` to `:2199`.
 
 ```c
-// [EXACT] exp\scripts\scripts\4_World\Classes\UserActionsComponent\Actions\Interact\ActionGetInTransport.c:36-37
+// P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:36-37
 		if (!transport.CanGetIn())
 			return false;
 ```
@@ -79,7 +78,7 @@ source establishes the component-to-seat and subsequent condition order.
 
 ## Cursor-targeted world action: two registrations, not the entity list
 
-[EXACT][CLAIM-R21-VEHICLE-WORLD-ACTION] A custom `ActionInteractBase` offered
+A custom `ActionInteractBase` offered
 while the player looks at a vehicle needs both:
 
 1. insertion of its typename from a `modded class ActionConstructor` override
@@ -98,12 +97,12 @@ each marker identifies the dead link without changing the condition blindly.
 
 Source anchors:
 
-- `scripts/4_world/classes/useractionscomponent/actionconstructor.c:27-34,297-303`
-- `scripts/4_world/entities/manbase/playerbase.c:1695-1745`
+- `RegisterActions` starts at `P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:27`, and it inserts `ActionGetInTransport` at `:302`.
+- `SetActions` runs from `P:\scripts\4_world\entities\manbase\playerbase.c:1695` to `:1745`.
 
 ## Multi-LOD submodel instantiated by proxy
 
-[EXACT][CLAIM-R21-VEHICLE-PROXY-AUTOCENTER] In the measured multi-LOD proxy
+In the measured multi-LOD proxy
 case, a visual-only submodel with no Geometry LOD was recentered during
 binarization: the offset moved into ODOL `model_info.bounding_center` while the
 shell proxy matrix remained authored, so the rendered part shifted.
@@ -122,7 +121,7 @@ exact visual displacement. The evidence is cross-checked against one custom
 vehicle plus working vanilla/community multi-LOD proxy controls; it is not a
 claim that every single-LOD engine proxy follows the same path.
 
-## Two caveats from the measured case (restored 2026-07-26)
+## Two caveats from the measured case (added 2026-07-26)
 
 - only ONE `modded class PlayerBase` per mod — put SetActions inside the existing one.
 - prompt shown + hand animation playing + server state flipping (`[LFHELI-DBG] door open=true`) with NO visible door motion = the SCRIPT chain is fine; suspect the baked-anim side (selection content in the binarized ODOL, skeleton bone, axis) — the script/anim boundary is exactly SetAnimationPhase.
@@ -135,10 +134,10 @@ is the **default in the signature** (`carscript.c:2177`), and it is not evidence
 nor `pFromPos` are observable from script.
 
 (until 1.29: the two sentences above — "no vanilla script calls that method"; native-only. `dayz-1-30-vehicles.md`, section 5, later corrects this for 1.29 too: the 1.29 condition already ended with the same call.)
-(since 1.30: **false**. `ActionGetInTransport.ActionCondition` loops selections and calls `transport.CanReachSeatFromDoors(selections[i], playerPosition, 1.0)` at `exp\scripts\scripts\4_World\Classes\UserActionsComponent\Actions\Interact\ActionGetInTransport.c:62-66`. The third argument vanilla passes is `1.0`. The LFQuad2 measurement below remains a valid warning against guessing `pFromPos` from memory-point choice; instrument the 1.30 call if you change `GetDoorConditionPointFromSelection`.)
+(since 1.30: **false**. `ActionGetInTransport.ActionCondition` loops selections and calls `transport.CanReachSeatFromDoors(selections[i], playerPosition, 1.0)` at `actiongetintransport.c:64`, inside the loop at `:62` to `:66`. The third argument vanilla passes is `1.0`. The LFQuad2 measurement below remains a valid warning against guessing `pFromPos` from memory-point choice; instrument the 1.30 call if you change `GetDoorConditionPointFromSelection`.)
 
 ```c
-// [EXACT] exp\scripts\scripts\4_World\Classes\UserActionsComponent\Actions\Interact\ActionGetInTransport.c:62-66
+// P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:62-66
 		for (int i = 0; i < selectionCount; ++i)
 		{
 			if (transport.CanReachSeatFromDoors(selections[i], playerPosition, 1.0))
@@ -149,8 +148,8 @@ nor `pFromPos` are observable from script.
 Measured cost of taking it at face value (LFQuad2, 2026-09-07): a quad whose
 `GetDoorConditionPointFromSelection` returned the approach points `pos_driver`/`pos_codriver`
 instead of centred ones was "corrected" to return the centred crew points. The change had three
-true supports — two vanilla vehicles return centred points (`van_01.c:274`,
-`offroadhatchback.c:371`), the sibling mod does the same, and the offline arithmetic gave 0.85 m
+true supports — two vanilla vehicles return centred points (`van_01.c:269`,
+`offroadhatchback.c:364`), the sibling mod does the same, and the offline arithmetic gave 0.85 m
 and 0.83 m against the 1 m limit. In game it broke two things at once: the driver entering from
 the right ended up yawed 15-20 degrees, and the codriver became unreachable from **both** sides.
 Reverted.
@@ -210,21 +209,18 @@ Vanilla states it plainly — same proxy on the car, different `model=` per item
 
 and every door is its own file, one per side, in a directory literally called `proxy\`:
 `Hatchback_02_Door_1_1.p3d` (driver), `Hatchback_02_Door_2_1.p3d` (codriver),
-`Hatchback_02_Door_1_2.p3d`. Source anchors: `DZ/vehicles/wheeled/config.cpp:8965,8987,9001,9123,9134` as the notes were written (the wheel, the ruined wheel and the three doors are at `:8980`, `:9006`, `:9019`, `:9144` and `:9155` on this repo's `P:\`);
-the same pattern holds for the Niva (`:858,883,905,1026`) and the CivilianSedan (`:4760,4781,4793,4916`).
+`Hatchback_02_Door_1_2.p3d`. Source anchors: the wheel, the ruined wheel and the three doors are at `P:\DZ\vehicles\wheeled\config.cpp:8980`, `:9006`, `:9019`, `:9144` and `:9155`;
+the same pattern holds for the Niva (`HatchbackWheel` at `:853`, `HatchbackWheel_Ruined` at `:882`, `HatchbackDoors_Driver` at `:908`, `HatchbackDoors_CoDriver` at `:1030`) and the CivilianSedan (`CivSedanWheel` at `:4762`, `CivSedanWheel_Ruined` at `:4788`, `CivSedanDoors_Driver` at `:4803`, `CivSedanDoors_CoDriver` at `:4927`).
 
 **The consequence that costs a deployment.** That one `model=` governs BOTH the fitted part and
 the loose inventory item, because they are the same entity in two states. So it cannot be used to
 fix an inventory preview, a loose-item icon or a mounted mesh in isolation: change it and both
 move together. Pointing a codriver door item at the driver door's `.p3d` puts a left-hand door on
-the right-hand side of the car — measured in a deployed build of a custom vehicle (SUB_BRZ s79,
-reverted in s80 with a negative gate; the failing case was reported by the user as the door on the
+the right-hand side of the car — measured in a deployed build of a custom vehicle (SUB_BRZ,
+reverted in the next build with a negative gate; the failing case was reported by the user as the door on the
 wrong side, not as a config error).
 
 **Before changing a part's `model=`, name both consumers.** Write down what the fitted part should
 look like and what the loose item should look like. If the answer differs, `model=` is the wrong
 lever and the fix belongs in the part's own `.p3d`, in a separate item class, or in the
 `hiddenSelections` of the host — not in a path swap.
-
-Origin: cross-checked against vanilla config here; the deployed regression and its revert are
-recorded in the SUB_BRZ project ledger, entry `S79-DOOR-MODEL-SWAP`.

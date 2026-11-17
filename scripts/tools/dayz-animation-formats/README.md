@@ -32,7 +32,7 @@ file returns exit `0` and one deterministic `animation-inspect-v1` JSON
 document. Invalid, truncated or unsupported data returns exit `2` and:
 
 ```json
-{"error":{"code":"ANIM_FORMAT_UNSUPPORTED","message":"unsupported animation format","offset":0}}
+{"error":{"code":"ANIM_FORMAT_UNSUPPORTED","message":"input is not SEAnim v1 or unbinarized RTM","offset":0}}
 ```
 
 Expected format errors are written to stdout, not stderr. Output contains no
@@ -86,18 +86,18 @@ scalars, truncation and trailing bytes are rejected.
 BMTR, duplicate/out-of-order blocks, unknown blocks, silent string truncation
 and trailing bytes are rejected.
 
-## Independent fixtures and license boundary
+## Fixtures
 
-The fixtures in `tests/fixtures/` contain first-party literal animation data:
+The fixtures in `tests/fixtures/` contain first-party literal animation data.
+Each binary was written and read back by an independent tool, so the tests
+compare this package against a second implementation of the format:
 
-| Fixture | Size | SHA-256 | Independent oracle |
+| Fixture | Size | SHA-256 | Independent tool |
 |---|---:|---|---|
-| `seanim-v1-full.seanim` | 288 | `75af1c6ab01ae715e6cea01e6897b804586687ccf7a234c21be6bef871288b29` | SE2Dev `io_anim_seanim` at `dffe313b635ce8940264201f25db9e68f4486d7e` |
-| `rtm-0101-mdat.rtm` | 258 | `37aa63f705d874c79b94721027d376a7cab347fc94691ad419e1172c5597c3f8` | Arma 3 Object Builder 2.5.1 |
+| `seanim-v1-full.seanim` | 288 | `75af1c6ab01ae715e6cea01e6897b804586687ccf7a234c21be6bef871288b29` | Blender add-on `io_anim_seanim` at commit `dffe313b635ce8940264201f25db9e68f4486d7e` |
+| `rtm-0101-mdat.rtm` | 258 | `37aa63f705d874c79b94721027d376a7cab347fc94691ad419e1172c5597c3f8` | Arma 3 Object Builder (A3OB) 2.5.1 |
 
-SE2Dev is MIT-licensed. Arma 3
-Object Builder is GPL-3.0-or-later and is used only as an external oracle; no
-A3OB or BisDLL source is included or imported by this package.
+Neither tool is included in or imported by this package.
 
 The local RTM writer was also read successfully by A3OB 2.5.1 under Blender
 5.1.1, preserving the expected motion, bones, phases, metadata and matrices.

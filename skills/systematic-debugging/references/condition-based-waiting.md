@@ -30,10 +30,7 @@ Use it when:
 - Tests time out when run in parallel.
 - You are waiting for async operations to complete.
 
-Don't use it when:
-
-- You are testing actual timing behavior (debounce, throttle intervals).
-- If you do use an arbitrary timeout, always document why.
+Don't use it when you are testing actual timing behavior (debounce, throttle intervals). If you do use an arbitrary timeout, always document why.
 
 ## Core pattern
 
@@ -66,7 +63,7 @@ A generic polling function:
 ```typescript
 async function waitFor<T>(
   condition: () => T | undefined | null | false,
-  description: string,
+  description = 'condition',
   timeoutMs = 5000
 ): Promise<T> {
   const startTime = Date.now();
@@ -84,7 +81,7 @@ async function waitFor<T>(
 }
 ```
 
-See `condition-based-waiting-example.ts` in this folder for a complete implementation with domain-specific helpers (`waitForEvent`, `waitForEventCount`, `waitForEventMatch`) from an actual debugging session.
+See `condition-based-waiting-example.ts` in this folder for a complete implementation with domain-specific helpers (`waitForEvent`, `waitForEventCount`, `waitForEventMatch`) for events on a thread.
 
 ## Common mistakes
 
@@ -98,7 +95,7 @@ See `condition-based-waiting-example.ts` in this folder for a complete implement
 
 ```typescript
 // Tool ticks every 100ms - need 2 ticks to verify partial output
-await waitForEvent(manager, 'TOOL_STARTED'); // First: wait for condition
+await waitForEvent(threadManager, threadId, 'TOOL_STARTED'); // First: wait for condition
 await new Promise(r => setTimeout(r, 200));   // Then: wait for timed behavior
 // 200ms = 2 ticks at 100ms intervals - documented and justified
 ```
@@ -109,9 +106,9 @@ Requirements:
 2. Base the wait on known timing, not a guess.
 3. Add a comment explaining why.
 
-## Real-world impact
+## Measured effect
 
-From a debugging session (2025-10-03):
+Replacing guessed sleeps with condition-based waits in one test suite:
 
 - Fixed 15 flaky tests across 3 files.
 - Pass rate: 60% to 100%.

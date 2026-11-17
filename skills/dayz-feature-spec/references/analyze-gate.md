@@ -23,7 +23,7 @@ Report high-signal findings. Do not paste raw artifacts into the report.
 
 - Every acceptance criterion and success criterion has a verification path: an offline check or a place in the batched in-game session. A missing path is CRITICAL.
 - Every requirement maps to at least one task or code change, and every task maps to at least one requirement. Orphans in either direction are HIGH.
-- Every forward-contract symbol is verified to exist (`path:line`). Any `[UNVERIFIED]` symbol the code depends on is CRITICAL: the consumer references something that is not there (the proxy-path bug measured on the knowledge pack author's LFQuad project).
+- Every forward-contract symbol is verified to exist (`path:line`). Any `[UNVERIFIED]` symbol the code depends on is CRITICAL: the consumer references something that is not there (for example a proxy path that points at a file that does not exist).
 
 ### B. Contradiction and drift
 

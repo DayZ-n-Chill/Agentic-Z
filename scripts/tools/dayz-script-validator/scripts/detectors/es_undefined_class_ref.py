@@ -355,7 +355,7 @@ def blank_template_arguments(text):
     four deep, before it read blanked text. No
     declaration is left to find among template arguments either: each `ref
     X,` of `new Param<ref X, ref X, ...>(1)` read like another declaration,
-    and each was read to the end of the statement (E2). Each run of text
+    and each was read to the end of the statement. Each run of text
     between two of those breaks is read once, and only where it holds a `<`.
     """
     spans = []

@@ -2,7 +2,7 @@
 
 The checks a high to low normal bake in Blender must pass before the first pass, so the bake is not repeated once per mistake. It ends with the conversion to a DayZ `_nohq` and the render that proves the bake.
 
-How to read it: this is Blender and bake practice measured on one mod (LFInfectedBig, a custom infected, 2026-06-24: five bake rounds hit four separate traps). None of it is a vanilla game fact, so nothing here cites `P:\`. The DayZ side of the result, the Y- convention and how `_nohq` is stored, is in `map-conventions.md`.
+How to read it: this is Blender and bake practice measured on one custom infected model (2026-06-24: five bake rounds hit four separate traps). None of it is a vanilla game fact, so nothing here cites `P:\`. The DayZ side of the result, the Y- convention and how `_nohq` is stored, is in `map-conventions.md`.
 
 ## Before the bake: geometry
 
@@ -50,7 +50,7 @@ For any data map (normal, AO, curvature, displacement, ID, masks):
 
 ## Looking at materials in Blender
 
-Notes from the same projects, for previewing a DayZ material before the game:
+For previewing a DayZ material before the game:
 
 - In Blender 5.1, use the `RENDERED` shading mode with EEVEE and a light, and capture the 3D view area, not the whole window.
 - For a Multi material, keep the second UV set (`tex1`) and reproduce the blend by the mask.

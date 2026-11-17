@@ -43,13 +43,13 @@ The user actions specific to motorbikes in DayZ 1.30, the structure of `Motorbik
 | `ActionRepairMotorbikeChassisWithBlowtorch` | `actionrepairmotorbikechassiswithblowtorch.c:9` | `Blowtorch` (blowtorch with gas) | Chassis: damaged zone between `WORN` and `RUINED` (inherited condition, `actionrepairmotorbikechassis.c:31-47`) | Yes (`actionconstructor.c:259`) |
 | `ActionRepairMotorbikeChassis` | `actionrepairmotorbikechassis.c:1` | Base without vanilla tool | Chassis | Yes (`actionconstructor.c:255`) |
 | `ActionRepairMotorbikeEngineWithBlowtorch` | `actionrepairmotorbikeenginewithblowtorch.c:9` | `Blowtorch` | Engine (`"Engine"`) | Yes (`actionconstructor.c:260`) |
-| `ActionRepairMotorbikeEngine` | `actionrepairmotorbikeengine.c:1` | Base (orphaned) | Engine | **NO** (vanilla omission in 1.30) |
+| `ActionRepairMotorbikeEngine` | `actionrepairmotorbikeengine.c:1` | Base (orphaned) | Engine | No (0 occurrences in `actionconstructor.c`) |
 | `ActionRepairMotorbikePartWithBlowTorch` | `actionrepairmotorbikepartwithblowtorch.c:9` | `Blowtorch` | Parts / fairings (`MotorbikePart`) | Yes (`actionconstructor.c:253`) |
 | `ActionRepairMotorbikePart` | `actionrepairmotorbikepart.c:12` | Base | Parts / fairings | Yes (`actionconstructor.c:252`) |
 
 ---
 
-## 2. Vehicle HUD: `MotorBikeHud`
+## 2. Vehicle HUD: `MotorbikeHud`
 
 - **File**: `P:\scripts\5_mission\gui\vehicles\motorbikehud.c:1-248`.
 - **Inheritance**: `class MotorbikeHud : VehicleHudBase`.
@@ -76,12 +76,12 @@ The user actions specific to motorbikes in DayZ 1.30, the structure of `Motorbik
   m_LightsComponent.RegisterSelection("FrontOn", {new VehicleLightSelectionData(0, "frontReflectorMatOn")});
   m_LightsComponent.RegisterSelection("BrakeOn", {new VehicleLightSelectionData(1, "brakeReflectorMatOn")});
   ```
-- Those are the base registrations (`motorbikescript.c:114-122`); the first argument is the `SetObjectMaterial` index (`vehiclelightscomponent.c:66-81`). Each vanilla bike then registers `BrakeOn` and `BrakeOff` again on index 2 (`motorbike_01.c:19-20`, `motorbike_02.c:20-21`). The knowledge pack this came from reports that from build 1.30.164200 the vanilla bikes also register `FrontOn` and `FrontOff` on their own index (Motorbike_01 front 3 and brake 2, Motorbike_02 front 4 and brake 6); not yet checked on `P:\`.
-- Rear light off: the `else` branch sets `"BrakeOff"` only when `HasGangedTailAndBrakeLights()` returns `false` (`motorbikescript.c:1236-1240`). The base returns `false` (`motorbikescript.c:169-172`) and both vanilla bikes override it to `true` (`motorbike_01.c:28-31`, `motorbike_02.c:29-32`). The `default` case of the same switch names the key `"BrakesOff"`, which nothing registers (`motorbikescript.c:1231-1233`). The knowledge pack reports that from build 1.30.164200 neither bike overrides it and the `default` case names `"BrakeOff"`; not yet checked on `P:\`.
+- Those are the base registrations (`motorbikescript.c:114-122`); the first argument is the `SetObjectMaterial` index (`vehiclelightscomponent.c:66-81`). Each vanilla bike then registers `BrakeOn` and `BrakeOff` again on index 2 (`motorbike_01.c:19-20`, `motorbike_02.c:20-21`). From build 1.30.164200 the vanilla bikes also register `FrontOn` and `FrontOff` on their own index (Motorbike_01 front 3 and brake 2, Motorbike_02 front 4 and brake 6); not yet checked on `P:\`.
+- Rear light off: the `else` branch sets `"BrakeOff"` only when `HasGangedTailAndBrakeLights()` returns `false` (`motorbikescript.c:1236-1240`). The base returns `false` (`motorbikescript.c:169-172`) and both vanilla bikes override it to `true` (`motorbike_01.c:28-31`, `motorbike_02.c:29-32`). The `default` case of the same switch names the key `"BrakesOff"`, which nothing registers (`motorbikescript.c:1231-1233`). From build 1.30.164200 neither bike overrides it and the `default` case names `"BrakeOff"`; not yet checked on `P:\`.
 - Supports dedicated light profiles (classes on `VehicleLightProfileFront` and `VehicleLightProfileBrakeAndReverse`), set in `P:\scripts\4_world\entities\scriptedlightbase\spotlightbase\vehiclelightprofiles\motorbike_01.c:1-34` and `motorbike_02.c` in the same folder:
-  - `Motorbike_01LightProfileFront`: brightness 2, radius 30m, angle 50º, RGB color `(0.85, 0.85, 0.68)` (lines 5-8). The knowledge pack reports brightness 8 from build 1.30.164200; not yet checked on `P:\`.
+  - `Motorbike_01LightProfileFront`: brightness 2, radius 30m, angle 50º, RGB color `(0.85, 0.85, 0.68)` (lines 5-8). Brightness is 8 from build 1.30.164200; not yet checked on `P:\`.
   - `Motorbike_01LightProfileRear`: brake light brightness 4, radius 6m, angle 120º, RGB color `(0.95, 0.16, 0.05)` (lines 17-20).
-  - `Motorbike_02LightProfileFront`: brightness 3, radius 65m, angle 65º, RGB color `(0.85, 0.85, 0.68)` (lines 5-8 of its file). The knowledge pack reports brightness 8 from build 1.30.164200; not yet checked on `P:\`.
+  - `Motorbike_02LightProfileFront`: brightness 3, radius 65m, angle 65º, RGB color `(0.85, 0.85, 0.68)` (lines 5-8 of its file). Brightness is 8 from build 1.30.164200; not yet checked on `P:\`.
 - Handlebar attachment:
   `int driveWheelIndex = GetBoneIndex("drivewheel");` and `m_LightsComponent.AttachLightOnObject("Front", GetMemoryPointPos(m_HeadLightPoint), vector.Zero, VehicleLightMode.SEGREGATED, driveWheelIndex);` (`motorbikescript.c:1107-1109`).
 
@@ -95,7 +95,7 @@ The user actions specific to motorbikes in DayZ 1.30, the structure of `Motorbik
   - `DUST_BEHIND` (`EffVehicleDust`) at the memory point `ptcDustPos` (`motorbikescript.c:199`).
   - `ENGINE_SMOKE` (`EffEngineSmoke`) at the memory point `ptcEnginePos` (`motorbikescript.c:200`). The memory point `engine` is read for the drowning check (`motorbikescript.c:181`).
   - `EXHAUST_SMOKE` (`EffExhaustSmoke`) oriented between `ptcExhaust_start` and `ptcExhaust_end`.
-  - Wheel groups: `WHEEL_SMOKE` (`EffWheelSmoke`) and `WHEEL_CONTACT` (`EffWheelContact`), with a 5.0 s cooldown (third `VehicleVFXDataParams` argument, `vehiclevfxcomponent.c:82-94`) (`motorbikescript.c:203-204`). The knowledge pack reports 2.0 s from build 1.30.164200; not yet checked on `P:\`.
+  - Wheel groups: `WHEEL_SMOKE` (`EffWheelSmoke`) and `WHEEL_CONTACT` (`EffWheelContact`), with a 5.0 s cooldown (third `VehicleVFXDataParams` argument, `vehiclevfxcomponent.c:82-94`) (`motorbikescript.c:203-204`). The cooldown is 2.0 s from build 1.30.164200; not yet checked on `P:\`.
 
 ---
 

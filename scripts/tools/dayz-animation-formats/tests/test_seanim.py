@@ -46,14 +46,14 @@ def _declared_empty_channel_bytes(presence_flags):
     return b"SEAnim" + struct.pack("<hH", 1, 28) + payload + b"b\0\0\0"
 
 
-def test_reads_frozen_se2dev_fixture_as_hand_checked_document():
-    """Breaks if the reader diverges from the SE2Dev oracle in any field."""
+def test_reads_frozen_seanim_fixture_as_hand_checked_document():
+    """Breaks if the reader diverges from the io_anim_seanim fixture in any field."""
     expected = _golden_document()
     actual = read_seanim(FIXTURES / "seanim-v1-full.seanim")
     assert actual == expected
 
 
-def test_writer_reproduces_frozen_se2dev_bytes():
+def test_writer_reproduces_frozen_seanim_fixture_bytes():
     """Breaks if order, widths, flags or precision stop being compatible."""
     expected = (FIXTURES / "seanim-v1-full.seanim").read_bytes()
     assert write_seanim_bytes(_golden_document()) == expected
@@ -163,7 +163,7 @@ def test_write_seanim_wrapper_defaults_to_relative_and_legacy_bone_keys(
 
 
 def test_write_seanim_missing_bone_key_frame_is_typed_error(tmp_path):
-    """Breaks if the MEN-4 repro leaks TypeError from a bone key."""
+    """Breaks if a bone key without a frame leaks TypeError before the validator."""
     path = tmp_path / "missing-bone-frame.seanim"
 
     with pytest.raises(AnimationFormatError) as raised:

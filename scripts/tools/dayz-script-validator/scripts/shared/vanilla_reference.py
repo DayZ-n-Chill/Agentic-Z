@@ -1,6 +1,6 @@
 """Curated, statically-verified slices of the vanilla DayZ script tree.
 
-R2 cite-then-verify: every entry MUST carry a `path:line` citation. This is the
+Cite, then verify: every entry MUST carry a `path:line` citation. This is the
 minimum-viable reference used by detectors that need to know vanilla member
 names / base override signatures WITHOUT mounting and parsing P:\\scripts at
 runtime. Coverage is intentionally partial — add entries only when verified

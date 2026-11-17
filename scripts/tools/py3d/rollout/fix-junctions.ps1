@@ -1,19 +1,19 @@
 # fix-junctions.ps1 - Re-points the junctions under ~\.agents\skills to the real LocalCache path
-# Context (2026-06-07): the 2026-06-05 plugin-canonical migration created junctions whose target is
-# <claude-appdata>\... - that path only exists INSIDE the Claude app
-# (Store-virtualized). For host processes (Codex CLI, PowerShell) the junctions dangle.
+# Context: junctions created from inside the Claude app (Store-packaged) point at
+# %APPDATA%\Claude\... - that path only exists INSIDE the app, where it is
+# virtualized. For host processes (Codex CLI, PowerShell) the junctions dangle.
 # This script re-points them to the equivalent physical path under
 # %LOCALAPPDATA%\Packages\<Claude>\LocalCache\Roaming\Claude\...
-# Scope approved by the author: ALL broken junctions with that target pattern.
+# Scope: ALL junctions under ~\.agents\skills with that target pattern.
 # Safety: junctions are removed with 'cmd /c rmdir' (it only deletes the reparse point,
 # NEVER the target's contents). PowerShell 5.1+, ASCII only.
-# S3 2026-06-07: version-agnostic wheel smoke check (py3d-*.whl, it used to pin 1.2.0).
+# The wheel smoke check is version-agnostic (py3d-*.whl).
 
 $ErrorActionPreference = 'Continue'
 $rootB = Join-Path $env:USERPROFILE '.agents\skills'
-$VIRT  = '<claude-appdata>\'
+$VIRT  = (Join-Path $env:APPDATA 'Claude') + '\'
 
-# Auto-detect the real root (same method as apply-s2-rollout v2)
+# Auto-detect the real root
 $REAL = $null
 Get-ChildItem "$env:LOCALAPPDATA\Packages" -Directory -ErrorAction SilentlyContinue |
   Where-Object { $_.Name -match 'Claude|Anthropic' } |
