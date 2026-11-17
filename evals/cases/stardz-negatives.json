@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "case_id": "stardz-negatives",
+  "family": "api",
+  "prompt": "Reject every unsupported Enforce claim named by the fixture.",
+  "fixtures": {
+    "negative-contracts.txt": "autoptr as universal ownership\noverloaded methods\nManaged means engine-owned\nJsonLoadFile global helper\nOnDrop universal callback\nDabs utility\n"
+  },
+  "assertions": [
+    {
+      "assertion_id": "rejects-autoptr",
+      "type": "not_contains",
+      "value": "autoptr is always required",
+      "evidence": [
+        "rejection.txt"
+      ]
+    },
+    {
+      "assertion_id": "rejects-overload",
+      "type": "not_contains",
+      "value": "method overloads are supported",
+      "evidence": [
+        "rejection.txt"
+      ]
+    },
+    {
+      "assertion_id": "rejects-managed",
+      "type": "not_contains",
+      "value": "Managed means engine-owned",
+      "evidence": [
+        "rejection.txt"
+      ]
+    },
+    {
+      "assertion_id": "rejects-jsonloadfile",
+      "type": "not_contains",
+      "value": "JsonLoadFile is a verified global",
+      "evidence": [
+        "rejection.txt"
+      ]
+    },
+    {
+      "assertion_id": "rejects-ondrop",
+      "type": "not_contains",
+      "value": "OnDrop is universal",
+      "evidence": [
+        "rejection.txt"
+      ]
+    },
+    {
+      "assertion_id": "rejects-dabs",
+      "type": "not_contains",
+      "value": "Dabs is verified",
+      "evidence": [
+        "rejection.txt"
+      ]
+    }
+  ],
+  "grader": {
+    "type": "mechanical"
+  },
+  "required_evidence": [
+    "rejection.txt"
+  ],
+  "variants": [
+    {
+      "variant_id": "autoptr",
+      "skill_revision": "r21-current",
+      "baseline_revision": "stardz-source",
+      "runner_id": "fixture",
+      "expected_verdict": "PASS",
+      "response": "Reject the claim; no verified declaration supports universal ownership.",
+      "evidence": {
+        "rejection.txt": "autoptr claim rejected by the mechanical negative fixture.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    },
+    {
+      "variant_id": "overload",
+      "skill_revision": "r21-current",
+      "baseline_revision": "stardz-source",
+      "runner_id": "fixture",
+      "expected_verdict": "PASS",
+      "response": "Reject the overload claim.",
+      "evidence": {
+        "rejection.txt": "overload claim rejected by the mechanical negative fixture.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    },
+    {
+      "variant_id": "managed",
+      "skill_revision": "r21-current",
+      "baseline_revision": "stardz-source",
+      "runner_id": "fixture",
+      "expected_verdict": "PASS",
+      "response": "Reject the ownership interpretation of Managed.",
+      "evidence": {
+        "rejection.txt": "Managed claim rejected by the mechanical negative fixture.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    },
+    {
+      "variant_id": "jsonloadfile",
+      "skill_revision": "r21-current",
+      "baseline_revision": "stardz-source",
+      "runner_id": "fixture",
+      "expected_verdict": "PASS",
+      "response": "Reject the unverified helper.",
+      "evidence": {
+        "rejection.txt": "JsonLoadFile claim rejected by the mechanical negative fixture.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    },
+    {
+      "variant_id": "ondrop",
+      "skill_revision": "r21-current",
+      "baseline_revision": "stardz-source",
+      "runner_id": "fixture",
+      "expected_verdict": "PASS",
+      "response": "Reject the universal callback claim.",
+      "evidence": {
+        "rejection.txt": "OnDrop claim rejected by the mechanical negative fixture.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    },
+    {
+      "variant_id": "dabs",
+      "skill_revision": "r21-current",
+      "baseline_revision": "stardz-source",
+      "runner_id": "fixture",
+      "expected_verdict": "PASS",
+      "response": "Reject the unverified utility.",
+      "evidence": {
+        "rejection.txt": "Dabs claim rejected by the mechanical negative fixture.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/dayz-modding-knowledge-pack/claims.schema.json",
+  "title": "DayZ Modding Knowledge Pack executable claim registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "claim_baseline_commit",
+    "claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "claim_baseline_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/claim"
+      }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._/-]*$"
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "artifact_id",
+        "line_start",
+        "line_end",
+        "source_id",
+        "source_revision",
+        "evidence_locator",
+        "license",
+        "observed_at",
+        "verification_level",
+        "promotion_artifact_id"
+      ],
+      "properties": {
+        "claim_id": {
+          "type": "string",
+          "pattern": "^CLAIM-[A-Z0-9][A-Z0-9-]*$"
+        },
+        "artifact_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "line_start": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_end": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "source_revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "evidence_locator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "license": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date"
+        },
+        "verification_level": {
+          "enum": [
+            "runtime_verified",
+            "source_verified",
+            "offline_tested",
+            "cross_checked",
+            "historical",
+            "unverified"
+          ]
+        },
+        "promotion_artifact_id": {
+          "$ref": "#/$defs/identifier"
+        }
+      }
+    }
+  }
+}

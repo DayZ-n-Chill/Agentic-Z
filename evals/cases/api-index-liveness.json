@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "case_id": "api-index-liveness",
+  "family": "api",
+  "prompt": "An API-index query returns zero active records. State what can and cannot be concluded before recommending a DayZ API.",
+  "fixtures": {
+    "active.c": "class ActiveApi\n{\n    void Run();\n}\n",
+    "commented.c": "// class CommentedApi\n// {\n//     void Run();\n// }\n",
+    "guarded.c": "#ifdef DEVELOPER\nclass GuardedApi\n{\n    void Run();\n}\n#endif\n"
+  },
+  "assertions": [
+    {
+      "assertion_id": "requires-tristate",
+      "type": "contains",
+      "value": "active|commented|missing",
+      "evidence": [
+        "api-index-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "requires-source-verification",
+      "type": "contains",
+      "value": "source path:line",
+      "evidence": [
+        "api-index-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "requires-guard-verification",
+      "type": "contains",
+      "value": "#ifdef",
+      "evidence": [
+        "api-index-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "rejects-zero-means-absent",
+      "type": "not_contains",
+      "value": "zero records proves absence",
+      "evidence": [
+        "api-index-evidence.txt"
+      ]
+    }
+  ],
+  "grader": {
+    "type": "mechanical"
+  },
+  "required_evidence": [
+    "api-index-evidence.txt"
+  ],
+  "variants": [
+    {
+      "variant_id": "approved",
+      "skill_revision": "r21-prior-art-approved",
+      "baseline_revision": "r21-pre-prior-art",
+      "runner_id": "fixture",
+      "expected_verdict": "PASS",
+      "response": "Require declaration_state=active|commented|missing. Until the index returns that structure, open the source path:line and inspect the surrounding #ifdef; zero active records is inconclusive.",
+      "evidence": {
+        "api-index-evidence.txt": "active.c:1-4; commented.c:1-4; guarded.c:1-6\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    },
+    {
+      "variant_id": "baseline",
+      "skill_revision": "r21-pre-prior-art",
+      "baseline_revision": "r21-pre-prior-art",
+      "runner_id": "fixture",
+      "expected_verdict": "FAIL",
+      "response": "The query returned no records, so zero records proves absence and the API does not exist.",
+      "evidence": {
+        "api-index-evidence.txt": "No active record returned.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    }
+  ]
+}

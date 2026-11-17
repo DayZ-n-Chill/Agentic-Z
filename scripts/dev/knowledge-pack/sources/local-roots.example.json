@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "roots": {
+    "dayz_mcp_source": {
+      "path_env": "PACK_DAYZ_MCP_SOURCE_ROOT",
+      "writable": false
+    },
+    "dayz_vanilla": {
+      "path_env": "PACK_DAYZ_VANILLA_ROOT",
+      "writable": false
+    },
+    "dayz_ui_research": {
+      "path_env": "PACK_DAYZ_UI_RESEARCH_ROOT",
+      "writable": false
+    },
+    "rip_vehicle_import": {
+      "path_env": "PACK_RIP_VEHICLE_IMPORT_ROOT",
+      "writable": false
+    },
+    "gamemaster_source": {
+      "path_env": "PACK_GAMEMASTER_SOURCE_ROOT",
+      "writable": false
+    },
+    "installed_user_skills": {
+      "path_env": "PACK_INSTALLED_USER_SKILLS_ROOT",
+      "writable": false
+    },
+    "lf_vstorage_source": {
+      "path_env": "PACK_LF_VSTORAGE_SOURCE_ROOT",
+      "writable": false
+    },
+    "lfpowergrid_source": {
+      "path_env": "PACK_LFPOWERGRID_SOURCE_ROOT",
+      "writable": false
+    },
+    "obsidian_knowledge": {
+      "path_env": "PACK_OBSIDIAN_KNOWLEDGE_ROOT",
+      "writable": false
+    },
+    "py3d_canonical": {
+      "path_env": "PACK_PY3D_CANONICAL_ROOT",
+      "writable": false
+    },
+    "py3d_rollout": {
+      "path_env": "PACK_PY3D_ROLLOUT_ROOT",
+      "writable": false
+    },
+    "ui_corpus_expansion": {
+      "path_env": "PACK_UI_CORPUS_EXPANSION_ROOT",
+      "writable": false
+    },
+    "ui_corpus_traderplus": {
+      "path_env": "PACK_UI_CORPUS_TRADERPLUS_ROOT",
+      "writable": false
+    },
+    "ui_corpus_traderx_layouts": {
+      "path_env": "PACK_UI_CORPUS_TRADERX_LAYOUTS_ROOT",
+      "writable": false
+    },
+    "ui_corpus_traderx_pbo": {
+      "path_env": "PACK_UI_CORPUS_TRADERX_PBO_ROOT",
+      "writable": false
+    },
+    "ui_corpus_vpp": {
+      "path_env": "PACK_UI_CORPUS_VPP_ROOT",
+      "writable": false
+    },
+    "utopia_source": {
+      "path_env": "PACK_UTOPIA_SOURCE_ROOT",
+      "writable": false
+    }
+  }
+}

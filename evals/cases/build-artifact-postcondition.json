@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "case_id": "build-artifact-postcondition",
+  "family": "api",
+  "prompt": "AddonBuilder exits successfully and a PBO exists at the destination. Decide whether the release build passed and state the required postconditions.",
+  "fixtures": {
+    "build.log": "Build completed.\n",
+    "before.sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n",
+    "after.sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+  },
+  "assertions": [
+    {
+      "assertion_id": "rejects-exit-zero-alone",
+      "type": "contains",
+      "value": "exit_0_is_not_build_success",
+      "evidence": [
+        "build-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "requires-fresh-artifact",
+      "type": "contains",
+      "value": "fresh_pbo",
+      "evidence": [
+        "build-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "requires-structural-inspection",
+      "type": "contains",
+      "value": "header_prefix",
+      "evidence": [
+        "build-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "requires-log-gate",
+      "type": "contains",
+      "value": "fatal_log",
+      "evidence": [
+        "build-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "requires-transactional-failure",
+      "type": "contains",
+      "value": "previous_artifact_unchanged",
+      "evidence": [
+        "build-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "rejects-existence-only",
+      "type": "not_contains",
+      "value": "existing_pbo_is_enough",
+      "evidence": [
+        "build-evidence.txt"
+      ]
+    }
+  ],
+  "grader": {
+    "type": "mechanical"
+  },
+  "required_evidence": [
+    "build-evidence.txt"
+  ],
+  "variants": [
+    {
+      "variant_id": "approved",
+      "skill_revision": "r21-prior-art-approved",
+      "baseline_revision": "r21-pre-prior-art",
+      "runner_id": "fixture",
+      "expected_verdict": "PASS",
+      "response": "Fail closed: exit_0_is_not_build_success. Require a fresh_pbo tied to this run-bound staging result or to a validated full-key cache hit, inspect header_prefix and expected entries, apply the fatal_log gate, and publish transactionally so a failure leaves previous_artifact_unchanged.",
+      "evidence": {
+        "build-evidence.txt": "before.sha256 equals after.sha256; no PBO structure or fatal-log evidence was supplied.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    },
+    {
+      "variant_id": "baseline",
+      "skill_revision": "r21-pre-prior-art",
+      "baseline_revision": "r21-pre-prior-art",
+      "runner_id": "fixture",
+      "expected_verdict": "FAIL",
+      "response": "AddonBuilder returned zero and the target exists, so existing_pbo_is_enough and the build passed.",
+      "evidence": {
+        "build-evidence.txt": "Destination PBO exists.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    }
+  ]
+}

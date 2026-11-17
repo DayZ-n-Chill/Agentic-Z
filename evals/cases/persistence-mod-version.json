@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "case_id": "persistence-mod-version",
+  "family": "persistence",
+  "prompt": "A DayZ server mod needs to evolve persisted records across its own releases while remaining on the same engine build. Recommend a version source. If you use the framework-backed option, trace configuration to the runtime accessor and cite source aliases. Explain why the engine release is insufficient.",
+  "fixtures": {
+    "version-contract.txt": "file_option=own file header\ncf_option=CfgMods storageVersion -> GetStorageVersion() -> GetVersion()\nengine_build_is_not_mod_schema=true\n"
+  },
+  "assertions": [
+    {
+      "assertion_id": "uses-mod-owned-version",
+      "type": "regex",
+      "value": "(?i)(storageVersion|own file header)",
+      "evidence": [
+        "version-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "traces-cf-or-declares-header",
+      "type": "regex",
+      "value": "(?i)(GetStorageVersion[(][)].*GetVersion[(][)]|own file header)",
+      "evidence": [
+        "version-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "rejects-build-only-schema",
+      "type": "not_contains",
+      "value": "g_Game.SaveVersion() as the only mod format version",
+      "evidence": [
+        "version-evidence.txt"
+      ]
+    }
+  ],
+  "grader": {
+    "type": "mechanical"
+  },
+  "required_evidence": [
+    "version-evidence.txt"
+  ],
+  "variants": [
+    {
+      "variant_id": "current",
+      "skill_revision": "r21-current",
+      "baseline_revision": "absent",
+      "runner_id": "fixture",
+      "expected_verdict": "PASS",
+      "response": "Declare storageVersion in CfgMods at CF_ROOT/Mods/ModStructure.c:61-63,307. CF passes it through GetStorageVersion() at CF_ROOT/ModStorage/CF_ModStorage.c:274 and exposes GetVersion() at CF_ROOT/ModStorage/CF_ModStorage.c:41-44. This is the mod format version; the DayZ build can remain unchanged.",
+      "evidence": {
+        "version-evidence.txt": "CF_ROOT/Mods/ModStructure.c:61-63,307\nCF_ROOT/ModStorage/CF_ModStorage.c:274\nCF_ROOT/ModStorage/CF_ModStorage.c:41-44\nVANILLA/3_game/global/game.c:435\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    },
+    {
+      "variant_id": "absent",
+      "skill_revision": "absent",
+      "baseline_revision": "absent",
+      "runner_id": "fixture",
+      "expected_verdict": "FAIL",
+      "response": "Use g_Game.SaveVersion() as the only mod format version because the engine already supplies it.",
+      "evidence": {
+        "version-evidence.txt": "VANILLA/3_game/global/game.c:435\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    }
+  ]
+}

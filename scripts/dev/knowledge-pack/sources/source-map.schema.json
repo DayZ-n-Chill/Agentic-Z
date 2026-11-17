@@ -1,0 +1,395 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/dayz-modding-knowledge-pack/source-map.schema.json",
+  "title": "DayZ Modding Knowledge Pack source map",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "baseline_commit",
+    "claim_baseline_commit",
+    "release_id",
+    "dayz_build",
+    "sources",
+    "artifacts",
+    "excluded_inputs",
+    "generated_artifacts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "baseline_commit": {
+      "$ref": "#/$defs/git_commit"
+    },
+    "claim_baseline_commit": {
+      "$ref": "#/$defs/git_commit"
+    },
+    "release_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "dayz_build": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+\\.0\\.[0-9]+$"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/artifact"
+      }
+    },
+    "excluded_inputs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/excluded_input"
+      }
+    },
+    "generated_artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/generated_artifact"
+      }
+    }
+  },
+  "$defs": {
+    "git_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._/-]*$"
+    },
+    "relative_path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\u0000]+$"
+    },
+    "license": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "verification_level": {
+      "enum": [
+        "runtime_verified",
+        "source_verified",
+        "offline_tested",
+        "cross_checked",
+        "historical",
+        "unverified"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "kind",
+        "revision",
+        "license"
+      ],
+      "properties": {
+        "source_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "enum": [
+            "git",
+            "filesystem",
+            "archive",
+            "web",
+            "authored"
+          ]
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "license": {
+          "$ref": "#/$defs/license"
+        },
+        "local_root_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "public_locator": {
+          "type": "string",
+          "format": "uri"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_revision",
+        "source_path",
+        "source_hash",
+        "license",
+        "verification_level",
+        "decision",
+        "decision_evidence"
+      ],
+      "properties": {
+        "source_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "source_revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "source_path": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "source_hash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "license": {
+          "$ref": "#/$defs/license"
+        },
+        "verification_level": {
+          "$ref": "#/$defs/verification_level"
+        },
+        "decision": {
+          "enum": [
+            "adopt",
+            "keep_pack",
+            "merge",
+            "reject"
+          ]
+        },
+        "decision_evidence": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id",
+        "output_path",
+        "distribution_role",
+        "license",
+        "verification_level",
+        "routing_artifact_id",
+        "hash_policy",
+        "inputs"
+      ],
+      "properties": {
+        "artifact_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "output_path": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "distribution_role": {
+          "enum": [
+            "payload",
+            "repo_only"
+          ]
+        },
+        "distribution_reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "license": {
+          "$ref": "#/$defs/license"
+        },
+        "verification_level": {
+          "$ref": "#/$defs/verification_level"
+        },
+        "routing_artifact_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "hash_policy": {
+          "enum": [
+            "sha256",
+            "self_exempt"
+          ]
+        },
+        "output_hash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "inputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/input"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "distribution_role": {
+                "const": "payload"
+              }
+            },
+            "required": [
+              "distribution_role"
+            ]
+          },
+          "then": {
+            "required": [
+              "output_hash"
+            ],
+            "properties": {
+              "hash_policy": {
+                "const": "sha256"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "distribution_role": {
+                "const": "repo_only"
+              }
+            },
+            "required": [
+              "distribution_role"
+            ]
+          },
+          "then": {
+            "required": [
+              "distribution_reason"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "hash_policy": {
+                "const": "sha256"
+              }
+            },
+            "required": [
+              "hash_policy"
+            ]
+          },
+          "then": {
+            "required": [
+              "output_hash"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "hash_policy": {
+                "const": "self_exempt"
+              }
+            },
+            "required": [
+              "hash_policy"
+            ]
+          },
+          "then": {
+            "properties": {
+              "output_path": {
+                "const": "sources/source-map.json"
+              },
+              "distribution_role": {
+                "const": "repo_only"
+              }
+            },
+            "not": {
+              "required": [
+                "output_hash"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "excluded_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_revision",
+        "source_path",
+        "source_hash",
+        "reason",
+        "decision_evidence"
+      ],
+      "properties": {
+        "source_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "source_revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "source_path": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "source_hash": {
+          "$ref": "#/$defs/sha256"
+        },
+        "reason": {
+          "enum": [
+            "generated",
+            "cache",
+            "backup",
+            "project_evidence",
+            "superseded",
+            "license_restricted"
+          ]
+        },
+        "decision_evidence": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "generated_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id",
+        "output_path",
+        "generator",
+        "license"
+      ],
+      "properties": {
+        "artifact_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "output_path": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "generator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "license": {
+          "$ref": "#/$defs/license"
+        }
+      }
+    }
+  }
+}

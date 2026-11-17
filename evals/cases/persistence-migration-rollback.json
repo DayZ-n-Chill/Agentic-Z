@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "case_id": "persistence-migration-rollback",
+  "family": "persistence",
+  "prompt": "Review a proposed persistent-format change for a DayZ mod. State the compatibility behavior for pre-change data, unreadable newer data, incomplete records, and downgrading to the previous release. Make every preservation and write decision explicit.",
+  "fixtures": {
+    "migration-contract.txt": "old_format=read_then_backup_before_rewrite\nnewer_format=read_only_reject\nincomplete_record=discard_staged_state\ndowngrade=old_reader_preserves_new_bytes\n"
+  },
+  "assertions": [
+    {
+      "assertion_id": "declares-legacy",
+      "type": "contains",
+      "value": "legacy: read and migrate after backup",
+      "evidence": [
+        "migration-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "declares-future",
+      "type": "contains",
+      "value": "future: reject without writing",
+      "evidence": [
+        "migration-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "declares-truncated",
+      "type": "contains",
+      "value": "truncated: reject without applying partial state",
+      "evidence": [
+        "migration-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "declares-rollback",
+      "type": "contains",
+      "value": "rollback: old reader rejects and preserves the data",
+      "evidence": [
+        "migration-evidence.txt"
+      ]
+    }
+  ],
+  "grader": {
+    "type": "mechanical"
+  },
+  "required_evidence": [
+    "migration-evidence.txt"
+  ],
+  "variants": [
+    {
+      "variant_id": "current",
+      "skill_revision": "r21-current",
+      "baseline_revision": "absent",
+      "runner_id": "fixture",
+      "expected_verdict": "PASS",
+      "response": "legacy: read and migrate after backup. future: reject without writing. truncated: reject without applying partial state. rollback: old reader rejects and preserves the data.",
+      "evidence": {
+        "migration-evidence.txt": "The four compatibility classes and their write decisions are declared.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    },
+    {
+      "variant_id": "absent",
+      "skill_revision": "absent",
+      "baseline_revision": "absent",
+      "runner_id": "fixture",
+      "expected_verdict": "FAIL",
+      "response": "legacy: read and migrate after backup. future: reject without writing. truncated: reject without applying partial state. Downgrade behavior is unspecified.",
+      "evidence": {
+        "migration-evidence.txt": "No old-reader behavior is declared for data emitted by the new writer.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    }
+  ]
+}

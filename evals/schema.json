@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/dayz-modding-knowledge-pack/eval.schema.json",
+  "title": "DayZ Modding Knowledge Pack mechanical evaluation case",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "family",
+    "prompt",
+    "fixtures",
+    "assertions",
+    "grader",
+    "required_evidence",
+    "variants"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "case_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "family": {
+      "enum": [
+        "api",
+        "ui",
+        "persistence"
+      ]
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fixtures": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "assertions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "assertion_id",
+          "type",
+          "value",
+          "evidence"
+        ],
+        "properties": {
+          "assertion_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "type": {
+            "enum": [
+              "contains",
+              "not_contains",
+              "regex"
+            ]
+          },
+          "value": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "grader": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "mechanical"
+        }
+      }
+    },
+    "required_evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "variants": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "variant_id",
+          "skill_revision",
+          "baseline_revision",
+          "runner_id",
+          "expected_verdict",
+          "response",
+          "evidence",
+          "tokens_input",
+          "tokens_output"
+        ],
+        "properties": {
+          "variant_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "skill_revision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "baseline_revision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "runner_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected_verdict": {
+            "enum": [
+              "PASS",
+              "FAIL"
+            ]
+          },
+          "response": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "tokens_input": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokens_output": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

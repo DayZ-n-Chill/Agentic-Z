@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "case_id": "persistence",
+  "family": "persistence",
+  "prompt": "Describe the versioned save contract and its legacy behavior from the fixture.",
+  "fixtures": {
+    "contract.txt": "version=2\nlegacy_read=required\nrollback=must_be_documented\n"
+  },
+  "assertions": [
+    {
+      "assertion_id": "keeps-legacy-read",
+      "type": "contains",
+      "value": "legacy_read=required",
+      "evidence": [
+        "contract-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "documents-rollback",
+      "type": "contains",
+      "value": "rollback=must_be_documented",
+      "evidence": [
+        "contract-evidence.txt"
+      ]
+    }
+  ],
+  "grader": {
+    "type": "mechanical"
+  },
+  "required_evidence": [
+    "contract-evidence.txt"
+  ],
+  "variants": [
+    {
+      "variant_id": "current",
+      "skill_revision": "r21-current",
+      "baseline_revision": "absent",
+      "runner_id": "fixture",
+      "expected_verdict": "PASS",
+      "response": "Keep legacy_read=required and rollback=must_be_documented.",
+      "evidence": {
+        "contract-evidence.txt": "contract.txt:2-3\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    },
+    {
+      "variant_id": "absent",
+      "skill_revision": "absent",
+      "baseline_revision": "absent",
+      "runner_id": "fixture",
+      "expected_verdict": "FAIL",
+      "response": "Write version 2 only.",
+      "evidence": {
+        "contract-evidence.txt": "No legacy or rollback handling supplied.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    }
+  ]
+}

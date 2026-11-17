@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "case_id": "easing-overshoot-audit",
+  "family": "blender-animation",
+  "skill_under_test": "blender-animation",
+  "question": "fixture/audit_easing.py is the whole quality gate a team uses to decide whether a 3-segment IK arm pick-and-place is animated naturally rather than robotically. It passes on a shot that still reads as mechanical. State every property of natural motion this gate fails to measure, and for each one give the concrete Blender mechanism that produces it and the measurement that would detect its absence. Name the keyframe interpolation type that makes a curve travel past its target value and settle back, say which easing it is paired with on an arriving key, and explain why per-channel timing matters between the arm segments. Do not merely suggest tightening the existing threshold. End your answer with a final CITATIONS: block containing exactly one path:line citation per line. Each citation must point to either a supplied fixture or a relative path in the pack, and may append the exact cited line in double quotes.",
+  "fixtures": {
+    "fixture/audit_easing.py": "import bpy\n\n\ndef audit(action):\n    \"\"\"Pass the shot when the curves are not linear.\"\"\"\n    for fcu in action.fcurves:\n        for kp in fcu.keyframe_points:\n            if kp.interpolation == 'LINEAR':\n                raise AssertionError(\"linear keyframe at %s\" % kp.co[0])\n    return True\n"
+  },
+  "graders": [
+    {
+      "type": "contains_all",
+      "values": ["BACK", "overshoot"]
+    },
+    {
+      "type": "regex_any",
+      "patterns": [
+        "(?i)EASE_OUT",
+        "(?i)ease[- ]out"
+      ]
+    },
+    {
+      "type": "regex_any",
+      "patterns": [
+        "(?i)stagger",
+        "(?i)offset\\s+(?:the\\s+)?channels?",
+        "(?i)channel\\s+offset",
+        "(?i)unison"
+      ]
+    },
+    {
+      "type": "regex_any",
+      "patterns": [
+        "(?i)overshoot_ratio",
+        "(?i)moving\\s*hold",
+        "(?i)MOVING_HOLD",
+        "(?i)anticipation"
+      ]
+    },
+    {
+      "type": "citations_resolve"
+    }
+  ],
+  "citation_roots": ["fixture", "pack"],
+  "arms": ["with_skill", "without_skill"],
+  "runs_per_arm": 5,
+  "pass_rule": {
+    "min_pass_with_skill": 0.8,
+    "max_pass_without_skill": 0.2
+  },
+  "min_discrimination": 0.6
+}

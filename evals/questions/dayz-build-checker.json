@@ -57,6 +57,18 @@
       ],
       "must_not_include": [],
       "verified": "agents/dayz-build-checker.md step 3 (P:\\Mods\\@<ModName>\\Addons\\<ModName>.pbo); skills/dayz-build-pbo/build.py:1 and :373 (pbo_path = target_dir / f\"{args.modname}.pbo\" under P:\\Mods\\@<ModName>\\Addons)"
+    },
+    {
+      "id": "build-artifact-postcondition",
+      "question": "Answer only, do not edit any file and do not run anything. The build gate script errored. Build check MyVest. /dayz-lint MyVest passed and no DayZDiag session is running. /dayz-build-pbo MyVest reports that AddonBuilder exited with code 0, and P:\\Mods\\@MyVest\\Addons\\MyVest.pbo exists, but the file's modified time is two days before this build started. What is your verdict, and why are exit code 0 and an existing PBO not enough?",
+      "must_include": [
+        "re:\\bFAIL",
+        "re:stale|old(er)?\\b|previous|prior|earlier|not (updated|fresh|new|rebuilt|produced)|newer than"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*PASS\\b"
+      ],
+      "verified": "skills/dayz-build-pbo/SKILL.md step 13 'Verify output' (the PBO exists and is newer than the build start; AddonBuilder can exit 0 while leaving an old PBO in place, and that case fails as a stale PBO); skills/dayz-build-pbo/build.py function with the docstring 'Return a failure message if the build did not produce a fresh PBO'; agents/dayz-build-checker.md step 3 (/dayz-build-pbo must succeed)"
     }
   ]
 }

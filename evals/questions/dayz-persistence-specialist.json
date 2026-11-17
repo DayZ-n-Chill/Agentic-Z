@@ -57,6 +57,71 @@
       ],
       "cite": "3_game/entities/entityai.c",
       "verified": "P:/scripts/3_game/entities/entityai.c:1393 (available only in this event, inside EEOnAfterLoad at :1381) and :3041 (cannot be called in OnStoreLoad); native at P:/scripts/3_game/global/game.c:1420"
+    },
+    {
+      "id": "persistence",
+      "question": "Answer only, do not edit any file. Release 2 of my item writes one more float at the end of OnStoreSave, after my own version int. What must OnStoreLoad do when it reads an item saved by release 1, which has no such float? And what do I have to tell server owners about going back to release 1 after release 2 has saved data?",
+      "must_include": [
+        "re:default",
+        "re:roll(ed|ing)?[ -]?back|downgrad|go(ing)? back|revert"
+      ],
+      "must_not_include": [
+        "re:return false (for|when|if) (the |an |a )?(old|older|release 1)"
+      ],
+      "verified": "skills/_shared/persistence/versioning-and-migration.md 'Rules for every upgrade path' rule 1 (an old save is not an error: set the default) and rule 3 (do not roll a mod back after it has saved data); vanilla does the same for a field it added: P:/scripts/4_world/entities/itembase/combinationlock.c:172 (m_CombinationInside is read only inside the version >= 143 branch that opens at :169)"
+    },
+    {
+      "id": "persistence-deprecated-api",
+      "question": "Answer only, do not edit any file. My server mod loads a JSON config file. I must tell a missing file, a malformed file and an unreadable file apart and log why the load failed. Which vanilla call do I use, what does it return, and where does the reason for a failure come back? Cite the vanilla file.",
+      "must_include": [
+        "re:JsonFileLoader<[^>]+>\\s*(\\.|::)\\s*LoadFile|JsonFileLoader[^\\n]{0,40}LoadFile",
+        "re:\\bbool\\b|returns? (true|false)",
+        "errorMessage"
+      ],
+      "must_not_include": [
+        "re:JsonFileLoader<[^>]+>\\s*(\\.|::)\\s*JsonLoadFile\\s*\\((?![^\\n]*(deprecated|obsolete|old|instead|avoid|not))"
+      ],
+      "cite": "3_game/tools/jsonfileloader.c",
+      "verified": "P:/scripts/3_game/tools/jsonfileloader.c:7 (static bool LoadFile(string filename, out T data, out string errorMessage)); the older call cannot report failure: :105 (static void JsonLoadFile) under the DEPRECATED comment at :99"
+    },
+    {
+      "id": "persistence-migration-rollback",
+      "question": "Answer only, do not edit any file. Review my plan to change my mod's saved format. State what the reader must do in each of these four cases, and for each one say plainly whether it may write: (1) data saved in the old format, (2) data saved by a newer release than the one running, (3) a record that ends in the middle (truncated), (4) the server owner goes back to the previous release after the new one has saved.",
+      "must_include": [
+        "re:back[ -]?up",
+        "re:trunc|incomplete|partial|ends? in the middle",
+        "re:reject|refus|return(s|ing)? false|fail",
+        "re:roll(ed|ing)?[ -]?back|downgrad|previous release|old(er)? reader",
+        "re:(not|never|no|without) (re)?writ|(not|never) (delete|overwrite)|preserv|intact|untouched|unchanged"
+      ],
+      "verified": "skills/dayz-persistence/references/migration-matrix.md 'Normative seven cells' (legacy: read, write new after backup; future-version: reject, do not write; truncated: reject, discard partial; rollback-old-reader: old reader rejects, does not delete) and 'Transversal write rule'; vanilla rejects a short record by returning false: P:/scripts/4_world/entities/itembase/basebuildingbase.c:439 (failed Read of m_SyncParts01) to :443"
+    },
+    {
+      "id": "persistence-mod-version",
+      "question": "Answer only, do not edit any file. My mod saves through Community Framework's ModStorage and its saved fields change between my own releases while the DayZ build stays the same. Which CfgMods entry carries my mod's storage version, which accessor gives it to my load code, and why is the game's own save version not enough?",
+      "must_include": [
+        "storageVersion",
+        "GetVersion"
+      ],
+      "must_not_include": [
+        "re:(use|rely on) (g_Game|GetGame\\(\\))\\.SaveVersion\\(\\) (alone|only|as (the|your) (only )?(mod|format))"
+      ],
+      "verified": "Community Framework (third-party, not on P:): CfgMods storageVersion -> ModStructure.GetStorageVersion() -> CF_ModStorage.GetVersion(), per skills/dayz-persistence/references/cf-modstorage.md 'Version unit: the mod'. The game's number is one per build: P:/scripts/3_game/global/game.c:435 (SaveVersion) and :5 (GAME_STORAGE_VERSION)"
+    },
+    {
+      "id": "basebuilding-part-id-cap",
+      "question": "Answer only, do not edit any file. Audit the whole Construction block in evals/fixtures/dayz-persistence-specialist/part_id_cap_config.cpp for BaseBuildingBase part id safety. Name every id that is invalid because it is out of range or used twice, give the highest id the vanilla code can sync and save, and explain the mechanism that sets that limit. Do not just tell me to renumber. Cite the vanilla file.",
+      "must_include": [
+        "93",
+        "42",
+        "94",
+        "re:m_SyncParts0[123]|bit ?mask|bitmask|31 (usable )?bits|three (31[- ]bit )?ints|3 ?[x*] ?31"
+      ],
+      "cite": "4_world/entities/itembase/basebuildingbase.c",
+      "unchanged": [
+        "evals/fixtures/dayz-persistence-specialist/part_id_cap_config.cpp"
+      ],
+      "verified": "P:/scripts/4_world/entities/itembase/basebuildingbase.c:157 (part_id 63 to 93 is the last range, in m_SyncParts03; an id above 93 matches no branch), :10 (m_SyncParts01, 31 parts per int) and :43 (RegisterNetSyncVariableInt for m_SyncParts01); the fixture has id = 42 twice and id = 94"
     }
   ]
 }

@@ -1,0 +1,933 @@
+{
+  "artifacts": [
+    {
+      "applicability": "tooling",
+      "artifact_id": "examples",
+      "artifact_kind": "tree",
+      "not_applicable_reason": "Worked examples are distributed with the pack and archived in Obsidian, not copied into skill discovery roots.",
+      "repo_path": "examples",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "knowledge",
+      "artifact_kind": "tree",
+      "not_applicable_reason": "Long-form evidence and reference notes remain in the public pack and Obsidian; installed skills receive only their curated operational invariants.",
+      "repo_path": "knowledge",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "repo/decisions",
+      "artifact_kind": "tree",
+      "not_applicable_reason": "Architecture decisions govern the pack but are not operational skill content.",
+      "repo_path": "decisions",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "tooling",
+      "artifact_id": "repo/evals",
+      "artifact_kind": "tree",
+      "not_applicable_reason": "Evaluation cases are repository test inputs and do not belong in installed skill roots.",
+      "repo_path": "evals",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "tooling",
+      "artifact_id": "repo/packctl",
+      "artifact_kind": "tree",
+      "not_applicable_reason": "Repository validation and release tooling is invoked from the repository, not discovered as an assistant skill.",
+      "repo_path": "packctl",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "repo/promotions",
+      "artifact_kind": "tree",
+      "not_applicable_reason": "Promotion contracts and public receipts govern deployment and must not enter skill discovery roots.",
+      "repo_path": "promotions",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "repo/sources",
+      "artifact_kind": "tree",
+      "not_applicable_reason": "Provenance registries and schemas are release governance contracts, not installed skills.",
+      "repo_path": "sources",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "tooling",
+      "artifact_id": "repo/tests",
+      "artifact_kind": "tree",
+      "not_applicable_reason": "Regression fixtures validate the repository pipeline and are not runtime skill instructions.",
+      "repo_path": "tests",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/agents",
+      "artifact_kind": "file",
+      "not_applicable_reason": "Agent entry points and pack indexes are repository documentation; they are not duplicated into installed skill roots.",
+      "repo_path": "AGENTS.md",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/changelog",
+      "artifact_kind": "file",
+      "not_applicable_reason": "Release history is public pack documentation, not operational skill content.",
+      "repo_path": "CHANGELOG.md",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/claude",
+      "artifact_kind": "file",
+      "not_applicable_reason": "Agent entry points and pack indexes are repository documentation; they are not duplicated into installed skill roots.",
+      "repo_path": "CLAUDE.md",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/compatibility-matrix",
+      "artifact_kind": "file",
+      "not_applicable_reason": "The release-wide compatibility matrix governs all artifacts and is not copied into each skill.",
+      "repo_path": "compatibility-matrix.md",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/contributing",
+      "artifact_kind": "file",
+      "not_applicable_reason": "Contribution policy belongs to the pack documentation rather than installed skill roots.",
+      "repo_path": "CONTRIBUTING.md",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/copilot-instructions",
+      "artifact_kind": "file",
+      "not_applicable_reason": "Agent entry points and pack indexes are repository documentation; they are not duplicated into installed skill roots.",
+      "repo_path": ".github/copilot-instructions.md",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/cursorrules",
+      "artifact_kind": "file",
+      "not_applicable_reason": "Agent entry points and pack indexes are repository documentation; they are not duplicated into installed skill roots.",
+      "repo_path": ".cursorrules",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/gemini",
+      "artifact_kind": "file",
+      "not_applicable_reason": "Agent entry points and pack indexes are repository documentation; they are not duplicated into installed skill roots.",
+      "repo_path": "GEMINI.md",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/getting-started",
+      "artifact_kind": "file",
+      "not_applicable_reason": "Onboarding for someone reading the repository; an installed skill root has no reader to onboard.",
+      "repo_path": "GETTING-STARTED.md",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/gitattributes",
+      "artifact_kind": "file",
+      "not_applicable_reason": "Git line-ending policy makes repository hashes reproducible and is not skill content.",
+      "repo_path": ".gitattributes",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/github-workflows-ci",
+      "artifact_kind": "file",
+      "not_applicable_reason": "GitHub workflow governance is archived with the repository snapshot and is not installed as a skill.",
+      "repo_path": ".github/workflows/ci.yml",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/gitignore",
+      "artifact_kind": "file",
+      "not_applicable_reason": "Git exclusion policy is repository governance, not skill content.",
+      "repo_path": ".gitignore",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/license",
+      "artifact_kind": "file",
+      "not_applicable_reason": "The repository license travels with the pack and does not belong in each installed skill.",
+      "repo_path": "LICENSE",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/manifest",
+      "artifact_kind": "file",
+      "not_applicable_reason": "The human-readable payload inventory documents releases and is not skill content.",
+      "repo_path": "MANIFEST.txt",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/mcp-example",
+      "artifact_kind": "file",
+      "not_applicable_reason": "Agent entry points and pack indexes are repository documentation; they are not duplicated into installed skill roots.",
+      "repo_path": ".mcp.example.json",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "tooling",
+      "artifact_id": "root/packctl-packaging",
+      "artifact_kind": "file",
+      "not_applicable_reason": "Packaging metadata for the repository CLI; it is meaningless outside the repository that installs it.",
+      "repo_path": "pyproject.toml",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/product-spec",
+      "artifact_kind": "file",
+      "not_applicable_reason": "The final-product contract is project governance and not an assistant skill.",
+      "repo_path": "product-spec.md",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/pytest",
+      "artifact_kind": "file",
+      "not_applicable_reason": "Pytest collection policy is repository test governance, not skill content.",
+      "repo_path": "pytest.ini",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/readme",
+      "artifact_kind": "file",
+      "not_applicable_reason": "The pack overview and navigation document is not duplicated into installed skill roots.",
+      "repo_path": "README.md",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/third-party-notices",
+      "artifact_kind": "file",
+      "not_applicable_reason": "Attribution and reference-only license boundaries stay at pack level.",
+      "repo_path": "THIRD_PARTY_NOTICES.md",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "governance",
+      "artifact_id": "root/tools-index",
+      "artifact_kind": "file",
+      "not_applicable_reason": "Agent entry points and pack indexes are repository documentation; they are not duplicated into installed skill roots.",
+      "repo_path": "TOOLS.md",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/3d-generation-harness",
+      "artifact_kind": "tree",
+      "repo_path": "skills/3d-generation-harness",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/_shared",
+      "artifact_kind": "tree",
+      "repo_path": "skills/_shared",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/ai-3d-to-dayz",
+      "artifact_kind": "tree",
+      "repo_path": "skills/ai-3d-to-dayz",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/ardy-motion-generation",
+      "artifact_kind": "tree",
+      "repo_path": "skills/ardy-motion-generation",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/blender-animation",
+      "artifact_kind": "tree",
+      "repo_path": "skills/blender-animation",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/blender-assembly",
+      "artifact_kind": "tree",
+      "repo_path": "skills/blender-assembly",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/blender-visual-review",
+      "artifact_kind": "tree",
+      "repo_path": "skills/blender-visual-review",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-3d-viewer",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-3d-viewer",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-ai-patterns",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-ai-patterns",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-animation-pipeline",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-animation-pipeline",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-aviation",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-aviation",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-basebuilding",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-basebuilding",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-characters",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-characters",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-clothing",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-clothing",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-doors",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-doors",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-feature-spec",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-feature-spec",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-mcp-verify",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-mcp-verify",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-mod-dev",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-mod-dev",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-mod-workflow",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-mod-workflow",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-model-pipeline",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-model-pipeline",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-p3d-audit",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-p3d-audit",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-p3d-inspector",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-p3d-inspector",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-particles",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-particles",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-pbo-build",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-pbo-build",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-pbo-reverse-engineering",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-pbo-reverse-engineering",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-persistence",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-persistence",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-physics-engine",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-physics-engine",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-preflight",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-preflight",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-proxy-align",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-proxy-align",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-realistic-animation-director",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-realistic-animation-director",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-sound-system",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-sound-system",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-test-ingame",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-test-ingame",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-texture-pipeline",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-texture-pipeline",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-ui-development",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-ui-development",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-vehicles",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-vehicles",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-weapons",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-weapons",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-environment-hazards",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-environment-hazards",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-motorbikes",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-motorbikes",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/enforce-script-reference",
+      "artifact_kind": "tree",
+      "repo_path": "skills/enforce-script-reference",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/mixamo-retarget",
+      "artifact_kind": "tree",
+      "repo_path": "skills/mixamo-retarget",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/rigorous-data-audit",
+      "artifact_kind": "tree",
+      "repo_path": "skills/rigorous-data-audit",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/rip-vehicle-import",
+      "artifact_kind": "tree",
+      "repo_path": "skills/rip-vehicle-import",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/systematic-debugging",
+      "artifact_kind": "tree",
+      "repo_path": "skills/systematic-debugging",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/task-observer",
+      "artifact_kind": "tree",
+      "repo_path": "skills/task-observer",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/uv-clean-atlas",
+      "artifact_kind": "tree",
+      "repo_path": "skills/uv-clean-atlas",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "tooling",
+      "artifact_id": "tools",
+      "artifact_kind": "tree",
+      "not_applicable_reason": "Executable tooling and its tests are distributed with the pack and archived in Obsidian, not copied into skill discovery roots.",
+      "repo_path": "tools",
+      "skill_target_ids": [],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    },
+    {
+      "applicability": "domain_invariant",
+      "artifact_id": "skill/dayz-underground",
+      "artifact_kind": "tree",
+      "repo_path": "skills/dayz-underground",
+      "skill_target_ids": [
+        "claude_user_skills",
+        "agents_user_skills"
+      ],
+      "vault_targets": [
+        "obsidian_snapshots"
+      ]
+    }
+  ],
+  "schema_version": 1
+}

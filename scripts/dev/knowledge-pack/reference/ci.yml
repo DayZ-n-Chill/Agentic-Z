@@ -1,0 +1,82 @@
+# Offline pack contract for a clean Windows runner.
+# Does not invoke the skills-ref gate; PACK_SKILLS_REF_ROOT is not on this runner.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pack-contract:
+    name: pack-contract
+    runs-on: windows-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest
+        run: python -m pip install pytest==9.1.1
+
+      - name: Validate pack
+        run: python -m packctl validate --root . --report "$env:RUNNER_TEMP\pack-validate.json"
+
+      - name: Test packctl
+        run: python -m pytest -q -p no:cacheprovider tests/packctl
+
+      # The skill test folders, each in its own pytest process, through the
+      # code and pass rule of the publish gate's skill_tests check.
+      # tools/<tool>/tests stay gate-only: five of them import packages this
+      # runner does not install (jsonschema, numpy, Pillow, py3d).
+      - name: Test skills
+        run: python -m packctl test-folders --root . --tree skills --report-dir "$env:RUNNER_TEMP\skill-tests"
+
+  # The Linux route: the pack's contract off Windows (case-sensitive paths, POSIX
+  # path rules) and skills/_shared/scripts/dayz-proton.sh, whose tests skip on
+  # Windows. What starts a tool needs Steam and Proton and is not covered here.
+  linux:
+    name: linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest
+        run: python -m pip install pytest==9.1.1
+
+      - name: Validate pack
+        run: python -m packctl validate --root . --report "$RUNNER_TEMP/pack-validate.json"
+
+      # The two deselected tests assert Windows path and winerror behaviour.
+      - name: Test packctl
+        run: >-
+          python -m pytest -q -p no:cacheprovider tests/packctl
+          --deselect "tests/packctl/test_promotion.py::test_invalid_path_alias_config_fails_before_plan_or_writes[fragment-drive]"
+          --deselect tests/packctl/test_promotion.py::test_apply_reports_winerror_without_physical_path
+
+      - name: Test skills
+        run: python -m packctl test-folders --root . --tree skills --report-dir "$RUNNER_TEMP/skill-tests"
