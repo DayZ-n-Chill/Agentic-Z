@@ -76,6 +76,8 @@ Script never creates or destroys a controller (`dayzcreatureaiinputcontroller.c:
 `DayZInfectedConstants` (`dayzinfected.c:12` to `:18`) lists `MINDSTATE_CALM`, `MINDSTATE_DISTURBED`, `MINDSTATE_ALERTED`, `MINDSTATE_CHASE`, `MINDSTATE_FIGHT` and `MINDSTATE_COWER`. Movement states are `DayZInfectedConstantsMovement` (`:21`): idle, walk, run, sprint.
 
 - The server reads the state every step in `HandleMindStateChange` (`zombiebase.c:454`) and syncs it: `RegisterNetSyncVariableInt("m_MindState", -1, 5)` (`zombiebase.c:54`). Clients read it with `GetMindStateSynced()` (`:182`).
+- When the state changes, `HandleMindStateChange` sets the idle animation with `SetIdleState`: calm 0, disturbed 1, chase 2 (`P:\scripts\4_world\entities\creatures\infected\zombiebase.c:459-472`).
+- `MINDSTATE_COWER` is new in 1.30 and is the sandstorm state. The infected goes back to the calm idle pose with `SetIdleState(0)`; the vanilla comment says the AI has already stopped its movement (`P:\scripts\4_world\entities\creatures\infected\zombiebase.c:474-478`). What puts an infected into the cower state is engine code; script only shows this reaction. A custom infected that registers its own `m_MindState` sync range must keep it wide enough for the value 5.
 - Vanilla attacks only in chase and fight (`zombiebase.c:618` to `:623`): chase uses the `CHASE` attack group, fight the `FIGHT` group.
 - A stealth kill is refused once the infected is disturbed or higher (`P:\scripts\4_world\entities\dayzplayerimplementmeleecombat.c:447` to `:449`). A guard that should never be stealth killed must not sit in calm.
 

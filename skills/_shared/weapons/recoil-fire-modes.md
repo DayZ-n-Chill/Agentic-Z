@@ -10,6 +10,19 @@ Recoil is a script class. Fire modes are config classes. This file covers both.
 
 The fire mode's `recoil="recoil_cz527"` and `recoilProne` strings (`P:\DZ\weapons\firearms\cz527\config.cpp:105`, `:106`) do not name a config class: no `CfgRecoils` or `recoil_cz527` class exists anywhere under `P:\DZ` or `P:\scripts`. Tune recoil in the script class, not in those strings.
 
+The engine config does define a `class CfgRecoils` (`P:\bin\config.cpp:218`), but it holds only two arrays, `empty[]` and `impulse[]`, and no entry named after a gun: `recoil_cz527` and the SCAR-H's `recoil_fal` (`P:\DZ\weapons\firearms\scarh\config.cpp:94`) appear nowhere in `P:\bin\config.cpp` either. The knowledge pack describes the config `recoil` string as a separate `CfgRecoils` channel next to the script object; on `P:\` that channel has nothing for these names to select, so the advice above stands.
+
+DayZ 1.30 added four recoil classes for the new firearm scripts, all in `P:\scripts\4_world\classes\recoilbase\recoils\`:
+
+| Class | Hands curve height (points 1 and 2) | `m_MouseOffsetDistance` | `m_CamOffsetDistance` | Note |
+|---|---|---|---|---|
+| `SCARLRecoil` (`scarlrecoil.c:1`) | 1.3 and 1.6 | 1.5 | 0.01 | Every value equals `SCARHRecoil` (`scarhrecoil.c:1`). |
+| `LugerRecoil` (`lugerrecoil.c:1`) | 3 and 4 | 0.95 | 0.02 | A sharp vertical curve. |
+| `LeeEnfieldRecoil` (`leeenfieldrecoil.c:1`) | 1.75 and 2 | 1.6 | 0.02 | Short times: `m_HandsOffsetRelativeTime = 0.125` (`leeenfieldrecoil.c:18`). |
+| `MP18Recoil` (`mp18recoil.c:1`) | 0.9 and 0.85 | 0.9 | 0.005 | The lowest camera kick of the four. |
+
+Their weapons return them from `SpawnRecoilObject` (for example `P:\scripts\4_world\entities\firearms\automaticrifle\scarl.c:4-7`).
+
 ### What a recoil class sets
 
 From `CZ527Recoil` (`P:\scripts\4_world\classes\recoilbase\recoils\cz527recoil.c`) and the field comments in `recoilbase.c:13` to `:27`:
@@ -42,6 +55,7 @@ A mod recoil class is Enforce Script in `4_World` and follows `skills/_shared/en
 
 - `modes[]` lists the mode classes in the order the player cycles them (`cz527\config.cpp:81`: `"Single"`; AKM at `P:\DZ\weapons\firearms\akm\config.cpp:77`: `"SemiAuto"`, `"FullAuto"`).
 - Each mode is a class inheriting a root mode base: `Mode_Single`, `Mode_SemiAuto`, `Mode_Burst` or `Mode_FullAuto` (`cz527\config.cpp:85`; AKM `SemiAuto` at `akm\config.cpp:87`, `FullAuto` at `:119`). `Mode_SemiAuto` and `Mode_Safe` are defined in `P:\DZ\data\config.cpp:3771` and `:3778`; `Mode_Burst` and `Mode_FullAuto` are only forward declared there (`:3776`, `:3777`). Declare whichever you use at the root of your file, as vanilla does.
+- The mode bases themselves are defined in the engine config, at its root: `Mode_SemiAuto` (`P:\bin\config.cpp:237`), `Mode_Single` (`P:\bin\config.cpp:254`), `Mode_Burst` with `burst=3` (`P:\bin\config.cpp:271`), `Mode_Double` (`P:\bin\config.cpp:293`) and `Mode_FullAuto` with `autoFire=1` (`P:\bin\config.cpp:315`). `DZ_Data` only adds to `Mode_SemiAuto` and defines `Mode_Safe`. A mode class declared inside `CfgWeapons` instead of at the root is a different, empty class, and a full auto mode built on it is dropped by the engine; `weapon-config.md`, "Forward declarations", has the symptom and the test.
 - Burst sets `burst=3` on a `Mode_Burst` class (AUG at `P:\DZ\weapons\firearms\aug\config.cpp:88`, `:114`).
 - Script hears a mode change through `Weapon_Base.OnFireModeChange` (`weapon_base.c:1048`).
 

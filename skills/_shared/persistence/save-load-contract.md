@@ -22,6 +22,19 @@ Each entity has one stream of values with no names and no type tags. Every class
 
 This means a subclass's data sits after its parent's data. If anything earlier in the chain reads one value too many or too few, every class after it reads the wrong bytes.
 
+### The base class data has no fixed width
+
+Never skip a fixed number of values after `super` to reach your own. What `EntityAI` writes depends on the object:
+
+| Part of the stream | When it is there | Source |
+|---|---|---|
+| Construction data | First in the stream, written by the entity's construction component through `HandleStoreSave`; the load reads it only when `version >= 143` and the component exists | `P:\scripts\3_game\entities\entityai.c:2912` to `:2914`; `constructionComponent` at `P:\scripts\3_game\entities\entityai.c:2981` |
+| Nothing, for a plain item or a `BaseBuildingBase` | `ConstructionBasic.HandleStorageEvents` returns `false`, so the component writes nothing | `P:\scripts\3_game\systems\construction_basic.c:29` |
+| A version and ten ints, for a rebuildable map building | `Rebuilding` overrides `HandleStoreSave` and calls `SerializeConstructionData` | `P:\scripts\4_world\classes\rebuilding\rebuilding.c:473`; `SerializeConstructionData` at `P:\scripts\4_world\classes\rebuilding\rebuilding.c:501` |
+| Eight energy values, or none | Only when the entity has an energy manager (`m_EM`) | `P:\scripts\3_game\entities\entityai.c:2917` to `:2948` |
+
+A reader that counts values instead of calling `super.OnStoreLoad` passes every test made with one kind of object and breaks on the other. Test a class that can exist with and without the energy component in both forms. The deep version of this contract is `references/vanilla-stream.md` in the `dayz-persistence` skill.
+
 ## What vanilla already saves
 
 You do not write these yourself. They are written by the base classes your class inherits from.
@@ -55,6 +68,11 @@ Check the return of every `Read` and return `false` when it fails. Vanilla retur
 
 Do not return `false` to mean "this save has no value for my new field". That case is an upgrade path, covered in `versioning-and-migration.md`.
 
+Two additions from the knowledge pack import, neither of which changes the advice above:
+
+* **Measured in game, not checkable on `P:\`.** The source pack's LFPowerGrid mod returned `false` from `OnStoreLoad` on DayZDiag 1.29.163709 and the engine kept the entity: the RPT printed `!!! Scripted variables corrupted upon "<class>"` and the object stayed in the world with its script variables at their defaults, apart from what the load had already assigned. So a `false` loses the saved state, not necessarily the object, and can leave a half loaded object behind. To remove the object, delete it yourself. What the next save writes was not measured. Details: `references/load-and-restore.md` in the `dayz-persistence` skill.
+* **Read into locals, then commit.** Vanilla reads straight into members and sets a default before it returns `false`, for example `m_Combination = 0` in `CombinationLock` (`P:\scripts\4_world\entities\itembase\combinationlock.c:145` to `:148`). That leaves partly applied state after a failed load. In mod code, read every value into a local variable and copy the locals to the members only after the last read succeeded.
+
 ## Other saving hooks worth knowing
 
 | Hook | Use | Source |
@@ -62,6 +80,18 @@ Do not return `false` to mean "this save has no value for my new field". That ca
 | `bool CanSaveItemInHands(EntityAI item_in_hands)` | Whether the item a player holds is saved with them. The stash returns `false`. | `P:\scripts\3_game\entities\entityai.c:1746`; `P:\scripts\4_world\entities\undergroundstash.c:36` |
 | `void SetLifetime(float fLifeTime)` and `float GetLifetime()` | Set or read the remaining economy lifetime in seconds. Saved data does not keep an object whose lifetime the economy lets run out. | `P:\scripts\3_game\entities\entityai.c:3377` and `:3379` |
 | `ECE_NOLIFETIME`, `ECE_NOPERSISTENCY_WORLD`, `ECE_DYNAMIC_PERSISTENCY` | Spawn flags for `CreateObjectEx` that skip lifetime, skip saving in the world, or turn saving on only once a player takes the object. | `P:\scripts\3_game\ce\centraleconomy.c:30`, `:31`, `:33`; used at `P:\scripts\3_game\dayzgame.c:3669` |
+
+## Saved is not the same as kept: lifetime
+
+The central economy keeps a lifetime in seconds on every entity it persists. `SetLifetime` and `GetLifetime` set and read what remains, `SetLifetimeMax` and `GetLifetimeMax` the maximum per instance, whose default comes from the economy database (`P:\scripts\3_game\entities\entityai.c:3377` to `:3386`). A territory flag's refresh calls `RadiusLifetimeReset`, which resets lifetimes "to default value from DB within radius" (`P:\scripts\4_world\entities\itembase\basebuildingbase\totem.c:168`; documented at `P:\scripts\3_game\ce\centraleconomy.c:562` to `:570`).
+
+Measured in game by the source pack (LFPowerGrid mod, DayZDiag 1.29.163709; engine behaviour, not checkable on `P:\`): a class with no entry in any `types.xml` gets a maximum lifetime of 1800 seconds, a new object starts at 1 to 2 times that, the lifetime runs down with a player standing next to it, a restart saves and restores what remains, and objects whose lifetime ran out are deleted during the next startup. Adding the entry later protects only objects created after it.
+
+So correct save code does not keep an object in the world. Every class a player places, or that otherwise persists, needs an entry with an explicit `lifetime` in the mod's own `types.xml` (vanilla gives `Fence` and `Watchtower` 3888000 in the Chernarus mission's `db/types.xml`, a server file that is not on `P:\`), and a persistence test with objects younger than an hour proves nothing. Evidence and limits: `references/lifetime-and-storage.md` in the `dayz-persistence` skill.
+
+## Stored entities load after `OnMissionStart`
+
+Measured in game by the source pack (DayZDiag 1.29.163709, not checkable on `P:\`): the engine creates stored entities after `MissionServer.OnMissionStart` returns, and an entity's `EEInit` runs before its `OnStoreLoad`. A structure the mod rebuilds from its own file, and that stored entities can rest on (a floor, a platform), is therefore created inside `OnMissionStart`, not in a delayed call; a stored vehicle parked on a platform that was rebuilt two seconds later fell to the terrain. A later pass may only bind what already exists. Details: `references/load-and-restore.md` in the `dayz-persistence` skill.
 
 ## Vanilla examples to read
 

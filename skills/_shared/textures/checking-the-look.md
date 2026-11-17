@@ -26,4 +26,10 @@ Once the user has packed the mod with `/dayz-build-pbo` and started it with `/da
 | Each health level (the user damages the item) | Worn, then damaged, then ruined look | No change: `healthLevels[]` points every level at one material (`rvmat-stages.md`) |
 | Thermal optics, only when a `StageTI` was written | The thermal texture shows | Check the `_ti_ca` path |
 
+Three notes for reading what the user reports:
+
+- **Checking the normal direction needs the right light.** Flipping the green channel changes the shading only for light that crosses the texture's V axis, so a groove that runs along U must be lit from the top or the bottom of the texture, not along it. Two renders that look the same prove nothing. `/dayz-texture-pipeline` has a script that measures a source map's convention before it is packed.
+- **A material set from script is judged by the frame.** `GetObjectMaterial` was seen returning the script's material while the item rendered vanilla, and an empty string while the override was visible (`runtime-material-swaps.md`). Ask the user what they see; do not accept a log line as proof.
+- **A part that never appears** can be a hidden selection whose config texture is an empty string, which hides it on purpose (`runtime-material-swaps.md`).
+
 A missing texture or material is also written to the client log. Ask the user to check the newest log in `.server\!ClientDiagLogs\` for lines naming the mod's `.paa` or `.rvmat` files, or to run `/dayz-gate ingame`, which reads those logs for them.

@@ -35,9 +35,18 @@ class EffGeneratorSmoke : EffectParticle
 2. Register a new particle in `3_Game` with a modded `ParticleList`, as the vanilla comment at `particlelist.c:3` to `9` shows: `static const int MYMOD_EXHAUST = RegisterParticle("MyMod/data/particles/", "mymod_exhaust");`. `RegisterParticle(string root_path, string file_name)` (line 452) lowercases both parts and takes the name without `.ptc`.
 3. Write a small `EffectParticle` subclass that calls `SetParticleID` with your ID, like `EffGeneratorSmoke`. Put it in `3_Game` or `4_World`.
 4. In the device, keep `ref Effect m_Smoke;`, start it with `SEffectManager.PlayOnObject` next to the loop sound, and free it with `SEffectManager.DestroyEffect` where the loop sound stops, and in the destructor or `EEDelete`.
-5. Wrap all of it in the client check (`!GetGame().IsDedicatedServer()`). Particles are client only like sounds (Tier 2, `conventions/scripts.md`).
+5. Wrap all of it in the client check (`!GetGame().IsDedicatedServer()`). Particles are client only like sounds (Tier 2, `conventions/scripts.md`). Since 1.30 vanilla particle code uses the wider `IsHeadlessOrDedicatedServer()`, which also skips headless clients: the particle pool is built only when it is false (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:65`), and the particle patterns in `dayz-particles/references/integration-patterns.md` use it throughout. When one block starts both the sound and the particle, use the wider check for the whole block.
 
 The full device pattern for particles, with toggles and cleanup, is Pattern D in `dayz-particles/references/integration-patterns.md`. The sound side is in `sound-script.md`.
+
+## Effects the server starts
+
+A sound set and a particle both play on clients only, so the usual route is a synced state that each client reacts to (`sound-script.md`, "Starting a sound from the server"). Vanilla also has two ready made server routes:
+
+- Item sounds: `StartItemSoundServer(id)` sends the sound to every client by RPC. See `item-and-player-sounds.md`.
+- Short particle effects: `SEffectManager.CreateParticleServer(vector pos, EffecterParameters parameters)` creates an effecter entity on the server that shows the particle on nearby clients (`P:\scripts\3_game\effectmanager.c:586`). Vanilla uses it for tree cutting, fishing, fish traps and, since 1.30, ceiling dust. See `dayz-particles/references/dayz-1-30-particles.md`.
+
+Since 1.30 a surface can also name the sound that goes with its particle. `SurfaceInfo` has a sound set getter next to each particle getter, such as `GetWheelContactSoundSetName()` beside `GetWheelContactParticleId()` (`P:\scripts\3_game\surfaceinfo.c:54`), and the vanilla wheel contact effect reads both and creates the sound with `SEffectManager.CreateSound` (`P:\scripts\4_world\entities\effects\effwheelcontact.c:34`).
 
 ## Config hooks: sounds and particles without script
 

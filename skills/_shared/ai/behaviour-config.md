@@ -96,3 +96,7 @@ On `ZombieBase` (`P:\DZ\characters\zombies\config.cpp:24`):
 ## Noise classes
 
 `CfgNoises` (`P:\DZ\AI\config.cpp:6903`) holds named noises such as `ZombieRoarNoise` and `WolfStepNoise`, each with `type`, `continuousRange` and `strength`. Weapons carry their own `NoiseShoot` class, for example strength 80 and type `shot` in `P:\DZ\weapons\firearms\akm\config.cpp:82`. Script loads any of these with `NoiseParams` (see `perception.md`).
+
+## Global AI parameters
+
+`class AIParams` (`P:\DZ\data\aiconfigs\config.cpp:12`) holds values shared by every creature: `maxNoiseRange=300` (`:14`), the weather to noise multipliers the engine uses since 1.30 to lower what AI hears (`rainToNoiseMultiplier` to `sandstormToNoiseMultiplier`, `:15` to `:20`), `noiseDampeningMultiplier` (`:21`), `noiseCollisionDampeningMultiplier` and `noiseShotCollisionDampeningMultiplier` (`:22`, `:23`), `groupLODDistance=1000` (`:24`), and `class AgentTeams` with the team list and each team's `friends[]` (`:25`). The teams are the `teamName` values the templates above use: `Player`, `BigGame`, `Zombies`, `Predator` and `AmbientLife`. How the weather multipliers replace the old script helpers is in `perception.md`, "Weather and noise".

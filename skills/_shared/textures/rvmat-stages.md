@@ -22,8 +22,17 @@ What each key and stage of a DayZ `.rvmat` does, for the two shaders mod items u
 | `SuperHair` / `Super` | 128 | Hair and fur |
 | `Multi` / `Multi` | 1,960 | Building surfaces that blend several layers |
 | `TerrainX` / `Terrain` | 25,030 | Terrain layers, made by Terrain Builder |
+| `NormalMapSpecularMap` / `NormalMap` | 87 | Tiled surfaces with a constant base color: roads, ruins, decals |
+| `Normal` / `Basic` | 76 | The flat shader with no stages, used by the penetration materials on collision faces |
+| `CalmWater` / `CalmWater` | 14 | Water. The `.rvmat` is two lines and the look is in an `.emat` |
 
 A mod item uses Super. Use Skin only for a new character body or head, and copy a vanilla head material when you do. The other shaders belong to map and building work, not to this pack.
+
+Three of them do reach item and vehicle work, and each is covered in the `/dayz-texture-pipeline` skill:
+
+- **A part with a constant color and no color texture on its faces** uses `PixelShaderID="NormalMapSpecularMap"` with `VertexShaderID="NormalMap"`, as the Sakhal road does (`P:\DZ\structures_sakhal\roads\parts\data\asf2_sakhal.rvmat:7-8`): a `_nohq` in Stage1, an `_sm` in Stage2, and the color from `diffuse[]`. See `dayz-texture-pipeline/references/vehicle-materials-and-color-variants.md`.
+- **Collision faces** take a penetration material: `surfaceInfo` naming a `.bisurf`, then `PixelShaderID="Normal"` and `VertexShaderID="Basic"` (`P:\DZ\data\data\penetration\wood_desk.rvmat:1-9`). See `dayz-texture-pipeline/references/rvmat-cookbook.md`.
+- **Multi** blends four tiled material families through a mask on the second UV set, for example `PixelShaderID="Multi"` at `P:\DZ\rocks\data\rock_apart1\rock_apart1.rvmat:7`. See `dayz-texture-pipeline/references/multi-rvmat-section-texturing.md`.
 
 ## The keys above the stages
 
@@ -49,9 +58,14 @@ VertexShaderID="Super";
 | `specularPower` | Highlight tightness. Low for cloth, high for metal and glass (values per surface in `surface-recipes.md`). |
 | `renderFlags[]` | Optional. Vanilla glass sometimes adds `"NoZWrite"` (for example `P:\DZ\characters\headgear\data\riothelmet_glass.rvmat`). |
 
+More on two of these keys:
+
+- A light that switches on and off is two materials that differ in the last number of `emmisive[]`: the sedan's lit lights have `emmisive[]={1,1,1,120}` (`P:\DZ\vehicles\wheeled\sedan_02\data\sedan_02_lights_e.rvmat:4`) and the unlit ones `emmisive[]={1,1,1,0}` (`P:\DZ\vehicles\wheeled\sedan_02\data\sedan_02_lights.rvmat:4`). The vehicle config names the pair.
+- Of the Super materials under `P:\DZ`, 154 set `renderFlags[]` to `"nozwrite"` alone and 24 to `"addblend"` with `"nozwrite"`. A decal with alpha that lies on paint uses it, as the offroad's stickers do (`P:\DZ\vehicles\wheeled\offroad_02\data\offroad_02_decals.rvmat:7-12`). A window does not need it: `P:\DZ\vehicles\wheeled\data\auta_skla.rvmat` has no `renderFlags[]`.
+
 ## Super stages
 
-Every stage is a `class StageN` with a `texture` and a `uvSource`. Stages 1 to 5 and 7 use `uvSource="tex"` with this identity `uvTransform`; Stage6 uses `uvSource="none"` and has no `uvTransform`:
+Every stage is a `class StageN` with a `texture` and a `uvSource`. Stages 1 to 5 and 7 use `uvSource="tex"` with this identity `uvTransform`:
 
 ```cpp
 class Stage1
@@ -79,6 +93,10 @@ class Stage1
 | `Stage6` | Fresnel, always procedural | `#(ai,64,64,1)fresnel(n,k)` |
 | `Stage7` | Environment (reflection) map | `dz\data\data\env_land_co.paa`, or `#(argb,8,8,3)color(0,0,0,1,CO)` for none |
 | `StageTI` | Thermal texture `_ti_ca` (optional) | leave the stage out |
+
+Stage6 is written two ways in vanilla Super materials: with `uvSource="none"` and no `uvTransform` in 2,091 of them (`P:\DZ\characters\tops\data\bomberjacket.rvmat:72`), and with `uvSource="tex"` and a `uvTransform` in 3,601 (`P:\DZ\vehicles\parts\data\aircraft_battery.rvmat:72`). Both load; copy the form of the vanilla material you started from.
+
+`dir[]` has no single identity value. Vanilla writes `dir[]={0,0,0}` 66,451 times, as in the block above (`P:\DZ\vehicles\parts\data\aircraft_battery.rvmat:17`), and `dir[]={0,0,1}` 46,672 times (`P:\DZ\vehicles\wheeled\van_01\data\van_01_wheel.rvmat:17`), both under Super. A review that checks whether a texture samples one to one looks at `aside[]`, `up[]` and `pos[]`, where `{1,0,0}`, `{0,1,0}` and `{0,0,0}` are the identity and other values are tiling factors.
 
 Keep all seven numbered stages, even when most hold placeholders. In the clothing, weapon, tool and glasses folders every vanilla Super material has Stage1 to Stage7. A `Stage0` with the color texture appears only on some glass, glowing and vehicle parts (for example `riothelmet_glass.rvmat` and `P:\DZ\gear\tools\data\flashlight_glass.rvmat`); ordinary gear does not need it.
 
@@ -115,6 +133,10 @@ Write three materials per surface: `<name>.rvmat`, `<name>_damage.rvmat` and `<n
 - `specular[]` drops to `{0.47450981,0.47450981,0.47450981,1}` and `specularPower` from 100 to 55.
 - `Stage6` becomes `fresnel(1.28,0.5)` and `Stage7` becomes `#(argb,8,8,3)color(0.15,0.15,0.15,1,CO)`, so the worn item stops reflecting.
 - Stages 1, 2, 4 and 5 keep the item's own textures.
+
+Weapons use their own shared macros, tiled four times: `weapons_damage_generic_mc.paa` in `Stage3` of `P:\DZ\weapons\shotguns\saiga\data\saiga_damage.rvmat:35`, with `aside[]={4,0,0}` and `up[]={0,4,0}` (`P:\DZ\weapons\shotguns\saiga\data\saiga_damage.rvmat:39-40`).
+
+The engine applies the `healthLevels[]` material when a threshold is crossed, and that replaces a material a script set on the item. Read `runtime-material-swaps.md` before writing an effect that repaints an item from script.
 
 Pointing a mod's damage materials at the vanilla wear macro is fine; the path stays `dz\...`. The `healthLevels[]` entry itself is config work for the worker who owns the item's class: dayz-wearables-specialist for clothing, gear and characters, dayz-vehicle-specialist for vehicles, dayz-weapon-specialist for weapons, and dayz-config-specialist for anything else.
 

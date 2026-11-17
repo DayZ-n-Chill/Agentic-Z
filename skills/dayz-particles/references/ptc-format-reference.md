@@ -8,6 +8,7 @@ All values are space-separated. Curves use keyframe pairs: `time value [time val
 - [Structure](#structure)
 - [Complete property table](#complete-property-table)
 - [Vanilla examples (annotated)](#vanilla-examples-annotated)
+- [Runtime overrides are script, not .ptc keys](#runtime-overrides-are-script-not-ptc-keys)
 
 ---
 
@@ -34,7 +35,7 @@ EffectDef {
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `ShapeType` | string | Point | Emission shape: `Point`, `Box`, `Ellipse` |
+| `ShapeType` | string | Point | Emission shape: `Point`, `Box`, `Ellipse`, `Cone`, `Sphere`, `OnSphere` (one vanilla file per value is cited in `standalone-particle-reference.md`, "Emitter shapes") |
 | `ShapeSize` | vec3 | 0 0 0 | Dimensions of emission shape (x y z meters) |
 | `ConeAngle` | vec3 | 0 0 0 | Emission cone spread (yaw pitch roll degrees) |
 | `MaxNum` | int | — | Maximum simultaneous alive particles |
@@ -71,7 +72,7 @@ EffectDef {
 | `VelAffect` | float | 0 | Velocity influence on direction (0-1) |
 | `AirResistance` | float | 0 | Drag (higher=slower for smoke) |
 | `AirResistanceRND` | float | 0 | Random air resistance variance |
-| `GravityMultiply` | float | 0 | Gravity influence (0=float, 1=earth gravity) |
+| `GravityMultiply` | float | 0 | Gravity influence (0=float, 1=earth gravity). A negative value makes the particle rise: vanilla birds use `GravityMultiply -0.1` (`P:\graphics\particles\birds_01.ptc:25`) |
 | `GravityMultiplyRND` | float | 0 | Random gravity variance |
 | `Wind` | float | 0 | Wind influence (0=ignore, 1=full) |
 | `Spring` | float | 0 | Spring-back force toward origin |
@@ -269,3 +270,10 @@ Emitter roles:
 
 Key insight: complex effects are built by layering simple emitters.
 Each emitter handles one visual aspect independently.
+Larger layered examples (a 4, a 7 and a 12 emitter effect from a third-party mod), the `Mast` curves in use and script that turns single emitters on and off are in `standalone-particle-reference.md`.
+
+---
+
+## Runtime overrides are script, not .ptc keys
+
+The properties above are the whole on-disk format; DayZ 1.30 added no `.ptc` key. What 1.30 added is a script hook that changes the live values of a playing effect: an `EffectParticle` subclass overrides `ParticleParamsOverride(ParticleParamsOverrideData)` (`P:\scripts\3_game\effects\effectparticle.c:619`) and sets `EmitorParam` values there. The vanilla vehicle effects set `LIFETIME`, `VELOCITY`, `SIZE`, `AIR_RESISTANCE`, `REPEAT` and `WIND` this way (`P:\scripts\4_world\entities\effects\vehicledust.c:17` to `:22`), the wheel contact effect also sets `SPRING` (`P:\scripts\4_world\entities\effects\effwheelcontact.c:18`), and the exhaust scales `BIRTH_RATE` (`P:\scripts\3_game\effects\effectparticle\vehiclesmoke\exhaustsmoke.c:24`). Details: `dayz-1-30-particles.md`.

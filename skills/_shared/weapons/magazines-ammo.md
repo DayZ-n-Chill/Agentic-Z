@@ -19,6 +19,7 @@ Ammo piles live in `CfgMagazines`, not `CfgAmmo`. The `Ammunition_Base` config c
 - Ammo pile `ammo` names its bullet and `count` is the most rounds in one stack (`ammunition\config.cpp:648` and `:649`).
 - Bullet `spawnPileType` names the pile it turns back into (`projectiles\config.cpp:4466`). Emptying a magazine creates that pile (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionemptymagazine.c:91`), so a wrong value spawns the wrong rounds.
 - `AmmoTypesAPI.GetAmmoType` reads the default bullet of a magazine type (`P:\scripts\3_game\global\ammotypes.c:23`).
+- `AmmoTypesAPI.MagazineTypeToAmmoType(string magazineType, out string ammoType)` turns a magazine or pile type into the bullet type the damage system uses, and passes a name through when it already is a bullet type (`P:\scripts\3_game\global\ammotypes.c:26`). Vanilla calls it when it fills a weapon (`P:\scripts\4_world\entities\firearms\weapon_base.c:840`). Use it; do not write your own lookup of `CfgMagazines <type> ammo`.
 
 ## Bullet registration
 
@@ -36,6 +37,10 @@ From `Magazine_Base` (`magazine\config.cpp:17`) and `Mag_CZ527_5rnd` (`:4044`):
 
 A magazine that players fill by hand needs the `MagazineStorage` script class, which adds the load and empty actions (`P:\scripts\4_world\entities\itembase\magazine\magazine.c:463`). Inheriting a vanilla magazine in config gives the mod class that script class with no code.
 
+The same keys on a 30 round magazine, `Mag_AKM_30Rnd` (`P:\DZ\weapons\attachments\magazine\config.cpp:3436`): `count=30` (`:3457`), `ammo="Bullet_762x39"` (`:3458`), `ammoItems[]` (`:3459`) and `tracersEvery=0` (`:3464`).
+
+A magazine script class can do more than store rounds. `Mag_MP18_Drum32Rnd` (`P:\scripts\4_world\entities\itembase\magazine\magazines.c:67`) overrides `UpdateAnimation` to turn the animation source `drum` as rounds leave, stops at 12 rounds (`m_AmmoOffset`), plays `wpn_mp18_drum_mag_SoundSet` at the memory point `drum_sound` on clients, and saves `m_LastAnimPhase`, reading it back only from save version 144 on (`:79` to `:121`). The vanilla data on `P:\` has the script but no `CfgMagazines` class for this magazine (see `weapon-classes.md`, "Script classes with no model or config class").
+
 ## Bullet keys
 
 From `Bullet_762x39` (`projectiles\config.cpp:4461` to `:4513`):
@@ -50,3 +55,18 @@ From `Bullet_762x39` (`projectiles\config.cpp:4461` to `:4513`):
 ## New calibre or reuse
 
 Reusing a vanilla calibre is one line: put the vanilla pile in `chamberableFrom[]` and the vanilla bullet in the magazine's `ammo`. A new calibre needs all three classes, the `cfgAmmoTypes` entry, and loot entries from the server lead.
+
+## Classifying a cartridge from script
+
+For code that must treat ammo by class (pistol, intermediate, full power, shell, arrow) without a list of class names, so that modded ammo works too: a turret, per class ballistics, loot logic.
+
+- The classes are `enum CartridgeType { None = 0, Pistol = 1, Intermediate = 2, FullPower = 3, Shell = 4, Arrow = 5 }` (`P:\scripts\4_world\entities\itembase\magazine\magazine.c:3-11`).
+- The class is stored on the ammo pile's `CfgMagazines` class, not in `CfgAmmo`: `AmmoData` reads it with `g_Game.ConfigGetInt("CfgMagazines " + init_type + " iconCartridge")` (`P:\scripts\4_world\entities\itembase\magazine\magazine.c:32`), after checking `ConfigIsExisting("CfgMagazines " + init_type)` (`:29`). `iconCartridge` is a UI icon key that doubles as the cartridge class. Check that each pile you depend on carries a sensible value before shipping balance built on it.
+- Two paths fill the cache, and the server guard covers only one. The `Magazine` constructor preloads `m_AmmoData` only when `!g_Game.IsDedicatedServer()` (`P:\scripts\4_world\entities\itembase\magazine\magazine.c:45-64`). The static `Magazine.GetAmmoData(classname)` fills the map on demand with no such guard (`P:\scripts\4_world\entities\itembase\magazine\magazine.c:117-132`), so it does work on a dedicated server. The cost is allocation: the first miss constructs an `AmmoData` (`:123-125`). Read it once on an attachment event and cache the result; never call it inside a per step loop.
+- Gate on `IsAmmoPile()` when you mean loose rounds. `Object.IsAmmoPile()` returns false by default (`P:\scripts\3_game\entities\object.c:571-574`) and `Ammunition_Base` overrides it to return true (`P:\scripts\4_world\entities\itembase\magazine\ammunitionpiles.c:27-30`). Detachable magazines do not declare `iconCartridge` (no class in `P:\DZ\weapons\attachments\magazine\config.cpp` sets it), so logic that skips this gate classifies every magazine as `None`.
+- Not every vanilla pile has a class. `Ammunition_Base` sets `iconCartridge=0` (`P:\DZ\weapons\ammunition\config.cpp:22`), and five `scope=2` piles never override it: `Ammo_CupidsBolt` (`:1642`), `Ammo_RPG7_HE` (`:1947`), `Ammo_RPG7_AP` (`:2012`), `Ammo_LAW_HE` (`:2077`) and `Ammo_GrenadeM4` (`:2142`). Any table keyed on the class needs a stated policy for `None`, and must tell "0 declared" from "key absent": test with `ConfigIsExisting` first, because what `ConfigGetInt` returns for a missing path is not documented.
+- Without an unpacked `P:\DZ`, the same binarized configs can be read by running `CfgConvert -txt` (DayZ Tools) over `weapons_ammunition.pbo` and `weapon_magazines.pbo` from the installed game's `Addons` folder. The knowledge pack's author established the list above that way before it was confirmed on `P:\`.
+
+## Reading a bullet's damage before it is fired
+
+A bullet's damage profile is plain config: `ConfigGetFloat("CfgAmmo " + ammoType + " DamageApplied Health damage")`, and the same path with `Blood damage` and `Shock damage`. Vanilla reads all three this way (`P:\scripts\4_world\entities\dayzplayerimplementfalldamage.c:273-275`). A mod can use it to cap extreme modded ammo without a list of class names.

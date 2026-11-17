@@ -17,6 +17,11 @@ What vanilla gives you for creatures that walk a route or hold a post, and what 
 - `DayZCreatureAI.InitAIAgent(AIGroup group)` (`dayzanimal.c:207`) starts the AI of a creature created without it, so you choose its group. `DestroyAIAgent()` (`:208`) removes it.
 - Group templates are defined in `class GroupBehaviourTemplates` (`P:\DZ\data\aiconfigs\config.cpp:77`, addon `DZ_data_aiconfigs`). The animal ones are `DZAmbientLifeGroupBeh` (`:79`), `DZWolfGroupBeh` (`:87`), `DZDeerGroupBeh` (`:151`), `DZdomesticGroupBeh` (`:201`) and `DZSheepGroupBeh` (`:252`). Animal templates in `P:\DZ\AI\config.cpp` point at them with `defaultGroupTemplateName`, for example `DZDeerGroupBeh` (`:589`) and `DZWolfGroupBeh` (`:5424`).
 - The infected pack template is `DZInfectedPackBeh` with `type="InfectedPack"` (`P:\DZ\data\aiconfigs\config.cpp:304`). Its keys include `groupRadius=10` (`:311`) and `agentPathLength=100` (`:313`). No vanilla script calls `CreateGroup` with it.
+- The bear template `BlissBearGroupBeh` is in a second addon, `DZ_data_aiconfigs_bliss` (`P:\DZ\data_bliss\aiconfigs\config.cpp:9`).
+- Each template has a `type` that selects the engine behaviour: `Predators` for the wolf (`P:\DZ\data\aiconfigs\config.cpp:89`), `WildHerbivores` for deer (`P:\DZ\data\aiconfigs\config.cpp:153`), `DomesticHerbivores` for cattle and sheep (`P:\DZ\data\aiconfigs\config.cpp:203`), `Bear` for the bear (`P:\DZ\data_bliss\aiconfigs\config.cpp:11`). Its life cycle classes name the kind of mission zone the group goes to with `zoneType` (wolf: `Rest` and `HuntingGround`, `P:\DZ\data\aiconfigs\config.cpp:127`, `:133`). How the mission binds territories to these templates is in `animal-territories.md`.
+- The knowledge pack reports two more templates in the Nasdara data of 1.30, `DZMouflonGroupBeh` (`type = "DomesticHerbivores"`) and `DZDogGroupBeh` (`type = "Predators"`, `zoneType = "HuntingGround"`); not yet checked on `P:\`, which has no Nasdara data. A custom map that wants a new herd or pack copies or inherits a group template in its own config instead of rebuilding the behaviour in script. Details: `skills/dayz-ai-patterns/references/dayz-1-30-ai.md`.
+
+The official 1.30 modding changelog says the navmesh file format changed with no backward compatibility, so a custom terrain must regenerate its navmesh for 1.30. Not checked on `P:\`; a path that works on a vanilla map and fails on a custom one after the update points there first.
 
 ## Waypoint patrols for infected
 
@@ -50,3 +55,18 @@ Large community AI mods build human NPCs by spawning a player class character th
 1. Say plainly that vanilla has no human AI and that a from scratch human AI is a large project.
 2. Offer the infected or animal based guard first (a custom infected with its own template and a patrol route), which runs on the vanilla engine AI.
 3. If the user still wants humans, plan it as its own milestone with the script lead and the architect, and write every class fresh against the vanilla hooks above. Whether a player class character can be created and simulated without a client must be proven in the in game test first; no vanilla file shows it.
+
+### How one community AI mod is organised
+
+The `dayz-ai-patterns` skill (`skills/dayz-ai-patterns/SKILL.md`) describes, in our own words and with no code from the mod, twelve patterns the knowledge pack's author read in the DayZ Expansion AI scripts (third-party, not on `P:\`). Read it to debug a server that runs that mod, or for design ideas when planning the human AI milestone above; the code is still written fresh. The ideas, in one line each:
+
+- A state of the state machine, not scattered calls, switches a far away unit's simulation off and back on.
+- Combat starts at one threat level and ends at a lower one, so a unit does not flip in and out.
+- The state machine is data (XML) built from smaller state machines, so behaviour changes without changing script.
+- A cheap view angle test runs before any line of sight raycast, and the raycast result is cached between checks.
+- Threat values, target scans and formation positions are each refreshed on a small random interval per unit, so many units never do the same work on the same server tick.
+- A unit with no player in range keeps running, but five times slower.
+- Paths are recalculated only after the target moved far enough and a cooldown passed, and path filters use costs: an open door area costs so much that units route around it.
+- A group refuses to give a target to another member once every member already tracks it, which spreads a squad over several enemies.
+
+Vanilla pieces for the same ideas: `AIAgent.SetKeepInIdle` to pause a unit, `AIWorld.FindPath` with a `PGFilter` and `SetCost` for costed paths (both above), and the timer and per step rules in `spawning-and-performance.md`.

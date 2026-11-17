@@ -8,7 +8,7 @@ Run it on every release that touches a class with `OnStoreSave` or `OnStoreLoad`
 
 ## Steps
 
-1. **Find every saving class.** Grep the mod's scripts for `OnStoreSave`, `OnStoreLoad`, `AfterStoreLoad` and `EEOnAfterLoad`. Grep the configs for `class Construction`. Grep for `JsonFileLoader` and `FileSerializer`.
+1. **Find every saving class.** Grep the mod's scripts for `OnStoreSave`, `OnStoreLoad`, `AfterStoreLoad` and `EEOnAfterLoad`. Grep the configs for `class Construction`. Grep for `JsonFileLoader` and `FileSerializer`. If the mod uses Community Framework's ModStorage, also grep for `CF_OnStoreSave` and `CF_OnStoreLoad` (third-party hooks, not checked on `P:\`).
 2. **List the writes and the reads.** For each class, number every `ctx.Write` in `OnStoreSave` and every `ctx.Read` in `OnStoreLoad`, with the value's type and the version that added it.
 3. **Check the pairs.** Every row must pass all of these:
    * `super.OnStoreSave(ctx)` is the first line of the save, and the load returns `false` when `super.OnStoreLoad` does.
@@ -22,6 +22,22 @@ Run it on every release that touches a class with `OnStoreSave` or `OnStoreLoad`
 7. **Check links.** Entities linked by persistent ID are looked up only in `EEOnAfterLoad` (`P:\scripts\3_game\entities\entityai.c:1393`).
 8. **Check files.** Each saved JSON or binary file has a version field and a load path for every older version; files are written only on the server.
 9. **Record test evidence.** Note whether both paths were tested: a fresh object, and an object saved by the last release then loaded by this one. Say plainly when a path was not tested.
+10. **Count the inventory twice.** A list of saving classes built by one search is closed with a second, independent count before anyone reviews it: also grep for `ctx.Read` and `ctx.Write` themselves, and for helper methods that take the context from another class. In the source pack's LFPowerGrid audit a search-built table listed 11 files while 25 contained `ctx.Read` or `ctx.Write`, and a whole family of helper hooks was missing. Reviewers treat the table they are handed as complete.
+11. **Check no reader counts values past `super`.** The base class data has no fixed width: `EntityAI` writes eight energy values or none (`P:\scripts\3_game\entities\entityai.c:2917` to `:2948`), and construction data may come before them (`save-load-contract.md`, "The base class data has no fixed width"). A load that skips a fixed number of values instead of calling `super.OnStoreLoad` is a finding even when every current test passes.
+12. **Check the whole `super` chain, in both directions.** For each saving class, open every class between it and the vanilla base and confirm each override of `OnStoreSave`, `OnStoreLoad`, `AfterStoreLoad` and `EEOnAfterLoad` calls `super`; one missing link breaks every class below it. For a `modded class` on a vanilla base, also list the vanilla classes that inherit from that base and override the method without calling `super`: the modded code never runs for them.
+13. **Check the class still exists and will stay in the world.** Compare class name, parent, `scope` and the `CfgPatches` `units[]` entry with the last release, in the config of the built PBO (`versioning-and-migration.md`, "The class must still exist"). Confirm every class that persists has a `types.xml` entry with an explicit lifetime (`save-load-contract.md`, "Saved is not the same as kept: lifetime").
+14. **Check file replacement.** No code or comment may claim an atomic save. A replace is `DeleteFile` then `CopyFile` (`P:\scripts\1_core\proto\ensystem.c:528` and `:531`): confirm a backup is made before the delete, the copy is read back and checked, and the temp file is removed only after that check. Where the code has a save path and a recovery path, compare their checks line by line; the source pack found a recovery path that kept a destination its save path would have deleted as corrupt.
+
+Rules for the evidence itself:
+
+* A finding quotes the code it is about, with `path:line`. A description without the quoted lines is a guess, and the next reader cannot check it.
+* Before acting on a list of findings, open the file for each one and confirm it says what the finding claims. An audit run by several agents with no such check was about 55% invented in the source pack's own case.
+* A check that reports "nothing to fix" counts only with proof it looked at something: a count above zero, or a planted example it found. A test object younger than the default lifetime, or a storage copy that loaded no items, proves nothing.
+* A tolerant parser, a redundant guard or a branch that accepts two formats is robustness, not a defect.
+
+## When to run the deep audit
+
+The steps above are the release check for a normal mod. When a bug would lose player progression on a live server (storage mods, virtual containers, banking, anything with its own files, queues or recovery after a crash), run the full procedure in the `rigorous-data-audit` skill: mechanical checks first (file name helpers, cleanup of every written marker, every entry point, flags against their files, state transitions), then eight review angles, then a check of every finding against the real file by a reader with fresh context, a cross-actor pass, fixes, a second pass and four tests in game. The report below is still what reaches the server lead.
 
 ## Report format
 
