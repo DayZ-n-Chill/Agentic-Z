@@ -1,9 +1,15 @@
 # Winding Diagnostics: Deep Methodology
 
 Field-verified winding-validation methodology from production DayZ mod debugging
-(a crate mod and a vanilla-overriding lamp mod). Complements killer #1 ("Inverted
-Face Winding") in `p3d-killers.md` with validation methodology, known traps, and a
-complete Blender-import checklist.
+(a crate mod and a vanilla-overriding lamp mod). Complements killer #1 (collision LOD
+wound outward) in `p3d-killers.md` with validation methodology, known traps, and a
+complete Blender-import checklist. The measured cases, the state table for Check A and
+the step by step fix are in `winding-diagnostics.md`; how to read the py3d winding
+findings is in `winding-absolute-check.md`.
+
+The convention to check against: in a correct MLOD both the cross product
+`cross(v1-v0, v2-v0)` and the stored normals point away from the side meant to be seen.
+On a solid seen from outside, which every collision component is, both point inward.
 
 **Contents**
 
@@ -17,9 +23,11 @@ complete Blender-import checklist.
 **Centroid-based check (`cross(e1, e2) · (face_centroid - LOD_centroid) > 0`):**
 
 - It is **right-handed** (Three.js / OpenGL convention). DayZ is **left-handed**. A
-  CORRECT post-flip model shows up as "winding inward" under this check while its
-  declared normals point outward: that is not an inconsistency, it is the opposite
-  sign of the cross product between coordinate systems.
+  CORRECT model shows up as "winding inward" under this check, with its declared
+  normals inward too: that is not an inconsistency, it is the opposite sign of the
+  cross product between coordinate systems. (This line once said the normals of a
+  correct model point outward. That is the older outward-normal convention, which
+  Check A below reads as UNIFORM_FLIPPED.)
 - It assumes **convex geometry** (compares against the LOD centroid). For hollow
   boxes with thick walls, correct interior faces get flagged as "inverted".
 - **Conclusion: it is NOT valid for validating absolute DayZ winding.** This skill
@@ -45,17 +53,30 @@ compare the wrong things.
 1. **Check A: winding vs averaged corner normal, per face (DIAGNOSTIC).** For each
    face compute `n_winding = normalize(cross(v1-v0, v2-v0))` and compare it with the
    normalized average of `face.vertices[i].normal` over the corners. The percentage
-   of faces with `dot < -0.5` indicates the handedness state:
-   - **~100% UNIFORM_FLIPPED** → the EXPECTED state in DayZ (left-handed) after
-     export from Blender (right-handed Z-up). The handedness change inverts the
-     cross product. Field-verified in-game on production mods: rendering,
-     ballistics, cursor, and collision all OK. No action needed. → severity NOTE.
-   - **~0% UNIFORM_NON_FLIPPED** → either there was no handedness transform, or the
-     normals were re-aligned post-transform. Verify in-game. → severity NOTE.
-   - **5-95% MIXED** → real bug; rendering/collision is inconsistent between faces.
-     → severity CRITICAL.
+   of faces with `dot < -0.5` counts the faces that strongly disagree with their
+   stored normals. It does not say which way either one points:
+   - **~0% UNIFORM_NON_FLIPPED** → winding and normals agree (count agreement as well,
+     `dot > 0`: only about 100 % agreement means they agree). A correct export reads
+     this. So do a mirrored export and an inside-out model whose faces and normals
+     were turned together. → severity NOTE: consistent with a correct model, not proof.
+   - **~100% UNIFORM_FLIPPED** → winding and normals disagree: the older
+     outward-normal convention (cross product inward, normals outward), or a correct
+     export whose faces were reversed afterwards, which is inside-out. One crate mod in
+     this state was field-verified in game (rendering, ballistics, cursor and collision
+     all OK), but it is not what a correct conversion writes. → severity WARNING on a
+     new export.
+   - **5-95% MIXED** → parts in different states, not a verdict by itself. A car door
+     verified in game reads mixed with no face group inverted. Split the census by
+     part and locate any group wound against its neighbours with Check B. → severity
+     WARNING; a visible part that reads inside-out is the defect.
 
-   Coordinate-system-agnostic.
+   This list once called UNIFORM_FLIPPED the expected state after a Blender export
+   (NOTE, no action) and MIXED a real bug (CRITICAL). Later in-game measurements
+   corrected both; the evidence and the table that turns each state into a fix are in
+   `winding-diagnostics.md`.
+
+   Coordinate-system-agnostic. Leave proxy triangles out of the count and out of any
+   fix: their vertex order encodes the proxy frame.
 
 2. **Check B: edge-pair topology (THE MOST RELIABLE).** Two manifold faces that
    share an edge must traverse it in opposite directions. If `face1` traverses
@@ -78,8 +99,9 @@ compare the wrong things.
   (idempotent modulo 2). Always write a backup (e.g. `.p3d.bak_pre_winding_flip`)
   before flipping; if the backup exists, the flip was applied at least once.
   Note: the flip helper scripts referenced by the original project are NOT bundled
-  with this skill: the operation is simply swapping `vertices[1]`/`vertices[2]` on
-  every face via py3d.
+  with this skill: the operation is `face.vertices.reverse()` on every face via py3d.
+  (This note once said to swap `vertices[1]`/`vertices[2]`. That is the same for a
+  triangle but turns a quad `[0,1,2,3]` into `[0,2,1,3]`, a crossed face.)
 - **Negating the `lod.facenormals` pool** ("renegate normals" style scripts) is
   based on a misunderstanding of the format: do not do it. If it was applied, the
   pool normals are wrongly negated; revert by negating them again.
@@ -90,9 +112,13 @@ compare the wrong things.
   this CRITICAL is fine as a preventive signal even though the engine tolerated it
   in that particular case. Do not re-flip such a model unless a concrete in-game
   symptom appears.
-- **`face.flags |= 0x20000` (`NoBackfaceCulling`)** sidesteps the problem in the
-  Visual LOD but NOT in collision LODs. If you use it on Visual, fixing the winding
-  in Geometry/GeoPhys/FireGeo/ViewGeo is **still mandatory**.
+- **`face.flags |= 0x20000` (`NoBackfaceCulling`) does not work.** It was once listed
+  here as a way round the problem in the Visual LOD. Measured since: the faces stayed
+  see-through in game, because binarize discards the MLOD per-face `flags` field (three
+  MLODs that differ only in `face.flags` binarize to byte-identical models). The route
+  that works for a part seen from both sides is double-sided geometry, and fixing the
+  winding in Geometry/GeoPhys/FireGeo/ViewGeo is mandatory either way
+  (`winding-diagnostics.md`, "Known traps").
 - **Making a mesh double-sided** (duplicating faces with reversed winding)
   complicates Check B: it introduces non-manifold edges (3+ faces sharing an edge),
   which is correct geometry but the check must treat it as NOTE, not CRITICAL.
@@ -103,9 +129,13 @@ compare the wrong things.
    required ones exist (Visual=0, Geometry=1e13, Memory=1e15) plus the recommended
    ones (LandContact=2e15, ViewGeo=6e15, FireGeo=7e15) if the object interacts with
    bullets/cursor.
-2. Apply a winding flip (swap `vertices[1]`/`vertices[2]` on every face via py3d).
-   Write a `.bak` backup first and confirm it was created.
-3. Run Check A + Check B on ALL LODs (not just Visual).
+2. Decide whether the export needs a winding change at all: read Check A and the
+   direction test of `winding-diagnostics.md` first. A model converted with the model
+   pipeline skill's Blender to DayZ conversion needs none. If a whole-model flip is
+   needed, use `face.vertices.reverse()` on every face (never a `vertices[1]`/`[2]`
+   swap), write a `.bak` backup first and confirm it was created. (This step once
+   said to flip every import; a flip on a correct export turns it inside-out.)
+3. Run Check A + Check B on ALL LODs (not just Visual), and `/dayz-p3d-audit`.
 4. If Check B reports bad edges: identify which faces, then either re-flip
    selectively or re-export from Blender with correct settings. Do NOT declare the
    model "ready" with mixed winding.

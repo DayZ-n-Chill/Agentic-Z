@@ -14,12 +14,16 @@ With a model.cfg (--model-cfg, or the nearest one under --scan-dir) each
 animation in CfgModels > <model> > Animations is checked against the model.
 The Geometry LOD autocenter property is only checked when the config.cpp
 (--config, or the nearest one under --scan-dir) has a class with autocenter = 0.
+The same config.cpp feeds the wheel-slot check of a wheeled vehicle body.
 
-Gates on /dayz-preflight. Requires py3d for .p3d parsing
-(python -m pip install -r ../requirements.txt); exits 2 when it is missing.
+Gates on /dayz-preflight. Reads .p3d files with py3d: the DayZ fork kept in
+this repo at scripts/tools/py3d when that folder is there, otherwise the
+installed py3d (python -m pip install -r ../requirements.txt); exits 2 when
+neither is found. With the fork (1.6.0 or later) its P3D.validate() findings,
+the winding checks among them, are added to this script's own.
 """
 
-import sys, os, re, glob, argparse
+import sys, os, re, glob, argparse, importlib.util, math
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
@@ -27,10 +31,25 @@ import skill_helpers as h  # noqa: E402
 
 
 REQUIREMENTS = Path(__file__).resolve().parents[1] / "requirements.txt"
+# The DayZ fork of py3d kept in this repo. A plugin install that ships only
+# skills/ has no such folder and falls back to the installed py3d.
+REPO_FORK = Path(__file__).resolve().parents[3] / "scripts" / "tools" / "py3d" / "py3d" / "__init__.py"
+FORK_MIN_VERSION = (1, 6, 0)
+_fork_module = None
 
 
 def load_py3d():
-    """Import py3d, exiting 2 with an install hint if it is missing."""
+    """py3d: the repo's DayZ fork when it is there, else the installed py3d.
+
+    The fork is loaded from its file under a private module name, so it never
+    replaces a py3d another script in the same process imported. Exits 2 with
+    an install hint when neither is found.
+    """
+    global _fork_module
+    if REPO_FORK.is_file():
+        if _fork_module is None:
+            _fork_module = h.load_module("py3d_dayz_fork", REPO_FORK)
+        return _fork_module
     try:
         import py3d
     except ImportError:
@@ -38,6 +57,16 @@ def load_py3d():
         print(f'Run: python -m pip install -r "{REQUIREMENTS}"', file=sys.stderr)
         sys.exit(2)
     return py3d
+
+
+def fork_version(py3d):
+    """The version of a DayZ fork of py3d as a tuple, or None for any other py3d."""
+    if not getattr(py3d, "IS_DAYZ_FORK", False):
+        return None
+    try:
+        return tuple(int(x) for x in str(py3d.__version__).split("."))
+    except (AttributeError, ValueError):
+        return None
 
 # ============================================================================
 # model.cfg: CfgModels > <model> > Animations
@@ -204,7 +233,15 @@ def classify_lod(resolution):
     canonical resolutions"): Visual < 1000, ShadowVolume 10000-19999 (10000
     shadow volume, 11000 shadow buffer), Geometry 1e13, GeoPhys 4e13 (the
     PhysX geometry), Memory 1e15, LandContact 2e15, ViewGeo 6e15, FireGeo 7e15.
+    Roadway 3e15, Paths 4e15 and HitPoints 5e15 are named too (the vanilla
+    scan in skills/_shared/models/lods.md counts them); no check runs on them.
     """
+    if 2.9e15 <= resolution <= 3.1e15:
+        return "Roadway"
+    if 3.9e15 <= resolution <= 4.1e15:
+        return "Paths"
+    if 4.9e15 <= resolution <= 5.1e15:
+        return "HitPoints"
     if resolution < 1000:
         return "Visual"
     if 1e4 <= resolution < 2e4:
@@ -509,6 +546,347 @@ def check_visual_lod(lod):
     return issues
 
 
+# ============================================================================
+# WHOLE-MODEL CHECKS: vertex budget, vehicle body, needle triangles, wheel slots
+# ============================================================================
+# Each takes the whole model and names the LOD it found a problem in. The facts
+# behind them are in references/killers-detail.md and references/vehicle-checks.md.
+
+_DAMPER_RE = re.compile(r'damper', re.I)
+
+
+def is_vehicle_body(p):
+    """True for a wheeled-vehicle body: a model with a suspension 'damper' selection.
+
+    A body carries selections such as 'wheel_1_1_damper' or 'wheel_1_1_damper_land';
+    a wheel model that is only a proxy on the body does not. Keying on 'damper'
+    keeps a lone wheel (which has 'wheel' selections) from counting as a body.
+    """
+    return any(_DAMPER_RE.search(name) for lod in p.lods for name in lod.selections)
+
+
+def check_lod0_vertex_budget(p):
+    """Check the most detailed Visual LOD against the 16-bit vertex ceiling.
+
+    The ceiling is on resolved vertices, the distinct (point, normal, uv) triples
+    of the face corners, not on the raw point or face-corner counts: a model with
+    96,585 face corners that resolved to 22,143 vertices loaded fine. Over 65,535
+    resolved vertices is CRITICAL. Raw counts over 65,536 with fewer resolved
+    vertices are a WARNING, and so is a heavy LOD on a vehicle body, whose proxies
+    add their own vertices in game. A single file cannot add the proxies up.
+    """
+    issues = []
+    visual = [(lod.resolution, i, lod) for i, lod in enumerate(p.lods) if classify_lod(lod.resolution) == "Visual"]
+    if not visual:
+        return issues
+    _, i, lod = min(visual, key=lambda item: item[:2])
+    nverts, nidx, nnorm = len(lod.points), lod.num_vertices, len(lod.facenormals)
+    resolved = {(v.point_index, v.normal_index, tuple(v.uv)) for face in lod.faces for v in face.vertices}
+    nres = len(resolved)
+    if nres > 65535:
+        issues.append(("CRITICAL",
+            f"LOD[{i}] Visual resolves to {nres} unique vertices (point x normal x uv), over the 65535 "
+            f"of a 16-bit index: the model fails to load or renders invisible "
+            f"(points={nverts}, face corners={nidx})."))
+    elif nverts > 65536 or nidx > 65536:
+        issues.append(("WARNING",
+            f"LOD[{i}] Visual raw counts exceed 65536 (points={nverts}, face corners={nidx}), but it "
+            f"resolves to {nres} unique vertices, under the ceiling. Raw counts alone are not the limit."))
+    elif is_vehicle_body(p) and (nnorm > 16384 or nverts > 32768):
+        issues.append(("WARNING",
+            f"LOD[{i}] Visual is heavy for a vehicle body (points={nverts}, normals={nnorm}). Count the "
+            f"body plus every proxy placed on it against 32768 normals and 65536 vertices before "
+            f"adding proxies."))
+    return issues
+
+
+def check_geometry_class_vehicle(p):
+    """Check a wheeled vehicle body's Geometry LOD carries the named property class=vehicle.
+
+    Every vanilla wheeled body under P:\\DZ\\vehicles\\wheeled\\ carries it. This is
+    parity with vanilla only: leaving it out was tested in game and did not stop
+    the wheels simulating (that is check_wheel_slot_firegeo's subject).
+    """
+    issues = []
+    if not is_vehicle_body(p):
+        return issues
+    for i, lod in enumerate(p.lods):
+        if classify_lod(lod.resolution) != "Geometry":
+            continue
+        props = dict(lod.properties) if lod.properties else {}
+        if (props.get("class") or "").strip().lower() != "vehicle":
+            issues.append(("CRITICAL",
+                f"LOD[{i}] Geometry of a wheeled vehicle has no named property class=vehicle. Every "
+                f"vanilla wheeled body carries it; add it to match (it is not what makes wheels "
+                f"simulate: see the wheel-slot check)."))
+    return issues
+
+
+NEEDLE_MIN_AREA = 1e-6   # m^2
+NEEDLE_MIN_RATIO = 1e-4  # area / longest edge^2
+NEEDLE_LODS = ("Geometry", "FireGeo", "ViewGeo")
+_COMPONENT_RE = re.compile(r"component\d+", re.I)
+# py3d's proxy selection name: proxy:<path>.<index>, 'proxy:' in any case.
+_PROXY_NAME_RE = re.compile(r"^proxy:(?P<path>.+)\.(?P<index>\d+)$", re.IGNORECASE)
+
+
+def triangle_area_ratio(a, b, c):
+    """Area of the triangle a, b, c (each an (x, y, z)) and that area over the
+    square of its longest edge: sqrt(3)/4 = 0.433 for an equilateral triangle,
+    the most it can be, and 0.0 when the three points coincide."""
+    ab = [b[i] - a[i] for i in range(3)]
+    ac = [c[i] - a[i] for i in range(3)]
+    bc = [c[i] - b[i] for i in range(3)]
+    cross = (ab[1] * ac[2] - ab[2] * ac[1],
+             ab[2] * ac[0] - ab[0] * ac[2],
+             ab[0] * ac[1] - ab[1] * ac[0])
+    area = 0.5 * math.sqrt(sum(x * x for x in cross))
+    longest = max(sum(x * x for x in e) for e in (ab, ac, bc))
+    return area, (area / longest if longest > 0.0 else 0.0)
+
+
+def needle_triangles(points, faces, min_area=NEEDLE_MIN_AREA, min_ratio=NEEDLE_MIN_RATIO):
+    """The needle triangles of faces, as (face, corners, area, ratio).
+
+    points is a sequence of (x, y, z) and faces a sequence of faces, each a
+    sequence of indices into points. Each face is split into triangles from
+    its first corner, so a quad (a, b, c, d) reads as (a, b, c) and (a, c, d).
+    A triangle is a needle when its area is under min_area or its area over the
+    square of its longest edge, the ratio, is under min_ratio. Needles come in
+    the order of faces: face is a needle's position in faces and corners its
+    three point indices.
+    """
+    found = []
+    for n, face in enumerate(faces):
+        for j in range(1, len(face) - 1):
+            corners = (face[0], face[j], face[j + 1])
+            area, ratio = triangle_area_ratio(*[points[k] for k in corners])
+            if area < min_area or ratio < min_ratio:
+                found.append((n, corners, area, ratio))
+    return found
+
+
+def _opposite_longest_edge(points, corners):
+    """The corner of a triangle that faces its longest edge."""
+    def d2(i, j):
+        return sum((points[i][k] - points[j][k]) ** 2 for k in range(3))
+    a, b, c = corners
+    return max((d2(b, c), a), (d2(a, c), b), (d2(a, b), c))[1]
+
+
+def proxy_triangles(lod):
+    """ids of the proxy triangles of a LOD, by the rule py3d's DayZ fork uses.
+
+    A proxy is a selection named proxy:<path>.<index> that holds exactly one
+    face, a triangle, and as its points exactly that triangle's three corners.
+    A selection under a proxy name with any other shape is not a proxy, and its
+    faces are read like any other face.
+    """
+    out = set()
+    for name, sel in lod.selections.items():
+        if not _PROXY_NAME_RE.match(name):
+            continue
+        if len(sel.points) != 3 or len(sel.faces) != 1:
+            continue
+        face = next(iter(sel.faces))
+        if len(face.vertices) != 3:
+            continue
+        corners = {id(vx.point) for vx in face.vertices}
+        if len(corners) == 3 and corners == set(map(id, sel.points)):
+            out.add(id(face))
+    return out
+
+
+def check_collision_needle_triangles(p):
+    """Check the components of the Geometry, View and Fire LODs for needle triangles.
+
+    Measured in DayZ 1.29: two convex hulls that each held one needle took no
+    ray in geom, view or fire, and binarize said nothing. Built again without
+    the point opposite each needle's longest edge, they took every ray. The
+    engine's own limit lies between a ratio of 4.6e-7 (no hit) and 1.19e-4
+    (hit); this check fails a triangle under NEEDLE_MIN_AREA or NEEDLE_MIN_RATIO.
+
+    Every face of every ComponentNN selection is read (any case; a face at
+    weight 0 is not in the selection, and proxy triangles are left out). A face
+    in no component is the coverage check's subject, not this one's.
+    """
+    issues = []
+    for i, lod in enumerate(p.lods):
+        kind = classify_lod(lod.resolution)
+        if kind not in NEEDLE_LODS:
+            continue
+        number = {id(pt): n for n, pt in enumerate(lod.points)}
+        points = [pt.coords for pt in lod.points]
+        index = {id(face): n for n, face in enumerate(lod.faces)}
+        proxies = proxy_triangles(lod)
+        for name, sel in lod.selections.items():
+            if not _COMPONENT_RE.fullmatch(name):
+                continue
+            faces = sorted(((index[id(face)], face) for face, weight in sel.faces.items()
+                            if weight and id(face) in index and id(face) not in proxies),
+                           key=lambda item: item[0])
+            corners = [[number[id(v.point)] for v in face.vertices] for _, face in faces]
+            for n, tri, area, ratio in needle_triangles(points, corners):
+                issues.append(("CRITICAL",
+                    "LOD[%d] %s, %s, face %d: needle triangle (points %d, %d, %d), area %.2e m^2, "
+                    "area/longest edge^2 %.2e (this check fails a triangle under %.0e m^2 or %.0e). "
+                    "In game a convex hull holding one took no ray in geom, view or fire, and binarize "
+                    "said nothing: build the hull again without point %d, the corner opposite the "
+                    "longest edge (references/killers-detail.md, 'Needle triangles')."
+                    % (i, kind, name, faces[n][0], tri[0], tri[1], tri[2], area, ratio,
+                       NEEDLE_MIN_AREA, NEEDLE_MIN_RATIO, _opposite_longest_edge(points, tri))))
+    return issues
+
+
+def _class_body(text, header_re):
+    """The text between the braces of the first class whose header matches header_re, or None."""
+    m = re.search(header_re, text)
+    if not m:
+        return None
+    start = text.find("{", m.start())
+    if start < 0:
+        return None
+    depth = 0
+    for j in range(start, len(text)):
+        if text[j] == "{":
+            depth += 1
+        elif text[j] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start + 1:j]
+    return None
+
+
+def parse_wheel_selections(config_text):
+    """The wheel-slot selections a vehicle config.cpp names, as (selections, slots, note).
+
+    The config links them in two steps: SimulationModule > Axles > <axle> >
+    Wheels > <side> has inventorySlot = "<slot>", and CfgSlots > Slot_<slot> has
+    name = "<slot>" and selection = "<selection>". Vanilla keeps CfgSlots in
+    P:\\scripts\\config.cpp, away from the vehicle classes, and a mod that reuses
+    vanilla wheel slots has no CfgSlots of its own. The mapping cannot be read
+    then; note says why, and nothing is failed.
+    """
+    text = strip_comments(config_text)
+    axles = _class_body(text, r'class\s+Axles\b')
+    if axles is None:
+        return set(), set(), "no 'class Axles' block (not a wheeled-vehicle config, or an unusual layout)"
+    slots = set(re.findall(r'inventorySlot\s*=\s*"([^"]+)"', axles))
+    if not slots:
+        return set(), set(), "the Axles block has no inventorySlot entries"
+    cfgslots = _class_body(text, r'class\s+CfgSlots\b')
+    mapped = {}
+    if cfgslots is not None:
+        for m in re.finditer(r'class\s+\w+\s*\{([^{}]*)\}', cfgslots):
+            name = re.search(r'name\s*=\s*"([^"]+)"', m.group(1))
+            selection = re.search(r'selection\s*=\s*"([^"]+)"', m.group(1))
+            if name and selection:
+                mapped[name.group(1)] = selection.group(1)
+    sels = {mapped[slot] for slot in slots if slot in mapped}
+    if sels:
+        return sels, slots, ""
+    if cfgslots is None:
+        return set(), slots, ("this config.cpp has no CfgSlots block, so the slot to selection mapping "
+                              "could not be read; check the wheel selections in the Fire Geometry LOD by hand")
+    return set(), slots, ("CfgSlots has no slot named like a wheel inventorySlot, so the mapping could "
+                          "not be read; check by hand")
+
+
+def check_wheel_slot_firegeo(p, config_text):
+    """Check each wheel-slot selection of a vehicle body exists in its Fire Geometry LOD.
+
+    The engine binds a wheel slot to the model through the selection that
+    CfgSlots names. When that selection is only in the visual LODs the wheel
+    attaches as an item but never simulates: WheelCountPresent() stays 0 while
+    WheelCount() is the full count, with no log line (measured in game on a
+    custom quad). Runs only for a vehicle body and only with a config.cpp.
+    """
+    issues = []
+    if not is_vehicle_body(p):
+        return issues
+    fire = [(i, lod) for i, lod in enumerate(p.lods) if classify_lod(lod.resolution) == "FireGeo"]
+    if not fire:
+        issues.append(("CRITICAL",
+            "Wheeled vehicle body has no Fire Geometry LOD, so no wheel-slot selection can be found "
+            "in it and the wheels will not simulate."))
+        return issues
+    sels, _slots, note = parse_wheel_selections(config_text)
+    if not sels:
+        if note:
+            issues.append(("NOTE", f"Wheel-slot check not run: {note}."))
+        return issues
+    fi, fire_lod = fire[0]
+    for sel in sorted(sels):
+        found = find_selection(fire_lod, sel)
+        if found is None:
+            issues.append(("CRITICAL",
+                f"Wheel-slot selection '{sel}' (from CfgSlots) is missing from Fire Geometry LOD[{fi}]. "
+                f"The wheel will attach but not simulate (WheelCountPresent() = 0), with no log line. "
+                f"Add the wheel proxy face of that LOD to a selection named '{sel}', keeping its "
+                f"other selections."))
+        elif len(found.faces) == 0:
+            issues.append(("WARNING",
+                f"Wheel-slot selection '{sel}' is in Fire Geometry LOD[{fi}] but holds 0 faces. "
+                f"It must hold the wheel proxy face."))
+    return issues
+
+
+# ============================================================================
+# py3d DayZ fork: P3D.validate()
+# ============================================================================
+_FORK_SEVERITY = {"ERROR": "CRITICAL", "WARN": "WARNING"}
+# validate() findings this script already reports itself, by the LOD it checks
+# them on. Ours know the config.cpp and model.cfg (autocenter, pos center), read
+# whole polygons (degenerate faces) or grade the finding differently on purpose
+# (P:\ paths on faces are a NOTE in a source model), so the fork's copy is dropped.
+_FORK_COVERED = {
+    "Geometry": {"ERR_COMPONENT_NAMING", "WARN_COMPONENT_NAMING", "WARN_COMPONENT_COVERAGE",
+                 "WARN_AUTOCENTER_MISSING", "WARN_NOT_WATERTIGHT", "WARN_DEGENERATE_FACES"},
+    "FireGeo": {"WARN_NOT_WATERTIGHT", "WARN_DEGENERATE_FACES"},
+    "Memory": {"WARN_MEMORY_POS_CENTER", "WARN_MEMORY_BOX_PLACING", "WARN_MEMORY_HAS_FACES"},
+    "Visual": {"WARN_PDRIVE_PATH"},
+    "GeoPhys": {"WARN_LOD_KIND_UNKNOWN"},
+}
+# The fork guesses an animation's selection from the axis name (<name>_axis
+# needs <name>). A rig may bind them under different names in model.cfg.
+_FORK_AXIS_GUESS = {"ERR_AXIS_SELECTION_MISSING", "WARN_AXIS_SELECTION_EMPTY"}
+
+
+def fork_findings(p, py3d, lod_map, model_cfg_checked=False):
+    """The findings of the DayZ fork's P3D.validate(), as (severity, message).
+
+    Returns None when py3d is not the DayZ fork at FORK_MIN_VERSION or later,
+    so the caller can say the checks did not run. ERROR becomes CRITICAL and
+    WARN becomes WARNING. A finding this script reports itself on the same LOD
+    is dropped (_FORK_COVERED). The axis-name guess is dropped when model.cfg
+    was checked, which reads the real binding, and is only a WARNING without one.
+    """
+    version = fork_version(py3d)
+    if version is None or version < FORK_MIN_VERSION or not hasattr(p, "validate"):
+        return None
+    try:
+        found = p.validate()
+    except Exception as e:  # a model the validator cannot walk, such as an index out of its pool
+        return [("WARNING", f"py3d validate() stopped: {e}. Its winding and component checks did not run.")]
+    checked = {index: kind for kind, (index, _lod) in lod_map.items()}
+    issues = []
+    for f in found:
+        if f.code in _FORK_COVERED.get(checked.get(f.lod), ()):
+            continue
+        severity = _FORK_SEVERITY.get(f.severity, f.severity)
+        msg = f.msg
+        if f.code in _FORK_AXIS_GUESS:
+            if model_cfg_checked:
+                continue
+            if severity == "CRITICAL":
+                severity = "WARNING"
+            msg += (" (Guessed from the axis name; pass --model-cfg to check the selection and axis "
+                    "each animation really names.)")
+        lod_tag = "" if f.lod is None else f"LOD[{f.lod}] "
+        issues.append((severity, f"{lod_tag}[{f.code}] {msg}"))
+    return issues
+
+
 # A double-quoted string, a /* */ comment or a // comment. Strings come first so a
 # "//" inside one (url = "http://...") is kept, not read as a comment.
 _TEXT_COMMENT = re.compile(r'"[^"\n]*"|/\*.*?\*/|//[^\n]*', re.S)
@@ -582,7 +960,8 @@ def audit_p3d(filepath, model_cfg=None, config=None, tally=None):
                 tally["unreadable"] = 1
                 return False
             f.seek(0)
-            p = load_py3d().P3D(f)
+            py3d = load_py3d()
+            p = py3d.P3D(f)
     except Exception as e:
         print(f"  {h.FAIL} Failed to read: {e}", file=sys.stderr)
         tally["unreadable"] = 1
@@ -630,8 +1009,9 @@ def audit_p3d(filepath, model_cfg=None, config=None, tally=None):
             print(f"  BBox: X=[{min(xs):.3f}..{max(xs):.3f}] Y=[{min(ys):.3f}..{max(ys):.3f}] Z=[{min(zs):.3f}..{max(zs):.3f}]")
 
         # Component01 and the autocenter property belong only on the Geometry LOD;
-        # running those checks on GeoPhys/FireGeo flags valid vanilla models. There is no winding check:
-        # the centroid heuristic flags every Blender export (left-handed transform);
+        # running those checks on GeoPhys/FireGeo flags valid vanilla models. This script has no
+        # winding check of its own: the centroid heuristic flags every Blender export (left-handed
+        # transform). The DayZ fork's validate() adds winding findings below when it is in use;
         # see references/winding-methodology.md for the manual method.
         # Every collision LOD needs a material on each face (killer 10); ViewGeo gets only that check.
         if lt == "Geometry":
@@ -667,7 +1047,26 @@ def audit_p3d(filepath, model_cfg=None, config=None, tally=None):
             print(f"  {sev}: {msg}")
             all_issues.append((sev, msg))
 
+    # Whole-model checks: the vertex budget, the vehicle body checks and needle triangles.
+    # The wheel-slot check needs the config.cpp text; an unreadable one was reported above.
+    print(f"\n  --- Whole model ---")
+    results = check_lod0_vertex_budget(p) + check_geometry_class_vehicle(p) + check_collision_needle_triangles(p)
+    if config:
+        try:
+            config_text = Path(config).read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            config_text = None
+        if config_text is not None:
+            results += check_wheel_slot_firegeo(p, config_text)
+    elif is_vehicle_body(p):
+        print("  No config.cpp given (--config, or one near the model under --scan-dir): the wheel-slot "
+              "selections of this vehicle body were not checked.")
+    for sev, msg in results:
+        print(f"  {sev}: {msg}")
+        all_issues.append((sev, msg))
+
     # Animations named in model.cfg
+    model_cfg_checked = False
     print(f"\n  --- Animations ---")
     if model_cfg is None:
         print("  No model.cfg given (--model-cfg, or one beside the model under --scan-dir); not checked.")
@@ -684,10 +1083,22 @@ def audit_p3d(filepath, model_cfg=None, config=None, tally=None):
             print(f"  NOTE: {msg}")
             all_issues.append(("NOTE", msg))
         else:
+            model_cfg_checked = text is not None
             print(f"  {len(anims)} animation(s) in {model_cfg}: {sorted(anims)}")
             for sev, msg in check_animations(anims, lod_map):
                 print(f"  {sev}: {msg}")
                 all_issues.append((sev, msg))
+
+    # The DayZ fork's own validator: winding, component coverage, mass, normals budget.
+    print(f"\n  --- py3d validate() ---")
+    results = fork_findings(p, py3d, lod_map, model_cfg_checked)
+    if results is None:
+        print("  Not run: this py3d is not the DayZ fork (scripts/tools/py3d, 1.6.0 or later), so the "
+              "winding checks were skipped. Check winding by hand (references/winding-methodology.md).")
+    else:
+        for sev, msg in results:
+            print(f"  {sev}: {msg}")
+            all_issues.append((sev, msg))
 
     # Summary
     tally.update(tally_issues(all_issues))
@@ -778,8 +1189,12 @@ def scan_directory(dirpath):
     print(f"\nScanning directory: {dirpath}")
     results = []  # (path, passed, tally)
 
-    # P3D files
+    # P3D files. A backup copy (model.bak.p3d, or anything under a *.bak folder) is skipped:
+    # it is an older state of a model that is audited under its own name.
     for f in sorted(glob.glob(os.path.join(dirpath, '**', '*.p3d'), recursive=True)):
+        if '.bak' in os.path.relpath(f, dirpath).lower():
+            print(f"\nSkipping backup model: {f}")
+            continue
         t = {}
         ok = audit_p3d(f, find_model_cfg(f, dirpath), find_model_cfg(f, dirpath, "config.cpp"), tally=t)
         results.append((f, ok, t))
