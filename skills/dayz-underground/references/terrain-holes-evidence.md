@@ -44,7 +44,7 @@ Livonia is 12,800 m wide. With 2048 cells, a cell is 6.25 m. The table places th
 Triggers that the 6.25 m column lands on:
 
 - Main entrance: the triggers at (749.7; 533.5; 1228.5) and (735.0; 533.7; 1229.1), each 15 by 5.6 by 10.8 m.
-- Second entrance: the trigger at (593.7; 588.75; 1131.8), 11 by 22.3 by 11.6 m.
+- Second entrance: in X and Z the cells overlap five triggers. Three are the entrance stack: the transition trigger at (592.0; 606.5; 1131.0), 8.7 by 16 by 7.8 m with 12 breadcrumbs; the trigger below it at (593.7; 588.75; 1131.8), 11 by 22.3 by 11.6 m; and the outer trigger (`EyeAccommodation` 1) at (584.65; 611; 1131.1), 6 by 8 by 7.6 m, which reaches only 0.15 m into the cells. The other two are the large interior boxes at (605.05; 562.5; 1143.45) and (626.15; 504.95; 1143.3), which also cover this ground deeper down.
 
 With 5 m and with 10 m neither group falls inside the range of the triggers. Two independent groups fitting is what supports the 6.25 m reading. It is a cross check, not a read value: the cell size was not read from the header of the `.wrp`, and the cell size of other maps is not measured.
 

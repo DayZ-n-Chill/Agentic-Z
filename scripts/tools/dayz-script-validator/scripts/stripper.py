@@ -15,7 +15,8 @@ def make_stripper_warning(rule_id, rel_path, token_name, line_number):
         "message": (
             f"[WARN] {location}: unterminated {token_name} starting near line "
             f"{line_number}. Linter coverage on this file is degraded; fix the "
-            "source or rely on baseline syntax validation (dayz-pbo-build)."
+            "source, or check its syntax by building the mod with /dayz-build-pbo "
+            "and loading it with /dayz-launch-test."
         ),
     }
 

@@ -91,7 +91,7 @@ Short forms of the findings in the references; the evidence and its limits are i
 
 ## DayZ 1.30 in short
 
-- `GAME_STORAGE_VERSION` is 144 (`game.c:5`); it was 142 on 1.29.
+- `GAME_STORAGE_VERSION` is 144 (`game.c:5`); it was 142 on 1.29 (the 1.29 value is not yet checked on P:\, which holds only the 1.30 scripts).
 - `EntityAI.OnStoreSave` lets the construction component write first (`entityai.c:2912-2914`), and the load reads that block only from version 143 (`entityai.c:2981`). It is empty for `BaseBuildingBase`; `Rebuilding` on map buildings writes its own version and ten ints.
 - `PlayerBase` saves a thermal value through `m_ThermalBiasHandler` after the arrow manager (`P:\scripts\4_world\entities\manbase\playerbase.c:7395`) and reads it with no version check (`playerbase.c:7520-7524`), so a 1.29 player record fails to load on a 1.30 multiplayer server.
 - `CombinationLock` writes a third value, `m_CombinationInside`, read only from version 143 (`P:\scripts\4_world\entities\itembase\combinationlock.c:169-177`).

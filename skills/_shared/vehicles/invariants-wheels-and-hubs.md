@@ -153,38 +153,36 @@ Consequence: `CreateObjectEx` returns **null**. Vehicle **fails to spawn**; it i
 | a second working quad bike mod | 4 | **does not exist** |
 | LFQuad2 (port, failed to spawn) | **0** | exists, and there all 4 were, with 1 point and 0 faces |
 
-**The port trap:** an Arma 2 MLOD includes LandContact LOD, and porter leaves contact
-points there because name matches. DayZ does not read hub from there: `wheelHub` in
-`config.cpp` resolves against **Geometry**. Notice both symptoms are same error --
-a selection with 1 point and 0 faces cannot carry `componentNN` either, because there are no faces
-to tag.
+**The port trap:** an Arma 2 MLOD has a LandContact LOD, and a port leaves the contact
+points there because the names match. DayZ does not read the hub from that LOD: `wheelHub` in
+`config.cpp` resolves against **Geometry**. Both symptoms are the same error: a selection with
+1 point and 0 faces cannot carry `componentNN` either, because it has no faces to tag.
 
-**5-second check before any in-game cycle:** for each `wheelHub` named by
-config, that name must exist in Geometry LOD, with faces, and dual-tagged. In
-complementary non-enumerated form: derive it from model's own config, which names the
-hubs, not from a hand-written list.
+**5-second check before any in-game cycle:** every `wheelHub` that the config names must exist in
+the Geometry LOD, with faces, and carry both tags. Take the list of hubs from the model's own
+config, which names them, not from a hand-written list.
 
-And process warning, which is expensive half of this entry: signature of this error is also
-written in `history/superseded-family-b-rules.md` (its Invariant 23 block), a history file that carries
-no authority, so nobody reads it as a rule. When archiving a rule,
-check that living half preserves BOTH questions: what, and where.
+A process warning, and the costly half of this entry: the signature of this error is also
+written in `history/superseded-family-b-rules.md` (its Invariant 23 block), but that history file
+carries no authority, so nobody reads it as a rule. When you archive a rule, check that the part
+still in force keeps BOTH questions: what, and where.
 
-**CONFIRMED IN-GAME same day.** After moving the four selections to Geometry LOD
---names on geometry that ALREADY existed, without adding a single face-- vehicle **spawns**:
+**Confirmed in game the same day.** After the four selections were moved to the Geometry LOD
+(names put on geometry that ALREADY existed, without adding a single face), the vehicle **spawns**:
 
     [LFQ2-TEST] LFQuad2 type=LFQuad2 pos=<13282.5, 7.27, 6883.2> wheels=4 fuel=1
 
-`CreateObjectEx` returns object instead of null, with all four wheels attached. Meaning
-Geometry gap was not only necessary: it was **sufficient** for engine to
-build physics. Useful to know because engine stops at FIRST error, so prior to
-testing it could not be ruled out that more blockers lay behind.
+`CreateObjectEx` returns the object instead of null, with all four wheels attached. So the missing
+Geometry selections were not only a necessary fix: they were **sufficient** for the engine to
+build physics. That is worth knowing because the engine stops at the FIRST error, so before the
+test it was possible that more blockers lay behind it.
 
-**Measured trade-off, to watch when driving:** in a port, sole geometry
-corresponding to each wheel is usually **the entire wheel** (here 0.198 x 0.599 x 0.599 m) vs
-reference hub box (0.20 x 0.22 x 0.22 m). It is the honest choice --inventing a
-small box alters Geometry LOD mass-- but leaves a 3x larger collision component
-on two axes. If after fix suspension acts strange or vehicle feels anchored,
-that size is first suspect, not config.
+**Measured trade-off, to watch when driving:** in a port, the only geometry that belongs to each
+wheel is usually **the entire wheel** (here 0.198 x 0.599 x 0.599 m), against the reference hub
+box (0.20 x 0.22 x 0.22 m). Using it is the honest choice, because inventing a small box changes
+the Geometry LOD mass, but it leaves a collision component about 3 times larger on two axes. If
+the suspension behaves strangely or the vehicle feels anchored after the fix, suspect that size
+first, not the config.
 
 ## Every axle must be listed in an Axles override: what the engine enumerates is not inherited (added 2026-09-11, Arma2Quad)
 

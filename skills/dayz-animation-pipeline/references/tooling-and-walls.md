@@ -32,7 +32,7 @@ Most confusion comes from mixing the two routes. A third thing is not a clip for
 1. **One replacement of a graph at a time.** A mod that replaces the player graph or a creature graph cannot load next to another that replaces the same graph; two crash client and server (third-party mod behaviour, not checked on `P:\`). Flag it on every plan that ships a replaced graph. It does not touch config driven animation, and it does not touch weapon, item or rider animation bound through a child `.asi`: that route binds per item class in script (`AddItemInHandsProfileIK`, `P:\scripts\3_game\dayzplayer.c:243`, and `AddItemBoneRemap`, `:252`) and never edits a graph file, so several such mods load together. Do not warn about this wall on a custom weapon animation plan. One vehicle class's rider pose works the same way (`vehicle-rider-ik-pose.md`). Detail: `anim-graph.md`, "Which changes collide".
 2. **`.rtm` is reverse engineered.** The format description is reverse engineering, not a contract, and can change between engine versions (`skeletal-rtm.md`).
 3. **`.anm` is closed.** DayZATool writes it, as a closed program, and Workbench writes it. There is no open source `.anm` writer.
-4. **Bone names are exact.** A name that is not in the target skeleton logs `Error: Bone X doesn't exist in skeleton OFP2_ManSkeleton` and that bone does not move.
+4. **Bone names are exact.** A name that is not in the target skeleton logs `Error: Bone X doesn't exist in skeleton OFP2_ManSkeleton` and that bone does not move. Runtime log behaviour, not checked on `P:\`.
 5. **The vanilla skeleton cannot be restructured.** Animation is overlaid on the vanilla bones; adding or removing bones breaks the vanilla clips. Not checked on `P:\`.
 
 ## Signing and shipping

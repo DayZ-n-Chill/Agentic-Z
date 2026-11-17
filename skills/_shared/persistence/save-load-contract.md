@@ -29,7 +29,7 @@ Never skip a fixed number of values after `super` to reach your own. What `Entit
 | Part of the stream | When it is there | Source |
 |---|---|---|
 | Construction data | First in the stream, written by the entity's construction component through `HandleStoreSave`; the load reads it only when `version >= 143` and the component exists | `P:\scripts\3_game\entities\entityai.c:2912` to `:2914`; `constructionComponent` at `P:\scripts\3_game\entities\entityai.c:2981` |
-| Nothing, for a plain item or a `BaseBuildingBase` | `ConstructionBasic.HandleStorageEvents` returns `false`, so the component writes nothing | `P:\scripts\3_game\systems\construction_basic.c:29` |
+| Nothing, for a plain item or a `BaseBuildingBase` | A plain item has no construction component: `EntityAI.CreateConstructionComponent` returns `null`, so the branch is skipped. A `BaseBuildingBase` has a `Construction` component, but `Construction` does not override `HandleStoreSave`, which is an empty declaration on `ConstructionBasic` | `P:\scripts\3_game\entities\entityai.c:3474` to `:3477`; `P:\scripts\3_game\systems\construction_basic.c:34` |
 | A version and ten ints, for a rebuildable map building | `Rebuilding` overrides `HandleStoreSave` and calls `SerializeConstructionData` | `P:\scripts\4_world\classes\rebuilding\rebuilding.c:473`; `SerializeConstructionData` at `P:\scripts\4_world\classes\rebuilding\rebuilding.c:501` |
 | Eight energy values, or none | Only when the entity has an energy manager (`m_EM`) | `P:\scripts\3_game\entities\entityai.c:2917` to `:2948` |
 

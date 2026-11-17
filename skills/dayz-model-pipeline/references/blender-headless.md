@@ -179,8 +179,8 @@ obj = bpy.context.active_object
 
 # Add subdivision surface
 subsurf = obj.modifiers.new(name='Subsurf', type='SUBSURF')
-subsurf.levels = 2                    # Viewport subdivisions
-subsurf.render_levels = 3             # Render subdivisions (higher for export)
+subsurf.levels = 2                    # Viewport subdivisions: what modifier_apply and the default OBJ export use
+subsurf.render_levels = 3             # Render subdivisions: used only by renders, or by wm.obj_export with export_eval_mode='DAG_EVAL_RENDER'
 subsurf.type = 'CATMULL_CLARK'        # Smooth type
 ```
 
@@ -781,7 +781,7 @@ bpy.ops.mesh.primitive_uv_sphere_add(
     radius=0.05,
     segments=16,
     ring_count=8,
-    location=(0.25, 0.18, 0.8)
+    location=(0.25, 0.25, 0.8)  # centre on the +Y face (box spans y -0.25 to 0.25), so half the LED shows
 )
 led = bpy.context.active_object
 led.name = "LED_Indicator"

@@ -89,9 +89,10 @@ This check is critical—most DayZ mod failures start here.
 - **Class inheritance verification:**
   - Validate parent classes exist (e.g., Inventory_Base, Container_Base, Land_Stone_*)
   - Warn if parent class is not a known DayZ base (may not exist in vanilla)
-- **hiddenSelections matching:**
-  - `hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]` are each aligned index-by-index with `hiddenSelections[]` — each array (when present) must have the SAME length as `hiddenSelections[]`, not a combined total
-  - Vanilla shape: one `hiddenSelections` entry at `P:\DZ\gear\tools\config.cpp:79` and one `hiddenSelectionsTextures` entry at `P:\DZ\gear\tools\config.cpp:83`
+- **hiddenSelections matching (warning, not a requirement):**
+  - `hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]` are each read index-by-index against `hiddenSelections[]`, so entry N retextures selection N. Giving each array (when present) the same length as `hiddenSelections[]` is a mod-side recommendation that makes every selection's texture and material explicit
+  - The engine accepts a shorter array: vanilla `Flashlight` at `P:\DZ\gear\tools\config.cpp:278-295` has 4 `hiddenSelections` entries, 4 `hiddenSelectionsTextures` entries and 1 `hiddenSelectionsMaterials` entry. A length mismatch is a WARN, never a FAIL
+  - Simple vanilla shape: one `hiddenSelections` entry at `P:\DZ\gear\tools\config.cpp:79` and one `hiddenSelectionsTextures` entry at `P:\DZ\gear\tools\config.cpp:83`
   - Example: `hiddenSelections[] = {"skin1", "skin2", "metal"}` (3 items) → `hiddenSelectionsTextures[]` has 3 entries and `hiddenSelectionsMaterials[]` has 3 entries
 - **AnimationSources reference check:**
   - Any AnimationSource defined here must be referenced in model.cfg (if model.cfg exists)
@@ -359,7 +360,7 @@ Date: 2026-03-28
 [PASS] config.cpp syntax OK
   └─ 12 classes, 3 patches (CfgPatches valid)
   └─ All braces balanced, semicolons correct
-  └─ hiddenSelections count matches textures
+  └─ hiddenSelections arrays have equal lengths
 
 [WARN] model.cfg: animation "lever_rotate" references axis "lever_axis"
   └─ Verify this axis exists as memory point pair in Item_Watch.p3d
@@ -478,7 +479,7 @@ the first five blocks.
 - [ ] Each patch has `units[]`, `weapons[]`, `requiredVersion` and `requiredAddons[]`
 - [ ] No duplicate class names, and no member defined twice in one class (1.30)
 - [ ] Parent class names look correct (for example `ItemBase`, `Clothing_Base`)
-- [ ] `hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]` each have as many entries as `hiddenSelections[]`
+- [ ] `hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]` each have as many entries as `hiddenSelections[]` (recommended; vanilla `Flashlight` at `P:\DZ\gear\tools\config.cpp:278-295` shows the engine accepts a shorter array)
 
 **model.cfg (if present)**
 

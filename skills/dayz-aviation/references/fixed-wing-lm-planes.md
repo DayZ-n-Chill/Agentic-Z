@@ -1,10 +1,10 @@
 # Fixed-wing aircraft on CarScript: the LM_Planes layout
 
-How the LM_Planes mod builds eight planes and one amphibious car on one base class: the config skeleton, `requiredAddons`, the `class defs` wrapper for sub-mods, the data driven base script class, custom Pawn replication, ground and air modes, `driverless` braking, the memory points and bones the model needs, the dashboard material toggle, sub-mod layout, cosmetic proxies, shared wheels and the mistakes seen in the mod.
+How the LM_Planes mod builds seven planes and one amphibious car on one base class: the config skeleton, `requiredAddons`, the `class defs` wrapper for sub-mods, the data driven base script class, custom Pawn replication, ground and air modes, `driverless` braking, the memory points and bones the model needs, the dashboard material toggle, sub-mod layout, cosmetic proxies, shared wheels and the mistakes seen in the mod.
 
 Third-party mod behaviour (LM_Planes, Workshop `3730564764`), not vanilla. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code.
 
-LM_Planes is the fixed-wing reference: 8 aircraft plus 1 amphibious car (Patty_Wagon) sharing one base class, `LlamaPlaneScript`. It inherits `CarScript`, overrides the physics in script and uses `class Buoyancy` for seaplanes. `CarScript` gives wheels, seats, sound integration and the damage system for free, which `EntityAI` or `Inventory_Base` would not. The vanilla contracts this leans on, and the traps, are in `skills/_shared/vehicles/aviation-carscript-base.md`.
+LM_Planes is the fixed-wing reference: 7 planes (Tigermoth, Cessna180, Catalina, Spitfire, DC-3, StuntPlane, Z37_Bumblebee) plus 1 amphibious car (Patty_Wagon) sharing one base class, `LlamaPlaneScript`. It inherits `CarScript`, overrides the physics in script and uses `class Buoyancy` for seaplanes. `CarScript` gives wheels, seats, sound integration and the damage system for free, which `EntityAI` or `Inventory_Base` would not. The vanilla contracts this leans on, and the traps, are in `skills/_shared/vehicles/aviation-carscript-base.md`.
 
 ## Architecture
 

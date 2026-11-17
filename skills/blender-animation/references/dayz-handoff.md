@@ -121,7 +121,8 @@ Two vanilla unjam clips were read for their track names: `P:\DZ\anims\anm\player
 - It has no `EntityPosition`, no `Pelvis` and no leg bone. Vanilla action clips are spine-up.
 - It has no IK helper bone (`...Origin`, `...Direction`, `LeftHandIKTarget`).
 - It does carry `LeftHand_Dummy` and `RightHand_Dummy`, the four carpal bones `LeftHandRing`, `LeftHandPinky`, `RightHandRing` and `RightHandPinky`, and the ten weapon bones `Weapon_Bullet`, `Weapon_Trigger`, `Weapon_Magazine`, `Weapon_Bolt` and `Weapon_Bone_01` to `Weapon_Bone_06`.
-- Its events include `Weapon_CanUnjam_Start`, `LoopStart`, `Weapon_CanUnjam_End`, `LoopEnd`, `Weapon_BulletEject`, `Weapon_Cocked` and `Weapon_Unjammed`. The PM73 clip has the same shape.
+- Its events include `Weapon_CanUnjam_Start`, `LoopStart`, `Weapon_CanUnjam_End`, `LoopEnd`, `Weapon_BulletEject`, `Weapon_Cocked` and `Weapon_Unjammed`.
+- The PM73 clip has the same spine-up bone set (`Spine` up, both hand dummies, the carpal bones, the weapon bones, no `Pelvis`). Its events are only the loop and unjam events: `Weapon_CanUnjam_Start`, `LoopStart`, `Weapon_CanUnjam_End`, `LoopEnd` and `Weapon_Unjammed`, with no `Weapon_BulletEject` and no `Weapon_Cocked`.
 
 ### Rules (tool behaviour and measured results; not yet checked on `P:\` unless a line says so)
 

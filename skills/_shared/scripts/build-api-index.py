@@ -344,8 +344,12 @@ def main():
     if a.mod is not None:
         if not re.fullmatch(r'[A-Za-z0-9_.-]+', a.mod) or a.mod in ('.', '..'):
             ap.error("--mod must match [A-Za-z0-9_.-]+ and must not be . or ..")
+    if not os.path.isdir(a.scripts):
+        ap.error(f"source folder {a.scripts!r} does not exist or is not a folder")
+    if os.path.exists(a.out) and not os.path.isdir(a.out):
+        ap.error("the output folder (out) exists and is not a folder; refusing")
     if os.path.islink(a.out) and not os.path.isdir(a.out):
-        ap.error("--out is a non-directory or broken symlink; refusing")
+        ap.error("the output folder (out) is a non-directory or broken symlink; refusing")
     _out_dir = os.path.realpath(a.out)
     _target = os.path.join(a.out, 'mod-' + a.mod + '.txt.xz' if a.mod else 'dayz-api.txt.xz')
     if os.path.islink(_target):
@@ -353,7 +357,7 @@ def main():
     if os.path.lexists(_target):
         _resolved = os.path.realpath(_target)
         if os.path.commonpath([_out_dir, _resolved]) != _out_dir:
-            ap.error("output path resolves outside --out; refusing")
+            ap.error("output path resolves outside the output folder (out); refusing")
     classes, enums, globs = {}, {}, {'typedef': [], 'fn': [], 'var': []}
     ids = module_ids(a.scripts) if a.mod else {'.': ''}
     pbos = {}

@@ -32,7 +32,7 @@ Each item marked **Measured** comes from a real run. Unless the item names anoth
 | `apply_alignment_json.py` | Applies the adjustments exported by the viewer to the MLOD models. |
 | `export_clothing_fbx.py` | Runs in Blender: exports worn MLOD models to FBX with their weights, for an artist. |
 
-The three Python scripts need the DayZ fork of py3d, 1.6.0 or newer, from the repo folder `scripts/tools/py3d`; they add that folder to the path themselves. They read MLOD models only (the `.p3d` Object Builder saves), not binarized ones.
+`alignment_viewer_extract.py`, `apply_alignment_json.py` and `export_clothing_fbx.py` need the DayZ fork of py3d, 1.6.0 or newer, from the repo folder `scripts/tools/py3d`; they add that folder to the path themselves. `alignment_viewer_build.py` reads only the JSON and needs no py3d. The three py3d scripts read MLOD models only (the `.p3d` Object Builder saves), not binarized ones.
 
 ## Check these three first, in this order
 

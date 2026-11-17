@@ -89,7 +89,7 @@ Other points from the same tests:
 
 ## Weapon attachment proxies
 
-A weapon's proxies place its attachments the same way. `P:\DZ\weapons\pistols\fnx45\fnp45.p3d` stores `proxy:\dz\weapons\attachments\magazine\magazine_fnp45.001`, `proxy:\dz\weapons\attachments\optics\optic_fnp45_mrds.001` and `proxy:dz\weapons\attachments\muzzle\suppressor_45acp.001` (byte scan; the last one is stored without the leading backslash). Each attachment model has its config class: `ProxySuppressor_45ACP` at `P:\DZ\weapons\attachments\muzzle\config.cpp:1750`, `ProxyOptic_Reflex` at `P:\DZ\weapons\attachments\optics\config.cpp:3182`, `ProxyMagazine_FNP45` at `P:\DZ\weapons\attachments\magazine\config.cpp:9383`. Slots and config are in `_shared/weapons/attachments.md`.
+A weapon's proxies place its attachments the same way. `P:\DZ\weapons\pistols\fnx45\fnp45.p3d` stores `proxy:\dz\weapons\attachments\magazine\magazine_fnp45.001`, `proxy:\dz\weapons\attachments\optics\optic_fnp45_mrds.001` and `proxy:dz\weapons\attachments\muzzle\suppressor_45acp.001` (byte scan; the last one is stored without the leading backslash). Each attachment model has its config class: `ProxySuppressor_45ACP` at `P:\DZ\weapons\attachments\muzzle\config.cpp:1750`, `ProxyOptic_FNP45_MRDS` at `P:\DZ\weapons\attachments\optics\config.cpp:3122`, `ProxyMagazine_FNP45` at `P:\DZ\weapons\attachments\magazine\config.cpp:9383`. Slots and config are in `_shared/weapons/attachments.md`.
 
 **Not checked on `P:\`** (measured in game on a third-party weapon mod: a compensator, a rail mount and an optic):
 

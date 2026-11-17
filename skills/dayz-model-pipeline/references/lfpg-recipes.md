@@ -157,7 +157,7 @@ Three points where this block differs from the Arma way of writing it:
 | Cable gland | Cylinder | Ø12mm, L10mm | 16 | 32 | Back side, protruding 10mm |
 | Terminal posts | Cylinder (×2) | Ø6mm, H8mm | 12 | 24 each | Positive (red) & negative (black) |
 | Mounting tabs | Thin rectangles | 15×40×3mm (×2) | — | 24 total | Left & right sides, screw holes |
-| **Total LOD0** | — | — | — | **~450** | Optimized for wall mounting |
+| **Total LOD0** | — | — | — | **~152** | Sum of the rows above |
 
 ### Memory Points & Named Selections
 ```
@@ -223,12 +223,12 @@ Static device — all state indicated via LEDs and script UI.
 | Output ports (×6) | Cable glands | Ø12mm each | 16 | 32×6 | Right side, 2 columns × 3 rows |
 | Status LED strip | Thin bar | 160×8×2mm | flat | 24 | Top front, 6 LEDs mapped |
 | DIN-rail clip | Bracket | 30×20×5mm | — | 28 | Back side, for cabinet mounting |
-| **Total LOD0** | — | — | — | **~900** | High detail for UI visibility |
+| **Total LOD0** | — | — | — | **~416** | Sum of the rows above |
 
 ### Memory Points & Named Selections
 ```
 Memory Points:
-  - actionPos: [0, 0, 40]         (front panel center, UI interaction)
+  - actionPos: [0, 75, 0]         (front panel center on the +Y front face, UI interaction)
   - ce_center: [0, 0, 0]          (geometric centre of the housing)
   - port_input_1: [-100, 0, 0]    (input cable gland, left side)
   - port_input_1_dir: [-110, 0, 0]
@@ -286,7 +286,7 @@ Via script: one method on the sorter sets the LED of one output, taking the outp
 | Backplate | Rounded rect | 85×85×10mm | bevel 2mm | 32 | Flush mount, screw holes |
 | Toggle lever | Thin rectangle | 15×8×3mm | — | 8 | Rotated ±45° from center |
 | Face frame | Raised border | 75×75mm | beveled | 24 | Surrounds toggle cutout |
-| **Total LOD0** | — | — | — | **~220** | Ultra-light for performance |
+| **Total LOD0** | — | — | — | **~64** | Sum of the rows above |
 
 ### Memory Points & Named Selections
 ```
@@ -345,18 +345,23 @@ Offset: 0 (centered neutral)
 | Fuel cap | Cylinder | Ø50mm, H20mm | 24 | 48 | Side-mounted, hinged cover |
 | Exhaust pipe | Cylinder + bend | Ø40mm, L300mm | 16 | 80 | Top rear, exit vent |
 | Rubber feet | Cylinder (×4) | Ø25mm, H15mm | 12 each | 24×4 | Bottom corners, isolation |
-| **Total LOD0** | — | — | — | **~1900** | Large floor unit, visible detail |
+| **Total LOD0** | — | — | — | **~584** | Sum of the rows above |
 
 ### Memory Points & Named Selections
 ```
 Memory Points:
-  - fuel_cap_pivot: [300, 0, 220]  (cap hinge point)
-  - panel_pivot: [-250, 0, 150]    (panel top edge for opening animation)
-  - actionPos: [-200, 0, 300]      (control panel center, player interact)
+  - fuel_cap_pivot: [300, 0, 220]  (cap hinge point, on the +X side face)
+  - panel_pivot: [0, 200, 25]      (panel top edge on the front face, for opening animation)
+  - actionPos: [0, 200, -100]      (control panel center on the front face, player interact)
   - ce_center: [0, 0, 0]           (geometric centre of the generator)
-  - port_output_1: [250, 0, 80]    (main output cable port)
-  - port_output_1_dir: [270, 0, 80] (20mm further out: the cable leaves sideways)
-  - fuel_input: [-150, 180, 100]   (fuel cap opening, for script fuel calc)
+  - port_output_1: [300, 0, 80]    (main output cable port, on the +X side face)
+  - port_output_1_dir: [320, 0, 80] (20mm further out: the cable leaves sideways)
+  - fuel_input: [300, 25, 220]     (centre of the Ø50mm fuel cap opening, 25mm from
+                                   the hinge; for script fuel calc)
+
+The housing runs from -300 to 300mm in X, -200 (rear) to 200 (front) in Y and -250
+to 250 in Z about ce_center, the same +Y front as the other recipes. The control panel
+covers Z -225 to 25 on the front face, so its centre is at Z -100.
 
 Named Selections:
   - body                          (main housing)
@@ -389,7 +394,7 @@ Axis: [1, 0, 0]  (X, forward tilt)
 Source: control_panel
 Range: 0–110°
 Duration: 0.6s
-Offset: [-250, 0, 150]  (top edge hinge)
+Offset: [0, 200, 25]  (top edge hinge)
 ```
 
 ### LED States (3 Total)
@@ -462,7 +467,7 @@ Wind the faces inward, as `domain-recipes.md` records. Give the model a name wit
 | Cable ports (×6) | Cable glands | Ø12mm each | 16 each | 32×6 | All sides, configurable input/output |
 | DIN mounting | Thin bracket | 40×60×3mm | — | 16 | Rear side, standard rail clip |
 | Status LED (×6) | Small cylinders | Ø3mm | 8 each | 16×6 | LED indicators for each port |
-| **Total LOD0** | — | — | — | **~700** | Distribution hub |
+| **Total LOD0** | — | — | — | **~368** | Sum of the rows above |
 
 ### Memory Points & Named Selections
 ```
@@ -543,13 +548,13 @@ class lfpg_[device_name]
 
 ### Vertex Allocation by Detail Tier
 
-Pick the tier by how much visible detail the device carries, not by its size: the 200 mm sorter carries about 900 vertices at LOD 0, more than the 450 of the 80 mm battery adapter and four times the 220 of the 85 mm wall switch. The last column places each recipe by its own LOD 0 total.
+Pick the tier by how much visible detail the device carries, not by its size: the 200 mm sorter carries about 416 vertices at LOD 0, more than twice the 152 of the 80 mm battery adapter and six times the 64 of the 85 mm wall switch. The last column places each recipe by its own LOD 0 total.
 
 | Tier | LOD0 | LOD1 | LOD2 | LOD3 | Recipes in this tier |
 |----------|------|------|------|------|-------|
-| Light | 200–500 | 100–250 | 50–125 | 25–60 | Push button (~192), wall switch (~220), battery adapter (~450) |
-| Medium | 500–1000 | 250–500 | 100–250 | 50–125 | Junction box (~700), sorter (~900) |
-| Heavy | 1000–2000 | 500–1000 | 250–500 | 125–250 | Generator (~1900) |
+| Light | up to 500 | up to 250 | up to 125 | up to 60 | Wall switch (~64), battery adapter (~152), push button (~192), junction box (~368), sorter (~416) |
+| Medium | 500–1000 | 250–500 | 100–250 | 50–125 | Generator (~584) |
+| Heavy | 1000–2000 | 500–1000 | 250–500 | 125–250 | None of the recipes |
 | Machinery | 2000–3000 | 1000–1500 | 500–750 | 250–375 | None of the recipes |
 
 **Collision geometry (Geometry/Fire/View)**: 8–20 convex verts max per object. Use bounding box approximation.

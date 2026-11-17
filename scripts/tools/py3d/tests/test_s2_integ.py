@@ -108,7 +108,7 @@ def test_integ_inspector_roundtrip_idempotent(fork, tmp_path):
 
 
 @needs_skills
-def test_integ_audit_premigracion_all_pass(fork, tmp_path):
+def test_integ_audit_all_pass(fork, tmp_path):
     """The skill's audit script, running on this library, reports OVERALL ALL
     PASSED (exit 0) on the healthy model. The legacy GeoPhys and
     autocenter-on-FireGeo WARNINGs are exactly the drift the pruned parity

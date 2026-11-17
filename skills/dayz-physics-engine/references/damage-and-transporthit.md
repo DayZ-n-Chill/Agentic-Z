@@ -107,7 +107,7 @@ All on `Object` (`P:\scripts\3_game\entities\object.c`):
 | `SetHealthMax(zone, type)` | script helper | `:1105` | `SetHealth` to the maximum |
 | `GetHealthLevel(zone)` | `proto native int` | `:1171` | 0 pristine to 4 ruined |
 
-The health types used in script are `"Health"`, `"Blood"` and `"Shock"`. The zone name `"GlobalHealth"` is used by `PlayerBase` for the HUD (`P:\scripts\4_world\entities\manbase\playerbase.c:5594-5599`).
+The health types used in script are `"Health"`, `"Blood"` and `"Shock"`. The zone name `"GlobalHealth"` is the one vanilla script reads for the player's global health and blood, for example in `PlayerBase.GetImmunity` (`P:\scripts\4_world\entities\manbase\playerbase.c:5594-5599`).
 
 ### 6. `EEHitBy`: signature and chain
 
@@ -396,7 +396,7 @@ The parts of a zone:
 - `transferToGlobalCoef`: the share that goes to global health. `RepairDamageTransfer` reads it (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionrepairtent.c:167`).
 - `fatalInjuryCoef`: vanilla sets it per zone, for example 0.1 on the player's `Head` and 1 on `Brain` (`P:\DZ\characters\data\config.cpp:492` and `:570`). No vanilla script reads it (0 matches in `P:\scripts`), so what the engine does with it is `[UNVERIFIED]`; the likely reading is that a zone at 0 health with a coefficient above 0 kills or destroys the object.
 
-`GlobalHealth` is the zone name `PlayerBase` reads for the HUD, as in `GetHealth("GlobalHealth", "Blood")` (`P:\scripts\4_world\entities\manbase\playerbase.c:5599`).
+`GlobalHealth` is the zone name vanilla script reads for the player's global health and blood, as in `GetHealth("GlobalHealth", "Blood")` in `PlayerBase.GetImmunity` (`P:\scripts\4_world\entities\manbase\playerbase.c:5599`), `PlayerBase.GetHealthRegenSpeed` (`:6594`) and the server bleeding manager (`P:\scripts\4_world\classes\bleedingsources\bleedingsourcesmanagerserver.c:143`).
 
 Health states (`GameConstants.STATE_RUINED` down to `STATE_PRISTINE`, `P:\scripts\3_game\constants.c:909-913`):
 
@@ -468,7 +468,7 @@ Where script uses the names:
 | `"RightArm"` | An upper bleeding source (`P:\scripts\4_world\entities\manbase\playerbase.c:545`) |
 | `"LeftLeg"`, `"RightLeg"`, `"LeftFoot"`, `"RightFoot"` | The broken legs check (`P:\scripts\4_world\entities\manbase\playerbase.c:1324`) |
 | `""` (empty) | The global zone |
-| `"GlobalHealth"` | Read for the HUD |
+| `"GlobalHealth"` | The player's global health and blood (`P:\scripts\4_world\entities\manbase\playerbase.c:5594-5599`) |
 
 ## Bleeding sources
 

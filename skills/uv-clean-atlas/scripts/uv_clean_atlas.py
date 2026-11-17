@@ -259,15 +259,27 @@ def sat_offenders():
     bm2.faces.ensure_lookup_table()
     uv = bm2.loops.layers.uv.active
     tris = []
+    n_tris = n_nan = n_collapsed = 0
     for f in bm2.faces:
         loops = f.loops[:]
         p2 = [l[uv].uv.copy() for l in loops]
         for i in range(1, len(p2) - 1):
             a, b, c2 = p2[0], p2[i], p2[i + 1]
+            n_tris += 1
             area = abs((b[0] - a[0]) * (c2[1] - a[1]) - (c2[0] - a[0]) * (b[1] - a[1])) * 0.5
-            if area > 1e-14:
+            if area != area:  # NaN UVs give a NaN area
+                n_nan += 1
+            elif area > 1e-14:
                 tris.append((f.index, ((a[0], a[1]), (b[0], b[1]), (c2[0], c2[1]))))
+            else:
+                n_collapsed += 1
     bm2.free()
+    if not tris:
+        # nothing left for the SAT check: stop with the counts instead of dying in min()
+        print(f"SAT_FAIL: no triangle with a valid, non-zero UV area is left to test "
+              f"(tris={n_tris} collapsed_tris={n_collapsed} nan_tris={n_nan}); "
+              f"the unwrap collapsed this mesh, use Track B")
+        sys.exit(1)
     def sat(t1, t2, eps=1e-9):
         for ta, tb in ((t1, t2), (t2, t1)):
             for i in range(3):

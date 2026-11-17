@@ -218,11 +218,12 @@ assembled from the tools under `scripts/tools/` and keybind-toggled test harness
   one place. A `.layout` under
   an addon prefix is served only by the PBO, loose files included, but a `.layout` under `$profile:` is
   re-read from disk on every `CreateWidgets`, which gives the seconds-long loop.
-  **Dabs UIs: Dabs Framework ships layout hot-reload under DIAG** —
-  `static ScriptView.ReloadAll()` (`MVC/ScriptView.c:126-134`, `#ifdef DIAG_DEVELOPER`, comment
-  literally "Hot reload all widgets layouts") Unlinks + rebuilds every live ScriptView's layout.
-  Wire it to a keybind/DbgUI button under DayZDiag and Dabs-based UI gets edit→see in seconds; it
-  also proves the engine re-reads the layout file on a fresh CreateWidgets call in a live session.
+  **Dabs UIs:** Dabs Framework has `static ScriptView.ReloadAll()` under `#ifdef DIAG_DEVELOPER`
+  (`MVC/ScriptView.c`; Dabs source, not on P:\, not yet checked), which unlinks and rebuilds every
+  live ScriptView's layout. The same rule applies to it: the rebuild reads the layout from wherever
+  its path points. A view whose layout sits under its mod's addon prefix still shows a disk edit only
+  after a repack; point the view's layout path under `$profile:` (`hot-iteration.md`) to get the
+  seconds-long loop from a keybind or DbgUI button.
 
 ### 4.2 Tools on disk
 - **Pre-PBO linter** — `scripts/tools/dayz-script-validator/scripts/script_validator.py <addon_root>` (JSON

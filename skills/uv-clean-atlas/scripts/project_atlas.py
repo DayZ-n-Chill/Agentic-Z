@@ -17,7 +17,9 @@ EXPECTED_FACE_COUNT faces, the two controls read shells S06 and S03
 (CONTROL_A_SHELL, CONTROL_B_SHELL), and the G7 to G10 stages name that body's
 shells and its one corrected face: G7_ATLAS_A_SHELLS, G7_ATLAS_B_SHELLS,
 G7_CROSSING_SHELLS, G7_MIRROR_PAIRS, LEGACY_CORRECTION_FACE and
-LEGACY_CORRECTION_FACE_ISLAND, which the G7 to G10 gates check. --placement-override always runs the
+LEGACY_CORRECTION_FACE_ISLAND. The G8 to G10 gates check
+LEGACY_CORRECTION_FACE; only the G10 gate checks LEGACY_CORRECTION_FACE_ISLAND.
+--placement-override always runs the
 G10 stage, whatever <outdir> is called. Without it, the stage is chosen by the name
 of <outdir> (out_g7, out_g8, out_g9, out_g10; any other name runs the axis search and
 the earlier block packer), and each stage reads atlas_metrics.json from the folder that
@@ -114,7 +116,8 @@ G7_MIRROR_PAIRS = (("S07", "S06"), ("S10", "S09"))  # (left, right)
 G7_ATLAS_A_SHELLS = ("S02", "S03", "S05", "S06", "S07", "S08", "S09", "S10")
 G7_ATLAS_B_SHELLS = ("S00", "S01", "S04", "S11", "S12")
 # The one face moved between islands in G8 (it straddled X=0), and the island
-# it must end up in. The G7 to G10 gates check both.
+# it must end up in. The G8 to G10 gates check the face; only the G10 gate
+# checks its island.
 LEGACY_CORRECTION_FACE = 4053
 LEGACY_CORRECTION_FACE_ISLAND = "S08|+Z|R|+"
 G7_SIGN_SPLIT_X = 0.0

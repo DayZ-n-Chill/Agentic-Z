@@ -33,9 +33,9 @@ joins a `DayZDiag` server (`0x00020017`); that pairing, and the managed dayz-mcp
 
 ```sh
 S=skills/_shared/scripts/dayz-client-headless.sh
-$S start /var/tmp/dzc -name=autotest "-mod=@9dd22c91;@MyMod" -connect=127.0.0.1 -port=$GAME
-$S shot  /var/tmp/dzc /var/tmp/dzc/now.png
-$S stop  /var/tmp/dzc                         # ends sway, which ends the game
+sh $S start /var/tmp/dzc -name=autotest "-mod=@9dd22c91;@MyMod" -connect=127.0.0.1 -port=$GAME
+sh $S shot  /var/tmp/dzc /var/tmp/dzc/now.png
+sh $S stop  /var/tmp/dzc                         # ends sway, which ends the game
 ```
 
 It starts a headless sway (`WLR_BACKENDS=headless`, 1280x720) and runs inside it the chain Steam itself uses
@@ -125,7 +125,7 @@ was checked by the offline script validator only (`scripts/tools/dayz-script-val
 ## 4. One command: start, wait, report, stop
 
 ```sh
-skills/_shared/scripts/dayz-client-test.sh -t "$TREE" -s "@AutoTest" -c "@AutoTest" -o /var/tmp/run1
+sh skills/_shared/scripts/dayz-client-test.sh -t "$TREE" -s "@AutoTest" -c "@AutoTest" -o /var/tmp/run1
 # [AUTOTEST] PASS client_has_player local player SurvivorM_Rolf
 # [AUTOTEST] PASS server_item_synced Chemlight_Red replicated to the client
 # [AUTOTEST] PASS godmode_blocks_damage  | server: health 100 -> 100
@@ -137,7 +137,7 @@ Free ports, server, headless client, wait for `DONE`, collect `[AUTOTEST]` lines
 CF in the server's mod list pass `-m mpmissions/<mission>` (relative): CF resolves `$mission:`/`$storage:` from it.
 Exit 0 = `DONE` seen and no `FAIL`; 1 = a failure or the timeout (default 300 s; a cold client start alone takes
 about 60 s), which saves `timeout.png`. Build and sign the example first:
-`dayz-mod-pack.sh -C <copy of assets/autotest-mod> keygen`, then `build`; link `build/@AutoTest` and
+`bash skills/_shared/scripts/dayz-mod-pack.sh -C <copy of assets/autotest-mod> keygen`, then `build`; link `build/@AutoTest` and
 `keys/AutoTest.bikey` into the tree and `build/@AutoTest` into the client directory. The key is a test key: never
 install it on a real server.
 

@@ -1,4 +1,4 @@
-# Vanilla-control gate tests. Comparison is pure: no vanilla tree, no 85s run.
+# Vanilla-control gate tests. Comparison is pure: no vanilla tree, no six-minute full run.
 import io
 import json
 import pathlib

@@ -69,7 +69,7 @@ FIRST_BLOCK_FIX = {
     "crew_can_get_through": "bare 'class X: CarScript' inherits Transport.CrewCanGetThrough()=false - fix: extends CarScript override CrewCanGetThrough+GetSeatAnimationType+GetAnimInstance + worldScriptModule (rip-import.md)",
     "area_blocked": "IsAreaAtDoorFree false -> door-area obstruction / door selection",
     "unreachable": "CanReachSeatFromDoors false -> seat<->door geometry, OR car too far from player (move adjacent before concluding a model fix)",
-    "occupied": "seat taken -> respawn fresh (harness state, not a model bug)",
+    "occupied": "seat taken -> get out with action_use('ActionGetOutTransport', target='self') or restart the client (harness state, not a model bug)",
     "item_heavy": "drop the heavy item in hands (harness state)",
     "already_in_vehicle": "exit the vehicle first (harness state)",
     "no_component": "you passed component=-1: take a real component from a scene_raycast (partial, never PASS)",
@@ -204,7 +204,7 @@ def run_ladder(d, args) -> dict:
     pre = d.run("vehicle_telemetry", {}, timeout=15)
     if not pre.get("_timeout") and pre.get("error") != "not_seated" and extract_pos(pre) is not None:
         fail("preflight", f"player already seated in a vehicle (prior pass not cleaned up): {json.dumps(pre)[:160]}",
-             "restart the client OR respawn fresh before re-running; a get-out verb is out of scope (runbook). Without this, R5 measures the OLD car while verdict.json names the new spawn.", hard=True)
+             "get out with action_use('ActionGetOutTransport', target='self') or restart the client before re-running, and spawn one car per run (player_respawn on a living player does nothing). Without this, R5 measures the OLD car while verdict.json names the new spawn.", hard=True)
         R["stop"] = "preflight"
         return R
 

@@ -250,9 +250,10 @@ The skill uses a two-phase workflow so the map is right before anything is baked
 
 **What happens:**
 1. Import the animation FBX into Blender (`import_fbx`)
-2. Auto-generate the bone map with fuzzy matching (`auto_map_bones`)
-3. The quality rating is printed
-4. Print the map
+2. Strip the `mixamorig:` prefix from the source bone names (step 2 of "How to run it" in `SKILL.md`); `auto_map_bones` maps nothing on prefixed names
+3. Auto-generate the bone map with fuzzy matching (`auto_map_bones`)
+4. The quality rating is printed
+5. Print the map
 
 **User actions:**
 - Review each bone correspondence (see "Reviewing the map")

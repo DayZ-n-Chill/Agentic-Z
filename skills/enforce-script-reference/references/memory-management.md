@@ -159,12 +159,14 @@ class MyClass
 }
 ```
 
-**Trap 2: `foreach` over the return of a getter**
+**Trap 2: `foreach` over the return of a getter** (reported; the cause was not checked on `P:\`)
+
+A `foreach` written directly over a getter's return value has been reported to misbehave. Copy the result to a local first and loop over the local.
 ```
-// WRONG — getter returns weak ref, GC collects between iterations
+// AVOID — loop directly over the getter's result
 void Test()
 {
-    foreach (string t: GetMyArray())  // NPE on 2nd element!
+    foreach (string t: GetMyArray())
     {
     }
 }

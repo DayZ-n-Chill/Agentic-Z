@@ -132,13 +132,13 @@ A copy of the Geometry or Fire Geometry LOD for PhysX interactions. In DayZ it i
 
 ## Vertex normal limits
 
-- DayZ (the RV engine with DX9): at most 32,768 vertex normals per LOD.
+- DayZ: at most 32,768 vertex normals per LOD. No file on `P:\` states this limit; it was not checked there.
 - Going over this crashes the game or makes the LOD invisible.
 - Check with Buldozer: if the LOD does not display, the model is over the limit.
 
-### Budget on the resolved LOD0 (proxies summed; DX9 16-bit indices)
+### Budget on the resolved LOD0 (proxies summed)
 
-The ceiling of 32,768 normals above is per LOD, but for a vehicle or any host of attachments the figure that crashes the game is the **resolved LOD0**: the body mesh plus every wheel, light and attachment proxy resolved and counted once per instance (4 wheels, 2 headlights and so on), not once per source file. DX9 uses 16-bit indices, so the hard ceilings on that resolved sum are about **32,768 normals** and about **65,536 vertices**. Cross either and DayZ crashes on load or draws the LOD invisible, which is costly to diagnose because each part's own `.p3d` looks fine in isolation. Budget against both ceilings before generating proxies and LODs. `/dayz-p3d-audit` prints the LOD0 vertex budget of a model.
+The ceiling of 32,768 normals above is per LOD, but for a vehicle or any host of attachments the figure that crashes the game is the **resolved LOD0**: the body mesh plus every wheel, light and attachment proxy resolved and counted once per instance (4 wheels, 2 headlights and so on), not once per source file. The hard ceilings measured on that resolved sum are about **32,768 normals** and about **65,536 vertices** (the range of a signed and an unsigned 16-bit index; not checked on `P:\`). Cross either and DayZ crashes on load or draws the LOD invisible, which is costly to diagnose because each part's own `.p3d` looks fine in isolation. Budget against both ceilings before generating proxies and LODs. `/dayz-p3d-audit` prints the LOD0 vertex budget of a model.
 
 Traps when trimming to fit:
 

@@ -42,8 +42,8 @@ This directory contains a fail-closed operation. There are no full projections n
 | `dayz-p3d-audit/scripts/audit_p3d.py` | `not_applicable` | Projection is a strict subset of live: 7 of 15 functions; all 15 are preserved, including `check_wheel_slot_firegeo`. |
 | `dayz-pbo-build/references/validation-scripts.md` | `not_applicable` | Contains no 1.4.0 delta; projected changes belong to another scope. |
 | `dayz-proxy-align/SKILL.md` | `retired` | Live declares `>= 1.6.0` (`SKILL.md:37,40`), already has `add / inspect / align / remove` cycle (`SKILL.md:49`) and preserves **on purpose** patch delta under "py3d 1.4.0 lifecycle (plugin projection, historical)" (`SKILL.md:92`). Not lost: relabeled. |
-| `dayz-animation-pipeline/references/py3d-1.0.0-quirks.md` | `retired` | Already applied in live: `git apply --reverse --check` exits 0. |
-| `dayz-animation-pipeline/SKILL.md` | `retired` | Already applied in live (`git apply --reverse --check` exits 0) and live minimum is `>= 1.6.0` (`SKILL.md:16`). |
+| `dayz-animation-pipeline/references/py3d-1.0.0-quirks.md` | `retired` | Already applied in live: `git apply --reverse --check` exited 0 when the patch was retired. |
+| `dayz-animation-pipeline/SKILL.md` | `retired` | Already applied in live (`git apply --reverse --check` exited 0 when the patch was retired) and live minimum is `>= 1.6.0` (`SKILL.md:16`). |
 
 The six `not_applicable` remain in manifest: although not written, their hash is checked to detect preimage drift. No empty patch is fabricated.
 
@@ -51,7 +51,7 @@ Targets are relative to `-TargetSkillRoot`, and the hashes and `SKILL.md` line n
 
 ## Closed patch intake (2026-09-02)
 
-The four patches were left with no live delta: two were already applied and two were superseded by newer content (1.6.0 > 1.4.0). Their entries were removed from manifest — a `not_applicable` entry compares hash against live prose and that breaks any synthetic fixture, including `verify-wheel-restock.ps1` —, and their reason was recorded in table above. The `.patch` files remain in `patches/` as record.
+The four patches were left with no live delta: two were already applied and two were superseded by newer content (1.6.0 > 1.4.0). Their entries were removed from manifest — a `not_applicable` entry compares hash against live prose and that breaks any synthetic fixture, including `verify-wheel-restock.ps1` —, and their reason was recorded in table above. The `.patch` files remain in `patches/` as a record of what each patch changed, not as reverse-checkable copies: their wording was edited after retirement (in the `dayz-animation-pipeline/SKILL.md` patch, one added line was dropped and its last hunk header went from `+80,33` to `+80,32`), so `git apply --reverse --check` of a stored file against the snapshot text can now fail. The reverse-check results in the table above are those taken at retirement.
 
 Before declaring a patch dead, the opposite of the obvious was verified: that target skill did not contain a fix contradicting it. In `dayz-proxy-align` the check returned positive signal — 1.4.0 content remains there, named as historical —, so absence was deliberate, not a loss.
 

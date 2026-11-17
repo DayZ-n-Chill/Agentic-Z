@@ -215,7 +215,7 @@ def test_required_lods_firegeo_note_uses_7e15():
 
 
 def test_required_lods_geophys_absence_is_not_reported():
-    # Vanilla DayZ models carry no 2e13 LOD; its absence must not raise anything.
+    # Few vanilla DayZ models carry a GeoPhys LOD (4e13); its absence must not raise anything.
     lods = {"Visual": 0, "Geometry": 0, "Memory": 0, "ViewGeo": 0, "FireGeo": 0}
     assert audit.check_required_lods(lods) == []
 

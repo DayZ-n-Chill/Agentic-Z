@@ -68,7 +68,7 @@ class powerGeneratorLoop_Soundshader
 Notes on samples:
 
 - Paths start with the addon prefix, with or without a leading backslash. Both forms are in vanilla: `"DZ\sounds\..."` (line 5770) and `"\DZ\sounds\..."` (line 16412). A mod sample path starts with the mod's `$PBOPREFIX$`, such as `"MyMod\data\sounds\mymod_generator_loop"`.
-- With several samples, the engine plays one of them each time. Vanilla almost always gives each sample `1`; `seachest_movement_Soundshader` (line 10493) mixes 1, 2 and 3, which reads as a relative weight. That reading is not documented in vanilla, so treat it as unverified.
+- With several samples, the engine plays one of them each time. Vanilla almost always gives each sample `1`; `seachest_movement_Soundshader` (line 10493) mixes 1, 2, 3, 5 and 18 (lines 10500 to 10555), which reads as a relative weight. That reading is not documented in vanilla, so treat it as unverified.
 - Vanilla ships both mono and stereo `.ogg` samples. A count of the files under `P:\DZ\sounds\` found about 19,000 mono and 8,000 stereo, and the generator loop above is stereo at 44100 Hz. Nothing on `P:\` states a required channel count.
 - `/dayz-build-pbo` packs `.ogg` and `.wss` files (its `include.lst`), so samples under `workspace/<ModName>/` reach the PBO.
 

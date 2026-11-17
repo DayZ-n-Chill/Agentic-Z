@@ -57,7 +57,7 @@ VERIFIED_TYPES = {
 KNOWN_ANIM_KEYS = [
     "type", "source", "selection", "axis", "begin", "end", "memory",
     "minValue", "maxValue", "minPhase", "maxPhase", "sourceAddress",
-    "animPeriod", "angle0", "angle1", "offset0", "offset1", "hideValue",
+    "angle0", "angle1", "offset0", "offset1", "hideValue",
 ]
 
 

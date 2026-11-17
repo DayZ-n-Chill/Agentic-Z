@@ -192,7 +192,12 @@ class ConfigCppValidator:
                     self._compare_hidden_selections(class_name, arrays)
 
     def _compare_hidden_selections(self, class_name: str, arrays: Dict):
-        """Compare the hiddenSelections arrays of one class body"""
+        """Compare the hiddenSelections arrays of one class body.
+
+        A length mismatch is a warning, not an error: the engine accepts a shorter
+        array (vanilla Flashlight, P:\\DZ\\gear\\tools\\config.cpp:278-295, has
+        4 selections and 1 material).
+        """
         selections = arrays.get('hiddenSelections')
         if not selections:
             return
@@ -200,7 +205,7 @@ class ConfigCppValidator:
         tex_count = len(arrays.get('hiddenSelectionsTextures', []))
         mat_count = len(arrays.get('hiddenSelectionsMaterials', []))
         if tex_count > 0 and sel_count != tex_count:
-            self.errors.append({
+            self.warnings.append({
                 'check': 'hidden_selections',
                 'class': class_name,
                 'message': f'Mismatch: {sel_count} selections but {tex_count} textures',
@@ -208,7 +213,7 @@ class ConfigCppValidator:
             })
 
         if mat_count > 0 and sel_count != mat_count:
-            self.errors.append({
+            self.warnings.append({
                 'check': 'hidden_selections',
                 'class': class_name,
                 'message': f'Mismatch: {sel_count} selections but {mat_count} materials'
@@ -962,9 +967,11 @@ if __name__ == '__main__':
 
 ## Integration Example: Combined Validator Script
 
-**run_all_validations.py** – Runs the config, texture and .p3d validators and produces a unified
-report. It leaves out `stringtable_validator.py`, which is broken for DayZ (section 3). Keep the
-validator scripts in the same folder as this script.
+**run_all_validations.py** – Runs the config and texture validators and produces a unified
+report. It leaves out `stringtable_validator.py`, which is broken for DayZ (section 3), and
+`p3d_lod_checker.py`, which does not run as written (see the table at the top) and would fail every
+addon that has a `.p3d`. Check models with `/dayz-p3d-audit` instead. Keep the validator scripts in
+the same folder as this script.
 
 ```bash
 python run_all_validations.py /path/to/addon
@@ -1006,10 +1013,10 @@ if __name__ == '__main__':
 
     # config_cpp_validator.py takes the config.cpp file; the others take the addon root.
     # stringtable_validator.py is left out: it reads stringtable.xml and is broken for DayZ.
+    # p3d_lod_checker.py is left out: it does not run as written; use /dayz-p3d-audit for models.
     validators = [
         ('config_cpp_validator.py', str(Path(addon_root) / 'config.cpp')),
-        ('texture_path_checker.py', addon_root),
-        ('p3d_lod_checker.py', addon_root)
+        ('texture_path_checker.py', addon_root)
     ]
 
     results = {}

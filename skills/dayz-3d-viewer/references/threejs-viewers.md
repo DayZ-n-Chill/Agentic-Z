@@ -26,7 +26,7 @@ The viewer tool and `/dayz-proxy-align` are on that lane already: both take thei
 
 ## Embedded pages in a sandboxed frame
 
-A chat artifact frame blocks every network request the page makes itself: `fetch()`, `XMLHttpRequest` and `URL.createObjectURL()`. The embedded mode therefore bakes the geometry into the HTML as `Float32Array` data and the textures as `data:image/png;base64`, and builds the scene from raw `THREE.BufferGeometry` and `THREE.MeshStandardMaterial`. It uses no GLTFLoader, no fetch and no blob URLs. The web mode is the one that loads a separate `.glb` with `GLTFLoader.load()`.
+A chat artifact frame blocks `fetch()`, `XMLHttpRequest` and blob URLs from `URL.createObjectURL()`. Module imports from the CDN through the importmap still load, so Three.js itself works there. The embedded mode therefore bakes the geometry into the HTML as `Float32Array` data and the textures as `data:image/png;base64`, and builds the scene from raw `THREE.BufferGeometry` and `THREE.MeshStandardMaterial`. It uses no GLTFLoader, no fetch and no blob URLs. The web mode is the one that loads a separate `.glb` with `GLTFLoader.load()`.
 
 ## The fit editor pattern
 

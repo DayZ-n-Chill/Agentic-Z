@@ -131,6 +131,6 @@ In the JSON this is `"SandstormData": { "sandstormFrequency": 1.0 }`. `CfgGamepl
 
 ## Nasdara: the weather trigger
 
-Only the Nasdara world data starts storms from weather. In bad weather its `CalculateWind` computes `sandstormChance` as 8 times `m_sandstormFrequency`, clamped to 0 to 100 (`P:\scripts\4_world\classes\worlds\nasdara.c:563` to `:575`), and sets `m_IsSandstorm`. On the overcast change it then calls `StartSandstorm(phmnTime * WIND_MAGNITUDE_TIME_MULTIPLIER)` (`P:\scripts\4_world\classes\worlds\nasdara.c:318` to `:322`). `ChernarusPlus` never calls `StartSandstorm`; its world data file does not name it (`P:\scripts\4_world\classes\worlds\chernarusplus.c:31` is its `Init`).
+Only the Nasdara world data starts storms from weather. In bad weather its `CalculateWind` computes `sandstormChance` as 8 times `m_sandstormFrequency`, clamped to 0 to 100 (`P:\scripts\4_world\classes\worlds\nasdara.c:563` to `:575`), and sets `m_IsSandstorm`. On the overcast change it then calls `StartSandstorm(phmnTime * WIND_MAGNITUDE_TIME_MULTIPLIER)` (`P:\scripts\4_world\classes\worlds\nasdara.c:318` to `:322`). `ChernarusPlusData` never calls `StartSandstorm`; its world data file does not name it (`P:\scripts\4_world\classes\worlds\chernarusplus.c:31` is its `Init`).
 
 Design note: on a custom map with no `CalculateWind` like Nasdara's, `sandstormFrequency` does nothing until something calls `Start`, either a mission script or the map's own `WorldData` class.

@@ -57,7 +57,7 @@ Each `Material1..N` child under a part fills one material record, `m_MaterialTyp
 |---|---|
 | `type` | item class name, used when refunding piles on dismantle |
 | `slot_name` | attachment slot the material sits in; `HasMaterials` needs the attachment there with enough quantity (`HasMaterialsEx`, `constructionbase.c:1081-1119`; 1.29 `construction.c:617-655`) |
-| `quantity` | amount consumed; `-1` deletes the whole object and `0` ignores the quantity (`TakeMaterialsServer`, `constructionbase.c:1162-1176`; the material check skips a `0` at `:1100`) |
+| `quantity` | amount consumed; `-1` deletes the whole material item in the slot (not the buildable) and `0` ignores the quantity (`TakeMaterialsServer`, `constructionbase.c:1162-1176`; the material check skips a `0` at `:1100`) |
 | `lockable` | `1` locks the material in its slot (it stays attached and becomes part of the wall) instead of consuming it (`TakeMaterialsServer`, `constructionbase.c:1139-1179`; 1.29 `construction.c:671-723`) |
 | `skipOnRepair`, `skipOnDismantle` | since 1.30: the material is not needed to repair, or not refunded on dismantle (`constructionmaterials.c:31-32`) |
 

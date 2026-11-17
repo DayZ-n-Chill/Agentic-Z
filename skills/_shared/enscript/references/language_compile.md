@@ -85,7 +85,7 @@ A correct `path:line` does not prove a symbol can be called. Check three things 
 
 ## Compiler traps
 
-Measured in compiles on DayZDiag and retail servers; the compiler is native, so only the vanilla examples were checked on `P:\`. The measurements and error texts are in `skills/enforce-script-reference/references/compiler-traps.md` and `skills/enforce-script-reference/references/hard-rules.md`.
+Measured in compiles on DayZDiag and retail servers, except the two rows marked "reported"; the compiler is native, so only the vanilla examples were checked on `P:\`. The measurements and error texts are in `skills/enforce-script-reference/references/compiler-traps.md` and `skills/enforce-script-reference/references/hard-rules.md`.
 
 | Trap | What the compiler says | What to write |
 |---|---|---|
@@ -102,11 +102,11 @@ Measured in compiles on DayZDiag and retail servers; the compiler is native, so 
 | A variable named like a type: `Widget map = ...` (also `set`, `array`, `vector`, `string`, `Class`) | `Variable name 'map' already used as type name`, then decoy errors on the lines after it | Rename it; fix the first error of the block and ignore the rest |
 | One line that joins 18 or more terms with `+` and holds a string literal (17 compiled, 18 failed on DayZDiag 1.30.164289) | `Formula too complex`, then `Incompatible parameter` on the same line | Build the string in steps: `s = s + part;` |
 | A method with a 17th parameter (measured on a 1.30.164289 server) | `Maximum arguments count 16 exceeded in method 'X'` | Pass one object that carries the values |
-| A `switch` in which every case, `default` included, returns | A missing return is reported for the method | Move the last `return` out of the `switch`, after it |
-| `a & b == b` | Nothing: it compiles as `a & (b == b)`, as in C | Write `(a & b) == b` |
+| A `switch` in which every case, `default` included, returns (reported, not measured) | A missing return is reported for the method | Move the last `return` out of the `switch`, after it |
+| `a & b == b` (reported, not measured) | Nothing: it compiles as `a & (b == b)`, as in C | Write `(a & b) == b` |
 | `text.Replace(a, b).Replace(c, d)` | The second call is made on an `int`: `Replace` changes the string and returns a count (`P:\scripts\1_core\proto\enstring.c:156`) | One `Replace` per statement, on a local copy |
 
-The measurement behind the 17th-parameter row is in `skills/enforce-script-reference/references/verified-api-catalog.md`; the measurements behind the other six of the last seven rows are in `skills/enforce-script-reference/references/pitfalls-advanced.md`.
+The measurement behind the 17th-parameter row is in `skills/enforce-script-reference/references/verified-api-catalog.md`; the measurements behind the keyword-and-digit, type-name and 18-term rows are in `skills/enforce-script-reference/references/pitfalls-advanced.md`, which lists the `switch` and `a & b == b` rows as reported only. The `Replace` row follows from the vanilla return type it cites.
 
 Two things that do compile, against a common belief: C style casts, as in `(float)random_int / (float)max_range` (`P:\scripts\1_core\proto\enmath.c:110`), and a `string` plus a `bool`.
 

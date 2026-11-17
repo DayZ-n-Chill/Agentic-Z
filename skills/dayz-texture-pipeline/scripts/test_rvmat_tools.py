@@ -61,6 +61,15 @@ def test_source_extension_absolute_path_and_forward_slash_are_reported():
     assert {f.line for f in found if f.code == "FORWARD_SLASH_PATH"} == {4}
 
 
+def test_texture_findings_point_at_the_texture_line_when_the_brace_is_on_its_own_line():
+    text = (
+        'PixelShaderID="Super";\nVertexShaderID="Super";\n'
+        'class Stage1\n{\n\ttexture="x\\data\\a_nohq.png";\n};\n'
+    )
+    found = rvmat_lint.lint_text(text, "thing.rvmat")
+    assert {f.line for f in found if f.code == "SOURCE_TEXTURE_EXT"} == {5}
+
+
 def test_texture_existence_is_checked_under_the_given_root(tmp_path):
     (tmp_path / "mymod" / "data").mkdir(parents=True)
     (tmp_path / "mymod" / "data" / "thing_nohq.paa").write_bytes(b"")

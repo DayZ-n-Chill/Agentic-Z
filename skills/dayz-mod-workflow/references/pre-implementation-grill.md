@@ -2,7 +2,7 @@
 
 The questions to go through with the user before writing the `config.cpp`, `model.cfg` or scripts of a placeable or usable DayZ object. `dayz-mod-workflow` runs it in its activation check. It is opt-out, not opt-in: a generic "any questions?" pass does not reach the DayZ-specific axes, and skipping this list brings back silent assumptions.
 
-In this repo `dayz-mod-architect` asks these while it plans, and `/dayz-recipe` drafts a plan from a one-line request; the answers belong in `output/<ModName>-plan/plan.md`.
+In this repo no agent or skill asks these for you: `dayz-mod-architect` does not cover them and can only return open questions, and `/dayz-recipe` drafts a plan from a one-line request without them. The main session settles them with the user, before or alongside planning, and the answers go into `output/<ModName>-plan/plan.md`.
 
 ## How to ask (non-technical users)
 

@@ -197,9 +197,9 @@ From the 1911 (`P:\DZ\anims\workspaces\player\player_main\weapons\player_main_19
 | "mag remove" | `ReloadMagazineDetach` | The clip's file name says `mag_remove`; the state does not. The clip only draws the hand moving away; inventory script decides when the magazine really leaves. |
 | "bullet in chamber" | No such state | Chambering is the commands `CMD_Reload_Chambering` and `CMD_Reload_ChamberingFast`. |
 
-### A weapon states clip has 2 to 4 keys per channel
+### A weapon states clip stores 2 to 4 frames
 
-Read from the binary clips (not checked on `P:\`, where they are not text). The intent when authoring is three frames, closed, open and jammed, one per start state. Workbench trims consecutive keys that are nearly the same, so across 47 vanilla `w_*_states.anm` the stored key count per channel is 2, 3 or 4. `w_akm_states.anm` holds 2 distinct frames at 30 frames per second (`Weapon_Bolt` slides between them and `Weapon_Bullet` ejects). All player weapon reload, fire, jam, state and IK pose clips are at 30 frames per second, with a frame count of the last key index plus one. The AKM frame budget is in `weapon-anim-blender-complete.md`.
+Read from the `HEAD` chunk of the binary clips, which store a frame count and per-channel key counts for each bone (the clips are not text, so this cannot be checked by opening them in an editor). The intent when authoring is three frames, closed, open and jammed, one per start state. Workbench trims consecutive keys that are nearly the same, so across the 50 `w_*_states.anm` clips in `P:\DZ\anims\anm\player\reloads\<weapon>\` (1.30 data) each clip stores 2, 3 or 4 frames (24 clips hold 2, 19 hold 3, 7 hold 4), and no channel holds more keys than that. `w_akm_states.anm` holds 2 distinct frames at 30 frames per second (`Weapon_Bolt` slides between them and `Weapon_Bullet` ejects). All player weapon reload, fire, jam, state and IK pose clips are at 30 frames per second, with a frame count of the last key index plus one. The AKM frame budget is in `weapon-anim-blender-complete.md`.
 
 ### The `ikpose_` keys are in the graph's weapon IK node
 

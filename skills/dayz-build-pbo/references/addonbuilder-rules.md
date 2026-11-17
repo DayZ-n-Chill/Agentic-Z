@@ -65,7 +65,7 @@ AddonBuilder.exe P:\<ModName> P:\Mods\@<ModName>\Addons -prefix=<ModName> -temp=
 source: a changed `.c` may not be re-copied, so the PBO keeps packing old code while the
 build reports success. If the PBO does not reflect your changes, wipe `P:\temp\<ModName>`
 (or pass `-clear`) before rebuilding. Never place staging or sources inside the folder
-passed as `-temp`: AddonBuilder clears its `-temp` before copying. `build.py` stages in
+passed as `-temp`: with `-clear`, AddonBuilder wipes its `-temp` before copying. `build.py` stages in
 `P:\temp\_stage\<ModName>\`, beside the `-temp` folder `P:\temp\<ModName>\` and not inside it.
 
 **Binarized-build rules** (measured with AddonBuilder 1.0.240639 unless a line names another version):

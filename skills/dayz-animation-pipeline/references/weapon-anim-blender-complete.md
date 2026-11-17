@@ -384,7 +384,7 @@ Treating them as one change, or assuming a plain swap of Y and Z, gives wrong ro
 
 ### `.txo` (a skeleton or object; usually not needed here)
 
-File, Export, "DayZ Object (.txo)" is for a custom skeleton, such as a creature, with optional mesh and weights. Options: scale factor, selection or visible only, "Auto Create EntityPosition", "Auto Create HeadLook" (head look bone default `pin_lookat`, use `lookat` for vanilla infected; parent default `head`; offset default 0, 0.25, 0). It warns above 4 weights per vertex, the DayZ limit. Workbench registers it as an `.xob`. A player weapon animation reuses the vanilla skeleton, so this step is normally skipped. Creature work: `creature-animation.md`.
+File, Export, "DayZ Object (.txo)" is for a custom skeleton, such as a creature, with optional mesh and weights. Options: scale factor, selection or visible only, "Auto Create EntityPosition", "Auto Create HeadLook" (head look bone default `pin_lookat`, use `LookAt` for vanilla infected, as `P:\DZ\anims\cfg\skeletons.anim.xml:17` spells it; parent default `head`; offset default 0, 0.25, 0). It warns above 4 weights per vertex, the DayZ limit. Workbench registers it as an `.xob`. A player weapon animation reuses the vanilla skeleton, so this step is normally skipped. Creature work: `creature-animation.md`.
 
 ## 7. Compiling `.txa` to `.anm` in Workbench
 

@@ -26,9 +26,9 @@ the Library's Tools filter (or `steam steam://install/223350`) and wait until th
 
 ```sh
 S=skills/_shared/scripts
-"$S/find-dayzserver.sh" -v     # install dir on stdout; buildid and StateFlags on stderr
-"$S/find-dayzserver.sh" -w     # the DayZ client's workshop dir (content/221100)
-"$S/find-dayzserver.sh" -e -v  # experimental server 1042420 ("DayZ Server Exp", note the space)
+sh "$S/find-dayzserver.sh" -v     # install dir on stdout; buildid and StateFlags on stderr
+sh "$S/find-dayzserver.sh" -w     # the DayZ client's workshop dir (content/221100)
+sh "$S/find-dayzserver.sh" -e -v  # experimental server 1042420 ("DayZ Server Exp", note the space)
 ```
 
 It reads `libraryfolders.vdf` of every known Steam root and trusts `appmanifest_223350.acf`, not the
@@ -55,7 +55,7 @@ Steam owns the install: an update or "Verify integrity" overwrites what you put 
 from it writes `storage_1/` and core dumps into it. Run from a tree of your own that symlinks into Steam:
 
 ```sh
-TREE=$("$S/make-server-tree.sh" /var/tmp/dzt)   # short path, outside Steam
+TREE=$(sh "$S/make-server-tree.sh" /var/tmp/dzt)   # short path, outside Steam
 ```
 
 | In the tree | What it is |
@@ -88,7 +88,7 @@ server, a client on the same machine or the last test run still holds, and a col
 server answers on the wrong socket or RCon silently stays down.
 
 ```sh
-set -- $("$S/free-ports.sh" 3); GAME=$1 QUERY=$2 RCON=$3   # free for UDP and TCP, 10 apart, no defaults
+set -- $(sh "$S/free-ports.sh" 3); GAME=$1 QUERY=$2 RCON=$3   # free for UDP and TCP, 10 apart, no defaults
 ```
 
 | Port | Where |
@@ -118,7 +118,7 @@ set -- $("$S/free-ports.sh" 3); GAME=$1 QUERY=$2 RCON=$3   # free for UDP and TC
 
 ```sh
 ln -sfn "$PWD/build/@MyMod" "$TREE/@MyMod"           # your build: rebuild, rerun, no copy step
-W=$("$S/find-dayzserver.sh" -w)
+W=$(sh "$S/find-dayzserver.sh" -w)
 grep -h '^name' "$W"/*/mod.cpp "$W"/*/meta.cpp        # find a mod's id by name
 ln -sfn "$W/1559212036" "$TREE/@CF"                   # Community Framework
 ln -sfn "$W/1559212036/keys/"*.bikey "$TREE/keys/"

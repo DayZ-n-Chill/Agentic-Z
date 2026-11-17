@@ -53,7 +53,7 @@ Listed here so the patterns are concrete:
 
 ### 1. Reasoning is bad at enumeration
 
-Five of the twelve VULNs (003, 008, 009, 010, 011) were **mechanically enumerable**: a search plus a table walk finds each in under a minute. Reasoning agents underweight bookkeeping. The skill fixes this by running mechanical pre-checks **before** any reasoning review starts (workflow step 1).
+Five of the twelve VULNs (003, 008, 009, 010, 011) were **mechanically enumerable**: a search plus a table walk finds each in minutes, within the time budget of the matching check, with no reasoning needed. Reasoning agents underweight bookkeeping. The skill fixes this by running mechanical pre-checks **before** any reasoning review starts (workflow step 1).
 
 ### 2. Cross-actor tracing is the agent's weak spot
 

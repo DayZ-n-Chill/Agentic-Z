@@ -31,7 +31,7 @@ python -c "import py3d; assert getattr(py3d,'IS_DAYZ_FORK',False) and tuple(map(
   python -m dayz_3d_viewer install-lzo-shim
   ```
 
-  It writes an `lzo.py` into the user site-packages so that `import lzo` calls `lzokay`. Skip it when no LZO compressed PAA has to be decoded. Without it, such a file stops with a one line message and exit code 2.
+  It writes an `lzo.py` into the user site-packages so that `import lzo` calls `lzokay`. Skip it when no LZO compressed PAA has to be decoded. Without it, `paa-to-png` and `p3d-to-glb` stop on such a file with a one line message and exit code 2; `build-viewer` keeps going, lists the failed texture under `errors` and exits 1.
 
 ## Commands
 
@@ -61,7 +61,7 @@ For a model inside `workspace\<ModName>\`, always pass `--output`, for example `
 |---|---|
 | `0` | The conversion or parse finished. |
 | `1` | The input is missing or is not an MLOD `.p3d` (a binarized ODOL model), or the conversion failed (`build-viewer`: the `errors` list is not empty). |
-| `2` | Usage error, or an optional package is missing (Pillow, LZO). The message is one line on stderr, not a traceback. |
+| `2` | Usage error, or an optional package is missing (Pillow, LZO) for `paa-to-png` or `p3d-to-glb`. The message is one line on stderr, not a traceback. `build-viewer` does not stop on a missing package: it lists each failed step under `errors` and exits 1. |
 
 The same input gives the same `.glb` and `.html` bytes: neither file carries a timestamp or a path of the machine.
 

@@ -74,7 +74,7 @@ TEMPLATE_PATHS = [
 class FileStatus(enum.Enum):
     UNCHANGED = "unchanged"          # no-op
     SAFE_OVERWRITE = "safe-overwrite"  # local == baseline, take upstream
-    NEW = "new"                       # baseline + local missing, take upstream
+    NEW = "new"                       # clone never had it, take upstream
     LOCALLY_DELETED = "locally-deleted"  # in baseline, missing locally, leave alone
     LOCAL_ONLY_EDIT = "local-only-edit"  # only the user changed it, leave alone
     CONFLICT = "conflict"             # both diverged, ask user
@@ -579,7 +579,9 @@ def release_lock() -> None:
 
 SEARCH_INDEX_TAG_FILE = Path.home() / ".claude" / "dayz-search-index" / "release-tag.txt"
 GITHUB_LATEST_RELEASE_URL = "https://api.github.com/repos/DayZ-n-Chill/Agentic-Z/releases/latest"
-SEARCH_INDEX_ASSET_PREFIX = "dayz-search-index-"
+GITHUB_RELEASES_URL = "https://api.github.com/repos/DayZ-n-Chill/Agentic-Z/releases?per_page=100"
+# Same prefixes /dayz-search-download accepts (download.py ASSET_PREFIXES).
+SEARCH_INDEX_ASSET_PREFIXES = ("dayz-search-index-", "dayz-rag-index-")
 
 
 def installed_search_index_tag() -> Optional[str]:
@@ -592,30 +594,54 @@ def installed_search_index_tag() -> Optional[str]:
         return None
 
 
-def latest_search_index_tag() -> Optional[str]:
-    """Query GitHub for the latest release that has a dayz-search-index-* asset.
-    Returns None on any failure (offline, rate-limited, dropped connection,
-    malformed reply, no matching asset)."""
+def _fetch_github_json(url: str):
+    """GET a GitHub API URL and decode the JSON body. Returns None on any failure."""
     req = urllib.request.Request(
-        GITHUB_LATEST_RELEASE_URL,
+        url,
         headers={"Accept": "application/vnd.github+json", "User-Agent": "agentic-z-update"},
     )
     try:
         with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
+            return json.loads(resp.read().decode("utf-8"))
     # OSError covers URLError, timeouts, ssl.SSLError and connection resets
     # (http.client.RemoteDisconnected); HTTPException covers IncompleteRead;
     # ValueError covers bad JSON and bad UTF-8.
     except (OSError, http.client.HTTPException, ValueError):
         return None
-    if not isinstance(data, dict):
+
+
+def _release_index_tag(release) -> Optional[str]:
+    """Return the release's tag if it carries a search index asset, else None."""
+    if not isinstance(release, dict):
         return None
-    tag = data.get("tag_name")
-    assets = data.get("assets")
+    tag = release.get("tag_name")
+    assets = release.get("assets")
     if not isinstance(tag, str) or not isinstance(assets, list):
         return None
     for a in assets:
-        if isinstance(a, dict) and str(a.get("name", "")).startswith(SEARCH_INDEX_ASSET_PREFIX):
+        if isinstance(a, dict) and str(a.get("name", "")).startswith(SEARCH_INDEX_ASSET_PREFIXES):
+            return tag
+    return None
+
+
+def latest_search_index_tag() -> Optional[str]:
+    """Return the tag of the newest published release that carries a search
+    index asset (dayz-search-index-* or dayz-rag-index-*), choosing it the way
+    /dayz-search-download does: the latest release if it has one, otherwise the
+    newest non-draft, non-prerelease release in the release list that does.
+    Returns None on any failure (offline, rate-limited, dropped connection,
+    malformed reply, no release with an index)."""
+    tag = _release_index_tag(_fetch_github_json(GITHUB_LATEST_RELEASE_URL))
+    if tag:
+        return tag
+    releases = _fetch_github_json(GITHUB_RELEASES_URL)
+    if not isinstance(releases, list):
+        return None
+    for release in releases:  # GitHub lists newest first.
+        if not isinstance(release, dict) or release.get("draft") or release.get("prerelease"):
+            continue
+        tag = _release_index_tag(release)
+        if tag:
             return tag
     return None
 

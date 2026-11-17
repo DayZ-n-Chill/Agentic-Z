@@ -6,7 +6,7 @@ What to measure offline before a new or ported vehicle goes in game for the firs
 
 ## Vanilla anchors checked on `P:\`
 
-- The refuel action looks for `FUEL_SELECTION_NAME`, which is `"refill"` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\vehicles\actionfillfuel.c:13`), and measures the player against `GetRefillPointPosWS` and `GetActionDistanceFuel` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\vehicles\actionfillfuel.c:60-62`).
+- The refuel action compares each action component name of the targeted component with `transport.GetActionCompNameFuel()`, which returns `"refill"` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\vehicles\actionfillfuel.c:58`), and measures the player against `GetRefillPointPosWS` and `GetActionDistanceFuel` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\vehicles\actionfillfuel.c:60-62`).
 - `Transport` reads the `refill` memory point in its constructor (`P:\scripts\3_game\vehicles\transport.c:112`) and names the action component in `GetActionCompNameFuel` (`P:\scripts\3_game\vehicles\transport.c:459-461`).
 
 ## Run before the first in-game cycle
@@ -88,7 +88,7 @@ A port copies what it sees in the reference `config.cpp`. These three do not liv
 so they survive any review that reads configs:
 
 - **The `refill` anchor.** Without a `refill` selection in Memory and in ViewGeometry, the refuel
-  action **never appears** (`actionfillfuel.c:13`, `:60-62`; `transport.c:112-115`, `:459-462`).
+  action **never appears** (`actionfillfuel.c:58`, `:60-62`; `transport.c:112-115`, `:459-462`).
   Copying the `GetActionDistanceFuel()` override from the reference is not enough: it adjusts the
   distance of an action that, without an anchor, does not exist.
 - **Custom `CfgSoundSets`.** Inheriting the base class leaves the vehicle **mute**: zero engine

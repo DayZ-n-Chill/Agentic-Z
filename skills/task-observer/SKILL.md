@@ -631,7 +631,7 @@ session_context: [what task was being worked on]
 parked_until:           # mandatory when status is parked, empty otherwise:
                         #   one line naming the condition that unparks it
 resolved:               # date resolved; leave empty while OPEN
-resolution:             # what was done — set only when actioned/declined
+resolution:             # what was done — set only when actioned, declined or superseded
 reference:              # optional: path to saved session-local evidence
 ---
 

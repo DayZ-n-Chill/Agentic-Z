@@ -54,7 +54,7 @@ Grep "GetContainerTmpPath|GetContainerLfvPath|GetContainerBak1Path|GetContainerB
 
 For each writer and reader pair, the path they build must be byte-identical. If the writer uses `helper_A` and the reader uses an inline literal, that is a flag.
 
-On the vanilla side, every path a mod builds ends up as the `name` argument of one of a few file functions, so the set of call sites to group is closed: `FileExist` (`P:\scripts\1_core\proto\ensystem.c:397`), `OpenFile` (`ensystem.c:417`), `MakeDirectory` (`ensystem.c:525`), `DeleteFile` (`ensystem.c:528`), `CopyFile` (`ensystem.c:531`), and the `JsonFileLoader` calls `SaveFile` (`P:\scripts\3_game\tools\jsonfileloader.c:42`) and `JsonSaveFile` (`jsonfileloader.c:134`). Searching for those names finds inline paths the suffix search missed.
+On the vanilla side, a path a mod builds ends up as the path argument of a vanilla file function. The common ones are `FileExist` (`P:\scripts\1_core\proto\ensystem.c:397`), `OpenFile` (`ensystem.c:417`), `FindFile` for directory scans (`ensystem.c:520`), `MakeDirectory` (`ensystem.c:525`), `DeleteFile` (`ensystem.c:528`), `CopyFile` (`ensystem.c:531`), `BeginParse` (`ensystem.c:392`), `FileSerializer.Open` (`P:\scripts\1_core\proto\serializer.c:108`), and the `JsonFileLoader` calls `LoadFile` (`P:\scripts\3_game\tools\jsonfileloader.c:7`), `SaveFile` (`jsonfileloader.c:42`), `JsonLoadFile` (`jsonfileloader.c:105`) and `JsonSaveFile` (`jsonfileloader.c:134`). This list is not exhaustive: a mod can also reach files through its own wrappers or a framework, so add those names too. Searching for these names finds inline paths the suffix search missed, on both the writer and the reader side.
 
 ### Step 4: output
 

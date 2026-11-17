@@ -2,7 +2,7 @@
 
 The seven kinds of input a reader must classify when a saved format changes, what each must return, and how vanilla 1.30 handled its own new fields. Open this before changing any saved format, and when writing the tests for one.
 
-Line numbers are from the vanilla scripts on `P:\` (game storage version 144). A citation marked `1.29` points at the 1.29 scripts, which are not on `P:\` and were not checked there.
+Line numbers are from the vanilla scripts on `P:\` (game storage version 144). A citation marked `1.29` points at the 1.29 scripts, which are not on `P:\` and were not checked there. The same holds for every statement of what 1.29 did, cited or not: not yet checked on `P:\`.
 
 ## Normative seven cells
 

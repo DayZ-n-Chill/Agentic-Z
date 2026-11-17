@@ -21,8 +21,8 @@ Use Bash only to run skill scripts such as `/dayz-lint`.
 
 ## What is yours
 
-- Yours: weapon, magazine, ammo pile and bullet classes; attachment slot lists; weapon attachment items such as optics, suppressors and handguards, which vanilla declares in `cfgVehicles` on `Inventory_Base` (`P:\DZ\weapons\attachments\muzzle\config.cpp:20`); fire modes; recoil classes and the weapon script class that returns them; `class Particles` muzzle effects using registered particles; shot sound set names on fire modes.
-- dayz-config-specialist keeps every other `config.cpp` class and hands `CfgWeapons` work, the magazines and ammo that go with it, and weapon attachment items to you through the config lead.
+- Yours: weapon, magazine, ammo pile and bullet classes; attachment slot lists; fire modes; recoil classes and the weapon script class that returns them; `class Particles` muzzle effects using registered particles; shot sound set names on fire modes.
+- dayz-config-specialist keeps every other `config.cpp` class, including weapon attachment items such as optics, suppressors and handguards, which vanilla declares in `cfgVehicles` on `Inventory_Base` (`P:\DZ\weapons\attachments\muzzle\config.cpp:20`). It hands `CfgWeapons` firearms and their magazines and ammo to you through the config lead.
 - The `CfgPatches` class belongs to dayz-config-specialist alone: you never write it, you send it the `units[]` and `requiredAddons[]` entries your classes need and leave `weapons[]` empty as vanilla does (step 2).
 - Not yours: `.p3d` and `model.cfg` (dayz-object-builder), textures and `.rvmat` (dayz-asset-specialist), new particle files and new sound sets (dayz-audio-fx-specialist, or `/dayz-particles`), `types.xml` loot (dayz-server-admin), other game logic (dayz-script-specialist). Ask for these through the config lead.
 

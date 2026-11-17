@@ -42,6 +42,10 @@ This skill runs nothing against `P:\`, DayZ Tools or the game, so there is no pr
    ```python
    import_fbx(r"<path-to>\Walking.fbx")            # brings in the Mixamo armature and its action
    print(list_armatures())                          # for example ['Armature', 'MyDayZRig']
+   # A Mixamo FBX names its bones mixamorig:Hips and so on; auto_map_bones only
+   # accepts the bare names (see "Known gaps"), so strip the prefix first.
+   for b in list(bpy.data.objects["Armature"].data.bones):
+       b.name = b.name.split(":", 1)[-1]
    bm = auto_map_bones("Armature", "MyDayZRig")    # fuzzy pass: review this dict
    print(bm)
    ```
@@ -73,7 +77,7 @@ Mixamo rigs are in T-pose; many targets, game rigs included, are in A-pose or a 
 
 Read from the code, not yet run in Blender. Check each one when the fixture below is run.
 
-- **`mixamorig:` prefix.** `auto_map_bones` only takes source bones whose names are keys of its alias table (`Hips`, `LeftArm`, ...). A Mixamo FBX normally imports with prefixed names (`mixamorig:Hips`), and those match no key, so nothing is mapped. The call then stops with `KeyError: 'critical_bones_mapped'`, because the quality report for an empty map has no such entry (`test_retargeting.py` pins this against a stand-in `bpy`). The same error appears for any pair of armatures with no match at all. Rename the source bones to drop the prefix first, or build the map by hand.
+- **`mixamorig:` prefix.** `auto_map_bones` only takes source bones whose names are keys of its alias table (`Hips`, `LeftArm`, ...). A Mixamo FBX normally imports with prefixed names (`mixamorig:Hips`), and those match no key, so nothing is mapped. The call then stops with `KeyError: 'critical_bones_mapped'`, because the quality report for an empty map has no such entry (`test_retargeting.py` pins this against a stand-in `bpy`). The same error appears for any pair of armatures with no match at all. Rename the source bones to drop the prefix first (step 2 of "How to run it" does this), or build the map by hand.
 - **Stored maps.** `store_bone_mapping` and `load_bone_mapping` use `scene.bone_mapping_items`, `scene.bone_mapping_source_armature` and `scene.bone_mapping_target_armature`. Neither module registers those scene properties, so without that registration both calls fail. Until they are registered, keep the reviewed map as a Python dict, or save it as JSON next to the `.blend`.
 - **DAE import.** `import_dae` calls `bpy.ops.wm.collada_import`. Blender 5.0 removed the Collada importer, so on Blender 5.x the call fails. Convert the clip to FBX and use `import_fbx`, or run the DAE import in Blender 4.x.
 - **Empty map.** `retarget_animation` does not reject an empty `bone_map`: it adds no constraints and still bakes. That is the negative case of the fixture below.

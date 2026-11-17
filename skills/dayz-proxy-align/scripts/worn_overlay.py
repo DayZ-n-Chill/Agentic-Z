@@ -138,8 +138,11 @@ def main():
         tag = "DEFAULT" if (slot in DEFAULT_MAP and eff[slot] == DEFAULT_MAP.get(slot) and not any(k.split("=")[0]==slot for k in a.map)) else "override"
         if not bn.lower().endswith("_m.p3d"):
             print("ASK  %-9s no _m variant; using %s. Candidates: %s" % (slot, bn, [os.path.basename(c) for c in cands]))
-        elif len([c for c in cands if c.lower().endswith("_m.p3d")]) > 1:
-            print("NOTE %-9s several _m candidates; picked %s. Override: --map %s=<subdir>/<stem>" % (slot, bn, slot))
+        else:
+            male = sorted(os.path.basename(c) for c in cands if c.lower().endswith("_m.p3d"))
+            if len(male) > 1:
+                print("NOTE %-9s several _m candidates; picked %s. Candidates: %s. Override: --map %s=<subdir>/<stem>"
+                      % (slot, bn, male, slot))
         if a.dry_run:
             print("DRY  %-9s [%s] -> %s" % (slot, tag, bn)); continue
         ml = to_mlod(path, debin)

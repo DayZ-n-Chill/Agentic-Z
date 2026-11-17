@@ -2,7 +2,7 @@
 
 What 1.30 changed in the vanilla save streams, with the vanilla code copied in: the storage version, the construction data in front of the energy data, the player's thermal float, the combination lock's third value, the code lock, Rebuilding and the bunker file. Open this when porting a 1.29 mod that saves data, or when a 1.29 save misloads on 1.30.
 
-Every code block was copied from the file named in its first line and compared with `P:\` (game storage version 144). A citation marked `1.29` points at the 1.29 scripts, which are not on `P:\` and were not checked there.
+Every code block was copied from the file named in its first line and compared with `P:\` (game storage version 144). A citation marked `1.29` points at the 1.29 scripts, which are not on `P:\` and were not checked there. The same holds for every statement of what 1.29 did, cited or not (the 1.29 column of the table, "until 1.29", "did not exist in 1.29", "unchanged versus 1.29"): not yet checked on `P:\`.
 
 ## What changed
 
@@ -319,7 +319,7 @@ Design note: Treat this as a vanilla mission-file exception, not a template. A m
 3. Any `EntityAI` subclass on a `Rebuilding` house that skips `super` or seeks a fixed offset past "energy". 1.30 writes construction data first when the component is present.
 4. Claiming a `$mission:` `FileSerializer` overwrite is atomic, or that `BunkerBroadcastPersistenceStorage` follows `JsonFileLoader` + backup.
 
-`JsonFileLoader<T>.LoadFile` / deprecated `JsonLoadFile` are at the same lines as on 1.29 (`P:\scripts\3_game\tools\jsonfileloader.c:7-40`, `:99-131`). `DeleteFile` / `CopyFile` still at `ensystem.c:528,531`. No 1.30 change in CF ModStorage was checked.
+`JsonFileLoader<T>.LoadFile` / deprecated `JsonLoadFile` are at `P:\scripts\3_game\tools\jsonfileloader.c:7-40` and `:99-131`. That they sit at the same lines on 1.29 is not yet checked on `P:\`. `DeleteFile` / `CopyFile` still at `ensystem.c:528,531`. No 1.30 change in CF ModStorage was checked.
 
 ## Migration checklist
 

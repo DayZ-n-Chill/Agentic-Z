@@ -757,8 +757,11 @@ new ResizeObserver(resize).observe(vp);
 </body></html>"""
 
 if __name__=='__main__':
+    usage="Usage: p3d_inspector_viewer.py <recipe.json|--demo> [output.html]"
+    if any(a in ('-h','--help') for a in sys.argv[1:]):
+        print(usage); sys.exit(0)
     if len(sys.argv)<2:
-        print("Usage: p3d_inspector_viewer.py <recipe.json|--demo> [output.html]"); sys.exit(1)
+        print(usage); sys.exit(1)
     if sys.argv[1]=='--demo':
         sd=os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0,sd)
         from p3d_inspector_extract import generate_demo_recipe

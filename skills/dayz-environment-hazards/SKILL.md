@@ -48,7 +48,7 @@ A new environmental hazard should copy a vanilla pattern: an `EffectArea` with a
 1. **Reach the storm.** Script does not create the controller. On the server call `GetGame().GetWeather().GetSandstorm().Start(duration, false)` and `.Stop(duration, false)` (`P:\scripts\3_game\sandstorm.c:20` and `:27`).
 2. **World config.** The world class needs a `class Sandstorm` with `soundSets[]` and `particlePath` (`P:\DZ\data\config.cpp:1532`).
 3. **Frequency.** `"SandstormData": { "sandstormFrequency": 1.0 }` in `cfggameplay.json` (`ITEM_SandstormData`, `P:\scripts\3_game\cfggameplaydatajson.c:440`). 0 turns weather storms off; 2 doubles the chance on Nasdara.
-4. **World data.** For storms that come with the weather, copy Nasdara's pattern, `StartSandstorm` on the overcast change and the `sandstormChance` roll in `CalculateWind` (`P:\scripts\4_world\classes\worlds\nasdara.c:318` to `:322` and `:563` to `:575`). `ChernarusPlus` starts none. This is a design step, not a copied recipe.
+4. **World data.** For storms that come with the weather, copy Nasdara's pattern, `StartSandstorm` on the overcast change and the `sandstormChance` roll in `CalculateWind` (`P:\scripts\4_world\classes\worlds\nasdara.c:318` to `:322` and `:563` to `:575`). `ChernarusPlusData` starts none. This is a design step, not a copied recipe.
 5. **Shelter.** A player's intensity is `GetIntensity` at the head, faded over 1.5 s when underground, inside (a roof and `IsSoundInsideBuilding`) or in a `Car` (`P:\scripts\4_world\systems\sandstorm\scriptedsandstormcontroller.c:142` to `:178`). A motorbike and a boat are not shelter.
 6. **Protective gear.** A mask with `DEF_DUST_PARTICLE_BREATH` against silicosis; eyewear, a mask or night vision goggles with `DEF_DUST_PARTICLE_EYES` against irritation (`P:\scripts\3_game\constants.c:549` to `:550`).
 7. **Heat.** `HeatComfortMdfr` feeds `ThermalBiasHandler.Add` above the comfort thresholds (`P:\scripts\4_world\classes\playermodifiers\modifiers\heatcomfortmdfr.c:74` to `:82`), and the four `HeatStroke` phases read the bias (`STAGE_THRESHOLDS`, `P:\scripts\4_world\classes\playermodifiers\modifiers\diseases\heatstroke.c:4`).
@@ -136,7 +136,7 @@ A new environmental hazard should copy a vanilla pattern: an `EffectArea` with a
 1. **Nasdara map files.** Not checked on `P:\`: the first 1.30 build shipped a 6 file stub of `data_nasdara.pbo`; 1.30.164200 installs the full set of 24 PBOs with the world in an encrypted `.ebo`. See `references/dust-oilpit-nasdara.md`.
 2. **Washing the head with a frozen bottle.** `ActionWashHeadItemContinuous` only refuses gasoline, which matches the changelog's known issue.
 3. **Sickness icons.** Rule 4 above.
-4. **Sun on Chernarus.** `ChernarusPlus` does not fill `m_TemperatureUnderSunModifier`, so the sun effect there stays 0.
+4. **Sun on Chernarus.** `ChernarusPlusData` (`P:\scripts\4_world\classes\worlds\chernarusplus.c:2`) does not fill `m_TemperatureUnderSunModifier`, so the sun effect there stays 0.
 
 ## Building and testing the mod
 

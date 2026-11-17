@@ -5,7 +5,7 @@
   python3 dayz-api.py find REGEX [-c CLASS]      member lines matching REGEX (case-insensitive), with their class
   python3 dayz-api.py sub NAME [--all]           classes extending NAME (--all: transitively)
   python3 dayz-api.py enum NAME                  enum values; `find` also searches enum values and top-level declarations
-  python3 dayz-api.py src NAME                   source files declaring a class/enum, with ready `dayzmake cat` commands
+  python3 dayz-api.py src NAME                   source files declaring a class/enum: the PBO, then each file's path inside it
   python3 dayz-api.py chain NAME                 base class chain
   python3 dayz-api.py defines [REGEX]            #ifdef defines of the indexed mods (e.g. EXPANSIONMODMARKET, CF_MODULES)
 

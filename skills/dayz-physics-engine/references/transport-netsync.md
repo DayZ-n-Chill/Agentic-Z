@@ -9,8 +9,8 @@ Citations are `P:\...:line`, opened on `P:\` (a 1.30 build). `1.29:<path>:<line>
 The vehicle system has three layers:
 
 1. **`Transport` (native plus script).** The base class of every vehicle. It inherits from `Pawn` when `FEATURE_NETWORK_RECONCILIATION` is defined, and from `EntityAI` in builds without it. This is where replication starts: `Transport` registers `TransportOwnerState` and `TransportMove`, and the comment on the class says it uses `NetworkMoveStrategy.NONE`. `Car` and `CarScript` override those types again, and a car can run with `NetworkMoveStrategy.PHYSICS`, where the owning client predicts and is reconciled (see "Why `Transport` replicates and `ItemBase` does not" below). What the engine sends to proxy clients is native and was not checked on `P:\`.
-2. **`Car`, `Boat`, `Helicopter` (native).** They inherit from `Transport` and expose the physics API (throttle, steering, brake, fluids, gears). The simulation is native; script only calls setters.
-3. **`CarScript`, `BoatScript`, `HelicopterScript` (script).** Wrappers that add contact damage, fluids, lights, particles, sound and temperature. The contact cache that feeds damage (`m_ContactCache`) runs on the server only.
+2. **`Car`, `Motorbike`, `Boat`, `Helicopter` (native).** They inherit from `Transport` and expose the physics API (throttle, steering, brake, fluids, gears). The simulation is native; script only calls setters.
+3. **`CarScript`, `MotorbikeScript`, `BoatScript`, `HelicopterScript` (script).** Wrappers that add contact damage, fluids, lights, particles, sound and temperature. The contact cache that feeds damage (`m_ContactCache`) runs on the server only.
 
 Position and rotation sync of a `Transport` is not something `ItemBase` has, and it does not use `SetSynchDirty()`. It is a property of the native `Pawn` and `Transport` type: the engine sends position plus linear and angular velocity to all clients continuously (native behaviour, not checked on `P:\`).
 
@@ -28,6 +28,9 @@ EntityAI
         │       ├── Truck_02                         truck_02.c:1
         │       ├── Sedan_02, Van_01, Hatchback_02 ...
         │       └── Truck_01_Base, then Chassis, Cargo, Covered
+        ├── Motorbike                                motorbike.c:30
+        │   └── MotorbikeScript                      motorbikescript.c:53
+        │       └── Motorbike_01_ColorBase, Motorbike_02_ColorBase   motorbike_01.c:1, motorbike_02.c:1
         ├── Boat                                     boat.c:28
         │   └── BoatScript                           boatscript.c:41
         │       └── Boat_01_ColorBase                boat_01.c:1
@@ -35,7 +38,7 @@ EntityAI
             └── HelicopterScript                     helicopterscript.c:4
 ```
 
-- Full paths: `P:\scripts\3_game\entities\pawn.c:191`, `P:\scripts\3_game\vehicles\transport.c:66`, `P:\scripts\3_game\vehicles\car.c:87`, `P:\scripts\4_world\entities\vehicles\carscript.c:94`, `P:\scripts\3_game\vehicles\boat.c:28`, `P:\scripts\4_world\entities\vehicles\boatscript.c:41`, `P:\scripts\3_game\vehicles\helicopter.c:9`, `P:\scripts\4_world\entities\vehicles\helicopterscript.c:4`.
+- Full paths: `P:\scripts\3_game\entities\pawn.c:191`, `P:\scripts\3_game\vehicles\transport.c:66`, `P:\scripts\3_game\vehicles\car.c:87`, `P:\scripts\4_world\entities\vehicles\carscript.c:94`, `P:\scripts\3_game\vehicles\motorbike.c:30`, `P:\scripts\4_world\entities\vehicles\motorbikescript.c:53`, `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:1`, `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_02.c:1`, `P:\scripts\3_game\vehicles\boat.c:28`, `P:\scripts\4_world\entities\vehicles\boatscript.c:41`, `P:\scripts\3_game\vehicles\helicopter.c:9`, `P:\scripts\4_world\entities\vehicles\helicopterscript.c:4`.
 - Without `FEATURE_NETWORK_RECONCILIATION` the tree is `EntityAI`, then `Transport` (the `#else` at `P:\scripts\3_game\vehicles\transport.c:67-68`). The define is at `P:\scripts\1_core\defines.c:64`.
 
 ### `Transport` (`P:\scripts\3_game\vehicles\transport.c`)
@@ -215,7 +218,7 @@ class Transport extends Pawn
 proto native void Synchronize();
 ```
 
-The only vanilla description is that comment: it synchronizes the car's state when the simulation is not running. Vanilla calls it only on the server, after a part is attached or detached (`CarScript.EEItemAttached`, `P:\scripts\4_world\entities\vehicles\carscript.c:514-515`, and `CarScript.EEItemDetached`, `:593-594`). It is not a way to wake a vehicle or force a position snapshot: measured in game, an asleep vehicle moved with `SetPosition` plus `Synchronize()` delivered nothing to the client until it woke (SKILL.md, truth 11).
+The only vanilla description is that comment: it synchronizes the car's state when the simulation is not running. Vanilla calls it only on the server, after a part is attached or detached (`CarScript.EEItemAttached`, `P:\scripts\4_world\entities\vehicles\carscript.c:514-515`, and `CarScript.EEItemDetached`, `:593-594`; `MotorbikeScript` does the same in `EEItemAttached` and `EEItemDetached`, `P:\scripts\4_world\entities\vehicles\motorbikescript.c:551-554` and `:594-597`). It is not a way to wake a vehicle or force a position snapshot: measured in game, an asleep vehicle moved with `SetPosition` plus `Synchronize()` delivered nothing to the client until it woke (SKILL.md, truth 11).
 
 ```cpp
 // P:\scripts\3_game\vehicles\transport.c:810-814
@@ -347,7 +350,7 @@ Vanilla cars (OffroadHatchback, Truck_02, Van_01 and others) hold a `UniversalTe
 4. **`GetController()` is obsolete.** Use the methods on `Car` (`SetThrottle`, `SetSteering` and so on).
 5. **`IsServerOrOwner()`** (`P:\scripts\4_world\entities\vehicles\carscript.c:2592`). With the new networking (`NetworkMoveStrategy.PHYSICS`) the owner, the client that drives, also runs the simulation. With the classic networking only the server does.
 6. **`dBodyApplyImpulseAt` in `ActionPushCar`** (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionpushcar.c:52`). It uses the global `dBody` API, not `Transport`'s; the result spreads because the physics body exists on the server and `Transport` replicates it.
-7. **`Synchronize()` is not a wake snapshot.** Vanilla calls it only on the server after a state change while the simulation is not running, namely a part attached or detached (`P:\scripts\4_world\entities\vehicles\carscript.c:515`, `:594`). An asleep vehicle moved with `SetPosition` plus `Synchronize()` delivered nothing to the client (measured; SKILL.md, truth 11).
+7. **`Synchronize()` is not a wake snapshot.** Vanilla calls it only on the server after a state change while the simulation is not running, namely a part attached or detached (`P:\scripts\4_world\entities\vehicles\carscript.c:515`, `:594`; `P:\scripts\4_world\entities\vehicles\motorbikescript.c:554`, `:597`). An asleep vehicle moved with `SetPosition` plus `Synchronize()` delivered nothing to the client (measured; SKILL.md, truth 11).
 8. **The contact data uses `momentumDelta` as its "impulse".** The main calculation does not use `data.Impulse` from the `Contact`; it uses `GetMomentum() - m_MomentumPrevTick`.
 9. **`FEATURE_NETWORK_RECONCILIATION` is defined** (`P:\scripts\1_core\defines.c:64`). `P:\scripts\3_game\vehicles\transport.c:65-69` shows that without it `Transport` would inherit straight from `EntityAI`.
 10. **Cars with no driver.** `SetBrakesActivateWithoutDriver(true)` (`P:\scripts\3_game\vehicles\car.c:212`). When the driver loses control, `OnUpdate` applies a brake of 0.5.
@@ -408,6 +411,9 @@ Vanilla files this reference cites, under `P:\scripts\`:
 |---|---|
 | `3_game\vehicles\transport.c` | `Transport` base class: crew, forces, the net sync state types |
 | `3_game\vehicles\car.c` | The `Car` native API: steering, throttle, brake, gears, fluids |
+| `3_game\vehicles\motorbike.c` | The `Motorbike` native class |
+| `4_world\entities\vehicles\motorbikescript.c` | `MotorbikeScript`, with its `Synchronize()` calls |
+| `4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c`, `motorbike_02.c` | The vanilla motorbikes |
 | `3_game\vehicles\boat.c` | The `Boat` native API |
 | `3_game\vehicles\helicopter.c` | `Helicopter` and `HelicopterAuto` (native auto hover) |
 | `3_game\entities\pawn.c` | `Pawn`, `PawnOwnerState`, `PawnMove`, the `NetworkMoveStrategy` enum |

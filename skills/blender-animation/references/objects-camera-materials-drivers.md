@@ -335,11 +335,13 @@ checkbox to use the old noise, which old files will automatically have enabled."
   into 4.4+) — "Use the legacy way of generating noise. Has the issue that it can produce values
   outside of -1/1"
 
-For **camera shake**, the common recipe is: key the base motion normally (or leave the property
-completely un-keyed at a static value — a NOISE modifier alone is enough), add a NOISE modifier to
+For **camera shake**, the common recipe is: key the base motion normally (for a camera that does
+not move, insert a single key at its rest value), add a NOISE modifier to
 each of the 3 rotation-axis FCurves (and/or location), and tune `strength` (shake amount) and
 `scale` (shake speed — smaller `scale` = faster jitter). Use a different `phase` per axis so X/Y/Z
-don't wobble in lockstep.
+don't wobble in lockstep. The key is required: Blender skips an F-Curve that has no keyframes and
+no generating modifier, and NOISE is not a generating modifier, so a NOISE modifier on an
+un-keyed curve does nothing. The noise is added around the keyed value.
 
 ### CYCLES — perfect loops
 

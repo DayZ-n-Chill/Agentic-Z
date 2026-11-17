@@ -222,7 +222,7 @@ The files below are field notes from vehicle projects. Each opens with a `Status
 | Folder or file | Purpose |
 |---|---|
 | `_shared/vehicles/new-car-day-one.md` | Part checked: what to measure offline before a new or ported vehicle first goes in game, what each of the three files owns, and the gaps no config review reveals. |
-| `_shared/vehicles/vehicle-config-and-modelcfg.md` | Part checked: a complete `CarScript` config class and the matching `model.cfg` of a drivable car, block by block, from a working tutorial vehicle. |
+| `_shared/vehicles/vehicle-config-and-modelcfg.md` | Part checked: a complete `CarScript` config class and the matching `model.cfg` of a drivable car, block by block, from a working from-scratch third-party 4x4, compared with a quad bike, a DayZ Expansion UAZ and vanilla. |
 | `_shared/vehicles/vehicle-structural-parity.md` | Part checked: the parity-first method: debinarize a vanilla car once, diff your model against it, and build every missing LOD, selection, proxy, hub and override in one pass. |
 | `_shared/vehicles/invariants-engine-fluids-and-handling.md` | Part checked: why an engine will not start or stay on, what a test kit must fill and attach, and measured rules for rolling, steering, mass, grip and drivetrain ratios. |
 | `_shared/vehicles/invariants-get-in-and-seats.md` | Part checked: why a get-in, seat or door action does not appear on a new or imported car, and the model, config and script contract that makes it appear. |
@@ -257,7 +257,7 @@ The files below are field notes from vehicle projects. Each opens with a `Status
 | `_shared/vehicles/visual-metrics-and-viewer.md` | Part checked: what can be asserted from a screenshot: perspective artifacts, where a HUD marker ray is anchored, validating a visual metric on a control. |
 | `_shared/vehicles/external-obj-import.md` | Part checked: OBJ to game-ready `.p3d`, end to end: parse, transform, decimate, normals, LOD assembly, PNG to PAA, config wiring and validation. |
 | `_shared/vehicles/decimation-libraries.md` | Not yet checked on `P:\`: which Python library to reduce a high-poly import with, a `pymeshlab` recipe that keeps UV seams, and face targets for a LOD ladder. |
-| `_shared/vehicles/png-to-paa-encoding.md` | Not yet checked on `P:\`: a DXT1 `.paa` writer in Python, the file layout it writes, how to check its output, and what it cannot do. The encoder was not run here; `/dayz-pack-texture` is the normal route. |
+| `_shared/vehicles/png-to-paa-encoding.md` | Part checked: a DXT1 `.paa` writer in Python, the file layout it writes, how to check its output, and what it cannot do. The header layout was compared with vanilla files on `P:\` and the encoder's output was read back with this repo's PAA decoder; nothing was checked in game. `/dayz-pack-texture` is the normal route. |
 | `_shared/vehicles/gta-rip-intake.md` | Part checked: reading a GTA V vehicle mod archive offline, what its skeleton names map to in DayZ, and checking bone names against the real mesh pieces. |
 | `_shared/vehicles/rip-import.md` | Part checked: the rip import path in detail, from one worked example: the rip folder, deriving dimensions and the transform, the structural LOD recipe, first spawn results and their causes. |
 | `_shared/vehicles/rip-geometry-and-winding.md` | Part checked: geometry work on a ripped mesh: automatic retopology, the winding rules for proxy triangles and visual faces, the scope of `autocenter=0`, fixing winding per component. |

@@ -262,8 +262,8 @@ a correctness bug.
 - **`IsServer()` / `IsDedicatedServer()` — runtime.** A branch taken at execution time in a
   build that contains *both* paths. Use it inside code that legitimately runs on both sides
   and must fork behavior per-call (e.g. an `OnRPC` handler that validates on server and
-  applies on client). **The load-time trap (rules 19-20):** `GetGame().IsServer()`
-  returns true on a client *during load*, and `IsClient()` is not reliably true on a client during
+  applies on client). **The load-time trap (rules 19-20, not yet checked on `P:\`):** `GetGame().IsServer()`
+  is reported to return true on a client *during load*, and `IsClient()` is not reliably true on a client during
   load — so at constructor / module-init / `OnInit` time you must use `IsDedicatedServer()` /
   `!IsDedicatedServer()`, not `IsServer()`/`IsClient()`. After load (post-load callbacks:
   `OnRPC`, `EEContact`, per-tick), `IsServer()`/`IsClient()` are safe and are the standard

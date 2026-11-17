@@ -60,7 +60,8 @@ exclusive filter" ("Further build rules" below) holds for the ordinary sync pass
 final PBO contents.
 
 Measured case: an `.rvmat` omitted from `include.lst` still entered and was binarized because
-three `.p3d` files referenced it. This does not override the config-only-rvmat rule above:
+three `.p3d` files referenced it. This does not override binarized-build rule 2 in
+`addonbuilder-rules.md` (rvmats referenced only from `config.cpp` do not enter the PBO):
 an `.rvmat` referenced only by `config.cpp` may still be absent.
 
 Do not add material suffixes to `include.lst` as a precaution and treat that as proof.
@@ -402,10 +403,10 @@ return m_Tuning.ClientPresentMode == 0 || m_Tuning.ClientPresentMode == 1;
 ```
 
 Meaning that gate **would have passed just the same on the build without the variant**. It could not
-turn red, and therefore proved nothing: throughout entire run it seemed as though it
-verified that change traveled to PBO, and only verified that file was still there.
+turn red, and therefore proved nothing: throughout the entire run it seemed to verify that
+the change had reached the PBO, and it only verified that the file was still there.
 
-**How the string is chosen.** Let it be unique to the change, not to change area. A
+**How the string is chosen.** Make it unique to the change, not to the area of the change. A
 new constant name (`REST_PROBE_ARM_MPS`) or a new log tag
 (`[MYMOD-REST]`) are good: they do not exist before. An expression fragment on an
 already-used field, no.
@@ -415,6 +416,3 @@ already-used field, no.
 only seen green is not calibrated; proving it can turn red is the half that
 is almost never done. In the same run, two strings on new symbols did
 discriminate and one on a pre-existing symbol did not, with the same command.
-
-Sibling to what this section already says about gates proving form and not
-compilation: there gate measures what it shouldn't, here it measures something already there.

@@ -87,6 +87,40 @@ def test_shelf_pack_pca_angle_finds_the_long_axis():
     assert angle == pytest.approx(0.0)
 
 
+def _lift_shelf_dry(panels, strips, specks):
+    """Return shelf_pack's inner dry(S) bound to the given island boxes."""
+    tree = ast.parse(_source("uv_shelf_pack.py"), filename="uv_shelf_pack.py")
+    outer = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "shelf_pack")
+    dry = next(n for n in outer.body if isinstance(n, ast.FunctionDef) and n.name == "dry")
+    total = sum(e["area"] for e in panels) or 1e-12
+    namespace = {"math": math, "panels": panels, "strips": strips, "specks": specks,
+                 "total_panel_area": total, "m": math.sqrt(total) * 0.02}
+    exec(compile(ast.Module(body=[dry], type_ignores=[]), "uv_shelf_pack.py", "exec"), namespace)
+    return namespace["dry"]
+
+
+def test_shelf_pack_strips_clear_a_panel_wider_than_the_shelf():
+    # A row always takes its first panel, even one wider than the shelf width S;
+    # the strip column must start right of that panel, not at S.
+    def box(w, h, kind):
+        return {"w": w, "h": h, "area": w * h, "kind": kind}
+
+    panels = [box(3.871, 0.887, "panel"), box(3.495, 0.942, "panel"), box(2.652, 0.74, "panel"),
+              box(0.918, 0.612, "panel"), box(0.298, 0.071, "panel")]
+    strips = [box(0.05, 0.6, "strip")]
+    specks = [box(0.01, 0.01, "speck")]
+    dry = _lift_shelf_dry(panels, strips, specks)
+    pos, scale, W, H = dry(3.257)
+    rects = [(pos[id(e)][0], pos[id(e)][1], e["w"] * scale.get(id(e), 1.0),
+              e["h"] * scale.get(id(e), 1.0)) for e in panels + strips + specks]
+    for i in range(len(rects)):
+        x0, y0, w0, h0 = rects[i]
+        assert x0 + w0 <= W + 1e-9 and y0 + h0 <= H + 1e-9
+        for j in range(i + 1, len(rects)):
+            x1, y1, w1, h1 = rects[j]
+            assert x0 + w0 <= x1 or x1 + w1 <= x0 or y0 + h0 <= y1 or y1 + h1 <= y0, (i, j)
+
+
 def test_pipeline_imports_every_stage_module_and_each_is_shipped():
     imported = {
         alias.name

@@ -7,7 +7,7 @@ Geometry work on a ripped vehicle mesh: automatic retopology with Quadriflow, th
 ## Vanilla anchors checked on `P:\`
 
 - The vanilla control the winding notes compare against is `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` with its interior proxy `P:\DZ\vehicles\wheeled\civiliansedan\proxy\prox_int.p3d`. Both are binarized ODOL, which py3d cannot read, so the winding and normal statistics below were measured on debinarized copies and are not yet checked on `P:\`.
-- `autocenter=0` on a vehicle part proxy: vanilla sets it on `ProxyVehiclePart` (`P:\DZ\vehicles\wheeled\config.cpp:23901`), the config layer the `autocenter=0` section below counts next to the sub-model's own LOD properties.
+- `autocenter=0` on a vehicle part proxy: vanilla also sets `autocenter=0` on the `ProxyVehiclePart` config class (`P:\DZ\vehicles\wheeled\config.cpp:23901-23905`). That config setting is separate from the per-LOD `autocenter=0` property that the section below measures on the host and sub-model LODs.
 
 Nothing in this file is superseded: these are active lessons, ordered by topic instead of by date. The one winding rule for an imported car (keep the raw glTF winding) is invariant 7 and invariant 10 in `invariants-import-mesh-and-winding.md`; the rip import path is `rip-import.md`.
 

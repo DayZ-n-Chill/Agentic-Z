@@ -110,7 +110,7 @@ The gizmo sets the anchor's position and the frame's rotation. The export writes
 
 Clothing ships as more than one model, told apart by suffix: `_m` is worn on the male character, `_f` on the female, and `_g` or `_ground` is the model lying on the ground. For a male host the reference is `_m`. Picking the ground model is the classic cause of "it shows the floor model".
 
-`worn_overlay.py` seeds one default item per slot and prefers the `_m` file when it resolves a name. When a slot has several candidates it prints them (`NOTE` for several `_m` files, `ASK` when there is no `_m` file). Pick one with `--map` and tell the user which; do not guess silently.
+`worn_overlay.py` seeds one default item per slot and prefers the `_m` file when it resolves a name. When a slot has several candidates it prints the one it picked and the candidates (`NOTE` with the `_m` files when there are several, `ASK` with every match when there is no `_m` file). Pick one with `--map` and tell the user which; do not guess silently.
 
 This skill aligns the anchor and previews the right worn model. It does not make the engine swap a slot's default `*_dz` proxy for the equipped item's worn model: that is config and skeleton behaviour, described in `skills/_shared/models/proxy-frames.md`.
 
@@ -135,13 +135,15 @@ with open("host.p3d", "rb") as handle:
     model = py3d.P3D(handle)
 lod = model.lods[0]
 
+# The index must be free: add_proxy refuses a name the LOD already has,
+# and a dressable host usually has vest_dz.001 already.
 name = lod.add_proxy(
-    r"\dz\characters\proxies\vest_dz", 1,
+    r"\dz\characters\proxies\vest_dz", 2,
     origin=(0.0, 1.1, 0.0),
     rotation=((1, 0, 0), (0, 1, 0), (0, 0, 1)),
     space="engine",
 )
-descriptor = {item["name"]: item for item in lod.get_proxies(strict=True)}[name]
+descriptor = {item["name"]: item for item in lod.get_proxies()}[name]
 lod.align_proxy(
     name,
     origin=(0.0, 1.15, 0.02),
@@ -154,7 +156,7 @@ model.save("host_aligned.p3d")
 
 - `space="raw"` is the default and means the frame the angle sort gives. `space="engine"` means the pose expected in DayZ. The two differ by the matrix `P'`; see `skills/_shared/models/proxy-frames.md`.
 - Every one of these calls checks its input before changing anything: path, index, anchor, rotation, scale, the shape of the proxy triangle and that the proxy owns its points and face alone.
-- `get_proxies(strict=True)`, `align_proxy` and `remove_proxy` raise `ValueError` on a malformed proxy selection, which includes a proxy whose stored face normal is not the X row of its raw frame, the usual state of a hand-written 90/45/45 proxy. `proxy_apply.py` moves points only and leaves the stored normal, so a proxy it rewrote can still fail this check (checked with py3d 1.10.1). Call `get_proxies()` without `strict` to list such proxies, place them with `proxy_canon.py` and `proxy_apply.py`, and keep the py3d calls for proxies that pass `strict`, such as the ones `add_proxy` wrote.
+- `get_proxies(strict=True)`, `align_proxy` and `remove_proxy` raise `ValueError` on a malformed proxy selection, which includes a proxy whose stored face normal is not the X row of its raw frame, the usual state of a hand-written 90/45/45 proxy. `proxy_apply.py` moves points only and leaves the stored normal, so a proxy it rewrote can still fail this check (checked with py3d 1.10.1). `get_proxies(strict=True)` checks every proxy of the LOD, so one such proxy makes the whole listing fail; that is why the example lists with `get_proxies()` without `strict`. Place such proxies with `proxy_canon.py` and `proxy_apply.py`, and keep `align_proxy` and `remove_proxy` for proxies that pass the check, such as the ones `add_proxy` wrote.
 - `align_proxy` keeps the identities of the points, the face and the selection. `remove_proxy` deletes exactly the proxy's selection, face and three points, renumbers the remaining point indexes and sharp edges, and leaves the normal pool as it is on purpose.
 
 ## References

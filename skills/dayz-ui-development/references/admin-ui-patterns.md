@@ -148,7 +148,7 @@ int x = selectX, y = selectY;
 if (w < 0) { x = mouseX; w = -w; }
 if (h < 0) { y = mouseY; h = -h; }
 panel_selection.SetScreenPos(x, y);
-panel_selection.SetSize(w, h);
+panel_selection.SetScreenSize(w, h);
 
 // Hit test all ESP widgets:
 foreach widget: if (x < wX && y < wY && x+w >= wX && y+h >= wY) → selected

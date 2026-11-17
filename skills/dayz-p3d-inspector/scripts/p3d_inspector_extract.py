@@ -619,6 +619,10 @@ def generate_demo_recipe() -> dict:
 
 
 if __name__ == "__main__":
+    if any(arg in ("-h", "--help") for arg in sys.argv[1:]):
+        print("Usage: p3d_inspector_extract.py <model.p3d> [-o recipe.json] [-v]\n"
+              "       p3d_inspector_extract.py --demo [output.json]")
+        sys.exit(0)
     if len(sys.argv) < 2 or sys.argv[1] == "--demo":
         print("Generating demo recipe...")
         recipe = generate_demo_recipe()

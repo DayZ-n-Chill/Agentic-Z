@@ -18,7 +18,7 @@ Each machine has its own physics world. A body created by script on the server e
 
 - `Pawn` is the engine's type for an entity with continuous network movement; its owner state exists to correct a desync by replaying moves (`PawnOwnerState`, `P:\scripts\3_game\entities\pawn.c:20-25`). `Transport` supplies its own state and move types (`GetOwnerStateType`, `P:\scripts\3_game\vehicles\transport.c:160`) and uses `NetworkMoveStrategy.NONE` (the comment at `:65`).
 - `ItemBase` is not a `Pawn`. A dynamic body put on an item by script is simulated on the server; clients get occasional position updates and never a velocity (engine behavior; not checkable on `P:\`, confirm in game). It can look synced in a local test at low latency and still stutter or lag on a real server.
-- `Synchronize()` exists on `Transport` only: "Synchronizes car's state in case the simulation is not running" (`P:\scripts\3_game\vehicles\transport.c:171-172`). Call it when a script moves a vehicle that is asleep.
+- `Transport` has a native `Synchronize()`: "Synchronizes car's state in case the simulation is not running" (`P:\scripts\3_game\vehicles\transport.c:171-172`). Call it when a script moves a vehicle that is asleep. `ItemBase` has no native call of this kind; the native `Synchronize()` on `Weapon` sends weapon state, not movement (`P:\scripts\4_world\entities\core\inherited\weapon.c:8-11`), and the script `Synchronize()` methods on some items (for example `P:\scripts\4_world\entities\itembase\barbedwire.c:109`) only push their own sync variables.
 - Vehicle contact handling does its work on the server (`Transport.OnContact` checks `IsServer()`, `P:\scripts\3_game\vehicles\transport.c:315-317`).
 
 ## Options for a mod object that must move for everyone

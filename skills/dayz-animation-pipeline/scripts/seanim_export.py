@@ -36,7 +36,9 @@ def load_writer():
     import seanim_writer
     return seanim_writer
 
-UNIT_CM = 100.0  # rig meters -> SEAnim cm (verified vs aks74u_reference finger offsets)
+UNIT_CM = 100.0  # rig meters -> SEAnim cm (verified against the finger offsets of a local
+                 # DayZATool extract of an AKS-74U clip; which clip under
+                 # P:\DZ\anims\anm\player\ was not recorded, so not checked on P:\)
 
 # Viewer bone-local frame -> DayZATool .seanim bone-local frame. Each map is a change of
 # basis with det -1: rest offsets p -> M p, quaternion vector parts v -> -M v, w kept.
@@ -77,8 +79,9 @@ ANATOMICAL = re.compile(r'(Left|Right)(Shoulder|Arm|ArmRoll|ForeArm|ForeArmRoll|
                         r'|HandRing[1-3]?|HandPinky[1-3]?|UpLeg|UpLegRoll|Leg|LegRoll|Foot|ToeBase)')
 
 # Roll fingerprints: (parent, child_a, child_b, vanilla (y, z) of child_a - child_b across the
-# parent bone, DayZ cm). DayZATool extracts of vanilla p_erc_attackl_inplace_01_ras and
-# aks74u_reference: RightShoulder - LeftShoulder in Spine3 = (0, 0, 2.0); RightHandIndex1 -
+# parent bone, DayZ cm). DayZATool extracts of vanilla p_erc_attackl_inplace_01_ras and of an
+# AKS-74U clip (a local extract; which clip was not recorded, so not checked on P:\; the
+# .anm files are binary): RightShoulder - LeftShoulder in Spine3 = (0, 0, 2.0); RightHandIndex1 -
 # RightHandRing in RightHand = (-5.22, -2.75, -0.15), mirrored on the left hand. Through their
 # maps both rigs read within 0.07deg of these; a rig rolled about its bone axes by ROLL_TOL_DEG
 # or more reads further off.

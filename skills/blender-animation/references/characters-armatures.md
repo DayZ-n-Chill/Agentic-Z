@@ -673,12 +673,15 @@ animation:
    and check first whether the task can be done with pure data API instead (constraints,
    actions, NLA, keyframing, baking, and pose-space conversions all can — see the list above).
 
-8. **Low-level `FCurveKeyframePoints.insert()` inserts do not automatically get Bezier
-   handles/interpolation "for free."** This only matters when inserting via the low-level
-   F-Curve API instead of `keyframe_insert()` (which follows scene/tool defaults, typically
-   Bezier in a default startup file) — a programmatic low-level insert that never explicitly
-   sets `kf.interpolation = 'BEZIER'` can silently produce fully stepped (constant) animation
-   instead of the smooth curve the caller assumed.
+8. **Low-level `FCurveKeyframePoints.insert()` ignores the user's preferences for new keys.**
+   `keyframe_insert()` takes the interpolation and handle type for new keys from the user
+   preferences (Edit > Preferences > Animation), so a user who set new keys to Linear or
+   Constant gets those. `fcurve.keyframe_points.insert()` does not read the preferences: every
+   key it makes is `BEZIER` with auto-clamped handles, except on an integer, boolean or enum
+   F-Curve, which gets constant keys. Set `kf.interpolation` yourself when a script must
+   match what the user would get from the UI. With `options={'FAST'}` the insert also skips
+   handle recalculation, so call `fcurve.update()` after the last insert. (From Blender's
+   source; not run live.)
 
 9. **A pushed-down/unassigned Action with no fake user and no NLA strip referencing it
    disappears on file reload, not immediately** — a script that builds a library of cycle

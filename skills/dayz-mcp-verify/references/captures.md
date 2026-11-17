@@ -10,7 +10,7 @@ Control and data are engine-native and server-authoritative (spawn, raycast, tel
 
 ## How the window grab behaves
 
-- `PrintWindow(hwnd, hdc, PW_RENDERFULLCONTENT=2)` on the client's main window does capture the D3D game area: the full scene in more than 20 captures, even with another window covering it and without taking focus, as long as the Windows session is unlocked and the display is on (measured in game, DayZDiag 1.29, 2026-09-28). A black game area means the display is off or the session is locked, not that the route cannot read D3D.
+- `PrintWindow(hwnd, hdc, PW_RENDERFULLCONTENT=2)` on the client's main window does capture the D3D game area: the full scene in more than 20 captures, even with another window covering it and without taking focus, as long as the Windows session is unlocked and the display is on (measured in game, DayZDiag 1.29, 2026-09-28). A black game area means the display is off, not that the route cannot read D3D; a locked session makes the capture fail outright (see "Black frames" below).
 - `CopyFromScreen` only works with the window in front.
 - A covered DayZDiag window also drops to about 20 FPS, so anything timed on the client depends on who holds the foreground.
 - Byte-identical captures between camera poses mean the grab caught a stale frame, not the render. Validate on a crop of the game area, not on the variance of the whole frame (this corrects an older rule of 2026-08-12).

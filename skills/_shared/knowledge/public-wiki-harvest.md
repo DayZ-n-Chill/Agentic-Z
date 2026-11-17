@@ -4,7 +4,7 @@ Covers which public reference exists for DayZ modding outside this repo (the Boh
 
 Status: an index of pointers. Not yet checked on `P:\`: it states almost no game facts. The one it repeats was checked on 2026-11-17: `P:\scripts` holds no `CfgStamina` class, and the stamina maximum is the constant `STAMINA_MAX` at `P:\scripts\3_game\constants.c:749`.
 
-This file holds pointers only: no wiki text and no README text is copied into the repo. The game facts themselves are in `wiki-systems-reference.md` (contaminated areas, stamina and `cfggameplay.json`, diag menu categories, object and gear spawners, surfaces). Open that note for a fact, and this one to find the page that covers a topic.
+This file holds pointers only. The game facts themselves are in `wiki-systems-reference.md` (contaminated areas, stamina and `cfggameplay.json`, diag menu categories, object and gear spawners, surfaces). Open that note for a fact, and this one to find the page that covers a topic.
 
 ## Trust order
 

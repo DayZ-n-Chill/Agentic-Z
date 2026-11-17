@@ -4,13 +4,13 @@ Two open faults and one tool note, recorded 2026-05-17. None is checked on `P:\`
 
 | Finding | Status | Use it when |
 |---|---|---|
-| MDL-1: Binarize misaligns meshes tagged `personality` | Open bug, unresolved | Clothing or an accessory lines up in Object Builder and shifts after binarizing |
-| MDL-2: Nested proxies on binarized models can disappear | Open bug or engine limit | A mod model has missing parts and uses a binarized vanilla model as a proxy |
-| MDL-3: Object Builder alternative for Maya | Third-party tool, alpha | The user models in Maya and wants to skip Object Builder |
+| Binarize misaligns meshes tagged `personality` | Open bug, unresolved | Clothing or an accessory lines up in Object Builder and shifts after binarizing |
+| Nested proxies on binarized models can disappear | Open bug or engine limit | A mod model has missing parts and uses a binarized vanilla model as a proxy |
+| Object Builder alternative for Maya | Third-party tool, alpha | The user models in Maya and wants to skip Object Builder |
 
 ---
 
-## MDL-1. Binarize misaligns p3d meshes tagged as `personality`
+## Binarize misaligns p3d meshes tagged as `personality`
 
 **Open bug, unresolved, not reproduced here.**
 
@@ -34,7 +34,7 @@ Likely candidates:
 
 ---
 
-## MDL-2. Nested proxies on binarized models can disappear in game
+## Nested proxies on binarized models can disappear in game
 
 **Open bug or engine limitation, not reproduced here.**
 
@@ -62,7 +62,7 @@ Workaround that did work, with caveats:
 
 ---
 
-## MDL-3. Object Builder alternative for Maya
+## Object Builder alternative for Maya
 
 **Third-party tool for Autodesk Maya 2027, alpha.**
 
@@ -85,4 +85,4 @@ Useful when:
 
 ## How to use these in an audit
 
-MDL-1 and MDL-2 are red flags during a p3d audit: if a user reports misalignment after binarize, or missing proxies on binarized models, name the matching finding and state that it is not yet checked on `P:\`.
+The binarize misalignment and the disappearing nested proxies are red flags during a p3d audit: if a user reports misalignment after binarize, or missing proxies on binarized models, name the matching finding and state that it is not yet checked on `P:\`.

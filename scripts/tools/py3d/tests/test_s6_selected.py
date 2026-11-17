@@ -21,8 +21,8 @@ Two measurements bound what this is worth:
   the user's editor state, and dropping it silently discards their work.
 
 The content therefore matters, not just the presence: regenerating the tag
-as zeroes of the right length (what the reference p3d.py does) passes a
-presence check and still loses the selection. Hence
+as zeroes of the right length passes a presence check and still loses the
+selection. Hence
 `test_selected_content_is_preserved_not_zeroed`.
 
 The independent walker (helpers.selected_payloads) reads the bytes without

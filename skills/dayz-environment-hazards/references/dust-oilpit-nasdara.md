@@ -56,8 +56,8 @@ The weight coefficient is `GetWeightCoef()`:
 | `Transport` (default) | 1.0 | `GetWeightCoef`, `P:\scripts\3_game\vehicles\transport.c:475` |
 | `Offroad_02` | 1.5 | `GetWeightCoef`, `P:\scripts\4_world\entities\vehicles\inheritedcars\offroad_02.c:133` |
 | `Truck_01_Base` | 2.0 | `GetWeightCoef`, `P:\scripts\4_world\entities\vehicles\inheritedcars\truck_01_base.c:120` |
-| `Motorbike_01` | 0.5 | `GetWeightCoef`, `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:87` |
-| `Motorbike_02` | 0.75 | `GetWeightCoef`, `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_02.c:77` |
+| `Motorbike_01_ColorBase` | 0.5 | `GetWeightCoef`, `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:87` |
+| `Motorbike_02_ColorBase` | 0.75 | `GetWeightCoef`, `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_02.c:77` |
 
 No motorbike uses 0.25; `P:\` shows 0.5 and 0.75.
 

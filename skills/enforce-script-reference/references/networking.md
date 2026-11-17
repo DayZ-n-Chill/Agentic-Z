@@ -30,7 +30,7 @@ class MyMod_Device extends ItemBase
 
     void MyMod_Device()
     {
-        // Register in constructor — NOT in EEInit, NOT anywhere else
+        // Register in the constructor (or an InitItemVariables() override; PlayerBase uses Init()), not in EEInit
         string varPowered = "m_PoweredNet";
         RegisterNetSyncVariableBool(varPowered);
 

@@ -53,7 +53,7 @@ class CfgVehicles
     // Parent class — almost all DayZ placeable objects inherit from one of these:
     // - HouseNoDestruct — buildings, static structures
     // - Inventory_Base — items, placeable objects
-    // - ItemBase — smaller items
+    // (ItemBase is a script class only; no vanilla config.cpp defines it, so never use it as a config parent)
     
     class HouseNoDestruct;  // External class declaration
     

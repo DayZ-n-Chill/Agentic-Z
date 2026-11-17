@@ -46,7 +46,7 @@ A sound set and a particle both play on clients only, so the usual route is a sy
 - Item sounds: `StartItemSoundServer(id)` sends the sound to every client by RPC. See `item-and-player-sounds.md`.
 - Short particle effects: `SEffectManager.CreateParticleServer(vector pos, EffecterParameters parameters)` creates an effecter entity on the server that shows the particle on nearby clients (`P:\scripts\3_game\effectmanager.c:586`). Vanilla uses it for tree cutting, fishing, fish traps and, since 1.30, ceiling dust. See `dayz-particles/references/dayz-1-30-particles.md`.
 
-Since 1.30 a surface can also name the sound that goes with its particle. `SurfaceInfo` has a sound set getter next to each particle getter, such as `GetWheelContactSoundSetName()` beside `GetWheelContactParticleId()` (`P:\scripts\3_game\surfaceinfo.c:54`), and the vanilla wheel contact effect reads both and creates the sound with `SEffectManager.CreateSound` (`P:\scripts\4_world\entities\effects\effwheelcontact.c:34`).
+Since 1.30 a surface can also name the sound that goes with its particle. `SurfaceInfo` has a sound set getter next to the step, wheel, wheel contact, vehicle dust, cloud and ground particle getters, such as `GetWheelContactSoundSetName()` beside `GetWheelContactParticleId()` (`P:\scripts\3_game\surfaceinfo.c:54`). The dust kickup getters, such as `GetDustKickupEffectId()` (`P:\scripts\3_game\surfaceinfo.c:59`), and `GetCeilingDustParticleId()` (`P:\scripts\3_game\surfaceinfo.c:70`) have no sound set getter. The vanilla wheel contact effect reads both and creates the sound with `SEffectManager.CreateSound` (`P:\scripts\4_world\entities\effects\effwheelcontact.c:34`).
 
 ## Config hooks: sounds and particles without script
 

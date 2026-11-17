@@ -24,7 +24,8 @@ concatenation are a known, deliberate false negative (cannot be resolved statica
 
 Usage:
     python ui_reconcile.py <addon_root> [<addon_root> ...] [--json] [--strict]
-Exit: 0 clean, 1 any FAIL (typo-likely), 2 WARN only (verify). --strict makes WARN -> exit 1.
+Exit: 0 clean, 1 any FAIL (typo-likely), 2 WARN only (verify), 3 a root is not a
+directory. --strict makes WARN -> exit 1.
 
 Standalone by design (reconciliation is cross-file); pairs with script_validator.py.
 """

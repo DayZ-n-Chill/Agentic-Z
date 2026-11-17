@@ -100,7 +100,7 @@ Mass: `point.mass` is `None` by default. Set a number only on the points of the 
 
 ## LOD resolution values
 
-The engine identifies the type of a LOD by its resolution value. The same values as a table, with what each LOD is for and the Arma values not to use, are in `critical-rules.md` ("LOD resolution values"); this dictionary is the form the generation code uses:
+The engine identifies the type of a LOD by its resolution value. The same values as a table, with what each LOD is for and the values not to use, are in `critical-rules.md` ("LOD resolution values"); this dictionary is the form the generation code uses:
 
 ```python
 LOD_RESOLUTION = {
@@ -116,8 +116,8 @@ LOD_RESOLUTION = {
     "roadway":        3.0e15,    # Roadway
     "paths":          4.0e15,    # Paths (AI navigation)
     "hitpoints":      5.0e15,    # Hit points / damage zones
-    "view_geometry":  6.0e15,    # View Geometry (DayZ; not the Arma 3 value 3e13)
-    "fire_geometry":  7.0e15,    # Fire Geometry (DayZ; not the Arma 3 value 2e13)
+    "view_geometry":  6.0e15,    # View Geometry (not 3e13, a value some Arma era guides give)
+    "fire_geometry":  7.0e15,    # Fire Geometry (not 2e13, a value some Arma era guides give)
 }
 ```
 
@@ -243,7 +243,7 @@ LODs sit in rising resolution order in the file (`_shared/models/lods.md`, "Orde
 After generating, verify:
 
 - [ ] The file reads back without errors.
-- [ ] The number of LODs is right, at the DayZ resolutions: Geometry `1e13`, Memory `1e15`, LandContact `2e15`, Roadway `3e15`, Hit points `5e15`, View Geometry `6e15`, Fire Geometry `7e15`, not the Arma 3 values `2e13` and `3e13`.
+- [ ] The number of LODs is right, at the DayZ resolutions: Geometry `1e13`, Memory `1e15`, LandContact `2e15`, Roadway `3e15`, Hit points `5e15`, View Geometry `6e15`, Fire Geometry `7e15`, not the values `2e13` and `3e13` that some Arma era guides give.
 - [ ] Resolution LOD 0 has the most vertices.
 - [ ] The Geometry LOD has the `class=house` property (if it is a building).
 - [ ] **The `autocenter=0` named property is on every collision LOD** (Geometry, Fire Geometry, View Geometry, Roadway, Hit points, LandContact) of a placed object: Rule 16. The bug it prevents: missing on Fire Geometry, the collision mesh sat about 22 cm away from the visual mesh. Rule 16 says what vanilla stores and when the property belongs on a model at all.
@@ -1037,7 +1037,7 @@ def fix_ce_center(model):
 
 ## The LOD resolution values are the DayZ ones
 
-(Corrected 2026-07-18.) Every LOD resolution in this file uses the DayZ set: Geometry `1e13`, Memory `1e15`, LandContact `2e15`, Roadway `3e15`, Paths `4e15`, Hit points `5e15`, View Geometry `6e15`, Fire Geometry `7e15` (visual below `1e3`; ShadowVolume about `1e4`). The old Arma 3 values `2e13` and `3e13` for Fire and View Geometry, which DayZ does not read as those LODs, are not used. The source of truth in the tool is `py3d.classify_lod_resolution`; in this repo it is the Tier 2 table in `_shared/conventions/assets.md`.
+(Corrected 2026-07-18.) Every LOD resolution in this file uses the DayZ set: Geometry `1e13`, Memory `1e15`, LandContact `2e15`, Roadway `3e15`, Paths `4e15`, Hit points `5e15`, View Geometry `6e15`, Fire Geometry `7e15` (visual below `1e3`; ShadowVolume about `1e4`). The values `2e13` and `3e13` for Fire and View Geometry, which some Arma era guides give and which DayZ does not read as those LODs, are not used (`2e13` is the buoyancy LOD of the vanilla boat). The source of truth in the tool is `py3d.classify_lod_resolution`; in this repo it is the Tier 2 table in `_shared/conventions/assets.md`.
 
 ---
 

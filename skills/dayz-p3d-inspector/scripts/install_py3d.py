@@ -239,7 +239,14 @@ def _run_pip(*arguments: str) -> None:
         )
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0],
+        epilog="Takes no arguments. Run it with none to install the wheel.",
+    )
+    parser.parse_args(argv)
     wheel = _select_wheel()
     action = _preexisting_action()
     if action == "replace-dayz-legacy":

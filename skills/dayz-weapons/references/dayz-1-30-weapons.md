@@ -8,7 +8,7 @@ Every block marked `[EXACT]` is copied from the cited file on `P:\`. `[VERIFIED-
 
 Until 1.29, any vanilla firearm with a script under `4_World\Entities\Firearms\` also shipped a model and a `CfgWeapons` class in the matching weapons PBO (the 1.29 data is not on `P:\`, so not checked there).
 
-Since 1.30, four new firearm scripts and a bayonet compile, register their hand animations, and in two cases have their own bone remaps, while the vanilla data on `P:\` has no model and no `CfgWeapons` or `CfgMagazines` class for them. For a comparison, use a weapon that ships in the data you have: the SCAR-H for a rifle shaped like the SCAR-L, the P1 or Glock for a pistol, the CZ527 or Mosin for a bolt action, the CZ61 or PM73 for an open bolt SMG.
+Since 1.30, four new firearm scripts and a bayonet compile, register their hand animations, and in two cases have their own bone remaps, while the vanilla data on `P:\` has no model and no `CfgWeapons` or `CfgMagazines` class for them. For a comparison, use a weapon that ships in the data you have: the SCAR-H for a rifle shaped like the SCAR-L, the P1 or Glock for a pistol, the CZ527 or Mosin for a bolt action, the PM73 RAK for an open bolt SMG (`PM73Rak_Base extends OpenBolt_Base`, `P:\scripts\4_world\entities\firearms\smg\pm73rak.c:5`; the CZ61 is closed bolt, `CZ61_Base : RifleBoltLock_Base`, `P:\scripts\4_world\entities\firearms\smg\cz61.c:4`).
 
 `[VERIFIED-vanilla]` on `P:\`:
 

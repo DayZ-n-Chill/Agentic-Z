@@ -51,7 +51,7 @@ Walk every LOD and make sure that only the Geometry LOD (resolution `1e13`) has 
 ```python
 for lod in model.lods:
     has_mass = any(p.mass is not None for p in (lod.points if hasattr(lod, "points") else []))
-    if lod.resolution == 1e13:
+    if abs(lod.resolution - 1e13) < 1e11:  # resolutions are float32 after a read
         assert has_mass, "Geometry LOD must have #Mass#"
     else:
         assert not has_mass, f"LOD res={lod.resolution:.0e} must NOT have #Mass#"
@@ -76,7 +76,7 @@ The writer's identity guard should fail loudly on a dead selection key. A succes
 
 `[DESIGN]` Name such axes `axis_<name>` to keep the validator quiet.
 
-`/dayz-p3d-audit` passes this finding on as a WARNING when it runs without a `model.cfg`, marked as guessed from the axis name; the same reading applies to it. With `--model-cfg` the audit drops the guess and instead checks the selection and axis each animation names (`fork_findings` in `dayz-p3d-audit/scripts/audit_p3d.py`; `_shared/models/memory-points.md`).
+`/dayz-p3d-audit` passes this finding on as a WARNING when it runs without a `model.cfg`, marked as guessed from the axis name; the same reading applies to it. With `--model-cfg` the audit drops the guess and instead checks the selection and axis each animation names (`fork_findings` in `skills/dayz-p3d-audit/scripts/audit_p3d.py`; `_shared/models/memory-points.md`).
 
 ## Quads are stored as quads
 

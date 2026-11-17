@@ -95,12 +95,11 @@ AddonBuilder.exe P:\<ModName> P:\Mods\@<ModName>\Addons ^
     -prefix=<ModName> -temp=P:\temp\<ModName> [-clear]
 ```
 
-`-clear` wipes target dir before building (useful in large refactors /
+`-clear` clears the `-temp` folder before copying (useful in large refactors /
 chasing stale assets).
-
 **Measured build gotchas:**
 
-- **AddonBuilder cleans its `-temp` BEFORE copying** ("Clearing temp folder" in its log) and
+- **With `-clear`, AddonBuilder cleans its `-temp` BEFORE copying** ("Clearing temp folder" in its log) and
   the default is `P:\temp\<mod>`. `P:\temp` and `P:\TEMP` are the SAME path (Windows
   case-insensitive): source staging under `P:\TEMP\<X>` with `-temp=P:\temp\<X>`
   causes AddonBuilder to DELETE the entire staging and fail with "Copy failed" (and exit 0 on

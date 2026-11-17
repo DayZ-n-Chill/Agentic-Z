@@ -99,13 +99,14 @@ In py3d: `lod.properties['autocenter'] = '0'`
 
 A P3D without a Memory LOD (res ~1e15) will have no animation, no bounding data, and
 potentially crash the engine. A P3D without a Geometry LOD (res ~1e13) will have zero
-collision and zero action targeting.
+collision. The action cursor raycasts the View Geometry LOD, not the Geometry LOD
+(`RaycastRVParams` defaults to `ObjIntersectView`, `P:\scripts\3_game\global\dayzphysics.c:88`).
 
 **Required LODs for any interactive DayZ object:**
 
 - LOD 0, Visual (res=0.0): rendering
 - Memory (res ~1e15): animation axes, bounding, interaction points
-- Geometry (res ~1e13): collision and cursor raycasting
+- Geometry (res ~1e13): collision and physics
 
 **Recommended additional LODs:**
 
@@ -156,8 +157,8 @@ for items without a proper Geometry LOD or with broken `GetCollisionBox()` data.
 The Component selections (`Component01` to `ComponentNN`) together cover every vertex and
 face of the Geometry LOD, with weight=1. Each component is one convex closed piece. A
 non-convex shape is split into several convex components (Object Builder's Find Components),
-so do not merge them into one. Anything no component covers is partial collision: those
-faces won't register raycasts.
+so do not merge them into one. A closed part left out of every component gets no
+collision: its faces do not register raycasts.
 
 Measured in game (`killers-detail.md` section 8): a closed part left out of every
 component collided with nothing in the LODs it was left out of, even beside covered

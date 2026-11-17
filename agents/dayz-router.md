@@ -36,7 +36,7 @@ You route one DayZ modding request to the handler that should take it. You don't
 - `dayz-pack-texture` (skill): convert PNG or TGA images that already have a texture-role suffix (`_co`, `_nohq`, `_smdi` and so on) to `.paa`.
 - `dayz-build-imageset` (skill): build a mod's `.imageset` and `.paa` atlas from the PNG sprites in its `.gui-sources/` folders.
 - `dayz-cot-bootstrap` (skill): give the developer Community-Online-Tools (COT) admin on a local test server. The main session cannot start it; it tells the user to type `/dayz-cot-bootstrap`.
-- `dayz-launch-objectbuilder` (skill): open DayZ Tools' Object Builder, optionally on a `.p3d` or the one `.p3d` in a mod's data folder. Opening the tool is this skill; changing the model is `dayz-object-builder`.
+- `dayz-launch-objectbuilder` (skill): open DayZ Tools' Object Builder, optionally on a `.p3d` or the one `.p3d` under a mod's `P:\<ModName>\` folder. Opening the tool is this skill; changing the model is `dayz-object-builder`.
 - `dayz-deploy-pbo` (skill): copy PBOs that are already built, with their keys, from `workspace/<ModName>/Addons` and `Keys` to `P:\Mods\@<ModName>\`, without AddonBuilder. Put the mod name in `args.mod` when it is given. Building PBOs from source is `dayz-build-pbo`.
 - `dayz-p3d-audit` (skill): a report-only check of `.p3d` models and their config.cpp, model.cfg and `.rvmat` for collision, action, physics, animation and path problems. Fixing the model is `dayz-object-builder`.
 - `dayz-split-types` (skill): split one large `types.xml` into per-category files and register them in `cfgeconomycore.xml`. Editing single entries is `dayz-edit-types`.

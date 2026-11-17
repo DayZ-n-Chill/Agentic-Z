@@ -90,7 +90,7 @@ The detail and the workarounds (a key-driven test addon, a mission driver) are i
 
 ## Report
 
-A criteria table (criterion, PASS, FAIL or INFO, evidence), the PNG captures and the telemetry and raycast JSON, one overall verdict, and a "manual test" section. Each capture costs about 25,000 tokens of context: batch the orbit captures and do not read a PNG twice. If a verdict says FAIL, open the client log before recording it (`/dayz-logwatch --dir <client profile folder>`); in one battery the automatic verdict accused the mod six times with no real mod failure.
+A criteria table (criterion, PASS, FAIL or INFO, evidence), the PNG captures and the telemetry and raycast JSON, one overall verdict, and a "manual test" section. Each capture costs about 25,000 tokens of context: batch the orbit captures and do not read a PNG twice. If a verdict says FAIL, open the client log before recording it (`/dayz-logwatch --dir <client profile folder> --since <minutes>`, with minutes reaching back past the failure; without `--since` it reads only lines written after the watch starts); in one battery the automatic verdict accused the mod six times with no real mod failure.
 
 ## What to read
 

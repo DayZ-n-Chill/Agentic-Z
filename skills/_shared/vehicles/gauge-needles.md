@@ -409,8 +409,10 @@ would invert entirely yielding 1 out of 11 — absurd for shipped
 cars whose clusters are seen turning clockwise. No need to believe convention
 beforehand.
 
-Reproducible in two minutes on
+The table was reproduced on the DayZ 1.29 models of
 `DZ\vehicles\wheeled\{offroadhatchback,civiliansedan,hatchback_02,sedan_02}\*.p3d`.
+The current models on `P:\` are ODOL version 56, which this repo cannot parse
+yet, so re-checking the table on today's data needs an ODOL version 56 reader.
 
 In LFQuad3 this convention (axis towards driver, `angle0 = rest - theta(min)`)
 is that of cluster approved in game on 2026-09-06. If a cluster with this
@@ -949,8 +951,9 @@ major marks, within 12.7 px kmh and 6.4 px rpm); radius = ACTUAL disc edge (r_ma
 Moving the center MOVES angles: they are re-derived when it changes. Painted disc:
 32 segments, `DISC_R = 0.0254`, centered at p0 offset by `lift`, `add_dial_faces`. Each needle
 with ITS disc: `remap_gauge_discs` assigns by x (`aguja_izquierda` at x +0.056 =
-speedometer; `aguja_derecha` at x -0.055 = tachometer; OBJ names
-are inverted relative to their position).
+speedometer; `aguja_derecha` at x -0.055 = tachometer; with the driver's
+right at -X, the OBJ names match the driver-frame position, but assignment
+still goes by x, not by name).
 
 Stack measured along axis, in mm from eye: -0.3 painted disc with
 bad `lift` of -0.0003 (covered everything), +0.0 blade, +0.8..+2.5 hub, +1.5

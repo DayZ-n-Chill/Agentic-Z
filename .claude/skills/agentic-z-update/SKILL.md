@@ -52,7 +52,7 @@ It then records the upstream SHA in `.claude/.upstream-baseline`, but only when 
 |---|---|---|
 | `unchanged` | Local file matches upstream | nothing |
 | `safe-overwrite` | Not edited locally, upstream changed it | apply upstream |
-| `new` | Upstream has it, the baseline and the clone do not | apply upstream |
+| `new` | Upstream has it and the clone never had it (absent from the baseline, or in the baseline but never committed in the clone) | apply upstream |
 | `locally-deleted` | In the baseline, missing in the clone, and once committed in the clone (you deleted it) | leave alone (`--per-file` take restores it) |
 | `local-only-edit` | Only the clone edited it (upstream unchanged) | leave alone |
 | `conflict` | Both the clone and upstream edited it | leave alone (use `--per-file` to resolve) |
@@ -125,13 +125,13 @@ output/                     # one-shot deliverables
 
 ## SessionStart hook
 
-A `SessionStart` hook runs `update.py --check --quiet` at the start of every Claude Code session in this repo. It prints a one-line nudge if upstream is ahead, if a newer prebuilt search index is available, or if no baseline has been recorded yet (run `/agentic-z-update` once to record it). Silent on no-change. The hook has a 20 second timeout, which leaves room for the `git fetch` plus the 5 second GitHub release check on a slow network; the drift check itself takes well under a second even with hundreds of files behind. It always exits 0: Claude Code drops plain output from a hook that exits non-zero, so a failing exit code would hide the nudge. Configured in `.claude/settings.json`.
+A `SessionStart` hook runs `update.py --check --quiet` at the start of every Claude Code session in this repo. It prints a one-line nudge if upstream is ahead, if a newer prebuilt search index is available, or if no baseline has been recorded yet (run `/agentic-z-update` once to record it). Silent on no-change. The hook has a 20 second timeout, which leaves room for the `git fetch` plus the GitHub release check (one or two requests of up to 5 seconds each) on a slow network; the drift check itself takes well under a second even with hundreds of files behind. It always exits 0: Claude Code drops plain output from a hook that exits non-zero, so a failing exit code would hide the nudge. Configured in `.claude/settings.json`.
 
 To disable temporarily: comment out the `SessionStart` block in `.claude/settings.json`.
 
 ## Search index notification
 
-If `/dayz-search-download` was run before, this skill also checks whether the installed GitHub release of the search index has been superseded. The check is read-only and never downloads; it only suggests running `/dayz-search-download`.
+If `/dayz-search-download` was run before, this skill also checks whether the installed GitHub release of the search index has been superseded. It picks the newest release carrying an index the same way `/dayz-search-download` does: the latest release if it has a `dayz-search-index-*` or `dayz-rag-index-*` asset, otherwise the newest published (not draft, not prerelease) release in the release list that has one. It reports an update when that release's tag sorts newer than the installed one. The check is read-only and never downloads; it only suggests running `/dayz-search-download`.
 
 To skip the check: ensure `~/.claude/dayz-search-index/release-tag.txt` doesn't exist (the check is silent when no installed tag is recorded).
 

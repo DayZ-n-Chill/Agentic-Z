@@ -6,7 +6,7 @@
 // Vanilla BadgesPanel uses right_ref with a 252-unit INWARD offset
 // (hexactpos 1; references/layout-format.md, drawn edge − parent edge = −252 at
 // 1920x1080). The dayz-ui-lab parser models that subtraction
-// (scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py:790-792), with exact units as
+// (scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py:791-792), with exact units as
 // pixels. This file does not copy the offset. An exact offset scales with the
 // screen height too (references/rules-and-checklist.md rule 3, corrected 2026-10-03; this comment said
 // "hexactpos 1 + 252 px is what breaks 1280x720").

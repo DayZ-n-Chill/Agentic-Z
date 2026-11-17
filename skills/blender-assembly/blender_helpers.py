@@ -260,7 +260,7 @@ def smart_uv(obj, angle=66, margin=0.02):
 
 def bake_map(high, low, kind='NORMAL', size=2048, ray=0.01, path=None):
     """Rule 11 — bake kind ('NORMAL' or 'AO') from high onto low's UVs.
-    Low MUST have UVs (smart_uv first). Blender bakes OpenGL-convention (Y+)
+    Low MUST have UVs (unwrap first, SKILL.md Rule 11 step 2). Blender bakes OpenGL-convention (Y+)
     tangent normals; DayZ _nohq is DirectX-convention (Y-), so invert the
     green channel before export (SKILL.md Rule 11)."""
     scene = bpy.context.scene

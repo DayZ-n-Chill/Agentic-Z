@@ -11,20 +11,20 @@ Vanilla facts: Preprocessor defines (`SERVER`, `NO_GUI`, `DIAG_DEVELOPER`) are c
 ```
 if (condition)
 {
-    // Single condition
+	// Single condition
 }
 
 if (condition1 && condition2)
 {
-    // Multiple conditions
+	// Multiple conditions
 }
 else if (condition3)
 {
-    // Else-if branch
+	// Else-if branch
 }
 else
 {
-    // Else branch
+	// Else branch
 }
 ```
 
@@ -50,12 +50,12 @@ if ((a & b) == b)
 ```
 for (int i = 0; i < count; i++)
 {
-    // Loop body
+	// Loop body
 }
 
 foreach (string item : collection)
 {
-    // For-each loop
+	// For-each loop
 }
 ```
 
@@ -64,9 +64,9 @@ foreach (string item : collection)
 ```
 foreach (string stateName : stateNames)
 {
-    stateName.TrimInPlace();
-    int value = typename.StringToEnum(EMyMod_State, stateName);
-    // Process value
+	stateName.TrimInPlace();
+	int value = typename.StringToEnum(EMyMod_State, stateName);
+	// Process value
 }
 ```
 
@@ -77,40 +77,40 @@ Unverified: `foreach` over a getter call is reported to call the getter again on
 ```
 class MyClass
 {
-    ref TStringArray m_Test = {"A", "B"};
+	ref TStringArray m_Test = {"A", "B"};
 
-    TStringArray GetTest()
-    {
-        return m_Test;
-    }
+	TStringArray GetTest()
+	{
+		return m_Test;
+	}
 
-    void TestBad()
-    {
-        // AVOID: reported (unverified) to call the getter every iteration
-        foreach (string t : GetTest())
-        {
-            Print(t);
-        }
-    }
+	void TestBad()
+	{
+		// AVOID: reported (unverified) to call the getter every iteration
+		foreach (string t : GetTest())
+		{
+			Print(t);
+		}
+	}
 
-    void TestGood()
-    {
-        // CORRECT: Assign to variable first
-        TStringArray test = GetTest();
-        foreach (string t : test)
-        {
-            Print(t);
-        }
-    }
+	void TestGood()
+	{
+		// CORRECT: Assign to variable first
+		TStringArray test = GetTest();
+		foreach (string t : test)
+		{
+			Print(t);
+		}
+	}
 
-    void TestAlsoGood()
-    {
-        // CORRECT: Direct member access works fine
-        foreach (string t : m_Test)
-        {
-            Print(t);
-        }
-    }
+	void TestAlsoGood()
+	{
+		// CORRECT: Direct member access works fine
+		foreach (string t : m_Test)
+		{
+			Print(t);
+		}
+	}
 }
 ```
 
@@ -119,7 +119,7 @@ class MyClass
 ```
 while (condition)
 {
-    // Loop body
+	// Loop body
 }
 ```
 
@@ -133,27 +133,27 @@ Unverified: the compiler is reported to still ask for a return after a `switch` 
 // REPORTED (unverified): compiler may complain about a missing return
 string Test(string what)
 {
-    switch (what)
-    {
-        case "A":
-        case "B":
-            return "X";
-        default:
-            return "Y";
-    }
-    // Reported (unverified) error: function must return a value
+	switch (what)
+	{
+		case "A":
+		case "B":
+			return "X";
+		default:
+			return "Y";
+	}
+	// Reported (unverified) error: function must return a value
 }
 
 // WORKAROUND: Move last return outside switch
 string Test(string what)
 {
-    switch (what)
-    {
-        case "A":
-        case "B":
-            return "X";
-    }
-    return "Y";  // Default case moved outside
+	switch (what)
+	{
+		case "A":
+		case "B":
+			return "X";
+	}
+	return "Y";  // Default case moved outside
 }
 ```
 
@@ -167,7 +167,7 @@ array<int> list = {0, 1, 2};
 // CORRECT: Index-based bounds check
 if (index >= 0 && index < list.Count())
 {
-    int value = list[index];
+	int value = list[index];
 }
 
 // NOT A BOUNDS CHECK: tests the value, not the index
@@ -186,15 +186,15 @@ if (!list[index])
 
 ```
 #ifdef MYMOD_GROUPS
-    // Group-specific code
+	// Group-specific code
 #endif
 
 #ifdef SERVER
-    // Server-only code
+	// Server-only code
 #endif
 
 #ifndef DIAG_DEVELOPER
-    // Non-developer build code
+	// Non-developer build code
 #endif
 ```
 

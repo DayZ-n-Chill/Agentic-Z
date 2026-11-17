@@ -55,7 +55,7 @@ string Test(string what)
 }
 ```
 
-### 4. Compile Errors Show Wrong File/Line
+### 4. Compile Errors Show Wrong File/Line (reported, not checked on `P:\`)
 
 When a class referenced in code doesn't exist (e.g., missing addon), the
 compiler shows the **last successfully parsed file at EOF**, not the file
@@ -138,9 +138,12 @@ shader = Super;
 
 ### 8. ProjectionBasedOnParent Creates Real Entities
 
-If a kit/hologram uses `ProjectionBasedOnParent`, the engine creates an
-actual entity during placement preview. Without overriding `PlaceEntity()`,
-ghost entities accumulate.
+The hologram creates a real entity of the `ProjectionBasedOnParent()` class
+for the placement preview: `CreateObjectEx(ProjectionBasedOnParent(), pos, ...)`
+on the server and as a local object on the client
+(`P:\scripts\4_world\classes\hologram.c:114`, `:121`; vanilla `PlaceEntity` is at `:1044`).
+That ghost entities accumulate without a `PlaceEntity()` override is
+reported and was not checked on `P:\`.
 
 ```
 // REQUIRED override in Hologram
@@ -344,7 +347,7 @@ Print(GetGame().GetTime());
 
 ### RPT Log Analysis
 
-Common log patterns and what they mean:
+Common log patterns and what they mean. The rows for `Variable name 'X' already used as type name`, `Unknown operator '%'` and `Formula too complex` were measured (see the sections above); the other rows are reported and were not checked, since logs are not on `P:\`.
 
 | Log Pattern | Meaning |
 |---|---|
@@ -401,7 +404,7 @@ string s = x.ToString();  // "42"
 
 # Additional pitfalls: style guide and performance
 
-Each entry notes whether it was checked against vanilla on `P:\`.
+Each entry either cites the vanilla line it was checked against on `P:\`, names the build it was measured on, or is marked as reported and not checked.
 
 ### Compiler / language quirks
 
@@ -417,7 +420,8 @@ Each entry notes whether it was checked against vanilla on `P:\`.
 
 - **Switch with `default` still requires a return outside** — even though every case
   including default returns, the compiler complains "function must return a value".
-  Workaround: move the default branch's return to a final `return Y;` after the switch:
+  Workaround: move the default branch's return to a final `return Y;` after the switch
+  *(reported; not checked on `P:\`, same as section 3)*:
 
   ```c
   string Test(string what)
@@ -433,7 +437,8 @@ Each entry notes whether it was checked against vanilla on `P:\`.
   ```
 
 - **`if (a & b == b)` parses as `a & (b == b)`** — bitwise has lower precedence than
-  comparison in EnScript (C/C++ semantics). Parenthesize:
+  comparison in EnScript (C/C++ semantics). Parenthesize
+  *(reported; not checked on `P:\`, same as "Operator Precedence Trap" above)*:
 
   ```c
   if ((a & b) == b)   // CORRECT
@@ -442,11 +447,12 @@ Each entry notes whether it was checked against vanilla on `P:\`.
 - **Compiler errors with undefined classes / name conflicts point to the wrong file** —
   the error shows the last `.c` parsed at EOF, not the line that triggered the issue.
   When the error location seems wrong, search the entire codebase for the symbol and
-  check that all required addons are loaded.
+  check that all required addons are loaded. *(Reported; not checked on `P:\`, same as section 4.)*
 
 - **`crash_<date>_<time>.log` contains exceptions, not segfaults** — actual crashes
   (memory faults) write a different dump. When debugging, check both: exception logs
   for handled errors, separate crash dumps for hard segfaults.
+  *(Reported; log files are not on `P:\`, so this was not checked.)*
 
 ### Performance traps (declarations checked in vanilla `game.c`)
 
@@ -511,7 +517,7 @@ Vanilla examples: `GizmoGetCount` and its two neighbours at `P:\scripts\3_game\g
 
 ### `notnull` keyword for parameters
 
-Propagates non-nullness guarantees. The caller has already verified non-null, so the
+Vanilla uses it on parameters, for example `AddLocation(notnull BenchmarkLocation loc)` (`P:\scripts\5_mission\mission\missionbenchmark.c:54`). It propagates non-nullness guarantees. The caller has already verified non-null, so the
 function can skip the check. Combined with the EnScript rule "null-check where you
 know how to handle it":
 
@@ -546,7 +552,7 @@ modded class ItemBase
 
 ### `EXTrace.Start` (Expansion / Community Framework only)
 
-Modern minimal-overhead tracing. Not in vanilla DayZ. Available when Expansion
+Modern minimal-overhead tracing. Not in vanilla DayZ (no `EXTrace` anywhere under `P:\scripts`). Available when Expansion
 or DayZ Community Framework is loaded. Replaces older `CF_Trace_0` pattern that
 required `#ifdef EXPANSIONTRACE` guards.
 
@@ -609,6 +615,7 @@ behave as if the override does not exist, but the codebase compiles cleanly.
 Rule: when picking the cross-mod gate symbol, audit the target PBO's
 `config.cpp` `CfgPatches` / `CfgMods.defines[]` entries — never trust a
 matching `#define` in `scripts/Common/Define.c` to propagate.
+*(Reported for mods; it cannot be checked on `P:\`.)*
 
 ### `#ifdef DEVELOPER` ≠ `DIAG_DEVELOPER` — read the actual compile defines
 
@@ -622,19 +629,19 @@ Vanilla has APIs guarded by `#ifdef DEVELOPER` (e.g. `DayZPlayerSyncJunctures.Se
 - **Seated player + vehicle**: `HumanCommandVehicle vc = player.GetCommand_Vehicle();` (`P:\scripts\3_game\human.c:1528`), then `Transport veh = vc.GetTransport();` (`P:\scripts\3_game\human.c:716`), then `veh.GetTransform(mat); mat[3] = pos; veh.SetTransform(mat);` — vehicle and occupant move together. The occupant's position lags one frame: to report the applied position, read `veh.GetPosition()`, not `player.GetPosition()`.
 - **Give**: `player.GetInventory().CreateInInventory(cls)` / `player.GetHumanInventory().CreateInHands(cls)` (`P:\scripts\3_game\systems\inventory\humaninventory.c:44`) with `player.GetItemInHands()` as the hands-occupied guard.
 
-### `foreach` on getter results re-calls the getter
+### `foreach` over a getter's result (reported; the cause was not checked on `P:\`)
 
-Every iteration calls the method again. Hoist to a local first:
+A `foreach` written directly over a getter's return value has been reported to misbehave. Copy the result to a local first and loop over the local:
 
 ```c
-// BAD — getter called N times
+// AVOID — loop directly over the getter's result
 foreach (string t : GetTest()) { Print(t); }
 
-// GOOD — getter called once
+// GOOD — result copied to a local
 TStringArray test = GetTest();
 foreach (string t : test) { Print(t); }
 
-// ALSO GOOD — direct member access doesn't recall
+// ALSO GOOD — loop over a member directly
 foreach (string t : m_Test) { Print(t); }
 ```
 

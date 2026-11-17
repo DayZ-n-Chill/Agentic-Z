@@ -10,7 +10,7 @@ Measured results, tool behaviour and third-party mod behaviour (Community Framew
 
 ## WHAT THIS DOES
 
-Closes the dev loop for a DayZ mod on a single Windows machine: re-pack the PBO, deploy it where the engine reads mods, and launch `DayZDiag_x64.exe` with `-filePatching` so that script and config edits can be picked up without re-binarizing (see "FILEPATCHING SCOPE" for what that really covers). Four launch modes (`offline`, `server`, `client`, `all`) are driven by one orchestrator script and double-click `.bat` wrappers, generated per mod into `<Mod>_dev\tools\`.
+Closes the dev loop for a DayZ mod on a single Windows machine: re-pack the PBO, deploy it where the engine reads mods, and launch `DayZDiag_x64.exe` with `-filePatching` so that script and config edits can be picked up without re-binarizing (see "FILEPATCHING SCOPE" for what that really covers). Four launch modes (`offline`, `server`, `client`, `all`) are driven by one orchestrator script and thin `.bat` wrappers around it, generated per mod into `<Mod>_dev\tools\`. The wrappers work only inside a session started by the dayz-mcp managed launcher (see "USAGE"); a plain double-click from Explorer stops with "Managed lifecycle environment is incomplete".
 
 Until 1.29 the loop was: pack the PBO, deploy the packed `@Mod`, launch DayZDiag with `-filePatching`. Since 1.30 `-mod` may point at an **unpacked** source folder, RV configs load unpacked, and there are new flags `-cacheP3D=0/1` and `-resolveFilePatchingUsingEnfusion=0/1` (documented for 1.30 Experimental; not checkable on `P:\`). Details: `dayz-1-30-test-ingame.md`.
 
@@ -119,7 +119,7 @@ From `<Mod>_dev\tools\`:
 .\dayz-test.ps1 -Mod MyMod -Kill -RunId <run_id>
 ```
 
-Key parameters: `-Mod` (required), `-Mode`, `-Mission`, `-Build`/`-Clean`, `-ExtraMods`, `-BaseMods`/`-NoBaseMods` (see below), `-Source` (default `P:\<Mod>`), `-RunId`, `-NoFilePatching`, `-Port`, `-PlayerName`, `-ServerWait`. Double-click wrappers: `server.bat` (all + build), `client.bat` (pass `-RunId <run_id>`), `offline.bat`.
+Key parameters: `-Mod` (required), `-Mode`, `-Mission`, `-Build`/`-Clean`, `-ExtraMods`, `-BaseMods`/`-NoBaseMods` (see below), `-Source` (default `P:\<Mod>`), `-RunId`, `-NoFilePatching`, `-Port`, `-PlayerName`, `-ServerWait`. `.bat` entry points for the managed launcher (they need the same lifecycle environment, so a plain double-click fails): `server.bat` (all + build), `client.bat` (pass `-RunId <run_id>`), `offline.bat`.
 
 ## DEFAULT MODS & ADMIN TOOLS
 

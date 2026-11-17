@@ -107,3 +107,11 @@ def test_mod_name_is_checked_before_anything_is_written(tmp_path, name):
     assert done.returncode != 0
     assert "--mod must match" in done.stderr
     assert not out.exists()
+
+
+def test_missing_source_folder_writes_no_index(tmp_path):
+    out = tmp_path / "api"
+    done = _run(BUILD, str(tmp_path / "typo"), str(out), api_dir=out)
+    assert done.returncode != 0
+    assert "source folder" in done.stderr
+    assert not out.exists()

@@ -145,17 +145,19 @@ def shelf_pack(me):
         pos = {}
         scale = {}
         cx = cy = row_h = 0.0
+        right = 0.0  # real right edge of the panel rows; a panel wider than S passes it
         for e in panels:
             if cx > 1e-12 and cx + e['w'] > S:
                 cx = 0.0
                 cy += row_h + m
                 row_h = 0.0
             pos[id(e)] = (cx, cy)
+            right = max(right, cx + e['w'])
             cx += e['w'] + m
             row_h = max(row_h, e['h'])
         ptop = cy + row_h
         field_h = max(ptop, math.sqrt(total_panel_area) * 0.5)
-        sx = S + 3.0 * m
+        sx = max(S, right) + 3.0 * m
         for e in strips:
             sc = min(1.0, field_h * 0.98 / e['h']) if e['h'] > 1e-12 else 1.0
             scale[id(e)] = sc

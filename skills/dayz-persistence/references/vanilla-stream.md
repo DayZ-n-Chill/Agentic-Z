@@ -2,7 +2,7 @@
 
 The rules for data saved in an entity's own `OnStoreSave` stream: write and read order, the version argument, the variable width of the base class data, and what fails. Open this when a mod saves fields on its own entity.
 
-Line numbers are from the vanilla scripts on `P:\` (game storage version 144). A citation marked `1.29` points at the 1.29 scripts, which are not on `P:\` and were not checked there.
+Line numbers are from the vanilla scripts on `P:\` (game storage version 144). A citation marked `1.29` points at the 1.29 scripts, which are not on `P:\` and were not checked there. The same holds for every statement of what 1.29 did, cited or not: not yet checked on `P:\`.
 
 ## Scope
 

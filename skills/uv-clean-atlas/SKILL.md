@@ -225,7 +225,7 @@ Everything above is the Windows workflow and holds there. For Linux, the Proton 
 
 - The WSL2 steps are Linux already. Run them natively and skip the Windows to WSL plumbing (stripping CRLF, quoting from PowerShell into bash).
 - Headless Blender is `blender -b <file.blend> --python <script> -- <args>`.
-- The PNG step of `project_atlas.py` (`render_atlas_pngs`) calls `powershell.exe` with `draw_atlas_fallback.ps1`, a script that is not shipped here on any OS. On Linux, skip that step or draw the atlas PNG files with PIL.
+- The PNG step of `project_atlas.py` (`render_atlas_pngs`) would run `draw_atlas_fallback.ps1` through `powershell.exe`, but that script is not shipped with the skill, so on every OS the step skips itself, logs `PNG_RENDER_SKIPPED` and the run ends normally. Draw the atlas PNG files from `atlas_a_islands.json` yourself, for example with PIL.
 
 ## Scripts
 

@@ -68,7 +68,7 @@ The reasoning agents that signed off on LF_VStorage 1.4.6 were not lazy. Each re
 | Pre-super gate placement | VULN-004 (gate runs after vanilla super) | Order of operations within an EE hook is invisible from "is the gate present?" |
 | Sanity caps missing | VULN-011 (LFV2 count fields uncapped) | Threat model not in scope of the agent's prompt |
 
-Five of those are **enumerable mechanically**, a script + grep finds them in under a minute. Three are **cross-actor**, one writer + a different deleter + admin override. Reasoning across 3+ files is where Opus agents thin out.
+Five of those are **enumerable mechanically**, a search plus a table walk finds them in minutes (the per-check time budgets in the reference files), with no reasoning needed. Three are **cross-actor**, one writer + a different deleter + admin override. Reasoning across 3+ files is where Opus agents thin out.
 
 And separately: agents *report* findings convincingly whether or not the findings are real. The fix is three-pronged: cheap mechanical pre-checks first, then reasoning agents specifically prompted on the gaps reasoning is bad at, then an adversarial verification pass before any finding is trusted.
 
@@ -89,7 +89,7 @@ Skipping early steps makes later ones less effective, do not skip. Each step bel
 > **Done when:** a written list of mechanical findings exists (zero items if
 > clean), each citing `path:line_start-line_end`, ready to paste into step 2.
 
-Run before spawning any agents. Each check is a grep + table walk; on a mod the size of LF_VStorage they take about two hours together (the time budget at the end of each reference file gives its share), and they catch the bookkeeping-style bugs reasoning misses.
+Run before spawning any agents. Each check is a grep + table walk; on a mod the size of LF_VStorage they take about two hours together (the four mechanical-check files, `state-machine-matrix.md` and `engine-hooks-and-super-chain.md` each give a time budget; the other three step-1 files give none), and they catch the bookkeeping-style bugs reasoning misses.
 
 These reference files give the procedures. Read the ones that apply before running:
 

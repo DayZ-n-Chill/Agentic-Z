@@ -2,7 +2,7 @@
 
 How to keep mod data in its own file under the server profile: the file primitives vanilla gives you, the load rules, a save sequence that can be recovered at every step, and why it is not atomic. Open this for server wide data or anything an admin must read or repair outside the game.
 
-Line numbers are from the vanilla scripts on `P:\` (game storage version 144). A citation marked `1.29` points at the 1.29 scripts, which are not on `P:\` and were not checked there.
+Line numbers are from the vanilla scripts on `P:\` (game storage version 144). A citation marked `1.29` points at the 1.29 scripts, which are not on `P:\` and were not checked there. The same holds for every statement of what 1.29 did, cited or not: not yet checked on `P:\`.
 
 ## Scope and available primitives
 
@@ -105,6 +105,6 @@ Until 1.29 this file did not exist. Since 1.30 the bunker scheduler persists acr
 
 Design note: Do not copy this as a persistence template. If a mod needs administrator-inspectable bunker-like state, keep this sidecar contract on `$profile:` / `$saves:` with an explicit version header. If the data must live next to the mission, document that `DeleteFile` cannot rotate it and that a failed `Read` is undetectable in vanilla.
 
-`JsonFileLoader<T>.LoadFile` / deprecated `JsonLoadFile` are at the same lines as on 1.29 (`jsonfileloader.c:7-40`, `:99-131`).
+`JsonFileLoader<T>.LoadFile` / deprecated `JsonLoadFile` are at `jsonfileloader.c:7-40` and `:99-131`. That they sit at the same lines on 1.29 is not yet checked on `P:\`.
 
 The vanilla bodies are copied in `dayz-1-30-persistence.md`.

@@ -70,6 +70,7 @@ def find_class_blocks(text: str, prefixes: tuple[str, ...]) -> dict[str, dict[st
             "body": text[open_index + 1 : close_index],
             "line": line_at(text, match.start()),
             "offset": match.start(),
+            "body_offset": open_index + 1,
         }
     return blocks
 
@@ -143,7 +144,7 @@ def lint_text(text: str, file_path: str, pdrive_root: Path | None = None) -> lis
             "body": body,
             "line": int(block["line"]),
             "texture": texture_match.group(1) if texture_match else None,
-            "texture_line": int(block["line"]) + body.count("\n", 0, texture_match.start()) if texture_match else int(block["line"]),
+            "texture_line": line_at(text, int(block["body_offset"]) + texture_match.start()) if texture_match else int(block["line"]),
             "uvSource": string_value(body, "uvSource"),
             "texGen": string_value(body, "texGen"),
         }

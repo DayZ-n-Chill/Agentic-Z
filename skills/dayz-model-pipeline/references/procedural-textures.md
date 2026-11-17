@@ -407,7 +407,7 @@ def generate_painted_metal(width=512, height=512, seed=42):
     for y in range(height):
         for x in range(width):
             dist = min(x, y, width - x, height - y) / max(width, height)
-            edge_mask[y, x] = 1.0 - (dist * 0.3)  # Wear extends 30% inward
+            edge_mask[y, x] = max(0.0, 1.0 - dist / 0.3)  # Full wear at the border, none from 30% inward
     edge_color = 0.40  # Lighter gray
     for c in range(3):
         canvas[:, :, c] = blend_lerp(canvas[:, :, c], edge_color, edge_mask * 0.08)

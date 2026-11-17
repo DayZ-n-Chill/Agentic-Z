@@ -93,6 +93,33 @@ def test_matching_asset_returns_tag(monkeypatch):
     assert update.latest_search_index_tag() == "v2.0"
 
 
+def test_rag_index_prefix_is_accepted(monkeypatch):
+    body = json.dumps({"tag_name": "1.4.0", "assets": [{"name": "dayz-rag-index-v0.1.0.tar.gz"}]})
+    monkeypatch.setattr(update.urllib.request, "urlopen", _urlopen_returning(_Resp(body.encode())))
+    assert update.latest_search_index_tag() == "1.4.0"
+
+
+def test_latest_without_index_falls_back_to_newest_release_with_one(monkeypatch):
+    latest = {"tag_name": "v2.1.0", "assets": []}
+    listing = [
+        latest,
+        {"tag_name": "v2.2.0-rc1", "prerelease": True, "assets": [{"name": "dayz-search-index-x.tar.gz"}]},
+        {"tag_name": "v2.0.5", "draft": True, "assets": [{"name": "dayz-search-index-x.tar.gz"}]},
+        {"tag_name": "1.4.0", "assets": [{"name": "dayz-rag-index-v0.1.0.tar.gz"}]},
+        {"tag_name": "1.2.1", "assets": [{"name": "dayz-search-index-v1.tar.gz"}]},
+    ]
+
+    def fake(req, timeout=None):
+        url = req.full_url
+        if url == update.GITHUB_LATEST_RELEASE_URL:
+            return _Resp(json.dumps(latest).encode())
+        assert url == update.GITHUB_RELEASES_URL
+        return _Resp(json.dumps(listing).encode())
+
+    monkeypatch.setattr(update.urllib.request, "urlopen", fake)
+    assert update.latest_search_index_tag() == "1.4.0"
+
+
 def test_no_matching_asset_returns_none(monkeypatch):
     body = json.dumps({"tag_name": "v2.0", "assets": [{"name": "other.zip"}]})
     monkeypatch.setattr(update.urllib.request, "urlopen", _urlopen_returning(_Resp(body.encode())))

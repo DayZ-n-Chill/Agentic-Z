@@ -15,7 +15,7 @@ This folder fills the gap between those: the recurring patterns themselves (nets
 Files in this folder are in one of two states:
 
 - **Checked on `P:\`**, every fact cites the vanilla file and line it was read from: all of `references/`; in `patterns/`, `modded_class.md` (which marks each of its reported claims as such), `netsync.md`, `persistence.md`, `rpc.md`, `singleton.md` (which marks the `JsonSerializer` behavior it could not read in script), `actions.md`, `json_config_migration.md`, `language_workarounds.md`, `physics_items.md`, `scheduler.md` (which marks each of its reported claims as such) and `server_tick_budget.md` (which cites the vanilla calls and marks the third-party techniques as reported); in `integrations/`, `vanilla_plugins.md`, `central_economy.md` and `input_bindings.md`; in `examples/`, `01` to `10`, the three layouts and `layouts.md`.
-- **Checked against the framework's own scripts**, not vanilla: `integrations/community_framework.md` (`P:\Mods\@CF\Addons\scripts.pbo`) and `integrations/dabs_framework.md` (the Dabs scripts PBO).
+- **Checked against the framework's own scripts**, not vanilla: `integrations/community_framework.md` (`P:\Mods\@CF\Addons\scripts.pbo`), `integrations/dabs_framework.md` (the Dabs scripts PBO) and `integrations/expansion_style.md` (the shipped Expansion PBOs under `P:\Mods\`, and CF's `scripts.pbo` for its CF names).
 
 When you add or change a fact in a checked file, check it on `P:\` (or in the framework's PBO) and cite the line. Never overwrite a checked file with content that was not checked.
 

@@ -179,7 +179,8 @@ R.proxies.forEach((px,i)=>{
     wg.setIndex(px.worn.faces.flat()); wg.computeVertexNormals();
     const wm=new T.Mesh(wg, new T.MeshStandardMaterial({color:col, transparent:true, opacity:0.30, side:T.DoubleSide, depthWrite:false}));
     wm.visible=false; wm.userData.pi=i; scene.add(wm); worn.push(wm);
-    // (2) final-result mesh: same geometry expressed relative to v0, parented to the
+    // (2) final-result mesh: same geometry expressed relative to the proxy's
+    // derived anchor (px.origin), parented to the
     // handle so it rigidly follows the proxy as you move/rotate it (assembled preview)
     const rg=new T.BufferGeometry();
     rg.setAttribute('position', new T.BufferAttribute(new Float32Array(px.worn.positions.flatMap(p=>[p[0]-o[0],p[1]-o[1],p[2]-o[2]])),3));
@@ -255,8 +256,9 @@ $('bExport').onclick=()=>{
     const e=M.elements;                       // columns = world dirs of local x,y,z
     const ly=[e[4],e[5],e[6]], lz=[e[8],e[9],e[10]], p=h.position;
     // canonical unambiguous triangle (see proxy_frame.py): anchor, +Y short leg,
-    // +Z long leg(2x). derive_frame() recovers exactly this handle's rotation,
-    // so what you align == what the engine renders. No 90/45/45 tie re-introduced.
+    // +Z long leg(2x). derive_frame() recovers exactly this handle's rotation as
+    // the raw frame. The engine renders P' times that raw frame (proxy_frame.py),
+    // which can show it 90 degrees off. No 90/45/45 tie re-introduced.
     const nt=[[rnd(p.x),rnd(p.y),rnd(p.z)],
               [rnd(p.x+S*ly[0]),rnd(p.y+S*ly[1]),rnd(p.z+S*ly[2])],
               [rnd(p.x+2*S*lz[0]),rnd(p.y+2*S*lz[1]),rnd(p.z+2*S*lz[2])]];

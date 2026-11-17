@@ -86,7 +86,7 @@ The process corollary: when the user says "this already happened on the previous
 
 - `profile-schema.md`: the `profiles\<car>.json` field by field.
 - The vehicles pack (`skills/_shared/vehicles/`): the rip import history (why each rule exists; `skills/_shared/vehicles/rip-import.md`) and the structural contract with the engine (`skills/_shared/vehicles/vehicle-structural-parity.md`).
-- The generic DayZ vehicle checklist, the numbered invariants (0 to 35, spread over six files), indexed under "Numbered invariants" in `skills/dayz-vehicles/SKILL.md`.
+- The generic DayZ vehicle checklist, the numbered invariants (0 to 35, spread over eight files), indexed under "Numbered invariants" in `skills/dayz-vehicles/SKILL.md`.
 - `<vehicle-import>\reviews\2026-07-11-research-metodo-import.md`: the consolidated research that set the priorities and this runbook.
 
 ## Lift or translation of geometry: no double transform with proxied chunks

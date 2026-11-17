@@ -204,7 +204,7 @@ Knurling, grip stippling, screw threads, stamped text, fine panel seams: modeled
 
 Known pitfalls, all controllable:
 
-- No UVs on the low mesh is a hard error. Run `smart_uv` first.
+- No UVs on the low mesh is a hard error. Unwrap it first (step 2): `smart_uv` for a quick hard-surface bake, or the `uv-clean-atlas` method for a DayZ visual asset.
 - High and low not occupying the same space, or `ray` too small or too large, gives patchy garbage in the map. Set `max_ray_distance` slightly above the largest gap between the high and low surfaces; use a cage for parts with deep recesses. The default `ray=0.01` gave clean 1024 px NORMAL and AO bakes at a gap of about 4 mm (measured on Blender 5.1.1).
 - Blender bakes tangent normals in the OpenGL convention (Y+). DayZ's `_nohq` is the DirectX convention (Y-): invert the green channel (G' = 255 - G) on every Cycles bake before export. The convention was measured by calibration against a vanilla `_nohq`; it is not checked on `P:\` here. A `.paa` `_nohq` stores 1 minus X in alpha and 1 minus the source alpha in red (`DayZ Tools\Bin\ImageToPAA\TexConvert.cfg`, class `normalmap_hq`: `channelSwizzleA = "1-R"`, `channelSwizzleR = "1-A"`). This is not the standard DXT5nm layout, so un-swizzle with X = 1 minus the stored alpha before auditing a converted map. The evidence and the calibration method are in the `dayz-texture-pipeline` skill (`references/map-conventions.md`).
 
@@ -262,7 +262,7 @@ Every Blender model, every time:
 7. **Spanning dimensions from `verify_bounds()`**: measured, never guessed.
 8. **Booleans by protocol.** Scale applied, cutter overshoots by at least 1 mm, EXACT, cleanup, gate.
 9. **Bevel every visible part.** Angle-limited, applied, after all booleans.
-10. **Fine detail to the bake.** High and low twins from one script, `smart_uv` plus `bake_map` (NORMAL and AO), never knurling on LOD0.
+10. **Fine detail to the bake.** High and low twins from one script, the low mesh unwrapped (by logical sections with the `uv-clean-atlas` skill for a DayZ visual asset, `smart_uv` only where nobody paints the atlas), then `bake_map` (NORMAL and AO), never knurling on LOD0.
 11. **`verify_bounds()` and `verify_overlap()`** after every part and every joint.
 12. **`verify_mesh_integrity()`** after every boolean or modifier apply, after every loft, and at finalization.
 13. **Component checkpoint.** One quick `vr_capture` of each complex part (lofts, boolean-heavy pieces) before building on top.

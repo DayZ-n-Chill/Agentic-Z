@@ -615,8 +615,12 @@ def build_p3d(recipe, output_path, auto_fix_enabled=True, verbose=False):
 
 # ── CLI ────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    usage = "Usage: p3d_inspector_build.py recipe.json [output.p3d] [-v] [--no-autofix]"
+    if any(arg in ("-h", "--help") for arg in sys.argv[1:]):
+        print(usage)
+        sys.exit(0)
     if len(sys.argv) < 2:
-        print("Usage: p3d_inspector_build.py recipe.json [output.p3d] [-v] [--no-autofix]")
+        print(usage)
         sys.exit(1)
 
     recipe_path = sys.argv[1]

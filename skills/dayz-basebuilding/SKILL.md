@@ -80,7 +80,7 @@ class Construction
                 {
                     type="WoodenLog";       // item class, used when refunding
                     slot_name="Material_WoodenLogs";
-                    quantity=2;             // -1 deletes the whole object, 0 ignores the quantity
+                    quantity=2;             // -1 deletes the whole material item in the slot, 0 ignores the quantity
                     lockable=1;             // lock the material in its slot instead of consuming it
                 };
             };
