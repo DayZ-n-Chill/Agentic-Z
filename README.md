@@ -305,7 +305,7 @@ Most of these 41 skills are reference skills: the agent loads one when a task to
 | Command | Purpose |
 |---|---|
 | [`/sync-skills`](.claude/skills/sync-skills/SKILL.md) | Link `skills/` and `.claude/skills/` into each agent CLI's home dir. Required after clone. |
-| [`/agentic-z-update`](.claude/skills/agentic-z-update/SKILL.md) | Pull upstream template improvements into your clone without touching `workspace/`. |
+| [`/agentic-z-update`](.claude/skills/agentic-z-update/SKILL.md) | Pull the latest Agentic-Z template changes into your clone without touching `workspace/`. |
 | [`/docs-sync`](.claude/skills/docs-sync/SKILL.md) | Check the React wiki (its own private repo, `DayZ-n-Chill/Agentic-Z-Wiki`, cloned next to this one) against the source: every agent and skill is listed, counts match the repo and the grade files, and each graded item appears once in the grades tables; `--apply` updates only those computed counts. |
 | [`/clean-repo`](.claude/skills/clean-repo/SKILL.md) | Repo-wide cleanup orchestrator across every domain. |
 

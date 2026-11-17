@@ -2,7 +2,7 @@
 
 Covers evals/cases/ (mechanical cases with canned answers), evals/live/ (live
 cases, their schema and the Claude Code adapter) and the link from every
-case to the question it became in evals/questions/. Nothing here calls
+case to the questions that cover it in evals/questions/. Nothing here calls
 claude.
 
 Run with: py -m pytest scripts/dev/test_kp_evals.py
@@ -23,8 +23,8 @@ CASES = sorted((EVALS / "cases").glob("*.json"))
 LIVE_CASES = sorted((EVALS / "live" / "cases").glob("*.json"))
 ADAPTER = EVALS / "live" / "runners" / "claude-code.py"
 
-# Each case and the question ids it became. One case held six claims, so it
-# became six questions.
+# Each case, the agent whose question file covers it, and its question ids.
+# The negatives case tests six claims, so six questions cover it.
 CASE_QUESTIONS = {
     "api-enforce": ("dayz-script-specialist", ["api-enforce"]),
     "api-index-liveness": ("dayz-script-specialist", ["api-index-liveness"]),
@@ -129,7 +129,7 @@ def test_part_id_fixture_does_not_reveal_the_limit():
     ids = [int(v) for v in re.findall(r"\bid\s*=\s*(\d+)\s*;", fixture)]
     assert "93" not in fixture and "syncparts" not in fixture.lower()
     assert len(ids) != len(set(ids)) and any(v > 93 for v in ids)
-    # The question for our runner reads the same fixture from evals/fixtures/.
+    # The matching question in evals/questions/ reads the same fixture from evals/fixtures/.
     assert (EVALS / "fixtures" / "dayz-persistence-specialist" / "part_id_cap_config.cpp").read_text(
         encoding="utf-8") == fixture
 
@@ -192,7 +192,7 @@ def test_adapter_refuses_to_run_without_a_model_and_effort(monkeypatch, capsys):
     assert "claude-code adapter error: ValueError" in capsys.readouterr().err
 
 
-# The link to our question format
+# The link to the questions in evals/questions/
 
 def test_every_case_is_listed():
     assert {p.stem for p in CASES + LIVE_CASES} == set(CASE_QUESTIONS)

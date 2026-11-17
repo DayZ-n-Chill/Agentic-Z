@@ -283,7 +283,7 @@ def test_refuses_dirty_source_symlink_submodule_traversal_and_collision(tmp_path
     assert symlink.returncode == 1
     assert report_of(symlink)["findings"][0]["code"] == "SYMLINK"
 
-    submodule_commit = dangling_tree_commit(source, "160000", v1, "vendor/mod", "submodule")
+    submodule_commit = dangling_tree_commit(source, "160000", v1, "deps/mod", "submodule")
     gitlink = run_pin(
         "materialize",
         "--source",

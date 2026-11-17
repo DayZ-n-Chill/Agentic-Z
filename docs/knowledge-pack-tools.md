@@ -351,7 +351,7 @@ python scripts/tools/dayz-layout-viewer/build_viewer.py <layout> [-o out.html]
 
 It reads through `dayz-ui-lab`'s format parser, so it inherits that contract —
 including the continuation and fail-closed escape behaviour — rather than
-carrying a second lexer. It is **not** `dayz-ui-lab/render.py`, which emits
+carrying a second lexer. It is **not** `dayz-ui-lab/dayz_ui_lab/render.py`, which emits
 semantic scenario JSON and no HTML.
 
 **A structural approximation, not the rasterizer.** Its README enumerates what
