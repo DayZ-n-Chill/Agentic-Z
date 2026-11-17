@@ -10,6 +10,11 @@ Vanilla models under `P:\DZ\` are binarized ODOL, which Object Builder and `/day
 | Which memory points does vanilla script look for, and how are axes built? | `memory-points.md` |
 | Which named properties does vanilla set, and where does mass go? | `named-properties.md` |
 | How is a proxy named and placed? | `proxies.md` |
+| How does a proxy triangle become a position and a facing, and why does an attached model come out rotated or on the floor (clothing on a static host, crew seats, body-part and weapon attachment proxies)? | `proxy-frames.md` |
+| What is a named selection, which LOD does each kind belong in, who reads it, and how do tools lose it? | `selections.md` |
+| Which selections and points does a building, ladder or well carry (door leaves, ladder schemes, the Paths LOD, loot and rain sound points, `liquid_source`)? | `building-selections.md` |
+| How are UVs stored in a `.p3d`, which UV set does each material stage read, and how is an in-game texture fault traced back to the UVs? | `uv-mapping.md` |
+| How does vanilla texture one mesh with up to four tiling surfaces through a `Multi` material, and what must the model carry for it? | `multi-rvmat-texturing.md` |
 | What does a door need in the model, and who writes the rest? | `doors.md` |
 
 ## Other packs this one leans on

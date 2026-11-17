@@ -47,3 +47,37 @@ to detect "winding mismatch". This breaks because:
 The right approach is to average the per-corner normals of one face and
 compare to the winding cross product. See
 `skills/dayz-p3d-audit/references/winding-methodology.md`.
+
+To negate a normal, write the pool entry (`lod.facenormals[j] = (-x, -y, -z)`), never
+the `Vertex.normal` setter, which looks the new value up in the pool and re-indexes the
+corner. An entry shared with a corner whose normal must stay gets a negated copy
+appended to the pool, and only the corners to change are pointed at the copy
+(`skills/dayz-p3d-audit/references/winding-diagnostics.md`, "From Check B to fix").
+
+### Selections are dictionaries
+
+`lod.selections` is an ordered dictionary keyed by selection name. Looping over it
+gives the names, not objects. Each selection's `points` and `faces` are dictionaries
+keyed by the point or face object, with the weight as the value, so they cannot be
+indexed by number:
+
+```python
+for name, sel in lod.selections.items():
+    members = len(sel.points), len(sel.faces)
+
+# positions of a selection's points in lod.points
+position = {id(pt): n for n, pt in enumerate(lod.points)}
+indices = sorted(position[id(pt)] for pt in sel.points)
+```
+
+Code that reads `sel.name`, or indexes `sel.points[0]`, was written for another
+library version and fails with `'str' object has no attribute 'name'` or
+`'Selection' object is not subscriptable`.
+
+### Two libraries share the name
+
+`/dayz-p3d-audit` can install KoffeinFlummi's `py3d`. The repo also keeps a DayZ fork
+of it under `scripts/tools/py3d/`, which adds `P3D.validate()`, proxy helpers and
+guards against writing a corrupt file, and sets `py3d.IS_DAYZ_FORK = True`. The
+package called `py3d` on PyPI is neither: it is an unrelated point cloud library, so
+never `pip install py3d`.

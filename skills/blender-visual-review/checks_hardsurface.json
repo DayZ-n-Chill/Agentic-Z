@@ -1,0 +1,38 @@
+[
+  {
+    "q": "Is every part of the model physically connected, with no piece floating detached in mid-air?",
+    "view": "assembled__iso"
+  },
+  {
+    "q": "Do the edges look chamfered or beveled rather than perfectly sharp 90-degree primitive edges?",
+    "view": "zoom_receiver__right_iso"
+  },
+  {
+    "q": "Are cylindrical parts smooth and round rather than visibly faceted polygons?",
+    "view": "zoom_muzzle__front_iso",
+    "skip": "The test object cannot answer this question and produced 8/12 false alarms; see references/local-vlm-judge.md, 'Faceting question: closed'."
+  },
+  {
+    "q": "Is the model free of visible holes or gaps where solid surface should be?",
+    "view": "assembled__iso"
+  },
+  {
+    "q": "Are there any black, inside-out or wrongly shaded faces visible?",
+    "view": "assembled__profile_R",
+    "skip": "Mechanical-only because the defect is absent from the capture; see the measured note below.",
+    "note": "DO NOT score this perceptually. Measured 2026-08-21: flipping 62 faces (face-0 normal dot = -1.0001) changes 0.00% of the pixels under this skill's own capture settings (Workbench + show_cavity, culling off), so the defect is not in the image. With backface culling on, the same flip changes 36.92% of the pixels -- and ornith-1.5:9b, qwen3-vl:30b and muse-glimmer:30b still all answer NO on both variants, 3 seeds each, with confident wrong reasoning. Use the backface-culling diff in references/winding-flip-detection.md instead."
+  },
+  {
+    "q": "Does the object read as a finished object rather than a set of plain untextured boxes?",
+    "view": "assembled__iso"
+  },
+  {
+    "q": "Are the proportions of the parts consistent with each other, with nothing obviously oversized or undersized?",
+    "view": "assembled__profile_L",
+    "skip": "The VLM score was unfalsified and missed both constructed defects; see references/local-vlm-judge.md, 'Before believing a high score'."
+  },
+  {
+    "q": "Is the object sitting on the ground plane rather than floating above it or sunk into it?",
+    "view": "assembled__profile_L"
+  }
+]
