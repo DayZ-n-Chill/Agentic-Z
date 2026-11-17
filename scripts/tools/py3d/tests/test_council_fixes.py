@@ -56,13 +56,13 @@ def _codes(model):
 
 # ------------------------------------------------------------- FIX-1
 
-def test_asciiz_sin_nul_lanza_en_vez_de_colgar():
+def test_asciiz_without_nul_raises_instead_of_hanging():
     """EOF with no NUL must raise. Under a timeout, so a hang fails the test."""
     box = {}
 
     def target():
         try:
-            py3d._read_asciiz(io.BytesIO(b"NO_NUL_HASTA_EOF"))
+            py3d._read_asciiz(io.BytesIO(b"NO_NUL_UNTIL_EOF"))
             box["res"] = "returned"
         except Exception as exc:
             box["res"] = type(exc).__name__
@@ -79,18 +79,18 @@ def test_asciiz_sin_nul_lanza_en_vez_de_colgar():
         "_read_asciiz returned instead of raising on an asciiz with no NUL")
 
 
-def test_asciiz_valido_sigue_funcionando():
+def test_valid_asciiz_still_works():
     """The fix must not change the happy path: that is upstream's contract."""
-    assert py3d._read_asciiz(io.BytesIO(b"hola\0resto")) == "hola"
+    assert py3d._read_asciiz(io.BytesIO(b"hello\0rest")) == "hello"
     assert py3d._read_asciiz(io.BytesIO(b"\0")) == ""
     # a string longer than the 1024-byte read block
-    largo = b"x" * 3000 + b"\0"
-    assert py3d._read_asciiz(io.BytesIO(largo)) == "x" * 3000
+    long_str = b"x" * 3000 + b"\0"
+    assert py3d._read_asciiz(io.BytesIO(long_str)) == "x" * 3000
 
 
 # ------------------------------------------------------------- FIX-2
 
-def test_mensaje_de_winding_no_recomienda_el_swap_que_cruza_quads():
+def test_winding_message_does_not_recommend_the_swap_that_crosses_quads():
     """reverse() is the correct remedy; the swap crosses quads."""
     model = py3d.P3D()
     vis = build_cube_lod(py3d, resolution=1.0)
@@ -118,7 +118,7 @@ def test_mensaje_de_winding_no_recomienda_el_swap_que_cruza_quads():
 
 # ------------------------------------------------------------- FIX-3
 
-def test_inversion_global_de_todos_los_lods_se_detecta():
+def test_global_inversion_of_all_lods_is_detected():
     """The false negative that motivated the fork: everything inverted meant
     silence.
 
@@ -132,38 +132,38 @@ def test_inversion_global_de_todos_los_lods_se_detecta():
         "produced no winding finding at all; codes=%r" % codes)
 
 
-def test_modelo_sano_no_produce_falso_positivo_de_winding():
+def test_healthy_model_produces_no_winding_false_positive():
     """The counter-test: the instrument has to be able to say yes."""
     codes = _codes(_model_visual_plus_geometry(invert_all=False))
-    errores = [c for c in codes if "WINDING" in c and c.startswith("ERR")]
-    assert not errores, (
+    errors = [c for c in codes if "WINDING" in c and c.startswith("ERR")]
+    assert not errors, (
         "a healthy model was flagged with a winding ERROR: %r (codes=%r)"
-        % (errores, codes))
+        % (errors, codes))
 
 
-def test_la_senal_de_normal_declarada_distingue_ambos_sentidos():
+def test_declared_normal_signal_distinguishes_both_directions():
     """Signal B on its own: 100% on the healthy model, 0% on the inverted one.
 
     This is the test that tells one direction from the other. With the old
     centroid predicate both cases give the same answer, because a wholly
     inverted model is internally consistent.
     """
-    sano = build_cube_lod(py3d, resolution=1.0)
-    invertido = build_cube_lod(py3d, resolution=1.0)
-    _invert_winding(invertido)
+    healthy = build_cube_lod(py3d, resolution=1.0)
+    inverted = build_cube_lod(py3d, resolution=1.0)
+    _invert_winding(inverted)
 
-    pct_sano = py3d._pct_normal_agreement(sano)
-    pct_inv = py3d._pct_normal_agreement(invertido)
+    pct_healthy = py3d._pct_normal_agreement(healthy)
+    pct_inv = py3d._pct_normal_agreement(inverted)
 
-    assert pct_sano == pytest.approx(100.0), (
+    assert pct_healthy == pytest.approx(100.0), (
         "a healthy cube should agree 100%% between winding and declared "
-        "normal, got %r" % pct_sano)
+        "normal, got %r" % pct_healthy)
     assert pct_inv == pytest.approx(0.0), (
         "a cube with inverted winding should give 0%%, got %r" % pct_inv)
 
 
-def test_coherencia_de_aristas_en_malla_cerrada():
+def test_edge_coherence_in_closed_mesh():
     """Signal A: in a well-built closed mesh, every shared edge is traversed
     in opposite directions by its two faces."""
-    cubo = build_cube_lod(py3d, resolution=1.0)
-    assert py3d._pct_edge_coherence(cubo) == pytest.approx(100.0)
+    cube = build_cube_lod(py3d, resolution=1.0)
+    assert py3d._pct_edge_coherence(cube) == pytest.approx(100.0)

@@ -164,7 +164,7 @@ class ScenarioCompositionTests(unittest.TestCase):
         )
         self.assertEqual(
             composition["scenario"],
-            "tools/dayz-ui-lab/fixtures/scenarios/three-cards/scenario.json",
+            "scripts/tools/dayz-ui-lab/fixtures/scenarios/three-cards/scenario.json",
         )
         for node in flatten(composition["roots"]):
             source = str(node["source"]["path"])

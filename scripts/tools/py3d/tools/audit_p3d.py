@@ -44,7 +44,7 @@ _SEV = {"ERROR": "CRITICAL", "WARN": "WARNING"}
 
 
 def classify_lod(resolution):
-    """Delegado al fork (mapa canonico DayZ, tolerancia relativa unica)."""
+    """Delegated to the fork (canonical DayZ map, single relative tolerance)."""
     kind = py3d.classify_lod_resolution(resolution)
     if kind is None:
         return "Other(%.1e)" % resolution
@@ -58,7 +58,7 @@ def classify_lod(resolution):
 
 
 def check_required_lods(lod_map):
-    """LODs minimos (ids normalizados DayZ; GeoPhys retirado)."""
+    """Minimum LODs (normalized DayZ ids; GeoPhys retired)."""
     issues = []
     if "Geometry" not in lod_map:
         issues.append(("CRITICAL", "Missing Geometry LOD (res ~1e13). No collision or action targeting possible."))
@@ -74,7 +74,7 @@ def check_required_lods(lod_map):
 
 
 def check_p_drive_paths_in_file(filepath):
-    """Paths P:\\ en archivos de texto (config.cpp, .rvmat, model.cfg)."""
+    """P:\\ paths in text files (config.cpp, .rvmat, model.cfg)."""
     issues = []
     try:
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
@@ -123,7 +123,7 @@ def audit_p3d(filepath):
 
     all_issues.extend(check_required_lods(lod_map))
 
-    # Checks de modelo: delegados al fork (paridad depurada).
+    # Model checks: delegated to the fork (refined parity).
     for f in p.validate():
         sev = _SEV.get(f.severity, f.severity)
         lod_tag = "" if f.lod is None else "LOD[%d] " % f.lod

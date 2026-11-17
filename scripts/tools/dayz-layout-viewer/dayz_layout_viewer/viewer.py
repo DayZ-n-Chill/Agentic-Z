@@ -1,6 +1,6 @@
 """DayZ .layout -> self-contained HTML preview at four viewports.
 
-Consumes the pack format parser in tools/dayz-ui-lab/dayz_ui_lab/parse.py
+Consumes the pack format parser in scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py
 (LayoutDoc + phase-1 geometry) and embeds the resolved tree at 1080p, 1440p,
 21:9 and 720p into one *.preview.html.
 
@@ -30,7 +30,7 @@ _PARSE: ModuleType | None = None
 
 
 def load_layout_parser() -> ModuleType:
-    """Load tools/dayz-ui-lab/dayz_ui_lab/parse.py, the pack format parser."""
+    """Load scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py, the pack format parser."""
     global _PARSE
     if _PARSE is not None:
         return _PARSE
@@ -50,7 +50,7 @@ def load_layout_parser() -> ModuleType:
         if not parse_path.is_file():
             raise ImportError(
                 "dayz_ui_lab.parse is required. Keep this tool next to "
-                "tools/dayz-ui-lab in the pack tree, or put that directory "
+                "scripts/tools/dayz-ui-lab in the pack tree, or put that directory "
                 "on PYTHONPATH."
             )
         spec = importlib.util.spec_from_file_location("dayz_ui_lab.parse", parse_path)

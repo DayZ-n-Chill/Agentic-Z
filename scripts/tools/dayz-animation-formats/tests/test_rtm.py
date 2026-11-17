@@ -22,23 +22,23 @@ def _golden_document():
 
 
 def test_reads_frozen_a3ob_fixture_as_hand_checked_document():
-    """Rompe si ejes, bloques, casing o matrices divergen de A3OB."""
+    """Breaks if axes, blocks, casing or matrices diverge from A3OB."""
     assert read_rtm_bytes(_fixture_bytes()) == _golden_document()
 
 
 def test_writer_reproduces_frozen_a3ob_bytes():
-    """Rompe si el orden de componentes RTM deja de ser compatible."""
+    """Breaks if the RTM component order stops being compatible."""
     assert write_rtm_bytes(_golden_document()) == _fixture_bytes()
 
 
 def test_rtm_semantic_roundtrip_preserves_mdat_and_transforms():
-    """Rompe si el writer pierde metadata o una fila de la matriz pública."""
+    """Breaks if the writer loses metadata or a row of the public matrix."""
     expected = _golden_document()
     assert read_rtm_bytes(write_rtm_bytes(expected)) == expected
 
 
 def test_empty_mdat_container_roundtrip_preserves_exact_bytes():
-    """Rompe si un RTM_MDAT observado se elimina por tener cero entradas."""
+    """Breaks if an observed RTM_MDAT is dropped for having zero entries."""
     raw = _fixture_bytes()
     animation = raw[raw.index(b"RTM_0101"):]
     original = b"RTM_MDAT" + b"\0" * 8 + animation
@@ -51,7 +51,7 @@ def test_empty_mdat_container_roundtrip_preserves_exact_bytes():
 
 
 def test_animation_without_mdat_roundtrip_preserves_exact_bytes():
-    """Rompe si el lector inventa un RTM_MDAT que no estaba declarado."""
+    """Breaks if the reader invents an RTM_MDAT that was not declared."""
     raw = _fixture_bytes()
     original = raw[raw.index(b"RTM_0101"):]
 
@@ -62,7 +62,7 @@ def test_animation_without_mdat_roundtrip_preserves_exact_bytes():
 
 
 def test_explicit_mdat_absence_with_metadata_is_rejected():
-    """Rompe si el writer repara una contradicción emitiendo MDAT en silencio."""
+    """Breaks if the writer repairs a contradiction by silently emitting MDAT."""
     document = _golden_document()
     document["mdat_present"] = False
 
@@ -74,7 +74,7 @@ def test_explicit_mdat_absence_with_metadata_is_rejected():
 
 
 def test_manual_rtm_document_without_mdat_field_keeps_legacy_inference():
-    """Rompe si el campo ausente deja de inferir MDAT desde metadata."""
+    """Breaks if the absent field stops inferring MDAT from metadata."""
     document = _golden_document()
     document.pop("mdat_present", None)
 
@@ -90,7 +90,7 @@ def test_manual_rtm_document_without_mdat_field_keeps_legacy_inference():
     "fixture_path", sorted(FIXTURES.glob("*.rtm")), ids=lambda path: path.name
 )
 def test_rtm_corpus_read_write_roundtrip_is_byte_exact(fixture_path):
-    """Rompe si cualquier RTM del corpus se normaliza durante read→write."""
+    """Breaks if any RTM in the corpus is normalized during read→write."""
     original = fixture_path.read_bytes()
 
     assert write_rtm_bytes(read_rtm_bytes(original)) == original
@@ -108,7 +108,7 @@ def test_rtm_corpus_read_write_roundtrip_is_byte_exact(fixture_path):
 def test_unsupported_duplicate_and_trailing_blocks_fail_closed(
     data, code, offset
 ):
-    """Rompe si RTM cae a best-effort o ignora un bloque final."""
+    """Breaks if RTM falls back to best-effort or ignores a trailing block."""
     with pytest.raises(AnimationFormatError) as raised:
         read_rtm_bytes(data)
     assert raised.value.code == code
@@ -116,7 +116,7 @@ def test_unsupported_duplicate_and_trailing_blocks_fail_closed(
 
 
 def test_mdat_after_animation_is_rejected_as_out_of_order():
-    """Rompe si el parser acepta RTM_0101 seguido de RTM_MDAT."""
+    """Breaks if the parser accepts RTM_0101 followed by RTM_MDAT."""
     raw = _fixture_bytes()
     animation_offset = raw.index(b"RTM_0101")
     reordered = raw[animation_offset:] + raw[:animation_offset]
@@ -127,7 +127,7 @@ def test_mdat_after_animation_is_rejected_as_out_of_order():
 
 @pytest.mark.parametrize("cut", [0, 7, 15, 31, 60, 120, 257])
 def test_truncated_rtm_never_returns_partial_frames(cut):
-    """Rompe si un frame/transform incompleto se rellena con ceros."""
+    """Breaks if an incomplete frame/transform is padded with zeros."""
     with pytest.raises(AnimationFormatError) as raised:
         read_rtm_bytes(_fixture_bytes()[:cut])
     assert raised.value.code in {
@@ -139,7 +139,7 @@ def test_truncated_rtm_never_returns_partial_frames(cut):
 
 
 def test_fixed_bone_field_without_nul_is_rejected():
-    """Rompe si un nombre de 32 bytes se trunca silenciosamente."""
+    """Breaks if a 32-byte name is silently truncated."""
     raw = bytearray(_fixture_bytes())
     animation_offset = raw.index(b"RTM_0101")
     bone_field = animation_offset + 28
@@ -170,7 +170,7 @@ def test_fixed_bone_field_without_nul_is_rejected():
     ],
 )
 def test_rtm_writer_validates_complete_document_before_emission(mutation):
-    """Rompe si el writer acepta un RTM ambiguo o estructuralmente incoherente."""
+    """Breaks if the writer accepts an ambiguous or structurally incoherent RTM."""
     document = _golden_document()
     mutation(document)
     with pytest.raises(AnimationFormatError):
@@ -178,7 +178,7 @@ def test_rtm_writer_validates_complete_document_before_emission(mutation):
 
 
 def test_rtm_float32_overflow_is_stable_format_error():
-    """Rompe si struct.pack filtra OverflowError fuera del contrato público."""
+    """Breaks if struct.pack leaks OverflowError outside the public contract."""
     document = _golden_document()
     document["motion"][0] = 1e100
     with pytest.raises(AnimationFormatError) as raised:

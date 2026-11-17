@@ -8,8 +8,6 @@ version = "0.1.0"
 description = "Convert DayZ MLOD .p3d, PAA and RVMAT assets to glTF and Three.js HTML"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
-authors = [{name = "DayZ Modding Knowledge Pack contributors"}]
 dependencies = []
 
 [project.optional-dependencies]

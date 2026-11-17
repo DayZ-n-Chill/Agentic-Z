@@ -180,7 +180,7 @@ def test_load_contract_fails_closed_on_semantic_ambiguity(
 
 
 def test_cross_reused_face_addresses_are_split_not_exact_duplicate(tmp_path):
-    """Rompe si A->Y se etiqueta duplicado tras A->X y B->Y."""
+    """Breaks if A->Y is labelled duplicate after A->X and B->Y."""
     value = valid_contract()
     value["winding"]["faces"].extend([
         {

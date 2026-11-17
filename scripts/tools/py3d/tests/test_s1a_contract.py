@@ -38,7 +38,7 @@ def test_canon_ident(fork, upstream, name, builder):
 
 @pytest.mark.parametrize("name,builder", CANONICAL, ids=IDS)
 def test_sem_inv(fork, name, builder):
-    """SEM-INV: write -> reopen -> invariantes semanticos completos."""
+    """SEM-INV: write -> reopen -> full semantic invariants."""
     assert_sem_inv(fork, builder(fork))
 
 

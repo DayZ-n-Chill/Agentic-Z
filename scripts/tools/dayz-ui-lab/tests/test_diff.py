@@ -11,8 +11,8 @@ import tempfile
 import unittest
 
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-TOOL_DIR = REPO_ROOT / "tools" / "dayz-ui-lab"
+REPO_ROOT = Path(__file__).resolve().parents[4]
+TOOL_DIR = REPO_ROOT / "scripts" / "tools" / "dayz-ui-lab"
 MODULE_DIR = TOOL_DIR / "dayz_ui_lab"
 THREE_CARDS = TOOL_DIR / "fixtures" / "scenarios" / "three-cards" / "scenario.json"
 DEFECT_SCENARIO = TOOL_DIR / "fixtures" / "scenarios" / "defect-overlays" / "scenario.json"

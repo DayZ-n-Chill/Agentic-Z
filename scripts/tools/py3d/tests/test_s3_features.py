@@ -174,8 +174,8 @@ def test_val_audit_mass_pos(fork, tmp_path):
 # ---- P3D.transform ----------------------------------------------------
 
 def test_trans_pos_rot_x_neg90(fork):
-    """TRANS-POS: (x,y,z)->(x,z,-y) exacto; normales M*n; winding y
-    normal_index INTACTOS (det=+1); signos preservados."""
+    """TRANS-POS: (x,y,z)->(x,z,-y) exact; normals M*n; winding and
+    normal_index INTACT (det=+1); signs preserved."""
     p3d = fork.P3D()
     vis = build_cube_lod(fork, resolution=1.0)
     p3d.lods.append(vis)
@@ -228,11 +228,11 @@ def test_trans_neg_mirror(fork):
 @pytest.mark.parametrize("matrix", [
     SHEAR,                                  # TRANS-NONORTHO
     SCALE_NONUNIFORM,                       # TRANS-NONUNIFORM
-    ZERO_COL,                               # TRANS-DET0 (norma cero)
+    ZERO_COL,                               # TRANS-DET0 (zero norm)
 ], ids=["nonortho", "nonuniform", "zerocol"])
 def test_trans_rejects_contract(fork, matrix):
-    """TRANS-NONORTHO/NONUNIFORM/DET0: ValueError de contrato y
-    modelo BYTE-intacto."""
+    """TRANS-NONORTHO/NONUNIFORM/DET0: contract ValueError and
+    BYTE-intact model."""
     p3d = build_multilod_v2_p3d(fork)
     before = write_bytes(p3d)
     with pytest.raises(ValueError) as e:
@@ -242,13 +242,13 @@ def test_trans_rejects_contract(fork, matrix):
 
 
 @pytest.mark.parametrize("matrix", [
-    ((1.0, 0.0), (0.0, 1.0), (0.0, 0.0)),   # filas de 2
-    ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0)),     # 2 filas
-    (("a", "b", "c"), (0, 1, 0), (0, 0, 1)),  # no numerica
+    ((1.0, 0.0), (0.0, 1.0), (0.0, 0.0)),   # rows of 2
+    ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0)),     # 2 rows
+    (("a", "b", "c"), (0, 1, 0), (0, 0, 1)),  # non-numeric
     None,
 ], ids=["row2", "rows2", "nonnumeric", "none"])
 def test_trans_rejects_shape(fork, matrix):
-    """TRANS-SHAPE: forma/tipo invalidos -> ValueError; modelo intacto."""
+    """TRANS-SHAPE: invalid shape/type -> ValueError; model intact."""
     p3d = build_multilod_v2_p3d(fork)
     before = write_bytes(p3d)
     with pytest.raises(ValueError) as e:
@@ -386,7 +386,7 @@ def test_ds_grows_pool_when_needed(fork):
 
 
 def test_ds_neg_kind(fork):
-    """DS-NEG-KIND: Geometry y Memory -> ValueError, LOD intacto."""
+    """DS-NEG-KIND: Geometry and Memory -> ValueError, LOD intact."""
     geo = build_cube_lod(fork, resolution=1.0e13, selection_name="Component01",
                          mass_per_point=25.0, texture="", material="")
     mem = build_memory_lod(fork, [("pos center", (0.0, 0.0, 0.0))])

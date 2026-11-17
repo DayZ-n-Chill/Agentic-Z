@@ -17,7 +17,7 @@ from typing import Any
 
 MODULE_DIR = Path(__file__).resolve().parent
 TOOL_DIR = MODULE_DIR.parent
-REPO_ROOT = TOOL_DIR.parents[1]
+REPO_ROOT = TOOL_DIR.parents[2]
 SCHEMA_VERSION = "dayz-ui-diff-v1"
 VIEWPORT_MISMATCH_CODE = "DIFF-VIEWPORT-MISMATCH"
 MISSING_VALUE = {"missing": True}

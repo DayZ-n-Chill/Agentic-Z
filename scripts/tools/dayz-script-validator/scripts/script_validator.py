@@ -150,7 +150,7 @@ from detectors.es_layout_path_pboprefix import (
     check_es_layout_path_pboprefix,
     parse_pboprefix,
 )
-# ES-PROCESSDIRECTDAMAGE-DT-ALIAS quarantined 2026-08-18: entityai.c:4103 calls
+# ES-PROCESSDIRECTDAMAGE-DT-ALIAS quarantined 2026-08-18: entityai.c:4153 calls
 # ProcessDirectDamage(DT_CUSTOM, ...). See the detector module header.
 from detectors.es_local_var_redeclare import (
     ES_LOCAL_VAR_REDECLARE_RULE_ID,

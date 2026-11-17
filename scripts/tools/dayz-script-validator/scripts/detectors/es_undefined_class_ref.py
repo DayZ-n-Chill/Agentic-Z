@@ -58,7 +58,7 @@ ES_UNDEFINED_CLASS_REF_RULE_ID = "ES-UNDEFINED-CLASS-REF"
 _CLASS_LIKE_RE = re.compile(r"^[A-Z]")
 
 # Vanilla is read raw, and writes `/*sealed*/ class SurfaceDetectionParameters`
-# (3_game/surfaceinfo.c:74): a block comment may precede the keyword.
+# (3_game/surfaceinfo.c:94): a block comment may precede the keyword.
 _LEADING_COMMENTS = r"(?:/\*.*?\*/[ \t]*)*"
 _CLASS_DEF_RE = re.compile(
     r"^[ \t]*" + _LEADING_COMMENTS
@@ -86,7 +86,7 @@ _MACRO_DEFINE_RE = re.compile(r"^[ \t]*#[ \t]*define[ \t]+(?P<name>\w+)", re.M)
 # (blank_template_arguments), where a template span is its `<`, spaces and
 # its own `>` however deep it nested. A greedy `<...>` swallowed
 # `Symptoms_primary` in `array<ref Param> Symptoms_primary, array<ref Param>
-# Symptoms_secondary` (4_world/classes/playersymptoms/statemanager.c:827),
+# Symptoms_secondary` (4_world/classes/playersymptoms/statemanager.c:896),
 # and a lazy one could still run on to any later `>` of the statement, so
 # every place a declaration can start read to its end: time quadratic in the
 # length of a long statement (inbox fb-20261017-175254-e6d6). Vanilla closes

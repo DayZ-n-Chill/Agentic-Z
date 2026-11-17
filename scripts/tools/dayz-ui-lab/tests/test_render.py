@@ -14,7 +14,7 @@ from typing import Any
 
 
 TOOL_DIR = Path(__file__).parents[1]
-REPO_ROOT = TOOL_DIR.parents[1]
+REPO_ROOT = TOOL_DIR.parents[2]
 MODULE_PATH = TOOL_DIR / "dayz_ui_lab" / "render.py"
 SCENARIO_MODULE_PATH = TOOL_DIR / "dayz_ui_lab" / "scenario.py"
 SCHEMA_PATH = TOOL_DIR / "schemas" / "dayz-ui-render-v1.schema.json"

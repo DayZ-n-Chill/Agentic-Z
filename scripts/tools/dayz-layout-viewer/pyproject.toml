@@ -8,8 +8,6 @@ version = "0.1.0"
 description = "Approximate self-contained HTML preview of a DayZ .layout at four viewports"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
-authors = [{name = "DayZ Modding Knowledge Pack contributors"}]
 dependencies = []
 
 [project.scripts]

@@ -17,8 +17,8 @@ The DayZ py3d fork `>=1.6.0` is mandatory. The unrelated package named `py3d`
 on PyPI is not compatible.
 
 ```powershell
-python -m pip install -e tools/py3d
-python -m pip install -e tools/dayz-model-preflight
+python -m pip install -e scripts/tools/py3d
+python -m pip install -e scripts/tools/dayz-model-preflight
 ```
 
 At runtime the imported module must expose `IS_DAYZ_FORK is True` and a
@@ -127,5 +127,5 @@ exception.
 ## Test
 
 ```powershell
-python -m pytest -q tools/dayz-model-preflight/tests
+python -m pytest -q scripts/tools/dayz-model-preflight/tests
 ```

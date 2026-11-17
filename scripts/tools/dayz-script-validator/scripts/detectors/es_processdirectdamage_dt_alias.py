@@ -1,7 +1,7 @@
 # QUARANTINED 2026-08-18 - not imported by script_validator.py and not executed.
 # The premise is FALSE. `DT_*` is not "only a comment in object.c": the same tree
 # CALLS it, in shipped code with no #ifdef -
-#   3_game/entities/entityai.c:4103
+#   3_game/entities/entityai.c:4153
 #     ProcessDirectDamage(DT_CUSTOM, transport, "", "TransportHit", "0 0 0", damage);
 # and again at :4130 and :4141 inside RegisterTransportHit. The comment the
 # detector cited as proof of absence is the proto documentation for the parameter
@@ -11,7 +11,7 @@
 #
 # DamageType.CUSTOM also exists (damagesystem.c:16). Both spellings being valid is
 # not a defect. To re-wire: show Workbench rejecting `e.ProcessDirectDamage(DT_CUSTOM, ...)`
-# with Undefined AND explain why entityai.c:4103 is not in that compilation.
+# with Undefined AND explain why entityai.c:4153 is not in that compilation.
 
 import re
 

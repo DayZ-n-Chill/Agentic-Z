@@ -8,8 +8,6 @@ version = "0.1.0"
 description = "Strict read-only ODOL v53-v55 adapter"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
-authors = [{name = "DayZ Modding Knowledge Pack contributors"}]
 dependencies = []
 
 [project.scripts]

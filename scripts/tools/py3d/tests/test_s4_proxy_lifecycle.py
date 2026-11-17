@@ -1,4 +1,4 @@
-"""Fase 04a: ciclo de vida estricto de proxies MLOD."""
+"""Phase 04a: strict lifecycle of MLOD proxies."""
 
 import itertools
 import math

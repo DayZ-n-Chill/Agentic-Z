@@ -3,7 +3,7 @@
 # them in code that ships and compiles:
 #   1_core/proto/proto.c:312    a = (int)h << 24;        (h is float, set at :310)
 #   1_core/proto/enmath.c:110   (float)random_int / (float)max_range
-#   3_game/entities/entityai.c:3207   ctx.Write((int)GetIsFrozen());
+#   3_game/entities/entityai.c:3206   ctx.Write((int)GetIsFrozen());
 # Running this detector over the whole vanilla tree (2805 .c files) produced
 # 73 findings, every one of them a false positive by construction. That breaks
 # the project invariant: partial coverage may cost false negatives, never false

@@ -27,7 +27,7 @@ def test_q1_neg_upstream_parity(upstream):
 
 
 def test_q1_pos_factory_registers_and_roundtrips(fork):
-    """Q1-POS: new_selection bindea, registra y sobrevive write->read."""
+    """Q1-POS: new_selection binds, registers and survives write->read."""
     p3d = build_cube_p3d(fork)
     lod = p3d.lods[0]
     sel = lod.new_selection("lf_extra")
@@ -97,7 +97,7 @@ def test_w_upstream_crashes_late_and_cryptic(upstream):
 # ---- #Property# length -----------------------------------------------------------
 
 def test_prop_pos_63_bytes_roundtrip_exact(fork):
-    """PROP-POS: valor de 63 bytes -> round-trip exacto."""
+    """PROP-POS: 63-byte value -> exact round-trip."""
     p3d = build_cube_p3d(fork)
     lod = p3d.lods[0]
     v63 = "v" * 63
@@ -107,8 +107,8 @@ def test_prop_pos_63_bytes_roundtrip_exact(fork):
 
 
 @pytest.mark.parametrize("key,value", [
-    ("class", "x" * 70),     # valor largo
-    ("k" * 64, "house"),     # clave larga
+    ("class", "x" * 70),     # long value
+    ("k" * 64, "house"),     # long key
     ("class", "y" * 64),     # exactly 64: it would lose the NUL terminator
 ])
 def test_prop_neg_over_63_bytes_raises(fork, key, value):

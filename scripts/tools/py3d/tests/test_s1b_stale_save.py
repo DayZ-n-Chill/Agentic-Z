@@ -28,7 +28,7 @@ def test_stale_2_foreign_key_raises(fork):
     lod = p3d.lods[0]
     other = build_cube_p3d(fork).lods[0]
     sel = lod.new_selection("lf_foreign")
-    sel.points[other.points[0]] = 1  # punto ajeno
+    sel.points[other.points[0]] = 1  # foreign point
     with pytest.raises(RuntimeError) as ei:
         write_bytes(p3d)
     assert "foreign" in str(ei.value) and "lf_foreign" in str(ei.value)
@@ -80,7 +80,7 @@ def test_save_pos_backup_dir(fork, tmp_path):
     backups = tmp_path / "_backups"
     p3d.save(str(target), verify=True, backup_dir=str(backups))
     first = target.read_bytes()
-    assert not backups.exists() or list(backups.iterdir()) == []  # no habia previo
+    assert not backups.exists() or list(backups.iterdir()) == []  # there was no previous file
 
     p3d.lods[0].properties["lodnoshadow"] = "1"
     p3d.save(str(target), verify=True, backup_dir=str(backups))

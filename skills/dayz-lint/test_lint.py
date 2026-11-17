@@ -591,6 +591,205 @@ def test_workspace_fixes_keep_the_workspace_path(mod, p_drive):
     assert "add the .p3d under workspace/MyMod/" in f["triage"]["fix"]
 
 
+# --- stage 2: the code (scripts/tools/dayz-script-validator) ---------------------
+
+RESERVED_WORD = "modded class PlayerBase\n{\n\tvoid MyModTick()\n\t{\n\t\tvector local;\n\t}\n}\n"
+SCRIPT_OWNER, CONFIG_OWNER, UI_OWNER, ASSET_OWNER = (
+    "dayz-script-specialist", "dayz-config-specialist", "dayz-ui-specialist", "dayz-asset-specialist")
+
+
+def vanilla_scripts(p_drive: Path) -> None:
+    """A vanilla scripts tree small enough for a test, with the class Managed the validator looks for."""
+    write("scripts/1_Core/core.c", "class Class\n{\n}\nclass Managed\n{\n}\nclass PlayerBase : Managed\n{\n}\n")(p_drive)
+
+
+def test_clean_mod_passes_the_code_stage(mod, p_drive):
+    report = run(mod, p_drive)
+    assert (report["verdict"], report["findings"]) == ("PASS", [])
+    code = report["code"]
+    assert (code["errors"], code["warnings"]) == (0, 0)
+    assert code["files"] == 3  # config.cpp, vest.c and vest.rvmat
+    # The fixture P:\ has no vanilla scripts, so the rules that need them say so instead of passing.
+    assert {s["rule"] for s in code["skipped"]} == {
+        "ES-UNDEFINED-CLASS-REF", "ES-VARIABLE-NAMED-AS-TYPE", "ES-UNDEFINED-BUILTIN-METHOD"}
+
+
+def test_clean_mod_with_vanilla_scripts_skips_nothing(mod, p_drive):
+    vanilla_scripts(p_drive)
+    report = run(mod, p_drive)
+    assert (report["verdict"], report["findings"], report["code"]["skipped"]) == ("PASS", [], [])
+
+
+def test_unmounted_p_drive_names_the_missing_vanilla_scripts(mod, tmp_path):
+    skipped = run(mod, tmp_path / "no-P")["code"]["skipped"]
+    assert len(skipped) == 3
+    assert all(s["reason"].startswith(f"the vanilla scripts were not found at {tmp_path / 'no-P' / 'scripts'}") for s in skipped)
+
+
+def test_code_error_fails_with_the_validator_finding_in_lint_shape(mod, p_drive):
+    write("scripts/4_World/vest.c", RESERVED_WORD)(mod)
+    report = run(mod, p_drive)
+    [f] = report["findings"]
+    assert set(f) == {"rule", "severity", "file", "line", "message", "text", "triage", "stage"}
+    assert (f["rule"], f["severity"], f["file"], f["line"], f["stage"]) == (
+        "ES-RESERVED-WORD-IDENTIFIER", "error", "workspace/MyMod/scripts/4_World/vest.c", 5, "code")
+    # The validator's "[FAIL] <file> line <n>: " head is gone: file and line have their own fields.
+    assert f["message"].startswith("'local' is an Enforce keyword")
+    assert f["text"] == f"[lint:ES-RESERVED-WORD-IDENTIFIER] {f['message']}"
+    t = f["triage"]
+    assert (t["status"], t["id"], t["owner_agent"]) == ("known", "lint-es-reserved-word-identifier", SCRIPT_OWNER)
+    assert t["fix"] == "Rename the variable, member or parameter."
+    assert (report["verdict"], report["errors"], report["warnings"]) == ("FAIL", 1, 0)
+    assert (report["code"]["errors"], report["code"]["warnings"]) == (1, 0)
+
+
+def test_code_warning_does_not_fail(mod, p_drive):
+    write("scripts/4_World/vest.c",
+          'modded class PlayerBase\n{\n\tbool MyModIsVest(EntityAI item)\n\t{\n\t\treturn item.GetType() == "MyMod_Vest";\n\t}\n}\n')(mod)
+    report = run(mod, p_drive)
+    assert [(f["rule"], f["severity"], f["line"]) for f in report["findings"]] == [("ES-GETTYPE-EXACT-MATCH", "warning", 5)]
+    assert (report["verdict"], report["errors"], report["warnings"]) == ("PASS", 0, 1)
+
+
+def test_first_stage_findings_are_unchanged_by_the_code_stage(mod, p_drive):
+    edit(mod / "config.cpp", 'units[] = {"MyMod_Vest"};', 'units = "MyMod_Vest";')
+    (mod / "data" / "vest.p3d").unlink()
+    before = run(mod, p_drive)["findings"]
+    assert [f["rule"] for f in before] == ["cfgpatches-field", "missing-model"] and all("stage" not in f for f in before)
+    write("scripts/4_World/vest.c", RESERVED_WORD)(mod)
+    report = run(mod, p_drive)
+    # The same two dicts, in the same order, ahead of the code error.
+    assert report["findings"][:2] == before
+    assert [f["rule"] for f in report["findings"]] == ["cfgpatches-field", "missing-model", "ES-RESERVED-WORD-IDENTIFIER"]
+    assert report["errors"] == 3
+
+
+@pytest.mark.parametrize("rel,text,rule,severity,owner,line", [
+    ("data/vest.rvmat", 'class Stage1\n{\n\ttexture = "MyMod\\data\\vest_nohq.paa";\n};\nPixelShaderID = "NormalMapMacro";\n'
+                        "shader = NormalMapMacro;\n", "RVMAT-NO-NORMALMAPMACRO", "error", ASSET_OWNER, 6),
+    ("gui/vest.layout", '<GUI version="1">\n</GUI>\n', "LAYOUT-XML-FORMAT", "error", UI_OWNER, 1),
+    ("inputs.xml", "<modinfo>\n</modinfo>\n", "CONFIG-INPUTS-XML-WRONG-ROOT", "error", CONFIG_OWNER, 1),
+])
+def test_code_findings_outside_scripts_go_to_their_owner(mod, p_drive, rel, text, rule, severity, owner, line):
+    write(rel, text)(mod)
+    [f] = [f for f in run(mod, p_drive)["findings"] if f["rule"] == rule]
+    assert (f["severity"], f["file"], f["line"], f["triage"]["owner_agent"]) == (severity, f"workspace/MyMod/{rel}", line, owner)
+
+
+def test_script_that_is_not_utf8_is_a_warning_not_an_error(mod, p_drive):
+    # The engine still loads it; only the code rules cannot read it.
+    (mod / "scripts" / "4_World" / "vest.c").write_bytes(b"// caf\xe9\nmodded class PlayerBase\n{\n}\n")
+    report = run(mod, p_drive)
+    [f] = report["findings"]
+    assert (f["rule"], f["severity"], f["line"], report["verdict"]) == ("INPUT-ENCODING-ERROR", "warning", 1, "PASS")
+    assert f["triage"]["fix"].startswith("Save the file as UTF-8")
+
+
+def test_unknown_class_is_an_error_until_its_mod_is_passed_as_an_external_root(mod, tmp_path, p_drive):
+    vanilla_scripts(p_drive)
+    write("scripts/4_World/vest.c", "modded class PlayerBase\n{\n\tvoid MyModTick()\n\t{\n\t\tOtherModHelper.Refresh();\n\t}\n}\n")(mod)
+    other = tmp_path / "OtherMod"
+    write("config.cpp", 'class CfgPatches { class OtherMod { units[] = {}; weapons[] = {}; requiredAddons[] = {"DZ_Data"}; }; };')(other)
+    write("scripts/4_World/helper.c", "class OtherModHelper\n{\n\tstatic void Refresh()\n\t{\n\t}\n}\n")(other)
+    [f] = run(mod, p_drive)["findings"]
+    assert (f["rule"], f["severity"], f["line"]) == ("ES-UNDEFINED-CLASS-REF", "error", 5)
+    assert "--external-scripts" in f["triage"]["fix"]
+    report = lint.lint_mod("MyMod", mod, mod.parents[1], p_drive=p_drive, external_roots=[other])
+    assert (report["verdict"], report["findings"], report["code"]["skipped"]) == ("PASS", [], [])
+
+
+def test_learned_entry_wins_over_the_built_in_owner_of_a_code_finding(mod, p_drive):
+    write("scripts/4_World/vest.c", RESERVED_WORD)(mod)
+    project = mod.parents[1]
+    [f] = lint.lint_mod("MyMod", mod, project, p_drive=p_drive, project_dir=project)["findings"]
+    assert f["triage"]["owner_agent"] == SCRIPT_OWNER
+    learned = lint.triage.learned_path(project)
+    lint.triage.learn("team-reserved-word", f["text"], learned, [], meaning="m", fix="Ask the team lead.", owner="user")
+    [f] = lint.lint_mod("MyMod", mod, project, p_drive=p_drive, project_dir=project)["findings"]
+    assert (f["triage"]["id"], f["triage"]["owner_agent"], f["triage"]["fix"]) == ("team-reserved-word", "user", "Ask the team lead.")
+
+
+def test_every_rule_the_validator_can_report_has_an_owner_and_a_fix():
+    scripts = lint.VALIDATOR_DIR / "scripts"
+    main = (scripts / "script_validator.py").read_text(encoding="utf-8")
+    modules = set(re.findall(r"^from ([\w.]+) import", main, re.MULTILINE))
+    ids: set[str] = set()
+    for module in modules:
+        source = (scripts / (module.replace(".", "/") + ".py")).read_text(encoding="utf-8")
+        ids |= set(re.findall(r'^\w*RULE_ID\w* = \(?\s*"([A-Z0-9-]+)"', source, re.MULTILINE))
+    assert len(ids) > 40
+    # Never reported by lint: it passes no game folder to compare, the mod folder always exists,
+    # and the validator declares the third id without any rule that reports it.
+    never = {"VANILLA-ROOT-BUILD-MISMATCH", "INPUT-NOT-FOUND", "ES-LAYOUT-PATH-PBOPREFIX-MISMATCH-NO-PREFIX"}
+    assert ids - never == set(lint.CODE_RULES)
+    agents = {p.stem for p in (lint.REPO / "agents").glob("*.md")}
+    assert {owner for owner, _ in lint.CODE_RULES.values()} <= agents
+    assert lint.CODE_WARNING_ONLY <= set(lint.CODE_RULES)
+
+
+def test_payload_only_bundle_has_no_code_stage(mod, p_drive):
+    (mod / "config.cpp").unlink()
+    (mod / "Addons").mkdir()
+    (mod / "Addons" / "payload.pbo").write_bytes(b"x")
+    write("scripts/4_World/vest.c", RESERVED_WORD)(mod)
+    report = run(mod, p_drive)
+    assert report["verdict"] == "PASS" and report["findings"] == [] and "code" not in report
+
+
+def test_cli_prints_code_findings_and_unchecked_rules_in_the_lint_format(mod, p_drive, monkeypatch, capsys):
+    monkeypatch.setattr(lint, "P_DRIVE", p_drive)
+    write("scripts/4_World/vest.c", RESERVED_WORD)(mod)
+    assert lint.main(["--mod-dir", str(mod)]) == 1
+    out = capsys.readouterr().out.splitlines()
+    assert out[0] == "FAIL"
+    [index] = [i for i, line in enumerate(out) if "vest.c:5  error ES-RESERVED-WORD-IDENTIFIER: 'local' is an Enforce keyword" in line]
+    assert out[index].startswith("- ") and out[index + 1] == f"    -> {SCRIPT_OWNER}: Rename the variable, member or parameter."
+    assert any(line.startswith("  not checked ES-UNDEFINED-CLASS-REF: ") for line in out)
+    assert out[-1] == "  1 error(s), 0 warning(s)"
+    assert lint.main(["--mod-dir", str(mod), "--json"]) == 1
+    data = json.loads(capsys.readouterr().out.partition("\n")[2])
+    assert data["code"]["errors"] == 1 and data["findings"][0]["stage"] == "code"
+
+
+def test_cli_external_scripts(mod, tmp_path, p_drive, monkeypatch, capsys):
+    monkeypatch.setattr(lint, "P_DRIVE", p_drive)
+    assert lint.main(["--mod-dir", str(mod), "--external-scripts", str(tmp_path / "missing")]) == 2
+    lines = capsys.readouterr().out.splitlines()
+    assert lines[0] == "ERROR" and "--external-scripts" in lines[1]
+    (tmp_path / "OtherMod").mkdir()
+    assert lint.main(["--mod-dir", str(mod), "--external-scripts", str(tmp_path / "OtherMod")]) == 0
+
+
+# --- the callers: /dayz-gate build and /dayz-build-pbo ---------------------------
+
+def test_gate_build_stops_on_a_code_error(mod, p_drive, monkeypatch):
+    gate = lint.h.load_module("dayz_gate_for_lint_test", lint.SKILLS_DIR / "dayz-gate" / "gate.py")
+    monkeypatch.setattr(gate.lint, "P_DRIVE", p_drive)
+    monkeypatch.setattr(gate.lint.h, "link_target", lambda p: mod)
+    report = gate.new_report("build", "MyMod")
+    assert gate.run_lint(report, "MyMod", mod, mod.parents[1]) is True and report["failures"] == []
+    write("scripts/4_World/vest.c", RESERVED_WORD)(mod)
+    report = gate.new_report("build", "MyMod")
+    assert gate.run_lint(report, "MyMod", mod, mod.parents[1]) is False
+    assert report["lint"] == {"verdict": "FAIL", "errors": 1, "warnings": 0}
+    [f] = report["failures"]
+    assert (f["category"], f["rule"], f["file"], f["line"]) == (
+        "lint", "ES-RESERVED-WORD-IDENTIFIER", "workspace/MyMod/scripts/4_World/vest.c", 5)
+
+
+def test_build_pbo_stops_on_a_code_error(mod, p_drive, monkeypatch, capsys):
+    build = lint.h.load_module("dayz_build_pbo_for_lint_test", lint.SKILLS_DIR / "dayz-build-pbo" / "build.py")
+    monkeypatch.setattr(build.lint, "P_DRIVE", p_drive)
+    build.gate_on_lint("MyMod", mod.parents[1])
+    assert "/dayz-lint passed" in capsys.readouterr().out
+    write("scripts/4_World/vest.c", RESERVED_WORD)(mod)
+    with pytest.raises(SystemExit) as exc:
+        build.gate_on_lint("MyMod", mod.parents[1])
+    message = str(exc.value.code)
+    assert "/dayz-lint found 1 error(s)" in message
+    assert "workspace/MyMod/scripts/4_World/vest.c:5: 'local' is an Enforce keyword" in message
+
+
 def test_script_runs_standalone(mod):
     r = subprocess.run([sys.executable, str(HERE / "lint.py"), "--help"], capture_output=True, text=True)
     assert r.returncode == 0 and "--mod-dir" in r.stdout

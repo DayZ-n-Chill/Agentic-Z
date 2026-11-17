@@ -1,7 +1,7 @@
 from dayz_3d_viewer import classify_lod, p3d_info, p3d_to_glb
 from dayz_3d_viewer.p3d_to_gltf import extract_lod_geometry, find_best_visual_lod
 
-from _support import (
+from viewer_support import (
     make_memory_lod,
     make_triangle_lod,
     parse_glb,

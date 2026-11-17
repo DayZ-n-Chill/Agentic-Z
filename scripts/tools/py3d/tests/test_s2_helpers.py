@@ -27,13 +27,13 @@ def test_lod_pos_get_lod_four_kinds(fork):
 
 
 def test_lod_pos_kind_tolerance_and_shadow(fork):
-    """Tolerancia relativa unica + familia shadowvolume."""
+    """Single relative tolerance + shadowvolume family."""
     lod = fork.LOD()
     lod.resolution = 1.04e13  # within 5%
     assert lod.kind() == "geometry"
-    lod.resolution = 10010.0  # ShadowVolume nivel 10
+    lod.resolution = 10010.0  # ShadowVolume level 10
     assert lod.kind() == "shadowvolume"
-    lod.resolution = 2.0  # nivel de detalle visual
+    lod.resolution = 2.0  # visual level of detail
     assert lod.kind() == "visual"
 
 
@@ -50,7 +50,7 @@ def test_lod_neg_unknown_and_legacy_arma(fork):
         assert fork.classify_lod_resolution(legacy) is None
     assert p3d.get_lod("memory") is None  # no match -> None
     with pytest.raises(ValueError):
-        p3d.get_lod("geophys")  # kind inexistente -> ValueError
+        p3d.get_lod("geophys")  # nonexistent kind -> ValueError
 
 
 # ---- BBOX-POS / BBOX-NEG ---------------------------------------------
@@ -68,7 +68,7 @@ def test_bbox_pos_unit_cube(fork):
 
 
 def test_bbox_neg_empty_lod(fork):
-    """BBOX-NEG: LOD vacio -> ValueError."""
+    """BBOX-NEG: empty LOD -> ValueError."""
     with pytest.raises(ValueError, match="no points"):
         fork.LOD().bbox()
 
@@ -108,7 +108,7 @@ def test_tri_pos_cube_with_selection(fork):
     reread = read_p3d(fork, write_bytes(p3d))
     rlod = reread.lods[0]
     assert len(rlod.faces) == 12
-    assert rlod.num_vertices == 36  # entradas #UVSet# = num_vertices
+    assert rlod.num_vertices == 36  # #UVSet# entries = num_vertices
     assert len(rlod.selections["half"].faces) == 6
     got = sorted(rlod.selections["half"].faces.values())
     assert all(abs(w - 0.5) < 0.51 / 255 for w in got)
@@ -164,6 +164,6 @@ def test_mass_pos_total_on_geometry(fork):
         geo.set_total_mass(-1)
 
 
-def test_s1_multilod_sigue_limpio(fork):
+def test_s1_multilod_stays_clean(fork):
     """Regression: the fixture still gives validate() == []."""
     assert build_multilod_p3d(fork).validate() == []

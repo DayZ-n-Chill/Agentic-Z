@@ -15,7 +15,7 @@ DayZ tools and a final DayZ/DayZDiag check remain separate gates.
 From the repository root:
 
 ```powershell
-python -m pip install -e tools/dayz-animation-formats
+python -m pip install -e scripts/tools/dayz-animation-formats
 ```
 
 Python 3.9 or newer is required. The runtime has no third-party dependencies.
@@ -95,7 +95,7 @@ The fixtures in `tests/fixtures/` contain first-party literal animation data:
 | `seanim-v1-full.seanim` | 288 | `75af1c6ab01ae715e6cea01e6897b804586687ccf7a234c21be6bef871288b29` | SE2Dev `io_anim_seanim` at `dffe313b635ce8940264201f25db9e68f4486d7e` |
 | `rtm-0101-mdat.rtm` | 258 | `37aa63f705d874c79b94721027d376a7cab347fc94691ad419e1172c5597c3f8` | Arma 3 Object Builder 2.5.1 |
 
-SE2Dev is MIT-licensed and is attributed in the repository notices. Arma 3
+SE2Dev is MIT-licensed. Arma 3
 Object Builder is GPL-3.0-or-later and is used only as an external oracle; no
 A3OB or BisDLL source is included or imported by this package.
 
@@ -105,5 +105,5 @@ The local RTM writer was also read successfully by A3OB 2.5.1 under Blender
 ## Test
 
 ```powershell
-python -m pytest -q tools/dayz-animation-formats/tests
+python -m pytest -q scripts/tools/dayz-animation-formats/tests
 ```

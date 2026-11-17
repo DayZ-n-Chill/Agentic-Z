@@ -4,14 +4,14 @@ Convert DayZ MLOD `.p3d` models, `.paa` textures and `.rvmat` materials
 into a binary glTF (`.glb`) and a standalone Three.js HTML viewer.
 
 The converter is the pack form of the `dayz-3d-viewer` skill. It reads
-the DayZ py3d fork from `tools/py3d` (1.6.0 or later). It does not vendor a
+the DayZ py3d fork from `scripts/tools/py3d` (1.6.0 or later). It does not vendor a
 wheel and it does not talk to the game.
 
 ## Requirements and install
 
 ```powershell
-python -m pip install -e tools/py3d
-python -m pip install -e tools/dayz-3d-viewer
+python -m pip install -e scripts/tools/py3d
+python -m pip install -e scripts/tools/dayz-3d-viewer
 ```
 
 PAA decoding needs Pillow. LZO-compressed DXT mipmaps (common on
@@ -19,7 +19,7 @@ PAA decoding needs Pillow. LZO-compressed DXT mipmaps (common on
 `lzokay` plus the shim below.
 
 ```powershell
-python -m pip install -e "tools/dayz-3d-viewer[all]"
+python -m pip install -e "scripts/tools/dayz-3d-viewer[all]"
 ```
 
 The imported `py3d` module must expose `IS_DAYZ_FORK is True` and a
@@ -111,5 +111,5 @@ timestamp or a host path.
 ## Test
 
 ```powershell
-python -m pytest -q tools/dayz-3d-viewer/tests
+python -m pytest -q scripts/tools/dayz-3d-viewer/tests
 ```

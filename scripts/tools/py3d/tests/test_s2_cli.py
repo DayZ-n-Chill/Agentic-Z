@@ -77,7 +77,7 @@ def test_cli_info_unreadable(fork, tmp_path):
 # ---- CLI-VAL ---------------------------------------------------------
 
 def test_cli_validate_clean_and_broken(fork, tmp_path):
-    """CLI-VAL: limpio exit 0 / winding roto exit 1 / no legible exit 2."""
+    """CLI-VAL: clean exit 0 / broken winding exit 1 / unreadable exit 2."""
     clean = write(fork, build_multilod_v2_p3d(fork), tmp_path / "ok.p3d")
     r = run_cli("validate", clean)
     assert r.returncode == 0

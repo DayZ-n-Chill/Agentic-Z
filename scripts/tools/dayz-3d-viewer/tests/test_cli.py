@@ -7,7 +7,7 @@ from dayz_3d_viewer import MissingDependencyError
 from dayz_3d_viewer.deps import require_pillow
 from dayz_3d_viewer.__main__ import main
 
-from _support import make_triangle_lod, save_model, write_rgba8888_paa
+from viewer_support import make_triangle_lod, save_model, write_rgba8888_paa
 
 
 TOOL_ROOT = Path(__file__).resolve().parents[1]

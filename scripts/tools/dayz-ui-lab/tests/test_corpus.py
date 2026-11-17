@@ -218,7 +218,7 @@ class ProvenanceAuditTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             pack, third_party = self._pack(temp_dir)
             write(
-                pack / "tools/dayz-ui-lab/fixtures/scenarios/green/card.layout",
+                pack / "scripts/tools/dayz-ui-lab/fixtures/scenarios/green/card.layout",
                 LEAF_LAYOUT,
             )
             _, findings = corpus.audit_redistribution(
@@ -230,7 +230,7 @@ class ProvenanceAuditTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             pack, third_party = self._pack(temp_dir)
             write(
-                pack / "tools/dayz-ui-lab/fixtures/unlisted/stray.layout",
+                pack / "scripts/tools/dayz-ui-lab/fixtures/unlisted/stray.layout",
                 LEAF_LAYOUT,
             )
             _, findings = corpus.audit_redistribution(

@@ -233,7 +233,7 @@ def _v_unit(v, fallback):
 
 
 def _mat_vec(m, v):
-    """Producto matriz 3x3 (row-major) x vector columna."""
+    """3x3 matrix (row-major) times column vector product."""
     return (m[0][0] * v[0] + m[0][1] * v[1] + m[0][2] * v[2],
             m[1][0] * v[0] + m[1][1] * v[1] + m[1][2] * v[2],
             m[2][0] * v[0] + m[2][1] * v[1] + m[2][2] * v[2])
@@ -950,7 +950,7 @@ def _recipe_build_memory(recipe):
 # audit script with its normalised ids - and the absolute-centroid check
 # is WITHDRAWN.
 #
-# Depuracion aplicada respecto al audit original:
+# Refinements applied relative to the original audit:
 #   - modern DayZ ids: the "collision" class is geometry, view_geometry
 #     and fire_geometry; the audit's GeoPhys/2e13 slot was stale;
 #   - autocenter is only required on the Geometry LOD - the audit also ran
@@ -3258,7 +3258,7 @@ class P3D:
             elif lod_type in _RECIPE_BUILD_WIREFRAME_TYPES:
                 model.lods.append(
                     _recipe_build_wireframe(lod_dict, lod_type, recipe))
-            # memory: reconstruido abajo; desconocidos: omitidos (scoped)
+            # memory: rebuilt below; unknown ones: skipped (scoped)
         mem = _recipe_build_memory(recipe)
         if mem is not None:
             model.lods.append(mem)

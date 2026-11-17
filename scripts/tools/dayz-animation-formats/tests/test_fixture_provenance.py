@@ -7,7 +7,7 @@ FIXTURES = Path(__file__).with_name("fixtures")
 
 
 def test_first_party_animation_fixture_hashes_are_frozen():
-    """Rompe si cualquier fixture oracle cambia sin nueva adjudicación."""
+    """Breaks if any oracle fixture changes without a new adjudication."""
     expected = {
         "seanim-v1-full.seanim": (
             288,
@@ -25,7 +25,7 @@ def test_first_party_animation_fixture_hashes_are_frozen():
 
 
 def test_semantic_expectations_are_valid_json_objects():
-    """Rompe si un golden deja de ser un documento JSON comparable."""
+    """Breaks if a golden stops being a comparable JSON document."""
     for name in ("seanim-v1-full.json", "rtm-0101-mdat.json"):
         value = json.loads((FIXTURES / name).read_text(encoding="utf-8"))
         assert isinstance(value, dict)

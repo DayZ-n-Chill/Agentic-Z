@@ -12,7 +12,7 @@ def codes(findings):
 # ---- VAL-POS ----------------------------------------------------------------
 
 def test_val_pos_clean_models(fork):
-    """VAL-POS: modelos sanos -> 0 findings (ni WARN)."""
+    """VAL-POS: healthy models -> 0 findings (not even WARN)."""
     assert build_cube_p3d(fork).validate() == []
     assert build_multilod_p3d(fork).validate() == []
 
@@ -58,7 +58,7 @@ def test_val_neg_property_truncation_fingerprint(fork):
 
 
 def test_val_neg_unreadable_roundtrip(fork, monkeypatch):
-    """Perdida semantica inyectada -> ERR_UNREADABLE_ROUNDTRIP (no raise)."""
+    """Injected semantic loss -> ERR_UNREADABLE_ROUNDTRIP (no raise)."""
     p3d = build_cube_p3d(fork)
     orig = fork.Selection.write
 

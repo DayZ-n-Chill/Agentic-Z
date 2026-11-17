@@ -46,7 +46,7 @@ def test_mem_pos_upsert_idempotent(fork):
     n_points = len(lod.points)
 
     lod.set_memory_point("crewdriver", (1.0, 2.0, 3.0))
-    lod.set_memory_point("crewdriver", (4.0, 5.0, 6.0))  # upsert, no duplica
+    lod.set_memory_point("crewdriver", (4.0, 5.0, 6.0))  # upsert, no duplicate
 
     assert len(lod.points) == n_points + 1  # created only ONCE
     mps = lod.get_memory_points()
@@ -61,7 +61,7 @@ def test_mem_pos_upsert_idempotent(fork):
 
 
 def test_mem_neg_preexisting_duplicate_collapses(fork):
-    """MEM-NEG: duplicado pre-existente (estilo vanilla) + set -> colapsa a 1."""
+    """MEM-NEG: pre-existing duplicate (vanilla style) + set -> collapses to 1."""
     p3d = fork.P3D()
     lod = build_memory_lod(fork, [])
     p3d.lods.append(lod)
@@ -76,7 +76,7 @@ def test_mem_neg_preexisting_duplicate_collapses(fork):
     lod.set_memory_point("crewdriver", (1.0, 1.0, 1.0))
 
     sel = lod.selections["crewdriver"]
-    assert len(sel.points) == 1  # colapsado, no 2 ni 3
+    assert len(sel.points) == 1  # collapsed, not 2 or 3
     assert lod.get_memory_points()["crewdriver"] == (1.0, 1.0, 1.0)
     reread = read_p3d(fork, write_bytes(p3d))
     assert len(reread.lods[0].selections["crewdriver"].points) == 1

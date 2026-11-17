@@ -123,7 +123,7 @@ def test_count_table_error_none_or_anatomy_mismatch_is_partial(mutation):
 
 
 def test_huge_backend_number_is_partial_without_overflow_traceback():
-    """Rompe si float(int gigante) escapa del límite fail-closed."""
+    """Breaks if float(huge int) escapes the fail-closed limit."""
     worker = _worker()
     worker["resolutions"][0] = 10 ** 10000
     with pytest.raises(OdolStrictError) as raised:
@@ -189,7 +189,7 @@ def test_invalid_preflight_never_reaches_manifest_or_worker(
 def test_temporary_payload_staging_failure_is_backend_failure(
     tmp_path, monkeypatch
 ):
-    """Rompe si un fallo I/O temporal escapa como traceback no contractual."""
+    """Breaks if a transient I/O failure escapes as a non-contractual traceback."""
     source = tmp_path / "input.p3d"
     source.write_bytes(b"synthetic input")
     monkeypatch.setattr(

@@ -5,7 +5,7 @@ from dayz_3d_viewer import (
     run_pipeline,
 )
 
-from _support import make_memory_lod, make_triangle_lod, save_model
+from viewer_support import make_memory_lod, make_triangle_lod, save_model
 
 
 def test_glb_and_html_are_byte_identical_across_runs(tmp_path):

@@ -5,7 +5,7 @@ from dayz_3d_viewer import (
 )
 from dayz_3d_viewer.viewer_template import THREE_CDN, THREE_JS_VERSION
 
-from _support import make_triangle_lod, save_model
+from viewer_support import make_triangle_lod, save_model
 
 
 def test_embedded_html_contains_geometry_and_no_host_paths(tmp_path):

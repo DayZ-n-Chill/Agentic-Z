@@ -1,4 +1,4 @@
-"""digest_pbo: the header properties and per-entry SHA-256 that tools/dayz-pbo-diff reads.
+"""digest_pbo: the header properties and per-entry SHA-256 that scripts/tools/dayz-pbo-diff reads.
 
 Stdlib only, so it runs where the rest of this suite's dependencies are absent.
 """

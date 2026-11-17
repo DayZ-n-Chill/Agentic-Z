@@ -21,7 +21,7 @@ from builders import build_multilod_v2_p3d
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILLS = os.environ.get(
-    "SKILLS_DIR", "/sessions/magical-epic-pascal/mnt/.claude/skills")
+    "SKILLS_DIR", "")
 
 INSPECTOR = os.path.join(SKILLS, "dayz-p3d-inspector", "scripts")
 AUDIT_ORIG = os.path.join(SKILLS, "dayz-p3d-audit", "scripts",
@@ -50,10 +50,10 @@ def _semantic_equal(a, b, tol=1e-6, path="$"):
     if path.endswith(".edges"):
         sa = {tuple(e) for e in a}
         sb = {tuple(e) for e in b}
-        assert sa == sb, "%s: edges difieren" % path
+        assert sa == sb, "%s: edges differ" % path
         return
     if isinstance(a, dict) and isinstance(b, dict):
-        assert set(a) == set(b), "%s: claves %r != %r" % (path, set(a),
+        assert set(a) == set(b), "%s: keys %r != %r" % (path, set(a),
                                                           set(b))
         for k in a:
             _semantic_equal(a[k], b[k], tol, "%s.%s" % (path, k))

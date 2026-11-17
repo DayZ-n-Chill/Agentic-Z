@@ -30,7 +30,7 @@ def _load_upstream():
                       "https://github.com/KoffeinFlummi/py3d and point it there")
     init = os.path.join(root, "py3d", "__init__.py")
     if not os.path.isfile(init):
-        return None, "no existe %s" % init
+        return None, "does not exist: %s" % init
     spec = importlib.util.spec_from_file_location("py3d_upstream", init)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)

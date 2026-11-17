@@ -139,7 +139,7 @@ class TestWithoutIndexMatchesCurated(_IndexIsolation):
         self.assertTrue(vanilla_reference.is_vanilla_global_class_name("LogManager"))
         self.assertFalse(vanilla_reference.is_vanilla_global_class_name("Alpha"))
         self.assertEqual(
-            "scripts/3_game/tools/debug.c:691",
+            "scripts/3_game/tools/debug.c:702",
             vanilla_reference.vanilla_global_class_citation("LogManager"),
         )
         self.assertIsNone(vanilla_reference.vanilla_global_class_citation("Alpha"))
@@ -205,10 +205,10 @@ class TestIndexExtendsAndCuratedWins(_IndexIsolation):
         self.assertIn("LogManager", document["global_class_names"])
         self.assertNotEqual(
             document["global_class_names"]["LogManager"],
-            "scripts/3_game/tools/debug.c:691",
+            "scripts/3_game/tools/debug.c:702",
         )
         self.assertEqual(
-            "scripts/3_game/tools/debug.c:691",
+            "scripts/3_game/tools/debug.c:702",
             vanilla_reference.vanilla_global_class_citation("LogManager"),
         )
         indexed_params = document["override_params"].get("OnExecuteServer", {})

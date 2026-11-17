@@ -10,15 +10,15 @@ from builders import (add_proxy_triangle, build_cube_p3d,
 from helpers import read_p3d, write_bytes
 
 
-# 90 grados alrededor de Y: filas x,y,z local->world
+# 90 degrees around Y: rows x,y,z local->world
 ROT_Y90 = ((0.0, 0.0, -1.0), (0.0, 1.0, 0.0), (1.0, 0.0, 0.0))
 
 
 # ---- PROXY-POS -------------------------------------------------------
 
 def test_proxy_pos_roundtrip_exact(fork):
-    """PROXY-POS: add_proxy -> save -> get_proxies: path/index exactos,
-    anchor == f32(origin), frame == R (tolerancia f32), inambiguo."""
+    """PROXY-POS: add_proxy -> save -> get_proxies: exact path/index,
+    anchor == f32(origin), frame == R (f32 tolerance), unambiguous."""
     p3d = build_multilod_v2_p3d(fork)
     vis = p3d.get_lod("visual")
     origin = (0.25, 0.5, -0.75)
@@ -71,7 +71,7 @@ def test_proxy_derive_canonical_inverse(fork):
     tri = fork.canonical_proxy_triangle(anchor, ROT_Y90)
     got_anchor, R, ambiguous, deg = fork.derive_proxy_frame(tri)
     assert not ambiguous
-    assert deg[0] > deg[1] > deg[2]  # tres angulos distintos
+    assert deg[0] > deg[1] > deg[2]  # three distinct angles
     for j in range(3):
         assert abs(got_anchor[j] - anchor[j]) < 1e-9
         for k in range(3):
@@ -82,7 +82,7 @@ def test_proxy_derive_canonical_inverse(fork):
 
 def _deep_equal(a, b, tol=1e-6, path="$"):
     if isinstance(a, dict) and isinstance(b, dict):
-        assert set(a) == set(b), "%s: claves %r != %r" % (path, set(a), set(b))
+        assert set(a) == set(b), "%s: keys %r != %r" % (path, set(a), set(b))
         for k in a:
             _deep_equal(a[k], b[k], tol, "%s.%s" % (path, k))
     elif isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):

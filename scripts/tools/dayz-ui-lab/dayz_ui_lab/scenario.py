@@ -15,7 +15,7 @@ from typing import Any
 
 MODULE_DIR = Path(__file__).resolve().parent
 TOOL_DIR = MODULE_DIR.parent
-REPO_ROOT = TOOL_DIR.parents[1]
+REPO_ROOT = TOOL_DIR.parents[2]
 SCHEMA_PATH = TOOL_DIR / "schemas" / "dayz-ui-scenario-v1.schema.json"
 SCHEMA_VERSION = "dayz-ui-scenario-v1"
 DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"

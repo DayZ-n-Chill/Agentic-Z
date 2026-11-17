@@ -1,4 +1,4 @@
-"""Script-path entry: python tools/dayz-layout-viewer/build_viewer.py <layout>."""
+"""Script-path entry: python scripts/tools/dayz-layout-viewer/build_viewer.py <layout>."""
 
 from __future__ import annotations
 

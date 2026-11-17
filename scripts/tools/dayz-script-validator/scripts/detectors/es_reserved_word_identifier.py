@@ -31,8 +31,8 @@ ES_RESERVED_WORD_IDENTIFIER_RULE_ID = "ES-RESERVED-WORD-IDENTIFIER"
 # Vanilla uses all four as keywords, never as names: `sealed class Contact`
 # (1_core/physics/contact.c:9), `local array<string> overridden`
 # (4_world/plugins/pluginbase/pluginconfigviewer.c:153), `proto owned string
-# GetModule()` (1_core/proto/enconvert.c:536), `out array<Man> players`
-# (3_game/global/game.c:947). Other modifiers vanilla uses the same way
+# GetModule()` (1_core/proto/enconvert.c:571), `out array<Man> players`
+# (3_game/global/game.c:945). Other modifiers vanilla uses the same way
 # (notnull, inout, autoptr, reference, volatile, external, event...) are left
 # out until a compile failure is on record for them.
 #

@@ -24,7 +24,7 @@ identity again before the subprocess imports `odol_reader`.
 ## Install
 
 ```powershell
-python -m pip install -e tools/dayz-odol-strict
+python -m pip install -e scripts/tools/dayz-odol-strict
 ```
 
 Python 3.9 or newer is required. Before inspection, supply a local backend root
@@ -128,8 +128,8 @@ integration is enabled only when `DAYZ_ODOL_BACKEND_ROOT` points to the exact
 pinned closure.
 
 ```powershell
-python -m pytest -q tools/dayz-odol-strict/tests
+python -m pytest -q scripts/tools/dayz-odol-strict/tests
 
 $env:DAYZ_ODOL_BACKEND_ROOT = 'D:\external\odol-backend\scripts'
-python -m pytest -q tools/dayz-odol-strict/tests
+python -m pytest -q scripts/tools/dayz-odol-strict/tests
 ```

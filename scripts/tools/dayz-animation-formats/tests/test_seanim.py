@@ -47,14 +47,14 @@ def _declared_empty_channel_bytes(presence_flags):
 
 
 def test_reads_frozen_se2dev_fixture_as_hand_checked_document():
-    """Rompe si el lector diverge del oracle SE2Dev en cualquier campo."""
+    """Breaks if the reader diverges from the SE2Dev oracle in any field."""
     expected = _golden_document()
     actual = read_seanim(FIXTURES / "seanim-v1-full.seanim")
     assert actual == expected
 
 
 def test_writer_reproduces_frozen_se2dev_bytes():
-    """Rompe si orden, widths, flags o precisión dejan de ser compatibles."""
+    """Breaks if order, widths, flags or precision stop being compatible."""
     expected = (FIXTURES / "seanim-v1-full.seanim").read_bytes()
     assert write_seanim_bytes(_golden_document()) == expected
 
@@ -66,7 +66,7 @@ def test_writer_reproduces_frozen_se2dev_bytes():
 def test_declared_empty_bone_channel_roundtrip_preserves_exact_bytes(
     presence_flags, channel
 ):
-    """Rompe si un canal declarado se elimina por contener cero claves."""
+    """Breaks if a declared channel is dropped for containing zero keys."""
     original = _declared_empty_channel_bytes(presence_flags)
 
     document = read_seanim_bytes(original)
@@ -81,7 +81,7 @@ def test_declared_empty_bone_channel_roundtrip_preserves_exact_bytes(
     [(1, "position_keys"), (2, "rotation_keys"), (4, "scale_keys")],
 )
 def test_keys_in_undeclared_bone_channel_fail_closed(presence_flag, channel):
-    """Rompe si claves no declaradas se emiten reparando flags en silencio."""
+    """Breaks if undeclared keys are emitted by silently repairing flags."""
     document = _golden_document()
     document["presence_flags"] = 0x47 & ~presence_flag
 
@@ -94,7 +94,7 @@ def test_keys_in_undeclared_bone_channel_fail_closed(presence_flag, channel):
 
 
 def test_manual_seanim_document_without_presence_flags_keeps_legacy_inference():
-    """Rompe si el nuevo campo pasa a ser obligatorio para llamantes existentes."""
+    """Breaks if the new field becomes mandatory for existing callers."""
     document = _golden_document()
     document.pop("presence_flags", None)
     expected = (FIXTURES / "seanim-v1-full.seanim").read_bytes()
@@ -108,7 +108,7 @@ def test_manual_seanim_document_without_presence_flags_keeps_legacy_inference():
     ids=lambda path: path.name,
 )
 def test_seanim_corpus_read_write_roundtrip_is_byte_exact(fixture_path):
-    """Rompe si cualquier SEAnim del corpus se normaliza durante read→write."""
+    """Breaks if any SEAnim in the corpus is normalized during read→write."""
     original = fixture_path.read_bytes()
 
     assert write_seanim_bytes(read_seanim_bytes(original)) == original
@@ -120,7 +120,7 @@ def test_seanim_corpus_read_write_roundtrip_is_byte_exact(fixture_path):
     [("float32", 1e-6), ("float64", 1e-12)],
 )
 def test_all_types_and_precisions_roundtrip(anim_type, precision, tolerance):
-    """Rompe si un tipo 0..3 o la precisión seleccionada se normaliza."""
+    """Breaks if a type 0..3 or the selected precision is normalized."""
     document = _golden_document()
     document["anim_type"] = anim_type
     document["precision"] = precision
@@ -141,7 +141,7 @@ def test_all_types_and_precisions_roundtrip(anim_type, precision, tolerance):
 def test_write_seanim_wrapper_defaults_to_relative_and_legacy_bone_keys(
     tmp_path,
 ):
-    """Rompe si el wrapper conserva el antiguo default ABSOLUTE=0."""
+    """Breaks if the wrapper keeps the old ABSOLUTE=0 default."""
     path = tmp_path / "default.seanim"
     write_seanim(
         path,
@@ -163,7 +163,7 @@ def test_write_seanim_wrapper_defaults_to_relative_and_legacy_bone_keys(
 
 
 def test_write_seanim_missing_bone_key_frame_is_typed_error(tmp_path):
-    """Rompe si el repro MEN-4 filtra TypeError desde una clave de hueso."""
+    """Breaks if the MEN-4 repro leaks TypeError from a bone key."""
     path = tmp_path / "missing-bone-frame.seanim"
 
     with pytest.raises(AnimationFormatError) as raised:
@@ -180,7 +180,7 @@ def test_write_seanim_missing_bone_key_frame_is_typed_error(tmp_path):
 
 
 def test_write_seanim_missing_note_frame_is_typed_error(tmp_path):
-    """Rompe si una nota sin frame filtra TypeError antes del validador."""
+    """Breaks if a note without a frame leaks TypeError before the validator."""
     path = tmp_path / "missing-note-frame.seanim"
 
     with pytest.raises(AnimationFormatError) as raised:
@@ -234,7 +234,7 @@ def test_write_seanim_missing_note_frame_is_typed_error(tmp_path):
 def test_directed_header_index_and_trailing_mutations_fail_closed(
     mutate, code, offset
 ):
-    """Rompe si corrupción conocida produce un documento parcial."""
+    """Breaks if known corruption produces a partial document."""
     raw = bytearray((FIXTURES / "seanim-v1-full.seanim").read_bytes())
     mutate(raw)
     with pytest.raises(AnimationFormatError) as raised:
@@ -245,7 +245,7 @@ def test_directed_header_index_and_trailing_mutations_fail_closed(
 
 @pytest.mark.parametrize("cut", [0, 7, 9, 35, 48, 51, 100, 287])
 def test_every_truncated_region_fails_without_partial_document(cut):
-    """Rompe si EOF actúa como NUL/cero y devuelve datos incompletos."""
+    """Breaks if EOF acts as NUL/zero and returns incomplete data."""
     raw = (FIXTURES / "seanim-v1-full.seanim").read_bytes()[:cut]
     with pytest.raises(AnimationFormatError) as raised:
         read_seanim_bytes(raw)
@@ -257,7 +257,7 @@ def test_every_truncated_region_fails_without_partial_document(cut):
 
 
 def test_frame_outside_declared_range_is_rejected():
-    """Rompe si un índice igual a frame_count se acepta."""
+    """Breaks if an index equal to frame_count is accepted."""
     raw = bytearray((FIXTURES / "seanim-v1-full.seanim").read_bytes())
     raw[77] = 11
     with pytest.raises(AnimationFormatError) as raised:
@@ -279,7 +279,7 @@ def test_frame_outside_declared_range_is_rejected():
     ],
 )
 def test_writer_rejects_invalid_document_before_returning_bytes(mutation):
-    """Rompe si el writer emite un prefijo antes de validar todo."""
+    """Breaks if the writer emits a prefix before validating everything."""
     document = _golden_document()
     mutation(document)
     with pytest.raises(AnimationFormatError):
@@ -287,7 +287,7 @@ def test_writer_rejects_invalid_document_before_returning_bytes(mutation):
 
 
 def test_float32_writer_overflow_is_stable_format_error():
-    """Rompe si struct.pack filtra OverflowError fuera del contrato público."""
+    """Breaks if struct.pack leaks OverflowError outside the public contract."""
     document = _golden_document()
     document["precision"] = "float32"
     document["bones"][0]["position_keys"][0]["value"][0] = 1e100

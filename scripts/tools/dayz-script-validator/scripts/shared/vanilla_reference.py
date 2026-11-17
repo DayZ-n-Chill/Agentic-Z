@@ -140,7 +140,7 @@ def override_param_names(method_name):
 # ES-METHOD-NAME-COLLIDES-VANILLA-CLASS (CANDIDATE-38). Curated; partial
 # coverage -> false negatives, never false positives. Keyed by class name.
 VANILLA_GLOBAL_CLASS_NAMES = {
-    "LogManager": "scripts/3_game/tools/debug.c:691",  # class LogManager
+    "LogManager": "scripts/3_game/tools/debug.c:702",  # class LogManager
 }
 
 
@@ -199,8 +199,8 @@ VANILLA_PLATFORM_GATED_METHODS = {
     "GetConsoleToolbarText": {
         "owner": "Inventory",
         "macro": "PLATFORM_CONSOLE",
-        # declaration at :1314; #ifdef PLATFORM_CONSOLE is the previous line
-        "citation": "5_mission/gui/inventorynew/inventory.c:1314",
+        # declaration at :1308; #ifdef PLATFORM_CONSOLE is the previous line
+        "citation": "5_mission/gui/inventorynew/inventory.c:1308",
     },
 }
 

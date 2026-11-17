@@ -9,12 +9,12 @@ This is the pack OFFLINE layer. It does not launch DayZ. In-game verification
 belongs to DayZ-MCP.
 
 Its fail-closed PBO reader, `scripts/vehicle_proxy/pbo.py`, is also the reader
-of [`tools/dayz-pbo-diff`](../dayz-pbo-diff/README.md), through `digest_pbo`.
+of [`scripts/tools/dayz-pbo-diff`](../dayz-pbo-diff/README.md), through `digest_pbo`.
 
 ## Install
 
 ```powershell
-python -m pip install -e tools/dayz-vehicle-proxy-contract
+python -m pip install -e scripts/tools/dayz-vehicle-proxy-contract
 ```
 
 Python 3.10 or newer is required. Runtime dependencies: `numpy`, `scipy`,
@@ -28,10 +28,10 @@ binary (or a test shim). There is no default machine path.
 From the pack root, without installing:
 
 ```powershell
-python tools/dayz-vehicle-proxy-contract/scripts/vehicle_proxy_contract.py audit --manifest <manifest.json> --out <outdir>
-python tools/dayz-vehicle-proxy-contract/scripts/vehicle_proxy_contract.py preview --manifest <manifest.json> --out <outdir>
-python tools/dayz-vehicle-proxy-contract/scripts/vehicle_proxy_contract.py repair --manifest <manifest.json> --staging <abs-staging-dir> --operation <set-autocenter-zero|yaw180|affine-fit>
-python tools/dayz-vehicle-proxy-contract/scripts/vehicle_proxy_contract.py self-test
+python scripts/tools/dayz-vehicle-proxy-contract/scripts/vehicle_proxy_contract.py audit --manifest <manifest.json> --out <outdir>
+python scripts/tools/dayz-vehicle-proxy-contract/scripts/vehicle_proxy_contract.py preview --manifest <manifest.json> --out <outdir>
+python scripts/tools/dayz-vehicle-proxy-contract/scripts/vehicle_proxy_contract.py repair --manifest <manifest.json> --staging <abs-staging-dir> --operation <set-autocenter-zero|yaw180|affine-fit>
+python scripts/tools/dayz-vehicle-proxy-contract/scripts/vehicle_proxy_contract.py self-test
 ```
 
 After `pip install -e`:
@@ -65,7 +65,7 @@ Findings are JSON on disk for `audit`/`preview`. stderr carries `usage error:`,
 python -m pytest tests -q
 ```
 
-Run from `tools/dayz-vehicle-proxy-contract/`, or point pytest at that
+Run from `scripts/tools/dayz-vehicle-proxy-contract/`, or point pytest at that
 `tests/` directory from the pack root. Test files resolve `scripts/` from
 their own path, not from the current working directory.
 

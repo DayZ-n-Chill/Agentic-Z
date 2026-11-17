@@ -3,13 +3,13 @@
     "raster": false,
     "semantic": true
   },
-  "entrypoint": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout",
+  "entrypoint": "scripts/tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout",
   "normalization": {
     "float_decimal_places": 6,
     "path_format": "repo-relative-posix",
     "widget_order": "depth-first-preorder"
   },
-  "scenario": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/scenario.json",
+  "scenario": "scripts/tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/scenario.json",
   "scenario_id": "defect-overlays",
   "schema_version": "dayz-ui-render-v1",
   "state": "defective",
@@ -113,7 +113,7 @@
       "source": {
         "column": 1,
         "line": 1,
-        "path": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
+        "path": "scripts/tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
       },
       "state": [],
       "type": "FrameWidgetClass"
@@ -214,7 +214,7 @@
       "source": {
         "column": 9,
         "line": 9,
-        "path": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
+        "path": "scripts/tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
       },
       "state": [],
       "type": "FrameWidgetClass"
@@ -313,7 +313,7 @@
       "source": {
         "column": 17,
         "line": 18,
-        "path": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
+        "path": "scripts/tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
       },
       "state": [],
       "type": "TextWidgetClass"
@@ -409,7 +409,7 @@
       "source": {
         "column": 9,
         "line": 29,
-        "path": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
+        "path": "scripts/tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
       },
       "state": [],
       "type": "FrameWidgetClass"
@@ -508,7 +508,7 @@
       "source": {
         "column": 17,
         "line": 37,
-        "path": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
+        "path": "scripts/tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
       },
       "state": [],
       "type": "TextWidgetClass"
@@ -607,7 +607,7 @@
       "source": {
         "column": 17,
         "line": 46,
-        "path": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
+        "path": "scripts/tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
       },
       "state": [],
       "type": "TextWidgetClass"
@@ -706,7 +706,7 @@
       "source": {
         "column": 9,
         "line": 57,
-        "path": "tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
+        "path": "scripts/tools/dayz-ui-lab/fixtures/scenarios/defect-overlays/layouts/defects.layout"
       },
       "state": [],
       "type": "ButtonWidgetClass"

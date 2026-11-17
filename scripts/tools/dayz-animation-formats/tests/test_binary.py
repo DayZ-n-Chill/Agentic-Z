@@ -13,7 +13,7 @@ from dayz_animation_formats.errors import AnimationFormatError
 
 
 def test_reader_tracks_offsets_and_little_endian_values():
-    """Rompe si un error posterior reporta offset o endianness incorrectos."""
+    """Breaks if a later error reports a wrong offset or endianness."""
     reader = BinaryReader(struct.pack("<BHIf", 7, 513, 70000, 1.25))
     assert reader.offset == 0
     assert reader.u8() == 7
@@ -25,7 +25,7 @@ def test_reader_tracks_offsets_and_little_endian_values():
 
 
 def test_short_read_fails_at_first_missing_field_offset():
-    """Rompe si la lectura truncada retorna bytes parciales."""
+    """Breaks if a truncated read returns partial bytes."""
     reader = BinaryReader(b"\x01\x02")
     with pytest.raises(AnimationFormatError) as raised:
         reader.u32()
@@ -35,7 +35,7 @@ def test_short_read_fails_at_first_missing_field_offset():
 
 
 def test_count_is_rejected_before_iteration_or_allocation():
-    """Rompe si count*item_size puede exceder los bytes restantes."""
+    """Breaks if count*item_size can exceed the remaining bytes."""
     reader = BinaryReader(b"\0" * 8)
     with pytest.raises(AnimationFormatError) as raised:
         reader.require_count(3, 4, "frames")
@@ -45,7 +45,7 @@ def test_count_is_rejected_before_iteration_or_allocation():
 
 
 def test_cstring_requires_nul_and_strict_utf8():
-    """Rompe si una cadena corrupta se acepta con reemplazo silencioso."""
+    """Breaks if a corrupt string is accepted with silent replacement."""
     with pytest.raises(AnimationFormatError) as missing:
         BinaryReader(b"abc").cstring()
     assert missing.value.code == "ANIM_STRING_UNTERMINATED"
@@ -58,7 +58,7 @@ def test_cstring_requires_nul_and_strict_utf8():
 
 
 def test_fixed_cstring_requires_nul_zero_padding_and_byte_bound():
-    """Rompe si RTM trunca nombres o esconde bytes tras el NUL."""
+    """Breaks if RTM truncates names or hides bytes after the NUL."""
     assert BinaryReader(b"Pelvis\0\0").fixed_cstring(8) == "Pelvis"
     with pytest.raises(AnimationFormatError) as missing:
         BinaryReader(b"12345678").fixed_cstring(8)
@@ -72,7 +72,7 @@ def test_fixed_cstring_requires_nul_zero_padding_and_byte_bound():
 
 
 def test_string_writers_reject_nul_and_emit_exact_utf8():
-    """Rompe si un NUL embebido altera los límites del formato."""
+    """Breaks if an embedded NUL alters the format boundaries."""
     assert encode_cstring("arma") == b"arma\0"
     assert encode_fixed_cstring("A", 4) == b"A\0\0\0"
     with pytest.raises(AnimationFormatError) as raised:
@@ -82,7 +82,7 @@ def test_string_writers_reject_nul_and_emit_exact_utf8():
 
 @pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
 def test_require_finite_rejects_non_finite_scalar(value):
-    """Rompe si NaN/Inf entra en claves o matrices serializadas."""
+    """Breaks if NaN/Inf enters serialized keys or matrices."""
     with pytest.raises(AnimationFormatError) as raised:
         require_finite(value, "phase")
     assert raised.value.code == "ANIM_VALUE_INVALID"
@@ -90,7 +90,7 @@ def test_require_finite_rejects_non_finite_scalar(value):
 
 @pytest.mark.parametrize("value", [True, "1.0", object()])
 def test_require_finite_rejects_non_json_number_types(value):
-    """Rompe si bool/texto se normaliza silenciosamente a float."""
+    """Breaks if bool/text is silently normalized to float."""
     with pytest.raises(AnimationFormatError) as raised:
         require_finite(value, "phase")
     assert raised.value.code == "ANIM_VALUE_INVALID"

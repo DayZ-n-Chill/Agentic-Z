@@ -1,7 +1,7 @@
 from dayz_3d_viewer import PAAFile, convert_paa_to_png
 from dayz_3d_viewer.paa_to_png import PAA_RGBA8888
 
-from _support import write_dxt1_paa, write_rgba8888_paa
+from viewer_support import write_dxt1_paa, write_rgba8888_paa
 
 
 def test_rgba8888_round_trip_pixels(tmp_path):

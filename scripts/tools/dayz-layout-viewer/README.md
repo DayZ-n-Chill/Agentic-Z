@@ -6,12 +6,12 @@ parser diagnostics. In it exact widgets keep their declared px at every
 viewport while proportional widgets scale. The engine draws exact units as
 1/1080 of the screen height (`dayz-ui-development` Rule 3, measured in game),
 so off 1080p that difference is this model's, not the game's: the parser lays
-exact units out as pixels (`tools/dayz-ui-lab/dayz_ui_lab/parse.py:772-775`). *(Corrected
+exact units out as pixels (`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py:772-775`). *(Corrected
 2026-10-03: this called it the usual "looked right in the mockup, wrong
 in-game" failure.)*
 
 Geometry, attributes and diagnostics come from the pack format parser
-`tools/dayz-ui-lab/dayz_ui_lab/parse.py` (`LayoutDoc`). This tool is **not**
+`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py` (`LayoutDoc`). This tool is **not**
 `dayz-ui-lab/render.py`, which emits semantic scenario JSON, not an HTML
 preview.
 
@@ -39,22 +39,22 @@ this viewer does not recover them.
 
 ## Requirements and install
 
-Stdlib only. It imports the sibling `tools/dayz-ui-lab` parser; run it from
+Stdlib only. It imports the sibling `scripts/tools/dayz-ui-lab` parser; run it from
 the pack tree (or put that directory on `PYTHONPATH`). `dayz-ui-lab` is not
 a pip extra of this tool and is not modified by it.
 
 From the repository root, either use the script path (no install):
 
 ```powershell
-python tools/dayz-layout-viewer/build_viewer.py gui/layouts/menu.layout
-python tools/dayz-layout-viewer/build_viewer.py menu.layout -o menu.preview.html
-python tools/dayz-layout-viewer/build_viewer.py menu.layout --layout-root gui/layouts
+python scripts/tools/dayz-layout-viewer/build_viewer.py gui/layouts/menu.layout
+python scripts/tools/dayz-layout-viewer/build_viewer.py menu.layout -o menu.preview.html
+python scripts/tools/dayz-layout-viewer/build_viewer.py menu.layout --layout-root gui/layouts
 ```
 
 or install and invoke the module:
 
 ```powershell
-python -m pip install -e tools/dayz-layout-viewer
+python -m pip install -e scripts/tools/dayz-layout-viewer
 python -m dayz_layout_viewer gui/layouts/menu.layout -o menu.preview.html
 ```
 

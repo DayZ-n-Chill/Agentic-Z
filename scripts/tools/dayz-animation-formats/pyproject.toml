@@ -8,8 +8,6 @@ version = "0.1.0"
 description = "Strict SEAnim v1 and unbinarized DayZ RTM interchange"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
-authors = [{name = "DayZ Modding Knowledge Pack contributors"}]
 dependencies = []
 
 [project.scripts]

@@ -76,7 +76,7 @@ def _run_cli(*arguments):
 def test_inspect_cli_returns_deterministic_schema_valid_json(
     filename, expected
 ):
-    """Rompe si inspect filtra rutas/tiempo o cambia su contrato v1."""
+    """Breaks if inspect leaks paths/time or changes its v1 contract."""
     result = _run_cli("inspect", FIXTURES / filename)
     assert result.returncode == 0
     assert result.stderr == ""
@@ -92,7 +92,7 @@ def test_inspect_cli_returns_deterministic_schema_valid_json(
 
 
 def test_output_file_bytes_equal_stdout_bytes(tmp_path):
-    """Rompe si --output usa otra serialización o añade metadatos físicos."""
+    """Breaks if --output uses another serialization or adds physical metadata."""
     fixture = FIXTURES / "seanim-v1-full.seanim"
     stdout_result = _run_cli("inspect", fixture)
     destination = tmp_path / "inspection.json"
@@ -114,7 +114,7 @@ def test_output_file_bytes_equal_stdout_bytes(tmp_path):
 def test_invalid_input_exits_two_with_machine_error_on_stdout(
     tmp_path, payload, expected_code
 ):
-    """Rompe si hay fallback, traceback o error esperado en stderr."""
+    """Breaks if there is a fallback, traceback or expected error on stderr."""
     source = tmp_path / "invalid.bin"
     source.write_bytes(payload)
     result = _run_cli("inspect", source)
@@ -129,7 +129,7 @@ def test_invalid_input_exits_two_with_machine_error_on_stdout(
 
 
 def test_frozen_fixture_hashes_are_the_bytes_inspected():
-    """Rompe si el test compara JSON con un fixture distinto al versionado."""
+    """Breaks if the test compares JSON with a fixture other than the versioned one."""
     for name in ("seanim-v1-full.seanim", "rtm-0101-mdat.rtm"):
         path = FIXTURES / name
         result = _run_cli("inspect", path)

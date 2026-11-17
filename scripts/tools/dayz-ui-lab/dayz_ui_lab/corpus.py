@@ -29,10 +29,10 @@ DEFAULT_MANIFEST = TOOL_DIR / "corpora" / "manifest.json"
 
 # These named fixture directories are the only places where this repository may
 # track .layout files. Everything else may be a leaked third-party layout.
-FIRST_PARTY_LAYOUT_DIR = "tools/dayz-ui-lab/probe/LF_UIProbe/gui/layouts"
+FIRST_PARTY_LAYOUT_DIR = "scripts/tools/dayz-ui-lab/probe/LF_UIProbe/gui/layouts"
 FIRST_PARTY_LAYOUT_DIRS = (
     FIRST_PARTY_LAYOUT_DIR,
-    "tools/dayz-ui-lab/fixtures/scenarios",
+    "scripts/tools/dayz-ui-lab/fixtures/scenarios",
 )
 
 

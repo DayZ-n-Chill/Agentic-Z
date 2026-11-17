@@ -1,11 +1,11 @@
 --- a/dayz-animation-pipeline/references/py3d-1.0.0-quirks.md
 +++ b/dayz-animation-pipeline/references/py3d-1.0.0-quirks.md
 @@ -1,4 +1,4 @@
--# py3d 1.0.0 quirks — HISTORICO (superado por el fork DayZ >= 1.2.0)
-+# py3d 1.0.0 quirks — HISTORICO (superado por el fork DayZ >= 1.4.0)
+-# py3d 1.0.0 quirks — HISTORICAL (superseded by the DayZ fork >= 1.2.0)
++# py3d 1.0.0 quirks — HISTORICAL (superseded by the DayZ fork >= 1.4.0)
  
- > **Estado 2026-06-06 (rollout py3d-fork S2):** este documento queda como
- > HISTORICO. La verificacion R22 (plan py3d-fork, R22-P1-01) demostro que
+ > **Status 2026-06-06 (rollout py3d-fork S2):** this document remains as
+ > HISTORICAL. The R22 verification (py3d-fork plan, R22-P1-01) showed that
 @@ -196,8 +196,8 @@ JSON against either frame produces mirrored output for one of them.
  
  After any py3d-based `.p3d` write:

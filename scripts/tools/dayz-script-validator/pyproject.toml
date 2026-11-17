@@ -8,8 +8,6 @@ version = "0.1.0"
 description = "Offline Enforce Script, layout and config linter for DayZ mods"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
-authors = [{name = "DayZ Modding Knowledge Pack contributors"}]
 dependencies = []
 
 [project.scripts]

@@ -9,7 +9,7 @@ param(
     [switch]$NoWrite,
 
     # Restock the vendored wheel without reading the patch payload. Wheel
-    # correctness depends only on wheel-manifest.json and tools/py3d/dist;
+    # correctness depends only on wheel-manifest.json and scripts/tools/py3d/dist;
     # binding it to a prose preimage made every skill edit abort the restock.
     [switch]$WheelOnly
 )
@@ -506,7 +506,7 @@ foreach ($SkillName in $PresentWheelSkills) {
 if ($WheelPlans.Count -gt 0) {
     if (-not (Test-Path -LiteralPath $WheelPath -PathType Leaf)) {
         Write-Host (
-            "[FAIL] tracked wheel is missing from tools/py3d/dist: " +
+            "[FAIL] tracked wheel is missing from scripts/tools/py3d/dist: " +
             $WheelManifest.filename
         )
         $PreflightFailures++

@@ -133,7 +133,7 @@ def test_invalid_summary_is_rejected_before_comparison(mutation):
 
 
 def test_huge_summary_number_is_invalid_without_overflow_traceback():
-    """Rompe si un entero JSON hostil provoca OverflowError en diff."""
+    """Breaks if a hostile JSON integer causes OverflowError in diff."""
     candidate = _summary()
     candidate["lods"][0]["resolution"] = 10 ** 10000
     with pytest.raises(OdolStrictError) as raised:

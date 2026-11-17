@@ -10,7 +10,7 @@ archive by content, file by file (.c only). A folder carries no build number,
 and the PBO header's version or the exe's version only name a build: they do
 not say which build a folder was extracted from. Read-only. The PBO is read
 with the Pack's fail-closed reader,
-tools/dayz-vehicle-proxy-contract/scripts/vehicle_proxy/pbo.py, which refuses
+scripts/tools/dayz-vehicle-proxy-contract/scripts/vehicle_proxy/pbo.py, which refuses
 a compressed entry: what it cannot read is reported as not compared, never as
 a match.
 """

@@ -7,7 +7,7 @@
 # and the tree does exactly that -
 #   4_world/classes/camerashake.c:44      delete this;
 #   2_gamelib/entities/rendertarget.c:46  delete m_RenderWidget;   (~RenderTarget)
-#   4_world/entities/manbase/playerbase.c:2512  delete m_HologramServer;
+#   4_world/entities/manbase/playerbase.c:2692  delete m_HologramServer;
 # For a non-managed widget or BoneMask, `obj = null` is not a substitute: it
 # hides the symptom and keeps the leak.
 #
