@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "case_id": "api-enforce",
+  "family": "api",
+  "prompt": "Name only declarations present in the supplied Enforce fixture and cite the evidence file.",
+  "fixtures": {
+    "fixture.c": "class DemoApi\n{\n    void VerifiedCall(int value);\n}\n"
+  },
+  "assertions": [
+    {
+      "assertion_id": "uses-verified-call",
+      "type": "contains",
+      "value": "VerifiedCall(int value)",
+      "evidence": [
+        "answer.txt"
+      ]
+    },
+    {
+      "assertion_id": "rejects-invented-call",
+      "type": "not_contains",
+      "value": "InventedCall",
+      "evidence": [
+        "answer.txt"
+      ]
+    }
+  ],
+  "grader": {
+    "type": "mechanical"
+  },
+  "required_evidence": [
+    "answer.txt"
+  ],
+  "variants": [
+    {
+      "variant_id": "current",
+      "skill_revision": "r21-current",
+      "baseline_revision": "absent",
+      "runner_id": "fixture",
+      "expected_verdict": "PASS",
+      "response": "Use VerifiedCall(int value), declared in fixture.c:3.",
+      "evidence": {
+        "answer.txt": "fixture.c:3 — void VerifiedCall(int value);\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    },
+    {
+      "variant_id": "absent",
+      "skill_revision": "absent",
+      "baseline_revision": "absent",
+      "runner_id": "fixture",
+      "expected_verdict": "FAIL",
+      "response": "Use InventedCall().",
+      "evidence": {
+        "answer.txt": "No matching declaration.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    }
+  ]
+}

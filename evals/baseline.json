@@ -30,7 +30,7 @@
   },
   "dayz-script-specialist": {
     "score": 5,
-    "total": 5,
+    "total": 13,
     "passed": [
       "action-layer",
       "layer-visibility",
@@ -100,7 +100,7 @@
   },
   "dayz-animation-specialist": {
     "score": 5,
-    "total": 5,
+    "total": 9,
     "passed": [
       "angle-radians",
       "building-door-source",
@@ -114,7 +114,7 @@
   },
   "dayz-persistence-specialist": {
     "score": 5,
-    "total": 5,
+    "total": 10,
     "passed": [
       "base-part-id-renumber",
       "cargo-saved-by-engine",
@@ -203,7 +203,7 @@
   },
   "dayz-ui-specialist": {
     "score": 5,
-    "total": 5,
+    "total": 6,
     "passed": [
       "chat-open-check",
       "hud-mod-ingamehud",
@@ -346,7 +346,7 @@
   },
   "dayz-ingame-tester": {
     "score": 5,
-    "total": 5,
+    "total": 6,
     "passed": [
       "bundle-exempt-from-deps",
       "bundle-pbo-check-passes",
@@ -377,7 +377,7 @@
   },
   "dayz-build-checker": {
     "score": 5,
-    "total": 5,
+    "total": 6,
     "passed": [
       "agreed-session-stops-first",
       "lint-error-fails-before-build",

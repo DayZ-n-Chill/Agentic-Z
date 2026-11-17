@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "case_id": "companion-lifecycle-authority",
+  "family": "api",
+  "prompt": "A useful third-party DayZ desktop companion can launch and stop game processes and capture its own WPF window. State how it may be integrated with the governed DayZ MCP/UI workflow.",
+  "fixtures": {
+    "companion.txt": "ProcessManager exposes start/stop. ControlPlane calls those methods. UI is WPF.\n"
+  },
+  "assertions": [
+    {
+      "assertion_id": "denies-lifecycle-authority",
+      "type": "contains",
+      "value": "external_companion_no_lifecycle_authority",
+      "evidence": [
+        "companion-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "excludes-process-verbs",
+      "type": "contains",
+      "value": "start/stop/restart",
+      "evidence": [
+        "companion-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "pins-version",
+      "type": "contains",
+      "value": "pinned_version",
+      "evidence": [
+        "companion-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "separates-ui-evidence",
+      "type": "contains",
+      "value": "wpf_not_layout_evidence",
+      "evidence": [
+        "companion-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "rejects-default-install",
+      "type": "not_contains",
+      "value": "install_by_default",
+      "evidence": [
+        "companion-evidence.txt"
+      ]
+    }
+  ],
+  "grader": {
+    "type": "mechanical"
+  },
+  "required_evidence": [
+    "companion-evidence.txt"
+  ],
+  "variants": [
+    {
+      "variant_id": "approved",
+      "skill_revision": "r21-prior-art-approved",
+      "baseline_revision": "r21-pre-prior-art",
+      "runner_id": "fixture",
+      "expected_verdict": "PASS",
+      "response": "Treat it as external_companion_no_lifecycle_authority: document a pinned_version, exclude start/stop/restart whenever DayZ_MCP owns the run, and record wpf_not_layout_evidence. It remains optional reference tooling.",
+      "evidence": {
+        "companion-evidence.txt": "Third-party process management overlaps the governed run owner; WPF renders the companion itself, not DayZ .layout semantics.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    },
+    {
+      "variant_id": "baseline",
+      "skill_revision": "r21-pre-prior-art",
+      "baseline_revision": "r21-pre-prior-art",
+      "runner_id": "fixture",
+      "expected_verdict": "FAIL",
+      "response": "install_by_default, then use the companion start and stop buttons to manage every test run and accept its WPF screenshot as proof that a DayZ .layout is correct.",
+      "evidence": {
+        "companion-evidence.txt": "The companion has process controls and a WPF interface.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    }
+  ]
+}

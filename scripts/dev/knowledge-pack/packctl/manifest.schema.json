@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/dayz-modding-knowledge-pack/manifest.schema.json",
+  "title": "DayZ Modding Knowledge Pack deterministic release manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "release_id",
+    "source_commit",
+    "dayz_build",
+    "source_map_schema",
+    "payload_file_count",
+    "archive_member_count",
+    "licenses",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "release_id": {
+      "type": "string"
+    },
+    "source_commit": {
+      "type": "string"
+    },
+    "dayz_build": {
+      "type": "string"
+    },
+    "source_map_schema": {
+      "const": 1
+    },
+    "payload_file_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "archive_member_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "licenses": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "payload": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256",
+          "license"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "license": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

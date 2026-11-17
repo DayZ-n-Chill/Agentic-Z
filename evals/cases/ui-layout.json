@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "case_id": "ui-layout",
+  "family": "ui",
+  "prompt": "Explain the supplied layout contract without inventing a runtime widget name.",
+  "fixtures": {
+    "panel.layout": "PanelWidgetClass Root {\n  TextWidgetClass Title {}\n}\n"
+  },
+  "assertions": [
+    {
+      "assertion_id": "uses-title-widget",
+      "type": "contains",
+      "value": "TextWidgetClass Title",
+      "evidence": [
+        "layout-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "rejects-invented-widget",
+      "type": "not_contains",
+      "value": "MagicGridWidget",
+      "evidence": [
+        "layout-evidence.txt"
+      ]
+    }
+  ],
+  "grader": {
+    "type": "mechanical"
+  },
+  "required_evidence": [
+    "layout-evidence.txt"
+  ],
+  "variants": [
+    {
+      "variant_id": "current",
+      "skill_revision": "r21-current",
+      "baseline_revision": "r20",
+      "runner_id": "fixture",
+      "expected_verdict": "PASS",
+      "response": "The declared child is TextWidgetClass Title.",
+      "evidence": {
+        "layout-evidence.txt": "panel.layout:2 — TextWidgetClass Title {}\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    },
+    {
+      "variant_id": "baseline",
+      "skill_revision": "r20",
+      "baseline_revision": "r20",
+      "runner_id": "fixture",
+      "expected_verdict": "FAIL",
+      "response": "Use MagicGridWidget.",
+      "evidence": {
+        "layout-evidence.txt": "panel.layout contains no MagicGridWidget.\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    }
+  ]
+}

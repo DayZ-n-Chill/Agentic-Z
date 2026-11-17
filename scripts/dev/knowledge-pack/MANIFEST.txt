@@ -1,0 +1,31 @@
+DayZ Modding Knowledge Pack - where the inventory lives
+=======================================================
+
+This file used to carry a hand-maintained listing of every payload file with its
+size and SHA-256. It is not that any more, and the reason is worth stating rather
+than silently fixing.
+
+A hand-written inventory of hashes in a repository whose every commit changes a
+hash cannot stay true. This one was written for r21 Phase 04 and was never
+regenerated: by 2026-08-15 it declared 222 payload files against an actual 267,
+and the first hash it listed had been superseded several times over. Nothing
+caught it, because no gate verifies that a document's prose matches the tree it
+describes - the source map only proved that the stale file was itself unmodified.
+
+The authoritative inventory is generated, not written:
+
+  manifest.json, produced inside every release ZIP by packctl build
+  (packctl/builder.py). It carries the payload hashes, licenses, source commit,
+  DayZ build and exact member counts, and it is regenerated from the tree on each
+  build, so it cannot drift from what it describes.
+
+To obtain it:
+
+  python -m packctl build --root . --output <out.zip> --report <report.json>
+
+then read manifest.json from inside <out.zip>. Two clean builds of the same
+commit produce a byte-identical archive, so the manifest is reproducible.
+
+For provenance rather than inventory - which input each distributable file came
+from, under which licence, and with which decision - see sources/source-map.json,
+which packctl validate checks against the tree on every run.

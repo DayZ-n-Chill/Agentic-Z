@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "case_id": "persistence-deprecated-api",
+  "family": "persistence",
+  "prompt": "Prepare a DayZ Enforce Script recommendation for loading a JSON configuration where missing, malformed, and unreadable input must be distinguishable. Name the supported generic call and state how success and diagnostic detail are handled. Do not use an API that cannot report failure.",
+  "fixtures": {
+    "loader-contract.txt": "supported=JsonFileLoader<T>.LoadFile(string, out T, out string) -> bool\nfailure_detail=errorMessage\nobsolete=JsonLoadFile(string, out T) -> void\n"
+  },
+  "assertions": [
+    {
+      "assertion_id": "uses-supported-loader",
+      "type": "contains",
+      "value": "JsonFileLoader<T>.LoadFile",
+      "evidence": [
+        "loader-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "checks-return-channel",
+      "type": "contains",
+      "value": "bool return",
+      "evidence": [
+        "loader-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "checks-diagnostic-output",
+      "type": "contains",
+      "value": "errorMessage",
+      "evidence": [
+        "loader-evidence.txt"
+      ]
+    },
+    {
+      "assertion_id": "rejects-deprecated-wrapper",
+      "type": "not_contains",
+      "value": "JsonLoadFile",
+      "evidence": [
+        "loader-evidence.txt"
+      ]
+    }
+  ],
+  "grader": {
+    "type": "mechanical"
+  },
+  "required_evidence": [
+    "loader-evidence.txt"
+  ],
+  "variants": [
+    {
+      "variant_id": "current",
+      "skill_revision": "r21-current",
+      "baseline_revision": "absent",
+      "runner_id": "fixture",
+      "expected_verdict": "PASS",
+      "response": "Use JsonFileLoader<T>.LoadFile(path, data, errorMessage). Check the bool return before accepting data, and inspect errorMessage when the call returns false.",
+      "evidence": {
+        "loader-evidence.txt": "VANILLA/3_game/tools/jsonfileloader.c:7-40\nVANILLA/3_game/tools/jsonfileloader.c:99-131\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    },
+    {
+      "variant_id": "absent",
+      "skill_revision": "absent",
+      "baseline_revision": "absent",
+      "runner_id": "fixture",
+      "expected_verdict": "FAIL",
+      "response": "Use JsonLoadFile(path, data) and continue with defaults if no values appear.",
+      "evidence": {
+        "loader-evidence.txt": "VANILLA/3_game/tools/jsonfileloader.c:99-131\n"
+      },
+      "tokens_input": 0,
+      "tokens_output": 0
+    }
+  ]
+}

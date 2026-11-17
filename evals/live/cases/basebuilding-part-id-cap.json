@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "case_id": "basebuilding-part-id-cap",
+  "family": "persistence",
+  "skill_under_test": "dayz-basebuilding",
+  "question": "Audit the entire Construction{} block in fixture/config.cpp for DayZ BaseBuildingBase part-id persistence safety. Identify every concrete id that is invalid because it is out of range or duplicated, and explain the engine mechanism that makes it invalid; do not merely suggest renumbering. End your answer with a final CITATIONS: block containing exactly one path:line citation per line. Each citation must point to either a supplied fixture or a relative path in the pack, and may append the exact cited line in double quotes.",
+  "fixtures": {
+    "fixture/config.cpp": "class CfgVehicles\n{\n    class TestWall\n    {\n        class Construction\n        {\n            class wall\n            {\n                class base\n                {\n                    id = 1;\n                };\n                class frame_left\n                {\n                    id = 42;\n                };\n                class frame_right\n                {\n                    id = 42;\n                };\n                class roof\n                {\n                    id = 94;\n                };\n            };\n        };\n    };\n};\n"
+  },
+  "graders": [
+    {
+      "type": "contains_all",
+      "values": ["93", "42", "94"]
+    },
+    {
+      "type": "regex_any",
+      "patterns": [
+        "(?i)three\\s+(?:31[- ]bit\\s+)?ints",
+        "(?i)3\\s*[×x*]\\s*31",
+        "(?i)31\\s+(?:usable\\s+)?bits",
+        "(?i)bitmask",
+        "(?i)(?:m_)?SyncParts0[123]"
+      ]
+    },
+    {
+      "type": "citations_resolve"
+    }
+  ],
+  "citation_roots": ["fixture", "pack"],
+  "arms": ["with_skill", "without_skill"],
+  "runs_per_arm": 5,
+  "pass_rule": {
+    "min_pass_with_skill": 0.8,
+    "max_pass_without_skill": 0.2
+  },
+  "min_discrimination": 0.6
+}

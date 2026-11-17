@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "case_id": "video-output-gate-order",
+  "family": "blender-animation",
+  "skill_under_test": "blender-animation",
+  "question": "fixture/render_turntable.py configures a 6-second product turntable preview and raises TypeError on the marked line under Blender 5.x, on a build where video output is available. Diagnose the failure precisely: name the image-settings attribute that gates video output, state the order the assignments must take, and explain why the current order fails while the same code worked on an earlier Blender. Then state how the script should verify at runtime that this build can encode video at all instead of assuming MP4 output exists. Separately, the orbit in this script is a perfect constant-velocity circle; name the f-curve mechanism that introduces human imperfection into it and the measurement that distinguishes a varied orbit from a metronomic one. End your answer with a final CITATIONS: block containing exactly one path:line citation per line. Each citation must point to either a supplied fixture or a relative path in the pack, and may append the exact cited line in double quotes.",
+  "fixtures": {
+    "fixture/render_turntable.py": "import bpy\n\nscene = bpy.context.scene\nscene.frame_start = 1\nscene.frame_end = 180\nscene.render.fps = 30\n\nims = scene.render.image_settings\nims.file_format = 'FFMPEG'          # <-- TypeError raised here\nscene.render.ffmpeg.format = 'MPEG4'\nscene.render.ffmpeg.codec = 'H264'\nscene.render.filepath = '/tmp/turntable.mp4'\n\npivot = bpy.data.objects['OrbitPivot']\npivot.rotation_euler = (0.0, 0.0, 0.0)\npivot.keyframe_insert('rotation_euler', frame=1)\npivot.rotation_euler = (0.0, 0.0, 6.283185)\npivot.keyframe_insert('rotation_euler', frame=180)\nfor fcu in pivot.animation_data.action.fcurves:\n    for kp in fcu.keyframe_points:\n        kp.interpolation = 'LINEAR'\n"
+  },
+  "graders": [
+    {
+      "type": "contains_all",
+      "values": ["media_type", "VIDEO", "FFMPEG"]
+    },
+    {
+      "type": "regex_any",
+      "patterns": [
+        "(?i)media_type\\s*(?:=|to|as)?\\s*'?VIDEO'?\\s+(?:must\\s+be\\s+set\\s+)?(?:first|before)",
+        "(?i)(?:set|assign)\\s+media_type\\s+(?:first|before)",
+        "(?i)only\\s+then\\s+does\\s+.*file_format"
+      ]
+    },
+    {
+      "type": "regex_any",
+      "patterns": [
+        "(?i)build_options",
+        "(?i)codec_ffmpeg",
+        "(?i)never\\s+assume\\s+MP4"
+      ]
+    },
+    {
+      "type": "regex_any",
+      "patterns": [
+        "(?i)NOISE\\s+modifier",
+        "(?i)modifiers\\.new\\(\\s*type\\s*=\\s*'NOISE'"
+      ]
+    },
+    {
+      "type": "citations_resolve"
+    }
+  ],
+  "citation_roots": ["fixture", "pack"],
+  "arms": ["with_skill", "without_skill"],
+  "runs_per_arm": 5,
+  "pass_rule": {
+    "min_pass_with_skill": 0.8,
+    "max_pass_without_skill": 0.2
+  },
+  "min_discrimination": 0.6
+}

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "case_id": "txa-add-spine-up-export",
+  "family": "dayz-animation",
+  "skill_under_test": "blender-animation",
+  "question": "fixture/export_bones.json is the bone list a script is about to export as a DayZ .txa wave animation for Workbench, taken from a rig that carries extra bones. Audit it: name every bone that must NOT be exported and give the specific reason for each, distinguishing bones excluded because the animation is additive from bones whose exclusion rests only on a tested export and not on the vanilla skeleton, and say whether the vanilla player bone list contains those bones. Name the vanilla skeleton, name the export type the file must declare, and say what the export must be driven by rather than written by hand. Do not simply say to remove unused bones. End your answer with a final CITATIONS: block containing exactly one path:line citation per line. Each citation must point to either a supplied fixture or a relative path in the pack, and may append the exact cited line in double quotes.",
+  "fixtures": {
+    "fixture/export_bones.json": "{\n  \"target\": \"wave_2s_30fps.txa\",\n  \"bones\": [\n    \"EntityPosition\",\n    \"Pelvis\",\n    \"Spine\",\n    \"Spine1\",\n    \"Spine2\",\n    \"Neck\",\n    \"Head\",\n    \"RightShoulder\",\n    \"RightArm\",\n    \"RightForeArm\",\n    \"RightHand\",\n    \"RightHand_Dummy\",\n    \"RightHandRing\",\n    \"RightHandRing1\",\n    \"RightHandPinky\",\n    \"RightHandPinky1\",\n    \"LeftUpLeg\",\n    \"RightUpLeg\"\n  ]\n}\n"
+  },
+  "graders": [
+    {
+      "type": "contains_all",
+      "values": ["EntityPosition", "RightHand_Dummy", "OFP2_ManSkeleton", "ADD"]
+    },
+    {
+      "type": "regex_any",
+      "patterns": [
+        "(?i)Ring",
+        "(?i)Pinky"
+      ]
+    },
+    {
+      "type": "regex_any",
+      "patterns": [
+        "(?i)skeletons\\.anim\\.xml",
+        "(?i)(?:is|are)\\s+(?:listed|present)\\s+in\\s+(?:the\\s+)?vanilla",
+        "(?i)vanilla\\s+(?:player\\s+)?(?:skeleton|bone\\s+list|clips?)\\s+(?:does\\s+)?(?:lists?|carr(?:y|ies)|ha(?:s|ve)|keys?)",
+        "(?i)untested"
+      ]
+    },
+    {
+      "type": "regex_any",
+      "patterns": [
+        "(?i)spine[- ]up",
+        "(?i)additive"
+      ]
+    },
+    {
+      "type": "regex_any",
+      "patterns": [
+        "(?i)export\\s+operator",
+        "(?i)plugin(?:'s)?\\s+(?:own\\s+)?(?:rig|export)",
+        "(?i)DayZ\\s+Animation\\s+Tools"
+      ]
+    },
+    {
+      "type": "citations_resolve"
+    }
+  ],
+  "citation_roots": ["fixture", "pack"],
+  "arms": ["with_skill", "without_skill"],
+  "runs_per_arm": 5,
+  "pass_rule": {
+    "min_pass_with_skill": 0.8,
+    "max_pass_without_skill": 0.2
+  },
+  "min_discrimination": 0.6
+}

@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/dayz-modding-knowledge-pack/live-eval.schema.json",
+  "title": "DayZ Modding Knowledge Pack live discriminating evaluation case",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "family",
+    "skill_under_test",
+    "question",
+    "fixtures",
+    "graders",
+    "citation_roots",
+    "arms",
+    "runs_per_arm",
+    "pass_rule",
+    "min_discrimination"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "case_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "family": {"type": "string", "minLength": 1},
+    "skill_under_test": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "CITATIONS:"
+    },
+    "fixtures": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
+    "graders": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "values"],
+            "properties": {
+              "type": {"const": "contains_all"},
+              "values": {
+                "type": "array",
+                "minItems": 1,
+                "items": {"type": "string", "minLength": 1}
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "patterns"],
+            "properties": {
+              "type": {"const": "regex_any"},
+              "patterns": {
+                "type": "array",
+                "minItems": 1,
+                "items": {"type": "string", "minLength": 1}
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type"],
+            "properties": {
+              "type": {"const": "citations_resolve"}
+            }
+          }
+        ]
+      }
+    },
+    "citation_roots": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {"enum": ["fixture", "pack"]}
+    },
+    "arms": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        {"const": "with_skill"},
+        {"const": "without_skill"}
+      ],
+      "items": false
+    },
+    "runs_per_arm": {"type": "integer", "minimum": 3},
+    "pass_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min_pass_with_skill", "max_pass_without_skill"],
+      "properties": {
+        "min_pass_with_skill": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max_pass_without_skill": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "min_discrimination": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 1
+    }
+  }
+}

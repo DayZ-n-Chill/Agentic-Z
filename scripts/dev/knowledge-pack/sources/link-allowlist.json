@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "path": "knowledge/vault-notes/dayz-animations-creatures-weapons.md",
+      "target": "skills-drafts/dayz-animation-pipeline/references/config-driven-animation.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-animations-creatures-weapons.md",
+      "target": "skills-drafts/dayz-animation-pipeline/references/item-ik-and-hide.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-animations-creatures-weapons.md",
+      "target": "skills-drafts/dayz-animation-pipeline/references/tooling-and-walls.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-animations-creatures-weapons.md",
+      "target": "skills-drafts/dayz-animation-pipeline/references/skeletal-anm-enfusion.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-animations-creatures-weapons.md",
+      "target": "skill-patches-pending.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-animations-creatures-weapons.md",
+      "target": "video-transcripts/dayz-modding/2026-02-14-tree-dayz-basic-animations-tutorial.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-animations-creatures-weapons.md",
+      "target": "video-transcripts/dayz-modding/2023-06-02-hunterz688-dayz-custom-animations-introduction.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-animations-creatures-weapons.md",
+      "target": "video-transcripts/dayz-modding/2023-12-22-hunterz688-dayz-animation-workshop-vol-2.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-animations-creatures-weapons.md",
+      "target": "video-transcripts/dayz-modding/2024-03-30-hunterz688-dayz-animation-workshop-vol-3.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-animations-creatures-weapons.md",
+      "target": "../30_Sessions/2026-05-28-dayz-animation-video-notes.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-capacidades-verificadas.md",
+      "target": "skills-drafts/dayz-animation-pipeline/scripts/seanim_writer.py",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-capacidades-verificadas.md",
+      "target": "skills-drafts/dayz-animation-pipeline.skill",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-capacidades-verificadas.md",
+      "target": "../30_Sessions/2026-05-20-dayz-animation-pipeline-evals-packaging.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-capacidades-verificadas.md",
+      "target": "../10_Projects/_ESTADO-PROYECTOS.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-capacidades-verificadas.md",
+      "target": "../30_Sessions/2026-05-25-introspeccion.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-p3d-inspector-memory-selection-bugs.md",
+      "target": "../30_Sessions/2026-05-21-kt-roadkill-armed-faithful-mlod-stepB-unblock.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-enforce-script-reference.md",
+      "target": "../10_Projects/LF_VStorage/bug-ledger.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-enforce-script-reference.md",
+      "target": "../10_Projects/LF_VStorage/verified-apis.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-mod-implementation-checklists.md",
+      "target": "../00_System/workflow.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-model-pipeline.md",
+      "target": "../20_Runbooks/dayz-p3d-audit.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-model-pipeline.md",
+      "target": "../20_Runbooks/dayz-p3d-inspector.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-model-pipeline.md",
+      "target": "../20_Runbooks/dayz-3d-viewer.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-model-pipeline.md",
+      "target": "../10_Projects/LFQuad/research/2026-05-26-fix-firegeo-wheel-proxies-claude.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-model-pipeline.md",
+      "target": "../30_Sessions/2026-05-26-LFQuad-wheelsim-debug-handoff.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-model-pipeline.md",
+      "target": "skill-patches-pending.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-vehicles-crossproject.md",
+      "target": "../30_Sessions/2026-06-29-dayz-vehicles-skill-audit-consolidation.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/dayz-wrp-roadgraph-extraction.md",
+      "target": "../30_Sessions/2026-05-14-gps-3-mapas-nuevos.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/uv-mapping-dayz.md",
+      "target": "../30_Sessions/2026-06-28-SUB_BRZ-fase5-texturas.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "knowledge/vault-notes/uv-mapping-dayz.md",
+      "target": "lessons-learned.md",
+      "reason": "Historical source pointer retained as context; the referenced private artifact is not distributed."
+    },
+    {
+      "path": "knowledge/vault-notes/uv-mapping-dayz.md",
+      "target": "../30_Sessions/2026-06-25-LFInfectedBig-uv-bake.md",
+      "reason": "Private Obsidian context pointer intentionally excluded from the public pack."
+    },
+    {
+      "path": "skills/rigorous-data-audit/index.md",
+      "target": "./audit-dayz-3d-viewer.md",
+      "reason": "Historical audit pointer retained as context; the project-specific report is not distributed."
+    },
+    {
+      "path": "skills/rigorous-data-audit/index.md",
+      "target": "./audit-dayz-mod-workflow.md",
+      "reason": "Historical audit pointer retained as context; the project-specific report is not distributed."
+    },
+    {
+      "path": "skills/rigorous-data-audit/index.md",
+      "target": "./audit-dayz-model-pipeline.md",
+      "reason": "Historical audit pointer retained as context; the project-specific report is not distributed."
+    },
+    {
+      "path": "skills/rigorous-data-audit/index.md",
+      "target": "./audit-dayz-p3d-audit.md",
+      "reason": "Historical audit pointer retained as context; the project-specific report is not distributed."
+    },
+    {
+      "path": "skills/rigorous-data-audit/index.md",
+      "target": "./audit-dayz-p3d-inspector.md",
+      "reason": "Historical audit pointer retained as context; the project-specific report is not distributed."
+    },
+    {
+      "path": "skills/rigorous-data-audit/index.md",
+      "target": "./audit-dayz-particles.md",
+      "reason": "Historical audit pointer retained as context; the project-specific report is not distributed."
+    },
+    {
+      "path": "skills/rigorous-data-audit/index.md",
+      "target": "./audit-dayz-pbo-build.md",
+      "reason": "Historical audit pointer retained as context; the project-specific report is not distributed."
+    },
+    {
+      "path": "skills/rigorous-data-audit/index.md",
+      "target": "./audit-dayz-preflight.md",
+      "reason": "Historical audit pointer retained as context; the project-specific report is not distributed."
+    },
+    {
+      "path": "skills/rigorous-data-audit/index.md",
+      "target": "./audit-dayz-ui-development.md",
+      "reason": "Historical audit pointer retained as context; the project-specific report is not distributed."
+    },
+    {
+      "path": "skills/rigorous-data-audit/index.md",
+      "target": "./audit-enforce-script-reference.md",
+      "reason": "Historical audit pointer retained as context; the project-specific report is not distributed."
+    },
+    {
+      "path": "skills/rigorous-data-audit/index.md",
+      "target": "./audit-japm-pbo-recovery.md",
+      "reason": "Historical audit pointer retained as context; the project-specific report is not distributed."
+    }
+  ]
+}

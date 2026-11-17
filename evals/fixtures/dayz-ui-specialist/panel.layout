@@ -1,0 +1,6 @@
+PanelWidgetClass Root {
+ {
+  TextWidgetClass Title {
+  }
+ }
+}
