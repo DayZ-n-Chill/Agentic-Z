@@ -2,6 +2,8 @@
 
 How a scripted aircraft on `CarScript` stays smooth for its pilot: the vanilla Pawn classes and events, the move strategy a car reports, what a full owner prediction pipeline needs, when ownership really changes hands, and why the pilot's own camera must not be smoothed. Vanilla facts cite `P:\` (1.30 scripts). Results measured in the LFHeli helicopter project and facts read from shipped mods (RFFS, MH6, LM_Planes, Expansion) are marked and are not checked on `P:\`.
 
+Related file in this pack: `network-physics-ownership.md` (ground vehicle field notes on network ownership against a forced seat and a custom Pawn frame).
+
 ## The vanilla pieces
 
 All of it sits inside `#ifdef FEATURE_NETWORK_RECONCILIATION` (`P:\scripts\3_game\entities\pawn.c:1`). The glossary there: the authority is the server, the owner is the client controlling the pawn, a proxy is any other client.

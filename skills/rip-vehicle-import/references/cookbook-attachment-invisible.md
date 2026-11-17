@@ -42,7 +42,7 @@ Mechanical gate: `derive_proxy_frame` of every visual attachment proxy equals th
 
 Added 2026-08-22.
 
-The constant in point 2 (for x greater than 0 `((1,0,0),(0,0,-1),(0,1,0))`, mirrored for x less than 0) is not universal. It was measured on `civiliansedan_mlod` and holds for geometry derived from that control. The rip import history of the vehicles pack says the same: copy the vanilla frame, not the frame of the "kt" mod, whose mirror differs because its wheel geometry differs. The structural parity topic gives the general rule: the frame depends on e1 and e2 and on the orientation of the base model. (`rip-import.md` and `vehicle-structural-parity.md` in the source pack.)
+The constant in point 2 (for x greater than 0 `((1,0,0),(0,0,-1),(0,1,0))`, mirrored for x less than 0) is not universal. It was measured on `civiliansedan_mlod` and holds for geometry derived from that control. The rip import history of the vehicles pack says the same: copy the vanilla frame, not the frame of the "kt" mod, whose mirror differs because its wheel geometry differs. The structural parity topic gives the general rule: the frame depends on e1 and e2 and on the orientation of the base model. (`skills/_shared/vehicles/rip-import.md` and `skills/_shared/vehicles/vehicle-structural-parity.md`.)
 
 The practical consequence, and where time is lost: measuring these literals against a control from another family yields "inverted" with nothing broken. It happened. A note in the ledger (SP-156) recorded the constant as measured backwards after comparing it against a Landrover. Before believing the constant is wrong:
 

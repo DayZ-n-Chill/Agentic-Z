@@ -14,4 +14,4 @@ This is a history pointer, not a working checklist. Nothing listed here is delet
 | Separate alignment notes | `<vehicle-import>\work\_gates\s42_door_engine_alignment.json`; `work\sub_brz_final\*\receipts\brz-door-engine-alignment.json` | Technical gate outputs kept; no separate narrative note is required. |
 | Pilot report | `<vehicle-import>\scripts\smoke_checklist_f4.md:32-68` | A manual smoke test is still possible; no separate pilot report is generated. |
 
-The exact former day-1 checklist and the 12-step pipeline are in `history-canonical-path.md`. The root cause analysis stays in the rip import history of the vehicles pack (`rip-import.md` in the source pack).
+The exact former day-1 checklist and the 12-step pipeline are in `history-canonical-path.md`. The root cause analysis stays in the rip import history of the vehicles pack (`skills/_shared/vehicles/rip-import.md`).

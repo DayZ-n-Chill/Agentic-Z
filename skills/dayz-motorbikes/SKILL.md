@@ -65,7 +65,7 @@ The minimum set of deliverables for a working bike, in order. Each step that bre
 2. [EXACT] **`class Crew`.** `class Driver` and `class CoDriver: Driver` with `actionSel = "seat_driver"`, `proxyPos = "crewDriver"`, `getInPos = "pos_driver"`, `getInDir = "pos_driver_dir"`, both with `isDriver = 1;` (`config.cpp:52-70`).
 3. [EXACT] **`class SimulationModule`.** `class Wheels` with `class Front` and `class Rear` (no `Axles`), `class Brakes` with `Front` (`input = 1`) and `Rear` (`input = 0`), and the lean curves in `class Steering` (`config.cpp:263-378`). Invariants 1, 2 and 6.
 4. [EXACT] **`AnimationSources`.** Dampers `damper_1` and `damper_2`, wheel state `AnimHitWheel_1` and `AnimHitWheel_2` (`config.cpp:111-147`, `:379-399`). Add `SeatDriver` for a flip-up seat (invariant 4).
-5. [EXACT] **`DamageSystem`.** `GlobalHealth` (1000 HP) and the zones of `Motorbike_01`: `Chassis`, `Fender` (transfer target of `Front`), `Engine` (`inventorySlots[] = {"SparkPlug"}`), `Front`, `Reflector_1_1`, `Back` and `FuelTank`, plus `GUIInventoryAttachmentsProps` (`config.cpp:400-989`). A glass slot that should hide at health 0.0, as in `Reflector_1_1`, is a config shape the knowledge pack has not seen work in game (SP-483, in its vehicle config notes).
+5. [EXACT] **`DamageSystem`.** `GlobalHealth` (1000 HP) and the zones of `Motorbike_01`: `Chassis`, `Fender` (transfer target of `Front`), `Engine` (`inventorySlots[] = {"SparkPlug"}`), `Front`, `Reflector_1_1`, `Back` and `FuelTank`, plus `GUIInventoryAttachmentsProps` (`config.cpp:400-989`). A glass slot that should hide at health 0.0, as in `Reflector_1_1`, is a config shape the knowledge pack has not seen work in game (SP-483, at the end of section 6b of `skills/_shared/vehicles/vehicle-config-and-modelcfg.md`).
 6. [EXACT] **Wheels and proxies.** One class per wheel on `MotorbikeWheel` with a `_Ruined` child (`config.cpp:154-219`), and the proxies in `CfgNonAIVehicles` (`config.cpp:2316-2350`):
    ```cpp
    class MyBike_Wheel_1: MotorbikeWheel { scope = 2; radius = 0.29; width = 0.06; tyreLateralFriction = 3.0; };
@@ -105,7 +105,7 @@ The minimum set of deliverables for a working bike, in order. Each step that bre
    - **Telemetry**: rpm, speed and gear respond as the `SimulationModule` says.
    - **Fall and recover**: a side hit or a sharp turn tips the bike, the rider is thrown off (`CrewShouldEject`) and `ActionPickUpMotorbike` stands it up again.
 3. **In the RPT** [UNVERIFIED: these message texts are illustrative, not measured; search by symbol]:
-   - `Cannot load surface info` or `Undefined sound shader`: a sound set or particle surface is missing.
+   - `Cannot load surface info` or `Undefined sound shader`: a sound set or particle surface is missing in `CfgSurfaces`.
    - `AnimationSource ... not found`: a source is not declared in `AnimationSources`.
    - `Bone 'drivewheel' not found`: the front fork bone is missing from the model.
    - A spawn with no simulation: check for an `Axles` block where `Wheels` should be (the exact failure is not measured).

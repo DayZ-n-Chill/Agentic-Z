@@ -1,7 +1,7 @@
 ---
 name: dayz-vehicles
-description: "Checks a DayZ ground or water vehicle model offline (get-in memory points, seat selections, wheel axis handedness) and points vehicle authoring, import and debugging at the right file of the vehicle pack. Use when building, importing, porting or debugging a car, truck, quad or boat: CarScript config.cpp and model.cfg, drivetrain and suspension, crew and get-in, doors, lights, gauges, proxies, LODs, a ripped or OBJ model that will not spawn, get-in missing, wheels missing or spinning backwards, a white or untextured vehicle, or a vehicle that breaks when packed for a server."
-argument-hint: "<model.p3d> [more.p3d ...]"
+description: "Checks a DayZ ground or water vehicle model offline (get-in memory points, seat selections, wheel axis handedness; in a binarized model, whether a named selection has a section the engine draws and which bone its vertices bind to) and points vehicle authoring, import and debugging at the right file of the vehicle pack. Use when building, importing, porting or debugging a car, truck, quad or boat: CarScript config.cpp and model.cfg, drivetrain and suspension, crew and get-in, doors, lights, gauges, proxies, LODs, a ripped or OBJ model that will not spawn, get-in missing, wheels missing or spinning backwards, a white or untextured vehicle, or a vehicle that breaks when packed for a server."
+argument-hint: "<model.p3d> [more.p3d ...] | <binarized.p3d> --selection <name> | <binarized.p3d> --texture <substring>"
 ---
 
 <!-- skill-dir-note -->
@@ -41,6 +41,10 @@ python -m pip install -r "<skill-dir>\requirements.txt"
 | Script | What it checks | Input |
 |---|---|---|
 | `scripts\audit_getin_wheels.py` | Get-in memory points, seat selections and wheel axis handedness | One or more MLOD `.p3d` files (the source model, not a binarized one) |
+| `scripts\gate_odol_sections.py` | Whether each named selection of a binarized model has a section the engine draws | One ODOL `.p3d` taken out of the packed PBO, and the selection names |
+| `scripts\check_odol_bone_refs.py` | Which skeleton bone the vertices of a section bind to in a binarized model | One ODOL `.p3d` taken out of the packed PBO, and a texture substring |
+
+The two ODOL scripts do not use py3d, which reads MLOD only. They need an external ODOL parser: the modules `bis_reader` and `odol_reader` of an ODOL to MLOD converter. That parser is not part of this repo. Point at its folder with `--backend-root <dir>` or the environment variable `DAYZ_ODOL_BACKEND_ROOT` (the variable the tool in `scripts/tools/dayz-odol-strict/` also reads). Without it both scripts stop with exit code 2 and say what is missing. DayZ 1.30 and its tools write ODOL version 56 (`dayz-1-30-vehicles.md` of the pack), so the parser must read that version.
 
 ### audit_getin_wheels.py
 
@@ -67,6 +71,39 @@ The required names are the two-seat roster of the reference quad the check was w
 
 Only MLOD files can be read. Agentic-Z ships no debinarizer, so a binarized vanilla model cannot be passed as the control.
 
+### gate_odol_sections.py
+
+```cmd
+python "<skill-dir>\scripts\gate_odol_sections.py" path\to\binarized.p3d --selection screen_nav --selection light_dashboard [--lod 0 --lod 1100] [--keyword dashboard] [--backend-root path\to\odol-backend]
+```
+
+Run it on the `.p3d` extracted from the PBO you are about to deploy, after any change that adds geometry or a textured selection. A selection can be present in every string table of the binarized file and still never render; what decides is its section (`animation-bake-and-odol-sections.md` of the pack).
+
+It prints the ODOL version and LOD resolutions, the skeleton bones whose name is a gated selection or contains a keyword, and for each LOD read (default: 0 and 1100, the third-person and first-person visual LODs): the vertex, face, section and selection counts, the bounding box, the textures and materials whose path contains a keyword (default keywords: `gps`, `marker`, `cluster`, `screen`, `argb`, `color`, `dashboard`, `cab_screen`), the number of faces no section covers, and the proxies. For each `--selection` it prints the face and vertex lists, whether the selection is sectional, each section's face range, bone range, texture, material and `special` flags, each vertex's position, UV and bone reference, the UV span, and each face's area in square millimetres.
+
+Exit codes:
+
+- **0**: every gated selection is drawable in every LOD read, or no `--selection` was given (overview only).
+- **1**: a model defect. Each one is a `FAIL:` line on stderr after the report: the selection is missing, is not sectional (it is not listed in `CfgModels` `sections[]`), owns no section, or one of its sections lacks the hidden-selection bit `0x20000` in `special` (a `0x0000C000` section is never drawn).
+- **2**: no input, a missing file, a file with no `ODOL` signature (an MLOD source model), a file the parser cannot read, a `--lod` the model does not have, or no parser backend (an `INPUT_ERROR:` line).
+
+A selection that is absent from the first-person LOD on purpose fails at LOD 1100; pass `--lod 0` alone to gate only the LOD it lives in.
+
+### check_odol_bone_refs.py
+
+```cmd
+python "<skill-dir>\scripts\check_odol_bone_refs.py" path\to\binarized.p3d --texture gps_arrow [--texture cluster --max-faces 2] [--reference-texture cluster_co.paa] [--lod 0] [--backend-root path\to\odol-backend]
+```
+
+Use it when a section passes the gate above and still does not show. A vertex bound to a bone whose hide animation starts at phase 1 is invisible from spawn, whatever the material or the section says.
+
+For each LOD read it lists every section whose texture path contains a `--texture` substring (with `--max-faces N`, only sections of at most N faces: a witness quad has two), and for each of its vertices the bone name, bone index and weight, or `NONE/static`. With `--reference-texture` it also prints the bone of the first vertex of a section that is known to render (the first section of more than ten faces whose texture path ends with that suffix), to compare against. Read the bone names against the `model.cfg` animations of the model: the script reports and does not judge.
+
+Exit codes:
+
+- **0**: the report was printed.
+- **2**: no `--texture`, a missing or unreadable file, a `--lod` the model does not have, or no parser backend (an `INPUT_ERROR:` line).
+
 ## References
 
 All files are in `skills/_shared/vehicles/`. Open only the one the current step needs.
@@ -80,9 +117,9 @@ All files are in `skills/_shared/vehicles/`. Open only the one the current step 
 | `attachments[]`, `CfgSlots`, door and wheel part classes, inventory categories, crew seats, door states | `attachments-and-crew.md` |
 | Fuel, oil, coolant and brake fluid, engine start rules, battery and plugs | `fluids-and-engine.md` |
 | `DamageSystem` zones, zone names script depends on, crash damage | `damage.md` |
-| A complete, source-checked `config.cpp` and `model.cfg` for a drivable car, block by block | `vehicle-config-and-modelcfg.md` |
+| A complete, source-checked `config.cpp` and `model.cfg` for a drivable car, block by block; window and glass damage zones; what the engine feeds the dashboard needles; how get-in picks a seat; ruined wheels | `vehicle-config-and-modelcfg.md` |
 | Boats (propeller, buoyancy, boat fluids, always-free get-in), trucks (three axles, double wheels under one class name), ATV slots | `vehicle-types-boat-truck.md` |
-| What changed for vehicles in DayZ 1.30: lights, horn, fluids, boats, port blockers, line drift | `dayz-1-30-vehicles.md` |
+| What changed for vehicles in DayZ 1.30: light profiles and the light toggle, the battery methods, horn, the get-in condition, fluids, boats, `speedGeoms`, ruined wheels and tyre fields, script module paths, line drift, and a 1.29 to 1.30 migration checklist | `dayz-1-30-vehicles.md` |
 | What each of `.p3d`, `config.cpp` and `model.cfg` owns; what to measure before the first in-game cycle; gaps a port inherits | `new-car-day-one.md` |
 
 ### Making an imported or procedural model work
@@ -107,7 +144,7 @@ All files are in `skills/_shared/vehicles/`. Open only the one the current step 
 | Question | File |
 |---|---|
 | No get-in prompt, no co-driver or rear seat, no door action; four seats; right-hand drive; choosing a donor; inherited config keys | `invariants-get-in-and-seats.md` |
-| The four-link get-in condition chain, action registration, and the `Geometry` and `autocenter=0` gate for proxied submodels | `get-in-actions-and-proxy-pose.md` |
+| The four-link get-in condition chain, action registration, the `Geometry` and `autocenter=0` gate for proxied submodels, which anchor really places the occupant, and why a part's `model=` governs both the fitted part and the loose item | `get-in-actions-and-proxy-pose.md` |
 | Proxy placement measured on a reference car, the four-layer contract of detachable parts, the two registrations a vehicle action needs, View Pilot of a shell and proxy car | `proxies-and-get-in.md` |
 | Door edges: measuring the missing edge, closing it by script, hood and trunk against a door | `doors-and-panel-edges.md` |
 | Why a ripped door, hood or tailgate shows a see-through rim, and what does not close it | `rip-panel-open-rim.md` |
@@ -126,8 +163,8 @@ All files are in `skills/_shared/vehicles/`. Open only the one the current step 
 | Question | File |
 |---|---|
 | Lights that do not switch: material paths, hidden selection order and ownership, bulbs, driver exit | `lights.md` |
-| Emissive materials and dynamic lights (headlights, brake, dashboard) | `emissive-leds-and-dynamic-lights.md` |
-| Dashboard needles and dials: frame, rotation direction, needle build, fuel gauge, night check | `gauge-needles.md` |
+| An LED or indicator that changes colour, glows and optionally lights the scene: hidden selection, one `.rvmat` per state with `emmisive[]`, the swap from script, a `PointLightBase` on a memory point | `emissive-leds-and-dynamic-lights.md` |
+| Dashboard needles and dials: frame and mirror traps, rotation direction, deriving `angle0` and `angle1`, needle build, fuel panel from scratch, night check, the full recipe | `gauge-needles.md` |
 | A map on a cockpit screen: render target bridge, satmap tiles, tile overlap, sliding tile window | `cockpit-screens-and-map-tiles.md` |
 | What the seated player sees: the res 1100 View Pilot LOD and its proxies; offline first-person viewer traps | `view-pilot-and-first-person.md` |
 | An empty inventory preview of a door or part: `rotationFlags` per side, `invview` placement | `inventory-preview.md` |
@@ -137,14 +174,14 @@ All files are in `skills/_shared/vehicles/`. Open only the one the current step 
 
 | Question | File |
 |---|---|
-| White vehicle after binarize, `model.cfg` for ODOL against MLOD, reversed wheel spin, proxy drive paths, offline PBO checks | `build-packaging-and-debug.md` |
+| `model.cfg` for ODOL against MLOD, reversed wheel spin, proxy drive paths, offline PBO checks (the white vehicle after binarize is in the white-car cookbook of the rip-vehicle-import skill) | `build-packaging-and-debug.md` |
 | Proving an animation and new geometry survived binarization: skeleton bones, `sections[]`, section flags, PAA encoding, translation offsets | `animation-bake-and-odol-sections.md` |
 | Is the packed PBO the approved artifact; `config.cpp` syntax with `CfgConvert` and canaries; comparing native crashes | `deploy-gates-and-crash-fingerprint.md` |
 | Per-tick events, engine state on a passenger's client, visual state on a fresh spawn, a vehicle drawn or exited in the wrong place | `runtime-state-and-sync.md` |
 | Network ownership against a forced seat, why writing the pose fights the owner, a custom Pawn frame | `network-physics-ownership.md` |
 | Driving, seating and unseating a vehicle from an automated harness; what the server still validates | `test-stand-and-mcp.md` |
 | Whether a pose complaint is a perspective artifact; anchoring a HUD marker ray; validating a visual metric | `visual-metrics-and-viewer.md` |
-| The per-session history of the imported-car visual gates, items #10(a) to #10(o) | `visual-gates-and-winding.md` |
+| The per-session history of the imported-car visual gates, items #10(a) to #10(o); what a clean `validate()` and a Blender culling render cannot prove about winding; the sign of a face a script adds or moves | `visual-gates-and-winding.md` |
 
 ### Method and history
 

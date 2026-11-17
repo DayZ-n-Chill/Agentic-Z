@@ -42,7 +42,7 @@ In DayZ 1.30, `carscript.c` (-1155 / +877 lines against 1.29) ceases to be a sel
 - `ToggleHeadlights()` is not in the `DEPRECATED` section because 1.30 deleted it: `carscript.c` on `P:\` has no such method (1.29 declared it in `CarScript`). In 1.30 `ActionSwitchLights` calls the native `Transport.LightToggle()` instead (`actionswitchlights.c:64`; declared at `transport.c:236`). An `override` of it stops the module from compiling.
 - The battery rows used to say "override `NeedElectricitySourceDevice()` and return `true`", which is already the default (`transport.c:821-824`). What a battery car needs is `GetElectricitySourceDevice()`, because the default `null` (`transport.c:826-829`) reaches `CarScript` through `GetBattery()` (`carscript.c:2437-2440`) and makes it report `NO_BATTERY` with a battery attached (`carscript.c:1768-1774`).
 
-More on 1.30 cars: the 1.30 vehicle notes of the vehicles pack (`skills/_shared/vehicles/README.md` lists its files).
+More on 1.30 cars: `skills/_shared/vehicles/dayz-1-30-vehicles.md`.
 
 ---
 

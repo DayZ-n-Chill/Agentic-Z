@@ -68,4 +68,4 @@ A `CarScript` aircraft that still overrides `CreateFrontLight` or subclasses `Ca
 6. Keep the custom `UA*` flight axes; they are independent of the vehicle light rename.
 7. Do not switch the entity base to `HelicopterScript`.
 
-The ground vehicle side of the same migration is in the vehicle pack (`skills/_shared/vehicles/README.md`).
+The ground vehicle side of the same migration is in `skills/_shared/vehicles/dayz-1-30-vehicles.md`.

@@ -22,8 +22,8 @@ Use the r128 UMD files, not the ESM ones. `index.html` loads them with `<script 
 
    The script prints `GLB_DONE mode=<full|minimal> bytes=<n>` when it finishes. `minimal` means this Blender version rejected the full option set and the export fell back to the GLB format with extras only.
 2. Copy `index.html` and `lib\` next to `car.glb`, or write the GLB into the viewer folder.
-3. Serve the folder over http. The page cannot fetch the GLB from `file://`. Any static server works, for example `python -m http.server <port> --directory <dir>`; in Claude Code that is an entry in `.claude\launch.json` started with `preview_start`.
-4. The human clicks a part and sets it to INCLUDE, MOVABLE or EXCLUDE; EXCLUDE takes a reason. The changes live in `window.DZ_DELTAS` as `{stem: {from, to, reason}}`. The agent reads them with a browser JavaScript tool (`javascript_tool` in Claude Code), or the human presses "Copy changes (JSON)".
+3. Serve the folder over http. The page cannot fetch the GLB from `file://`. Any static server works, for example `python -m http.server <port> --directory <dir>`; an agent harness with a preview server can start it from its launch configuration.
+4. The human clicks a part and sets it to INCLUDE, MOVABLE or EXCLUDE; EXCLUDE takes a reason. The changes live in `window.DZ_DELTAS` as `{stem: {from, to, reason}}`. The agent reads them with a browser JavaScript tool (the harness's page-script tool), or the human presses "Copy changes (JSON)".
 5. Apply the deltas to the `.blend` headless: move the objects whose `source_id` equals the stem or starts with `stem__obj`, and update `dz_exclude_reason` and `dz_responsible`. Check the result again, then follow the normal lane: export, `import-blender`, `check`.
 
 The page title and heading still carry the name of the first car it was used on (`sub_wrxsti_04`); edit both lines of `index.html` for another car.

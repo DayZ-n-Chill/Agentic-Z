@@ -17,4 +17,4 @@ The symptom is the same either way, so check the wiring first.
 
 ## Where the full rule is
 
-The Fire Geometry wheel-slot rule is written out in the structural parity topic of the vehicles pack (`vehicle-structural-parity.md` in the source pack, with SP-027) and it is one of the vehicle checks of `dayz-p3d-audit`.
+The Fire Geometry wheel-slot rule is written out in the structural parity topic of the vehicles pack (`skills/_shared/vehicles/vehicle-structural-parity.md`, with SP-027) and it is one of the vehicle checks of `dayz-p3d-audit`.

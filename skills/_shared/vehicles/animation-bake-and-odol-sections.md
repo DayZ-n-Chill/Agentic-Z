@@ -58,6 +58,13 @@ a naive scan for the first plausible table hits a false positive. Reference impl
 `odol_reader`). String-only scans pass while the geometry is undrawable — that gate cost
 five wasted in-game cycles before it existed.
 
+In this repo the gate is `skills/dayz-vehicles/scripts/gate_odol_sections.py`: name the selections
+with `--selection` and it fails any that is not sectional, owns no section or lacks the `0x20000`
+bit. `skills/dayz-vehicles/scripts/check_odol_bone_refs.py` next to it prints the skeleton bone of
+each vertex of a section, for the case where the section is drawable but its bone is hidden by an
+animation. Both need the same external ODOL parser; `skills/dayz-vehicles/SKILL.md` says how to
+point at it.
+
 ## PAA files: always encode with ImageToPAA (added 2026-08-19)
 
 **PAA files: always encode with ImageToPAA (added 2026-08-19):**

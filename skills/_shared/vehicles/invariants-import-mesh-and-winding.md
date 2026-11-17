@@ -229,7 +229,7 @@ in-game gate pending).**
   of seat, rake (0,0.516,0.857) vanilla-parallel) and live (Task 9 v64 PASS + manual drive
   2026-07-23, no inverted-drive or backwards-pose reports). Full adjudication:
   `MERCEDES_AMGLF_dev\reviews\2026-07-02-fable-review-plan-OUTPUT.md`.
-  **R22 refinement (2026-08-01, Codex re-measured the same backups — narrows the rule above):**
+  **R22 refinement (2026-08-01, a second agent session re-measured the same backups — narrows the rule above):**
   the "rotate the entire cabin cluster" adjudication is Mercedes-SPECIFIC; the durable rule is
   two-sided — (1) adjudicate cabin orientation with the anatomical pairs against untouched sim
   anchors, then (2) rotate exactly the adjudicated cluster IN EVERY FILE/LOD THE HOST

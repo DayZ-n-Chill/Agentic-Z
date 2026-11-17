@@ -69,7 +69,7 @@ Open only the file the task needs. Pack files are under `skills/_shared/vehicles
 
 ## Related packs and skills
 
-- The vehicle pack (`skills/_shared/vehicles/README.md`) covers the car side every aircraft still has: `SimulationModule`, crew seats, fluids, damage zones. Packaging faults that pass with file patching and break on a dedicated server (Binarize dropping textures named only in config, `model.cfg` behaving differently for binarized and source models) are ground vehicle topics that apply to aircraft unchanged. For an amphibious vehicle, the hull and car base belong to the vehicle pack and the buoyancy and flight layer belong here.
+- The vehicle pack (`skills/_shared/vehicles/README.md`) covers the car side every aircraft still has: `SimulationModule`, crew seats, fluids, damage zones. Packaging faults that pass with file patching and break on a dedicated server (Binarize dropping textures named only in config, `model.cfg` behaving differently for binarized and source models) are ground vehicle topics that apply to aircraft unchanged: `skills/_shared/vehicles/build-packaging-and-debug.md` and `skills/_shared/vehicles/deploy-gates-and-crash-fingerprint.md`. For an amphibious vehicle, the hull and car base belong to the vehicle pack and the buoyancy and flight layer belong here.
 - Enforce Script rules: `skills/_shared/enscript-style.md` and the `skills/_shared/enscript/README.md` pack (RPC, net sync, persistence, input bindings).
 - Models and materials: `skills/_shared/models/README.md` and `skills/_shared/textures/README.md`; the dayz-model-pipeline skill for the Object Builder workflow.
 - Crash and impact particles: the `dayz-particles` skill.

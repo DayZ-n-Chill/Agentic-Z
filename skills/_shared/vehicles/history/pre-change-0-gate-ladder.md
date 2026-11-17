@@ -6,6 +6,8 @@ History only: the old ordered ladder of visual gates for an imported car, kept f
 
 > Snapshot of 2026-08-05. Nothing here is current doctrine; the current rules are in `method-and-gate-calibration.md` and the invariant files.
 
+Related file in this folder: `legacy-gate-ladder.md` (the later copy of the same ladder, with the LOD frame parity rung added).
+
 ## Vanilla anchors checked on `P:\`
 
 - The ladder's rung 0 diffs the model against a vanilla car; the control used throughout these notes is `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` (binarized, not read here).
@@ -35,7 +37,7 @@ code yet. Run cheap topological gates before expensive raycast/in-game ones.
    misses. HINT — the in-game render is the final gate (s13). (First-person INTERIOR is a separate LOD:
    ViewPilot 1100, DOUBLE-SIDE it per #10g, not orient-inward.)
 5. **MATERIAL / LOD / PATHS** — each visible piece has a material selection (not `untagged`), lives in
-   LOD0, and its textures/rvmats resolve (dayz-pbo-build). A piece with NO material renders invisible
+   LOD0, and its textures/rvmats resolve (`/dayz-build-pbo`). A piece with NO material renders invisible
    too — same symptom as inverted winding, different cause; rule it out here.
 
 6. **LOD FRAME PARITY — every `_lodN` variant carries the SAME frame as its LOD0** (added 2026-08-01,

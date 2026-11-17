@@ -6,7 +6,7 @@ History only, no authority. The active adapter is the skill's `SKILL.md`; no com
 
 ## rip to DayZ: runbook with the change 0 cutover (2026-08-05)
 
-Distilled from the SUB_BRZ build, sessions s2 to s32, plus the consolidated dual research (`<vehicle-import>\reviews\2026-07-11-research-metodo-import.md`). The rules are given only in their final verified state. The historical why (root cause analyses, red herrings, superseded rules) is in the rip import history of the vehicles pack (`rip-import.md` in the source pack); read it as history, not as procedure. The workspace is `<vehicle-import>`, kept outside any cloud-synced folder. The orchestrator is `scripts\import_car.py --car profiles\<car>.json`, a legacy and in-flight orchestrator; it is not the runner of the new family B lane.
+Distilled from the SUB_BRZ build, sessions s2 to s32, plus the consolidated dual research (`<vehicle-import>\reviews\2026-07-11-research-metodo-import.md`). The rules are given only in their final verified state. The historical why (root cause analyses, red herrings, superseded rules) is in the rip import history of the vehicles pack (`skills/_shared/vehicles/rip-import.md`); read it as history, not as procedure. The workspace is `<vehicle-import>`, kept outside any cloud-synced folder. The orchestrator is `scripts\import_car.py --car profiles\<car>.json`, a legacy and in-flight orchestrator; it is not the runner of the new family B lane.
 
 ## Change 0: the family B cutover (new assets only)
 
@@ -18,7 +18,7 @@ The earlier locations and procedure are in:
 
 - `history-canonical-path.md`: the snapshot of the earlier checklist and pipeline.
 - `history-retired-artifacts.md`: the catalogue of the seven retired types.
-- The rip import history of the vehicles pack (`rip-import.md` in the source pack): technical history and root cause analysis, which may be consulted during diagnosis.
+- The rip import history of the vehicles pack (`skills/_shared/vehicles/rip-import.md`): technical history and root cause analysis, which may be consulted during diagnosis.
 
 ### Offline allowlist of family B
 
@@ -65,8 +65,8 @@ This is a list of recurrence, not of mechanism: the user has seen each row in ga
 | Defect seen | Projects | Where the mechanism is |
 |---|---|---|
 | Asymmetric headlights: one side has the light, the other only the plastic | SUB_BRZ, MercedesAMGLF | Open. Suspect a selection, `hiddenSelections` or a proxy missing on one side; compare left and right explicitly, do not look at only one. |
-| Wheels correct in hand, invisible when mounted (the proxies do not activate) | SUB_BRZ, MercedesAMGLF | The wheels and doors as items section of the config and model.cfg topic of the vehicles pack (item, slot and proxy wiring; `vehicle-config-and-modelcfg.md` section 8 in the source pack), the "attachment or geometry silently missing" part of the structural parity topic (`vehicle-structural-parity.md`), and `cookbook-attachment-invisible.md`. |
-| See-through from the interior (floor, roof, handlebars) | several | The visual gates and winding topic of the vehicles pack (`visual-gates-and-winding.md` in the source pack): an imported single-sided shell, and the rule that the primary gate is topological uniformity per piece, run before the raycast. |
+| Wheels correct in hand, invisible when mounted (the proxies do not activate) | SUB_BRZ, MercedesAMGLF | The wheels and doors as items section of the config and model.cfg topic of the vehicles pack (item, slot and proxy wiring; `skills/_shared/vehicles/vehicle-config-and-modelcfg.md` section 8), the "attachment or geometry silently missing" part of the structural parity topic (`skills/_shared/vehicles/vehicle-structural-parity.md`), and `cookbook-attachment-invisible.md`. |
+| See-through from the interior (floor, roof, handlebars) | several | The visual gates and winding topic of the vehicles pack (`skills/_shared/vehicles/visual-gates-and-winding.md`): an imported single-sided shell, and the rule that the primary gate is topological uniformity per piece, run before the raycast. |
 | A texture with the pattern applied wrongly, "the livery of another part" | OH-1, MercedesAMGLF (suspected) | See the OH-1 precedent below. |
 | Doors that are not one item per door with a proxy that depends on the door being equipped | MercedesAMGLF | The same wheels and doors as items section. The vanilla pattern is one item per door, with the item's `inventorySlot` equal to an entry of the car's `attachments[]`; the chain is in `skills/_shared/vehicles/attachments-and-crew.md`. |
 
@@ -85,8 +85,8 @@ The process corollary: when the user says "this already happened on the previous
 ## References of the runbook
 
 - `profile-schema.md`: the `profiles\<car>.json` field by field.
-- The vehicles pack (`skills/_shared/vehicles/`): the rip import history (why each rule exists; `rip-import.md` in the source pack) and the structural contract with the engine (`vehicle-structural-parity.md`).
-- The generic DayZ vehicle checklist, preflight items 1 to 15 of the source `dayz-vehicles` skill.
+- The vehicles pack (`skills/_shared/vehicles/`): the rip import history (why each rule exists; `skills/_shared/vehicles/rip-import.md`) and the structural contract with the engine (`skills/_shared/vehicles/vehicle-structural-parity.md`).
+- The generic DayZ vehicle checklist, the numbered invariants 1 to 15, indexed under "Numbered invariants" in `skills/dayz-vehicles/SKILL.md`.
 - `<vehicle-import>\reviews\2026-07-11-research-metodo-import.md`: the consolidated research that set the priorities and this runbook.
 
 ## Lift or translation of geometry: no double transform with proxied chunks

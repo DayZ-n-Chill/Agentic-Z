@@ -4,6 +4,8 @@ Why a get-in, seat or door action does not appear on a new or imported car, and 
 
 > Status: field notes measured on third-party mods, each named in its entry (SUB_BRZ, SUB_WRXSTI, MercedesAMGLF, LFQuad, LFQuad2, LFQuad3, Arma2Quad, LFHeli). Those measurements were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. A citation without `P:\` keeps the line number the note was written with, for the DayZ build that entry names, and is not yet checked on `P:\`: Grep for the symbol before relying on the number. Where they were opened, the `carscript.c` numbers matched this repo's `P:\` (a 1.30 build), the `transport.c` numbers sat 3 to 9 lines lower than written, and the `DZ\vehicles\wheeled\config.cpp` numbers differed. Tags such as SP-205 or LL-244 are the notes' own lesson numbers. Paths such as `<vehicle-import>\...` or `SUB_BRZ_dev\...` point into those mods' work folders, which are not part of this repo. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
 
+Related file in this pack: `get-in-actions-and-proxy-pose.md` (the get-in condition chain link by link, and which anchor places the occupant).
+
 ## Vanilla anchors checked on `P:\`
 
 - `CrewCanGetThrough` returns `false` in `Transport` (`P:\scripts\3_game\vehicles\transport.c:724`), so a car with no script class of its own can never be entered.

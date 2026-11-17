@@ -16,7 +16,7 @@ A related fact from the same experiment, verified by the author against the vani
 
 ## Binarize drops config-only assets
 
-**Symptom.** The vehicle renders white or untextured on a dedicated server but looks correct with local file patching. This is the most common "ships broken" failure of an imported vehicle. It is not a `P:\` path problem (the `P:\` paths section of the packaging and debug topic in the vehicles pack, `build-packaging-and-debug.md` in the source pack).
+**Symptom.** The vehicle renders white or untextured on a dedicated server but looks correct with local file patching. This is the most common "ships broken" failure of an imported vehicle. It is not a `P:\` path problem (the `P:\` paths section of the packaging and debug topic in the vehicles pack, `skills/_shared/vehicles/build-packaging-and-debug.md`).
 
 **Root cause.** AddonBuilder's binarize dependency tracker packs only the assets the geometry (`.p3d`) references. Assets declared only in `config.cpp` are not tracked and are left out of the PBO:
 

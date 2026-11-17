@@ -4,6 +4,8 @@ Process rules that cost more iterations than any config fact: the iteration budg
 
 > Status: field notes measured on third-party mods, each named in its entry (SUB_BRZ, SUB_WRXSTI, MercedesAMGLF, LFQuad, LFQuad2, LFQuad3, Arma2Quad, LFHeli). Those measurements were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. A citation without `P:\` keeps the line number the note was written with, for the DayZ build that entry names, and is not yet checked on `P:\`: Grep for the symbol before relying on the number. Where they were opened, the `carscript.c` numbers matched this repo's `P:\` (a 1.30 build), the `transport.c` numbers sat 3 to 9 lines lower than written, and the `DZ\vehicles\wheeled\config.cpp` numbers differed. Tags such as SP-205 or LL-244 are the notes' own lesson numbers. Paths such as `<vehicle-import>\...` or `SUB_BRZ_dev\...` point into those mods' work folders, which are not part of this repo. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
 
+Related file in this pack: `process-gates.md` (negative fixtures for import gates and the rules promoted from the lessons corpus).
+
 ## Vanilla anchors checked on `P:\`
 
 - The crew probe of the method below dumps `CrewPositionIndex` for each component index (`P:\scripts\3_game\vehicles\transport.c:179`).
@@ -31,7 +33,7 @@ different project before being named. They cost more iterations than any invaria
 3. **When the judge is the eye, offline analysis gets ONE round.** Green offline gates do not
    predict the live result. A Task 9 build reported `263/263 global + verifier 35/35 hard PASS` plus
    every SHA, and then: `Visual: FAIL of evidence, client hung`. The LFHeli "six fronts" night
-   spent ~25 Codex sessions to produce refutations only (binding intact, re-bake refuted, clock and
+   spent ~25 agent sessions to produce refutations only (binding intact, re-bake refuted, clock and
    interpolation refuted) and concluded the discriminator was the user's own screenshot. If the
    discriminator is visual or feel, spend one offline round ruling out cheap causes, then go to the
    game — extra offline rounds postpone the verdict, they do not replace it.
