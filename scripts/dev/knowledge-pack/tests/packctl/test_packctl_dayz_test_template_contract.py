@@ -1,11 +1,11 @@
 from pathlib import Path
 
 
-from packctl_testlib import require_tree_file
+from packctl_testlib import REPO_ROOT
 
 
 def _template_text() -> str:
-    template = require_tree_file("skills/dayz-test-ingame/templates/dayz-test.ps1")
+    template = REPO_ROOT / "skills/dayz-test-ingame/templates/dayz-test.ps1"
     return template.read_text(encoding="utf-8")
 
 

@@ -1,4 +1,4 @@
-"""Deterministic validation, packaging and promotion for the knowledge pack."""
+"""Deterministic validation, gating, packaging and promotion for this repository."""
 
 from .common import SCHEMA_VERSION
 

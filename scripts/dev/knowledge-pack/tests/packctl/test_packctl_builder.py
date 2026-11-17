@@ -18,7 +18,7 @@ def codes(report: dict[str, object]) -> list[str]:
 
 
 def test_two_clean_builds_are_byte_identical(repo_factory, tmp_path: Path) -> None:
-    root = repo_factory(payload={"LICENSE", "README.md"})
+    root = repo_factory()
     first = tmp_path / "one.zip"
     second = tmp_path / "two.zip"
 
@@ -34,8 +34,8 @@ def test_two_clean_builds_are_byte_identical(repo_factory, tmp_path: Path) -> No
 
 
 def test_zip_profile_and_manifest_counts(repo_factory, tmp_path: Path) -> None:
-    root = repo_factory(payload={"LICENSE", "README.md"})
-    output = tmp_path / "pack.zip"
+    root = repo_factory()
+    output = tmp_path / "archive.zip"
 
     report = build_archive(root, output)
 
@@ -56,9 +56,9 @@ def test_zip_profile_and_manifest_counts(repo_factory, tmp_path: Path) -> None:
 
 
 def test_dirty_repo_is_rejected_without_output(repo_factory, tmp_path: Path) -> None:
-    root = repo_factory(payload={"LICENSE", "README.md"})
+    root = repo_factory()
     (root / "README.md").write_text("# Dirty\n", encoding="utf-8")
-    output = tmp_path / "pack.zip"
+    output = tmp_path / "archive.zip"
 
     report = build_archive(root, output)
 
@@ -66,21 +66,8 @@ def test_dirty_repo_is_rejected_without_output(repo_factory, tmp_path: Path) -> 
     assert not output.exists()
 
 
-def test_unmapped_tracked_file_is_rejected(repo_factory, tmp_path: Path) -> None:
-    root = repo_factory(payload={"LICENSE", "README.md"})
-    (root / "extra.txt").write_text("extra\n", encoding="utf-8")
-    run_git(root, "add", "extra.txt")
-    run_git(root, "commit", "-qm", "extra")
-    output = tmp_path / "pack.zip"
-
-    report = build_archive(root, output)
-
-    assert "SOURCE-UNMAPPED" in codes(report)
-    assert not output.exists()
-
-
 def test_payload_symlink_is_rejected(repo_factory, tmp_path: Path) -> None:
-    root = repo_factory(payload={"LICENSE", "README.md"})
+    root = repo_factory()
     target = root / "target.txt"
     target.write_text("target\n", encoding="utf-8")
     link = root / "linked.txt"
@@ -90,7 +77,7 @@ def test_payload_symlink_is_rejected(repo_factory, tmp_path: Path) -> None:
         pytest.skip("This Windows environment does not permit symlink fixtures.")
     run_git(root, "add", "target.txt", "linked.txt")
     run_git(root, "commit", "-qm", "symlink fixture")
-    output = tmp_path / "pack.zip"
+    output = tmp_path / "archive.zip"
 
     report = build_archive(root, output)
 

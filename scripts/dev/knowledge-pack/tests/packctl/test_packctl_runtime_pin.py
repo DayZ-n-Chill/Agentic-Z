@@ -9,17 +9,10 @@ from pathlib import Path
 
 import pytest
 
-from packctl_testlib import locate_tree_file, run_git
+from packctl_testlib import REPO_ROOT, TOOLING_ROOT, run_git
 
 
-PACK_ROOT = Path(__file__).resolve().parents[2]
-# The runtime pin tool lives at scripts/tools/skill-runtime-pin/ in this repo.
-SCRIPT = locate_tree_file("scripts/tools/skill-runtime-pin/runtime_pin.py")
-if SCRIPT is None:
-    pytest.skip(
-        "scripts/tools/skill-runtime-pin/runtime_pin.py is not in this checkout",
-        allow_module_level=True,
-    )
+SCRIPT = REPO_ROOT / "scripts/tools/skill-runtime-pin/runtime_pin.py"
 
 V1_SKILL = """---
 name: dayz-mod-workflow
@@ -58,7 +51,7 @@ def load_pin():
 def run_pin(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(SCRIPT), *args],
-        cwd=PACK_ROOT,
+        cwd=TOOLING_ROOT,
         capture_output=True,
         text=True,
         encoding="utf-8",

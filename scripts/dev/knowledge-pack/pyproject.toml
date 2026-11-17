@@ -3,13 +3,12 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-# Distribution name is prefixed; the importable module stays `packctl`, the
-# same split the py3d fork uses. Without an install, `python -m packctl` only
-# resolves while the shell happens to be standing in the repository root --
-# which is an unstated precondition, not a contract.
+# Distribution name is prefixed; the importable module stays `packctl`.
+# Without an install, `python -m packctl` only resolves while the shell stands
+# in this folder or the folder is on PYTHONPATH.
 name = "dayz-packctl"
 dynamic = ["version"]
-description = "Deterministic validation, gating, packaging and promotion CLI for the DayZ Modding Knowledge Pack."
+description = "Deterministic validation, gating, packaging and promotion CLI for the Agentic-Z repository."
 requires-python = ">=3.10"
 # Stdlib only, deliberately: the gate has to run offline and deterministically
 # on a machine that installed nothing else. The external Agent Skills validator

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/dayz-modding-knowledge-pack/link-allowlist.schema.json",
-  "title": "Intentional private-context Markdown links",
+  "$id": "https://example.invalid/agentic-z/link-allowlist.schema.json",
+  "title": "Markdown links allowed to point at a missing target",
   "type": "object",
   "additionalProperties": false,
   "required": [

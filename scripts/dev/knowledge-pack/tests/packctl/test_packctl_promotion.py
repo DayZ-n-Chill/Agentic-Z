@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from packctl_testlib import require_tree_root, run_git, write_json
+from packctl_testlib import run_git, write_json
 
 import packctl.common as common
 from packctl.common import canonical_json_bytes, sha256_bytes, tree_digest
@@ -193,19 +193,7 @@ def promotion_fixture(
                 "---\nname: demo\ndescription: Promotion fixture.\n---\n# Demo\n"
             )
         },
-        payload={"LICENSE", "README.md", "skills/demo/SKILL.md"},
     )
-    source_map_path = root / "sources/source-map.json"
-    source_map = json.loads(source_map_path.read_text(encoding="utf-8"))
-    for item in source_map["artifacts"]:
-        item["routing_artifact_id"] = (
-            "fixture"
-            if str(item["output_path"]).startswith("skills/demo/")
-            else "fixture-root"
-        )
-    write_json(source_map_path, source_map)
-    run_git(root, "add", "sources/source-map.json")
-    run_git(root, "commit", "-qm", "route fixture artifacts")
 
     targets_root = tmp_path / "targets"
     claude = targets_root / "claude"
@@ -341,17 +329,6 @@ def lock_paths_for_plan(plan: dict[str, object]) -> set[str]:
 
 
 def add_file_route(root: Path, map_path: Path) -> None:
-    source_map_path = root / "sources/source-map.json"
-    source_map = json.loads(source_map_path.read_text(encoding="utf-8"))
-    readme = next(
-        item
-        for item in source_map["artifacts"]
-        if item["output_path"] == "README.md"
-    )
-    readme["routing_artifact_id"] = "fixture-file"
-    write_json(source_map_path, source_map)
-    run_git(root, "add", "sources/source-map.json")
-    run_git(root, "commit", "-qm", "route file fixture")
     promotion_map = json.loads(map_path.read_text(encoding="utf-8"))
     promotion_map["artifacts"].append(
         {
@@ -1090,7 +1067,7 @@ def test_preimage_gate_checks_every_logical_target_not_just_the_first(
     """Fails if a logical id after the first one stops being checked.
 
     The operations that reach the gate today are pre-dedup and carry a single
-    id (measured: 68 of 68). The dedup that merges ids mutates those same dicts
+    id. The dedup that merges ids mutates those same dicts
     in place afterwards, so checking only `[0]` is a latent trap: calling this
     function with plan operations would be enough for an adjudication on the
     second id to silently stop counting.
@@ -1444,111 +1421,6 @@ def test_path_alias_nested_in_absolute_path_fails_without_writes(
     assert not plan_path.exists()
     assert not (paths["claude"] / "demo").exists()
     assert list(paths["backups"].rglob("*")) == backup_entries
-
-
-def test_real_promotion_map_placeholder_scan_excludes_detector_corpus_and_keeps_real_payloads() -> None:
-    # Scans every route of the original pack tree, which is not in this repository.
-    root = require_tree_root("promotions/promotion-map.json", "knowledge", "skills")
-    promotion_map = json.loads(
-        (root / "promotions/promotion-map.json").read_text(encoding="utf-8")
-    )
-    routes = []
-    for route_value in promotion_map["artifacts"]:
-        route = dict(route_value)
-        route["_resolved_source"] = str(
-            (root / str(route["repo_path"])).resolve(strict=True)
-        )
-        route["_source_files"] = promotion._tracked_projection(
-            root,
-            str(route["repo_path"]),
-            route["artifact_kind"],
-        )
-        routes.append(route)
-
-    unmapped = promotion._executable_placeholder_findings(routes, {})
-    observed_paths = sorted(
-        str(item["evidence"]).split(":", 2)[0]
-        for item in unmapped
-        if item["code"] == "PROMOTION-CONFIG-INVALID"
-    )
-    # Census of every executable payload carrying a token from the closed alias
-    # list with no localisation configured. Pinned so that adding one is a
-    # deliberate act: each entry is a file that will not run until an operator
-    # points it at their own machine, and silently growing this list is how a
-    # pack ends up shipping scripts nobody can execute. It is only ever as good
-    # as PROMOTION_PATH_PLACEHOLDERS: a hardcoded path written with a token
-    # outside that tuple is invisible here AND unconfigurable, so an entry
-    # leaving is a fact about the scanner until someone runs the file.
-    assert observed_paths == [
-        "skills/dayz-animation-pipeline/scripts/extract_empties.py",
-        "skills/dayz-animation-pipeline/scripts/extract_weapon.py",
-        "skills/dayz-animation-pipeline/scripts/fbx_extract.py",
-        "skills/dayz-animation-pipeline/scripts/seanim_export.py",
-        "skills/dayz-clothing/references/alignment_viewer_build.py",
-        "skills/dayz-clothing/references/alignment_viewer_extract.py",
-        "skills/dayz-clothing/references/alignment_viewer_extract.py",
-        "skills/dayz-clothing/references/alignment_viewer_extract.py",
-        "skills/dayz-clothing/references/alignment_viewer_extract.py",
-        "skills/dayz-clothing/references/apply_alignment_json.py",
-        "skills/dayz-clothing/references/apply_alignment_json.py",
-        "skills/dayz-clothing/references/export_clothing_fbx.py",
-        "skills/dayz-clothing/references/export_clothing_fbx.py",
-        "skills/dayz-mcp-verify/references/drive_ladder.py",
-        "skills/dayz-preflight/preflight.py",
-        "skills/dayz-test-ingame/templates/dayz-test.ps1",
-        "skills/dayz-test-ingame/templates/dayz-test.ps1",
-        "skills/dayz-test-ingame/templates/dayz-test.ps1",
-        "skills/dayz-vehicles/references/check_odol_bone_refs.py",
-        "skills/dayz-vehicles/references/check_odol_bone_refs.py",
-        "skills/dayz-vehicles/references/check_odol_bone_refs.py",
-        "skills/dayz-vehicles/references/gate_odol_sections.py",
-        "skills/dayz-vehicles/references/gate_odol_sections.py",
-        "tools/py3d/rollout/fix-junctions.ps1",
-        "tools/py3d/rollout/fix-junctions.ps1",
-        "tools/py3d/rollout/fix-junctions.ps1",
-    ]
-
-    findings = promotion._executable_placeholder_findings(
-        routes,
-        {
-            "<dayz-projects>": {"kind": "path", "value": str(root)},
-            "<you>": {"kind": "fragment", "value": "fixture-user"},
-            "<claude-appdata>": {
-                "kind": "path",
-                "value": str(root / "claude-appdata"),
-            },
-            "<tmp>": {"kind": "path", "value": str(root / "tmp")},
-        },
-    )
-
-    assert findings == []
-
-    # fb-20261018-002910-6bdf: localization writes the configured path as
-    # is, so `<dayz-projects>` in a plain Python string became
-    # "C:\Users\...", which Python reads as a \U escape, and the installed
-    # preflight.py stopped parsing. Every Python payload must still compile
-    # with Windows paths in place of its placeholders.
-    windows_aliases = {
-        "<dayz-projects>": {
-            "kind": "path",
-            "value": "C:\\Users\\fixture\\DayZ Projects",
-        },
-        "<you>": {"kind": "fragment", "value": "fixture-user"},
-        "<claude-appdata>": {
-            "kind": "path",
-            "value": "C:\\Users\\fixture\\AppData\\Roaming\\Claude",
-        },
-        "<tmp>": {
-            "kind": "path",
-            "value": "C:\\Users\\fixture\\AppData\\Local\\Temp",
-        },
-    }
-    for repo_path in sorted(set(observed_paths)):
-        if repo_path.endswith(".py"):
-            localized = promotion._localized_payload_bytes(
-                root / repo_path, windows_aliases, root
-            )
-            compile(localized, repo_path, "exec")
 
 
 def test_legacy_v1_without_path_aliases_passes_without_placeholders(
@@ -1914,34 +1786,11 @@ def test_alias_targets_dedupe_physical_write_but_keep_logical_readbacks(
     assert len(plan["operations"]) == 3
 
 
-def test_unrouted_source_artifact_fails_closed(repo_factory, tmp_path: Path) -> None:
+def test_unrouted_tracked_file_fails_closed(repo_factory, tmp_path: Path) -> None:
     root, map_path, config_path, plan_path, _ = promotion_fixture(
         repo_factory, tmp_path
     )
     write_json(map_path, {"schema_version": 1, "artifacts": []})
-
-    report = check_promotion(root, map_path, config_path, plan_path)
-
-    assert "PROMOTION-UNROUTED" in codes(report)
-    assert not plan_path.exists()
-
-
-def test_routing_id_must_cover_each_source_map_output(
-    repo_factory,
-    tmp_path: Path,
-) -> None:
-    root, map_path, config_path, plan_path, _ = promotion_fixture(
-        repo_factory, tmp_path
-    )
-    source_map_path = root / "sources/source-map.json"
-    value = json.loads(source_map_path.read_text(encoding="utf-8"))
-    readme = next(
-        item for item in value["artifacts"] if item["output_path"] == "README.md"
-    )
-    readme["routing_artifact_id"] = "fixture"
-    write_json(source_map_path, value)
-    run_git(root, "add", "sources/source-map.json")
-    run_git(root, "commit", "-qm", "misroute fixture artifact")
 
     report = check_promotion(root, map_path, config_path, plan_path)
 
@@ -2198,17 +2047,6 @@ def test_file_promotion_hashes_content_independently_of_snapshot_name(
     root, map_path, config_path, plan_path, paths = promotion_fixture(
         repo_factory, tmp_path
     )
-    source_map_path = root / "sources/source-map.json"
-    source_map = json.loads(source_map_path.read_text(encoding="utf-8"))
-    readme_artifact = next(
-        item
-        for item in source_map["artifacts"]
-        if item["output_path"] == "README.md"
-    )
-    readme_artifact["routing_artifact_id"] = "fixture-file"
-    write_json(source_map_path, source_map)
-    run_git(root, "add", "sources/source-map.json")
-    run_git(root, "commit", "-qm", "route file fixture")
     promotion_map = json.loads(map_path.read_text(encoding="utf-8"))
     promotion_map["artifacts"].append(
         {
@@ -3639,7 +3477,7 @@ def test_remove_artifact_does_not_mask_other_permission_errors(
         promotion._remove_artifact(artifact)
 
 
-PHRASE_LONG = "an external ODOL->MLOD converter (not distributed with this pack)"
+PHRASE_LONG = "an external ODOL->MLOD converter (not distributed with this repo)"
 PHRASE_SHORT = "external ODOL->MLOD converter"
 PHRASE_LOCAL = "`the-local-tool`"
 
@@ -4987,7 +4825,7 @@ def test_ensure_known_residue_rejects_root_junction_with_allowed_digest(
 
 @pytest.mark.skipif(os.name != "nt", reason="directory junctions are a Windows feature")
 def test_ensure_known_residue_rejects_a_broken_junction(tmp_path: Path) -> None:
-    # Codex review of #120, J1: once its target is gone, exists() follows the
+    # Once a junction's target is gone, exists() follows the
     # junction and is_symlink() does not see it, so the residue read as absent.
     real = tmp_path / "real"
     real.mkdir()
@@ -5055,8 +4893,8 @@ def test_apply_keeps_a_link_planted_in_its_own_partial_stage(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    # Codex review of #120, J4: the rollback removed the stages this apply
-    # had made without looking inside, so a link planted in one went too.
+    # A rollback that removes the stages this apply made without looking
+    # inside would take a link planted in one with it.
     root, map_path, config_path, plan_path, _ = promotion_fixture(
         repo_factory, tmp_path
     )
@@ -5108,9 +4946,9 @@ def test_apply_refuses_a_broken_junction_at_a_stage_and_keeps_it(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # Codex review of #120, J4: a junction whose target was gone passed the
-    # residue check, so its stage counted as one this apply made; once the
-    # target was back, the rollback unlinked the junction and wrote ABORT.
+    # A junction whose target is gone must not pass the residue check: its
+    # stage would count as one this apply made, and once the target is back
+    # the rollback would unlink the junction and write ABORT.
     root, map_path, config_path, plan_path, _ = promotion_fixture(
         repo_factory, tmp_path
     )
@@ -5161,9 +4999,8 @@ def test_recovery_refuses_a_broken_junction_at_a_ready_stage(
     repo_factory,
     tmp_path: Path,
 ) -> None:
-    # Codex review of #120, J3: after STAGE_READY, a stage swapped for a
-    # junction whose target is gone read as absent, and the recovery wrote
-    # ABORT and kept it.
+    # After STAGE_READY, a stage swapped for a junction whose target is gone
+    # must not read as absent, or the recovery writes ABORT and keeps it.
     root, map_path, config_path, plan_path, _ = promotion_fixture(
         repo_factory, tmp_path
     )
@@ -5207,9 +5044,8 @@ def test_is_junction_reads_the_reparse_tag_without_path_is_junction(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # fb-20261018-012600-cdc5: Path.is_junction is new in Python 3.12, and
-    # without it every link check of the promotion took a junction for a
-    # plain directory.
+    # Path.is_junction is new in Python 3.12; without it every link check of
+    # the promotion would take a junction for a plain directory.
     real = tmp_path / "real"
     real.mkdir()
     junction = tmp_path / "junction"
@@ -5233,7 +5069,7 @@ def test_is_junction_without_path_is_junction_reads_only_the_mount_point_tag(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # Codex review of #120, J2: cloud placeholders, symlinks and app execution
+    # Cloud placeholders, symlinks and app execution
     # aliases carry reparse tags too, and only the mount point tag is a
     # junction.
     monkeypatch.setattr(Path, "is_junction", None, raising=False)

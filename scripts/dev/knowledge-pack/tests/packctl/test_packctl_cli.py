@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from packctl_testlib import require_tree_root
+from packctl_testlib import REPO_ROOT
 
 
 def run_cli(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -70,7 +70,7 @@ def test_validation_finding_returns_exit_1(repo_factory, tmp_path: Path) -> None
 
 
 def test_eval_cli_runs_versioned_case(tmp_path: Path) -> None:
-    root = require_tree_root("evals/cases/api-enforce.json")
+    root = REPO_ROOT
     output = tmp_path / "eval"
 
     result = run_cli(
@@ -329,9 +329,8 @@ def test_test_folders_runs_the_named_tree_and_prints_its_report(
     root = repo_factory(
         {
             "skills/bad/tests/test_bad.py": "def test_fails():\n    assert 1 + 1 == 3\n",
-            "tools/demo/tests/test_demo.py": "def test_fails():\n    assert False\n",
+            "scripts/tools/demo/tests/test_demo.py": "def test_fails():\n    assert False\n",
         },
-        payload={"LICENSE", "README.md"},
     )
     report_dir = tmp_path / "reports"
 
@@ -368,7 +367,6 @@ def test_test_folders_refuses_a_report_dir_inside_the_root(
 ) -> None:
     root = repo_factory(
         {"skills/good/tests/test_good.py": "def test_passes():\n    assert True\n"},
-        payload={"LICENSE", "README.md"},
     )
 
     result = run_cli(
@@ -392,11 +390,10 @@ def test_test_folders_runs_tools_py3d_tests_too(
     repo_factory,
     tmp_path: Path,
 ) -> None:
-    # The gate runs tools/py3d/tests in its own py3d_tests check; test-folders
+    # The gate runs scripts/tools/py3d/tests in its own py3d_tests check; test-folders
     # has no such check, so its tools tree includes the folder.
     root = repo_factory(
-        {"tools/py3d/tests/test_py3d.py": "def test_fails():\n    assert False\n"},
-        payload={"LICENSE", "README.md"},
+        {"scripts/tools/py3d/tests/test_py3d.py": "def test_fails():\n    assert False\n"},
     )
 
     result = run_cli(

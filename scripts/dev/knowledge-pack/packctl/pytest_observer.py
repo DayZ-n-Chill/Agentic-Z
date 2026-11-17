@@ -1,7 +1,7 @@
-"""pytest plugin the publish gate loads into every test-folder run.
+"""pytest plugin the gate loads into every test-folder run.
 
 ``packctl gate`` and ``packctl test-folders`` run each skills/<skill>/tests and
-tools/<tool>/tests folder as ``pytest -p packctl.pytest_observer
+scripts/tools/<tool>/tests folder as ``pytest -p packctl.pytest_observer
 --packctl-observer=<file> <folder>``. Through pytest's own hooks this plugin
 writes what the gate judges the run by, in a form that no output option,
 colour setting or printing plugin changes: every test item collected, the

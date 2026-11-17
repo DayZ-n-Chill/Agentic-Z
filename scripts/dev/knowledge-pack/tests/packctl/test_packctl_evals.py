@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from packctl_testlib import require_tree_root, write_json
+from packctl_testlib import REPO_ROOT, write_json
 
 from packctl.evals import run_eval_case, validate_eval_case
 
@@ -122,8 +122,8 @@ def test_eval_variants_use_fresh_declared_workspace_only(tmp_path: Path) -> None
     assert grading_b["verdict"] == "FAIL"
 
 
-def test_versioned_cases_and_stardz_negatives_are_mechanical() -> None:
-    root = require_tree_root("evals/cases/stardz-negatives.json")
+def test_versioned_cases_and_the_negatives_case_are_mechanical() -> None:
+    root = REPO_ROOT
     cases = sorted((root / "evals/cases").glob("*.json"))
 
     assert {path.stem for path in cases} == {
@@ -140,10 +140,10 @@ def test_versioned_cases_and_stardz_negatives_are_mechanical() -> None:
     }
     for path in cases:
         assert validate_eval_case(path) == []
-    stardz = json.loads(
+    negatives = json.loads(
         (root / "evals/cases/stardz-negatives.json").read_text(encoding="utf-8")
     )
-    assert {variant["variant_id"] for variant in stardz["variants"]} == {
+    assert {variant["variant_id"] for variant in negatives["variants"]} == {
         "autoptr",
         "overload",
         "managed",
@@ -151,4 +151,4 @@ def test_versioned_cases_and_stardz_negatives_are_mechanical() -> None:
         "ondrop",
         "dabs",
     }
-    assert all(assertion["type"] == "not_contains" for assertion in stardz["assertions"])
+    assert all(assertion["type"] == "not_contains" for assertion in negatives["assertions"])

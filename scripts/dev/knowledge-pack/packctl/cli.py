@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 from .api_index import build_index, query_index
 from .builder import build_archive
-from .common import exit_code_for, finding, make_report, write_json
+from .common import config_path, exit_code_for, finding, make_report, write_json
 from .evals import run_eval_case
 from .live_evals import run_live_eval_case
 from .gate import TEST_FOLDER_TREES, run_gate, run_test_folders
@@ -95,21 +96,15 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _resolve_api_source(root: Path, source_id: str) -> Path:
-    source_map = __import__("json").loads(
-        (root / "sources/source-map.json").read_text(encoding="utf-8")
+    # --source-id names a root in the untracked sources/local-roots.json.
+    local_roots = json.loads(
+        config_path(root, "sources/local-roots.json").read_text(encoding="utf-8")
     )
-    source = next(
-        item for item in source_map["sources"] if item["source_id"] == source_id
-    )
-    local_root_id = source["local_root_id"]
-    local_roots = __import__("json").loads(
-        (root / "sources/local-roots.json").read_text(encoding="utf-8")
-    )
-    config = local_roots["roots"][local_root_id]
+    config = local_roots["roots"][source_id]
     if "path" in config:
         return Path(config["path"])
     environment_name = config["path_env"]
-    value = __import__("os").environ.get(environment_name)
+    value = os.environ.get(environment_name)
     if not value:
         raise ValueError(f"Missing environment root: {environment_name}")
     return Path(value)

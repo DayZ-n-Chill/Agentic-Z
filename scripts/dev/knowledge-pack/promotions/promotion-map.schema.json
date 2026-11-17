@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/dayz-modding-knowledge-pack/promotion-map.schema.json",
-  "title": "DayZ Modding Knowledge Pack promotion routing",
+  "$id": "https://example.invalid/agentic-z/promotion-map.schema.json",
+  "title": "Promotion routing",
   "type": "object",
   "additionalProperties": false,
   "required": [

@@ -6,27 +6,18 @@ from pathlib import Path
 
 import pytest
 
-from packctl_testlib import (
-    ZERO_COMMIT,
-    artifact,
-    make_source_map,
-    require_tree_root,
-    run_git,
-    source,
-    write_json,
-)
+from packctl_testlib import REPO_ROOT, TOOLING_ROOT, run_git, write_json
 
 from packctl.common import git_tracked_files
 from packctl.validation import (
     validate_claims,
     validate_conflict_markers,
-    validate_licenses,
+    validate_license_file,
     validate_links,
     validate_moved_exact,
     validate_privacy,
     validate_repo,
     validate_skills,
-    validate_source_map,
 )
 
 
@@ -34,116 +25,20 @@ def codes(findings: list[dict[str, object]]) -> list[str]:
     return [str(finding["code"]) for finding in findings]
 
 
-def test_repository_checkout_contract_is_canonical_lf() -> None:
-    # Checks the original pack tree (its .gitattributes and every path its source
-    # map lists), which is not part of this repository.
-    root = require_tree_root(".gitattributes", "sources/source-map.json")
-    assert (root / ".gitattributes").read_bytes() == (
-        b"* text eol=lf\n"
-        b"*.p3d binary\n"
-        b"*.rtm binary\n"
-        b"*.seanim binary\n"
+def test_tooling_folder_is_checked_out_with_lf_line_endings() -> None:
+    assert (TOOLING_ROOT / ".gitattributes").read_bytes().endswith(
+        b"* text=auto eol=lf\n"
     )
-    source_map = json.loads(
-        (root / "sources/source-map.json").read_text(encoding="utf-8")
-    )
-    binary_suffixes = {".p3d", ".rtm", ".seanim"}
+    tracked = run_git(TOOLING_ROOT, "ls-files").splitlines()
     crlf_paths = [
-        str(item["output_path"])
-        for item in source_map["artifacts"]
-        if Path(str(item["output_path"])).suffix not in binary_suffixes
-        if b"\r\n" in (root / str(item["output_path"])).read_bytes()
+        relative
+        for relative in tracked
+        if (TOOLING_ROOT / relative).is_file()
+        if b"\r\n" in (TOOLING_ROOT / relative).read_bytes()
     ]
 
+    assert tracked
     assert crlf_paths == []
-
-
-def test_source_clean_maps_every_tracked_file_once(repo_factory) -> None:
-    root = repo_factory()
-
-    assert validate_source_map(root) == []
-
-
-def test_source_unmapped_has_stable_code(repo_factory) -> None:
-    root = repo_factory()
-    extra = root / "tracked-extra.txt"
-    extra.write_text("unmapped\n", encoding="utf-8")
-
-    run_git(root, "add", "tracked-extra.txt")
-
-    assert codes(validate_source_map(root)) == ["SOURCE-UNMAPPED"]
-
-
-def test_source_receipt_on_disk_must_be_mapped(repo_factory) -> None:
-    root = repo_factory()
-    receipt_path = "promotions/receipts/untracked.json"
-    receipt = root / receipt_path
-    receipt.parent.mkdir(parents=True)
-    receipt.write_text("{}\n", encoding="utf-8")
-
-    assert validate_source_map(root) == [
-        {
-            "code": "SOURCE-RECEIPT-UNTRACKED",
-            "severity": "error",
-            "path": receipt_path,
-            "line": 0,
-            "message": "A promotion receipt has no source-map artifact.",
-            "evidence": receipt_path,
-        }
-    ]
-
-
-def test_source_conflict_with_two_adopted_hashes_is_undecided(
-    repo_factory,
-) -> None:
-    root = repo_factory()
-    source_map_path = root / "sources/source-map.json"
-    value = json.loads(source_map_path.read_text(encoding="utf-8"))
-    target = next(
-        item for item in value["artifacts"] if item["output_path"] == "README.md"
-    )
-    target["inputs"].append(
-        {
-            **target["inputs"][0],
-            "source_id": "other",
-            "source_hash": "f" * 64,
-            "decision_evidence": "Second source also marked authoritative.",
-        }
-    )
-    value["sources"].append(source("other"))
-    write_json(source_map_path, value)
-
-    assert "SOURCE-CONFLICT-UNDECIDED" in codes(validate_source_map(root))
-
-
-def test_excluded_input_cannot_overlap_an_artifact_input(repo_factory) -> None:
-    root = repo_factory()
-    source_map_path = root / "sources/source-map.json"
-    value = json.loads(source_map_path.read_text(encoding="utf-8"))
-    source_input = value["artifacts"][0]["inputs"][0]
-    value["excluded_inputs"].append(
-        {
-            "source_id": source_input["source_id"],
-            "source_revision": source_input["source_revision"],
-            "source_path": source_input["source_path"],
-            "source_hash": source_input["source_hash"],
-            "reason": "superseded",
-            "decision_evidence": "Deliberate overlap fixture.",
-        }
-    )
-    write_json(source_map_path, value)
-
-    assert "SOURCE-INPUT-DUPLICATE" in codes(validate_source_map(root))
-
-
-def test_source_map_rejects_private_physical_root(repo_factory) -> None:
-    root = repo_factory()
-    source_map_path = root / "sources/source-map.json"
-    value = json.loads(source_map_path.read_text(encoding="utf-8"))
-    value["sources"][0]["physical_path"] = "C:\\Users\\person\\private"
-    write_json(source_map_path, value)
-
-    assert "SOURCE-SCHEMA-INVALID" in codes(validate_source_map(root))
 
 
 def test_skill_clean_description_and_allowed_frontmatter(repo_factory) -> None:
@@ -280,14 +175,24 @@ def test_privacy_allows_public_user_placeholder(repo_factory) -> None:
     assert validate_privacy(root) == []
 
 
-def test_private_path_in_repo_only_public_contract_is_rejected(
-    repo_factory,
-) -> None:
-    root = repo_factory(payload={"LICENSE", "README.md"})
-    source_map_path = root / "sources/source-map.json"
-    value = json.loads(source_map_path.read_text(encoding="utf-8"))
-    value["sources"][0]["notes"] = "C:\\Users\\alice\\private"
-    write_json(source_map_path, value)
+def test_private_path_in_a_json_contract_is_rejected(repo_factory) -> None:
+    root = repo_factory(
+        {
+            "sources/link-allowlist.json": json.dumps(
+                {
+                    "schema_version": 1,
+                    "entries": [
+                        {
+                            "path": "docs/links.md",
+                            "target": "missing.md",
+                            "reason": "C:\\Users\\alice\\private",
+                        }
+                    ],
+                }
+            )
+            + "\n"
+        }
+    )
 
     assert codes(validate_privacy(root)) == ["PRIVACY-PRIVATE-PATH"]
 
@@ -317,7 +222,6 @@ def test_privacy_rejects_private_keys_and_literal_credentials(
 ) -> None:
     root = repo_factory(
         {"notes.md": secret_line + "\n"},
-        payload={"LICENSE", "README.md", "notes.md"},
     )
 
     findings = validate_privacy(root)
@@ -331,20 +235,7 @@ def test_license_missing_fails(repo_factory) -> None:
     root = repo_factory()
     (root / "LICENSE").unlink()
 
-    assert "LICENSE-MISSING" in codes(validate_licenses(root))
-
-
-def test_forbidden_payload_license_fails(repo_factory) -> None:
-    root = repo_factory()
-    source_map_path = root / "sources/source-map.json"
-    value = json.loads(source_map_path.read_text(encoding="utf-8"))
-    target = next(
-        item for item in value["artifacts"] if item["output_path"] == "README.md"
-    )
-    target["license"] = "GPL-3.0-only"
-    write_json(source_map_path, value)
-
-    assert "LICENSE-FORBIDDEN-PAYLOAD" in codes(validate_licenses(root))
+    assert codes(validate_license_file(root)) == ["LICENSE-MISSING"]
 
 
 def test_claim_registry_requires_marker_and_exact_range(repo_factory) -> None:
@@ -358,20 +249,15 @@ def test_claim_registry_requires_marker_and_exact_range(repo_factory) -> None:
     )
     claims = {
         "schema_version": 1,
-        "claim_baseline_commit": ZERO_COMMIT,
         "claims": [
             {
                 "claim_id": "CLAIM-DEMO-API",
-                "artifact_id": "skills-demo-SKILL-md",
+                "path": "skills/demo/SKILL.md",
                 "line_start": 5,
                 "line_end": 5,
-                "source_id": "pack",
-                "source_revision": ZERO_COMMIT,
                 "evidence_locator": "fixture.c:1",
-                "license": "MIT",
                 "observed_at": "2026-07-24",
                 "verification_level": "source_verified",
-                "promotion_artifact_id": "fixture",
             }
         ],
     }
@@ -380,14 +266,13 @@ def test_claim_registry_requires_marker_and_exact_range(repo_factory) -> None:
     assert validate_claims(root) == []
 
 
-def test_claim_registry_ignores_repo_only_contract_examples(repo_factory) -> None:
+def test_claim_markers_outside_skills_are_not_claims(repo_factory) -> None:
     root = repo_factory(
         {
             "specs/example.md": (
                 "Example syntax: [EXACT][CLAIM-EXAMPLE-ONLY]\n"
             )
         },
-        payload={"LICENSE", "README.md"},
     )
 
     assert validate_claims(root) == []
@@ -436,7 +321,7 @@ def test_moved_exact_seal_that_matches_its_body_is_silent(tmp_path: Path) -> Non
 
 
 def test_moved_exact_seal_reports_a_body_edited_after_sealing(tmp_path: Path) -> None:
-    # The measured failure: a rename sweep edited the body and the pin stayed put.
+    # A rename sweep that edits the body leaves the pin where it was.
     edited = SEAL_BODY.replace("moved", "renamed")
     _seal(tmp_path, _sha_of(SEAL_BODY), edited)
     findings = validate_moved_exact(tmp_path)
@@ -459,8 +344,7 @@ def test_moved_exact_pin_comparison_ignores_hex_case(tmp_path: Path) -> None:
 
 
 def test_every_moved_exact_seal_in_this_repo_matches_its_body() -> None:
-    root = Path(__file__).resolve().parents[2]
-    assert codes(validate_moved_exact(root)) == []
+    assert codes(validate_moved_exact(REPO_ROOT)) == []
 
 
 # What `git merge` writes with merge.conflictStyle=diff3 (zdiff3 writes the same
@@ -477,8 +361,7 @@ CONFLICT_BLOCK = (
 
 
 def test_conflict_markers_are_reported_line_by_line(repo_factory) -> None:
-    # The measured failure: the squash of #52 committed three of these into
-    # CHANGELOG.md, and validate passed with 0 findings.
+    # A squash merge can commit these lines into a file such as CHANGELOG.md.
     root = repo_factory({"CHANGELOG.md": "# Changelog\n\n" + CONFLICT_BLOCK})
 
     findings = validate_conflict_markers(root)

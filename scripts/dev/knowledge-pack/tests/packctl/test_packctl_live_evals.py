@@ -8,7 +8,7 @@ import pytest
 
 from packctl.cli import main
 from packctl.live_evals import _grade_answer, run_live_eval_case, validate_live_eval_case
-from packctl_testlib import require_tree_root
+from packctl_testlib import REPO_ROOT
 
 
 def _valid_case() -> dict[str, object]:
@@ -355,7 +355,7 @@ def test_eval_live_subcommand_runs_case_and_writes_summary(tmp_path: Path) -> No
 
 
 def test_seed_case_is_valid_and_fixture_does_not_reveal_invariant() -> None:
-    root = require_tree_root("evals/live/schema.json")
+    root = REPO_ROOT
     case_path = root / "evals" / "live" / "cases" / "basebuilding-part-id-cap.json"
 
     assert validate_live_eval_case(case_path) == []
@@ -371,7 +371,7 @@ def test_seed_case_is_valid_and_fixture_does_not_reveal_invariant() -> None:
 
 
 def test_every_shipped_case_is_valid_and_does_not_leak_its_graders() -> None:
-    root = require_tree_root("evals/live/schema.json")
+    root = REPO_ROOT
     case_dir = root / "evals" / "live" / "cases"
     cases = sorted(case_dir.glob("*.json"))
 
@@ -392,7 +392,7 @@ def test_every_shipped_case_is_valid_and_does_not_leak_its_graders() -> None:
 def test_claude_code_adapter_builds_verified_isolated_command() -> None:
     import importlib.util
 
-    root = require_tree_root("evals/live/schema.json")
+    root = REPO_ROOT
     adapter_path = root / "evals" / "live" / "runners" / "claude-code.py"
     spec = importlib.util.spec_from_file_location("live_eval_claude_code", adapter_path)
     assert spec is not None and spec.loader is not None

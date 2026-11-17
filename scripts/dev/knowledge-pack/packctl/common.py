@@ -361,6 +361,20 @@ def is_within(path: Path, root: Path) -> bool:
         return False
 
 
+# The folder that holds this package, with sources/ beside it.
+TOOLING_DIR = Path(__file__).resolve().parents[1]
+
+
+def config_path(root: Path, relative: str) -> Path:
+    """Where a sources/ file of this root lives.
+
+    In the repository that holds this package the folder sits beside the
+    package; for any other root it sits under the root itself.
+    """
+    base = TOOLING_DIR if is_within(TOOLING_DIR, root) else Path(root)
+    return base / relative
+
+
 def tree_digest(path: Path) -> str:
     if not path.exists():
         return "absent"

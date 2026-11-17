@@ -49,7 +49,7 @@ def _run_process(
     )
 
 
-# The reference validator ships on PyPI as the distribution `skills-ref`, but its
+# The reference validator is on PyPI as the distribution `skills-ref`, but its
 # console script is named `agentskills`. The older name is kept first so an
 # existing checkout keeps working.
 _SKILLS_REF_COMMANDS = ("skills-ref", "agentskills")
@@ -133,8 +133,8 @@ def _run_test_suites(
     *,
     pycache_dir: Path,
 ) -> tuple[dict[str, object], str]:
-    # One pytest process per folder. Several folders ship a test module with
-    # the same basename (test_install_py3d.py in four skills), and one process
+    # One pytest process per folder. Several folders hold a test module with
+    # the same basename, and one process
     # collecting them all aborts under the default import mode ("import file
     # mismatch", exit 2) before a single test runs. A process per folder also
     # keeps one suite's sys.path and sys.modules out of the next.
@@ -186,11 +186,11 @@ def _run_test_suites(
     return check, "\n".join([", ".join(failed), *tails])[:2000]
 
 
-# Per tree: the check its test folders report under, the directory their logs
-# go to and the finding a red folder raises.
+# Per tree: the folder its test folders sit in, the check they report under,
+# the directory their logs go to and the finding a red folder raises.
 _TEST_FOLDER_TREES = {
-    "skills": ("skill_tests", "skill-tests", "SKILL-TESTS-FAILED"),
-    "tools": ("tool_tests", "tool-tests", "TOOL-TESTS-FAILED"),
+    "skills": ("skills", "skill_tests", "skill-tests", "SKILL-TESTS-FAILED"),
+    "tools": ("scripts/tools", "tool_tests", "tool-tests", "TOOL-TESTS-FAILED"),
 }
 TEST_FOLDER_TREES = tuple(_TEST_FOLDER_TREES)
 
@@ -203,12 +203,12 @@ def _test_folder_check(
     pycache_dir: Path,
     exclude: tuple[Path, ...] = (),
 ) -> tuple[str, dict[str, object], list[dict[str, object]]]:
-    # Every <tree>/<name>/tests folder but the excluded ones, each in its own
+    # Every <folder>/<name>/tests folder but the excluded ones, each in its own
     # pytest process.
-    check_name, log_name, code = _TEST_FOLDER_TREES[tree]
+    folder, check_name, log_name, code = _TEST_FOLDER_TREES[tree]
     suites = sorted(
         path
-        for path in (root / tree).glob("*/tests")
+        for path in (root / folder).glob("*/tests")
         if path.is_dir() and path not in exclude
     )
     check, evidence = _run_test_suites(
@@ -222,10 +222,10 @@ def _test_folder_check(
         findings.append(
             finding(
                 code,
-                path=tree,
+                path=folder,
                 line=0,
                 message=(
-                    f"A test folder under {tree}/ failed or did not run all "
+                    f"A test folder under {folder}/ failed or did not run all "
                     "of its tests."
                 ),
                 evidence=evidence,
@@ -261,9 +261,9 @@ def run_test_folders(
     report_dir: Path,
     trees: list[str],
 ) -> dict[str, object]:
-    # The gate's test-folder checks on their own, for CI, which has no
+    # The gate's test-folder checks on their own, for a machine with no
     # skills-ref validator to run the whole gate with. With no separate py3d
-    # check here, the tools tree includes tools/py3d/tests.
+    # check here, the tools tree includes scripts/tools/py3d/tests.
     root = Path(root).resolve()
     report_dir = Path(report_dir).resolve()
     refusal = _report_dir_in_root("test-folders", root, report_dir)
@@ -306,12 +306,11 @@ def run_gate(root: Path, report_dir: Path) -> dict[str, object]:
     }
     findings.extend(validation["findings"])
 
-    # Compile what SHIPS, which is what git tracks -- the same definition the
-    # archive builder uses. Walking the filesystem instead swept in ignored
-    # scratch: report directories, virtualenvs and build output, none of which
-    # reach a release. It also made the gate fail for the wrong reason, since a
-    # leftover venv under reports/ carries read-only files and py_compile stops
-    # on the PermissionError before compiling anything real.
+    # Compile what git tracks -- the same set the archive builder packs.
+    # Walking the filesystem instead sweeps in ignored scratch: report
+    # directories, virtualenvs and build output. It also fails the gate for the
+    # wrong reason, since a leftover venv carries read-only files and
+    # py_compile stops on the PermissionError before compiling anything real.
     python_files = [path for path in git_tracked_files(root) if path.endswith(".py")]
     if python_files:
         compile_result = _run_process(
@@ -385,8 +384,9 @@ def run_gate(root: Path, report_dir: Path) -> dict[str, object]:
     else:
         checks["skills_ref"] = {"verdict": "PASS", "skill_count": 0}
 
-    packctl_tests = root / "tests" / "packctl"
-    if packctl_tests.is_dir():
+    # The suite beside this package, when the package sits inside the root.
+    packctl_tests = _PACKCTL_PARENT / "tests" / "packctl"
+    if is_within(packctl_tests, root) and packctl_tests.is_dir():
         result = _run_process(
             root,
             [
@@ -413,7 +413,7 @@ def run_gate(root: Path, report_dir: Path) -> dict[str, object]:
             findings.append(
                 finding(
                     "PACKCTL-TESTS-FAILED",
-                    path="tests/packctl",
+                    path=packctl_tests.relative_to(root).as_posix(),
                     line=0,
                     message="The packctl regression suite failed.",
                     evidence=(result.stdout + result.stderr)[-2000:],
@@ -422,7 +422,7 @@ def run_gate(root: Path, report_dir: Path) -> dict[str, object]:
     else:
         checks["packctl_tests"] = {"verdict": "PASS", "returncode": 0}
 
-    py3d_tests = root / "tools" / "py3d" / "tests"
+    py3d_tests = root / "scripts" / "tools" / "py3d" / "tests"
     if py3d_tests.is_dir():
         result = _run_process(
             root,
@@ -450,7 +450,7 @@ def run_gate(root: Path, report_dir: Path) -> dict[str, object]:
             findings.append(
                 finding(
                     "PY3D-TESTS-FAILED",
-                    path="tools/py3d/tests",
+                    path="scripts/tools/py3d/tests",
                     line=0,
                     message="The py3d regression suite failed.",
                     evidence=(result.stdout + result.stderr)[-2000:],
@@ -459,9 +459,9 @@ def run_gate(root: Path, report_dir: Path) -> dict[str, object]:
     else:
         checks["py3d_tests"] = {"verdict": "PASS", "returncode": 0}
 
-    # Every other test folder the pack ships, skills/<skill>/tests and
-    # tools/<tool>/tests, each in its own pytest process. tools/py3d/tests ran
-    # above.
+    # Every other test folder, skills/<skill>/tests and
+    # scripts/tools/<tool>/tests, each in its own pytest process.
+    # scripts/tools/py3d/tests ran above.
     for tree in TEST_FOLDER_TREES:
         check_name, check, tree_findings = _test_folder_check(
             root,

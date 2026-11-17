@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .common import (
+    TOOLING_DIR,
     canonical_json_bytes,
     durable_rename,
     durable_write_bytes,
@@ -32,7 +33,6 @@ from .common import (
     tree_digest,
     write_json,
 )
-from .validation import SOURCE_MAP_PATH
 
 
 REQUIRED_SKILL_TARGETS = {"claude_user_skills", "agents_user_skills"}
@@ -42,7 +42,8 @@ PROMOTION_EXECUTABLE_SUFFIXES = {".ps1", ".psm1", ".bat", ".cmd", ".py"}
 # The closed alias list. It is closed in both directions: the scanner only
 # reports these tokens, and `_load_promotion_config` rejects a configured alias
 # that is not here -- so a payload whose hardcoded path uses a token missing
-# from this tuple is neither reported nor localisable, and ships unrunnable.
+# from this tuple is neither reported nor localisable, and is promoted
+# unrunnable.
 PROMOTION_PATH_PLACEHOLDERS = (
     "<you>",
     "<runbooks>",
@@ -54,26 +55,27 @@ PROMOTION_PATH_PLACEHOLDERS = (
     "<claude-appdata>",
     "<tmp>",
 )
+# Detector corpus: files of this tooling that carry placeholder tokens because
+# they implement or exercise the detector, not because an operator has to
+# localise them before the file will run.
 PROMOTION_PLACEHOLDER_SCANNER_EXCLUSIONS = frozenset(
-    {
-        # Detector corpus: these carry placeholder tokens because they
-        # implement or exercise a detector, not because an operator has to
-        # localise them before the file will run.
+    os.path.normcase(str(TOOLING_DIR / relative))
+    for relative in (
         "packctl/promotion.py",
-        "tests/packctl/test_promotion.py",
-        "tests/packctl/test_validation.py",
-    }
+        "tests/packctl/test_packctl_promotion.py",
+        "tests/packctl/test_packctl_validation.py",
+    )
 )
-# Prose that reads correctly in the published pack but names something different
+# Prose that reads correctly in the repository but names something different
 # on an installed tree. Unlike a path placeholder, the repository text is the
-# finished public wording, so nothing here has to be localised before a file is
+# finished wording, so nothing here has to be localised before a file is
 # usable and the placeholder scanner deliberately ignores these.
 PROMOTION_PHRASE_PLACEHOLDERS = (
-    "an external ODOL->MLOD converter (not distributed with this pack)",
+    "an external ODOL->MLOD converter (not distributed with this repo)",
     "external ODOL->MLOD converter",
 )
-# Phrase aliases also reach documentation, which path aliases never do: 31
-# published .md files carry <vault>-style tokens on purpose, so widening the
+# Phrase aliases also reach documentation, which path aliases never do:
+# Markdown files carry <vault>-style tokens on purpose, so widening the
 # path-alias suffix set would make the scanner reject them.
 PROMOTION_LOCALIZABLE_TEXT_SUFFIXES = {".md"}
 PathAliasMap = dict[str, dict[str, str]]
@@ -208,6 +210,11 @@ def _tracked_projection(root: Path, repo_path: str, kind: object) -> list[str]:
     ]
 
 
+def _placeholder_scan_excluded(path: Path) -> bool:
+    key = os.path.normcase(str(path.resolve(strict=False)))
+    return key in PROMOTION_PLACEHOLDER_SCANNER_EXCLUSIONS
+
+
 def _payload_localizable(
     source: Path,
     source_root: Path | None,
@@ -221,8 +228,7 @@ def _payload_localizable(
     resolved_source = source.resolve(strict=True)
     if not is_within(resolved_source, resolved_root):
         raise ValueError("projected source escapes repository")
-    relative = resolved_source.relative_to(resolved_root).as_posix()
-    return relative not in PROMOTION_PLACEHOLDER_SCANNER_EXCLUSIONS
+    return not _placeholder_scan_excluded(resolved_source)
 
 
 def _is_localizable_payload(
@@ -535,38 +541,24 @@ def _routing_findings(
                 )
             )
 
-    try:
-        source_map = load_json(root / SOURCE_MAP_PATH)
-        expected = [
-            (
-                str(item["routing_artifact_id"]),
-                str(item["output_path"]),
-            )
-            for item in source_map["artifacts"]
-            if isinstance(item, dict)
-        ]
-    except (OSError, UnicodeError, json.JSONDecodeError, KeyError, TypeError):
-        expected = []
-    for artifact_id, output_path in sorted(expected):
-        matching_routes = routes_by_id.get(artifact_id, [])
+    # Every tracked file has to sit inside some route.
+    routes = [route for matching in routes_by_id.values() for route in matching]
+    for output_path in git_tracked_files(root):
         if not any(
             _route_contains(
                 str(route.get("repo_path", "")),
                 route.get("artifact_kind"),
                 output_path,
             )
-            for route in matching_routes
+            for route in routes
         ):
             findings.append(
                 finding(
                     "PROMOTION-UNROUTED",
-                    path=SOURCE_MAP_PATH,
+                    path=output_path,
                     line=0,
-                    message=(
-                        "A source-map output is not contained by its named "
-                        "promotion route."
-                    ),
-                    evidence=f"artifact_id={artifact_id} output_path={output_path}",
+                    message="A tracked file is not contained by any promotion route.",
+                    evidence=output_path,
                 )
             )
     return sort_findings(findings)
@@ -925,9 +917,9 @@ def _executable_placeholder_findings(
                 for relative in route["_source_files"]
             ]
         for relative, candidate in candidates:
-            if relative in PROMOTION_PLACEHOLDER_SCANNER_EXCLUSIONS:
-                continue
             if candidate.suffix.lower() not in PROMOTION_EXECUTABLE_SUFFIXES:
+                continue
+            if _placeholder_scan_excluded(candidate):
                 continue
             try:
                 resolved = candidate.resolve(strict=True)

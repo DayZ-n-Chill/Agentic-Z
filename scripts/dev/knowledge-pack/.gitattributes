@@ -1,4 +1,3 @@
-# The packctl tests hash these files byte for byte (receipts, fixtures, the
-# source map), so they must be checked out with LF line endings on every
-# platform, as in the repository they were imported from.
+# Files in this folder are checked out with LF line endings on every
+# platform; a packctl test checks it.
 * text=auto eol=lf

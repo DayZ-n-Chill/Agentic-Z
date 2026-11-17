@@ -6,12 +6,12 @@ variant. This module owns both halves -- writing a copy and checking one -- so t
 that decides "in sync" cannot drift between the writer and the checker. `packctl validate`
 and `scripts/tools/sync_generated.py` both call in here.
 
-Why a sealed copy rather than one file everyone reads: `dayz_3d_viewer` ships as an
-installed package. Measured 2026-09-02, it installs NON-editable (a real copy under
-site-packages, `direct_url.json` with an empty `dir_info`), so nothing above it resolves to
-the pack root and `skills/_shared/` does not exist from there. A package that walked up to
-`_shared` would break `python -m dayz_3d_viewer`, a command the README and AGENTS.md
-document. So the copy stays, and the gate makes hand-editing it a build failure.
+Why a sealed copy rather than one file everyone reads: `dayz_3d_viewer` is an
+installed package. It installs NON-editable (a real copy under site-packages,
+`direct_url.json` with an empty `dir_info`), so nothing above it resolves to the
+repository root and `skills/_shared/` does not exist from there. A package that walked up
+to `_shared` would break `python -m dayz_3d_viewer`. So the copy stays, and the check
+makes hand-editing it a validation failure.
 
 Copies are DISCOVERED by their header, never read from a registry alone: a registry can
 forget a file, and a copy that loses its header is reported instead of silently exempted.
@@ -106,14 +106,12 @@ def scan(root: Path) -> list[dict[str, str]]:
         if target_rel in seen:
             continue
         if not (root / source_rel).is_file():
-            # PAIRS describes THIS pack, and `scan` runs against any root: the builder
-            # and gate fixtures are whole repositories as far as packctl is concerned.
-            # With no edited source in the tree there is nothing to be a copy of, so a
-            # missing copy is not drift and must not fail those roots. The two ways to
-            # actually lose a pair stay covered: drop the source alone and the copy keeps
-            # its header, so the loop above reports GENERATED-COPY-SOURCE-MISSING; drop
-            # both and the source map reports SOURCE-OUTPUT-MISSING, since it tracks each
-            # half as an artifact.
+            # PAIRS describes THIS repository, and `scan` runs against any root: the
+            # builder and gate fixtures are whole repositories as far as packctl is
+            # concerned. With no edited source in the tree there is nothing to be a copy
+            # of, so a missing copy is not drift and must not fail those roots. Dropping
+            # the source alone stays covered: the copy keeps its header, so the loop above
+            # reports GENERATED-COPY-SOURCE-MISSING. Dropping both halves is not reported.
             continue
         problems.append({"code": "GENERATED-COPY-UNMARKED", "path": target_rel,
                          "message": "A declared generated copy is missing or lost its generated header.",

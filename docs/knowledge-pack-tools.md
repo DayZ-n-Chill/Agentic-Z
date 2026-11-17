@@ -138,7 +138,7 @@ python -m dayz_animation_formats inspect input.rtm --output anatomy.json
 ```
 
 Unsupported signatures fail closed rather than being parsed on a guess. The
-frozen first-party fixtures are independently decoded by Arma3ObjectBuilder
+frozen fixtures are independently decoded by Arma3ObjectBuilder
 during validation, so the reader is checked against a second implementation and
 not only against itself.
 
@@ -401,7 +401,7 @@ The capture stays byte-identical to the git objects. The adapter is
 **DERIVED** (`<skill>-<short-commit>`), points at the captured original
 `SKILL.md`, and holds a canary whose nonce is never placed in the assembled
 prompt. Codex `--ignore-user-config` is not HOME isolation; Cursor has no
-exclusive catalog. Consumer argv is `[DESIGN]` until the owner runs the real
+exclusive catalog. Consumer argv is `[DESIGN]` until someone runs the real
 Cursor/Codex probes. A nonce without a read or injection of the original is a
 failed grade, not a pin.
 

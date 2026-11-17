@@ -46,7 +46,7 @@ def test_gate_runs_validation_and_two_reproducible_builds(
     repo_factory,
     tmp_path: Path,
 ) -> None:
-    root = repo_factory(payload={"LICENSE", "README.md"})
+    root = repo_factory()
     report_dir = tmp_path / "reports"
 
     report = run_gate(root, report_dir)
@@ -65,7 +65,7 @@ def test_gate_detects_non_reproducible_build_bytes(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    root = repo_factory(payload={"LICENSE", "README.md"})
+    root = repo_factory()
     report_dir = tmp_path / "reports"
     calls = 0
 
@@ -105,7 +105,6 @@ def test_gate_requires_external_skills_ref_when_skills_exist(
                 "---\nname: demo\ndescription: Gate fixture.\n---\n# Demo\n"
             )
         },
-        payload={"LICENSE", "README.md", "skills/demo/SKILL.md"},
     )
     monkeypatch.delenv("PACK_SKILLS_REF_ROOT", raising=False)
 
@@ -163,7 +162,6 @@ def test_gate_rejects_missing_evidence_even_when_fail_is_expected(
     }
     root = repo_factory(
         {"evals/cases/missing-evidence.json": json.dumps(case)},
-        payload={"LICENSE", "README.md"},
     )
 
     report = run_gate(root, tmp_path / "reports")
@@ -183,7 +181,6 @@ def test_gate_fails_when_a_skill_test_fails(
             "skills/bad/tests/test_bad.py": FAILING_SUITE,
             "skills/good/tests/test_good.py": PASSING_SUITE,
         },
-        payload={"LICENSE", "README.md"},
     )
     report_dir = tmp_path / "reports"
 
@@ -213,10 +210,9 @@ def test_gate_fails_when_a_tool_test_fails_and_runs_py3d_once(
 ) -> None:
     root = repo_factory(
         {
-            "tools/broken/tests/test_broken.py": FAILING_SUITE,
-            "tools/py3d/tests/test_py3d.py": PASSING_SUITE,
+            "scripts/tools/broken/tests/test_broken.py": FAILING_SUITE,
+            "scripts/tools/py3d/tests/test_py3d.py": PASSING_SUITE,
         },
-        payload={"LICENSE", "README.md"},
     )
     report_dir = tmp_path / "reports"
 
@@ -239,17 +235,15 @@ def test_gate_passes_same_named_and_cleanly_skipped_suites(
     repo_factory,
     tmp_path: Path,
 ) -> None:
-    # Two skills shipping test files with one basename abort a single pytest
-    # run ("import file mismatch", exit 2) -- the state of main before the
-    # gate ran these folders.
+    # Two skills holding test files with one basename abort a single pytest
+    # run ("import file mismatch", exit 2), so each folder gets its own run.
     root = repo_factory(
         {
             "skills/alpha/tests/test_install.py": PASSING_SUITE,
             "skills/beta/tests/test_install.py": PASSING_SUITE,
             "skills/blender/tests/test_needs_blender.py": SKIPPED_SUITE,
-            "tools/demo/tests/test_install.py": PASSING_SUITE,
+            "scripts/tools/demo/tests/test_install.py": PASSING_SUITE,
         },
-        payload={"LICENSE", "README.md"},
     )
 
     report = run_gate(root, tmp_path / "reports")
@@ -277,7 +271,6 @@ def test_gate_fails_test_folders_that_run_nothing_or_do_not_collect(
             "skills/deselected/tests/test_needs_blender.py": SKIPPED_SUITE,
             "skills/script/tests/test_script.py": SCRIPT_SUITE,
         },
-        payload={"LICENSE", "README.md"},
     )
 
     report = run_gate(root, tmp_path / "reports")
@@ -304,7 +297,6 @@ def test_gate_ignores_pytest_addopts_from_the_environment(
     monkeypatch.setenv("PYTEST_ADDOPTS", "--collect-only")
     root = repo_factory(
         {"skills/bad/tests/test_bad.py": FAILING_SUITE},
-        payload={"LICENSE", "README.md"},
     )
 
     report = run_gate(root, tmp_path / "reports")
@@ -323,7 +315,6 @@ def test_gate_fails_a_collection_only_run_configured_in_the_repository(
             "pytest.ini": "[pytest]\naddopts = --collect-only\n",
             "skills/bad/tests/test_bad.py": FAILING_SUITE,
         },
-        payload={"LICENSE", "README.md"},
     )
 
     report = run_gate(root, tmp_path / "reports")
@@ -346,7 +337,6 @@ def test_gate_fails_tests_deselected_by_quiet_coloured_configuration(
                 PASSING_SUITE + "\n\n" + FAILING_SUITE
             ),
         },
-        payload={"LICENSE", "README.md"},
     )
 
     report = run_gate(root, tmp_path / "reports")
@@ -384,7 +374,6 @@ def test_gate_fails_a_test_module_kept_out_of_collection(
             },
             **narrowing,
         },
-        payload={"LICENSE", "README.md"},
     )
 
     report = run_gate(root, tmp_path / "reports")
@@ -406,7 +395,6 @@ def test_gate_fails_a_run_ended_after_collection(
             },
             "skills/stopped/tests/conftest.py": EXIT_AFTER_COLLECTION,
         },
-        payload={"LICENSE", "README.md"},
     )
 
     report = run_gate(root, tmp_path / "reports")
@@ -560,7 +548,6 @@ def test_gate_refuses_a_report_dir_inside_the_root_before_any_suite_runs(
                 f"    Path({str(marker)!r}).write_text('ran', encoding='utf-8')\n"
             )
         },
-        payload={"LICENSE", "README.md"},
     )
 
     report = run_gate(root, root / "gate-reports")

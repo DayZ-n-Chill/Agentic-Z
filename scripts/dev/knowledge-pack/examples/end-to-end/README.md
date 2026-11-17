@@ -1,6 +1,6 @@
-# End-to-end: pack tools on a synthetic MLOD
+# End-to-end: the model tools on a synthetic MLOD
 
-This walkthrough chains the pack tools on a **synthetic** one-triangle
+This walkthrough chains three tools on a **synthetic** one-triangle
 `.p3d`. There is no DayZ asset and no private mod file. Commands assume
 the Agentic-Z repository root is the current directory and that the three
 packages are on `PYTHONPATH`:
@@ -25,7 +25,7 @@ Expected script output:
 OK
 ```
 
-`run.py` writes under `examples/end-to-end/work/` (gitignored). The
+`run.py` writes under `work/` next to itself (gitignored). The
 manual commands below do the same work in a directory you choose.
 
 ## 1. `py3d` writes a minimal MLOD
@@ -161,7 +161,7 @@ jsDelivr URL for three.js 0.160.0. It must not contain a host path.
 
 | Tool | Why it is not in this chain |
 |---|---|
-| `dayz-odol-strict` | Inspects **binarized ODOL** v53–v55. This file is MLOD. There is no ODOL writer in the pack, so the synthetic model cannot be the input. |
+| `dayz-odol-strict` | Inspects **binarized ODOL** v53–v55. This file is MLOD. There is no ODOL writer in this repository, so the synthetic model cannot be the input. |
 | `dayz-animation-formats` | Reads and writes **RTM / SEAnim**. The triangle has no skeleton track. |
 | `dayz-ui-lab` | Parses **`.layout`** widgets. This example has no UI. |
 
@@ -171,7 +171,7 @@ Do not invent an input just to tick the row.
 ## 5. Verify in-game (not run here)
 
 There is no DayZ process in this walkthrough. The in-game check is
-owned by `skills/dayz-mcp-verify` and the public bridge at
-https://github.com/willy92wins/dayz-mcp. After a real class exists,
-that skill is the one that spawns it, orbits, and captures evidence.
+owned by `skills/dayz-mcp-verify` and the DayZ MCP bridge that
+`docs/dayz-mcp.md` describes. After a real class exists, that skill is
+the one that spawns it, orbits, and captures evidence.
 Do not start DayZDiag from this example.

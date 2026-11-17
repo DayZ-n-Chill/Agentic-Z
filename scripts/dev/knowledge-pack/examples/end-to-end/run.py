@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run steps 1-3 of the synthetic end-to-end pack-tool example.
+"""Run steps 1-3 of the synthetic end-to-end model-tool example.
 
 Creates a one-triangle MLOD, gates it with dayz-model-preflight, and
 converts it with dayz-3d-viewer. Exits 0 only if every check matches.

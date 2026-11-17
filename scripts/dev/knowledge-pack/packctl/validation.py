@@ -9,12 +9,12 @@ from urllib.parse import unquote
 
 from .generated import scan as scan_generated
 from .common import (
+    config_path,
     finding,
     git_tracked_files,
     is_relative_contract_path,
     load_json,
     make_report,
-    sha256_file,
     sort_findings,
 )
 
@@ -189,7 +189,7 @@ def validate_links(root: Path) -> list[dict[str, object]]:
     root = Path(root).resolve()
     findings: list[dict[str, object]] = []
     allowed_links: set[tuple[str, str]] = set()
-    allowlist_path = root / LINK_ALLOWLIST_PATH
+    allowlist_path = config_path(root, LINK_ALLOWLIST_PATH)
     if allowlist_path.is_file():
         try:
             allowlist = load_json(allowlist_path)
@@ -374,7 +374,7 @@ def validate_claims(root: Path) -> list[dict[str, object]]:
     """
     root = Path(root).resolve()
     findings: list[dict[str, object]] = []
-    registry_path = root / CLAIMS_PATH
+    registry_path = config_path(root, CLAIMS_PATH)
     registry: object = {"schema_version": 1, "claims": []}
     if registry_path.is_file():
         try:

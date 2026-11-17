@@ -1,9 +1,9 @@
 """Cover `packctl.generated`: the header scan and the PAIRS backstop.
 
-The module shipped without tests and its backstop failed every synthetic root,
-so five builder/gate/cli tests went red. These pin both halves: the backstop
-still catches a copy that goes missing or loses its header, and it stays quiet
-on a tree that never carried the edited source.
+These pin both halves of the backstop: it still catches a copy that goes
+missing or loses its header, and it stays quiet on a tree that never carried
+the edited source, such as the synthetic roots of the builder, gate and cli
+tests.
 """
 from __future__ import annotations
 
@@ -31,13 +31,13 @@ def write_sources(root: Path, body: bytes = SOURCE_BODY) -> None:
 
 
 def test_pairs_stay_quiet_on_a_tree_without_the_edited_source(tmp_path: Path) -> None:
-    (tmp_path / "README.md").write_text("# Not the pack\n", encoding="utf-8")
+    (tmp_path / "README.md").write_text("# Another repository\n", encoding="utf-8")
 
     assert generated.scan(tmp_path) == []
 
 
 def test_fixture_repo_reports_no_generated_findings(repo_factory) -> None:
-    root = repo_factory(payload={"LICENSE", "README.md"})
+    root = repo_factory()
 
     assert validate_generated(root) == []
 
