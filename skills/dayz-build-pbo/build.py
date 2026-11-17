@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import fnmatch
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -23,6 +24,7 @@ import skill_helpers as h  # noqa: E402
 
 lint = h.load_module("dayz_build_pbo_lint", Path(__file__).resolve().parents[1] / "dayz-lint" / "lint.py")
 _nm = h.load_module("dayz_new_mod_module", h.SKILLS_DIR / "dayz-new-mod" / "new_mod.py")
+pbo_entries = h.load_module("dayz_build_pbo_entries", Path(__file__).resolve().parent / "pbo_entries.py")
 
 INCLUDE_LIST = Path(__file__).resolve().parent / "include.lst"
 # Patterns left out of the PBO, including .gui-sources/ (imageset sprite sources).
@@ -307,6 +309,200 @@ def check_pbo_output(pbo_path: Path, build_started: float) -> Optional[str]:
     return None
 
 
+def clear_stale_temp(temp_dir: Path) -> None:
+    """Remove a temp dir left by an earlier build, and exit unless it is gone.
+
+    AddonBuilder syncs the source into its temp dir incrementally, so files left there
+    (a failed build keeps the folder for debugging) can be packed in place of the
+    current source while the build still reports success. The build therefore starts
+    from an empty temp dir, and stops rather than build on one it could not empty.
+    """
+    if not temp_dir.exists():
+        return
+    try:
+        remove_tree(temp_dir)
+    except OSError as e:
+        sys.exit(
+            f"{FAIL} Could not empty the temp dir of an earlier build: {e.filename or temp_dir} is locked"
+            f" ({e.strerror or e}).\n"
+            "       Building on it could pack old files in place of the current source. Close the program\n"
+            "       that holds it (Explorer, an editor, a stuck AddonBuilder: taskkill /im AddonBuilder.exe /f),\n"
+            "       then build again."
+        )
+    if temp_dir.exists():
+        # Windows can report a delete as done while an open handle keeps the folder alive.
+        sys.exit(
+            f"{FAIL} The temp dir of an earlier build is still there after removing it: {temp_dir}\n"
+            "       Close the program that holds it open, then build again."
+        )
+    print(f"{OK} Removed the temp dir left by an earlier build: {temp_dir}")
+
+
+# The line AddonBuilder 1.0.240639 writes last for each run in <DayZ Tools>\Bin\Logs\AddonBuilder.rpt:
+# 2026-11-17 11:01:33,968 [DEBUG] 1: AddonBuilder.Program.RunComandLineApp - Build finished. [ResultCode]=1
+_RESULT_CODE_RE = re.compile(r"^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d),\d+ .*Build finished\. \[ResultCode\]=(-?\d+)")
+
+
+def addon_builder_log(addon_builder: Path) -> Path:
+    """<DayZ Tools>\\Bin\\Logs\\AddonBuilder.rpt for <DayZ Tools>\\Bin\\AddonBuilder\\AddonBuilder.exe."""
+    return addon_builder.parent.parent / "Logs" / "AddonBuilder.rpt"
+
+
+def logged_result_code(log: Path, build_started: float) -> Optional[int]:
+    """The [ResultCode] AddonBuilder logged for the run that ended after build_started.
+
+    AddonBuilder.exe exits 0 when CfgConvert or binarize fails; only its log says
+    [ResultCode]=1. Returns None when the log is missing or its last result is older
+    than this build, so the caller falls back to the PBO checks. The log's times are
+    local and cut to the second, hence the 1 s slack.
+    """
+    try:
+        lines = log.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return None
+    for line in reversed(lines):
+        m = _RESULT_CODE_RE.match(line)
+        if m:
+            logged = time.mktime(time.strptime(m.group(1), "%Y-%m-%d %H:%M:%S"))
+            return int(m.group(2)) if logged >= build_started - 1 else None
+    return None
+
+
+_LOG_STDERR_RE = re.compile(r"^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d),\d+ .*?process_ErrorDataReceived - (.*\S.*)$")
+
+
+def logged_tool_errors(log: Path, build_started: float, limit: int = 10) -> list[str]:
+    """What CfgConvert and binarize wrote to stderr during this build, from AddonBuilder's log.
+
+    binarize runs silent, so a failed build names its cause only here, for example
+    "File ...\\config.cpp, line 17: /CfgVehicles/MyItem.scope: Member already defined."
+    The cache-size banner binarize prints on every run is left out.
+    """
+    try:
+        lines = log.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return []
+    found = []
+    for line in lines:
+        m = _LOG_STDERR_RE.match(line)
+        if not m or m.group(2).startswith("FileServer MaxCacheSize"):
+            continue
+        if time.mktime(time.strptime(m.group(1), "%Y-%m-%d %H:%M:%S")) >= build_started - 1:
+            found.append(m.group(2).strip())
+    return found[-limit:]
+
+
+# Staged file types whose absence from the PBO breaks the mod with no error in the log:
+# a script that never compiles, a model that is not there.
+MUST_SHIP_SUFFIXES = {".c", ".p3d"}
+# Entries AddonBuilder adds that have no source file.
+GENERATED_ENTRIES = {"texheaders.bin", "$pboprefix$.txt", "$pboprefix$", "$prefix$"}
+# FileBank packs with DayZ Tools' own Bin\PboUtils\exclude.lst, whose *\Source\*, *\Temp\* and
+# *\Doc\* patterns drop these folders at any depth, even though the sync copied them.
+FILEBANK_DROPPED_FOLDERS = {"source", "temp", "doc"}
+
+
+def include_patterns() -> list[str]:
+    """The wildcard patterns in include.lst, lower case."""
+    return [p.strip().lower() for p in INCLUDE_LIST.read_text(encoding="utf-8").split(";") if p.strip()]
+
+
+def check_pbo_contents(pbo_path: Path, stage: Path, modname: str) -> tuple[list[str], list[str], Optional[str]]:
+    """Compare the built PBO's entry table with the staged source.
+
+    Returns (errors, warnings, summary). The expected entries are derived from the
+    stage, never from a hand-kept list: every staged file that include.lst lets
+    through should be an entry. An error is a missing script or model, a missing
+    config, or a wrong prefix: each loads as a mod that silently does nothing.
+    Everything else is a warning. summary is None when the PBO could not be read.
+    """
+    try:
+        pbo = pbo_entries.read_pbo(pbo_path)
+    except (pbo_entries.PboError, OSError) as e:
+        return [], [f"Could not read the entry table of {pbo_path} ({e}); its contents were not checked."], None
+
+    errors: list[str] = []
+    warnings: list[str] = []
+    if pbo.trailer_ok is False:
+        warnings.append(
+            f"{pbo_path.name} does not end in the checksum AddonBuilder writes (a zero byte and the SHA-1 of the\n"
+            "       file before it). The file may be cut short; build again before testing with it."
+        )
+    if pbo.prefix.lower() != modname.lower():
+        errors.append(
+            f"{pbo_path.name} has the header prefix {pbo.prefix!r}, expected {modname!r}.\n"
+            "       Script and asset paths resolve against the prefix, so nothing in this PBO would be found."
+        )
+
+    patterns = include_patterns()
+    staged = sorted(
+        str(p.relative_to(stage)).replace("/", "\\") for p in stage.rglob("*") if p.is_file()
+    ) if stage.is_dir() else []
+    packable, unlisted = [], []
+    for rel in staged:
+        name = rel.rsplit("\\", 1)[-1].lower()
+        if any(fnmatch.fnmatchcase(name, pat) for pat in patterns):
+            packable.append(rel)
+        elif rel != "$PBOPREFIX$":
+            unlisted.append(rel)
+    names = pbo.names()
+
+    missing = [rel for rel in packable if rel.lower() not in names]
+    must = [rel for rel in missing if Path(rel).suffix.lower() in MUST_SHIP_SUFFIXES]
+    other = [rel for rel in missing if Path(rel).suffix.lower() not in MUST_SHIP_SUFFIXES]
+    if "config.cpp" in (rel.lower() for rel in staged) and not names & {"config.bin", "config.cpp"}:
+        errors.append(f"{pbo_path.name} holds neither config.bin nor config.cpp, so the game cannot load it as a mod.")
+        other = [rel for rel in other if rel.lower() != "config.cpp"]
+
+    def folder_hint(rels: list[str]) -> str:
+        if not any(FILEBANK_DROPPED_FOLDERS & set(rel.lower().split("\\")[:-1]) for rel in rels):
+            return ""
+        return (
+            "\n       The packer leaves out every folder named Source, Temp or Doc, at any depth."
+            " Rename the folder."
+        )
+
+    if must:
+        errors.append(
+            f"{len(must)} staged script or model file(s) are not in {pbo_path.name}: "
+            + ", ".join(must[:10]) + (" ..." if len(must) > 10 else "")
+            + "\n       The mod would load with those scripts never compiled or those models missing."
+            + folder_hint(must)
+        )
+    if other:
+        warnings.append(
+            f"{len(other)} staged file(s) that include.lst lets through are not in {pbo_path.name}: "
+            + ", ".join(other[:10]) + (" ..." if len(other) > 10 else "") + folder_hint(other)
+        )
+
+    expected = {rel.lower() for rel in staged} | GENERATED_ENTRIES
+    # AddonBuilder packs a config.bin beside config.cpp (measured at the mod root; a nested
+    # config.cpp is given the same allowance).
+    expected |= {
+        rel.lower()[: -len("cpp")] + "bin" for rel in staged if rel.lower().rsplit("\\", 1)[-1] == "config.cpp"
+    }
+    extras = sorted(e.name for e in pbo.entries if e.key not in expected)
+    if extras:
+        warnings.append(
+            f"{len(extras)} entr{'y' if len(extras) == 1 else 'ies'} in {pbo_path.name} did not come from the staged"
+            " source: " + ", ".join(extras[:10]) + (" ..." if len(extras) > 10 else "")
+        )
+
+    summary = f"{pbo_path.name} holds {len(pbo.entries)} entries; all {len(packable)} packable staged files are in it"
+    if missing:
+        summary = f"{pbo_path.name} holds {len(pbo.entries)} entries; {len(packable) - len(missing)} of {len(packable)} packable staged files are in it"
+    if unlisted:
+        by_suffix: dict[str, int] = {}
+        for rel in unlisted:
+            suffix = Path(rel).suffix.lower() or "(no extension)"
+            by_suffix[suffix] = by_suffix.get(suffix, 0) + 1
+        summary += (
+            f" ({len(unlisted)} staged file(s) match no include.lst pattern and stay out: "
+            + ", ".join(f"{suffix} {count}" for suffix, count in sorted(by_suffix.items())) + ")"
+        )
+    return errors, warnings, summary
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build a DayZ mod into a .pbo via AddonBuilder.")
     parser.add_argument("modname", help="Mod name (must match workspace/<ModName>/).")
@@ -348,6 +544,8 @@ def main() -> int:
     # does not leave an unmarked @<ModName> that gate_on_marker then refuses.
     if created_root and not h.write_marker(deploy_root, args.modname):
         return 1
+    # A temp dir kept by a failed build must never feed this one.
+    clear_stale_temp(temp_dir)
     temp_dir.mkdir(parents=True, exist_ok=True)
     # The stage keeps the <ModName> folder name, which AddonBuilder uses for the PBO name.
     stage = TEMP_ROOT / "_stage" / args.modname
@@ -370,6 +568,17 @@ def main() -> int:
         print(f"       Kept for debugging: temp dir {temp_dir}, stage dir {stage}")
         return rc
 
+    # AddonBuilder exits 0 when CfgConvert or binarize fails; its log holds the real result.
+    log = addon_builder_log(addon_builder)
+    result_code = logged_result_code(log, build_started)
+    if result_code not in (None, 0):
+        print(f"{FAIL} AddonBuilder exited 0, but its log says the build failed ([ResultCode]={result_code}).")
+        for message in logged_tool_errors(log, build_started):
+            print(f"       {message}")
+        print(f"       Look for [ERROR] lines above, or in {log}")
+        print(f"       Kept for debugging: temp dir {temp_dir}, stage dir {stage}")
+        return 1
+
     pbo_path = target_dir / f"{args.modname}.pbo"
     error = check_pbo_output(pbo_path, build_started)
     if error is not None:
@@ -377,7 +586,19 @@ def main() -> int:
         print(f"       Kept for inspection: temp dir {temp_dir}, stage dir {stage}")
         return 1
 
+    errors, warnings, summary = check_pbo_contents(pbo_path, stage, args.modname)
+    for warning in warnings:
+        print(f"{WARN} {warning}")
+    if errors:
+        for error in errors:
+            print(f"{FAIL} {error}")
+        print(f"       {pbo_path} was written but is not a working build; do not test with it.")
+        print(f"       Kept for inspection: temp dir {temp_dir}, stage dir {stage}")
+        return 1
+
     print(f"{OK} Built: {pbo_path} ({pbo_path.stat().st_size:,} bytes)")
+    if summary:
+        print(f"{OK} {summary}")
     warn_stale_signatures(target_dir, args.modname)
 
     cleaned = True

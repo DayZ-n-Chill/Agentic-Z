@@ -82,6 +82,8 @@ override bool CanPutIntoHands(EntityAI parent) { return false; }      // drag in
 
 To hide an action from the wheel for another reason, `ItemBase.RemoveAction(typename)` removes one that a parent class added (`P:\scripts\4_world\entities\itembase.c:295`); call it in `SetActions()` after `super.SetActions()`.
 
+The knowledge pack's version of this pattern has four steps: the `IsTakeable()` and `CanPutInCargo` overrides above, plus `RemoveAction(ActionTakeItem)` and `RemoveAction(ActionTakeItemToHands)` in `SetActions()`. `ItemBase.SetActions` adds both take actions (`P:\scripts\4_world\entities\itembase.c:248` and `:249`), so removing them is valid and takes them off the item for good; with `IsTakeable()` false their conditions already fail, so it is optional. It does not replace `CanPutIntoHands`, which is what stops a drag into the hands slot.
+
 ---
 
 ## ⚠️ Base the condition on synced state only

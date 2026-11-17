@@ -23,6 +23,8 @@ m_Tick.Run(1.0, this, "Tick", null, true);
 
 The reported symptom is callbacks that fired correctly for hours and then skip, or fire many times back to back. If you see it, compare a `Timer` before you change anything else.
 
+The knowledge pack states this report as a fact and gives its source as "long-run production server logs"; those logs are not in this repo, so it stays unverified here. It also names a second way out for work that must keep time across many hours: have one manager object decide when work is due from the system clock, not from an accumulated delay. The clock calls are vanilla: `GetHourMinuteSecond(out int hour, out int minute, out int second)` (`P:\scripts\1_core\proto\ensystem.c:28`) and `GetYearMonthDay(out int year, out int month, out int day)` (`ensystem.c:52`).
+
 ---
 
 ## ⚠️ Per-tick allocation kills perf

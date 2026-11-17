@@ -88,6 +88,24 @@ modded class ItemBase
 }
 ```
 
+### Reported: many added fields on entity classes
+
+Reported by the knowledge pack, not checked on `P:\` (it is about engine behaviour, and no vanilla file shows it):
+
+- Member fields added to `modded class DayZGame` are safe: it is one script-side object with a stable lifetime.
+- Member fields added to `modded class PlayerBase` or `modded class ItemBase` are safe in almost every mod. The report is that some entity classes can go wrong on the engine side when many mods add fields and their order shifts, and that the sign is a strange crash at player connect or item spawn that goes away when one added field is removed.
+- Default to member fields. Only when you can reproduce such a crash, keep the state outside the entity in a static map keyed by an id of the entity:
+
+```c
+// Fallback only for a reproduced crash: state kept outside the entity
+class MyMod_StateMap
+{
+    static ref map<int, ref MyMod_State> s_StateByEntId = new map<int, ref MyMod_State>;
+}
+```
+
+Remove the entry when the entity is deleted, or the map keeps the state object alive (`ref` element type, `../references/language_memory.md` rule 2). What is checked is the save stream: fields you write in `OnStoreSave` on a modded vanilla class must be read back in the same order, and that is covered in `../../persistence/versioning-and-migration.md` ("Adding saved fields to a vanilla class").
+
 ---
 
 ## Adding Actions to an Item
