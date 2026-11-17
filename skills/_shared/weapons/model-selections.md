@@ -15,6 +15,25 @@ Every name below comes from vanilla config or script. The vanilla weapon models 
 
 Optic attachments carry their own camera points in their own models, such as `eyeScope_temp` and `cameraDir` on `HuntingOptic` (`P:\DZ\weapons\attachments\optics\config.cpp:1465`, `:1466`).
 
+### Points reported from a readable vanilla model
+
+Vendored from the knowledge pack, whose author read them in the memory LOD of a debinarized vanilla `akm.p3d` (model space, muzzle toward -X, Y up); not yet checked on `P:\`, where the model is binarized:
+
+- `bolt_axis` (two points): the travel of the bolt or charging handle, parallel to the bore.
+- `trigger_axis` (two points): the trigger's axis, sideways.
+- `magazine_axis` and `recoil` (two points each): magazine and recoil axes, roughly vertical on the AKM. Their exact meaning is not confirmed.
+- `nabojnicestart` and `nabojniceend`: on the AKM the ejection direction is up, to the right and to the rear.
+- `eye` sits about 5 cm above the bore on AKM iron sights.
+- `ce_center`, `ce_radius`, `invview`, `boundingbox_min` and `boundingbox_max` are present too.
+- There are no hand or grip points in a weapon model. The grip comes from the player's IK pose animation, which is animation work.
+
+Checks worth making on a new model before the first test (each one failed on a real AI generated rifle mesh in his MK47 project, measured against the AKM):
+
+- `usti hlavne` and `konec hlavne` share height and side offset, so the bore is level. A `konec hlavne` 4.6 cm too high tilted that rifle's fire line by 6.3 degrees.
+- `bolt_axis` is parallel to the bore, and `magazine_axis` and `recoil` point the way they do on the reference gun (his were sideways, 90 degrees off).
+- The ejection direction is within about 25 degrees of the reference gun's (his was 42 degrees off, with no rearward part).
+- The casing side depends on how the weapon sits in model space. On his SR2M project the two ejection points were on +Z and threw casings into the receiver; -Z was right (confirmed in game there). Read the side off the reference weapon, do not assume it.
+
 ## Selections
 
 | Name | Kind | Used by | Source |
@@ -32,6 +51,11 @@ The weapon's moving parts are remapped to player skeleton bones by `boneRemap[]`
 - Rifles (`Rifle_Base`, `P:\DZ\data\config.cpp:4241` to `:4257`): `bolt`, `magazine`, `trigger`, `charging`, `bullet`, `mag_release`, `boltrelease`.
 - Bolt actions (`BoltActionRifle_Base`, `P:\DZ\data\config.cpp:4265` to `:4279`): `bolthandle`, `boltbody`, `boltbodyS`, `trigger`, `bullet`, `magazine`.
 - The same lists are registered in script (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1580` and `:1592`).
+- Since 1.30 two more weapon bases have their own script remap: `LeeEnfield_Base` with `bolthandle`, `boltbody`, `trigger`, `bullet`, `bullet1` and `magazine` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1605`), and `Luger_Base` with `bolt`, `magazine`, `bullet`, `trigger`, `slide`, `toggle1` and `toggle2` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1621`). `SCARL_Base` and `MP18_Base` have none and use the `Rifle_Base` list.
+
+The script remap is an array of pairs, the model's selection first and the player bone second, passed to `AddItemBoneRemap` (`P:\scripts\3_game\dayzplayer.c:245-252`). `bolt` goes to `Weapon_Bolt`, `magazine` to `Weapon_Magazine`, `trigger` to `Weapon_Trigger`. A part can instead be animated by the model's own `model.cfg`; drive each part one way only.
+
+A selection that feeds a remap must cover the real part. On the author's SR2M project the `bolt` selection had been painted on the barrel, in front of the chamber, so the remap would have moved the barrel; comparing the selection's centre with where a bolt sits (behind the chamber) caught it before a test (confirmed in game after the repaint; third-party, not on `P:\`). Ask the object builder for the centre and bounds of each remapped selection and check them against the reference gun. The repaint steps are in `skills/dayz-weapons/references/p3d-selection-contract.md`.
 
 ## Other config the model must match
 

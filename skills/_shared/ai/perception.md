@@ -36,6 +36,20 @@ if (GetGame().IsServer())
 
 `AKM` with its `NoiseShoot` class is in `cfgWeapons` in `P:\DZ\weapons\firearms\akm\config.cpp` (`:82` inside `AKM_Base` at `:26`; `AKM` at `:191` inherits it). Infected hear a shot out to `rangeShotMax` 110 m (`P:\DZ\AI\config.cpp:6383`).
 
+`AddNoiseTarget` is the call for a decoy: it leaves a noise at a position for a time, with no entity attached, and the AI investigates the place. Vanilla uses it for the alarm clock (`P:\scripts\4_world\entities\itembase\gear\tools\alarmclock.c:142`), the vehicle horn and animal traps.
+
+## Weather and noise (since 1.30)
+
+Since DayZ 1.30 the engine lowers what the AI hears for rain, snow, fog, wind, sandstorm and the sea by itself. Script no longer passes a weather factor with each noise.
+
+- `NoiseSystem.GetEnvironmentNoiseReduction(vector pos)` returns the reduction the engine applies at a point; the vanilla comment calls it the single source of truth used by AI (`P:\scripts\3_game\noise.c:12-13`). The presence debug display reads it (`P:\scripts\4_world\plugins\pluginbase\pluginpresencenotifier.c:155-158`).
+- The amounts are config, in `class AIParams` (`P:\DZ\data\aiconfigs\config.cpp:12`): `maxNoiseRange=300`, `rainToNoiseMultiplier=10`, `snowfallToNoiseMultiplier=5`, `seaToNoiseMultiplier=15`, `fogToNoiseMultiplier=10`, `windToNoiseMultiplier=10`, `sandstormToNoiseMultiplier=10` and `noiseDampeningMultiplier=0.69999999` (`:14` to `:21`). To change how much infected hear in bad weather, change these keys in your own addon that requires `DZ_data_aiconfigs` (`P:\DZ\data\aiconfigs\config.cpp:3`). It changes hearing for every creature, and no vanilla file shows an addon overriding `AIParams`, so treat it as unverified until the in game test confirms it.
+- Vanilla emitters dropped their weather factor. Player steps pass only `NoiseAIEvaluate.GetNoiseMultiplier(this)` (`P:\scripts\4_world\entities\dayzplayerimplement.c:3472-3474`); infected voices call `AddNoise` with no multiplier (`P:\scripts\4_world\entities\creatures\infected\zombiebase.c:597-600`); the animal trap and the vehicle horn carry the comment `// weather dampening is now done engine-side` (`P:\scripts\4_world\entities\itembase\trapspawnbase.c:648`, `P:\scripts\4_world\entities\vehicles\components\vehiclehorncomponent.c:105`).
+- The old script helpers remain but are marked obsolete: `Weather.GetNoiseReductionByWeather()` (`P:\scripts\3_game\weather.c:454-455`), `Weather.GetNoiseReductionByWeatherEx(notnull Object object)`, which also counts the sandstorm (`P:\scripts\3_game\weather.c:407-408`), `NoiseAIEvaluate.GetNoiseReduction(Weather weather)` (`P:\scripts\4_world\static\sensesaievaluate.c:92-93`) and `NoiseAIEvaluate.GetNoiseReductionEx` (`P:\scripts\4_world\static\sensesaievaluate.c:18-19`). The 1.30 note on them says they are kept for the HUD and old mods. Use `GetNoiseReductionByWeatherEx` only for a display; overriding any of them does not change what the engine AI hears.
+- Do not multiply your own `AddNoise`, `AddNoisePos` or `AddNoiseTarget` strength by a weather value. The engine already reduces the noise at its position, so it would be lowered twice.
+
+The knowledge pack reports that until 1.29 `AIParams` had only the rain and sea keys and that player steps multiplied `NoiseAIEvaluate.GetNoiseReduction(g_Game.GetWeather())` into each noise; 1.29 is not on `P:\`. A mod written for 1.29 that still calls the old helpers compiles with an obsolete warning. Literal blocks: `skills/dayz-ai-patterns/references/dayz-1-30-ai.md`. The sound designer's side of the same change, and where vanilla keeps its noise classes, is in `skills/_shared/audio-fx/noise-for-ai.md`.
+
 ## What makes a player visible
 
 - Clothing: `PlayerBase.CalculateVisibilityForAI` (`P:\scripts\4_world\entities\manbase\playerbase.c:5405`) averages each worn item's visibility over ten slots and stores it with `SetVisibilityCoef` (`:5438`). Read it with `GetVisibilityCoef()` (`:5443`).

@@ -10,6 +10,7 @@ All line numbers below are in `P:\DZ\sounds\hpp\config.cpp` unless another file 
 - [CfgPatches](#cfgpatches)
 - [Sound shader (`CfgSoundShaders`)](#sound-shader-cfgsoundshaders)
 - [Sound set (`CfgSoundSets`)](#sound-set-cfgsoundsets)
+- [Inheriting a vanilla sound: weapon shots](#inheriting-a-vanilla-sound-weapon-shots)
 - [Worked example: a generator running loop](#worked-example-a-generator-running-loop)
 - [Checks before handing back](#checks-before-handing-back)
 
@@ -129,6 +130,68 @@ Vanilla also writes some of these in lower case (`volumefactor`, `soundshaders[]
 `CfgDistanceFilters` entries are low pass filters: `defaultDistanceFreqAttenuationFilter` (line 2424) has `minCutoffFrequency=150`, `innerRange=10` and `range=1000`.
 
 Reuse the vanilla processors, filters and curves by name. Write your own only when no vanilla one fits, and put it in your own `CfgSoundCurves`, `CfgSound3DProcessors` or `CfgDistanceFilters` at the config root, as `P:\DZ\sounds_bliss\config.cpp` does for curves at line 27840.
+
+## Inheriting a vanilla sound: weapon shots
+
+A shader or set can inherit a vanilla one and change only what differs. Declare the vanilla parent by name first, then inherit from it. Weapon mods do this for shot sounds, because the vanilla bases carry the range, curve, 3D processing, filter and limits that make a shot sit right in the mix:
+
+- `base_closeShot_SoundShader` sets `volume=1`, `range=3000` and `rangeCurve="closeShotAttenuationCurve"` (line 17117).
+- `Rifle_Shot_Base_SoundSet` sets `volumeFactor`, `volumeCurve="RifleShotCurve"`, `sound3DProcessingType="WeaponMediumShot3DProcessingType"`, `distanceFilter`, `occlusionFactor`, `obstructionFactor`, `spatial=1`, `doppler=0`, `loop=0`, `soundShadersLimit=2` and `soundObjectsLimit=2` (line 323687).
+
+The pattern, as a third-party weapon mod writes it (IMPWMODPart2, the sound config of its F2000 rifle; the mod's own names are replaced by `MyMod_`):
+
+```cpp
+class CfgSoundShaders
+{
+    class base_closeShot_SoundShader;                      // the vanilla parent
+    class MyMod_closeShot_SoundShader: base_closeShot_SoundShader
+    {
+        samples[]={{"MyMod\Sounds\mymod_close",1}};
+        volume=0.8;
+    };
+};
+class CfgSoundSets
+{
+    class Rifle_Shot_Base_SoundSet;                        // the vanilla parent
+    class MyMod_Shot_SoundSet: Rifle_Shot_Base_SoundSet
+    {
+        soundShaders[]=
+        {
+            "MyMod_closeShot_SoundShader",
+            "MyMod_midShot_SoundShader",
+            "MyMod_distShot_SoundShader"
+        };
+    };
+};
+```
+
+Both parents are in `P:\DZ\sounds\hpp\config.cpp`, so `requiredAddons[]` needs `DZ_Sounds_Effects` (see "CfgPatches" above). The weapon then names the set in `soundSetShot[]`; that side is in `effects-wiring.md` and in the weapons pack.
+
+The same mod shows a shader with no parent and an inline curve in meters, for a mid distance shot layer that is quiet up close, loudest at 50 m and gone by 300 m:
+
+```cpp
+class MyMod_SoundShaderMid
+{
+    samples[]={{"MyMod\Weapons\Sounds\Rifle1Mid",1}};
+    volume=0.56234133;
+    range=1500;
+    rangeCurve[]=
+    {
+        {0,0.2},
+        {50,1},
+        {300,0},
+        {1500,0}
+    };
+};
+```
+
+Its `volume` is a decibel step written as a factor, like the vanilla values above: `0.56234133` is -5 dB. Instead of an inline curve, a shader can name a vanilla curve, for example `rangeCurve="closeShotCurve"` (the class is at line 930).
+
+Facts about IMPWMODPart2 are from that mod's own files and are not checked on `P:\`. Every sample path in it is written without a file extension, the same as vanilla.
+
+### File formats
+
+Vanilla samples on `P:\DZ\sounds\` are `.ogg` files, named in config without the extension. The notes this pack was built from add that the engine also accepts `.wav`, that mods in practice ship `.ogg`, and that Bohemia's own compressed format `.wss` is not needed for a DayZ mod; none of those three statements is checked on `P:\`. Ship `.ogg`.
 
 ## Worked example: a generator running loop
 

@@ -1,0 +1,4 @@
+# Needed only by scripts/normal_convention.py and its tests.
+# rvmat_lint.py and rvmat_template.py use the standard library alone.
+numpy
+Pillow

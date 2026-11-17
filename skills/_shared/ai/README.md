@@ -9,5 +9,8 @@ Reference for computer controlled characters: infected, animals, and patrols or 
 | How do I make a noise the AI reacts to, or react to gunfire in my own code? What makes a player visible? | `perception.md` |
 | How do I make creatures walk a route or hold a post? Does vanilla have human AI? | `patrols-and-guards.md` |
 | How do I spawn AI from script, what does the server lead need for the economy, and how do I keep it cheap? | `spawning-and-performance.md` |
+| Where do animals live in the mission: `cfgenvironment.xml`, the `env\*_territories.xml` zone files, behaviour names and the group templates they select? | `animal-territories.md` |
+
+Deeper material is in the `dayz-ai-patterns` skill (`dayz-ai-patterns/SKILL.md`): twelve patterns studied in the DayZ Expansion AI module, described in our own words, and the vanilla 1.30 AI changes (native noise reduction, `MINDSTATE_COWER`, `AIParams`, animal group templates).
 
 Code from other mods is never copied into this pack or into a user's mod. Where a community approach is described, it is described in our own words only.

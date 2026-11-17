@@ -16,6 +16,8 @@ Verified from 8 vanilla particle material files. Plain text format.
 
 ## Two shader types
 
+These are the two material classes particles use. Vanilla `.emat` files outside particles use other classes (`MatWaterPool`, `MatOceanOld`, `MatPBRBasic`); those are covered in `dayz-texture-pipeline/references/matpbr-emat-pipeline.md`.
+
 ### `Particle` — Most common (fire, sparks, water, smoke with blending)
 
 Used when particles need additive blending, transparency sorting, or emissive glow.
@@ -25,6 +27,15 @@ Supports sprite sheet animation (TileU/TileV).
 
 Used for simpler particles that just need diffuse+ambient lighting.
 No BlendMode property available.
+
+### Postprocess `.emat` files are not particle materials
+
+These two shaders cover the `.emat` files a `.ptc` may name. Weather effects also ship `.emat` files with other shaders, and those are postprocess materials:
+
+- The sandstorm material opens with the shader `SnowEffect` (`P:\graphics\materials\postprocess\sandstorm.emat:1`) and sets its tint with `ParticlesColor 0.69 0.49 0.29 1` (`P:\graphics\materials\postprocess\sandstorm.emat:29`).
+- The Nasdara rain material opens with the shader `RainEffect` (`P:\graphics\materials\postprocess\rainnasdara.emat:1`).
+
+Do not put either file on the `Material` line of a `.ptc`. Both arrived with 1.30; see `dayz-1-30-particles.md`.
 
 ---
 

@@ -14,6 +14,7 @@ ParticleManager.c, ParticleBase.c). Inheritance: ParticleBase → Particle → P
 - [ParticleList — Registration & Lookup](#particlelist--registration--lookup)
 - [ParticleEvents — Event System](#particleevents--event-system)
 - [FireplaceBase Pattern (recommended for placed devices)](#fireplacebase-pattern-recommended-for-placed-devices)
+- [DayZ 1.30: SurfaceInfo, vehicle effects, server spawn](#dayz-130-surfaceinfo-vehicle-effects-server-spawn)
 
 ---
 
@@ -215,6 +216,12 @@ proto native ParticleSource GetParticle(int index);
 proto native int GetParticles(out array<ParticleSource> outArray, int startIndex, int count);
 ```
 
+Notes on the pool:
+
+- `GetInstance()` creates the global pool only when `IsHeadlessOrDedicatedServer()` is false, so it returns null on a dedicated server and on a headless client (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:65`). Up to 1.29 the test was the dedicated server check alone (1.29, not yet checked on `P:\`).
+- The global pool holds `POOL_SIZE = 10000` particles (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:25`).
+- `GetInstance()` is the global pool, not the only one allowed. The constructor `ParticleManager(ParticleManagerSettings settings)` is public (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:88`), and the vanilla particle tests build their own pool with `new ParticleManager(new ParticleManagerSettings(3000))` (`P:\scripts\3_game\particles\tests\pmtcreationandcleanup.c:50`). A mod can do the same for a pool of its own.
+
 ---
 
 ## ParticleList — Registration & Lookup
@@ -295,3 +302,59 @@ protected bool StopParticle(out Particle particle)
 
 Key insight: `out Particle particle` ensures the caller's reference is nulled,
 preventing double-stop bugs.
+
+The check in both helpers is the 1.30 one (`P:\scripts\4_world\entities\itembase\fireplacebase.c:1112` for `PlayParticle`, `P:\scripts\4_world\entities\itembase\fireplacebase.c:1132` for `StopParticle`). Up to 1.29 the same two helpers tested only for a dedicated server (1.29, not yet checked on `P:\`). Copy the 1.30 check into new helpers.
+
+---
+
+## DayZ 1.30: SurfaceInfo, vehicle effects, server spawn
+
+Signatures added or changed in 1.30. The full account, with the vanilla callers, is in `dayz-1-30-particles.md`.
+
+The client check, on the game (`P:\scripts\3_game\global\game.c:1136`). Its comment says it is also true for a dedicated server that has a head:
+
+```
+proto native bool IsHeadlessOrDedicatedServer();
+```
+
+Effects spawned by the server and shown on every nearby client. `CreateParticleServer` is older than 1.30 (tree cutting, fishing and fish traps call it); ceiling dust is its new frequent caller in 1.30 (`P:\scripts\4_world\classes\dust\dusteffectceilinghandler.c:98`):
+
+```
+// P:\scripts\3_game\effectmanager.c:586, :602, :611
+static int CreateParticleServer(vector pos, EffecterParameters parameters);   // returns the effecter ID
+static void ReinitParticleServer(int effecterID, EffecterParameters parameters);
+static void ReactivateParticleServer(int effecterID);
+```
+
+Surface choice with `SelectFromSurface` and the runtime override on `EffectParticle` (`P:\scripts\3_game\effects\effectparticle.c:611` to `:619`), and the data class `ParticleParamsOverrideData` (`P:\scripts\3_game\effects\effectparticle.c:651`):
+
+```
+void SelectFromSurface(string surface);              // older form; vehicle effects use the SurfaceInfo one
+void SelectFromSurface(SurfaceInfo surfaceInfo);
+void SetParticleState(int state);
+void ParticleParamsOverride(notnull ParticleParamsOverrideData data);
+
+class ParticleParamsOverrideData
+{
+    ref TFloatArray m_FloatModifiers;  // [0] = speed, [1] = weight in vehicle dust and wheel contact
+    void ClearAll();
+}
+```
+
+Surface particle IDs:
+
+- `Surface.GetStepsParticleID` and `Surface.GetWheelParticleID` are marked `Obsolete` in 1.30 (`P:\scripts\4_world\static\surface.c:64` and `P:\scripts\4_world\static\surface.c:70`). Each only returns `SurfaceInfo.GetByName(name).GetStepParticleId()` or `GetWheelParticleId()`.
+- Call `SurfaceInfo` directly: `GetStepParticleId` (`P:\scripts\3_game\surfaceinfo.c:49`), `GetWheelParticleId` (`P:\scripts\3_game\surfaceinfo.c:51`), `GetWheelContactParticleId` (`P:\scripts\3_game\surfaceinfo.c:53`), `GetVehicleDustParticleId` (`P:\scripts\3_game\surfaceinfo.c:55`), `GetCeilingDustParticleId` (`P:\scripts\3_game\surfaceinfo.c:70`).
+- `EffWheelSmoke.SetSurface(string)` is marked `Obsolete`; use `SelectFromSurface` (`P:\scripts\4_world\entities\effects\wheelsmoke.c:32`).
+
+Vehicle effects, on `VehicleVFXComponent` (`P:\scripts\4_world\entities\vehicles\components\vehiclevfxcomponent.c:96`):
+
+```
+// vehiclevfxcomponent.c:126, :139, :373, :530
+void RegisterEffect(EVehicleVFXEffect effectId, typename effectTypename, VehicleVFXDataParams params);
+void RegisterEffectGroup(EVehicleVFXEffectGroup groupId, typename effectTypename, int count, VehicleVFXDataParams params);
+ref ParticleParamsOverrideData GetParticleParamsOverrideData(EVehicleVFXEffect effectId);
+ref ParticleParamsOverrideData GetEffectGroupParticleParamsOverrideData(EVehicleVFXEffectGroup groupId);
+```
+
+The two enums are in `P:\scripts\3_game\enums\evehiclevfxtypes.c`.

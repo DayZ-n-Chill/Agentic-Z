@@ -33,6 +33,14 @@ Start from `P:\DZ\weapons\firearms\akm\data\akm.rvmat` (gun steel with a macro t
 - Polished metal gets a brighter `_smdi` and a higher `specularPower`; rusty or painted metal gets a darker `_smdi` and stays near 50 to 100.
 - Optics and lenses on weapons use `dz\data\data\env_land_optic_co.paa` in `Stage7` (23 of the 94 firearms materials).
 - A mod gun that changes a vanilla gun's look keeps the vanilla material's stages and swaps only the textures.
+- Pick the `Stage7` environment map by how strong the highlight is. DayZ ships 21 of them in `P:\DZ\data\data\` (`env_co.paa` and twenty named `env_*_co.paa`). `env_land_optic_co.paa` has an olive ground half, so a bright silver or mirror surface under it can read olive in game (one mod's report); `env_land_chrome_co.paa` is neutral. The measured colors of six of the maps are in `dayz-texture-pipeline/references/rvmat-cookbook.md`.
+
+### Vehicle paint
+
+- Start from the nearest vanilla vehicle body, for example `P:\DZ\vehicles\wheeled\civiliansedan\data\civiliansedan.rvmat` (`specularPower=200`) or the motorbike's, which sets `specular[]={1.1,1.1,1.1,1}` and `specularPower=160` (`P:\DZ\vehicles\singletrack\Motorbike_02\data\motorbike_02_body.rvmat:5-6`).
+- Vanilla paint is far darker in the `_smdi` than it looks. Measured on that motorbike's red body texture (one mod project, 2026-11-02): the red paint has a green median of 5 out of 255 and half of the whole body's texels have green at 4 or less; the bright values sit only on bare metal. Measure the vanilla asset nearest to yours before painting an `_smdi`; the tables are in `dayz-texture-pipeline/references/map-conventions.md`.
+- A part with one flat color and no color texture on its faces does not use Super. See the constant color shader in `rvmat-stages.md`.
+- Color variants are one texture per variant on a `color` hidden selection: `dayz-texture-pipeline/references/vehicle-materials-and-color-variants.md`. The vehicle's config belongs to dayz-vehicle-specialist.
 
 ## Glass
 
@@ -51,6 +59,8 @@ Pick the vanilla file nearest to your glass:
 - Glass wants a strong highlight: a bright `_smdi` or the `#(argb,8,8,3)color(1,1,1,1,SMDI)` placeholder, and `specularPower` of 200 or more.
 - Glass that breaks gets its own `_damage` and `_destruct` materials, like `tacgoggles_glass_damage.rvmat`; the item config lists them in `healthLevels[]` beside the frame material (`P:\DZ\characters\glasses\config.cpp:598`).
 - Frame and glass are two materials on two sets of faces. Ask dayz-object-builder for separate selections when the model has only one.
+- A decal with alpha that lies on paint (a sticker, a label) is not a window. Copy the offroad's sticker material, which is Super with `renderFlags[]` holding `"nozwrite"` (`P:\DZ\vehicles\wheeled\offroad_02\data\offroad_02_decals.rvmat:7-12`). One mod project reports that its labels rendered opaque until that flag was added.
+- A glowing lens or lamp face is an on and off material pair that differs in `emmisive[]` (`rvmat-stages.md`).
 
 ## Skin
 
