@@ -47,6 +47,8 @@ An item that can be worn in two slots hides a different part of the head in each
 | `hideSelectionsByinventorySlot` | `1` | `:2973` |
 | `simpleHiddenSelections[]` | `"hide_headgear"`, `"hide_mask"` | `:2982` |
 
+The other values of the same vanilla class, for a mod that copies it: `rotationFlags` 16, `weight` 120, `itemSize[]` `{3,1}`, `ragQuantity` 1, `varWetMax` 1, `heatIsolation` 0.4, `repairableWithKits[]` `{5,2}` with `repairCosts[]` `{30,25}` (`P:\DZ\characters\headgear\config.cpp:2960` to `:2967`).
+
 `Shemag_ColorBase` uses the same three keys (`P:\DZ\characters\headgear\config.cpp:3195` to `:3213`). A single-slot item sets only `headSelectionsToHide[]`: `NBCHoodBase` hides `"Clipping_NBC_Hood"` and has no `hideSelectionsByinventorySlot` (`P:\DZ\characters\headgear\config.cpp:7512`).
 
 The item type reads `hideSelectionsByinventorySlot` as a bool that defaults to false (`P:\scripts\4_world\entities\itembasetype.c:111` to `:113`). Script reads both values back through `ItemBase.GetHeadHidingSelection` and `ItemBase.HidesSelectionBySlot` (`P:\scripts\4_world\entities\itembase.c:4518` and `:4523`). `PlayerBase.HideHairSelections` then pairs them by index: when `HidesSelectionBySlot()` is true it hides only entry `i` of the list, where `i` is the position of the slot the item sits in among the item's own slots; otherwise it hides every entry (`P:\scripts\4_world\entities\manbase\playerbase.c:9327` to `:9359`). So the entries of `headSelectionsToHide[]` follow the order of `inventorySlot[]`. A two-slot headgear mod that leaves out `headSelectionsToHide[]` or `hideSelectionsByinventorySlot` clips through the head or hides the wrong part of it.

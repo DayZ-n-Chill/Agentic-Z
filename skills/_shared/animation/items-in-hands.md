@@ -41,6 +41,10 @@ modded class ModItemRegisterCallbacks
 
 Pick the instance and pose of the vanilla item closest in size and weight. Vanilla itself mixes them freely: `GiftBox_Small` uses the pot's instance with the cauldron's pose (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1042`). When the grip is right and only the direction the item points is wrong, turning the model is cheaper than a new pose.
 
+## A profile belongs to a class, not to one item
+
+Every profile call takes a class name or is global: `SetDefaultItemInHandsProfile` (`P:\scripts\3_game\dayzplayer.c:225`), `ResetItemInHandsProfiles` (`P:\scripts\3_game\dayzplayer.c:229`), `AddItemInHandsProfile` (`P:\scripts\3_game\dayzplayer.c:240`), `AddItemInHandsProfileIK` and `AddItemBoneRemap`. None takes an item instance or a player. The mod callbacks run from `DayZPlayerTypeRegisterItems` when the player type is set up (`RegisterFireArms` is called at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:460`), not when an item is picked up or an attachment changes. So a pose cannot be chosen per attachment inside a callback; the only built in variation is by class, registering a base class and overriding a subclass. Author one pose that works with and without the attachment.
+
 ## Weapon parts follow player bones
 
 `AddItemBoneRemap(string pItemClass, array<string> pBoneRemap)` (`P:\scripts\3_game\dayzplayer.c:252`) pairs a weapon's selection names with player skeleton bones, so a player clip moves the weapon's parts. Rifles map `bolt` to `Weapon_Bolt`, `magazine` to `Weapon_Magazine` and `trigger` to `Weapon_Trigger` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1579`, registered for `Rifle_Base` at :1580). The model side is in `_shared/weapons/model-selections.md`.

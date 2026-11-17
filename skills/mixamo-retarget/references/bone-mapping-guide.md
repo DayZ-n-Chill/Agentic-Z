@@ -546,7 +546,7 @@ LeftHand            LeftHand
 3. **Review the bone names**
    - Check for unusual naming conventions
    - Look for typos or special characters
-   - Check for a `mixamorig:` prefix on the source bones: `auto_map_bones` only reads source bones named exactly like its alias keys, so a prefixed armature maps nothing (see "Known gaps" in `SKILL.md`)
+   - Check for a `mixamorig:` prefix on the source bones: `auto_map_bones` only reads source bones named exactly like its alias keys, so a prefixed armature maps nothing and the call ends in `KeyError: 'critical_bones_mapped'` (see "Known gaps" in `SKILL.md`)
 
 ### Wrong left and right mapping
 

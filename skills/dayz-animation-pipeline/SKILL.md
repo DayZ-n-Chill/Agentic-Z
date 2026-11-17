@@ -98,7 +98,7 @@ Write `.cpp` and `.c` files into the mod's folder under `workspace\<ModName>\`. 
    python -m dayz_animation_formats inspect <file.seanim or file.rtm>
    ```
 
-   It handles full SEAnim v1 (channels, modifiers, notes, float32 and float64) and one unbinarized `RTM_0101` block with an optional `RTM_MDAT` before it. It refuses unknown flags and blocks, bad counts, truncated files, invalid names, non-finite values, wrong RTM bone order and trailing bytes. `seanim_writer.py` in this skill is the older project helper the viewer export still uses. The viewer route reads each bone's quaternion directly, so that writer's unfinished positions to rotations helper is not on its path.
+   It handles full SEAnim v1 (channels, modifiers, notes, float32 and float64) and one unbinarized `RTM_0101` block with an optional `RTM_MDAT` before it. It refuses unknown flags and blocks, bad counts, truncated files, invalid names, non-finite values, wrong RTM bone order and trailing bytes. `seanim_writer.py` in this skill is the older project helper the viewer export still uses. The viewer route reads each bone's quaternion directly, so the unfinished positions to rotations helper in `ik_pose_to_seanim.py` is not on its path.
 3. **Hand it to the converter the user runs:** SEAnim to `.anm` with DayZATool (`--generate-anim`), FBX to `.rtm` with `FBXToRTMGui.exe`, or `.txa` to `.anm` in Workbench.
 4. **Bone names match the target skeleton exactly**, or the RPT logs `Bone X doesn't exist` and that bone does not move. Take the names from `references/player-skeleton.md`, never from a tutorial.
 
@@ -106,21 +106,21 @@ The RTM writer was cross read by Arma 3 Object Builder 2.5.1 with motion, phases
 
 ## Scripts
 
-All in `<skill-dir>\scripts\`. The viewer steps pass files through the folder named by `DAYZ_ANIM_SCRATCH` (default `<tempdir>\dayz-anim-pipeline`); the FBX and `.p3d` paths are set at the top of the scripts that read them. Run a Blender step as `blender -b --python-exit-code 1 --python <script>` and stop at the first non-zero exit: without that flag an uncaught Python error still exits 0.
+All in `<skill-dir>\scripts\`. The viewer steps pass files through the folder named by `DAYZ_ANIM_SCRATCH` (default `<tempdir>\dayz-anim-pipeline`). The two Blender steps take the rig FBX after `--` on the command line, or from `DAYZ_ANIM_RIG_FBX`; `extract_weapon.py` takes the `.p3d` as its argument, or from `DAYZ_ANIM_WEAPON_P3D`. Run a Blender step as `blender -b --python-exit-code 1 --python <script> -- <rig.fbx>` and stop at the first non-zero exit: without that flag an uncaught Python error still exits 0.
 
 | Script | Needs | What it does |
 |---|---|---|
-| `gen_model_cfg.py` | Python | Writes a `model.cfg` from one description of bones and animations. |
-| `ik_pose_to_seanim.py` | Python, py3d | Solves a rider pose from six model anchors with two bone IK and writes SEAnim. Pass `--rest-pose` from a vanilla clip for output the game can use. |
+| `gen_model_cfg.py` | Python | Writes a `model.cfg` from one JSON description of bones and animations (`python gen_model_cfg.py spec.json > model.cfg`; `--self-test` prints a sample). Warns on an animation type or key outside its checked set and on a selection that is not a declared bone. |
+| `ik_pose_to_seanim.py` | Python | Solves a rider pose from the anchors in an `anchors.json` (seat, two grips, two feet) with two bone IK and writes one SEAnim per variant. The files hold solved joint positions and identity rotations: the step that turns positions into rotations against a rest pose is not written, with or without `--rest-pose`, so the output is a position reference, not a clip the game can play. |
 | `seanim_writer.py` | Python | The older SEAnim writer used by the two exporters here. |
 | `seanim_export.py` | Python | Turns a viewer animation JSON (local quaternions per bone and frame) into SEAnim through the bone frame map of the rig it reads. For weapon bone and partial tracks only, not full body actions. |
 | `fbx_extract.py` | Blender | Dumps the Bohemia character rig FBX to `rig_raw.json`: rest matrices, parents, lengths, the body mesh and every empty. |
 | `extract_empties.py` | Blender | Writes the helper empties' world matrices to `empties_armworld.json`. Exits 1 and writes nothing when the FBX has no `RightHand_Dummy`. |
-| `build_rig_dayz.py` | Python | Converts the two JSON files to `rig_dayz.json` in the viewer's frame. That frame is right handed, so its coordinates written into a `.p3d` as they are land mirrored. |
-| `extract_weapon.py` | Python, py3d | Extracts a weapon's first visual LOD and memory points to `weapon.json`. |
-| `build_viewer.py` | Python | Builds the self-contained weapon animation viewer HTML. |
-| `weapon_grip_viewer.py` | Python, py3d | Compares a custom weapon's memory points, bore line and hand zones with a vanilla reference. |
-| `install_py3d.py` | Python | Installs the DayZ py3d build the `.p3d` scripts need. |
+| `build_rig_dayz.py` | Python, numpy | Converts the two JSON files to `rig_dayz.json` in the viewer's frame. That frame is right handed, so its coordinates written into a `.p3d` as they are land mirrored. |
+| `extract_weapon.py` | Python, py3d | Extracts an MLOD weapon's first visual LOD and memory points to `weapon.json`. Stops when the installed py3d is not the DayZ fork. |
+| `build_viewer.py` | Python, `viewer_core.py` | Builds the weapon animation viewer page from `rig_dayz.json` and `weapon.json` (`python build_viewer.py [out.html] [--viewer-core <path>]`). It looks for the viewer core under `scripts/tools/dayz-3d-viewer/` and then `skills/_shared/`. The page loads Three.js from a CDN. |
+| `weapon_grip_viewer.py` | Python, py3d, `viewer_core.py` from `skills/_shared` | Compares a custom weapon's memory points, bore line and hand zones with a vanilla reference (both MLOD) and writes a viewer page plus an optional JSON report. The page loads Three.js from a CDN. |
+| `install_py3d.py` | Python, pip | Installs the DayZ py3d fork from a built wheel: this skill's `wheels` folder first, then the `dist` folder of `scripts/tools/py3d/`. Stops without changing anything when there is no wheel, more than one, or an installed py3d that is not the fork. With no wheel built, `python -m pip install -e scripts/tools/py3d` installs it from source. |
 
 The `.p3d` scripts need the DayZ fork of py3d (`scripts/tools/py3d/`, version 1.6.0 or later, `py3d.IS_DAYZ_FORK` true). `pip install py3d` installs an unrelated point cloud library from PyPI, and every geometry read then returns plausible garbage, so check the flag before trusting a result:
 

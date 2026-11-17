@@ -14,6 +14,10 @@ Where vanilla DayZ uses `.rtm` animation files, and why player and infected anim
 
 For a mod, `.rtm` work means a new face pose or a small animal state in the same shape as these entries: a clip whose bone names match the target skeleton, referenced by path from config. Keep the clip's bone names identical to the skeleton's.
 
+### The format and its tools
+
+Not checked on `P:\`, which holds no `.rtm` files; from the source knowledge pack's reading of community pages. The format is reverse engineered: the Bohemia community wiki page for it carries a notice that it describes internal, undocumented structures. An unbinarized file is an optional `RTM_MDAT` block of frame properties followed by `RTM_0101`: a motion vector, the frame and bone counts, bone names of a fixed 32 bytes, and one 4 by 3 matrix per bone and frame. A binarized form also exists. The user writes `.rtm` from Blender with the Arma 3 Object Builder addon or converts FBX with `FBXToRTMGui.exe` from DayZ Tools; the source and the converter must use the same frame rate, or the clip's speed drifts. Never use `.rtm` for a player weapon animation. Tools and traps: `skills/dayz-animation-pipeline/references/skeletal-rtm.md`.
+
 ## Player and infected use `.anm` graphs instead
 
 Survivors and infected do not use `.rtm` or `model.cfg` animations. They run Workbench animation graphs over `.anm` clips:
@@ -40,5 +44,6 @@ New clips do not always need a replaced graph. A clip for one item or weapon can
 |---|---|
 | Which graph, template and instance files exist, which `CMD_` commands and variables they declare, what collides | `anim-graphs.md` |
 | How an item or weapon gets its instance and IK pose, and how script switches the instance | `items-in-hands.md` |
+| What places a driver's or rider's hands and body, and how to change the pose for one vehicle class | `rider-poses.md` |
 | The full workflows, measured results and tools (SEAnim, RTM, viewer, rider poses, the 1.30 graph port) | `skills/dayz-animation-pipeline/SKILL.md` |
 | A custom creature's graph and skeleton | `_shared/ai/creature-animation.md` |

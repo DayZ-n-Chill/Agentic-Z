@@ -64,6 +64,38 @@ When changing or adding one animation for a custom item or weapon, the working h
 
 Reported unsolved in those videos (March 2024, not rechecked): holding two weapons at once, the full bow mechanic, and custom additive locomotion.
 
+## The three clips of a weapon
+
+| Clip | What it holds | Notes |
+|---|---|---|
+| IK pose | One pose of hands and fingers on the weapon. | Named by the `IkPose` line of the weapon's instance and by the call above. Poses are shared: the AKM's instance names the `izh18` pose (`P:\DZ\anims\workspaces\player\player_main\weapons\player_main_akm.asi:6`). |
+| Weapon states | Only the `Weapon_` bones, one frame per start state. | The engine picks a frame with `SetInitState(int pFrameIndex)`; the comment above it says each frame of the animation is one init state (`P:\scripts\3_game\human.c:1108` to `:1112`). The authoring intent is three frames (closed, open, jammed). The source pack read 2 to 4 stored keys per channel in the vanilla clips, because Workbench drops keys that are nearly equal; `w_akm_states.anm` has 2. |
+| Action clips | Reload, fire, chamber, jam. | Mapped per state in the instance's `Lines`. They play over the states clip, so an unjam clip must start on the jammed frame's bolt position or the bolt jumps (measured by the source pack). |
+
+All vanilla AKM clips the source pack extracted run at 30 frames per second: fire 11 frames, magazine removal 22, charging handle 44, full magazine swap 55, chambering 107, jam clearing 230.
+
+The `WeaponOperations` group has 42 states and exactly two columns, `ErcRas` and `PneRas` (`P:\DZ\anims\workspaces\player\player_main\player_main.ast:1262` to `:1265`). There is no crouch column; do not invent `WeaponOperations.CroRas`. The names `Jamming Cancel` and `Jamming Check` contain a space (`P:\DZ\anims\workspaces\player\player_main\player_main.ast:1245`, `:1246`). The column is chosen by the graph from the stance: `WeaponStancePne` starts on `Stance == 2` (`P:\DZ\anims\workspaces\player\player_main\combat.agf:1169` to `:1172`).
+
+## `reloadAction` does not drive the reload
+
+`reloadAction` in a weapon's config is a leftover key. Vanilla rifles do not set it: neither `P:\DZ\weapons\firearms\ak74\config.cpp` nor `P:\DZ\weapons\firearms\svd\config.cpp` contains it. It survives on two classes in `P:\DZ\data\config.cpp` (`reloadAction="ReloadBow"` at `P:\DZ\data\config.cpp:4592`, `reloadAction="ManActReloadAT"` at `P:\DZ\data\config.cpp:4756`). The reload clips come from the instance file by state name. Leave the key out of a custom weapon.
+
+## A held action is timed by script, and its clip must loop
+
+Unjamming is driven by a timer, not by the clip's length. `WeaponUnjamming` sets `m_jamTime = 5.0` (`P:\scripts\4_world\entities\firearms\fsm\states\weaponunjamming.c:218`); `WeaponUnjamming_Start` counts in `OnUpdate` and posts the timeout once `m_dtAccumulator >= m_jamTime` (`P:\scripts\4_world\entities\firearms\fsm\states\weaponunjamming.c:27` to `:42`), and the following state calls `SetJammed(false)` (`P:\scripts\4_world\entities\firearms\fsm\states\weaponunjamming.c:87`). Releasing the key first interrupts it and the weapon stays jammed.
+
+The source pack traced, and for the working case measured in game, that a custom unjam clip must carry `LoopStart` and `LoopEnd` notes so the gesture keeps looping while the timer runs. Without them the clip ends, the action reads as finished and the weapon returns to jammed. Structure and note format: `skills/dayz-animation-pipeline/references/weapon-anim-blender-complete.md`.
+
+## Model rules that keep inherited hands and sights right
+
+Measured by the source pack on generated rifles checked against a debinarized AKM; the point names occur in `P:\DZ\weapons\firearms\akm\akm.p3d`, the coordinates are not checkable there. What each name is read for is in `model-selections.md`.
+
+- `usti hlavne` and `konec hlavne` share Y and Z, so the bore is level. A rear point 4.6 cm high tilted one build's line of fire by 6.3 degrees.
+- `bolt_axis` is parallel to the bore.
+- `eye` sits about as high over the bore as on the reference weapon (5.2 cm on the AKM).
+- The ejection direction (`nabojnicestart` to `nabojniceend`) is within about 25 degrees of the reference.
+- The weapon model has no hand points. The hands come from the player's clips, so a custom weapon is fitted by moving the whole model with one offset until its bore and grip have the reference's relation to the origin. The checker for this is `weapon_grip_viewer.py` in the dayz-animation-pipeline skill.
+
 ## Authoring notes for the hands
 
 From the same videos; practice, not checked on `P:\`:

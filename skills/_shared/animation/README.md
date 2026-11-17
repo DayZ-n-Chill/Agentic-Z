@@ -11,7 +11,12 @@ Vanilla ships `model.cfg` only inside the packed `.p3d` files, so there is no va
 | Which script call plays the animation, on which side, and how do clients see it? | `script-hooks.md` |
 | Where does DayZ use `.rtm` files, and how is that different from character animation? | `rtm-and-character-animation.md` |
 | What must the user keep straight when the model comes from Blender? | `blender-handoff.md` |
+| Which graph, template and instance files exist, which `CMD_` commands and variables do they declare, and which mod changes collide? | `anim-graphs.md` |
+| How does an item or weapon get its pose in the hands, how do parts show or hide with attach state, and how does script switch the animation instance? | `items-in-hands.md` |
+| What places a driver's or rider's hands and body, how is the steering pose read, and how do I change the pose for one vehicle class without replacing the graph? | `rider-poses.md` |
 | What does a door need inside the `.p3d` (bones, axes, components, action points)? | `_shared/models/doors.md`, owned by `dayz-object-builder` |
+
+Deeper material sits in the skills, each with its own table in its `SKILL.md`: `skills/dayz-animation-pipeline/SKILL.md` (the full pipeline: config driven parts, SEAnim and RTM files, the graphs, rider poses, weapons in hands, with scripts), `skills/blender-animation/SKILL.md` (authoring a clip in Blender; `skills/blender-animation/references/dayz-handoff.md` covers the `.txa` handoff and the unjam loop trace), `skills/dayz-realistic-animation-director/SKILL.md` (motion contracts and evidence for realistic motion) and `skills/dayz-characters/SKILL.md` (humanoids on the vanilla skeleton).
 
 ## Worked vanilla examples
 
