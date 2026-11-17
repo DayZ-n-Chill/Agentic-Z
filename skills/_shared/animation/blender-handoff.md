@@ -1,6 +1,6 @@
 # Blender handoff notes
 
-What to tell the user when a moving part is modelled in Blender, so the bones and selections line up when the model reaches Object Builder. These are notes for the user to follow in their own tools. Agentic-Z ships no Blender tooling, and this specialist never runs Blender.
+What to tell the user when a moving part is modelled in Blender, so the bones and selections line up when the model reaches Object Builder. These are notes for the user to follow in their own tools; for a moving part this specialist never runs Blender. Blender scripts exist only for skeletal work, in the skills named in the last section.
 
 ## What the user gets from you
 
@@ -27,3 +27,15 @@ A short list, one line per moving part:
 ## After the import
 
 Ask `dayz-object-builder`, through the art lead, to check the selections and memory points in Object Builder and to run `/dayz-p3d-audit` on the mod's model. Then write or update `model.cfg` to match the names it reports.
+
+## When the Blender job is a rig or a clip
+
+These notes come from the source knowledge pack's animation skill; apart from the cited lines they are tool behaviour and measured results, not checked on `P:\`.
+
+- **Bone names are exact.** A clip bone whose name is not in the target skeleton logs `Bone X doesn't exist in skeleton` in the RPT and does not move. Survivors bind the `player_testing.xob` list (`P:\DZ\anims\cfg\skeletons.anim.xml:110`), named by `skeletonName` on `SurvivorBase` (`P:\DZ\characters\data\config.cpp:158`).
+- **Every limb joint has a twist bone.** The chain is arm, arm roll, forearm, forearm roll, hand, and the same in the leg. A rig or a script that skips a roll bone leaks its rotation into the next joint. The XML has no parent attribute; the measured parent table is in `skills/dayz-animation-pipeline/references/player-skeleton.md`.
+- **Blender and the game differ in handedness as well as in the up axis.** Blender is right handed with Z up, the game left handed with Y up. Geometry maps `(x, y, z)` to `(x, z, y)`. A map that only swaps the up axis mirrors the result, and a mirrored clip raises no error: it plays with left and right swapped. Test a new export route by raising one arm only and checking in game that it is the arm opposite the held item.
+- **Creature FBX export:** custom properties on, leaf bones off, no camera or lamp in the file, animation baked. Name bones without spaces. `EntityPosition` sits at the root with forward on +Y and up on +Z in Blender; `LookAt` is a child of the head.
+- **Frame rate.** Set it in the scene and give the converter the same value. Vanilla player clips are reported to be 30 frames per second; no text file on `P:\` declares it.
+
+Which skill does what: blender-animation authors `.txa` keyframes in Blender, mixamo-retarget puts FBX motion capture on a rig, and `/dayz-animation-pipeline` covers the headless route to SEAnim and RTM (`skills/dayz-animation-pipeline/references/blender-authoring.md`).

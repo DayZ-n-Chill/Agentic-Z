@@ -24,6 +24,53 @@ The survivor's `InventoryEquipment` `playerSlots[]` lists the slots a body accep
 
 Slots on gear itself, such as `VestHolster` (`P:\scripts\config.cpp:183`), `VestPouch` (`:189`), `VestBackpack` (`:195`) and `VestGrenadeA` to `VestGrenadeD` (`:2639` to `:2657`), are also in `CfgSlots`.
 
+## NBC slots
+
+Since DayZ 1.30 the NBC suit has slots of its own, so its pieces can be worn together with regular clothing. `CfgSlots` holds six of them.
+
+| Slot class | `name` | Ghost icon | Where |
+|---|---|---|---|
+| `Slot_NBCBag` | `NBCBag` | `back` | `P:\scripts\config.cpp:3115` |
+| `Slot_NBCHead` | `NBCHead` | `headgear` | `:3121` |
+| `Slot_NBCTop` | `NBCTop` | `body` | `:3127` |
+| `Slot_NBCGloves` | `NBCGloves` | `gloves` | `:3133` |
+| `Slot_NBCPants` | `NBCPants` | `legs` | `:3139` |
+| `Slot_NBCBoots` | `NBCBoots` | `feet` | `:3145` |
+
+Each vanilla NBC clothing base lists the regular slot first and its NBC slot second.
+
+| Class | `inventorySlot[]` | Where |
+|---|---|---|
+| `NBCHoodBase` | `"Headgear"`, `"NBCHead"` | `P:\DZ\characters\headgear\config.cpp:7493` |
+| `NBCJacketBase` | `"Body"`, `"NBCTop"` | `P:\DZ\characters\tops\config.cpp:7576` |
+| `NBCPantsBase` | `"Legs"`, `"NBCPants"` | `P:\DZ\characters\pants\config.cpp:4458` |
+| `NBCBootsBase` | `"Feet"`, `"NBCBoots"` | `P:\DZ\characters\shoes\config.cpp:3191` |
+| `NBCGloves_ColorBase` | `"Gloves"`, `"NBCGloves"` | `P:\DZ\characters\gloves\config.cpp:1212` |
+
+A mod NBC piece that lists only the regular slot cannot be layered with regular headgear, tops, pants, shoes or gloves.
+
+`NBCPantsBase` also declares `ContinuouActions[]` with `"AT_WRING_CLOTHES"` (`P:\DZ\characters\pants\config.cpp:4454`). The key is spelled that way in the vanilla file; copy the vanilla spelling if you copy the block.
+
+### `NBCBag` on backpacks
+
+Some backpacks take the NBC pack as an attachment, and not all of them. Nine vanilla bases list `"NBCBag"` in `attachments[]`, after `"Chemlight"`, `"WalkieTalkie"` and `"Backpack_1"`, all in `P:\DZ\characters\backpacks\config.cpp`:
+
+| Class | Class line | `"NBCBag"` line |
+|---|---|---|
+| `TaloonBag_ColorBase` | `:47` | `:62` |
+| `TortillaBag` | `:208` | `:224` |
+| `DryBag_ColorBase` | `:861` | `:876` |
+| `HuntingBag` | `:1050` | `:1066` |
+| `MountainBag_ColorBase` | `:1245` | `:1260` |
+| `AssaultBag_ColorBase` | `:2890` | `:2905` |
+| `Attack2Bag_ColorBase` | `:3054` | `:3069` |
+| `CoyoteBag_ColorBase` | `:3218` | `:3233` |
+| `AliceBag_ColorBase` | `:3370` | `:3385` |
+
+`SmershBag` lists only `"Chemlight"` and `"WalkieTalkie"` (`P:\DZ\characters\backpacks\config.cpp:1424`), and `ChildBag_ColorBase` stops at `"Backpack_1"` (`P:\DZ\characters\backpacks\config.cpp:1553`). The courier, improvised, leather sack, sling and army pouch bases in the same file have no `"NBCBag"` either. A mod backpack that should carry the NBC pack needs `"NBCBag"` in its own `attachments[]`.
+
+The pack itself is scripted as `NBCPack_ColorBase`, a `Container_Base` that never shows the cargo of its attachments and refuses an attachment that still holds cargo (`P:\scripts\4_world\entities\itembase\gear\containers\containers.c:83`), with the colors `NBCPack_Grey`, `NBCPack_White` and `NBCPack_Yellow` at `:105` to `:107`. No `config.cpp` under `P:\DZ` defines an `NBCPack` class, so the pack's `inventorySlot[]`, cargo size and model path are not known from vanilla data; do not state them.
+
 ## Slot keys on the item
 
 | Key | What it does | Vanilla example |

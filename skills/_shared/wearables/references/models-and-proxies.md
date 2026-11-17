@@ -14,6 +14,8 @@ The character's `clothingType` decides which worn model it uses: `SurvivorMale_B
 
 **Engine:** the worn models are weighted to the character skeleton so they move with the body; the ground model is a plain static model. Start a new worn model from the closest vanilla worn model's layout rather than from scratch. This is Object Builder and Blender work, not config.
 
+The skeleton name the worn models must be built with, the frame they are modeled in, their selections and weights, and the three failures that leave no log error are in `worn-models.md`.
+
 ## Proxies on the character
 
 The survivor body carries one proxy per equipment slot, defined in `CfgNonAIVehicles` at `P:\DZ\characters\data\config.cpp:10657`. Examples: `ProxyHeadgear_DZ` uses `\dz\Characters\Proxies\Headgear_DZ.p3d` (`:10685`), `ProxyVest_DZ` uses `Vest_DZ.p3d` (`:10715`). The proxy models are in `P:\DZ\characters\proxies\`. A mod wearable for an existing slot needs no change here.
@@ -34,6 +36,20 @@ A mod that adds a new attachment point writes its own `CfgNonAIVehicles` class n
 `headSelectionsToHide[]` lists head model selections to hide while the item is worn. It is read at `P:\scripts\4_world\entities\itembasetype.c:105`. Examples: `Clipping_HelmetMich` on `BallisticHelmet_ColorBase` (`P:\DZ\characters\headgear\config.cpp:86`), `Clipping_Mich2001` on `Mich2001Helmet` (`:8410`), `Clipping_Gasmask` on `GasMask` (`P:\DZ\characters\masks\config.cpp:57`).
 
 The names must exist in the vanilla head models. The vanilla head `m_adam.p3d` holds `clipping_flatcap`, `clipping_gasmask`, `clipping_headtorch`, `clipping_helmetmich`, `clipping_mich2001`, `clipping_mxhelmet`, `clipping_pilotka`, `clipping_ssh68helmet`, `clipping_baseballcap` and others (byte scan of `P:\DZ\characters\heads\m_adam.p3d`). A mod cannot add a new selection to the vanilla heads, so a new hat reuses the vanilla clipping selection whose shape is closest.
+
+### An item that fits two slots
+
+An item that can be worn in two slots hides a different part of the head in each. `Bandana_ColorBase` fits `"Headgear"` and `"Mask"` (`P:\DZ\characters\headgear\config.cpp:2955`) and sets three keys together:
+
+| Key | Value on `Bandana_ColorBase` | Where |
+|---|---|---|
+| `headSelectionsToHide[]` | `"Clipping_BandanaHead"`, `"Clipping_BandanaFace"`, one per slot in the order of `inventorySlot[]` | `P:\DZ\characters\headgear\config.cpp:2968` |
+| `hideSelectionsByinventorySlot` | `1` | `:2973` |
+| `simpleHiddenSelections[]` | `"hide_headgear"`, `"hide_mask"` | `:2982` |
+
+`Shemag_ColorBase` uses the same three keys (`P:\DZ\characters\headgear\config.cpp:3195` to `:3213`). A single-slot item sets only `headSelectionsToHide[]`: `NBCHoodBase` hides `"Clipping_NBC_Hood"` and has no `hideSelectionsByinventorySlot` (`P:\DZ\characters\headgear\config.cpp:7512`).
+
+The item type reads `hideSelectionsByinventorySlot` as a bool that defaults to false (`P:\scripts\4_world\entities\itembasetype.c:111` to `:113`). Script reads both values back through `ItemBase.GetHeadHidingSelection` and `ItemBase.HidesSelectionBySlot` (`P:\scripts\4_world\entities\itembase.c:4518` and `:4523`). `PlayerBase.HideHairSelections` then pairs them by index: when `HidesSelectionBySlot()` is true it hides only entry `i` of the list, where `i` is the position of the slot the item sits in among the item's own slots; otherwise it hides every entry (`P:\scripts\4_world\entities\manbase\playerbase.c:9327` to `:9359`). So the entries of `headSelectionsToHide[]` follow the order of `inventorySlot[]`. A two-slot headgear mod that leaves out `headSelectionsToHide[]` or `hideSelectionsByinventorySlot` clips through the head or hides the wrong part of it.
 
 ## Notes for the Object Builder specialist
 
