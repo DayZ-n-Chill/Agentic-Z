@@ -12,12 +12,11 @@ from .common import (
     git_commit,
     git_is_dirty,
     git_tracked_files,
-    load_json,
     make_report,
     sha256_bytes,
     sha256_file,
 )
-from .validation import SOURCE_MAP_PATH, validate_repo
+from .validation import validate_repo
 
 
 FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
@@ -87,33 +86,17 @@ def build_archive(root: Path, output: Path) -> dict[str, object]:
             checks={"validate": validation_report["verdict"]},
         )
 
-    source_map = load_json(root / SOURCE_MAP_PATH)
-    payloads = sorted(
-        (
-            item
-            for item in source_map["artifacts"]
-            if item["distribution_role"] == "payload"
-        ),
-        key=lambda item: item["output_path"],
-    )
-    payload_manifest = [
-        {
-            "path": item["output_path"],
-            "sha256": item["output_hash"],
-            "license": item["license"],
-        }
-        for item in payloads
+    # The archive holds what git tracks, in sorted order, plus the manifest.
+    payloads = [
+        {"path": relative, "sha256": sha256_file(root / relative)}
+        for relative in git_tracked_files(root)
     ]
     manifest = {
         "schema_version": 1,
-        "release_id": source_map["release_id"],
         "source_commit": git_commit(root),
-        "dayz_build": source_map["dayz_build"],
-        "source_map_schema": source_map["schema_version"],
         "payload_file_count": len(payloads),
         "archive_member_count": len(payloads) + 1,
-        "licenses": sorted({str(item["license"]) for item in payloads}),
-        "payload": payload_manifest,
+        "payload": payloads,
     }
     manifest_bytes = canonical_json_bytes(manifest)
 
@@ -134,9 +117,9 @@ def build_archive(root: Path, output: Path) -> dict[str, object]:
             allowZip64=True,
         ) as archive:
             for item in payloads:
-                name = str(item["output_path"])
+                name = item["path"]
                 data = (root / name).read_bytes()
-                if sha256_bytes(data) != item["output_hash"]:
+                if sha256_bytes(data) != item["sha256"]:
                     raise RuntimeError(f"payload hash changed during build: {name}")
                 archive.writestr(_zip_info(name), data)
             archive.writestr(_zip_info("manifest.json"), manifest_bytes)

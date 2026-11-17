@@ -19,7 +19,6 @@ from .common import (
 )
 
 
-SOURCE_MAP_PATH = "sources/source-map.json"
 CLAIMS_PATH = "sources/claims.json"
 LINK_ALLOWLIST_PATH = "sources/link-allowlist.json"
 VERIFICATION_LEVELS = {
@@ -30,15 +29,6 @@ VERIFICATION_LEVELS = {
     "historical",
     "unverified",
 }
-SOURCE_DECISIONS = {"adopt", "keep_pack", "merge", "reject"}
-EXCLUSION_REASONS = {
-    "generated",
-    "cache",
-    "backup",
-    "project_evidence",
-    "superseded",
-    "license_restricted",
-}
 ALLOWED_SKILL_FIELDS = {
     "name",
     "description",
@@ -47,13 +37,6 @@ ALLOWED_SKILL_FIELDS = {
     "metadata",
     "allowed-tools",
 }
-FORBIDDEN_PAYLOAD_LICENSES = (
-    "GPL",
-    "DPL-ND",
-    "CC-NC",
-    "PROPRIETARY",
-    "UNKNOWN",
-)
 TEXT_SUFFIXES = {
     ".bat",
     ".c",
@@ -71,423 +54,6 @@ TEXT_SUFFIXES = {
     ".yml",
     ".yaml",
 }
-
-
-def _source_schema_finding(message: str, evidence: str) -> dict[str, object]:
-    return finding(
-        "SOURCE-SCHEMA-INVALID",
-        path=SOURCE_MAP_PATH,
-        line=1,
-        message=message,
-        evidence=evidence,
-    )
-
-
-def _load_source_map(root: Path) -> tuple[dict[str, object] | None, list[dict[str, object]]]:
-    path = root / SOURCE_MAP_PATH
-    if not path.is_file():
-        return None, [
-            finding(
-                "SOURCE-MAP-MISSING",
-                path=SOURCE_MAP_PATH,
-                line=0,
-                message="The versioned source map is missing.",
-                evidence="Expected sources/source-map.json.",
-            )
-        ]
-    try:
-        value = load_json(path)
-    except (OSError, UnicodeError, json.JSONDecodeError) as error:
-        return None, [_source_schema_finding("The source map is not valid JSON.", str(error))]
-    if not isinstance(value, dict):
-        return None, [_source_schema_finding("The source map root must be an object.", type(value).__name__)]
-    return value, []
-
-
-def _validate_input(
-    value: object,
-    *,
-    context: str,
-    source_ids: set[str],
-) -> list[dict[str, object]]:
-    findings: list[dict[str, object]] = []
-    required = {
-        "source_id",
-        "source_revision",
-        "source_path",
-        "source_hash",
-        "license",
-        "verification_level",
-        "decision",
-        "decision_evidence",
-    }
-    allowed = required
-    if not isinstance(value, dict):
-        return [_source_schema_finding(f"{context} must be an object.", repr(value))]
-    unknown = set(value) - allowed
-    missing = required - set(value)
-    if unknown or missing:
-        findings.append(
-            _source_schema_finding(
-                f"{context} has invalid fields.",
-                f"missing={sorted(missing)} unknown={sorted(unknown)}",
-            )
-        )
-        return findings
-    if value["source_id"] not in source_ids:
-        findings.append(
-            _source_schema_finding(
-                f"{context} references an unknown source.",
-                str(value["source_id"]),
-            )
-        )
-    if not is_relative_contract_path(value["source_path"]):
-        findings.append(
-            _source_schema_finding(
-                f"{context} source_path is not a safe relative POSIX path.",
-                str(value["source_path"]),
-            )
-        )
-    if not re.fullmatch(r"[0-9a-f]{64}", str(value["source_hash"])):
-        findings.append(
-            _source_schema_finding(
-                f"{context} source_hash is not lowercase SHA-256.",
-                str(value["source_hash"]),
-            )
-        )
-    if value["verification_level"] not in VERIFICATION_LEVELS:
-        findings.append(
-            _source_schema_finding(
-                f"{context} has an unknown verification level.",
-                str(value["verification_level"]),
-            )
-        )
-    if value["decision"] not in SOURCE_DECISIONS:
-        findings.append(
-            _source_schema_finding(
-                f"{context} has an unknown reconciliation decision.",
-                str(value["decision"]),
-            )
-        )
-    if not str(value["decision_evidence"]).strip() or not str(value["license"]).strip():
-        findings.append(
-            _source_schema_finding(
-                f"{context} has an empty evidence or license field.",
-                context,
-            )
-        )
-    return findings
-
-
-def _validate_source_map_shape(value: dict[str, object]) -> list[dict[str, object]]:
-    findings: list[dict[str, object]] = []
-    required = {
-        "schema_version",
-        "baseline_commit",
-        "claim_baseline_commit",
-        "release_id",
-        "dayz_build",
-        "sources",
-        "artifacts",
-        "excluded_inputs",
-        "generated_artifacts",
-    }
-    unknown = set(value) - required
-    missing = required - set(value)
-    if unknown or missing:
-        findings.append(
-            _source_schema_finding(
-                "The source map has invalid top-level fields.",
-                f"missing={sorted(missing)} unknown={sorted(unknown)}",
-            )
-        )
-        return findings
-    if value["schema_version"] != 1:
-        findings.append(
-            _source_schema_finding("Unsupported source-map schema.", str(value["schema_version"]))
-        )
-    for key in ("baseline_commit", "claim_baseline_commit"):
-        if not re.fullmatch(r"[0-9a-f]{40}", str(value[key])):
-            findings.append(
-                _source_schema_finding(f"{key} must be a full lowercase commit.", str(value[key]))
-            )
-    if not re.fullmatch(r"1\.[0-9]+\.0\.[0-9]+", str(value["dayz_build"])):
-        findings.append(
-            _source_schema_finding("dayz_build has an invalid format.", str(value["dayz_build"]))
-        )
-    for key in ("sources", "artifacts", "excluded_inputs", "generated_artifacts"):
-        if not isinstance(value[key], list):
-            findings.append(_source_schema_finding(f"{key} must be an array.", type(value[key]).__name__))
-    if findings:
-        return findings
-
-    source_ids: set[str] = set()
-    source_allowed = {
-        "source_id",
-        "kind",
-        "revision",
-        "license",
-        "local_root_id",
-        "public_locator",
-        "notes",
-    }
-    for index, item in enumerate(value["sources"]):
-        context = f"sources[{index}]"
-        if not isinstance(item, dict):
-            findings.append(_source_schema_finding(f"{context} must be an object.", repr(item)))
-            continue
-        required_source = {"source_id", "kind", "revision", "license"}
-        unknown_source = set(item) - source_allowed
-        missing_source = required_source - set(item)
-        if unknown_source or missing_source:
-            findings.append(
-                _source_schema_finding(
-                    f"{context} has invalid fields.",
-                    f"missing={sorted(missing_source)} unknown={sorted(unknown_source)}",
-                )
-            )
-            continue
-        source_id = str(item["source_id"])
-        if source_id in source_ids:
-            findings.append(_source_schema_finding("Duplicate source_id.", source_id))
-        source_ids.add(source_id)
-        if item["kind"] not in {"git", "filesystem", "archive", "web", "authored"}:
-            findings.append(_source_schema_finding(f"{context} has an invalid kind.", str(item["kind"])))
-        if not str(item["revision"]).strip() or not str(item["license"]).strip():
-            findings.append(_source_schema_finding(f"{context} has an empty revision/license.", source_id))
-
-    artifact_allowed = {
-        "artifact_id",
-        "output_path",
-        "distribution_role",
-        "distribution_reason",
-        "license",
-        "verification_level",
-        "routing_artifact_id",
-        "hash_policy",
-        "output_hash",
-        "inputs",
-    }
-    artifact_required = {
-        "artifact_id",
-        "output_path",
-        "distribution_role",
-        "license",
-        "verification_level",
-        "routing_artifact_id",
-        "hash_policy",
-        "inputs",
-    }
-    for index, item in enumerate(value["artifacts"]):
-        context = f"artifacts[{index}]"
-        if not isinstance(item, dict):
-            findings.append(_source_schema_finding(f"{context} must be an object.", repr(item)))
-            continue
-        unknown_artifact = set(item) - artifact_allowed
-        missing_artifact = artifact_required - set(item)
-        if unknown_artifact or missing_artifact:
-            findings.append(
-                _source_schema_finding(
-                    f"{context} has invalid fields.",
-                    f"missing={sorted(missing_artifact)} unknown={sorted(unknown_artifact)}",
-                )
-            )
-            continue
-        path = item["output_path"]
-        if not is_relative_contract_path(path):
-            findings.append(_source_schema_finding(f"{context} output_path is unsafe.", str(path)))
-        role = item["distribution_role"]
-        policy = item["hash_policy"]
-        if role not in {"payload", "repo_only"}:
-            findings.append(_source_schema_finding(f"{context} has an invalid distribution role.", str(role)))
-        if item["verification_level"] not in VERIFICATION_LEVELS:
-            findings.append(_source_schema_finding(f"{context} has an invalid verification level.", str(item["verification_level"])))
-        if role == "repo_only" and not str(item.get("distribution_reason", "")).strip():
-            findings.append(_source_schema_finding(f"{context} lacks distribution_reason.", str(path)))
-        if policy == "self_exempt":
-            if path != SOURCE_MAP_PATH or role != "repo_only" or "output_hash" in item:
-                findings.append(_source_schema_finding("Only the repo-only source map may be self_exempt.", str(path)))
-        elif policy == "sha256":
-            if not re.fullmatch(r"[0-9a-f]{64}", str(item.get("output_hash", ""))):
-                findings.append(_source_schema_finding(f"{context} lacks a valid output_hash.", str(path)))
-        else:
-            findings.append(_source_schema_finding(f"{context} has an invalid hash policy.", str(policy)))
-        inputs = item.get("inputs")
-        if not isinstance(inputs, list) or not inputs:
-            findings.append(_source_schema_finding(f"{context} inputs must be a non-empty array.", str(path)))
-        else:
-            for input_index, source_input in enumerate(inputs):
-                findings.extend(
-                    _validate_input(
-                        source_input,
-                        context=f"{context}.inputs[{input_index}]",
-                        source_ids=source_ids,
-                    )
-                )
-
-    excluded_allowed = {
-        "source_id",
-        "source_revision",
-        "source_path",
-        "source_hash",
-        "reason",
-        "decision_evidence",
-    }
-    for index, item in enumerate(value["excluded_inputs"]):
-        context = f"excluded_inputs[{index}]"
-        if not isinstance(item, dict):
-            findings.append(_source_schema_finding(f"{context} must be an object.", repr(item)))
-            continue
-        if set(item) != excluded_allowed:
-            findings.append(
-                _source_schema_finding(
-                    f"{context} has invalid fields.",
-                    f"missing={sorted(excluded_allowed - set(item))} unknown={sorted(set(item) - excluded_allowed)}",
-                )
-            )
-            continue
-        if item["source_id"] not in source_ids:
-            findings.append(_source_schema_finding(f"{context} references an unknown source.", str(item["source_id"])))
-        if not is_relative_contract_path(item["source_path"]):
-            findings.append(_source_schema_finding(f"{context} source_path is unsafe.", str(item["source_path"])))
-        if not re.fullmatch(r"[0-9a-f]{64}", str(item["source_hash"])):
-            findings.append(_source_schema_finding(f"{context} source_hash is invalid.", str(item["source_hash"])))
-        if item["reason"] not in EXCLUSION_REASONS:
-            findings.append(_source_schema_finding(f"{context} has an invalid reason.", str(item["reason"])))
-        if not str(item["decision_evidence"]).strip():
-            findings.append(_source_schema_finding(f"{context} lacks decision evidence.", str(item["source_path"])))
-
-    generated_required = {"artifact_id", "output_path", "generator", "license"}
-    for index, item in enumerate(value["generated_artifacts"]):
-        context = f"generated_artifacts[{index}]"
-        if not isinstance(item, dict) or set(item) != generated_required:
-            findings.append(_source_schema_finding(f"{context} has invalid fields.", repr(item)))
-            continue
-        if not is_relative_contract_path(item["output_path"]):
-            findings.append(_source_schema_finding(f"{context} output_path is unsafe.", str(item["output_path"])))
-    return findings
-
-
-def validate_source_map(root: Path) -> list[dict[str, object]]:
-    root = Path(root).resolve()
-    value, findings = _load_source_map(root)
-    if value is None:
-        return sort_findings(findings)
-    shape_findings = _validate_source_map_shape(value)
-    findings.extend(shape_findings)
-    if shape_findings:
-        return sort_findings(findings)
-
-    artifacts: list[dict[str, object]] = value["artifacts"]  # type: ignore[assignment]
-    tracked = set(git_tracked_files(root))
-    outputs: dict[str, list[dict[str, object]]] = {}
-    for item in artifacts:
-        outputs.setdefault(str(item["output_path"]), []).append(item)
-    receipts_root = root / "promotions" / "receipts"
-    receipt_paths = {
-        path.relative_to(root).as_posix()
-        for path in receipts_root.glob("*.json")
-        if path.is_file()
-    }
-    for path in sorted(receipt_paths - set(outputs)):
-        findings.append(
-            finding(
-                "SOURCE-RECEIPT-UNTRACKED",
-                path=path,
-                line=0,
-                message="A promotion receipt has no source-map artifact.",
-                evidence=path,
-            )
-        )
-    for path, duplicates in outputs.items():
-        if len(duplicates) > 1:
-            findings.append(
-                finding(
-                    "SOURCE-DUPLICATE",
-                    path=path,
-                    line=0,
-                    message="A tracked output is classified more than once.",
-                    evidence=f"artifact_count={len(duplicates)}",
-                )
-            )
-    for path in sorted(tracked - set(outputs)):
-        findings.append(
-            finding(
-                "SOURCE-UNMAPPED",
-                path=path,
-                line=0,
-                message="A Git-tracked file has no source-map artifact.",
-                evidence=path,
-            )
-        )
-    for path in sorted(set(outputs) - tracked):
-        findings.append(
-            finding(
-                "SOURCE-OUTPUT-MISSING",
-                path=path,
-                line=0,
-                message="A source-map artifact is not a Git-tracked file.",
-                evidence=path,
-            )
-        )
-
-    for item in artifacts:
-        path = str(item["output_path"])
-        if item["hash_policy"] == "sha256" and path in tracked:
-            actual = sha256_file(root / path)
-            if actual != item["output_hash"]:
-                findings.append(
-                    finding(
-                        "SOURCE-HASH-MISMATCH",
-                        path=path,
-                        line=0,
-                        message="The tracked output differs from its source-map hash.",
-                        evidence=f"expected={item['output_hash']} actual={actual}",
-                    )
-                )
-        hashes = {str(source_input["source_hash"]) for source_input in item["inputs"]}
-        adopted = [source_input for source_input in item["inputs"] if source_input["decision"] == "adopt"]
-        if len(hashes) > 1 and len(adopted) > 1:
-            findings.append(
-                finding(
-                    "SOURCE-CONFLICT-UNDECIDED",
-                    path=path,
-                    line=0,
-                    message="Divergent inputs are simultaneously marked authoritative.",
-                    evidence=f"adopt_count={len(adopted)} distinct_hashes={len(hashes)}",
-                )
-            )
-
-    adopted_keys = {
-        (str(source_input["source_id"]), str(source_input["source_path"]))
-        for item in artifacts
-        for source_input in item["inputs"]
-    }
-    for excluded in value["excluded_inputs"]:  # type: ignore[index]
-        key = (str(excluded["source_id"]), str(excluded["source_path"]))
-        if key in adopted_keys:
-            findings.append(
-                finding(
-                    "SOURCE-INPUT-DUPLICATE",
-                    path=SOURCE_MAP_PATH,
-                    line=0,
-                    message="An input is both mapped and explicitly excluded.",
-                    evidence=f"{key[0]}:{key[1]}",
-                )
-            )
-
-    generated_paths = {str(item["output_path"]) for item in value["generated_artifacts"]}  # type: ignore[index]
-    for path in sorted(generated_paths & tracked):
-        findings.append(
-            finding(
-                "SOURCE-GENERATED-TRACKED",
-                path=path,
-                line=0,
-                message="A generated archive member must not be Git-tracked.",
-                evidence=path,
-            )
-        )
-    return sort_findings(findings)
 
 
 def _parse_frontmatter(path: Path) -> tuple[dict[str, object], int, str | None]:
@@ -710,34 +276,6 @@ def validate_links(root: Path) -> list[dict[str, object]]:
     return sort_findings(findings)
 
 
-def _payload_paths(root: Path) -> list[str]:
-    value, _ = _load_source_map(root)
-    if value is None or not isinstance(value.get("artifacts"), list):
-        return git_tracked_files(root)
-    return sorted(
-        str(item["output_path"])
-        for item in value["artifacts"]
-        if isinstance(item, dict) and item.get("distribution_role") == "payload"
-    )
-
-
-def _privacy_scan_paths(root: Path) -> list[str]:
-    tracked = set(git_tracked_files(root))
-    public_contracts = {
-        relative
-        for relative in tracked
-        if (
-            (
-                relative.startswith("sources/")
-                or relative.startswith("promotions/")
-            )
-            and Path(relative).suffix.lower() == ".json"
-        )
-        or relative == "packctl/manifest.schema.json"
-    }
-    return sorted(set(_payload_paths(root)) | public_contracts)
-
-
 def validate_privacy(root: Path) -> list[dict[str, object]]:
     root = Path(root).resolve()
     findings: list[dict[str, object]] = []
@@ -767,7 +305,7 @@ def validate_privacy(root: Path) -> list[dict[str, object]]:
             """
         ),
     ]
-    for relative in _privacy_scan_paths(root):
+    for relative in git_tracked_files(root):
         path = root / relative
         if not path.is_file() or path.suffix.lower() not in TEXT_SUFFIXES:
             continue
@@ -785,7 +323,7 @@ def validate_privacy(root: Path) -> list[dict[str, object]]:
                             "PRIVACY-PRIVATE-PATH",
                             path=relative,
                             line=line_number,
-                            message="A public pack file contains a user-specific absolute path.",
+                            message="A tracked file contains a user-specific absolute path.",
                             evidence=match.group(0),
                         )
                     )
@@ -797,7 +335,7 @@ def validate_privacy(root: Path) -> list[dict[str, object]]:
                             "PRIVACY-SECRET",
                             path=relative,
                             line=line_number,
-                            message="A public pack file contains a token-shaped secret.",
+                            message="A tracked file contains a token-shaped secret.",
                             evidence="[REDACTED]",
                         )
                     )
@@ -805,48 +343,19 @@ def validate_privacy(root: Path) -> list[dict[str, object]]:
     return sort_findings(findings)
 
 
-def validate_licenses(root: Path) -> list[dict[str, object]]:
+def validate_license_file(root: Path) -> list[dict[str, object]]:
     root = Path(root).resolve()
-    findings: list[dict[str, object]] = []
-    if not (root / "LICENSE").is_file():
-        findings.append(
-            finding(
-                "LICENSE-MISSING",
-                path="LICENSE",
-                line=0,
-                message="The repository-level license is missing.",
-                evidence="Expected LICENSE.",
-            )
+    if (root / "LICENSE").is_file():
+        return []
+    return [
+        finding(
+            "LICENSE-MISSING",
+            path="LICENSE",
+            line=0,
+            message="The repository-level license is missing.",
+            evidence="Expected LICENSE.",
         )
-    value, _ = _load_source_map(root)
-    if value is None or not isinstance(value.get("artifacts"), list):
-        return sort_findings(findings)
-    for item in value["artifacts"]:
-        if not isinstance(item, dict) or item.get("distribution_role") != "payload":
-            continue
-        license_id = str(item.get("license", "")).strip()
-        relative = str(item.get("output_path", ""))
-        if not license_id:
-            findings.append(
-                finding(
-                    "LICENSE-UNCOVERED",
-                    path=relative,
-                    line=0,
-                    message="A payload artifact has no license coverage.",
-                    evidence="license is empty",
-                )
-            )
-        elif any(marker in license_id.upper() for marker in FORBIDDEN_PAYLOAD_LICENSES):
-            findings.append(
-                finding(
-                    "LICENSE-FORBIDDEN-PAYLOAD",
-                    path=relative,
-                    line=0,
-                    message="A license-restricted source is classified as release payload.",
-                    evidence=license_id,
-                )
-            )
-    return sort_findings(findings)
+    ]
 
 
 CLAIM_MARKER_PATTERN = re.compile(
@@ -855,32 +364,32 @@ CLAIM_MARKER_PATTERN = re.compile(
 
 
 def validate_claims(root: Path) -> list[dict[str, object]]:
+    """Check claim markers under skills/ against the claim registry.
+
+    A marker is `[EXACT][CLAIM-ID]` or `claim: CLAIM-ID` in a tracked text file
+    under skills/. Each marker needs an entry in sources/claims.json that names
+    the same file and a line range holding the marker, and each entry needs its
+    marker. The registry file is optional: without it no claim is registered,
+    so every marker is reported.
+    """
     root = Path(root).resolve()
     findings: list[dict[str, object]] = []
     registry_path = root / CLAIMS_PATH
-    if not registry_path.is_file():
-        return [
-            finding(
-                "CLAIM-REGISTRY-MISSING",
-                path=CLAIMS_PATH,
-                line=0,
-                message="The executable-claim registry is missing.",
-                evidence=CLAIMS_PATH,
-            )
-        ]
-    try:
-        registry = load_json(registry_path)
-    except (OSError, UnicodeError, json.JSONDecodeError) as error:
-        return [
-            finding(
-                "CLAIM-SCHEMA-INVALID",
-                path=CLAIMS_PATH,
-                line=1,
-                message="The claim registry is not valid JSON.",
-                evidence=str(error),
-            )
-        ]
-    required_root = {"schema_version", "claim_baseline_commit", "claims"}
+    registry: object = {"schema_version": 1, "claims": []}
+    if registry_path.is_file():
+        try:
+            registry = load_json(registry_path)
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            return [
+                finding(
+                    "CLAIM-SCHEMA-INVALID",
+                    path=CLAIMS_PATH,
+                    line=1,
+                    message="The claim registry is not valid JSON.",
+                    evidence=str(error),
+                )
+            ]
+    required_root = {"schema_version", "claims"}
     if not isinstance(registry, dict) or set(registry) != required_root or registry.get("schema_version") != 1 or not isinstance(registry.get("claims"), list):
         return [
             finding(
@@ -888,21 +397,17 @@ def validate_claims(root: Path) -> list[dict[str, object]]:
                 path=CLAIMS_PATH,
                 line=1,
                 message="The claim registry root does not match schema v1.",
-                evidence="Expected schema_version, claim_baseline_commit and claims.",
+                evidence="Expected schema_version and claims.",
             )
         ]
     claim_required = {
         "claim_id",
-        "artifact_id",
+        "path",
         "line_start",
         "line_end",
-        "source_id",
-        "source_revision",
         "evidence_locator",
-        "license",
         "observed_at",
         "verification_level",
-        "promotion_artifact_id",
     }
     claims_by_id: dict[str, dict[str, object]] = {}
     for index, claim in enumerate(registry["claims"]):
@@ -938,9 +443,9 @@ def validate_claims(root: Path) -> list[dict[str, object]]:
                     evidence=claim_id,
                 )
             )
-        claims_by_id[claim_id] = claim
         if (
-            not isinstance(claim["line_start"], int)
+            not is_relative_contract_path(claim["path"])
+            or not isinstance(claim["line_start"], int)
             or not isinstance(claim["line_end"], int)
             or claim["line_start"] < 1
             or claim["line_end"] < claim["line_start"]
@@ -951,29 +456,17 @@ def validate_claims(root: Path) -> list[dict[str, object]]:
                     "CLAIM-SCHEMA-INVALID",
                     path=CLAIMS_PATH,
                     line=1,
-                    message="A claim has an invalid range or verification level.",
+                    message="A claim has an invalid path, range or verification level.",
                     evidence=claim_id,
                 )
             )
-
-    source_map, _ = _load_source_map(root)
-    artifact_paths: dict[str, str] = {}
-    claim_scan_paths: list[str] = []
-    if source_map and isinstance(source_map.get("artifacts"), list):
-        artifact_paths = {
-            str(item["artifact_id"]): str(item["output_path"])
-            for item in source_map["artifacts"]
-            if isinstance(item, dict)
-        }
-        claim_scan_paths = sorted(
-            str(item["output_path"])
-            for item in source_map["artifacts"]
-            if isinstance(item, dict)
-            and item.get("distribution_role") == "payload"
-        )
+            continue
+        claims_by_id[claim_id] = claim
 
     seen_markers: set[str] = set()
-    for relative in claim_scan_paths:
+    for relative in git_tracked_files(root):
+        if not relative.startswith("skills/"):
+            continue
         path = root / relative
         if not path.is_file() or path.suffix.lower() not in TEXT_SUFFIXES:
             continue
@@ -992,14 +485,13 @@ def validate_claims(root: Path) -> list[dict[str, object]]:
                             "CLAIM-UNREGISTERED",
                             path=relative,
                             line=line_number,
-                            message="An executable claim marker has no registry entry.",
+                            message="A claim marker has no registry entry.",
                             evidence=claim_id,
                         )
                     )
                     continue
-                expected_path = artifact_paths.get(str(claim["artifact_id"]))
                 if (
-                    expected_path != relative
+                    claim["path"] != relative
                     or not (int(claim["line_start"]) <= line_number <= int(claim["line_end"]))
                 ):
                     findings.append(
@@ -1007,7 +499,7 @@ def validate_claims(root: Path) -> list[dict[str, object]]:
                             "CLAIM-RANGE-MISMATCH",
                             path=relative,
                             line=line_number,
-                            message="A claim marker lies outside its registered artifact/range.",
+                            message="A claim marker lies outside its registered file or line range.",
                             evidence=claim_id,
                         )
                     )
@@ -1017,7 +509,7 @@ def validate_claims(root: Path) -> list[dict[str, object]]:
                 "CLAIM-MARKER-MISSING",
                 path=CLAIMS_PATH,
                 line=1,
-                message="A registered claim has no marker in its artifact.",
+                message="A registered claim has no marker in its file.",
                 evidence=claim_id,
             )
         )
@@ -1035,10 +527,8 @@ def validate_moved_exact(root: Path) -> list[dict[str, object]]:
 
     The seal marks a passage moved verbatim out of another file, and its sha256
     is over the raw bytes between the opening comment's newline and the closing
-    marker -- no normalization, no BOM, no CRLF variant. Measured 2026-08-24
-    against the seven seals in the tree: four matched that rule and three did
-    not, and nothing had ever run the comparison, so a global rename sweep
-    edited two sealed bodies and went unnoticed for nine days.
+    marker -- no normalization, no BOM, no CRLF variant. An edit inside a sealed
+    body, such as a global rename sweep, shows up here as drift.
 
     An unterminated opening marker is reported too. Without that, deleting the
     closing marker would silently exempt a block instead of failing it.
@@ -1085,9 +575,9 @@ def validate_generated(root: Path) -> list[dict[str, object]]:
 
     A copy exists because `dayz_3d_viewer` installs non-editable, so the package cannot
     reach `skills/_shared/` by walking parents. The copy is therefore a build artifact:
-    editing it by hand, or changing the source without regenerating, is a build failure
-    rather than a divergence nobody notices. The rule lives in `packctl.generated` so the
-    writer and this checker cannot disagree about what "in sync" means.
+    editing it by hand, or changing the source without regenerating, is a validation
+    failure. The rule lives in `packctl.generated` so the writer and this checker cannot
+    disagree about what "in sync" means.
     """
     return sort_findings(
         [
@@ -1111,8 +601,8 @@ CONFLICT_MARKER_PATTERN = re.compile(rb"([<|=>])\1{6}(?:[ \t]|$)")
 def validate_conflict_markers(root: Path) -> list[dict[str, object]]:
     """Report git merge-conflict markers left in tracked files.
 
-    The squash of #52 (3e22429) committed `<<<<<<< HEAD`, `=======` and
-    `>>>>>>> 4de8b5a...` into CHANGELOG.md, and every other check passed it.
+    A squash merge can commit `<<<<<<< HEAD`, `=======` and `>>>>>>> <commit>`
+    lines into a file, and no other check reports them.
 
     Every tracked file git would merge as text (no NUL byte in its first 8000
     bytes, git's binary test) is read as bytes and split on line feeds, so the
@@ -1165,7 +655,6 @@ def validate_conflict_markers(root: Path) -> list[dict[str, object]]:
 def validate_repo(root: Path) -> dict[str, object]:
     root = Path(root).resolve()
     checks = {
-        "source_map": validate_source_map(root),
         "skills": validate_skills(root),
         "moved_exact": validate_moved_exact(root),
         "generated": validate_generated(root),
@@ -1173,7 +662,7 @@ def validate_repo(root: Path) -> dict[str, object]:
         "claims": validate_claims(root),
         "links": validate_links(root),
         "privacy": validate_privacy(root),
-        "licenses": validate_licenses(root),
+        "license_file": validate_license_file(root),
     }
     findings = [item for result in checks.values() for item in result]
     check_summary = {

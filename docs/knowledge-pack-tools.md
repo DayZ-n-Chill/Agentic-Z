@@ -1,25 +1,26 @@
-# Knowledge Pack tools
+# Offline tools
 
-What each tool under `scripts/tools/` does, how to run it and what it refuses to do. These tools came in with the DayZ Modding Knowledge Pack import; "the pack" below means that material. Two tables at the end say which tool to reach for, by symptom and by task.
+What each tool under `scripts/tools/` does, how to run it and what it refuses to do. Two tables at the end say which tool to reach for, by symptom and by task.
 
-Thirteen Python tools ship in this pack. They are offline and deterministic,
+Thirteen Python tools live under `scripts/tools/`. They are offline and deterministic,
 except the experimental
 [`dayz-terrain-builder-runner`](#scriptstoolsdayz-terrain-builder-runner), which
 drives a Terrain Builder it launched; none of them phone home, and none of
 them guess. Most are stdlib-only;
 [`dayz-vehicle-proxy-contract`](#scriptstoolsdayz-vehicle-proxy-contract) also
-needs numpy, scipy, matplotlib and the pack py3d fork, and
+needs numpy, scipy, matplotlib and this repo's py3d, and
 [`dayz-navmesh-compare`](#scriptstoolsdayz-navmesh-compare) needs numpy for its
 terrain inputs only.
 
 **Install before invoking.** The `python -m <tool>` forms below resolve only
 once that tool is installed — `python -m pip install -e scripts/tools/<name>` from the
 repository root. On a fresh clone they fail with `No module named`, which
-reads like a broken tool and is a missing install. Tools that also ship a
-script path (`dayz-script-validator`, `dayz-ui-lab`, `skill-runtime-pin`) can
-be run from the tree without installing; each tool's section says which.
-`dayz-pbo-diff`, `dayz-navmesh-compare` and `dayz-terrain-builder-runner` are
-scripts only, run from the tree.
+reads like a broken tool and is a missing install. `dayz-script-validator`,
+`dayz-vehicle-proxy-contract` and `dayz-layout-viewer` also ship a script path
+and run from the tree without installing; each tool's section gives the
+command. `dayz-ui-lab`, `skill-runtime-pin`, `dayz-pbo-diff`,
+`dayz-navmesh-compare` and `dayz-terrain-builder-runner` have no package: they
+are scripts only, run from the tree.
 
 They exist because the DayZ asset pipeline fails *silently*: a `.p3d` written
 with a stale selection loads white, a mistyped RTM signature produces an
@@ -38,7 +39,7 @@ one.
 | [`dayz-3d-viewer`](#scriptstoolsdayz-3d-viewer) | Convert MLOD `.p3d`, PAA and RVMAT to glTF + HTML | **Yes** — `.glb`, PNG, HTML |
 | [`dayz-script-validator`](#scriptstoolsdayz-script-validator) | Lint Enforce, `config.cpp`, `.layout` and `.rvmat` before packing | Reports only |
 | [`dayz-vehicle-proxy-contract`](#scriptstoolsdayz-vehicle-proxy-contract) | Audit vehicle proxy graph, fit, engine properties and PBO closure | Reports only; `repair` stages copies outside the addon |
-| [`skill-runtime-pin`](#scriptstoolsskill-runtime-pin) | Capture a Pack commit and expose one derived runtime adapter | **Yes** — new task-local root only |
+| [`skill-runtime-pin`](#scriptstoolsskill-runtime-pin) | Capture one commit of a skills repository and expose one derived runtime adapter | **Yes** — new task-local root only |
 | [`dayz-pbo-diff`](#scriptstoolsdayz-pbo-diff) | Compare the entries of two PBOs by SHA-256, and their header properties | Reports only — one new JSON |
 | [`dayz-navmesh-compare`](#scriptstoolsdayz-navmesh-compare) | Compare two `.nm` navmeshes tile by tile, by structure, against terrain edits and routes | Reports only — one new JSON |
 | [`dayz-terrain-builder-runner`](#scriptstoolsdayz-terrain-builder-runner) | EXPERIMENTAL, Windows only: drive a Terrain Builder it launched by Win32 messages | **Yes** — its state file and `menu.json`; Terrain Builder rewrites its own settings on exit |
@@ -48,29 +49,32 @@ one.
 ## Two `.layout` parsers
 
 There are two readers. Neither is a superset of the other. Pick by the
-question you are asking, not by which file you already have open.
+question you are asking, not by which file you already have open. Only the
+format parser, `dayz-ui-lab`, is in this repo; the geometry parser,
+`layout_ast.py`, is not.
 
-Measured on 2026-08-19 over the 819 `.layout` files of the working tree:
+Measured on 2026-08-19 over a working tree of 819 `.layout` files:
 
-| | `layout_ast.py` (DayZ_Tooling) | `dayz-ui-lab` (this pack) |
+| | `layout_ast.py` (not in this repo) | `dayz-ui-lab` (in this repo) |
 |---|---|---|
 | Job | GEOMETRY | FORMAT |
 | Keeps | 11 geometry and flag keys | all keys |
-| Exceptions over 819 | 0 | 57 (45 are copies of ONE first-party HUD, 12 are XML files) |
+| Exceptions over 819 | 0 | 57 (45 are copies of ONE HUD layout, 12 are XML files) |
 | Continuation `\` + newline | does not reconstruct it | one LF — matches what was measured in DayZDiag |
 | Serves | rectangles, click centres, reachability | render, scenarios, and anything that reads text/color/image |
 
 Choice rule, in one line: **if you need where a widget IS, the geometry parser; if you need what it SAYS, the format parser. Neither is a superset of the other.**
 
-A third, historical parser exists (`renderer/parse.py` from the DayZ_UI_Research
-project). It is **superseded**. On Windows paths it **silently strips the
-backslash** (`gui\layouts\foo.edds` → `guilayoutsfoo.edds`). Do not revive it.
+A third, older parser (`renderer/parse.py`) is **superseded** and is not in
+this repo. On Windows paths it **silently stripped the backslash**
+(`gui\layouts\foo.edds` → `guilayoutsfoo.edds`). Do not write a reader that
+does the same.
 
 Inline-format collapse into `position` was a measured defect of the format
 parser: grouping by physical line in `Parser.parse_values` turned
 `ImageWidgetClass Bg { position 0 0 size 1 1 stretch 1 ignorepointer 1 { } }`
-into a single `position` attribute holding the whole list. Fixed in commit
-df64e5f **for the vocabulary the parser knows**: `parse_values`
+into a single `position` attribute holding the whole list. It is fixed **for
+the vocabulary the parser knows**: `parse_values`
 consumes by measured key arity, and that input now yields four attributes. The
 bound is the point. An attribute missing from `ATTRIBUTE_ARITY` still falls back
 to line grouping, so two unknown keys written inline still collapse into one —
@@ -80,9 +84,8 @@ ends its run. Adding an attribute to the table is what extends the fix. The
 geometry parser splits by arity throughout.
 
 A screen-rectangle predictor (`ui_rects.py`: `predict` / `lint` / `centers`)
-sits on the geometry parser. It is **not published in this pack** — it lives
-in the unpublished DayZ_Tooling workbench, and this pack ships the format lab,
-not a second, partial geometry model. Unmodelled anchors (`halign left_ref` /
+sits on the geometry parser. It is **not in this repo**: this repo ships the
+format lab, not a second, partial geometry model. Unmodelled anchors (`halign left_ref` /
 `valign top_ref`, `hexactpos 1`) are refused, not guessed. The route table in
 `skills/_shared/knowledge/mod-cycle.md` lists it as outside this repo.
 
@@ -90,13 +93,11 @@ not a second, partial geometry model. Unmodelled anchors (`halign left_ref` /
 
 ## `scripts/tools/py3d`
 
-A DayZ-specific fork of [KoffeinFlummi/py3d](https://github.com/KoffeinFlummi/py3d)
-(MIT) — a pure-Python reader/writer for the **MLOD `.p3d`** format, the editable
-non-binarized model format. Most asset scripts in these skills import it.
+A pure-Python reader/writer for the **MLOD `.p3d`** format, the editable
+non-binarized model format. Most asset scripts in the skills import it.
 
-Upstream is an unmaintained minimal codec. This fork adds the anti-corruption
-guards: the paths that used to silently produce a broken `.p3d` now fail early
-with an actionable message.
+It carries anti-corruption guards: the paths that would silently produce a
+broken `.p3d` fail early with an actionable message.
 
 - `lod.new_selection(name)` — get-or-create a selection that binds and registers.
 - `lod.set_memory_point(name, xyz)` / `get_memory_points()` — idempotent upsert.
@@ -123,12 +124,9 @@ python -c "import py3d; assert py3d.IS_DAYZ_FORK; print(py3d.__version__)"
 Current version **1.10.1**. The pinned wheel is built from that source:
 `py3d_dayz-1.10.1-py3-none-any.whl`, SHA-256
 `c9f000a51e6aca83104a8f021ef5e3eefe8d7f0a5b053623544b49dbdd5d1785`
-(`scripts/tools/py3d/rollout/wheel-manifest.json`; the wheel itself is not in the pack).
-Upstream for this fork:
-[willy92wins/py3d-dayz](https://github.com/willy92wins/py3d-dayz). Known
-limitations are listed in `scripts/tools/py3d/KNOWN-ISSUES.md` — read it before
-assuming a bug is yours. **Licence:** MIT, `scripts/tools/py3d/LICENSE` (© 2017 Felix
-Wiegand); keep that file with any redistribution.
+(`scripts/tools/py3d/rollout/wheel-manifest.json`; the wheel itself is not in this repo).
+Known limitations are listed in `scripts/tools/py3d/KNOWN-ISSUES.md` — read it before
+assuming a bug is yours.
 
 ## `scripts/tools/dayz-animation-formats`
 
@@ -158,7 +156,7 @@ python -m dayz_model_preflight check target.p3d \
   --contract preflight.json --json preflight-result.json
 ```
 
-Requires the py3d fork `>=1.6.0`. Missing or ambiguous one-to-one lineage is
+Requires this repo's py3d `>=1.6.0`. Missing or ambiguous one-to-one lineage is
 reported `INVALID`: the tool never guesses a mapping and never repairs a model.
 
 ## `scripts/tools/dayz-script-validator`
@@ -255,7 +253,7 @@ The manifest is the only place paths live. Every stored path
 PBO) must already be absolute. The tool has no default `C:\...` converter
 or addon root.
 
-Needs the pack py3d fork, numpy, scipy and matplotlib. `CfgConvert` is an
+Needs this repo's py3d, numpy, scipy and matplotlib. `CfgConvert` is an
 external adapter named by the manifest, not a bundled binary.
 
 **A green run is not proof the vehicle plays.** It predicts that the declared
@@ -276,10 +274,11 @@ python -m dayz_odol_strict inspect input.p3d \
 python -m dayz_odol_strict diff reference.json candidate.json
 ```
 
-The adapter, the schemas and three user-authorized first-party fixtures are
-redistributable and included. The compatible BisDLL-derived backend is **not**:
-it has no redistribution licence, so it stays external, hash-pinned, and is
-loaded only inside an isolated subprocess.
+The adapter, the schemas, the backend manifest
+(`scripts/tools/dayz-odol-strict/backend/manifest-v1.json`) and three binary
+fixtures are in this repo. The ODOL parser backend itself is **not**: it stays
+external, pinned by SHA-256 in that manifest, and is loaded only inside an
+isolated subprocess.
 
 **There is no ODOL writer and no partial-success mode**, and neither is planned.
 Inspecting a binarized model is a diagnostic; producing one is the engine's job.
@@ -290,7 +289,7 @@ An offline lab for DayZ `.layout` UIs: parse a layout into a JSON IR, compose
 scenarios from shells and subviews, emit a deterministic semantic render at a
 given viewport, and diff two renders into actionable defects. This is the
 **format** parser in [Two `.layout` parsers](#two-layout-parsers). Geometry
-(rectangles, click centres) is a different reader, outside this pack.
+(rectangles, click centres) is a different reader, outside this repo.
 
 ```bash
 python scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py <layout>
@@ -305,10 +304,17 @@ python scripts/tools/dayz-ui-lab/dayz_ui_lab/widget_ids.py collide <layout> [--j
 ```
 
 `diff.py` reports broken references, clipping, overlap and missing states per
-widget and scenario. `corpus.py` is the regression gate: it parses the pinned
-public corpora (VPP, Expansion, TraderPlus, TraderX) plus a first-party negative
-set — **376/376 layouts, zero diagnostics** — and audits that no third-party
-layout is redistributed with the pack.
+widget and scenario. `corpus.py` is the regression gate: it parses the corpora
+pinned in `scripts/tools/dayz-ui-lab/corpora/manifest.json` (VPP Admin Tools,
+DayZ Expansion, TraderPlus, TraderX and a negative set), compares every tracked
+`.layout` against them by content so that none of their layouts is kept in the
+repo, and reports a tracked `.layout` outside the tool's own fixture folders.
+The corpora are not in this repo: point
+`scripts/dev/knowledge-pack/sources/local-roots.json` (untracked; copy
+`local-roots.example.json`) at your own copies. A corpus with no configured
+root is reported `CORPUS-ROOT-MISSING` and fails the run, so "not measured"
+cannot look like "passes". Measured on 2026-07-28 with all five configured:
+**376/376 layouts, zero diagnostics**.
 
 `widget_ids.py` gives the IDs by which a DayZ 1.30 layout variant addresses
 vanilla widgets (`Class "{id}" { Prefab "{id}" }`; how they are derived:
@@ -370,21 +376,21 @@ python -m dayz_3d_viewer parse-rvmat housing.rvmat
 python -m dayz_3d_viewer build-viewer model.p3d --textures ./tex --mode embedded
 ```
 
-Requires the pack py3d fork `>=1.6.0`. Pillow and LZO are optional extras
+Requires this repo's py3d `>=1.6.0`. Pillow and LZO are optional extras
 (`[paa]`, `[lzo]`); a missing extra exits 2 with a one-line message.
-Generated HTML loads **three.js 0.160.0 from jsDelivr** — it is not
+Generated HTML loads **three.js 0.185.1 from jsDelivr** — it is not
 bundled, so a render needs a network. Known converter gaps (SWIZ, proxy
 triangles, ViewPilot at resolution 1100) are listed in
 `scripts/tools/dayz-3d-viewer/KNOWN-ISSUES.md` and are not repaired here.
 
 ## `scripts/tools/skill-runtime-pin`
 
-Capture **every blob** of a clean Pack commit into a new task-local root and
-add one derived discovery adapter. It is not a host launcher and it does not
+Capture **every blob** of one clean commit of a skills repository into a new
+task-local root and add one derived discovery adapter. It is not a host launcher and it does not
 prove the rest of a global catalog is off.
 
 ```powershell
-python scripts/tools/skill-runtime-pin/runtime_pin.py materialize --source <pack-repo> --commit <sha> --task-root <new-task-root>
+python scripts/tools/skill-runtime-pin/runtime_pin.py materialize --source <skills-repo> --commit <sha> --task-root <new-task-root>
 python scripts/tools/skill-runtime-pin/runtime_pin.py verify --task-root <task-root>
 python scripts/tools/skill-runtime-pin/runtime_pin.py assemble --task-root <task-root> --consumer cursor
 python scripts/tools/skill-runtime-pin/runtime_pin.py inspect-prompt --task-root <task-root> --prompt-input <dump.txt>
@@ -416,7 +422,7 @@ duplicate or non-ASCII name and a truncated archive are refused (exit 1), never
 skipped. `differing` lists every entry whose bytes differ or that is on one
 side only; `--ignore-prefix` filters a view (`differing_not_ignored`), not the
 comparison. `--out` must not exist. Between two AddonBuilder runs a different
-`.p3d` entry proves nothing by itself (`skills/dayz-build-pbo/references/post-build-gates.md`, SP-194).
+`.p3d` entry proves nothing by itself (`skills/dayz-build-pbo/references/post-build-gates.md`).
 
 ## `scripts/tools/dayz-navmesh-compare`
 
@@ -462,15 +468,34 @@ press Terrain Builder's own dialog buttons by label: their ids are swapped (Ok
 
 ---
 
+## Two helpers that are not tools of their own
+
+- `scripts/tools/sync_generated.py` regenerates and checks the sealed copy of
+  `skills/_shared/viewer_core.py` that `dayz-3d-viewer` ships inside its
+  package (`scripts/tools/dayz-3d-viewer/dayz_3d_viewer/viewer_core.py`). Edit
+  the source, never the copy, then run
+  `python scripts/tools/sync_generated.py sync --root .`; `check --root .`
+  exits 1 when the copy has drifted. The seal is a SHA-256 over the raw bytes
+  of the source, which is why `.gitattributes` keeps that file LF.
+- `scripts/tools/viewer-gate/render_check.mjs` is a Node smoke test for a
+  generated Three.js viewer page:
+  `node scripts/tools/viewer-gate/render_check.mjs <html|url> [--png out.png] [--expected-three 0.185.1]`.
+  It needs puppeteer (`PUPPETEER_MODULE`) and a Chrome or Chromium
+  (`PUPPETEER_EXECUTABLE_PATH`). A green run means the page loaded, drew and
+  reported the three.js revision it imported with no errors; it does not mean
+  the picture or the exported coordinates are right.
+
+---
+
 ## What is deliberately absent
 
 The DayZ 3D pipeline still needs more than this — Blender→`.p3d` assembly,
-PNG→PAA encoding, PBO packing. Those live in tooling that is not the
-author's to redistribute; `skills/_shared/knowledge/mod-cycle.md` lists what to
-install and where it comes from. PAA *decoding* is now in `scripts/tools/dayz-3d-viewer`.
+PNG→PAA encoding, PBO packing. Those are done with Blender and DayZ Tools,
+which are not in this repo; `skills/_shared/knowledge/mod-cycle.md` lists what
+to install. PAA *decoding* is in `scripts/tools/dayz-3d-viewer`.
 
-The screen-rectangle predictor (`ui_rects.py`) is also absent on purpose:
-it belongs to the unpublished DayZ_Tooling workbench, not this pack. See
+The screen-rectangle predictor (`ui_rects.py`) is also absent on purpose: this
+repo ships the format lab, not a geometry model. See
 [Two `.layout` parsers](#two-layout-parsers).
 
 The in-game verification bridge (DayZ-MCP) is described in
@@ -516,13 +541,13 @@ answer is "install it first".
 | Need a widget rectangle or click centre | `layout_ast.py` + `ui_rects.py` (not in this repo) | Contract in [Two `.layout` parsers](#two-layout-parsers) |
 | Need `.layout` text / color / image | `dayz-ui-lab` | Format parser; see the two-parser contract above |
 | Changing a linter rule, detector or parser | `vanilla_control.py` | Gate for linter authors, not a mod-cycle step |
-| Preview an MLOD `.p3d` / PAA / RVMAT | `dayz-3d-viewer` | HTML loads three.js 0.160.0 from a CDN; SWIZ, proxies and ViewPilot 1100 are documented gaps |
+| Preview an MLOD `.p3d` / PAA / RVMAT | `dayz-3d-viewer` | HTML loads three.js 0.185.1 from a CDN; SWIZ, proxies and ViewPilot 1100 are documented gaps |
 | Verifying anything in-game | the MCP bridge | Wiring example in [`dayz-mcp.md`](dayz-mcp.md), deliberately not auto-started |
 | Rebuilding or patching a PBO | `dayz-pbo-diff` | Payload SHA-256 per entry; between two builds a different `.p3d` entry proves nothing by itself |
 | Regenerating a terrain's navmesh | `dayz-navmesh-compare` | Structure, not bytes; verified only for one 12 288 m world in 12.5, 25 or 50 m tiles |
 | Driving Terrain Builder without the desktop | `dayz-terrain-builder-runner` | EXPERIMENTAL, Windows only: menus and file dialogs verified; Generate Layers, imports and WRP export not; a disposable instance only |
-| Working on Linux (DayZ Tools, DayZDiag, `P:`) | the `dayz-proton.sh` helper script | Runs BI's tools under Proton in private prefixes; native dayzmake / `workshop` first. Guide and measured matrix: the Linux and Proton note that came with the import |
-| Testing a mod on Linux without dayz-mcp (native server, headless retail client), building and publishing with dayzmake | the Linux helper scripts (`make-server-tree.sh`, `free-ports.sh`, `dayz-client-test.sh`, `dayz-mod-pack.sh`) | The Linux native server, headless client and dayzmake references, and the 1.30 server facts measured on the server, came in with the scripting workstream |
+| Working on Linux (DayZ Tools, DayZDiag, `P:`) | `skills/_shared/scripts/dayz-proton.sh` | Runs BI's tools under Proton in private prefixes; native dayzmake / `workshop` first. Guide and measured matrix: `skills/_shared/linux-proton.md` |
+| Testing a mod on Linux without dayz-mcp (native server, headless retail client), building and publishing with dayzmake | `make-server-tree.sh`, `free-ports.sh`, `dayz-client-test.sh` and `dayz-mod-pack.sh` in `skills/_shared/scripts/` | References: `skills/dayz-test-ingame/references/linux-native-server.md` and `linux-headless-client.md` beside it, and `skills/dayz-build-pbo/references/dayzmake-linux.md` |
 
 Two habits make the difference. Propose the tool **before** the expensive step,
 not after it fails: that is the whole point of a preflight. And when a tool
@@ -531,8 +556,11 @@ contract does not say what was verified.
 
 ## Running the tool tests
 
-The suites are per tool. Two of them share test-module basenames (`test_cli.py`,
-`_support.py`), which in the Knowledge Pack's own repository made a root-level
-`pytest` collection abort before a single test ran. Measured there on 2026-08-19:
-`tests/packctl` 220 passed / 3 skipped, `py3d` 220 / 10,
-`dayz-vehicle-proxy-contract` 128 plus 239 subtests, `dayz-script-validator` 157.
+Each tool keeps its suite in its own `tests/` folder (`skill-runtime-pin` has
+none there; `scripts/dev/knowledge-pack/tests/packctl/test_packctl_runtime_pin.py`
+covers it). `python -m pytest -q scripts/tools` from the repository root runs
+them all in one process, and CI runs them as part of the repo's test command
+(`.github/workflows/tests.yml`). That works only while every test module has a
+unique file name: two test files with the same basename in different folders
+abort the whole collection with "import file mismatch" before a single test
+runs. Name a new test module after its tool.
