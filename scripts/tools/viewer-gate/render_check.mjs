@@ -3,14 +3,14 @@
 // What a green result means: the page loaded, mounted a canvas with real pixels, drew
 // geometry at some point, reported the three revision it actually imported, and produced
 // no page/request/console errors. It does NOT mean the content matches the baseline.
-// Comparing baseline/after screenshots is the strongest cheap check for that, and it is what
-// the migration behind this file leaned on. It is NOT proof either. A calibration round said
-// so with a concrete attack: keep the render and the visible positions intact and change the
-// inverse conversion used when EXPORTING a memory point or a proxy - swap Y/Z on the way back
-// from Three coordinates to DayZ. The screenshots come out identical and the exported value is
-// wrong. In an alignment tool the product is the coordinates, not the image.
+// Comparing baseline/after screenshots is the strongest cheap check for that. It is NOT proof
+// either, and one concrete attack shows why: keep the render and the visible positions intact
+// and change the inverse conversion used when EXPORTING a memory point or a proxy - swap Y/Z on
+// the way back from Three coordinates to DayZ. The screenshots come out identical and the
+// exported value is wrong. In an alignment tool the product is the coordinates, not the image.
 //
-// That boundary is not modesty, it is measured. Three review rounds killed three proxies:
+// That boundary is not modesty, it is measured. Three earlier versions each relied on a proxy
+// that failed:
 //   v1 counted draw calls   -> deleting the only mesh passed (the grid kept drawing).
 //   v2 counted TRIANGLES    -> a helper sphere alone passed; a line-drawn domain FALSE-FAILed.
 //   v3 counted post-settle  -> a legitimate one-shot viewer FALSE-FAILed, and a decoy
@@ -43,7 +43,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-// No machine-absolute paths in this file (pack rule). Both dependencies are resolved from
+// No machine-absolute paths in this file (repo rule). Both dependencies are resolved from
 // the environment, and a miss says exactly what to set instead of throwing a stack trace.
 //   PUPPETEER_MODULE            path or specifier for the puppeteer ESM entry
 //   PUPPETEER_EXECUTABLE_PATH   Chrome/Chromium binary (CHROME_PATH also accepted)
@@ -79,13 +79,13 @@ const expectedThree = flag('--expected-three', null);
 const minDraws = Number(flag('--min-draws', '1'));
 // Optional HEURISTIC, off by default. When a viewer is known to draw triangles, this
 // still catches 'the mesh is gone' (helpers draw LINES). It is defeatable - a helper
-// that draws triangles satisfies it (R21b-01) - so it is a cheap extra net, never proof.
+// that draws triangles satisfies it - so it is a cheap extra net, never proof.
 const minTriDraws = Number(flag('--min-tri-draws', '0'));
 if (!target) {
   console.error('usage: render_check.mjs <html|url> [--png f] [--expected-three V] [--min-draws N]');
   process.exit(2);
 }
-// R21b-05: a bare relative path used to become file:///controls/x.html (cwd dropped).
+// A bare relative path used to become file:///controls/x.html (cwd dropped).
 const url = /^https?:\/\//.test(target) ? target : pathToFileURL(path.resolve(process.cwd(), target)).href;
 
 const browser = await puppeteer.launch({
@@ -98,7 +98,7 @@ const pageErrors = [], failedReq = [], consoleErrors = [], threeRequested = new 
 page.on('pageerror', e => pageErrors.push(String(e).slice(0, 220)));
 page.on('requestfailed', r => failedReq.push(r.url().slice(0, 160)));
 page.on('console', m => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 200)); });
-// R21b-03: runtime evidence. Only a real fetch of a three build counts as "the version used".
+// Runtime evidence. Only a real fetch of a three build counts as "the version used".
 page.on('request', r => {
   const m = r.url().match(/three@(\d+\.\d+\.\d+)\/build\/|three\.js\/(r\d+)\/build\//);
   if (m) threeRequested.add(m[1] || m[2]);
@@ -138,13 +138,13 @@ try {
   await page.evaluate(() => new Promise(r => setTimeout(r, 700)));            // settle (damping, async setup)
   // Canvas as the page actually loaded it. Measured BEFORE the resize nudge below: that
   // nudge fires the viewer's own resize handler, which repairs a 0x0 canvas and would
-  // hide the defect (the nudge's fix for R21b-02 was masking R21b-04). A viewer that
+  // hide the defect (the nudge added for one-shot viewers was masking a 0x0 canvas). A viewer that
   // shows nothing until the window is resized is broken for double-click use.
   canvasAtSettle = await page.evaluate(() => {
     const c = document.querySelector('canvas');
     return c ? { w: c.width, h: c.height } : null;
   });
-  // R21b-02: throw away everything observed so far, then measure a FRESH window. The resize
+  // Throw away everything observed so far, then measure a FRESH window. The resize
   // nudge makes on-demand viewers redraw, so a one-shot viewer is still measurable here.
   await page.evaluate(() => { window.__resetFrames(); window.dispatchEvent(new Event('resize')); });
   await page.evaluate(() => new Promise(r => setTimeout(r, 700)));
@@ -174,7 +174,7 @@ const checks = {
   noFailedReq:     failedReq.length === 0,
   noConsoleErr:    consoleErrors.length === 0,
   canvasHasPixels: !!canvas && canvas.w > 0 && canvas.h > 0
-                     && !!canvasAtSettle && canvasAtSettle.w > 0 && canvasAtSettle.h > 0,  // R21b-04
+                     && !!canvasAtSettle && canvasAtSettle.w > 0 && canvasAtSettle.h > 0,  // sized before the resize nudge too
   everDrew:        runtime.everDrew >= minDraws,
   // Same fix as everDrew: a one-shot viewer draws nothing AFTER settle, so binding this
   // to the post-settle window rejected legitimate viewers - the defect escaping sideways.

@@ -1,6 +1,6 @@
-# Authoring lessons from the Knowledge Pack's history
+# Authoring lessons
 
-Rules for people and agents who write skills, helper scripts and tests in this repo. Each one comes from a defect the DayZ Modding Knowledge Pack shipped and then fixed, as its change history records it. None is a DayZ game fact; the game facts from the same history are in `skills/_shared/knowledge/`.
+Rules for people and agents who write skills, helper scripts and tests in this repo. Each one comes from a defect that shipped in a skill, a script or a test and was then fixed. None is a DayZ game fact; the game facts are in `skills/_shared/knowledge/`.
 
 ## Python on Windows
 
@@ -26,9 +26,9 @@ Rules for people and agents who write skills, helper scripts and tests in this r
 
 ## Skill files
 
-- **An unquoted `: ` inside a YAML `description` parses as a nested mapping.** Two skill descriptions were invalid YAML and the pack's own validator passed them. Quote any description that holds a colon followed by a space.
+- **An unquoted `: ` inside a YAML `description` parses as a nested mapping.** Two skill descriptions were invalid YAML and the skill validator in use at the time passed them. Quote any description that holds a colon followed by a space.
 - **Do not ship a live `.mcp.json` as an example.** Agents auto-start the servers it declares, and a failed launch on every session is worse than no config. Name the example `.mcp.example.json`.
-- **When a fact is corrected, grep every file that states it.** The history's largest group of fixes is one rule corrected at its source and left wrong at its call sites.
+- **When a fact is corrected, grep every file that states it.** The largest group of fixes on record is one rule corrected at its source and left wrong at its call sites.
 
 ## Git
 
