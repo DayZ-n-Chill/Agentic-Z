@@ -1,0 +1,285 @@
+{
+  "note": "Name chains (the widget first, then each ancestor up to but not including the layout root) and the ID that a DayZ vanilla layout stores for that widget. positive: the stored ID equals 00000000 followed by the CRC of the concatenated chain. negative: it does not (a 64-bit ID, or one set by hand). Measured 2026-11-09 on the vanilla gui/layouts of 1.30.164200; source is the vanilla layout and line that stores the ID.",
+  "check_value": {
+    "input": "123456789",
+    "crc": "B995A485"
+  },
+  "positive": [
+    {
+      "parts": [
+        "Licensing"
+      ],
+      "id": "00000000564F35E9",
+      "source": "xbox/day_z_ingamemenu_xbox.layout:1277"
+    },
+    {
+      "parts": [
+        "version",
+        "Licensing"
+      ],
+      "id": "00000000308B9F61",
+      "source": "xbox/day_z_ingamemenu_xbox.layout:1294"
+    },
+    {
+      "parts": [
+        "copyright",
+        "Licensing"
+      ],
+      "id": "00000000BB186E8D",
+      "source": "xbox/day_z_ingamemenu_xbox.layout:1312"
+    },
+    {
+      "parts": [
+        "dayz_logo"
+      ],
+      "id": "000000009FF48118",
+      "source": "day_z_ingamemenu.layout:540"
+    },
+    {
+      "parts": [
+        "dayz_logo",
+        "ingame_menu_panel"
+      ],
+      "id": "000000005A1E7808",
+      "source": "xbox/day_z_ingamemenu_xbox.layout:841"
+    },
+    {
+      "parts": [
+        "DefaultActionWidget"
+      ],
+      "id": "00000000E4E67D3A",
+      "source": "day_z_hud.layout:11"
+    },
+    {
+      "parts": [
+        "ActionsPanel"
+      ],
+      "id": "000000007206B96B",
+      "source": "day_z_hud.layout:34"
+    },
+    {
+      "parts": [
+        "CrossHairs"
+      ],
+      "id": "000000007B7BDB10",
+      "source": "day_z_hud.layout:316"
+    },
+    {
+      "parts": [
+        "NotificationFrameWidget"
+      ],
+      "id": "000000005AC60D14",
+      "source": "day_z_hud.layout:389"
+    },
+    {
+      "parts": [
+        "ChatChannelPanel"
+      ],
+      "id": "00000000721FEE9F",
+      "source": "day_z_hud.layout:401"
+    },
+    {
+      "parts": [
+        "HudPanel"
+      ],
+      "id": "00000000D5349E9A",
+      "source": "day_z_hud.layout:434"
+    },
+    {
+      "parts": [
+        "HudDebugFrameWidget"
+      ],
+      "id": "00000000EE70746B",
+      "source": "debug/day_z_debug_monitor.layout:1"
+    },
+    {
+      "parts": [
+        "WindowLabel",
+        "StatusWindowWidget"
+      ],
+      "id": "000000003DB016A1",
+      "source": "debug/day_z_debug_monitor.layout:29"
+    },
+    {
+      "parts": [
+        "VersionLabel",
+        "NamesListboxWidget",
+        "StatusWindowWidget"
+      ],
+      "id": "00000000B5FE8D77",
+      "source": "debug/day_z_debug_monitor.layout:83"
+    },
+    {
+      "parts": [
+        "grid_CharacterStats",
+        "wdw_CharacterStats"
+      ],
+      "id": "000000000CBE1370",
+      "source": "debug/day_z_hud_debug.layout:33"
+    },
+    {
+      "parts": [
+        "feedbag_dialog",
+        "main_menu_dialog"
+      ],
+      "id": "000000009F62D738",
+      "source": "new_ui/main_menu_console.layout:28"
+    },
+    {
+      "parts": [
+        "PanelWidget0",
+        "InfoTextRight"
+      ],
+      "id": "0000000085869A9E",
+      "source": "new_ui/tutorials/xbox/tutorials_720p.layout:27"
+    },
+    {
+      "parts": [
+        "CloseConsoleButton",
+        "HeaderBarPC"
+      ],
+      "id": "00000000DCFF5316",
+      "source": "script_console/script_console.layout:31"
+    },
+    {
+      "parts": [
+        "ButtonContextMenuLabel",
+        "ButtonContextMenu",
+        "ButtonsContextMenu"
+      ],
+      "id": "000000002D0E4EBE",
+      "source": "script_console/script_console.layout:81"
+    },
+    {
+      "parts": [
+        "TabButtonsGrid",
+        "HeaderBarConsoleScroller",
+        "HeaderBarConsole"
+      ],
+      "id": "00000000C83F179C",
+      "source": "script_console/script_console.layout:169"
+    },
+    {
+      "parts": [
+        "panels"
+      ],
+      "id": "00000000723035A7",
+      "source": "underground_trigger_editor/day_z_underground_trigger_editor.layout:13"
+    },
+    {
+      "parts": [
+        "panel_top",
+        "panels"
+      ],
+      "id": "00000000B8EFC9BE",
+      "source": "underground_trigger_editor/day_z_underground_trigger_editor.layout:23"
+    },
+    {
+      "parts": [
+        "text",
+        "button"
+      ],
+      "id": "0000000040A6A742",
+      "source": "underground_trigger_editor/day_z_underground_trigger_editor_list_item.layout:24"
+    },
+    {
+      "parts": [
+        "ingame_menu_panel"
+      ],
+      "id": "000000004A374B29",
+      "source": "xbox/day_z_ingamemenu_xbox.layout:12"
+    },
+    {
+      "parts": [
+        "bottom",
+        "play_panel_root",
+        "ingame_menu_panel"
+      ],
+      "id": "000000006B300EC8",
+      "source": "xbox/day_z_ingamemenu_xbox.layout:65"
+    },
+    {
+      "parts": [
+        "continuebtn_label",
+        "continuebtn_panel",
+        "continuebtn",
+        "bottom",
+        "play_panel_root",
+        "ingame_menu_panel"
+      ],
+      "id": "0000000018AF352E",
+      "source": "xbox/day_z_ingamemenu_xbox.layout:135"
+    }
+  ],
+  "negative": [
+    {
+      "parts": [
+        "TemperatureLabel",
+        "NamesListboxWidget",
+        "StatusWindowWidget"
+      ],
+      "id": "6910D426B2427803",
+      "source": "debug/day_z_debug_monitor.layout:173"
+    },
+    {
+      "parts": [
+        "ImageBackgroundSandstorm0",
+        "WeatherRoot",
+        "WeatherPanel"
+      ],
+      "id": "69C6A40363814B16",
+      "source": "script_console/script_console.layout:7123"
+    },
+    {
+      "parts": [
+        "triggers_section",
+        "panel_left",
+        "panels"
+      ],
+      "id": "00000000CC000010",
+      "source": "underground_trigger_editor/day_z_underground_trigger_editor.layout:71"
+    },
+    {
+      "parts": [
+        "trigger_controls_edit_breadcrumbs",
+        "trigger_controls",
+        "triggers_section",
+        "panel_left",
+        "panels"
+      ],
+      "id": "00000000CC000001",
+      "source": "underground_trigger_editor/day_z_underground_trigger_editor.layout:206"
+    },
+    {
+      "parts": [
+        "trigger_controls_edit_breadcrumbs_spacer",
+        "trigger_controls",
+        "triggers_section",
+        "panel_left",
+        "panels"
+      ],
+      "id": "00000000CC000002",
+      "source": "underground_trigger_editor/day_z_underground_trigger_editor.layout:217"
+    },
+    {
+      "parts": [
+        "breadcrumb_edit_panel",
+        "panel_left",
+        "panels"
+      ],
+      "id": "00000000CC000003",
+      "source": "underground_trigger_editor/day_z_underground_trigger_editor.layout:233"
+    },
+    {
+      "parts": [
+        "breadcrumb_controls_save",
+        "breadcrumb_controls",
+        "breadcrumb_edit_panel",
+        "panel_left",
+        "panels"
+      ],
+      "id": "00000000CC00000A",
+      "source": "underground_trigger_editor/day_z_underground_trigger_editor.layout:504"
+    }
+  ]
+}

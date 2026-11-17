@@ -1,0 +1,213 @@
+{
+  "collections": [
+    {
+      "id": "cards",
+      "items": [
+        {
+          "bindings": [
+            {
+              "property": "text",
+              "value": "Alpha",
+              "widget": "CardTitle"
+            }
+          ],
+          "key": "alpha",
+          "layout": "layouts/card.layout",
+          "position": {
+            "height": 1.0,
+            "width": 0.3,
+            "x": 0.0,
+            "y": 0.0
+          }
+        },
+        {
+          "bindings": [
+            {
+              "property": "text",
+              "value": "Bravo",
+              "widget": "CardTitle"
+            }
+          ],
+          "key": "bravo",
+          "layout": "layouts/card.layout",
+          "position": {
+            "height": 1.0,
+            "width": 0.3,
+            "x": 0.35,
+            "y": 0.0
+          }
+        },
+        {
+          "bindings": [
+            {
+              "property": "text",
+              "value": "Charlie",
+              "widget": "CardTitle"
+            }
+          ],
+          "key": "charlie",
+          "layout": "layouts/card.layout",
+          "position": {
+            "height": 1.0,
+            "width": 0.3,
+            "x": 0.7,
+            "y": 0.0
+          }
+        }
+      ],
+      "mount": "CardsMount"
+    }
+  ],
+  "default_state": "populated",
+  "entrypoint": {
+    "layout": "layouts/shell.layout",
+    "subviews": [
+      "board"
+    ]
+  },
+  "scenario_id": "three-cards",
+  "schema_version": "dayz-ui-scenario-v1",
+  "states": [
+    {
+      "bindings": [
+        {
+          "property": "text",
+          "value": "Available Cards",
+          "widget": "HeaderTitle"
+        }
+      ],
+      "collections": [
+        {
+          "collection": "cards",
+          "items": [
+            "alpha",
+            "bravo",
+            "charlie"
+          ]
+        }
+      ],
+      "colors": [
+        {
+          "alpha": 1.0,
+          "color": [
+            0.1,
+            0.2,
+            0.3,
+            1.0
+          ],
+          "widget": "ShellRoot"
+        }
+      ],
+      "controls": [
+        {
+          "enabled": true,
+          "widget": "CheckoutButton"
+        }
+      ],
+      "modal": [
+        {
+          "visible": false,
+          "widget": "DetailsModal"
+        }
+      ],
+      "name": "populated",
+      "pointer": [
+        {
+          "state": "hover",
+          "widget": "PointerTarget"
+        }
+      ],
+      "positions": [
+        {
+          "height": 0.08,
+          "widget": "BoardStatus",
+          "width": 0.96,
+          "x": 0.02,
+          "y": 0.88
+        }
+      ],
+      "tabs": [
+        {
+          "active": true,
+          "widget": "InventoryTab"
+        }
+      ],
+      "visibility": [
+        {
+          "visible": false,
+          "widget": "EmptyLabel"
+        }
+      ]
+    },
+    {
+      "bindings": [
+        {
+          "property": "text",
+          "value": "No Cards Available",
+          "widget": "HeaderTitle"
+        }
+      ],
+      "collections": [
+        {
+          "collection": "cards",
+          "items": []
+        }
+      ],
+      "colors": [
+        {
+          "alpha": 0.9,
+          "color": [
+            0.12,
+            0.12,
+            0.12,
+            1.0
+          ],
+          "widget": "ShellRoot"
+        }
+      ],
+      "controls": [
+        {
+          "enabled": false,
+          "widget": "CheckoutButton"
+        }
+      ],
+      "modal": [
+        {
+          "visible": false,
+          "widget": "DetailsModal"
+        }
+      ],
+      "name": "empty",
+      "pointer": [
+        {
+          "state": "none",
+          "widget": "PointerTarget"
+        }
+      ],
+      "tabs": [
+        {
+          "active": false,
+          "widget": "InventoryTab"
+        }
+      ],
+      "visibility": [
+        {
+          "visible": true,
+          "widget": "EmptyLabel"
+        }
+      ]
+    }
+  ],
+  "subviews": [
+    {
+      "id": "board",
+      "layout": "layouts/subview.layout",
+      "mount": "SubviewMount",
+      "subviews": []
+    }
+  ],
+  "viewport": {
+    "height": 1080,
+    "width": 1920
+  }
+}

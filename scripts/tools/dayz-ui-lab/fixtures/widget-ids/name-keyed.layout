@@ -1,0 +1,22 @@
+FrameWidgetClass FrameWidget {
+ {
+  WrapSpacerWidgetClass Licensing {
+   {
+    TextWidgetClass version {
+     text "1.30"
+     {
+      ScriptParamsClass {
+       Binding_Name "VersionText"
+      }
+     }
+    }
+    TextWidgetClass copyright {
+    }
+   }
+  }
+  ImageWidgetClass dayz_logo {
+  }
+  FrameWidgetClass {
+  }
+ }
+}

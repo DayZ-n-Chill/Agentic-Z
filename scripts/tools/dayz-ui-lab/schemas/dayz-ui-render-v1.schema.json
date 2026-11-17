@@ -1,0 +1,443 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "canonical": {
+      "additionalProperties": false,
+      "properties": {
+        "raster": {
+          "enum": [
+            false
+          ],
+          "type": "boolean"
+        },
+        "semantic": {
+          "enum": [
+            true
+          ],
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "semantic",
+        "raster"
+      ],
+      "type": "object"
+    },
+    "entrypoint": {
+      "pattern": "^(?![A-Za-z]:)(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$)).+$",
+      "type": "string"
+    },
+    "normalization": {
+      "additionalProperties": false,
+      "properties": {
+        "float_decimal_places": {
+          "enum": [
+            6
+          ],
+          "type": "integer"
+        },
+        "path_format": {
+          "enum": [
+            "repo-relative-posix"
+          ],
+          "type": "string"
+        },
+        "widget_order": {
+          "enum": [
+            "depth-first-preorder"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "float_decimal_places",
+        "path_format",
+        "widget_order"
+      ],
+      "type": "object"
+    },
+    "scenario": {
+      "pattern": "^(?![A-Za-z]:)(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$)).+$",
+      "type": "string"
+    },
+    "scenario_id": {
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "type": "string"
+    },
+    "schema_version": {
+      "enum": [
+        "dayz-ui-render-v1"
+      ],
+      "type": "string"
+    },
+    "state": {
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "type": "string"
+    },
+    "stats": {
+      "additionalProperties": false,
+      "properties": {
+        "widget_count": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "widget_count"
+      ],
+      "type": "object"
+    },
+    "viewport": {
+      "additionalProperties": false,
+      "properties": {
+        "height": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "width": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "width",
+        "height"
+      ],
+      "type": "object"
+    },
+    "widgets": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "attributes": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*$",
+                  "type": "string"
+                },
+                "values": {
+                  "items": {},
+                  "type": "array"
+                }
+              },
+              "required": [
+                "name",
+                "values"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "children": {
+            "items": {
+              "pattern": "^widget-[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "collection": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "pattern": "^[a-z][a-z0-9-]*$",
+                "type": "string"
+              },
+              "item_key": {
+                "pattern": "^[a-z][a-z0-9-]*$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "item_key"
+            ],
+            "type": "object"
+          },
+          "geometry": {
+            "additionalProperties": false,
+            "properties": {
+              "alpha": {
+                "minimum": 0,
+                "type": "number"
+              },
+              "anchor": {
+                "additionalProperties": false,
+                "properties": {
+                  "horizontal": {
+                    "type": "string"
+                  },
+                  "vertical": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "horizontal",
+                  "vertical"
+                ],
+                "type": "object"
+              },
+              "clip_children": {
+                "type": "boolean"
+              },
+              "flags": {
+                "additionalProperties": false,
+                "properties": {
+                  "hexactpos": {
+                    "enum": [
+                      0,
+                      1
+                    ],
+                    "type": "integer"
+                  },
+                  "hexactsize": {
+                    "enum": [
+                      0,
+                      1
+                    ],
+                    "type": "integer"
+                  },
+                  "vexactpos": {
+                    "enum": [
+                      0,
+                      1
+                    ],
+                    "type": "integer"
+                  },
+                  "vexactsize": {
+                    "enum": [
+                      0,
+                      1
+                    ],
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "hexactpos",
+                  "vexactpos",
+                  "hexactsize",
+                  "vexactsize"
+                ],
+                "type": "object"
+              },
+              "ignore_pointer": {
+                "type": "boolean"
+              },
+              "notes": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "offset": {
+                "additionalProperties": false,
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "type": "object"
+              },
+              "position": {
+                "additionalProperties": false,
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "type": "object"
+              },
+              "raw": {
+                "additionalProperties": false,
+                "properties": {
+                  "position": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ],
+                    "type": "object"
+                  },
+                  "size": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "height": {
+                        "minimum": 0,
+                        "type": "number"
+                      },
+                      "width": {
+                        "minimum": 0,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "width",
+                      "height"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "position",
+                  "size"
+                ],
+                "type": "object"
+              },
+              "size": {
+                "additionalProperties": false,
+                "properties": {
+                  "height": {
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "width": {
+                    "minimum": 0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "width",
+                  "height"
+                ],
+                "type": "object"
+              },
+              "status": {
+                "enum": [
+                  "resolved",
+                  "assumed",
+                  "unknown-anchor"
+                ],
+                "type": "string"
+              },
+              "visible": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "status",
+              "notes",
+              "anchor",
+              "flags",
+              "position",
+              "offset",
+              "size",
+              "raw",
+              "visible",
+              "ignore_pointer",
+              "clip_children"
+            ],
+            "type": "object"
+          },
+          "id": {
+            "pattern": "^widget-[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parent_id": {
+            "pattern": "^widget-[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "sibling_index": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "source": {
+            "additionalProperties": false,
+            "properties": {
+              "column": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "line": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "path": {
+                "pattern": "^(?![A-Za-z]:)(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$)).+$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "line",
+              "column"
+            ],
+            "type": "object"
+          },
+          "state": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "value": {}
+              },
+              "required": [
+                "name",
+                "value"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "sibling_index",
+          "children",
+          "source",
+          "geometry",
+          "attributes",
+          "state"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "scenario_id",
+    "scenario",
+    "entrypoint",
+    "state",
+    "viewport",
+    "canonical",
+    "normalization",
+    "stats",
+    "widgets"
+  ],
+  "type": "object"
+}

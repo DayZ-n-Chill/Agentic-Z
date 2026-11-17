@@ -1,0 +1,26 @@
+{
+  "collections": [],
+  "default_state": "defective",
+  "entrypoint": {
+    "layout": "layouts/defects.layout",
+    "subviews": []
+  },
+  "scenario_id": "defect-overlays",
+  "schema_version": "dayz-ui-scenario-v1",
+  "states": [
+    {
+      "controls": [
+        {
+          "enabled": false,
+          "widget": "StateTarget"
+        }
+      ],
+      "name": "defective"
+    }
+  ],
+  "subviews": [],
+  "viewport": {
+    "height": 1000,
+    "width": 1000
+  }
+}

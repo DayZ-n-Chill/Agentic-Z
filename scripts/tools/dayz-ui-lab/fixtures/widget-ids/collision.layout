@@ -1,0 +1,16 @@
+FrameWidgetClass Root {
+ {
+  FrameWidgetClass ingame_menu_panel {
+   {
+    WrapSpacerWidgetClass play_panel_root {
+     {
+      WrapSpacerWidgetClass top {
+      }
+      WrapSpacerWidgetClass top {
+      }
+     }
+    }
+   }
+  }
+ }
+}

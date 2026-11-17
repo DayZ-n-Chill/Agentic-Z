@@ -1,0 +1,8 @@
+# Normalise line endings so the repo is not polluted by CRLF/LF churn
+# between contributors on Windows and POSIX.
+* text=auto eol=lf
+
+# .p3d fixtures and any binary artefact must never be transformed.
+*.p3d binary
+*.paa binary
+*.whl binary

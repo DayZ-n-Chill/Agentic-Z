@@ -1,0 +1,39 @@
+{
+  "collections": [],
+  "default_state": "default",
+  "entrypoint": {
+    "layout": "../three-cards/layouts/shell.layout",
+    "subviews": [
+      "a"
+    ]
+  },
+  "scenario_id": "cycle",
+  "schema_version": "dayz-ui-scenario-v1",
+  "states": [
+    {
+      "name": "default"
+    }
+  ],
+  "subviews": [
+    {
+      "id": "a",
+      "layout": "../three-cards/layouts/subview.layout",
+      "mount": "SubviewMount",
+      "subviews": [
+        "b"
+      ]
+    },
+    {
+      "id": "b",
+      "layout": "../three-cards/layouts/card.layout",
+      "mount": "CardsMount",
+      "subviews": [
+        "a"
+      ]
+    }
+  ],
+  "viewport": {
+    "height": 1080,
+    "width": 1920
+  }
+}

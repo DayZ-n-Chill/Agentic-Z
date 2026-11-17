@@ -1,0 +1,67 @@
+FrameWidgetClass DefectRoot {
+    position 0 0
+    size 1 1
+    hexactpos 0
+    vexactpos 0
+    hexactsize 0
+    vexactsize 0
+    {
+        FrameWidgetClass ClippingParent {
+            position 0.05 0.05
+            size 0.25 0.25
+            hexactpos 0
+            vexactpos 0
+            hexactsize 0
+            vexactsize 0
+            clipchildren 1
+            {
+                TextWidgetClass ClippedChild {
+                    position 0.75 0.2
+                    size 0.5 0.5
+                    hexactpos 0
+                    vexactpos 0
+                    hexactsize 0
+                    vexactsize 0
+                    text "Clipped"
+                }
+            }
+        }
+        FrameWidgetClass OverlapParent {
+            position 0.4 0.05
+            size 0.4 0.3
+            hexactpos 0
+            vexactpos 0
+            hexactsize 0
+            vexactsize 0
+            {
+                TextWidgetClass OverlapFirst {
+                    position 0.05 0.1
+                    size 0.5 0.5
+                    hexactpos 0
+                    vexactpos 0
+                    hexactsize 0
+                    vexactsize 0
+                    text "First"
+                }
+                TextWidgetClass OverlapSecond {
+                    position 0.4 0.3
+                    size 0.5 0.5
+                    hexactpos 0
+                    vexactpos 0
+                    hexactsize 0
+                    vexactsize 0
+                    text "Second"
+                }
+            }
+        }
+        ButtonWidgetClass StateTarget {
+            position 0.05 0.6
+            size 0.2 0.1
+            hexactpos 0
+            vexactpos 0
+            hexactsize 0
+            vexactsize 0
+            text "State"
+        }
+    }
+}

@@ -1,0 +1,41 @@
+// Synthetic fixture for the HTML layout viewer. Not a game asset.
+FrameWidgetClass Root {
+    position 0 0
+    size 1 1
+    hexactpos 0
+    vexactpos 0
+    hexactsize 0
+    vexactsize 0
+    {
+        TextWidgetClass HiddenLabel {
+            position 0.1 0.1
+            size 0.3 0.1
+            hexactpos 0
+            vexactpos 0
+            hexactsize 0
+            vexactsize 0
+            visible 0
+            text "hidden-by-flag"
+            color 1 0 0 1
+        }
+        TextWidgetClass ShownLabel {
+            position 0.1 0.3
+            size 0.3 0.1
+            hexactpos 0
+            vexactpos 0
+            hexactsize 0
+            vexactsize 0
+            visible 1
+            text "shown-by-flag"
+        }
+        ImageWidgetClass Icon {
+            position 0.1 0.5
+            size 0.1 0.1
+            hexactpos 0
+            vexactpos 0
+            hexactsize 0
+            vexactsize 0
+            image0 "#(argb,8,8,3)color(0.2,0.4,0.6,1)"
+        }
+    }
+}

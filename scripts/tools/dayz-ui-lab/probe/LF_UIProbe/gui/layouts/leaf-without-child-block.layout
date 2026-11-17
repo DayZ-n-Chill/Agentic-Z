@@ -1,0 +1,15 @@
+FrameWidgetClass ProbeRoot {
+    position 0 0
+    size 1 1
+    {
+        ButtonWidgetClass LeafButton {
+            position 0 0
+            size 200 40
+            hexactpos 1
+            vexactpos 1
+            hexactsize 1
+            vexactsize 1
+            text "Leaf"
+        }
+    }
+}

@@ -1,0 +1,6 @@
+TextWidgetClass Label
+{
+    text "{not a block}"
+    {
+    }
+}

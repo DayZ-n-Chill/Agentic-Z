@@ -1,0 +1,21 @@
+{
+  "collections": [],
+  "default_state": "default",
+  "entrypoint": {
+    "layout": "../three-cards/layouts/shell.layout",
+    "subviews": []
+  },
+  "scenario_id": "schema-invalid",
+  "schema_version": "dayz-ui-scenario-v1",
+  "states": [
+    {
+      "name": "default"
+    }
+  ],
+  "subviews": [],
+  "unexpected": true,
+  "viewport": {
+    "height": 1080,
+    "width": 1920
+  }
+}

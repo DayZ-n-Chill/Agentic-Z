@@ -1,0 +1,40 @@
+{
+  "bones": ["Pelvis"],
+  "format": "rtm",
+  "frames": [
+    {
+      "phase": 0.0,
+      "transforms": [
+        {
+          "bone": "Pelvis",
+          "matrix": [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0]
+          ]
+        }
+      ]
+    },
+    {
+      "phase": 1.0,
+      "transforms": [
+        {
+          "bone": "Pelvis",
+          "matrix": [
+            [0.0, -1.0, 0.0, 0.5],
+            [1.0, 0.0, 0.0, -0.25],
+            [0.0, 0.0, 1.0, 1.0],
+            [0.0, 0.0, 0.0, 1.0]
+          ]
+        }
+      ]
+    }
+  ],
+  "mdat_present": true,
+  "metadata": [
+    {"name": "step", "phase": 0.5, "value": "left"}
+  ],
+  "motion": [1.0, 2.0, 3.0],
+  "version": "RTM_0101"
+}

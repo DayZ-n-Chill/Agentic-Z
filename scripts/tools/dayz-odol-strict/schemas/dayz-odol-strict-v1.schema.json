@@ -1,0 +1,94 @@
+{
+  "$id": "https://example.invalid/dayz-odol-strict/dayz-odol-strict-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "backend_api_id": {"const": "odol_reader.ODOL.from_bytes-v1"},
+    "backend_manifest_id": {"minLength": 1, "type": "string"},
+    "backend_manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "container_offset": {"minimum": 0, "type": "integer"},
+    "input_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "lod_count": {"maximum": 64, "minimum": 1, "type": "integer"},
+    "lods": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "actual_end": {"minimum": 1, "type": "integer"},
+          "declared_end": {"minimum": 1, "type": "integer"},
+          "declared_start": {"minimum": 0, "type": "integer"},
+          "face_count": {"minimum": 0, "type": "integer"},
+          "index": {"minimum": 0, "type": "integer"},
+          "material_count": {"minimum": 0, "type": "integer"},
+          "named_properties": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {"type": "string"},
+                "value": {"type": "string"}
+              },
+              "required": ["name", "value"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "normal_count": {"minimum": 0, "type": "integer"},
+          "property_count": {"minimum": 0, "type": "integer"},
+          "proxy_count": {"minimum": 0, "type": "integer"},
+          "raw_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+          "resolution": {"type": "number"},
+          "selection_count": {"minimum": 0, "type": "integer"},
+          "selection_names": {
+            "items": {"type": "string"},
+            "type": "array"
+          },
+          "vertex_count": {"minimum": 0, "type": "integer"}
+        },
+        "required": [
+          "actual_end",
+          "declared_end",
+          "declared_start",
+          "face_count",
+          "index",
+          "material_count",
+          "named_properties",
+          "normal_count",
+          "property_count",
+          "proxy_count",
+          "raw_sha256",
+          "resolution",
+          "selection_count",
+          "selection_names",
+          "vertex_count"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "payload_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "resolutions": {
+      "items": {"type": "number"},
+      "minItems": 1,
+      "type": "array"
+    },
+    "schema_version": {"const": "dayz-odol-strict-v1"},
+    "version": {"enum": [53, 54, 55]}
+  },
+  "required": [
+    "backend_api_id",
+    "backend_manifest_id",
+    "backend_manifest_sha256",
+    "container_offset",
+    "input_sha256",
+    "lod_count",
+    "lods",
+    "payload_sha256",
+    "resolutions",
+    "schema_version",
+    "version"
+  ],
+  "type": "object"
+}

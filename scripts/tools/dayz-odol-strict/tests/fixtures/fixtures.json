@@ -1,0 +1,29 @@
+{
+  "fixtures": [
+    {
+      "filename": "odol-v53-ammo-box.p3d",
+      "lod_count": 1,
+      "rights": "User-authorized first-party fixture approved for public redistribution on 2026-07-25.",
+      "sha256": "c2ba93cc05d3d47df5400c6f5f68aef928687eef06ce38747340927cd39e96ba",
+      "size": 462,
+      "version": 53
+    },
+    {
+      "filename": "odol-v54-rugermarkiv-optic.p3d",
+      "lod_count": 1,
+      "rights": "User-authorized first-party fixture approved for public redistribution on 2026-07-25.",
+      "sha256": "ccdb62e78661f2a0d98e5d5ca8844a8a7f0ae5242c2e1f403530d01d0ef037f9",
+      "size": 562,
+      "version": 54
+    },
+    {
+      "filename": "odol-v55-lfquad-body.p3d",
+      "lod_count": 5,
+      "rights": "User-authorized first-party fixture approved for public redistribution on 2026-07-25.",
+      "sha256": "9dd2b16a70001b5e6513bf26da0b24db6c2a92c09f6fa09ae9aab20f77ef19d3",
+      "size": 1441109,
+      "version": 55
+    }
+  ],
+  "schema_version": "dayz-odol-fixtures-v1"
+}
