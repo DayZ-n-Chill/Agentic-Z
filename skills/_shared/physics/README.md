@@ -1,6 +1,6 @@
 # Physics pack
 
-Tier 3 reference for how DayZ objects behave physically: mass, collision LODs, dropping, throwing and contact. Written for `dayz-physics-specialist`; any DayZ worker may load one file of it when a task needs it. Tier 1 and Tier 2 still apply on top.
+Tier 3 reference for how DayZ objects behave physically: mass, collision LODs, dropping, throwing and contact, plus rigid bodies from script, interaction layers and raycasts, the player controller, what replicates, scripted triggers and water queries. Written for `dayz-physics-specialist`; any DayZ worker may load one file of it when a task needs it. Tier 1 and Tier 2 still apply on top.
 
 Every game fact here cites the vanilla file on `P:\` it came from. A line marked **model knowledge** comes from the MLOD format or Object Builder, not from a vanilla text file, so check it on the mod's own MLOD model with `/dayz-p3d-audit`. Vanilla `.p3d` files under `P:\DZ\` are binarized ODOL and stay closed: never open, convert or audit them.
 
@@ -12,8 +12,14 @@ Every game fact here cites the vanilla file on `P:\` it came from. A line marked
 | Which LOD stops players, items and bullets, and how to probe each one from script | `collision-lods.md` |
 | Why an item floats, freezes or falls through the floor when spawned, dropped or thrown | `drop-and-throw.md` |
 | Reacting when something hits something: `EOnContact`, impact sounds, players, vehicles, pushing | `contact.md` |
+| Creating, waking, moving and removing a physics body from script (`dBody` calls), friction and bounce, the calls that do not exist | `rigid-body-api.md` |
+| Interaction layers, the three ways to switch a collision off, the two families of ray and overlap tests, why the action cursor ignores a physics body | `layers-and-raycasts.md` |
+| The player's character controller, riding a moving platform, lifting the player from a command script, ragdoll and fall damage (1.30) | `player-controller.md` |
+| What the engine sends to clients about a moving object, which machine simulates it, and what physics work can leave the server | `network-and-authority.md` |
+| Trigger volumes from script: `ScriptedEntity` shapes, who is told about entry and exit, the `TriggerEvents` hooks | `scripted-triggers.md` |
+| What the water queries return over river pieces, ponds and a roadway water face of your own | `water-queries.md` |
 
-Related packs: `_shared/enscript/patterns/physics_items.md` (making a spawned item physics active), `dayz-p3d-audit/references/p3d-killers.md` (model faults that break collision with no error) and the LOD resolution table in `_shared/conventions/assets.md`.
+Related packs: the `dayz-physics-engine` skill (`dayz-physics-engine/SKILL.md`: the full depth behind this pack, with the engine deep dive, the damage and `TransportHit` pipeline, transport net sync, and ragdoll and fall damage in its `references/`), `_shared/enscript/patterns/physics_items.md` (making a spawned item physics active), `dayz-p3d-audit/references/p3d-killers.md` (model faults that break collision with no error) and the LOD resolution table in `_shared/conventions/assets.md`.
 
 ## Symptom to cause
 
@@ -27,3 +33,6 @@ Related packs: `_shared/enscript/patterns/physics_items.md` (making a spawned it
 | Player can't throw the item | The item uses the heavy hand profile, the weapon is raised, or there is no free space in front | `drop-and-throw.md` | expected for heavy items; otherwise dayz-config-specialist (parent class) |
 | Item lands with the wrong sound, or none | `soundImpactType` missing, or impact too slow | `contact.md` | dayz-config-specialist |
 | Item is far too easy or too hard to push | Geometry mass far from what the item should weigh | `mass-and-weight.md` | dayz-object-builder |
+| Action or cursor does not appear on the object | The action cursor reads View Geometry, not the physics body | `collision-lods.md`, `layers-and-raycasts.md` | dayz-object-builder |
+| Player walks through a body created on the server | The body exists only on the server; the player's controller is simulated on the client | `player-controller.md`, `network-and-authority.md` | dayz-script-specialist |
+| Rolling or thrown object freezes after a few seconds | The drop physics lifetime ended, or the body went to sleep | `drop-and-throw.md`, `rigid-body-api.md` | dayz-script-specialist |

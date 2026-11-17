@@ -12,8 +12,9 @@ Every game fact here cites the vanilla file on `P:\` it came from, or `<DayZ Too
 | What each `.rvmat` key and stage does in the Super and Skin shaders, plus damage, destruct and thermal variants | `rvmat-stages.md` |
 | Which vanilla material to copy for cloth, metal, glass or skin, and which values to change | `surface-recipes.md` |
 | What to tell the user to look at in Object Builder and in game once the files are written | `checking-the-look.md` |
+| Which script call changes a texture or material, what health levels and wetness do to it, and why a material set from script does not show | `runtime-material-swaps.md` |
 
-Related packs: `dayz-p3d-audit/references/config-rvmat-checks.md` (the `.rvmat` checks the model audit makes), `_shared/wearables/references/color-variants.md` (hidden selections and one texture per color) and `/dayz-pack-texture` (packs the images).
+Related packs: `dayz-p3d-audit/references/config-rvmat-checks.md` (the `.rvmat` checks the model audit makes), `_shared/wearables/references/color-variants.md` (hidden selections and one texture per color) `/dayz-pack-texture` (packs the images) and the `dayz-texture-pipeline` skill (`dayz-texture-pipeline/SKILL.md`: map conventions per suffix, the `.rvmat` cookbook, config and damage wiring, Multi materials, vehicle materials, baked atlases, the MatPBR `.emat` route, UI textures, and an `.rvmat` linter, template writer and normal map convention check).
 
 ## Symptom to cause
 
@@ -25,3 +26,6 @@ Related packs: `dayz-p3d-audit/references/config-rvmat-checks.md` (the `.rvmat` 
 | Glass is opaque | The color texture is `_co` (no alpha) instead of `_ca`, or the alpha is white | `surface-recipes.md` |
 | Item looks the same at every health level | `healthLevels[]` points every level at the same `.rvmat` | `rvmat-stages.md` |
 | Texture rejected by `/dayz-pack-texture` | Filename has no vanilla suffix | `suffixes-and-sizes.md` |
+| Material set from script does not show | The engine's health level material replaced it, or the getter was trusted | `runtime-material-swaps.md` |
+| Bumps look pushed in | The normal map is OpenGL style (Y+); `_nohq` is DirectX style (Y-) | `suffixes-and-sizes.md` |
+| ImageToPAA says `Loading of img failed` | RLE compressed TGA, 16-bit PNG, or a PNG saved by Blender | `suffixes-and-sizes.md` |

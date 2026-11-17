@@ -29,9 +29,9 @@ One lesson from the project: the connectivity pass scripts were lost once becaus
 
 1. **Road connector.** For each road piece in the Object section, connect the two nearest road nodes that are in different components and within 30 m (60 m for a bridge). The new edge is a three point line (node A, the piece's position, node B) with an asphalt surface. There is a real road model at that spot, which is what justifies the link. A live union find keeps the pass idempotent.
 2. **Reclassify.** Edges with surface `other` whose model belongs to a road family the base classifier does not know (`city_*`, `town_*` and similar) become asphalt.
-3. **Stitch.** Node pairs in different components closer than 5 m get an edge. This sews up fine fragmentation that the 3D duplicate removal left.
+3. **Stitch.** Node pairs in different components closer than 5 m get an edge, tagged `<stitch_road_5m>`. This sews up fine fragmentation that the 3D duplicate removal left.
 
-The output JSON records in an `extras` block what each pass added, and each pass keeps a backup of its input.
+The output JSON records in an `extras` block what each pass added (keys such as `roads_v2.5_added`, `fase6_reclass` and `fase6_stitches`; "fase6" is the source project's own name for passes 2 and 3), and each pass keeps a backup of its input (`.bak_*_pre_*`).
 
 The rule behind them: never connect by distance alone. A real object from the `.wrp` has to justify each connection. A pass that bridged node pairs by maximum distance was rejected because it created false connections.
 

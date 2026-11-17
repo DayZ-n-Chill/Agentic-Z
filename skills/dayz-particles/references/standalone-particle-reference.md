@@ -227,7 +227,7 @@ A real effect stacks emitters with different timing, size and material. The thre
 
 ### PLANES_IMPACT, a ground impact with 12 emitters
 
-Grouped in three clusters: fire (3 emitters), dust (7, among them small and large rings and emitters aimed up and aimed the opposite way) and debris with sparks (3).
+Grouped in three clusters named by emitter prefix: `explo_fire` (3 emitters), `explo_dust` (7, among them small and large rings and emitters aimed up and aimed the opposite way) and `explo_debris` with sparks (3).
 
 ### PLANES_BOOM, an aircraft fireball with 7 emitters
 

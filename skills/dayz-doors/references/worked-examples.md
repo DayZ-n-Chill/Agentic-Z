@@ -164,7 +164,7 @@ No pattern uses `AnimationSources` or script calls; those are in `_shared/animat
 
 The three tutorial buildings have no lock slots. In 1.30 `House` is a `BuildingBase`, which takes `CombinationLock` and `DigitalCodeLock` as attachments and ties them to a door through `AdditionalDoorInfo`. The source notes report that until 1.29 a world building's door locked only through the engine's `LockDoor` and `UnlockDoor` with a lockpick.
 
-The fence, a player built gate, lists both slots at entity level, not inside **class Doors** (`attachments[]`, `P:\DZ\gear\camping\config.cpp:4362` to `:4368`).
+The fence, a player built gate, lists both slots at entity level, not inside **class Doors** (`attachments[]`, `P:\DZ\gear\camping\config.cpp:4362` to `:4368`). The whole list is `Wall_Barbedwire_1`, `Wall_Barbedwire_2`, `Wall_Camonet`, `Att_CombinationLock`, `Att_CodeLock`, `Material_Nails`, `Material_WoodenPlanks`, `Material_MetalSheets`, `Material_WoodenLogs` and `Material_MetalWire`.
 
 The slot name constants of `BuildingBase`:
 

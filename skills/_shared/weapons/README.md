@@ -15,6 +15,9 @@ Every fact cites the vanilla file on `P:\` it came from as `path:line`. Line num
 | How do I set recoil, and how do fire modes, burst and rate of fire work? | `recoil-fire-modes.md` |
 | Muzzle flash, barrel smoke and shot sounds. | `muzzle-effects.md` |
 | What memory points, selections and bones must the model have? | `model-selections.md` |
+| Script calls: spawning a loaded weapon, reading its state, the state machine, firearm actions, the 1.30 explosion effect calls. | `weapon-script-api.md` |
+
+Deeper material is in the `dayz-weapons` skill (`dayz-weapons/SKILL.md`): the `.p3d` selection contract, the bone remap, the `CfgWeapons` contract, the import rule and the DayZ 1.30 firearm changes.
 
 ## Worked example used across the pack
 
