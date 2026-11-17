@@ -46,7 +46,7 @@ blender -b <in.blend> -P "<skill-dir>\scripts\uv_clean_atlas.py" -- <out.blend> 
 | `<out.blend>` | Saved copy: the original mesh with the new unwrap in its active UV layer. |
 | `<out_dir>`, `<tag>` | Where the renders go: `<tag>_uvlayout.png` and `<tag>_uvgrid.png`. |
 | `<min_faces>` | Charts smaller than this are merged into a neighbor. Validated values: 30 for the 10k mesh, 60 for the 37k mesh. |
-| `<object_name>` | The mesh object to unwrap. |
+| `<object_name>` | The mesh object to unwrap. When it is left out, or no object has that name, the script takes the first mesh object in the file without a warning, so always pass it. |
 
 Read the layout PNG yourself before showing it to the user.
 
@@ -122,7 +122,7 @@ Report `collapsed / total` next to the SAT pair count, and treat any collapse as
 | Question | Tool |
 |---|---|
 | Is there any overlap, exactly, and on which faces? | `blender -b <file.blend> -P "<skill-dir>\scripts\sat_gate.py" -- <object_name>` prints `SAT_PAIRS`, `SAT_FACES` and up to 40 offending faces with their 3D position |
-| How many islands, how much overlap, how even is the density, and what does the layout look like? | Import `uv_metrics.py` in a Blender script and call `score_and_render(obj, out_dir, tag)`. Its rasterizer works headless |
+| How many islands, how much overlap, how even is the density, and what does the layout look like? | Import `uv_metrics.py` in a Blender script and call `score_and_render(obj, out_dir, tag)`. Its rasterizer works headless. Its grid render replaces the object's materials and removes every camera and light in the scene, so do not save the file afterwards |
 | How good are the UVs of an assembled `.p3d` (LODs, proxies, material groups)? | Measure on the MLOD with py3d; the metrics and their traps are in `references/mlod-uv-audit.md` |
 | How does a PartUV result score? | `audit_partuv.py`, see `references/partuv-pilot.md` |
 
@@ -236,7 +236,7 @@ All in `<skill-dir>\scripts\`. Every `.py` here runs inside Blender (`blender -b
 | `uv_clean_atlas.py` | The Track A pipeline, stages 1 to 7 |
 | `uv_view_charts.py`, `uv_straighten.py`, `uv_shelf_pack.py`, `uv_metrics.py` | The stages, imported by the pipeline; `uv_metrics.py` is also the audit module |
 | `sat_gate.py` | The exact overlap gate for the active UV layer of one object |
-| `project_atlas.py` | The orthographic projector behind the photograph method |
+| `project_atlas.py` | The orthographic projector behind the photograph method. `blender -b <file.blend> --python project_atlas.py -- <assignment.json or SMOKE> <outdir> [--placement-override <file.json>]`. It is tied to the LFQuad body mesh and stops with exit code 2 on any other `.blend` until its constants are changed; see "Running the engine" in `references/organic-paint-photograph.md` |
 | `export_objs_tri.py` | Exports an object as a sanitized, triangulated OBJ for PartUV |
 | `audit_partuv.py` | Scores a PartUV result and re-packs it with the shelf packer |
 | `partuv_install.sh` | Installs PartUV on Linux or WSL2 |

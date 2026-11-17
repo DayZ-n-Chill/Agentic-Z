@@ -90,10 +90,10 @@ The full list of 21 rules, with the measurements behind them, is `references/cri
 | What must I check before working on an imported FBX or reshaping an imported mesh? | `references/blender-import-preflight.md` |
 | How do I clean up and export a mesh that came from another tool? | `references/blender-workflow.md` |
 | Why is the axis conversion a reflection, and how do I verify winding on collision LODs, glTF sources and open geometry? | `references/axes-and-winding.md` |
-| How do I write a `.p3d` with py3d (API, LOD build order, proxies, reading and diagnosing a file)? | `references/py3d-direct-generation.md` |
+| How do I write a `.p3d` with py3d (API, LOD build order, proxies, reading and diagnosing a file, a collision hull, checking baked mass offline with `binarize.exe`)? | `references/py3d-direct-generation.md` |
 | Which py3d do I install, where may mass sit, how do I replace a section safely, and what does the validator's axis finding mean? | `references/py3d-assembly-rules.md` |
 | What goes in each LOD, and how do I keep a big building's collision inside Binarize's limits? | `references/lods-and-geometry.md` |
-| Which memory points and named selections does a model need, and how do proxy selections work? | `references/memory-and-selections.md` |
+| Which memory points and named selections does a model need, how do proxy selections work, and how are LF_PowerGrid cable ports named? | `references/memory-and-selections.md` |
 | How do I write the `model.cfg` skeleton and animations, and drive them? | `references/animations.md` |
 | What does the model need in `config.cpp`, which proxy classes, which `.rvmat`, and how is it packed? | `references/config-and-packing.md` |
 | How do I generate `_co`, `_nohq` and `_smdi` maps with coherent noise? | `references/procedural-textures.md` |

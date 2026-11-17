@@ -75,6 +75,8 @@ The physics body: what players bump into, what items rest on, and where the mass
 
 What bullets hit. Same rules as Geometry: closed convex components, named the same way, with penetration materials. Damage zones in `config.cpp` list selection names in `componentNames[]` (`MediumTent` zone `Body`, `P:\DZ\gear\camping\config.cpp:242`), so those names must exist in this LOD. A model can stop players and still let bullets through, so it needs its own check. Thickness counts here too: glass built too thick stops bullets (format knowledge, not shown by a vanilla file).
 
+The penetration materials are vanilla files under `P:\DZ\data\data\penetration\`, a `.rvmat` and nearly always a `.bisurf` of the same name: `metalplate`, `wood`, `wood_desk`, `glass`, `concrete`, `plastic`, `rubber`, `cloth` and about forty more. Write the path as `dz\data\data\penetration\<name>.rvmat`. Arma guides name `CA\Data\Penetration\metal_plate.rvmat`; the DayZ folder is the one above, and it holds no `metal_plate.rvmat`.
+
 ## View Geometry
 
 What the action cursor and view checks hit. Without it the player gets no action prompt on the object (`p3d-killers.md` section 4). A building door is found from its View Geometry component (`P:\scripts\3_game\entities\building.c:27` to `:28`), so each door needs its own convex component plus a named selection named after the door here; see `doors.md`.
@@ -85,3 +87,21 @@ Two more things read this LOD:
 - **Liquid actions on a well.** The wash, drink and fill actions ask for the View Geometry components of a selection named `liquid_source` (`P:\scripts\4_world\classes\useractionscomponent\actions\actionconstants.c:180`). The selection is optional: see `building-selections.md`.
 
 To prove which LOD a fault is in, probe it from script as `_shared/physics/collision-lods.md` shows.
+
+## Limits (reported, not checked on `P:\`)
+
+Vanilla models are binarized and already inside every limit, so none of these can be read from `P:\`. They are Bohemia format knowledge or measurements reported with the imported knowledge pack on third-party mods; the full accounts are in `dayz-model-pipeline/references/lods-and-geometry.md`.
+
+| Limit | Reported value | What happens past it |
+|---|---|---|
+| Vertex normals in one LOD | 32,768 | The game crashes or the LOD is not drawn |
+| The drawn LOD0 of a host with its proxies resolved, each proxy counted once per copy | about 32,768 normals and 65,536 vertices | The same, while each part's own `.p3d` looks fine. `/dayz-p3d-audit` prints a model's LOD0 vertex budget |
+| LODs in one model, all types together | under about 30 | Binarize can crash |
+| Roadway LOD | every face points up; at most about 36 m from the model's origin; at most 255 points when it holds animated parts; no overlap with the Geometry LOD | Characters fall through, a long bridge needs several models, characters wobble |
+| Components in one collision LOD | the name allows up to `Component2048`; one large building failed in Binarize far below that | Binarize writes no file and prints no reason. Measured on that building: 28,124 faces and 31.5 million (named selections × points) per collision LOD passed, 32,766 faces and 33.9 million failed |
+
+Three working rules follow from those reports:
+
+- Two LODs must never share a resolution value, and a script that adds LODs must check that the LOD is not there already: run twice, it duplicates them.
+- Reduce a visual LOD with Decimate in collapse mode. Planar dissolve does not reduce a curved surface: on one vehicle body it gave more triangles than the LOD above it once the result was triangulated. To keep a grille or a badge intact, protect it with a vertex group.
+- When a building's collision goes past what Binarize accepts, move pieces into a second, collision only model placed at the same transform. Do not merge or decimate the pieces to fit.

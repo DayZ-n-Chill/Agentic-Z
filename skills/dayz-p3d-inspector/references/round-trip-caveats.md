@@ -10,6 +10,8 @@ Tool behaviour measured on mod models, not yet checked on `P:\`. What a selectio
 
 A memory selection is a membership set: which points belong to it. The builder's `build_memory_lod()` rebuilds the Memory LOD from `recipe.memory_points[].selections` and `recipe.axes`. On real models the extractor leaves both of those empty; the true membership sits in `recipe.lods[memory].selections`, which the builder ignores. A rebuild can therefore wipe memory selections while their names and the geometry still look right. Measured on a vehicle model with a weapon rig: 79 memory selections and 132 faces lost.
 
+What the skill's own tests show (`test_p3d_inspector.py`, next to the scripts): on the small demo model a round trip keeps every memory selection with its point count, because there the extractor does fill `memory_points[].selections`; and a selection that exists only in `recipe.lods[memory].selections` is dropped by the builder. So a clean demo round trip proves nothing about a real model: run the test below on the model itself.
+
 In game the model then loses whatever those selections carried: door, wheel and suspension axes, damage zones, seats, proxies. A backup of the Recipe does not help, since the Recipe is what is incomplete.
 
 **Round-trip test** (run it before a rebuild you mean to keep):

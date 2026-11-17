@@ -68,3 +68,17 @@ So the named property on the Geometry LOD is common in vanilla, handheld items i
 ### On every collision LOD (reported)
 
 Reported from LF_PowerGrid models, not checked on `P:\`: with `autocenter` = `0` on the Geometry LOD only, the Fire Geometry and View Geometry meshes of a placed object were recentered on their own bounding boxes, about 20 to 25 cm away from the visual mesh. Bullets passed through, a hologram stacked on the object fell to the ground, and the action cursor did not find it. Setting the property on every collision LOD the model has (Geometry, Fire Geometry, View Geometry, and Roadway, Hit points and LandContact when present) fixed all three. Vanilla does both, as the counts above show, so treat this as the safe choice for a placed object built from scratch (`dayz-model-pipeline/references/critical-rules.md`, rule 16).
+
+Also reported, from a third-party storage mod and not checked on `P:\`: an invisible entity whose visual LOD holds only proxy triangles, used to carry and draw attachments, needed `autocenter = 0` in its config class. Without it the engine recentered the model and its memory points shifted (`dayz-model-pipeline/references/memory-and-selections.md`, SP-LFS-6).
+
+## Reading and writing them with py3d
+
+Tool knowledge, not a vanilla fact. In an MLOD read with py3d, a LOD's named properties are the dictionary `lod.properties`, and both the key and the value are strings:
+
+```python
+geometry_lod.properties["class"] = "house"
+geometry_lod.properties["autocenter"] = "0"      # the string "0", not the number 0
+print(dict(geometry_lod.properties))
+```
+
+A check such as `lod.properties.get("autocenter") != "0"` therefore compares with the string. Properties are set per LOD, so a value that every collision LOD needs is written once on each.

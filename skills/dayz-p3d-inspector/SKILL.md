@@ -36,8 +36,9 @@ The viewer draws flat shaded geometry with no textures on purpose: its job is to
 ## Before you start
 
 - The extractor and the builder read and write `.p3d` with the DayZ fork of py3d (1.6.0 or later). They use the copy in this repo under `scripts/tools/py3d/` with nothing to install. Never `pip install py3d`: the PyPI package of that name is an unrelated library.
-- The extractor also needs numpy: `python -m pip install numpy`.
-- The viewer needs neither. It writes one self-contained HTML file that loads Three.js from a CDN, so the browser needs internet access the first time.
+- Without that folder (a plugin install that ships only `skills/`) both scripts fall back to the installed py3d, and stop with an install hint when there is none.
+- numpy is needed only by the builder's auto-fix: `python -m pip install numpy`. Without numpy the builder skips the auto-fix and says nothing.
+- The viewer needs neither. It writes one HTML file that loads Three.js 0.185.1 as ES modules from the jsDelivr CDN, so the browser needs internet access the first time. The page scaffold comes from `viewer_core.py`, which ships with the 3D viewer tool in `scripts/tools/dayz-3d-viewer`; the script stops and names the paths it tried when that file is missing.
 - `<skill-dir>\scripts\install_py3d.py` is optional. It installs the fork from a built wheel so that `import py3d` works outside this repo, and stops when no wheel was built.
 
 ## How to run

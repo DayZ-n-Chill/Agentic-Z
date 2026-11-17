@@ -12,7 +12,9 @@ A proxy is a placeholder in one model that shows another model in its place: fur
 - Put the proxy in every visual LOD where the other model should show. A proxy left out of a lower LOD makes that part vanish at a distance.
 - Since 1.30, a proxy that shows an inventory attachment also goes in the View Geometry LOD: the official 1.30 changelog says a dedicated server now reads the attachment's position from there when the proxy is not in the last visual LOD, instead of returning the parent's center (`lods.md`, View Geometry).
 - Vehicle slot proxies sit in non visual LODs as well. `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` has 6 visual LODs and stores each wheel proxy (`sedanwheel.001` to `.005`) 7 times and `battery_car.001` 8 times; the wheel slot case is in `selections.md`.
+- The index does not choose a slot. `P:\DZ\gear\camping\territory_flag.p3d` stores `proxy:\dz\gear\consumables\stone.001` for the stones of the flag pole, although `Material_FPole_Stones` is the second entry of `inventorySlot[]` in `ProxyStone` (`P:\DZ\gear\consumables\config.cpp:4573`). A proxy is tied to its slot through the selection that the slot's `CfgSlots` class names (`selection="Material_FPole_Stones"`, `P:\scripts\config.cpp:2496`).
 - Point at a model inside the mod's own `$PBOPREFIX$` or at a vanilla model. Never point at a `P:\` drive letter path.
+- Tool knowledge: the py3d fork in `scripts/tools/py3d` writes a proxy with `LOD.add_proxy(path, index)`. It refuses a path that ends in `.p3d` and an index below 1, and it writes a triangle whose facing is unambiguous.
 
 ## In config
 
@@ -23,6 +25,11 @@ A proxy that is only decoration needs no config of its own: no vanilla `config.c
 For an item, write a `ProxyAttachment` class of the mod's own rather than adding the slot to a vanilla vehicle part class. Reported from one in-game test on a third-party item, not checked on `P:\`: a slot added with `inventorySlot[] +=` to the vanilla `ProxyBattery_Car` (`P:\DZ\vehicles\parts\config.cpp:1145`) never drew the battery on an `ItemBase` flag, in three proxy layouts, while a class of the item's own deriving from `ProxyAttachment`, with its own small proxy model, drew it. `ProxyBattery_Car` derives from `ProxyPart`, a vehicle part class with `reversed=1` (`P:\DZ\vehicles\parts\config.cpp:1125`); the vanilla flag's own proxy class is `ProxyDZ_Flag: ProxyAttachment` (`P:\DZ\gear\camping\config.cpp:13595`). The full account is in `dayz-model-pipeline/references/config-and-packing.md`.
 
 Community reports of a proxy that points at a binarized vanilla model disappearing in game are in `dayz-model-pipeline/references/community-findings.md` (MDL-2).
+
+Two more reports from third-party mods, not checked on `P:\` (`dayz-model-pipeline/references/memory-and-selections.md`):
+
+- Binarize does not merge the proxied model into the parent. Converting the binarized parent back and finding the proxy there shows only that the proxy survived; whether the other model sits right can be seen only in game.
+- An entity can be nothing but proxies: a visual LOD holding only proxy triangles, plus Memory, View Geometry and Fire Geometry boxes and no Geometry LOD, drew its attachments, appeared in the vicinity panel and kept its attachments across restarts. It still blocked the player through its bounding volume.
 
 Clothing and gear proxies, including the body proxies on the survivor, are in `_shared/wearables/references/models-and-proxies.md`.
 

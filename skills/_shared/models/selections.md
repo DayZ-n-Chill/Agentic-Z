@@ -25,6 +25,10 @@ Binarize stores selection names in lower case. The wooden case's collision compo
 
 The names buildings carry (door leaves, ladders, the points of the Paths LOD, loot and rain sound points) and the `liquid_source` selection of a well are in `building-selections.md`.
 
+One name has no reader: `zbytek`, Czech for "the rest", is the selection Bohemia's models use for everything that is in no other selection. 275 of the 572 models under `P:\DZ\gear\` store it (for example `P:\DZ\gear\books\book_kniga.p3d`). A mod model does not need it, but generators often write it for the static part of a model.
+
+A selection that only swaps a texture or material (a hidden selection) belongs in the visual LODs and nowhere else. A bone belongs in a collision LOD only when the collision has to move with the part; a checker that reports every visual selection missing from Geometry, Fire Geometry or View Geometry is asking a question, not naming an error.
+
 Two of these rows fail silently when the selection is in the wrong LOD. Reported from in-game tests on a custom quad, not checked on `P:\`:
 
 - A wheel-slot selection that exists only in the visual LODs lets the wheel attach as an item but never simulate: `WheelCountPresent()` stays 0 while `WheelCount()` is the full count (`P:\scripts\3_game\vehicles\car.c:345` and `P:\scripts\3_game\vehicles\car.c:348`), and no log line says why. `/dayz-p3d-audit` checks this when it is given the vehicle's `config.cpp`.

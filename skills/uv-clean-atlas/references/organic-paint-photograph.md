@@ -36,6 +36,31 @@ Repeat until the ghost is gone. Keep the same `a` and use rigid translation only
 
 Do not use a Voronoi split. Do not use `smart_project`. Do not let the texturing tool recreate the UVs.
 
+## Running the engine
+
+```
+blender -b <file.blend> --python <skill-dir>\scripts\project_atlas.py -- <assignment.json or SMOKE> <outdir> [--placement-override <file.json>]
+```
+
+The script never saves the `.blend`. It writes `atlas_metrics.json`, the island files (`atlas_a_islands.json`, `atlas_b_islands.json`, `island_visibility.json`) and the frozen `assignment_REAL.json` into `<outdir>`, prints one `SUMMARY` line, and exits with code 3 when a gate fails.
+
+It is the projector exactly as it ran on the LFQuad body, so these parts must be changed before it accepts another mesh:
+
+| In the script | What it holds for LFQuad | Effect on another mesh |
+|---|---|---|
+| `EXPECTED_BLEND_SHA256` | The SHA-256 of that one `.blend` | `main()` logs `ERROR blend sha256` and exits with code 2 |
+| `EXPECTED_FACE_COUNT` | 10,502 faces | The face invariant gate fails |
+| `find_body_object()` | Looks for an object named `carroceria` (Spanish for bodywork) | Falls back to the mesh object with the most faces and logs a warning |
+| `CONTROL_A_SHELL`, `CONTROL_B_SHELL` | Shells `S06` and `S03`, with their expected overlap figures | The two controls read the wrong piece or raise a `KeyError` |
+| `G7_CROSSING_SHELLS`, `G7_MIRROR_PAIRS`, `G7_ATLAS_A_SHELLS`, `G8_FRONT_VIEW_ROTATIONS` | That body's shell ids | The G7 to G9 layouts place the wrong pieces |
+| `SMOKE_ISLANDS_A`, `SMOKE_OVERLAP_A`, the `G3_*` figures | Earlier measured results on that body, used as baselines | The "not worse than baseline" comparisons mean nothing |
+
+Three more things to know:
+
+- **The stage follows the name of `<outdir>`.** `out_g7`, `out_g8`, `out_g9` and `out_g10` select the anatomical, two-panel, archipelago and cropped-frame layouts. Any other folder name runs the projection-axis search and the earlier block packer. Each named stage reads `atlas_metrics.json` from the folder that holds the assignment file, so the stages run in order, each fed the previous stage's frozen assignment.
+- **`SMOKE` in place of the assignment file** derives a provisional split by shell size and shape and writes `assignment_SMOKE.json`. It is a plumbing check, not the paint classification.
+- **`--placement-override`** applies a JSON of rigid per-island translations on top of the `out_g10` result (the script logs it as G11). The file must have exactly the keys `source` (`"uv_arranger"`), `base` (`"out_g10"`), `atlas` (`"A"`), `uv_space` (`[0, 0, 1, 1]`) and `islands`, with one row per base island holding `id`, `placement_center_uv` and `delta_uv`; anything else is rejected. With an override the script then calls `render_atlas_pngs`, which runs `draw_atlas_fallback.ps1` through `powershell.exe`. That renderer is not shipped, so the call raises after the metrics are written; draw the PNG files from `atlas_a_islands.json` another way. Without an override it writes `REPORT_G10.md` next to `<outdir>` instead.
+
 ## Worked example: the statue, 2026-09-02
 
 Mesh: `statue_remesh.blend`, object `statue`, 5,756 faces, 1 shell, identity world transform.
