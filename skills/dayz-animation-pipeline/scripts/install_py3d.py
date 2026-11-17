@@ -13,6 +13,7 @@ Without a wheel, install the fork from source instead:
 
 from __future__ import annotations
 
+import argparse
 import ast
 from importlib import import_module
 from pathlib import Path, PurePosixPath
@@ -233,9 +234,23 @@ def _run_pip(*arguments: str) -> None:
         )
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print the wheel and the pip commands that would run, without running pip",
+    )
+    args = parser.parse_args(argv)
     wheel = _select_wheel()
     action = _preexisting_action()
+    if args.dry_run:
+        if action == "replace-dayz-legacy":
+            print("would run: " + " ".join(pip_command("uninstall", "-y", "py3d")))
+        print("would run: " + " ".join(pip_command("install", "--break-system-packages", str(wheel))))
+        return 0
     if action == "replace-dayz-legacy":
         _run_pip("uninstall", "-y", "py3d")
     _run_pip("install", "--break-system-packages", str(wheel))

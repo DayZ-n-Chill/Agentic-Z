@@ -19,14 +19,9 @@ Environment assumptions:
   a pair, so it cancels in parity signals; it inflates the foreground mask
   equally in both. Acceptable for change detection.
 
-Provenance: adapted from img2threejs
-https://github.com/img2threejs/img2threejs commit 9a8ecf12 (v1.4.3),
-Apache-2.0 — see THIRD_PARTY_NOTICES.md at the repo root. Function origins:
-  - PNG codec + foreground mask: forge/stage1_intake/extract_pbr_evidence.py
-  - mask resample / IoU / bbox / proportion / symmetry:
-    forge/stage4_review/diagnose_render.py
-  - luma / SSIM / Sobel edge / blowout / flat / tonal:
-    forge/stage4_review/divine_eye.py
+Signals: PNG decode and foreground mask; mask resample, IoU, bounding box,
+proportion and symmetry; luma, SSIM, Sobel edges, blowout, flat and tonal
+checks.
 Deliberately omitted: pHash, objectness, CIEDE2000 colour metrics — colour is
 judged on native-res crops by eye. Pure stdlib, Python 3.10+.
 

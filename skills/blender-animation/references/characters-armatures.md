@@ -98,7 +98,7 @@ Every claim here is either the RNA doc text or was executed live.
 | `Bone.matrix` | Parent (rest) | read-only | 3×3 rest-orientation matrix relative to the parent. Rarely used directly by scripts. |
 | `PoseBone.matrix_basis` | Local (relative to own rest + parent) | **read/write** | The literal composition of `location` + `rotation_quaternion`/`rotation_euler`/`rotation_axis_angle` + `scale` — i.e. exactly the channels keyframes drive. |
 | `PoseBone.matrix` | **Armature object space** (not world!) | **read/write** | The final, on-screen pose after constraints and drivers — but still relative to the armature object's own origin, not the scene. |
-| `PoseBone.matrix_channel` | Armature space, pre-constraint | read-only | Channels + drivers, but **before** constraints. Rarely needed. |
+| `PoseBone.matrix_channel` | Armature space | read-only | Channels + drivers, plus the effect of bone constraints. Rarely needed. |
 
 Exact doc text (`bpy.types.PoseBone`, current):
 - `matrix_basis`: *"Alternative access to location/scale/rotation relative to the parent and
@@ -106,8 +106,8 @@ Exact doc text (`bpy.types.PoseBone`, current):
 - `matrix`: *"Final 4×4 matrix after constraints and drivers are applied, in the armature
   object space."*
 - `matrix_channel`: *"4×4 matrix of the bone's location/rotation/scale channels (including
-  animation and drivers) and the effect of bone constraints"* — channel-only, pre-constraint,
-  readonly.
+  animation and drivers) and the effect of bone constraints"* — channels, drivers and
+  constraints, readonly.
 
 **[LIVE]** verified the practical relationship: on a fresh 2-bone orphan armature, setting
 `pose_bone.rotation_quaternion = Quaternion((0, 1, 0), radians(30))` then reading
@@ -548,7 +548,7 @@ own modal-operator loop): `bake_action_objects(object_action_pairs, *, frames, b
 **When to use which:** the pure-Python `anim_utils.bake_action` is almost always the better
 choice for an MCP/agent-driven script — it sidesteps every context-override problem in the next
 section. Reach for the `bpy.ops.nla.bake` operator only when its UI-level side effects are
-specifically wanted (e.g. it also drives NLA strip/track placement automatically) or when
+specifically wanted or when
 baking is a direct translation of a recorded user macro.
 
 ## Context overrides
@@ -632,8 +632,8 @@ animation:
    `rotation_quaternion` F-Curve untouched in the action and creates no new `rotation_euler`
    F-Curve — the bone's animation is silently broken at every *other* keyframe until a full
    manual re-key pass in the new mode. **Direct property assignment**
-   (`pose_bone.rotation_mode = 'XYZ'`, no operator) behaves the same, minus even the
-   current-frame display fix-up the operator does. Decide rotation mode per bone before keying
+   (`pose_bone.rotation_mode = 'XYZ'`, no operator) also converts the current pose value and
+   likewise leaves every existing F-Curve untouched. Decide rotation mode per bone before keying
    anything.
 
 3. **`Action.fcurves` does not exist from Blender 5.0 onward** (confirmed
@@ -829,7 +829,7 @@ opts = anim_utils.BakeOptions(
 baked_action = anim_utils.bake_action(arm_obj, action=None, frames=range(1, 25), bake_options=opts)
 ```
 
-### 10. Context override for an operator needing a specific active object/selection, without touching the user's real state
+### 10. Context override for an operator needing a specific active object/selection (the mode change persists: restore the prior mode afterward)
 ```python
 # bpy.types.Context.temp_override
 with bpy.context.temp_override(active_object=arm_obj, selected_objects=[arm_obj]):

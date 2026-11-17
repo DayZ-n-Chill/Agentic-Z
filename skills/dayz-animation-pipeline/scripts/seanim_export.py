@@ -217,7 +217,10 @@ def main():
 
     # --- offline gate: structural round-trip (every emitted bone, rot + pos keys) ---
     rd = sw.read_seanim(a.out)
-    assert rd['frame_count'] == len(frames), (rd['frame_count'], len(frames))
+    # The writer sets frame_count to the last frame written plus one: len(frames) when dense,
+    # the last authored keyframe plus one with --keys-only.
+    written = max(f for b in bones for grp in ('pos_keys', 'rot_keys') for f, _ in b[grp]) + 1
+    assert rd['frame_count'] == written, (rd['frame_count'], written)
     assert abs(rd['framerate'] - fps) < 1e-6
     assert [b['name'] for b in rd['bones']] == order, 'bone order mismatch'
     for src, got in zip(bones, rd['bones']):

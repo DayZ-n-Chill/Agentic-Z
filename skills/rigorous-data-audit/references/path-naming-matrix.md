@@ -16,7 +16,7 @@ The helper names, suffixes and `file:line` values in the tables are from the LF_
 
 Search for every function that returns a string ending in a recognized extension. Record name, signature and exact return template.
 
-```powershell
+```text
 Grep "function.*Path" --type c --output_mode content -n true
 Grep "return.*\.lfv|return.*\.tmp|return.*\.bak|return.*\.json|return.*\.manifest" --type c --output_mode content -n true
 ```
@@ -38,7 +38,7 @@ Inconsistency in the third column is a flag. In the example above, `.tmp` breaks
 
 Search for every literal that ends in one of the recognized extensions. This finds places that build the path inline without going through a helper.
 
-```powershell
+```text
 Grep "\".*\.lfv\"|\".*\.tmp\"|\".*\.bak1\"|\".*\.bak2\"|\".*\.manifest\.json\"|\".*\.virtualizing\"|\".*\.restoring\"|\".*\.quarantine\.json\"" --type c --output_mode content -n true
 ```
 
@@ -48,7 +48,7 @@ For each hit, record the file and line and which extension is being built. Compa
 
 For each helper, find every call site. Group by intent: writers against readers (recovery, cleanup, admin commands, boot scan).
 
-```powershell
+```text
 Grep "GetContainerTmpPath|GetContainerLfvPath|GetContainerBak1Path|GetContainerBak2Path" --type c --output_mode content -n true
 ```
 

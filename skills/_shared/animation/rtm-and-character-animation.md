@@ -29,7 +29,7 @@ Survivors and infected do not use `.rtm` or `model.cfg` animations. They run Wor
 | Clips | `P:\DZ\anims\anm\player\`, `P:\DZ\anims\anm\infected\` |
 | Skeleton bone lists | `P:\DZ\anims\cfg\skeletons.anim.xml` (infected `hermit_newbindpose.xob` at :2, survivor `player_testing.xob` at :110, the `z_hermit.xob` list at :430, which no vanilla `skeletonName` under `P:\DZ\characters\` names, and the animals). Which list a class binds is its `skeletonName`: `hermit_newbindpose.xob` on `ZombieBase` (`P:\DZ\characters\zombies\config.cpp:76`), `player_testing.xob` on `SurvivorBase` (`P:\DZ\characters\data\config.cpp:158`) |
 
-Items in hands pick an existing instance and an IK pose in script: `pType.AddItemInHandsProfileIK("Inventory_Base", "dz/anims/workspaces/player/player_main/player_main_1h.asi", toolsOneHanded, "dz/anims/anm/player/ik/gear/apple.anm")` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:373`). Mods add their items through `ModItemRegisterCallbacks` (`:305`, with `RegisterOneHanded` at :309 and `RegisterTwoHanded` at :311, called from :1552 and :1555).
+Items in hands pick an existing instance and an IK pose in script; how vanilla and a mod register them is in `items-in-hands.md`.
 
 ## Scope
 

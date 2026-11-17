@@ -32,19 +32,21 @@ class CfgMods {
 };
 ```
 
-**Sub-mod `class defs` wrapper** — when one mod has child mods (e.g. parent + per-feature sub-mods), the child CfgMods entries wrap their script-module loaders in `class defs`:
+**`class defs` wrapper** — every mod's script modules go inside `class defs` under `CfgMods.<Mod>`, for a root mod and a sub-mod alike. Vanilla does this for a root mod at `P:\DZ\data_sakhal\config.cpp:14-28`. Script modules placed directly under `CfgMods.<Mod>` without `class defs` are not loaded.
 
 ```cpp
-// Root mod (parent): script modules directly under CfgMods.<Mod>
+// Root mod (parent)
 class CfgMods {
     class MyParentMod {
         ...
-        class gameScriptModule { files[] = {"MyParentMod/scripts/3_Game"}; };
-        class worldScriptModule { files[] = {"MyParentMod/scripts/4_World"}; };
+        class defs {
+            class gameScriptModule { files[] = {"MyParentMod/scripts/3_Game"}; };
+            class worldScriptModule { files[] = {"MyParentMod/scripts/4_World"}; };
+        };
     };
 };
 
-// Sub-mod (child): wrapped in class defs
+// Sub-mod (child)
 class CfgMods {
     class MyParentMod_FeatureX {
         ...
@@ -56,7 +58,7 @@ class CfgMods {
 };
 ```
 
-The child mod's `CfgPatches` must require the parent (`requiredAddons[] = {"...", "ParentMod"}`). Without the `class defs` wrapper, sub-mod script modules don't register.
+The child mod's `CfgPatches` must require the parent (`requiredAddons[] = {"...", "ParentMod"}`).
 
 ### Custom inputs registration (modded_inputs XML)
 
@@ -101,7 +103,7 @@ class CfgMods {
 **Sections**:
 - `<actions>` declares inputs + stringtable loc keys
 - `<sorting>` groups inputs under a category for the in-game keybind menu
-- `<exclude>` marks inputs as excluded from default vanilla binding conflicts
+- `<exclude>` names a group of inputs that are switched off while that exclude is active (`UAInputAPI.ActivateExclude`, `P:\scripts\3_game\inputapi\uainput.c:239`)
 - `<preset>` assigns default bindings (one or more `<btn>` per input)
 
 **Naming conventions**:
@@ -115,9 +117,10 @@ class CfgMods {
 - Mouse: aim/look (avoid)
 - F: pickup/interact (avoid hijacking)
 - LShift/LCtrl: sprint/crouch (avoid)
-- Space: jump (avoid)
-- Available: G, H, J, K, V, B, N, M, function keys F1-F12, numpad
-- LeftAlt: free look toggle (used by some mods)
+- Space: jump and climb, `UAGetOver` (avoid)
+- G, V, H, M: vanilla binds G to throw and drop item (`UAThrowitem`, `UADropItem`), V to camera view (`UAPersonView`), H to car horn (`UACarHorn`) and M to the map (`UAMapToggle`) in `P:\bin\preset_x1mousekey.xml` (avoid)
+- LeftAlt (`kLMenu`): vanilla free look, `UALookAround` and `UALookAroundToggle` in the same preset (avoid)
+- Candidates: J, K, B, N, function keys F1-F12, numpad. Check `P:\bin\preset_x1mousekey.xml` for the key before you take it.
 
 ### CfgSoundSets parameters reference
 
@@ -168,7 +171,7 @@ class land_MyBuilding: HouseNoDestruct
 };
 ```
 
-Standard vanilla door sound classes: `doorMetalSmall*`, `doorWoodenSmall*`, `doorMetalLarge*`. Pick by door size/material.
+Standard vanilla door sound classes: `doorMetalSmall*`, `doorWoodSmall*`, `doorMetalLarge*`. Pick by door size/material.
 
 ### Buildings: damage isolation pattern (immortal building, damageable doors)
 
@@ -189,12 +192,12 @@ class DamageSystem
         class Door1 {
             class Health {
                 hitpoints = 10000;
-                transferToGlobalCoef = 0;  // !!! KEY: door damage does NOT propagate to building global
+                transferToGlobalCoef = 0;  // door damage does not propagate to building global
             };
             componentNames[] = {"door1"};
             fatalInjuryCoef = -1;
             class ArmorType {
-                // Door-specific armor: ALLOWS damage
+                // Door-specific armor: allows damage
                 class Projectile { class Health { damage = 2; }; class Blood { damage = 0; }; class Shock { damage = 0; }; };
                 class Melee      { class Health { damage = 2.5; }; class Blood { damage = 0; }; class Shock { damage = 0; }; };
             };
@@ -246,7 +249,7 @@ protected float GetSyncInterval()      { return 0.033; }  // 30Hz when active
 protected float GetSyncIntervalIdle()  { return 0.1; }    // 10Hz when no input
 ```
 
-Human eye doesn't perceive UI refresh >10-15Hz. Physics needs full tick rate, but dials/HUD/cosmetic anims can be 5-10x cheaper without visual difference.
+Updating dials at 10 Hz is a cost trade-off: the motion is visibly less smooth than at the full frame rate, but dials, HUD values and cosmetic animations stay readable and cost 5-10x less. Physics still needs the full tick rate.
 
 **Idle damping for vehicles without driver**:
 
@@ -367,7 +370,7 @@ Loop all players + RPCSingleParam with `man.GetIdentity()` for each. `true` 4th 
 When an entity owns ScriptedEffect refs (sounds, particles, lights), guarantee cleanup via three hooks:
 
 ```cpp
-class MyEntity : EntityAI
+class MyVehicle : CarScript
 {
     protected ref EffectParticle m_Eff;
     
@@ -377,13 +380,13 @@ class MyEntity : EntityAI
         super.EEDelete(parent);
     }
     
-    override void CleanupEffects()  // CarScript or similar base method
+    override void CleanupEffects()  // declared on Transport (P:\scripts\3_game\vehicles\transport.c:998), overridden in CarScript (P:\scripts\4_world\entities\vehicles\carscript.c:390)
     {
         super.CleanupEffects();
         CleanupResources();
     }
     
-    void ~MyEntity()                // destructor (last line of defense)
+    void ~MyVehicle()               // destructor (last line of defense)
     {
         CleanupResources();
     }
@@ -493,7 +496,7 @@ private bool IsLocalDriver()
 }
 ```
 
-Checks: (1) local player exists, (2) is in a Transport, (3) the transport IS this vehicle, (4) is in seat 0 (driver/pilot, not copilot/passenger). Use to gate vehicle-mounted weapons / driver-only actions.
+Checks: (1) local player exists, (2) is in a Transport, (3) the transport is this vehicle, (4) is in seat 0 (driver/pilot, not copilot/passenger). Use to gate vehicle-mounted weapons / driver-only actions.
 
 ### Vehicle anim instance override
 
@@ -515,15 +518,16 @@ For mods organized as parent + per-feature sub-mods:
 // Parent (root mod) — registers shared infra
 class CfgPatches {
     class MyParentMod {
-        units[] = {};              // EMPTY — no entities in parent
+        units[] = {};              // empty — no entities in parent
         requiredAddons[] = {"DZ_Data"};
     };
 };
 class CfgMods {
     class MyParentMod {
-        // Script modules registered DIRECTLY (no class defs wrapper):
-        class gameScriptModule  { files[] = {"MyParentMod/scripts/3_Game"}; };
-        class worldScriptModule { files[] = {"MyParentMod/scripts/4_World"}; };
+        class defs {                                     // script modules always sit in class defs
+            class gameScriptModule  { files[] = {"MyParentMod/scripts/3_Game"}; };
+            class worldScriptModule { files[] = {"MyParentMod/scripts/4_World"}; };
+        };
     };
 };
 
@@ -536,7 +540,7 @@ class CfgPatches {
 };
 class CfgMods {
     class MyParentMod_FeatureX {
-        class defs {                                     // wrapped in class defs
+        class defs {
             class worldScriptModule { files[] = {"MyParentMod/scripts/4_World"}; };
         };
     };

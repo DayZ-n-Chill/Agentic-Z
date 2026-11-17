@@ -334,3 +334,14 @@ def test_root_bone_without_mask_is_flagged(tmp_path):
     proc, out = _run(tmp_path, _anim(False), _rig(False))
     assert proc.returncode == 0, proc.stderr + proc.stdout
     assert "Pelvis" in proc.stderr and "root" in proc.stderr
+
+
+def test_keys_only_ending_before_the_last_frame_passes_the_gate(tmp_path):
+    """Breaks if --keys-only checks the written frame count against every frame of the anim."""
+    anim = _anim(False)
+    anim["keyframes"] = [0, 1]
+    proc, out = _run(tmp_path, anim, _rig(False), "--keys-only")
+    assert proc.returncode == 0, proc.stderr + proc.stdout
+    rd = sw.read_seanim(str(out))
+    assert rd["frame_count"] == 2
+    assert [f for f, _ in _bones(out)["RightHand"]["rot_keys"]] == [0, 1]

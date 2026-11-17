@@ -56,7 +56,7 @@ Managed
 
 Steps 4's two calls run only in the branch that creates the controller. When the controller is declared as `scriptclass` on the layout root (the Workbench style), nothing fills its `Widget` fields: bind them yourself or use `ViewBinding`s.
 
-The whole block sits inside `#ifndef COMPONENT_SYSTEM` and `#ifndef NO_GUI`; with either define set (a dedicated server) the constructor logs `Attempted to create layout on SERVER!` instead.
+The whole block sits inside `#ifndef COMPONENT_SYSTEM` and, within that, `#ifndef NO_GUI`. The `#else` belongs only to the inner `#ifndef NO_GUI` (`:92-95`): with `NO_GUI` set (a dedicated server) the constructor logs `Attempted to create layout on SERVER!` instead; with `COMPONENT_SYSTEM` set it skips layout creation silently and logs nothing.
 
 `new ScriptView()` therefore calls `CreateWidgets` itself. Never construct a view where the workspace can be null, such as an RPC handler that runs before the mission UI exists; create the view once at mission init and show or hide it later (rule 9 in `rules-and-checklist.md`).
 
@@ -160,7 +160,7 @@ Runs only when `Two_Way_Binding` is set and the widget's controller returns true
 ### InvokeCommand (`MVC\ViewBinding.c:206-231`)
 
 1. When the binding holds a `RelayCommand` object and its `CanExecute()` is true, it runs `Execute(context, args)` and takes the returned bool as "handled".
-2. Otherwise, when `Relay_Command` is not empty, it calls `g_Script.CallFunction(context, Relay_Command, handled, args)`: a method of that name on the controller, with its return value as "handled".
+2. Only when the binding holds no `RelayCommand` object and `Relay_Command` is not empty (`:217`), it calls `g_Script.CallFunction(context, Relay_Command, handled, args)`: a method of that name on the controller, with its return value as "handled". A held `RelayCommand` whose `CanExecute()` returns false gets no function call fallback: the click goes straight to step 3.
 3. When not handled and the context has a parent, it calls itself on the parent (`:222-224`).
 
 ---

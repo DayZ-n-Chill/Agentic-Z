@@ -212,7 +212,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 
 ### Reference and pipeline skills
 
-Most of these 41 skills are reference skills: the agent loads one when a task touches its topic, and reads the reference file the skill points at. Some also ship offline scripts. [`compatibility-matrix.md`](compatibility-matrix.md) says which DayZ build each one was checked on and how.
+Most of these 41 skills are reference skills: the agent loads one when a task touches its topic, and reads the reference file the skill points at. Some also ship offline scripts. [`compatibility-matrix.md`](compatibility-matrix.md) says which DayZ build each skill that has a row there was checked on and how.
 
 #### Vehicles
 
@@ -358,7 +358,7 @@ Skills also carry their own packs in `<skill>/references/`.
 | `scripts/tools/` | The offline Python tools: the script validator `/dayz-lint` runs as its second stage, py3d for DayZ `.p3d` files, model, layout and animation-format checkers, and viewers. [`knowledge-pack-tools.md`](knowledge-pack-tools.md) says what each does and picks one by symptom or task |
 | `scripts/dev/knowledge-pack/` | The validation, packaging and promotion tooling (`packctl`) with its tests. [`knowledge-pack-maintenance.md`](knowledge-pack-maintenance.md) explains it |
 | `evals/` | Answer tests per agent, plus the mechanical `cases/` and the `live/` cases. See [`evals.md`](evals.md) |
-| [`compatibility-matrix.md`](compatibility-matrix.md) | Which DayZ build each skill was checked on and how |
+| [`compatibility-matrix.md`](compatibility-matrix.md) | Which DayZ build each skill with a row there was checked on and how |
 | [`dayz-mcp.md`](dayz-mcp.md) | The optional DayZ-MCP server for in-game automation, installed separately |
 | [`knowledge-pack-product-spec.md`](knowledge-pack-product-spec.md) | The product definition for the reference skills and tools, with what is finished and what is open |
 | [`knowledge-pack-authoring-lessons.md`](knowledge-pack-authoring-lessons.md) | Rules for writing skills, helper scripts and tests, each from a defect that shipped and was fixed |

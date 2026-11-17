@@ -273,9 +273,8 @@ with approved/non-escalated items,
 ```bash
 # Stage the full skill directory (SKILL.md + references/, scripts/, assets/),
 # not SKILL.md alone. From a read-only mount, mkdir + per-file cp + chmod is
-# the only verified sequence for trees (cp -R and cp --no-preserve=mode both
-# fail creating files inside copied subdirectories — see skill-authoring.md
-# editing rule 6):
+# the only verified sequence for trees (cp --no-preserve=mode fails creating
+# files inside copied subdirectories — see skill-authoring.md editing rule 6):
 live="<absolute path to the live skill directory, no trailing slash>"
 s="[workspace folder]/skill-updates/[today]/[skill-name]"
 find "$live" -type d | while IFS= read -r d; do mkdir -p "$s/${d#$live}"; done
@@ -432,7 +431,10 @@ Wait for the user to acknowledge before other work.
 ## Constraints
 
 - Don't modify observation files beyond their `status`, `parked_until`,
-  `resolved`, and `resolution` frontmatter fields.
+  `resolved`, and `resolution` frontmatter fields, plus the two Step 3
+  edits: widening `skill:` after a sibling check finds it under-scoped,
+  and stripping client-identifying specifics from the Issue and
+  Improvement fields in the confidentiality pass.
 - Don't create new skills in a review — note candidates for the user to
   action via the skill-creator.
 - Unsure how to integrate an observation → skip it and say so in the
@@ -484,7 +486,7 @@ producer should assume it is not the only writer that day: before staging
 a skill, check whether that day's folder already holds a staged copy of
 the same skill — if it does, diff and integrate rather than overwrite,
 and say so in the manifest. Any consumer choosing the "newest staged
-version" (e.g. the publishing pipeline's freshness gate) must resolve it
+version" must resolve it
 by content, not by assuming a single authoritative producer — if two
 same-day copies of one skill diverge, surface the conflict rather than
 letting mtime decide. The manifest entry (below) is the provenance

@@ -17,7 +17,7 @@ Machine: Debian testing, Python 3.14, Steam native, GE-Proton11-1, native Linux 
   The DayZ Tools themselves run fine under Proton, AddonBuilder included. What breaks is every tool step
   that needs **game data**: the tools prefix does not know where the game is, so that data has to be
   linked into it. Observed on this machine: the game prefix has
-  `HKLM\Software\Wow6432Node\Bohemia Interactive\DayZ` `"main"="S:\steamapps\common\DayZ"`, while in the
+  `HKLM\Software\Wow6432Node\Bohemia Interactive\DayZ` `"main"="<Steam library>\steamapps\common\DayZ"`, while in the
   tools prefix (`compatdata/830640`) the same key exists but is **empty**. The tools prefix has an `s:`
   drive pointing at the Steam root, and no `P:`. So the link is the `main` value in the tools prefix,
   plus a `P:` with the game data the tool resolves (`dz\...`). This repair is not tested here; the

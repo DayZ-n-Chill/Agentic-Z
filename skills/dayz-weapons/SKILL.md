@@ -32,7 +32,7 @@ How the facts are marked: vanilla facts cite the file on `P:\` they were read in
 
 Each one cost many builds on one of the two weapon builds. All of them can be checked offline; a firearm test cycle costs as much as any other DayZ rebuild.
 
-1. **W-BUILD1: `model=` points at the real path inside the PBO, and the build is clean.** `[VERIFIED in-game]` on the rifle. The config pointed at the PBO root while the `.p3d` lived under `data\`. A build without a clean temp folder carried an old unbinarized copy at the root, and that copy was the model the engine loaded, so every offline winding and normal measurement described the wrong file. Fix: `model="\<Mod>\data\<weapon>.p3d"` and a clean rebuild (`/dayz-build-pbo <ModName> --clean`). See `references/import-rule-v4.md`, "Model path".
+1. **W-BUILD1: `model=` points at the real path inside the PBO, and the build is clean.** `[VERIFIED in-game]` on the rifle. The config pointed at the PBO root while the `.p3d` lived under `data\`. A build without a clean temp folder carried an old unbinarized copy at the root, and that copy was the model the engine loaded, so every offline winding and normal measurement described the wrong file. Fix: `model="\<Mod>\data\<weapon>.p3d"` and a rebuild from a clean temp folder (`/dayz-build-pbo <ModName>` empties its temp folder on every build). See `references/import-rule-v4.md`, "Model path".
 2. **W-BUILD2: test the binarized build; test a mod built on a weapon pack with loose scripts with the retail game.** `[VERIFIED in-game]` on the rifle. The winding and normals rule only holds on the binarized model, because binarizing flips the winding. A build served unbinarized measures the wrong thing. The third-party weapon pack the rifle inherits from also uses script without braces that the Diag build refuses to compile while the retail build only warns. See `references/import-rule-v4.md`.
 3. **W-SEL1: every selection that feeds a bone remap covers its real part.** `[VERIFIED in-game]` on the SMG. The `bolt` selection had been painted on the barrel (X from -0.19 to -0.09, in front of the chamber), not on the bolt, so the remap would have slid the barrel. It was caught offline by comparing the selection's centre with the anatomy of the gun: a bolt sits behind the chamber. See `references/p3d-selection-contract.md`, "A selection on the wrong part".
 4. **W-MEM1: the casing ejection side depends on the weapon's axes; read the reference weapon, do not assume.** `[VERIFIED in-game]` on the SMG. `nabojnicestart` and `nabojniceend` set the side. The SMG had them on +Z, which threw casings into the receiver; -Z was correct. See `references/p3d-selection-contract.md`.
@@ -109,13 +109,13 @@ What changed:
 - `OpenBolt_Base.SetActions()` adds `FirearmActionDetachMagazine` (`openbolt_base.c:388`).
 - `Weapon_Base.EEItemDetached` calls `ValidateAndRepair()` when the detached item is a magazine (`weapon_base.c:1121`).
 - Explosion effects: `ExplosiveEffectData` and `AmmoTypesAPI.GetExplosiveEffectData(string, string)` replace `GetExplosionParticleID`. `ExplosivesBase.SetParticleExplosion` and `AddExplosionEffectForSurface` are marked `[Obsolete("1.30: Handled in AmmoTypes instead")]`.
-- The attach magazine action requires `TestAttachMagazine(...)` (`firearmactionattachmagazine.c:256`).
+- The quick reload action, `FirearmActionAttachMagazineQuick`, requires `TestAttachMagazine(...)` (`firearmactionattachmagazine.c:256`); the plain attach action does not call it.
 - The chamber helper uses `LocalAcquireCartridgeEx` (`weapon_utils.c:9`).
 
 What breaks in a weapon mod written for 1.29:
 
 1. A compile error if it still calls `AmmoTypesAPI.GetExplosionParticleID`.
-2. Reloading never starts if its `TestAttachMagazine` is too strict or wrong for a custom muzzle.
+2. Quick reload never starts if its `TestAttachMagazine` is too strict or wrong for a custom muzzle.
 3. Workarounds that let an open bolt gun drop its magazine now fight the new `AddAction(FirearmActionDetachMagazine)`.
 4. Spawning `SCARL`, `Luger`, `LeeEnfield`, `MP18`, `Mag_Luger_8Rnd` or `Mag_MP18_Drum32Rnd` from `types.xml` or a trader fails on data that has no config class for them. The official 1.30 modding changelog also names `SoundHitType` and `GetSoundHitType()`; neither exists in the scripts on `P:\`, so do not call them.
 

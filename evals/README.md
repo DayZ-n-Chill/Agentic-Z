@@ -4,11 +4,11 @@ One question file per agent in `questions/` (all 30 agents are covered), and the
 
 ## Questions that match the eval cases
 
-Twenty questions ask what the fifteen cases under `cases/` and `live/cases/` ask. Each has the id of its case (`stardz-negatives` is six questions, one per claim). They have not been asked yet, so `baseline.json` counts them in `total` but not in `score` or `passed`. Record them with `scripts\dev\evals.bat --agent <name> --update-baseline`.
+Twenty questions ask what the fifteen cases under `cases/` and `live/cases/` ask. Each has the id of its case, except the Enforce Script negatives case, which is six questions named `enforce-negatives-<claim>`, one per claim. None of the twenty has been run yet: `baseline.json` counts them in each agent's `total` but not in its `score` or `passed` list.
 
 | Agent file | Question ids |
 |---|---|
-| `dayz-script-specialist` | `api-enforce`, `api-index-liveness`, `stardz-negatives-autoptr`, `-overload`, `-managed`, `-jsonloadfile`, `-ondrop`, `-dabs` |
+| `dayz-script-specialist` | `api-enforce`, `api-index-liveness`, `enforce-negatives-autoptr`, `-overload`, `-managed`, `-jsonloadfile`, `-ondrop`, `-dabs` |
 | `dayz-persistence-specialist` | `persistence`, `persistence-deprecated-api`, `persistence-migration-rollback`, `persistence-mod-version`, `basebuilding-part-id-cap` |
 | `dayz-ui-specialist` | `ui-layout` |
 | `dayz-build-checker` | `build-artifact-postcondition` |

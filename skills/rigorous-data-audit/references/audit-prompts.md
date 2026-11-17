@@ -214,37 +214,43 @@ Use **one** reviewer with a **fresh context** (`SKILL.md` step 3b asks for a rev
 
 ```
 You are verifying claims about a codebase. You have not seen the audit that
-produced these claims, and you should not try to reconstruct it. Do not
-reason about whether each claim WOULD be a bug, only whether the file says
-what the claim says.
+produced these claims, and you should not try to reconstruct it. Judge each
+claim from the code alone.
 
 Codebase root: <absolute path>
 
 For each claim below:
 1. Open the file at the cited path:line range.
 2. Paste the actual lines you find there, verbatim, with line numbers.
-3. Give a verdict, exactly one of:
+3. Give the first verdict, snippet_matches_file, exactly one of:
    - CONFIRMED: the cited lines say what the claim says.
    - WRONG LOCATION: the claimed content exists in the file but at
      different lines. Give the correct lines.
    - NOT FOUND: the cited lines do not say what the claim says, and you
      could not find the claimed content elsewhere in the file.
-4. Do not soften. "Mostly matches" is WRONG LOCATION or NOT FOUND, never
-   CONFIRMED. If the claim calls something a bug but the code is a
-   deliberate defensive branch (an OR that accepts two formats, a redundant
-   guard, a tolerant parser), the verdict for "bug" is NOT FOUND, even
-   though the lines exist.
+4. Give the second verdict, inference_holds, exactly one of:
+   - HOLDS: the code you pasted, plus any code you opened to follow it,
+     really has the consequence the claim states (for example, data can
+     be lost on that path).
+   - DOES NOT HOLD: the lines exist but the consequence does not follow.
+     A deliberate defensive branch (an OR that accepts two formats, a
+     redundant guard, a tolerant parser) is DOES NOT HOLD when the claim
+     calls it a bug.
+   - CANNOT TELL: deciding needs code or runtime facts you could not
+     reach. Say what is missing.
+   Paste any extra lines you used for this verdict.
+5. Do not soften. "Mostly matches" is WRONG LOCATION or NOT FOUND, never
+   CONFIRMED.
 
-Output: one block per claim: claim id, pasted lines, verdict, nothing else.
-No summary, no narrative, no recommendations, no severity.
+Output: one block per claim: claim id, pasted lines, snippet_matches_file,
+inference_holds, nothing else. No summary, no narrative, no
+recommendations, no severity.
 
 Claims to verify:
 <numbered list: id + one-line claim + path:line_start-line_end>
 ```
 
-Only CONFIRMED claims survive into the consolidated table. WRONG LOCATION claims are re-cited with the corrected lines and kept. NOT FOUND claims are dropped from the table: the bug may still be real elsewhere, but this audit has not shown it. If more than about 10% of claims come back NOT FOUND, treat the whole step 2 batch as untrustworthy (`SKILL.md` step 3c).
-
-This prompt returns one verdict per claim. `SKILL.md` step 3b asks for two separate verdicts per claim, `snippet_matches_file` and `inference_holds`, and to have the orchestrator re-read any claim the verifier could not confirm before it is dropped. When the two differ, the step in `SKILL.md` wins: add the second verdict to the prompt's point 3 and do not drop a NOT FOUND claim silently.
+A claim with CONFIRMED and HOLDS goes into the consolidated table. A WRONG LOCATION claim is re-cited with the corrected lines and then treated like CONFIRMED. Every other claim (NOT FOUND, DOES NOT HOLD or CANNOT TELL) is not actionable yet: the orchestrator re-reads the cited code itself and then either keeps it with its own pasted evidence or drops it with a one-line reason in the table. Never drop a claim silently. If more than about 10% of claims come back NOT FOUND, treat the whole step 2 batch as untrustworthy (`SKILL.md` step 3c).
 
 ## Implementer-grade pass (step 4)
 

@@ -73,9 +73,9 @@ python -m py3d diff     a.p3d b.p3d  # structural comparison
 
 **DayZ knowledge**
 - Canonical LOD resolutions and `LOD.kind()` / `P3D.get_lod("geometry")`.
-  Note DayZ does **not** use the Arma-3-era `e13` ids for FireGeo/ViewGeo:
-  they are `7e15` and `6e15`. Getting this wrong means bullets pass through
-  your model.
+  In DayZ FireGeo and ViewGeo are `7e15` and `6e15`; Geometry (`1e13`) is
+  the only `e13` id. Getting this wrong means bullets pass through your
+  model.
 - `P3D.validate()` reports a Geometry, View or Fire LOD with faces but no
   `ComponentNN` selection (in game a model with no component in any collision
   LOD collides with nothing, and nothing logs it; one LOD missing it alone was

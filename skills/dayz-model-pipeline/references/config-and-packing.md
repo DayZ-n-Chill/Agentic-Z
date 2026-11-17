@@ -212,7 +212,8 @@ class CfgNonAIVehicles
   (`MySlot.p3d` -> `ProxyMySlot`). A class named otherwise draws nothing and logs nothing, also
   for an inventory slot: measured in game on a quad mod (third-party mod behaviour), whose three inventory slots drew
   nothing until its proxy classes were renamed (the `rip-vehicle-import` skill's invisible
-  attachment cookbook, rule (d)). Check it in `config.cpp` before measuring any proxy frame
+  attachment cookbook, `skills/rip-vehicle-import/references/cookbook-attachment-invisible.md`,
+  section "Check first: the `Proxy` class name against the file name"). Check it in `config.cpp` before measuring any proxy frame
 - Class name (`ProxyMySlot`) must be unique across all loaded addons, so the proxy basename must be too
 - Multiple slots can point to the same proxy .p3d
 - For vanilla slots (CarBattery, TruckBattery, SparkPlug, etc.), no CfgSlots entry needed

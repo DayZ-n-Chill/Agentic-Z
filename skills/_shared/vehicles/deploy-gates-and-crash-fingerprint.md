@@ -52,10 +52,15 @@ discriminating variable, since the crash appeared in both. Report "same/differen
 signature", never "same/different bug": `C0000374` is detected on free, not where the
 out-of-bounds write happened, so an identical signature still does not prove identical cause.
 
-## config.cpp syntax has one offline gate, CfgConvert, and it only counts with canaries
+## config.cpp syntax has two offline gates, and CfgConvert only counts with canaries
 
 `-packonly` does NOT rapify, so the config ships as text and the first parser that reads it is
-the game's. The DayZ script validator does not check syntax either. What works:
+the game's. The DayZ script validator does not check syntax either. The first gate is the
+`/dayz-lint` rule `config-syntax` (`skills/dayz-lint/SKILL.md`), which uses the grammar of
+`hooks/edit_check.py`: it catches unbalanced braces, a missing `;` or `};`, an array without
+`[]` and `;` between array elements. It does not resolve class inheritance. CfgConvert adds that
+on top: it parses the whole file the way the engine does and resolves every base class,
+including the nested `class X: X` chains. Run it as well:
 
     "...\DayZ Tools\Bin\CfgConvert\CfgConvert.exe" -bin -dst <tmp>.bin <config.cpp>
 

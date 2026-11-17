@@ -26,7 +26,7 @@ Everything a player needs beyond auto hover is yours to write in the mod's own c
 | Camera | `Get3rdPersonCameraType()` errors in `Transport` (`P:\scripts\3_game\vehicles\transport.c:698`) and `HelicopterScript` does not override it. Return `DayZPlayerCameras.DAYZCAMERA_3RD_VEHICLE` as `CarScript` does (`carscript.c:2232`). |
 | Engine rules | Override `OnBeforeEngineStart` for fuel, battery or parts checks. `HelicopterScript` has no fluid or part logic. |
 | Flight input | Script calls `AutohoverOn()` and `AutohoverOff()`; any control beyond the native simulation is new script, which goes to dayz-script-specialist through the config lead. |
-| Actions | `HelicopterScript` registers no actions. Add get in and get out the way `CarScript.SetActions` does (`carscript.c:2313`). |
+| Actions | `HelicopterScript` registers no actions. Add `ActionGetInTransport` the way `CarScript.SetActions` does (`carscript.c:2313` to `:2322`, get in at `:2317`). Get out needs no registration on the vehicle: `ActionGetOutTransport` is registered once in `PlayerBase.SetActions` (`playerbase.c:1728`). |
 | Damage | A `DamageSystem` written fresh; none of the `CarScript` zone logic applies. |
 
 ## Starting point

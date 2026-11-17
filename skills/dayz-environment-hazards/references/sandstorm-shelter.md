@@ -31,7 +31,8 @@ The engine creates the scripted subclass named by `GetScriptedType`:
 | `Start(float duration, bool calledByWeather)` | `P:\scripts\3_game\sandstorm.c:20` | Server only. |
 | `Stop(float duration, bool calledByWeather)` | `P:\scripts\3_game\sandstorm.c:27` | Server only. |
 | `IsActive()`, `GetMagnitude()` | `sandstorm.c:32`, `:83` | Usable with no storm running. |
-| `GetDirection()`, `IsPositionAtEnd()`, `GetPosition()`, `GetSpeed()`, `GetRemainingMovementDuration()` | `sandstorm.c:37` to `:57` | Need an active storm, per their comments. |
+| `GetDirection()` | `sandstorm.c:33` to `:37` | Direction from the start to the end position. Its comment carries no active-storm note. |
+| `IsPositionAtEnd()`, `GetPosition()`, `GetSpeed()`, `GetRemainingMovementDuration()` | `sandstorm.c:38` to `:57` | Need an active storm, per their comments. |
 | `GetPointOnEdge(vector worldPosition, out vector outPosition)` | `sandstorm.c:65` | A negative distance means the position is inside the storm. |
 | `GetIntensity(vector worldPosition)` | `sandstorm.c:71` | Raw intensity at a point, before shelter. |
 | `GetIntensityForPlayer(Man player)` | `sandstorm.c:78` | A script method, not a `proto`; the scripted controller overrides it (below). |

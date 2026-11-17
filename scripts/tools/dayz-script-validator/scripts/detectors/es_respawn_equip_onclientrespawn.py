@@ -1,9 +1,11 @@
 # ES-RESPAWN-EQUIP-IN-ONCLIENTRESPAWNEVENT (heuristic).
 # `OnClientRespawnEvent(PlayerIdentity identity, PlayerBase player)` delivers
 # the PRE-respawn character: vanilla only uses it to kill the unconscious or
-# restrained player (missionserver.c:598-609, SetHealth("","",0.0) at :608).
-# The NEW character is created later in OnClientNewEvent -> CreateCharacter
-# (missionserver.c:536/:560/:576). Equipment/loadout logic wired here mutates
+# restrained player (missionserver.c:611, SetHealth("","",0.0) at :621).
+# The NEW character is created later in OnClientNewEvent (missionserver.c:549),
+# which calls CreateCharacter (:589, declared at :499) and then
+# EquipCharacter (:593, declared at :511); EquipCharacter equips it with
+# StartingEquipSetup (:536). Equipment/loadout logic wired here mutates
 # the dying character: silent no-op or corruption, no error, no log.
 # The event SIGNATURE is easy to verify; the trap is the parameter SEMANTICS.
 # The correct place to equip is OnClientNewEvent.
@@ -29,8 +31,8 @@ ES_RESPAWN_EQUIP_CALL_RE = re.compile(
 ES_RESPAWN_EQUIP_MESSAGE = (
     "[WARN] {rel_path} line {line}: `{call}` inside `OnClientRespawnEvent` -- "
     "this event delivers the PRE-respawn character (vanilla only kills the "
-    "unconscious there, missionserver.c:598-609); the NEW character is "
-    "created in `OnClientNewEvent` (missionserver.c:536). Equipment created "
+    "unconscious there, missionserver.c:611); the NEW character is "
+    "created in `OnClientNewEvent` (missionserver.c:549). Equipment created "
     "here lands on the dying character: silent no-op/corruption. Move loadout logic to OnClientNewEvent."
 )
 

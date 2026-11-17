@@ -91,7 +91,8 @@ A model is treated as a vehicle body when a selection name contains `damper`. Al
 The `--- py3d validate() ---` section holds the DayZ fork's findings, each with its LOD and code,
 for example `LOD[1] [ERR_WINDING_INVERTED] ...`. The fork's ERROR prints as CRITICAL and its WARN
 as WARNING. A fork finding that this script already makes itself on the same LOD is left out
-(autocenter, `pos center`, component naming and coverage on the Geometry LOD, watertight and
+(autocenter, `pos center`, component naming and the coverage WARN on the Geometry LOD, whose
+coverage ERROR still prints as CRITICAL; watertight and
 degenerate faces, `P:\` paths on faces), because the script's own version knows the config.cpp
 and model.cfg. The fork guesses an animation's selection from the axis name; that guess is left
 out when a model.cfg was checked and is only a WARNING when none was. A winding finding is a

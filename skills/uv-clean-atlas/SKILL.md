@@ -79,7 +79,7 @@ SAT_VERDICT: pairs=0 (ZERO OVERLAP PROVEN)   # the release gate
 METRICS[...] islands=54 overlap=0.09% density_p05/p50/p95=0.85/1.00/1.20
 ```
 
-- `overlap` (Monte Carlo) between 0.0 and 0.15% together with `SAT_VERDICT: pairs=0` is clean. Report the SAT line.
+- `overlap` (Monte Carlo) between 0.0 and 0.15% together with `SAT_VERDICT: pairs=0` says nothing overlaps among the triangles the check tested. It is not a pass yet: this log has no collapsed count, because the pipeline's checks drop zero-area UV triangles without counting them. Run `sat_gate.py` on `<out.blend>` (see "Auditing an existing UV set") and read its `SAT_INPUT` line. The atlas is clean only when `collapsed_tris=0` and `nan_tris=0` and `SAT_PAIRS: 0`. Report `SAT_PAIRS` together with `collapsed_faces` (collapsed over total), as "The quality gate" requires.
 - `STRAIGHTEN_ROLLBACK*` lines are the safety valves working, not failures. The mesh keeps the layout from before straightening, which was already validated.
 - `islands` far above three times `SHELLS` means `min_faces` is too small, the mesh has health problems, or the mesh needs a different method (see "Which method").
 
@@ -121,7 +121,7 @@ Report `collapsed / total` next to the SAT pair count, and treat any collapse as
 
 | Question | Tool |
 |---|---|
-| Is there any overlap, exactly, and on which faces? | `blender -b <file.blend> -P "<skill-dir>\scripts\sat_gate.py" -- <object_name>` prints `SAT_PAIRS`, `SAT_FACES` and up to 40 offending faces with their 3D position |
+| Is there any overlap, exactly, and on which faces? | `blender -b <file.blend> -P "<skill-dir>\scripts\sat_gate.py" -- <object_name>` prints `SAT_INPUT` (faces and triangles tested, and how many were dropped as collapsed or NaN), then `SAT_PAIRS`, `SAT_FACES` and up to 40 offending faces with their 3D position |
 | How many islands, how much overlap, how even is the density, and what does the layout look like? | Import `uv_metrics.py` in a Blender script and call `score_and_render(obj, out_dir, tag)`. Its rasterizer works headless. Its grid render replaces the object's materials and removes every camera and light in the scene, so do not save the file afterwards |
 | How good are the UVs of an assembled `.p3d` (LODs, proxies, material groups)? | Measure on the MLOD with py3d; the metrics and their traps are in `references/mlod-uv-audit.md` |
 | How does a PartUV result score? | `audit_partuv.py`, see `references/partuv-pilot.md` |
@@ -157,7 +157,7 @@ Only for a group where SLIM or a sparse cut **collapses** faces. Do not use Trac
 
 These were written down mid-session on 2026-09-01, as additions to Track B for a vehicle with materials and LODs, and corrected the next day. They are kept because they look right and will be proposed again.
 
-- **"Seam only the material boundaries; skip `smart_project`."** The reason looked good: `smart_project` at 66° on the body gave **8,711 islands against 495 3D shells, a 17 times overcut**, with 18% occupancy and 530 px/m. Seams on material boundaries alone gave 695 islands with a median of 19 faces, near the 495-shell floor exactly as hoped, and **100.0% of the triangles collapsed to zero UV area**. The probe that recommended it measured the island count and NaN but not collapse, so over the survivors it reported 1,308 px/m and 76% occupancy, better numbers than the correct run's. `smart_project` remains the only seam family on that mesh with 0.0% collapse. The table of five strategies is in `references/multi-lod-shared-atlas.md`, section 3.
+- **"Seam only the material boundaries; skip `smart_project`."** The reason looked good: `smart_project` at 66° on the body gave **8,711 islands against 495 3D shells, a 17 times overcut**, with 18% occupancy and 530 px/m. Seams on material boundaries alone gave 695 islands with a median of 19 faces, near the 495-shell floor exactly as hoped, and **100.0% of the triangles collapsed to zero UV area** straight out of the unwrap. Run through the fold loop and packing, it still had 77% collapsed. The probe that recommended it measured the island count and NaN but not collapse, so over the 23% that survived the fold loop it reported 1,308 px/m and 76% occupancy, better numbers than the correct run's. `smart_project` remains the only seam family on that mesh with 0.0% collapse. The table of five strategies is in `references/multi-lod-shared-atlas.md`, section 3.
 - **"The coarse LOD does not unwrap; transfer its UVs from LOD0 by nearest surface, one material at a time."** Three transfer strategies were measured. The best left **4,647 overlapping pairs and 167 collapsed faces**, and the one whose density came out right (ratio 0.97) still left 8,409 pairs. The cause is arithmetic, and no care in the transfer fixes it: the LOD0 islands have a median of 2 faces, while a LOD1 face has 2.5 times the area of a LOD0 face. Each LOD is unwrapped on its own and both are packed into separate regions of one sheet; sections 2 and 4 of the same reference.
 - **"The density floor is 755 px/m at 4096."** That floor came from two earlier atlases that each covered a *subset* of the same body, and packing less surface into the same sheet buys density for free. Against it a whole-body atlas failed while being denser than anything the mod ships. Derived again from shipped work, the reference is 134 to 147 px/m (below); section 7 of the same reference.
 
@@ -180,7 +180,7 @@ Do not dust-merge a view chart into its neighbor when that merge would make the 
 
 Read this before recommending any "UV AI".
 
-Verdict of 2026-07-16 (RTX 3090, WSL2): PartUV runs locally and is the only real UV AI with code and weights, but on vehicle content it **lost** to this pipeline on the first criterion. It produced 162 islands (threshold 1.25) and 127 (threshold 2.0) against 43 on the same retopology mesh, and 232 against 63 on the same rip. It charts per PartField part with no dust control, so helicoids and junk shells explode into storms of specks. The density spread was comparable, and its GPU cost is fine (about 4 s of inference for 10k to 37k triangles).
+Verdict of 2026-07-16 (RTX 3090, WSL2): PartUV runs locally and is the only real UV AI with code and weights, but on vehicle content it **lost** to this pipeline on the first criterion. It produced 162 islands (threshold 1.25) and 127 (threshold 2.0) against 43 on the same retopology mesh, and 232 against 63 on the same rip. The 43 and 63 come from the pilot's run of this pipeline before stage 5 (boundary straightening and the excision of leftover faces as specks); the current scripts give 54 and 65 on the same meshes, as stated at the top of this file. It charts per PartField part with no dust control, so helicoids and junk shells explode into storms of specks. The density spread was comparable, and its GPU cost is fine (about 4 s of inference for 10k to 37k triangles).
 
 Use it only when semantic part separation matters more than the island count, or as an experimental chart source feeding this pipeline's later stages. Setup, quirks, exact numbers and the commands to run it again are in `references/partuv-pilot.md`.
 
@@ -229,7 +229,7 @@ Everything above is the Windows workflow and holds there. For Linux, the Proton 
 
 ## Scripts
 
-All in `<skill-dir>\scripts\`. Every `.py` here runs inside Blender (`blender -b ... -P <script> -- <args>`), not under plain Python.
+All in `<skill-dir>\scripts\`. Every shipped script below runs inside Blender (`blender -b ... -P <script> -- <args>`), not under plain Python; `partuv_install.sh` runs under bash. The `test_*.py` files in the same folder run under plain pytest and need no Blender.
 
 | Script | Does |
 |---|---|

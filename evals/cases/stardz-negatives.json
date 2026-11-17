@@ -4,7 +4,7 @@
   "family": "api",
   "prompt": "Reject every unsupported Enforce claim named by the fixture.",
   "fixtures": {
-    "negative-contracts.txt": "autoptr as universal ownership\noverloaded methods\nManaged means engine-owned\nJsonLoadFile global helper\nOnDrop universal callback\nDabs utility\n"
+    "negative-contracts.txt": "autoptr as universal ownership\noverloaded methods are unsupported\nManaged means engine-owned\nJsonLoadFile global helper\nOnDrop universal callback\nDabs utility\n"
   },
   "assertions": [
     {
@@ -18,7 +18,7 @@
     {
       "assertion_id": "rejects-overload",
       "type": "not_contains",
-      "value": "method overloads are supported",
+      "value": "method overloads are unsupported",
       "evidence": [
         "rejection.txt"
       ]
@@ -82,7 +82,7 @@
       "baseline_revision": "unverified-claims",
       "runner_id": "fixture",
       "expected_verdict": "PASS",
-      "response": "Reject the overload claim.",
+      "response": "Reject the claim that overloads are unsupported; class Hud in P:\\scripts\\3_game\\gameplay.c declares ShowWalkieTalkie(bool show) and ShowWalkieTalkie(int fadeOutSeconds).",
       "evidence": {
         "rejection.txt": "overload claim rejected by the mechanical negative fixture.\n"
       },

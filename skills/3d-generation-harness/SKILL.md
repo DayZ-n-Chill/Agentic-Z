@@ -33,7 +33,7 @@ Follow `skills/_shared/dayz-conventions.md` when the target is a DayZ mod. This 
 | Building geometry in Blender, the helper library and the numeric gates (`verify_bounds`, `verify_overlap`, `verify_mesh_integrity`, `audit_all`) | `blender-assembly` |
 | Capturing renders (`vr_capture`), the defect checklist and the bounded fix loop | `blender-visual-review` |
 | DayZ pitfalls of an AI-generated mesh: retopology, the `_nohq` bake, the handoff | `ai-3d-to-dayz` |
-| Importing a vanilla model as a 1:1 reference, LODs, poly budgets, export to `.p3d` | `dayz-model-pipeline` |
+| LODs, poly budgets, export to `.p3d` | `dayz-model-pipeline` |
 | Auditing the exported `.p3d`, face winding included | `/dayz-p3d-audit` |
 | Packing the mod | `/dayz-build-pbo` |
 
@@ -59,7 +59,7 @@ Answer these before anything else. Ask the user only for what cannot be inferred
 
 1. **What item, exactly?** "A rifle" is not an answer. "An AKM-pattern rifle, wooden furniture, DayZ-era condition" is.
 2. **Target use.** DayZ mod (which slot and behavior), generic game asset, or render only? This sets the poly budget, the LOD plan and which export and audit skills apply.
-3. **Route.** Parametric hard surface goes through this harness with `blender-assembly`. Organic or sculpted shapes go to AI generation for the base mesh (the optional external `hunyuan3d-local` skill, when installed), and the harness resumes at Phase 4: the roast and ship gates apply to AI-generated meshes too, and to them most of all. For a DayZ-bound AI mesh, the DayZ pitfalls (retopology of a non-manifold mesh, the `_nohq` bake, the handoff) are in `ai-3d-to-dayz`; this harness owns the generic gates and discipline.
+3. **Route.** Parametric hard surface goes through this harness with `blender-assembly`. Organic or sculpted shapes go to AI generation for the base mesh (the optional external `hunyuan3d-local` skill, when installed). On that route Phases 1 and 2 still run in full, because the roast is scored against the dossier and the detail list; only the Phase 3 build is replaced by AI generation, and the mesh then goes to the Phase 4 roast. The roast and ship gates apply to AI-generated meshes too, and to them most of all. For a DayZ-bound AI mesh, the DayZ pitfalls (retopology of a non-manifold mesh, the `_nohq` bake, the handoff) are in `ai-3d-to-dayz`; this harness owns the generic gates and discipline.
 4. **Budget.** The LOD0 triangle range. For DayZ, anchor it to the triangle counts of the vanilla equivalent, not to taste.
 
 Gate I passes when all four have explicit answers written down. An unanswered item is a question for the user, not an assumption.
@@ -68,7 +68,7 @@ Gate I passes when all four have explicit answers written down. An unanswered it
 
 Never model from memory. What a language model recalls of an object's shape is a hypothesis, not a reference. Build the dossier from `references/dossier-template.md`:
 
-1. **References from several viewpoints.** Search for images of the item until you hold at least 4 distinct viewpoints (front, side, top and a three-quarter view), plus close-ups of every detail zone (grip, latches, fasteners, seams). For a DayZ item, also bring the vanilla equivalent's model into the scene as a 1:1 reference (the import path is in `dayz-model-pipeline`).
+1. **References from several viewpoints.** Search for images of the item until you hold at least 4 distinct viewpoints (front, side, top and a three-quarter view), plus close-ups of every detail zone (grip, latches, fasteners, seams). For a DayZ item, also bring the vanilla equivalent's model into the scene as a 1:1 reference. Vanilla models on `P:\` are binarized, so Blender can open one only after an external ODOL to MLOD converter, which Agentic-Z does not ship (`dayz-model-pipeline/references/blender-import-preflight.md`).
 2. **Dimension table.** Overall length, width and height from two independent sources, plus at least 5 landmark measurements (barrel length, grip height, wheel diameter and so on). Where no source exists, write `ESTIMATE ±X%`. An unlabeled estimate is an invention.
 3. **Part inventory.** Every visually distinct component, named. This becomes the build breakdown.
 4. **Unknowns list.** Everything you could not verify, stated as unknown, with the decision: resolve, accept with a tolerance, or ask the user. This list is what stops assumptions. An empty unknowns list on a non-trivial item is itself a red flag.
@@ -112,7 +112,7 @@ Gate V passes when no rubric category scores 0, the total is at least 13 of 16, 
 
 ## Phase 5: fix loop
 
-Follow `blender-visual-review`: fix one diagnosis at a time, re-render the same angles, keep the before and after pair. After the fixes, re-run only the affected rubric categories plus mesh integrity on the touched parts. A full re-roast is needed only when the fixes touched 3 or more components. Loop until Gate V passes. If three loops fail on the same defect, stop and re-plan that component: the plan was wrong, not the execution.
+Follow `blender-visual-review`: fix one diagnosis at a time, re-render the same angles, keep the before and after pair. After the fixes, re-run only the affected rubric categories plus mesh integrity on the touched parts. A full re-roast is needed only when the fixes touched 3 or more components. Loop until Gate V passes. Stop when `correction_loop.py` of `blender-visual-review` says so: once the same defect survives 2 consecutive fixes, it stops with `refine-spec`, and you re-plan that component, because the plan was wrong, not the execution.
 
 ## Phase 6: ship gate (Gate S)
 

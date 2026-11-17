@@ -32,7 +32,7 @@ How common each name is, from a scan of the 572 models under `P:\DZ\gear\`: `ce_
 
 ## Wheel models
 
-A wheel is its own `.p3d`, placed on the vehicle body as a proxy. Of 12 vanilla wheel models scanned under `P:\DZ\vehicles\wheeled\`, 11 hold the same five memory points: `ce_center`, `ce_radius`, `boundingbox_min`, `boundingbox_max` and `invview` (for example `P:\DZ\vehicles\wheeled\offroadhatchback\proxy\nivawheel.p3d`). `P:\DZ\vehicles\wheeled\civiliansedan\proxy\sedanwheel.p3d` holds only the last three. Give a new wheel all five. Seen on one custom quad, not checked on `P:\`: a wheel with only `ce_center` never touched the ground in the simulation (`dayz-p3d-audit/references/vehicle-checks.md`, killer 11).
+A wheel is its own `.p3d`, placed on the vehicle body as a proxy. There are 14 vanilla wheel models under `P:\DZ\vehicles\wheeled\` (not counting the `data\damagewheel\` models). Two of them, `P:\DZ\vehicles\wheeled\truck_02\proxy\truck_02_wheel.p3d` and `truck_02_wheel_spare.p3d`, have no Memory LOD at all (only visual, Geometry and Fire Geometry LODs). Of the 12 that have one, 11 hold the same five memory points: `ce_center`, `ce_radius`, `boundingbox_min`, `boundingbox_max` and `invview` (for example `P:\DZ\vehicles\wheeled\offroadhatchback\proxy\nivawheel.p3d`). `P:\DZ\vehicles\wheeled\civiliansedan\proxy\sedanwheel.p3d` holds only the last three. Give a new wheel all five. Seen on one custom quad, not checked on `P:\`: a wheel with only `ce_center` never touched the ground in the simulation (`dayz-p3d-audit/references/vehicle-checks.md`, killer 11).
 
 ## Names the mod invents
 

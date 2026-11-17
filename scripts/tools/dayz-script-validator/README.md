@@ -368,11 +368,17 @@ log, or from a broken file the validator passed:
   end with different brackets open, or an `#ifdef` is never closed, the
   file is not judged. A file with an unterminated string or block comment
   is not judged either: the stripper's warning is the finding there.
-- `ES-MODDED-ENGINE-CLASS` (FAIL): `modded class Transport`. DayZDiag
-  1.29.163709 refused it with `Engine class 'Transport' cannot be modded.`
-  and `Can't compile "Game" script module!`. Transport is the only class listed: another
-  engine class goes in only after a compile refuses it. Mod the script
-  bases in 4_World instead, `CarScript` or `BoatScript`.
+- `ES-MODDED-ENGINE-CLASS` (FAIL): `modded class Transport`,
+  `modded class DayZPlayerInventory` or `modded class Magazine`. DayZDiag
+  1.29.163709 refused `Transport` with `Engine class 'Transport' cannot be
+  modded.` and `Can't compile "Game" script module!`. DayZDiag 1.30.164200
+  refused `DayZPlayerInventory` and `Magazine` in 4_World the same way, with
+  `Can't compile "World" script module!`. Only these three classes are listed:
+  another engine class goes in only after a compile refuses it. For vehicles,
+  mod the script bases in 4_World instead, `CarScript` or `BoatScript`; for
+  ammo piles, `Ammunition_Base`, which compiled modded in the same 1.30 build;
+  `DayZPlayerInventory` has no script subclass, so hook the item side
+  (`ItemBase.EEItemLocationChanged`) instead.
 - `ES-MULTILINE-CONDITION-OPERATOR` (FAIL): a line inside the parentheses
   of an `if (` or `while (` that ends in `&&` or `||`, once per header.
   DayZ 1.30.164014 server refused `if ((t >= A && t < B) ||` followed by
@@ -442,7 +448,8 @@ over that tree and fails if the findings differ from a measured baseline.
 The vanilla tree is Bohemia's and is not redistributed. Without a local
 copy the control SKIPs (exit 2) instead of pretending the tree was clean.
 
-A full run on DayZ 1.30 takes two to four minutes. It is a gate, not a unit
+A full run on DayZ 1.30 takes about six minutes (the baseline run on
+1.30.164289 took 341 seconds). It is a gate, not a unit
 test: do not put it in the pytest run.
 
 ```powershell

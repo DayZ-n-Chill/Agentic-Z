@@ -83,8 +83,8 @@ Item/player previews render dark unless you touch `Widget.SetObjectLighting(floa
 in-game but fine in the mockup, this is why.
 
 ### 1.4 Script-driven spacers overwrite authored child geometry at runtime
-Any widget carrying a spacer `scriptclass` (e.g. `AutoHeightSpacer`, the vanilla spacer handlers)
-force `EXACTPOS|EXACTSIZE` onto every child at init and on `OnChildAdd`, then reposition children in
+Any widget carrying a `SpacerBase`-derived `scriptclass` (e.g. `VerticalSpacer`, `HorizontalSpacer`)
+has `EXACTPOS|EXACTSIZE` forced onto every child at init and on `OnChildAdd`, and the spacer then repositions children in
 exact units (section 1.1) — so proportional pos/size you authored on those children is **silently discarded**
 in-game while the editor preview still shows the authored values.
 - Evidence: `P:\scripts\3_game\gui\spacers\spacerbase.c:13-19` and `P:\scripts\3_game\gui\spacers\spacerbase.c:32-37`
@@ -356,7 +356,8 @@ typo-likely / 2 WARN verify; `--json` for machine output). It cross-checks the w
 ### 6.3 Implemented-against-plan (the fidelity check)
 7. Every widget in the section 5 spec table exists in the built layout with the planned **name, class, and
    mode**; nothing planned is missing, nothing unplanned crept in.
-8. Render the written `.layout` (v1 renderer, labelled) and eyeball it against the mockup for gross
+8. Render the written `.layout` with `scripts/tools/dayz-layout-viewer/build_viewer.py` (or
+   `/dayz-layout-preview`) and eyeball it against the mockup for gross
    layout — then trust only the in-game screenshot for pixels/colors/fonts.
 9. Screenshot in-game at 1080p **and** one non-1080p resolution; diff against the calibrated mockup.
    Resolution divergence here = a script rescaling exact widgets, a bitmap face that does not
@@ -375,8 +376,8 @@ Menu lifecycle (see also `vanilla-menus-map.md` and `expansion-mvc-patterns.md`)
   a common bug puts `SetID` in the wrong branch, leaving `MENU_UNKNOWN`); `ShowScriptedMenu(menu,
   parent)` shows an already-constructed instance. `P:\scripts\3_game\tools\uimanager.c`,
   `P:\scripts\3_game\dayzgame.c:1415-1421`, `P:\scripts\5_mission\mission\missionbase.c:198-354`, `P:\scripts\3_game\tools\uiscriptedmenu.c:136-153`.
-- Vanilla MenuID range is 1..46 (`P:\scripts\3_game\constants.c:176-221`, `MENU_ANY`..
-  `MENU_CONNECTION_DIALOGUE`); pick an arbitrary high int for custom menus (e.g. 98765).
+- Vanilla MenuID range is 1..48 (`P:\scripts\3_game\constants.c:176-223`, `MENU_ANY`..
+  `MENU_UNDERGROUND_TRIGGER_EDITOR`); pick an arbitrary high int for custom menus (e.g. 98765).
 - `UIScriptedMenu.OnShow()` auto-calls `LockControls()` and `OnHide()` auto-`UnlockControls()` — per
   device `ChangeGameFocus(±1, INPUT_DEVICE_MOUSE/KEYBOARD/GAMEPAD)` + cursor. Overriding OnShow/OnHide
   without `super` skips input locking; adding your own `ChangeGameFocus` on top double-counts the

@@ -20,7 +20,7 @@ Deeper material sits in the skills, each with its own table in its `SKILL.md`: `
 
 ## Worked vanilla examples
 
-These three vanilla objects cover the common cases. Every file in the pack refers back to them.
+These three vanilla objects cover the common cases. `animation-sources.md`, `model-cfg-animations.md`, `script-hooks.md` and `blender-handoff.md` refer back to them.
 
 | Case | Config | Script | Model |
 |---|---|---|---|

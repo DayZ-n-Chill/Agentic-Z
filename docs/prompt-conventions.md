@@ -107,7 +107,7 @@ A description that follows the rule, for that skill:
 
 > Recover source code from DayZ PBO files obfuscated with JAPM (also known as "PBO Tools"). Use whenever the user mentions "PBO Tools", "JAPM", "obfuscated PBO", "lost my source", "recover PBO source", "decompile PBO", ...
 
-Trigger phrases in another language that a user might type stay in the description as extra entries next to the English ones. Keep the whole description under 1024 characters: move caveats and notes on how skills combine into the body instead of cutting the triggers (`scripts/dev/pack_skill.py` refuses a longer one).
+Trigger phrases in another language that a user might type stay in the description as extra entries next to the English ones. Keep the whole description to at most 1024 characters: move caveats and notes on how skills combine into the body instead of cutting the triggers (`scripts/dev/pack_skill.py` refuses a longer one).
 
 ## Depth of an answer
 

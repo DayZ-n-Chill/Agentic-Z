@@ -83,7 +83,7 @@ A bad one (assumed, not cited):
 "evidence": "DC_3.c"  // line missing
 ```
 
-A well-extracted finding (`f_037` of the aircraft mod):
+A well-extracted finding:
 
 ```json
 {

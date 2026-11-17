@@ -31,7 +31,7 @@ Three kinds of clip exist per weapon. Do not mix them up:
 
 | Clip | What it is | Where it is named |
 |---|---|---|
-| IK pose | One pose: where hands and fingers sit on the gun. | The `IkPose` line of the `.asi`; the fourth argument of `AddItemInHandsProfileIK`. |
+| IK pose | One pose: where hands and fingers sit on the gun. | The `IkPose` line of the `.asi` and the fourth argument of `AddItemInHandsProfileIK`. The two can name different poses (the AKM's do; see "The IK pose (grip)"). |
 | Weapon states (`w_<weapon>_states.anm`) | Only the `Weapon_` bones, one frame per start state of the weapon (bolt closed, open, jammed). | The fifth argument; `SetInitState` reads it. |
 | Action clips (reload, fire, chamber, jam) | Authored as differences, roughly from the shoulders down, played over the idle. | The `Lines` of the `.asi`. |
 
@@ -211,7 +211,7 @@ Export type "Survivor IK 2h" or "Survivor IK 1h". The plugin restricts the expor
 
 What the pose can and cannot do, measured in game on a custom submachine gun (2026-06-17): rotating `LeftHand` or the IK helpers does not turn the support wrist, because the engine's IK lines the hand up with the weapon again. The pose visibly drives the finger curl. To change how the support hand is oriented, match the weapon's geometry to a reference whose hand already sits that way (`weapon-in-hands.md`).
 
-A vanilla IK pose file holds 2 frames at 30 frames per second, and the second is a byte for byte copy of the first, so it is one pose (read from the extracted AKM pose). Write a duplicate frame if a tool wants at least two. Poses are shared: the AKM's instance names the `izh18` pose (`IkPose` at `P:\DZ\anims\workspaces\player\player_main\weapons\player_main_akm.asi:6`).
+A vanilla IK pose file holds 2 frames at 30 frames per second, and the second is a byte for byte copy of the first, so it is one pose (read from the extracted AKM pose). Write a duplicate frame if a tool wants at least two. The two places that name a pose can disagree. For the AKM, the instance's `IkPose` line names the `izh18` pose (`P:\DZ\anims\workspaces\player\player_main\weapons\player_main_akm.asi:6`), while the script registers `AKM_Base` with `dz/anims/anm/player/ik/weapons/akm.anm` as the fourth argument of `AddItemInHandsProfileIK` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:412`). Which of the two the engine uses is not established; set both to the same pose in a custom weapon.
 
 ### The sight line
 
@@ -731,7 +731,7 @@ Each clip was extracted to SEAnim with DayZATool 1.3 and read with `seanim_write
 | `p_erc_fire_akm_ras` | 11 | 0.333 s | 45 | One fire cycle |
 | `p_erc_jam_akm_ras` | 230 | 7.633 s | 73 | Clearing a jam |
 | `w_akm_states` | 2 | 0.033 s | 10 (weapon bones) | Bolt and bullet states |
-| `ik\weapons\akm` (IK pose) | 2 | 0.033 s | 43 | Grip pose |
+| `ik\weapons\akm` (IK pose) | 2 | 0.033 s | 43 | Grip pose registered by script for `AKM_Base` (the `.asi` names `izh18`) |
 
 For the other kinds of clip the demo mod ships only `.anm` files, so frame ranges beyond its fire (7) and states (3) samples come from these extracts, not from authoring sources.
 

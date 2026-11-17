@@ -143,8 +143,8 @@ planar DISSOLVE is the default LOD path. The modifier leaves **loose vertices** 
 triangle indexes. Every count-based gate stays green (triangles, resolved, identity, monotonicity,
 frame parity), and the streams ship broken: a per-vertex extract loop driven by `mesh.loops` never
 reaches a loose vertex, so whatever the array was initialised to is what gets written. Initialised
-to `(0,0,0)` → **zero-length normals in NORMAL.bin**. Measured: source had 0 loose in 224.700 verts;
-after decimation, 786 at LOD1 and 4.024 at LOD2 — plus 16 normals of length down to `3e-6` that a
+to `(0,0,0)` → **zero-length normals in NORMAL.bin**. Measured: source had 0 loose in 224,700 verts;
+after decimation, 786 at LOD1 and 4,024 at LOD2 — plus 16 normals of length down to `3e-6` that a
 `> 0` usability test happily passed. Three checks close the whole class:
 - delete loose verts after every decimate (`bmesh.ops.delete(bm, geom=[v for v in bm.verts if not
   v.link_faces], context="VERTS")`). NOT one of the three forbidden calls — it removes only geometry
@@ -250,8 +250,10 @@ For family B this item now lives in the rip-vehicle-import skill, in its family 
 **Steering wheel vs hands: measure rim-center delta AND plane tilt vs the control BEFORE moving
 anything — the seat anim is the control's, so hands land on ITS wheel plane.** (added 2026-07-07,
 measured on SUB_BRZ) SUB_BRZ: rim-center delta vs crew anchor already in parity (1-1.6 cm) but rim
-tilt 15.8° vs sedan 31.0° → ±r·sin(Δ) = ±2.1 cm at r=0.159 = exactly the user's "top hand 2 cm
-behind, bottom hand 2 cm in front". Fix = rotate the wheel PIECE about its own rim center to the
+tilt 15.8° vs sedan 31.0°, so Δ = 15.2°. The rim's top and bottom edges sit ±r·sin(Δ) = ±4.2 cm
+off the control's plane at r=0.159; a hand gripping at half the radius above or below the rim center
+sits ±(r/2)·sin(Δ) = ±2.1 cm off, which matches the user's "top hand 2 cm behind, bottom hand 2 cm
+in front". Fix = rotate the wheel PIECE about its own rim center to the
 control's tilt and re-author `drivewheel`/`drivewheel_axis` memory points parallel to the new rim
 normal (SUB_BRZ's axis was 38° off its own rim; the sedan's is exactly parallel — a misaligned axis
 also wobbles the steering wheel animation). Do NOT recline the crew proxy when the positional delta is in

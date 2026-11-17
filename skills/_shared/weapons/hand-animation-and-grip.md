@@ -103,7 +103,7 @@ Practice, not checked on `P:\`:
 
 ## Making the support hand close on a custom weapon
 
-All of this section was measured in game on a custom submachine gun using the AKS-74U animations (June 2026), and read from a working third-party mod. None of it is checked on `P:\`.
+All of this section was measured in game on a custom submachine gun using the AKS-74U animations (June 2026). None of it is checked on `P:\`.
 
 **Turning the wrist in the IK pose does not turn the support hand.** On a custom weapon with no hand memory points, four variants of the IK pose with the `LeftHand` bone turned 90 degrees about different axes rendered the same in game. A 180 degree roll changed the hand area of a screenshot less (RMS 7.8) than a change of finger curl did (RMS 11). The only part of the IK pose that visibly applied was the finger curl (the `LeftHand` finger bones).
 
@@ -113,7 +113,7 @@ All of this section was measured in game on a custom submachine gun using the AK
 
 **What worked: raise the weapon to the hand.** The lever was moving the whole weapon model up to where the animation puts the support hand.
 
-- The working third-party mod (its Vikhr and SR-2M) gets its grip with vanilla IK poses (`Vikhr.anm`, `pm73_IK.anm`, both registered in vanilla at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:434`, `:425`), the firearm behaviour and matching geometry. It has no player animation replacement, no changed base pose and no scripted bones.
+- A working custom weapon gets its grip with vanilla IK poses (`Vikhr.anm`, `pm73_IK.anm`, both registered in vanilla at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:434`, `:425`), the firearm behaviour and matching geometry. It has no player animation replacement, no changed base pose and no scripted bones.
 - The number: the custom weapon's bore was 2.4 cm lower above the weapon's origin than the reference (0.066 m against 0.090 m), so the animation's hand landed on top of the barrel. Moving the whole model up 0.024 m closed the grip.
 - The rule of thumb: when the animation's levers (IK pose position or rotation, behaviour, forward kinematics on `LeftHand`) turn out to do nothing, move the weapon, not the animation.
 - It closed both stances. The IK pose is shared between the lowered and the aiming stance, and the worry was that fixing one would open the other. The same raised weapon closed the lowered stance (shipped) and the aiming stance (third person). A per stance instance override remains a fallback that was not needed.

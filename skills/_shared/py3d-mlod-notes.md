@@ -9,7 +9,7 @@ detail to know:
 by `vertex.normal_index`. It is not a per-face array.
 
 ```python
-# WRONG mental model — face.facenormals[i] is NOT the normal of face[i]
+# WRONG mental model — lod.facenormals[i] is NOT the normal of face[i]
 for i, face in enumerate(lod.faces):
     n = lod.facenormals[i]   # ← WRONG, indexes pool not face
 
@@ -23,9 +23,9 @@ for face in lod.faces:
 
 `face.vertices[i].normal` is a property that resolves to
 `lod.facenormals[v.normal_index]` for you. It returns a tuple `(x, y, z)`
-directly, not a Vec3 object — so don't write `.coords` on it (compare with
-`lod.points[i].coords` which does require `.coords` because points are Vec3
-objects).
+directly, not an object — so don't write `.coords` on it (compare with
+`lod.points[i].coords` which does require `.coords` because `lod.points` holds
+`py3d.Point` objects whose `.coords` attribute is the `(x, y, z)` tuple).
 
 ### Pool size is independent of face count
 
@@ -70,9 +70,10 @@ position = {id(pt): n for n, pt in enumerate(lod.points)}
 indices = sorted(position[id(pt)] for pt in sel.points)
 ```
 
-Code that reads `sel.name`, or indexes `sel.points[0]`, was written for another
-library version and fails with `'str' object has no attribute 'name'` or
-`'Selection' object is not subscriptable`.
+Code that reads `sel.name`, indexes `sel.points[0]`, or indexes the selection
+itself (`sel[0]`) was written for another library version and fails with
+`'str' object has no attribute 'name'`, `KeyError: 0`, or
+`'Selection' object is not subscriptable` respectively.
 
 ### Two libraries share the name
 

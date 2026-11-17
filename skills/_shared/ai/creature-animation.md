@@ -72,4 +72,4 @@ Bone names for all vanilla skeletons are listed in `P:\DZ\anims\cfg\skeletons.an
 - Start from the vanilla creature closest in build and behaviour: its skeleton, graph, template, instance and AI template. Change as little as possible.
 - Get one idle state with one clip playing in game before adding states.
 - A mod that ships its own graph for a new creature class collides with nothing. A mod that replaces a vanilla creature's graph collides with any other mod replacing the same one.
-- 1.30 rewrote every vanilla graph in a new text format. A graph written for 1.29 has to be ported; whether 1.30 loads the old format is not tested.
+- 1.30 rewrote every vanilla graph in a new text format (not checkable on `P:\`, which holds 1.30 only). A graph written for 1.29 has to be ported; whether 1.30 loads the old format is not tested.

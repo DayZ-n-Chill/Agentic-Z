@@ -1,6 +1,6 @@
 # Color test harness: an in game panel that measures how UI colors are drawn
 
-`LF_ColorTest` is a tiny diagnostic mod: F7 opens a panel with 10 swatches of known ARGB colors, so a screenshot shows how far the drawn colors sit from their hex values. It was written to measure the effect of `Widget.SetLV`.
+`ColorTest` is a tiny diagnostic mod: F7 opens a panel with 10 swatches of known ARGB colors, so a screenshot shows how far the drawn colors sit from their hex values. It was written to measure the effect of `Widget.SetLV`.
 
 **This is a diagnostic harness, not a pattern to copy.** It calls `Widget.SetLV(0)` on purpose, to measure. A mod must not do this: `SetLV` and `SetTextLV` are `proto static` and global (`P:\scripts\1_core\proto\enwidgets.c:114-117`), and vanilla uses them to apply the brightness the player chose (`SetHudBrightness` at `P:\scripts\3_game\dayzgame.c:3910-3914`). When you run this test, put the value back when you close it. See `theme-and-color.md`, "Color system".
 
@@ -25,7 +25,7 @@ The harness code below is not yet checked in game on 1.30.
 ```cpp
 class CfgPatches
 {
-    class LF_ColorTest
+    class ColorTest
     {
         units[] = {};
         weapons[] = {};
@@ -35,17 +35,17 @@ class CfgPatches
 
 class CfgMods
 {
-    class LF_ColorTest
+    class ColorTest
     {
         type = "mod";
-        name = "LF_ColorTest";
-        dir = "LF_ColorTest";
+        name = "ColorTest";
+        dir = "ColorTest";
         class defs
         {
             class missionScriptModule
             {
                 value = "";
-                files[] = { "LF_ColorTest/scripts/5_Mission" };
+                files[] = { "ColorTest/scripts/5_Mission" };
             };
         };
     };
@@ -54,18 +54,18 @@ class CfgMods
 
 ### $PBOPREFIX$
 ```
-LF_ColorTest
+ColorTest
 ```
 
-### scripts/5_Mission/LF_ColorTest.c
+### scripts/5_Mission/ColorTest.c
 
 ```c
-// LF_ColorTest: DayZ color diagnostics
+// ColorTest: DayZ color diagnostics
 // F7 opens and closes the panel
 
-class LF_ColorTestPanel
+class ColorTestPanel
 {
-    protected static ref LF_ColorTestPanel s_Instance;
+    protected static ref ColorTestPanel s_Instance;
     protected Widget m_Root;
     protected bool m_Open;
 
@@ -73,7 +73,7 @@ class LF_ColorTestPanel
     {
         if (!s_Instance)
         {
-            s_Instance = new LF_ColorTestPanel();
+            s_Instance = new ColorTestPanel();
         }
 
         if (s_Instance.m_Open)
@@ -86,12 +86,12 @@ class LF_ColorTestPanel
         }
     }
 
-    void LF_ColorTestPanel()
+    void ColorTestPanel()
     {
         m_Open = false;
     }
 
-    void ~LF_ColorTestPanel()
+    void ~ColorTestPanel()
     {
         if (m_Root)
         {
@@ -177,7 +177,7 @@ class LF_ColorTestPanel
         TextWidget title = TextWidget.Cast(titleW);
         if (title)
         {
-            string titleText = "LF ColorTest - F7 to close";
+            string titleText = "ColorTest - F7 to close";
             title.SetText(titleText);
         }
 
@@ -275,7 +275,7 @@ modded class MissionGameplay
         // Compare against the KeyCode name, not a raw number.
         if (key == KeyCode.KC_F7)
         {
-            LF_ColorTestPanel.Toggle();
+            ColorTestPanel.Toggle();
         }
     }
 }
@@ -283,7 +283,7 @@ modded class MissionGameplay
 
 ## User instructions
 
-1. Create the mod as `workspace/LF_ColorTest/` with the files above, then pack it with `/dayz-build-pbo`
+1. Create the mod as `workspace/ColorTest/` with the files above, then pack it with `/dayz-build-pbo`
 2. Load the mod on the local test server with `/dayz-launch-test`
 3. In game: press F7
 4. **Test A**: Screenshot of the panel (with SetLV(0) active)

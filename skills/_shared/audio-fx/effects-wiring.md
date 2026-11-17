@@ -1,6 +1,6 @@
 # Effects wiring: sound plus particles
 
-How a sound and a particle are put on one device, and how config hooks sounds and particles to weapons and item events. The particle file and its registration are covered by `/dayz-particles`; open `dayz-particles/SKILL.md` and its `references/` files for `.ptc`, `.emat` and the particle API.
+How a sound and a particle are put on one device, and how config hooks sounds and particles to weapons and item events. The particle file and its registration are covered by `/dayz-particles`; open `dayz-particles/SKILL.md` and its `references/` files for `.ptc`, `.emat` and the particle API. Line numbers are from the 1.30 scripts on `P:\`; statements about 1.29, such as what a version added, are not yet checked on `P:\`.
 
 ## The vanilla generator: sound and smoke together
 

@@ -7,7 +7,7 @@ from shared.vanilla_reference import base_member_set
 ES_MEMBER_REDECLARE_BASE_RULE_ID = "ES-MEMBER-REDECLARE-BASE"
 
 
-# carscript.c:266. A `class X extends <base>` or
+# carscript.c:2770. A `class X extends <base>` or
 # `modded class <base>` that re-declares a member variable already declared in
 # the vanilla base chain -> compile error 'Multiple declaration of variable X'.
 _CLASS_HEADER_RE = re.compile(

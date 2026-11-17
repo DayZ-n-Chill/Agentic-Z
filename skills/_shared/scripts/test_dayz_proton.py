@@ -71,6 +71,20 @@ def test_no_arguments_print_the_usage_and_fail(tmp_path: Path) -> None:
     assert "dayz-proton.sh doctor" in done.stderr
 
 
+@pytest.mark.parametrize("args", [(), ("--help",)])
+def test_usage_prints_without_steam(tmp_path: Path, args: tuple[str, ...]) -> None:
+    done = run(tmp_path, *args, steam=False)
+    assert done.returncode == 2
+    assert "dayz-proton.sh doctor" in done.stderr
+    assert "no Steam install found" not in done.stderr
+
+
+def test_winpath_works_without_steam(tmp_path: Path) -> None:
+    done = run(tmp_path, "winpath", "/var/lib/mods/@Mod", steam=False)
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.strip() == "Z:\\var\\lib\\mods\\@Mod"
+
+
 def test_winpath_maps_a_linux_path_to_z(tmp_path: Path) -> None:
     done = run(tmp_path, "winpath", "/var/lib/mods/@Mod")
     assert done.returncode == 0, done.stderr

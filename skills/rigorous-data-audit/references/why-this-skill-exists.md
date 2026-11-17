@@ -11,7 +11,7 @@ LF_VStorage 1.4.6 went through an audit of several rounds before the user asked 
 1. An external auditor handed in 6 P1 findings (lost-items class). Fixed.
 2. The user asked for a second audit with several Opus agents to catch what was missed. Six parallel Opus agents were started from independent angles (persistence, state machine, async, hooks, admin, recovery). Each agent produced a coherent report. None found anything new.
 3. The mod was declared "release-safe pending in-game test".
-4. The user then handed in `AUDIT_HARDENING_IMPLEMENTER.md` from an external implementer-grade auditor. **12 VULNs (P0 to P3) the agents had missed.**
+4. The user then handed in `AUDIT_HARDENING_IMPLEMENTER.md` from an external implementer-grade auditor. **12 VULNs (P0 to P2) the agents had missed.**
 
 ## The 12 VULNs
 
@@ -69,7 +69,7 @@ Once one agent said "this module is fine", later agents implicitly trusted that 
 
 ### 5. Severity self-reporting is unreliable
 
-The agents reported many P2 and P3 findings and zero P0. The implementer-grade auditor reported 6 P0 or P1. Agents systematically under-rate severity. The skill fixes this by having the user (or the main thread) assign severity during the step 3 consolidation, not the agent.
+The agents reported many P2 and P3 findings and zero P0. The implementer-grade auditor reported 11 P0 or P1 (5 P0 and 6 P1). Agents systematically under-rate severity. The skill fixes this by having the user (or the main thread) assign severity during the step 3 consolidation, not the agent.
 
 ## What the skill is and is not
 
@@ -85,4 +85,4 @@ The agents reported many P2 and P3 findings and zero P0. The implementer-grade a
 - `entry-point-audit.md`: finds the VULN-001 and VULN-009 classes
 - `flag-lifecycle-audit.md`: finds the VULN-010 class
 - `state-machine-matrix.md`: the structural state-transition check
-- `fact-audit-postmortem.md`: the second failure, an audit that was about 55% confabulated, which added step 3
+- `fact-audit-postmortem.md`: the second failure, an audit that was about 45% confabulated, which added step 3

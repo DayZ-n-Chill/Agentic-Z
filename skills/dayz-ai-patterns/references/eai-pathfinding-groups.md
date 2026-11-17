@@ -1,23 +1,24 @@
 # Expansion AI: pathfinding, groups and perception patterns
 
-How DayZ Expansion's AI module (eAI) limits path recalculation, weights navmesh areas, spreads a squad over several targets, keeps a formation, and throttles threat, target and line of sight work. The pattern IDs (PC-2 to PC-18) are the ones in the table in `SKILL.md`.
+How DayZ Expansion's AI module (eAI) limits path recalculation, weights navmesh areas, spreads a squad over several targets, keeps a formation, and throttles threat, target and line of sight work. The pattern IDs (P5 to P12) are the ones in the table in `SKILL.md`.
 
 Everything here is third-party mod behaviour, not vanilla: the DayZ Expansion scripts at commit `8f75d554`. File paths are relative to the Expansion scripts repository; none of it is on `P:\`. Every `path:line` below refers to that commit and is not yet checked. The patterns are described in prose and no Expansion code is reproduced. Use them as ideas: code for a user's mod is written fresh against vanilla, with the vanilla navmesh calls in `skills/_shared/ai/patrols-and-guards.md` and the server rules in `skills/_shared/ai/spawning-and-performance.md`.
 
-## PC-15: path recalculation behind thresholds, with its cost measured
+## P9: path recalculation behind thresholds, with its cost measured
 
 `Scripts/4_World/DayZExpansion_AI/Classes/PathFinding/ExpansionPathHandler.c:581-592`
 
 `ExpansionPathHandler` does not recalculate the path every time the target is updated. It is guarded by:
 
 - `PATH_RECALCULATE_THRESHOLD`: the smallest change in position before the path counts as stale.
-- `simulationPrecision`: controls the step resolution.
 - `m_MinTimeUntilNextUpdate`: a cooldown between recalculations.
 - `m_TimeIt.GetElapsed()`: the measured cost of each recalculation, which can feed an adaptive schedule.
 
+Separately from these guards, `simulationPrecision` sets the step resolution of the path.
+
 There is an older path system, `eAIPathFinding`, switched on with `#define EAI_USE_LEGACY_PATHFINDING`. The default is `ExpansionPathHandler`.
 
-## PC-16: path filters carry costs; an open door costs 10 000
+## P10: path filters carry costs; an open door costs 10 000
 
 `Scripts/4_World/DayZExpansion_AI/Classes/PathFinding/expansionpathfilters.c:131-147`
 
@@ -28,7 +29,7 @@ There is an older path system, `eAIPathFinding`, switched on with `#define EAI_U
 
 A filter is not just an include or exclude flag; it encodes a preference as cost. A cost of 10 000 forbids in practice without a hard block. If bots refuse to walk through open doors, or walk around a building instead, this cost is why. Vanilla's own filter is `PGFilter` with `SetCost` (`P:\scripts\3_game\ai\aiworld.c:67`).
 
-## PC-17: group targets are distributed so the squad does not pile onto one enemy
+## P11: group targets are distributed so the squad does not pile onto one enemy
 
 `Scripts/4_World/DayZExpansion_AI/Classes/eAIGroup.c:726`
 `Scripts/4_World/DayZExpansion_AI/Entities/AI/eAIBase.c:3497-3505`
@@ -37,13 +38,13 @@ A filter is not just an include or exclude flag; it encodes a preference as cost
 
 In practice: if every bot is already chasing target X, the next attempt to give X to another member is refused, and the squad spreads over several enemies without any explicit assignment logic. If all bots chase the same player anyway, check that this count logic is intact and that targets go through `AddTarget` instead of around it.
 
-## PC-18: formation positions are cached per unit and refreshed every 2 to 4 seconds
+## P12: formation positions are cached per unit and refreshed every 2 to 4 seconds
 
 `Scripts/4_World/DayZExpansion_AI/Classes/eAIGroup.c:822-830`
 
 `GetFormationPosition` compares `m_eAI_FormationPositionUpdateTime` with a random interval from `Math.RandomFloat(2.0, 4.0)`, drawn per unit. Each member recalculates its formation position on its own clock, not when the group says so. When the leader moves, the members do not all recalculate on the same tick; the work spreads over about two seconds. The group never broadcasts "recalculate now".
 
-## PC-14: the threat value is cached for 250 to 300 ms
+## P6: the threat value is cached for 250 to 300 ms
 
 `Scripts/4_World/DayZExpansion_AI/Classes/Targets/eAITargetInformationState.c:58-67`
 
@@ -51,7 +52,7 @@ Each target information state keeps its own timestamp, `m_ThreatLevelUpdateTimes
 
 So `CalculateThreat` runs at most about once per 275 ms per target, and because the window is random per call, many units do not all recalculate threat on the same server tick.
 
-## PC-7: the target scan advances one entry per tick and restarts after 0.1 to 0.2 s
+## P7: the target scan advances one entry per tick and restarts after 0.1 to 0.2 s
 
 `Scripts/4_World/DayZExpansion_AI/Entities/AI/eAIBase.c:2962-2966`
 
@@ -59,7 +60,7 @@ So `CalculateThreat` runs at most about once per 275 ms per target, and because 
 
 The list is never scanned in full in one tick, and the random restart interval keeps the units from all finishing their scan together.
 
-## PC-2: with no player in visibility range, the unit updates five times slower
+## P8: with no player in visibility range, the unit updates five times slower
 
 `Scripts/4_World/DayZExpansion_AI/Classes/ExpansionWorld.c:247-250`
 
@@ -67,7 +68,7 @@ When the scheduler mode is on (`eAIBase.s_eAI_FTO` is 2 or more) and the unit's 
 
 The logic is not switched off; it runs at a fifth of the rate, about every 250 ms instead of every 50 ms. The condition is local to the unit, so each one decides its own backoff.
 
-## PC-9b: the line of sight check is throttled, and the throttle follows the update interval
+## P5: the line of sight check is throttled, and the throttle follows the update interval
 
 `Scripts/4_World/DayZExpansion_AI/Entities/AI/eAIBase.c:8089-8097`
 

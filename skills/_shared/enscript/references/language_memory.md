@@ -29,7 +29,7 @@ Rules that follow:
 
 ## `autoptr`
 
-`autoptr` is the older owning qualifier. Vanilla uses it in ten files, mostly in `1_core` docs and examples: `autoptr map<string, int> prg_count = new map<string, int>;` (`P:\scripts\1_core\proto\enscript.c:834`) and `autoptr map<string, float> m_values;` as a member (`P:\scripts\1_core\proto\serializer.c:14`). Newer vanilla code uses `ref` for members. Use `ref` in mod code.
+`autoptr` is the older owning qualifier. Vanilla uses it in ten files: four in `1_core` (`dbgui.c`, `enphysics.c`, `enscript.c`, `serializer.c`) and six in ordinary game code in `3_game`, `4_world` and `5_mission`, such as `P:\scripts\3_game\analytics\scriptanalytics.c` and `P:\scripts\5_mission\mission\missionbase.c`. Examples: `autoptr map<string, int> prg_count = new map<string, int>;` (`P:\scripts\1_core\proto\enscript.c:834`) and `autoptr map<string, float> m_values;` as a member (`P:\scripts\1_core\proto\serializer.c:14`). Newer vanilla code uses `ref` for members. Use `ref` in mod code.
 
 ## Locals
 

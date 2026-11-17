@@ -82,7 +82,7 @@ Search for the entry-point name; open each match; verify that the invariant is e
 
 **Synchronous shortcuts of an async operation**:
 
-```powershell
+```text
 Grep "Synchronous|_Sync\b|Force\w+|_Now\b|ImmediateMode" --type c --output_mode content -n true
 ```
 
@@ -90,7 +90,7 @@ For each hit, find the corresponding async function and compare the two by hand.
 
 **Admin command handlers**:
 
-```powershell
+```text
 Grep "OnAdminCommand|HandleAdmin|RegisterCommand|admin_|Cmd_" --type c --output_mode content -n true
 ```
 
@@ -98,7 +98,7 @@ For each handler, ask: does this short-circuit the async queue? If yes, does it 
 
 **Mission entry points**:
 
-```powershell
+```text
 Grep "OnMissionStart|OnMissionLoaded|OnMissionFinish|OnUpdate" --type c --output_mode content -n true
 ```
 
@@ -106,15 +106,15 @@ For state set in `OnMissionStart` and read in `OnMissionLoaded`: is there a path
 
 **EE hook ordering**:
 
-```powershell
+```text
 Grep "override\s+void\s+EE" --type c --output_mode content -n true
 ```
 
-For each EE override: read the body. The first three lines must be either gate-then-super or super-then-gate, consistently. Mixed order is a bug.
+For each EE override that gates: read the body. The gate must run before the `super` call in every such hook. A hook that calls `super` first and gates afterwards is a finding (VULN-004), even when every hook does it in the same order.
 
 **Proximity used as identity**:
 
-```powershell
+```text
 Grep "Closest|Nearest|GetObjectsAtPosition" --type c --output_mode content -n true
 ```
 
@@ -129,7 +129,7 @@ How a restore should bind and create is an open problem: no rule for it has come
 
 ### Step 4: output
 
-A findings table with three columns: invariant, offending entry point, fix sketch. Group by invariant so the user sees "this invariant is honoured in 3 of 4 entry points": that is a P0 even if only one entry point is wrong.
+A findings table with three columns: invariant, offending entry point, fix sketch. Group by invariant so the user sees "this invariant is honoured in 3 of 4 entry points". One wrong entry point is enough for a finding; rate it by what the break does to player data, as with any other finding: P0 when data loss is possible, P1 when recovery is required. VULN-009 above is P1: the stale marker sends a complete container into recovery.
 
 ## Heuristics
 

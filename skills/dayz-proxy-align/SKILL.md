@@ -9,7 +9,7 @@ argument-hint: "<host.p3d> [<aligned.p3d>] [--rot Slot=AXIS:DEG ...] [--map Slot
 
 # /dayz-proxy-align
 
-A proxy is a named selection `proxy:\path\to\model.NNN` over one tiny triangle in a visual LOD. The triangle sets where the other model sits and which way it faces, and the engine reads it by its angles, not by its vertex order. When the triangle is ambiguous or misplaced, the attached clothing or item renders at the floor, floating or rotated.
+A proxy is a named selection `proxy:\path\to\model.NNN` over one tiny triangle in a visual LOD. The triangle sets where the other model sits and which way it faces. Not checked on `P:\`: the triangle is read by its angles, not by its vertex order (MLOD format knowledge and in-game measurements on mods, see `skills/_shared/models/proxy-frames.md`). When the triangle is ambiguous or misplaced, the attached clothing or item renders at the floor, floating or rotated.
 
 This skill replaces trial and error with numbers. It loads the host model and every proxy, lets you move and rotate each anchor against the real worn clothing, and writes the edited triangles straight back into the MLOD with py3d.
 
@@ -34,7 +34,7 @@ python -c "import py3d; assert getattr(py3d,'IS_DAYZ_FORK',False) and tuple(map(
 - py3d here is the DayZ fork in `scripts/tools/py3d`, version 1.6.0 or later. The last line fails when another py3d imports instead.
 - Do not run `pip install py3d`: the PyPI package of that name is a point cloud library. The Arma py3d that is not the DayZ fork uses the same import name and lacks the proxy functions and write guards; uninstall either one first (`python -m pip uninstall py3d`).
 - When a built wheel of the fork is at hand instead of the source folder, `python "<skill-dir>\scripts\install_py3d.py"` installs it. It looks in `<skill-dir>\wheels\`, then in `scripts\tools\py3d\dist\`, and stops without changing anything when no wheel or more than one is there, when a legacy `py3d-*.whl` sits beside it, or when the py3d already installed is not the fork. Agentic-Z ships no wheel.
-- `worn_overlay.py` shows vanilla worn clothing, and vanilla worn models are binarized (`P:\DZ\characters\vests\plate_carrier_m.p3d` starts with `ODOL`). It needs an external ODOL to MLOD backend, a folder holding `odol_reader.py` and `odol_to_mlod.py`, passed with `--odol-backend` or set in `DAYZ_ODOL_BACKEND_ROOT`. Agentic-Z ships none; it is the same backend the tool in `scripts/tools/dayz-odol-strict` expects. Without it, skip the overlay: the other steps work without it.
+- `worn_overlay.py` shows vanilla worn clothing, and vanilla worn models are binarized (`P:\DZ\characters\vests\plate_carrier_m.p3d` starts with `ODOL`). It needs an external ODOL to MLOD backend, a folder holding `odol_reader.py` and `odol_to_mlod.py`, passed with `--odol-backend` or set in `DAYZ_ODOL_BACKEND_ROOT`. Agentic-Z ships none. A backend set up for `scripts/tools/dayz-odol-strict` is not enough: that tool reads ODOL only and has no `odol_to_mlod.py`, which `worn_overlay.py` looks for. Without it, skip the overlay: the other steps work without it.
 - The editor page loads Three.js 0.185.1 from the jsDelivr CDN, so opening it needs a network. `proxy_viewer.py` takes the page scaffold from `viewer_core.py` in `scripts/tools/dayz-3d-viewer`.
 
 ## Scripts
@@ -59,7 +59,7 @@ Read the proxies first. The output lists each proxy with its angles and `AMBIG` 
 python "<skill-dir>\scripts\proxy_extract.py" mannequin.p3d recipe.json
 ```
 
-**Fast path.** Fixes the common "worn, but turned" case in one pass, with no editor:
+**Fast path.** Rewrites every proxy as an unambiguous triangle in one pass, with no editor, aimed at the common "worn, but turned" case:
 
 ```cmd
 python "<skill-dir>\scripts\proxy_canon.py" recipe.json edits.json
@@ -67,6 +67,8 @@ python "<skill-dir>\scripts\proxy_apply.py" mannequin.p3d edits.json mannequin_a
 ```
 
 `proxy_canon.py` rewrites every proxy in the recipe, including ones that were already unambiguous, to the raw identity frame. Add a rotation only where a slot needs one: `--rot Headgear=Y:90 Mask=Y:90`. `--scale` sets the triangle's short leg (default 0.001 m).
+
+One point is open and not checked on `P:\`. The raw identity default assumes vanilla worn clothing is authored in character space, so identity shows the item worn and upright. In-game measurements on weapon and vehicle mods found that the engine renders the triangle as `P'` times the raw frame, and a raw identity frame there rendered 90 degrees on its side; the two have not been compared on the same clothing model in game. When a proxy rewritten by `proxy_canon.py` renders rotated by 90 degrees, rewrite it with `space="engine"` in py3d (see Batch edits with py3d) or pass `--rot` for that slot. Details are in `skills/_shared/models/proxy-frames.md`, "Raw frame and engine frame".
 
 **With the worn clothing as reference.** Optional, and it needs the ODOL backend:
 
@@ -100,9 +102,9 @@ Click a proxy in the list or its sphere in the view to attach the gizmo. **W** m
 - **Final result**: every slot's worn mesh attached to its proxy, following the edits. This is the dressed preview at the current alignment.
 - **Worn ref**: the selected proxy's worn mesh at its native position in character space, as a fixed target to align the anchor against.
 
-"Reset proxy" puts a proxy back where it was loaded. "Export edits" opens a box with the JSON; use Select all and Ctrl+C (the clipboard is blocked on a `file://` page) and save it as `edits.json`.
+The editor does not read the frame stored in the loaded triangle: every proxy's gizmo starts at its loaded anchor with the raw identity frame (rotation 0, 0, 0). "Reset proxy" puts a proxy back at its loaded anchor and that identity frame, not at its loaded orientation. "Export edits" opens a box with the JSON; use Select all and Ctrl+C (the clipboard is blocked on a `file://` page) and save it as `edits.json`.
 
-The gizmo sets the anchor's position and the frame's rotation. The export writes a canonical triangle that encodes exactly that, so the frame derived from it is the one set in the editor. Scale is fixed, since a proxy is a tiny triangle; only position and rotation matter.
+The gizmo sets the anchor's position and the frame's rotation. The export writes a canonical triangle for every proxy, touched or not, that encodes exactly the editor's position and rotation, so the frame derived from it is the one set in the editor. A proxy you did not rotate is therefore written at the raw identity frame, as `proxy_canon.py` does, even when its loaded frame was already right. To keep such a proxy as it is, delete its entry from `edits.json` before running `proxy_apply.py`, which changes only the proxies listed. Each entry carries `"moved": true` when its gizmo was dragged. Scale is fixed, since a proxy is a tiny triangle; only position and rotation matter.
 
 ## Picking the worn model
 

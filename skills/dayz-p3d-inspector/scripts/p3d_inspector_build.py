@@ -12,12 +12,14 @@ properties. Each LOD is written at the resolution the Recipe records for it.
 Mass policy:
   - The Geometry LOD gets pt.mass assigned based on bbox volume * material density
   - Density looked up by keyword match on referenced materials/textures
-    (metal/steel/iron=7800, wood=600, plastic=1200, default=2000 kg/m^3)
+    (first match in DENSITY_KEYWORDS, e.g. metal/steel/iron=7800, wood=600,
+    plastic=1200, glass=2500; DENSITY_DEFAULT=2000 kg/m^3 when none matches)
   - Override via recipe.meta.point_mass_default or lod.properties["_point_mass"]
 
 Validation policy:
-  - Auto-fixes inverted face winding when >50% of visual_0 faces have stored
-    normals opposite to the geometric cross-product (reverses winding on ALL LODs).
+  - Auto-fixes inverted face winding when >50% of the faces of the first (lowest
+    resolution) visual LOD have stored normals opposite to the geometric
+    cross-product (reverses winding on ALL LODs).
   - For deeper validation (paths, structure, BB anchor), pipe the resulting
     .p3d through the dayz-p3d-audit skill.
 
@@ -291,9 +293,10 @@ def build_wireframe_lod(lod_dict, lod_type, recipe, py3d):
         lod.points.append(pt)
 
     # Face normals: compute one per face by cross product
-    # (wireframe faces don't carry normals; MLOD still needs the pool)
+    # (wireframe faces don't carry normals; MLOD still needs the pool).
+    # Larger polygons get their normals when they are fanned below.
     for face_indices in faces_data:
-        if len(face_indices) < 3:
+        if len(face_indices) < 3 or len(face_indices) > 4:
             continue
         nrm = _face_normal(positions, face_indices)
         lod.facenormals.append(nrm)
@@ -304,7 +307,6 @@ def build_wireframe_lod(lod_dict, lod_type, recipe, py3d):
         if len(face_indices) < 3 or len(face_indices) > 4:
             # MLOD only supports tri/quad; triangulate N-gons
             _append_triangulated(lod, face_indices, positions, py3d)
-            norm_idx += max(0, len(face_indices) - 2)
             continue
 
         face = py3d.Face(lod.points, lod.facenormals)
@@ -506,17 +508,15 @@ def auto_fix(model, verbose=False):
     """Apply safe auto-fixes. Returns list of fixes applied."""
     fixes = []
 
-    # Winding check: count faces with inverted normals in visual LOD 0
+    # Winding check: count faces with inverted normals in the first visual LOD,
+    # the one with the lowest resolution (vanilla often numbers it 1.0, not 0.0).
     try:
         import numpy as np
     except ImportError:
         return fixes
 
-    lod0 = None
-    for lod in model.lods:
-        if lod.resolution == 0.0:
-            lod0 = lod
-            break
+    visual = [lod for lod in model.lods if classify_lod_res(lod.resolution) == "visual"]
+    lod0 = min(visual, key=lambda lod: lod.resolution) if visual else None
 
     if lod0 is None or not lod0.faces:
         return fixes

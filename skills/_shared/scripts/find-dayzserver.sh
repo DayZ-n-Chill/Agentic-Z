@@ -7,8 +7,8 @@
 # every library listed in steamapps/libraryfolders.vdf is checked for appmanifest_223350.acf
 # (the manifest is authoritative, the "apps" list in libraryfolders.vdf can lag behind).
 #
-# Usage: find-dayzserver.sh [-e] [-v]   -v also prints build id and install state on stderr
-#        find-dayzserver.sh [-e] -w     print the DayZ client's workshop directory instead
+# Usage: sh find-dayzserver.sh [-e] [-v]   -v also prints build id and install state on stderr
+#        sh find-dayzserver.sh [-e] -w     print the DayZ client's workshop directory instead
 #                                       (steamapps/workshop/content/221100, one dir per mod id)
 #        -e  Experimental branch: server app 1042420 ("DayZ Server Exp"), client app 1024020
 #            ("DayZ Exp"). Experimental has no Workshop of its own: -e -w prints content/1024020
@@ -26,7 +26,7 @@ for arg in "$@"; do
         -v) verbose=1 ;;
         -w) workshop=1 ;;
         -e) APPID=1042420; CLIENT_APPID=1024020; SERVER_NAME="DayZ Experimental Server" ;;
-        *) echo "usage: $0 [-e] [-v|-w]" >&2; exit 2 ;;
+        *) echo "usage: sh $0 [-e] [-v|-w]" >&2; exit 2 ;;
     esac
 done
 

@@ -56,4 +56,4 @@ That the mechanism exists is checked above. That a mod's child instance changes 
 
 ## Reading the real steering angle
 
-To compare the hands with the bars in a test, read the animated part, not the input: `GetBonePivotsForAnimationSource(int level, string animationSource, out TIntArray pivots)` and `GetBoneRotationMS(int pivot, out float quaternion[4])` on `Object` (`P:\scripts\3_game\entities\object.c:233`, `:242`). Vanilla uses the first for its motorbike sounds (`P:\scripts\4_world\entities\vehicles\motorbikescript.c:292`).
+To compare the hands with the bars in a test, read the animated part, not the input: find the bones the steering source moves and read their rotation. The calls and their vanilla use are in `script-hooks.md`, "Reading a pose back from script".

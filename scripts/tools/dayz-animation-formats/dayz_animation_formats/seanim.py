@@ -204,6 +204,7 @@ def read_seanim_bytes(data):
             key_count = reader.unpack(frame_format)[0]
             record_size = frame_size + components * scalar_size
             reader.require_count(key_count, record_size, key_name)
+            seen_frames = set()
             for _ in range(key_count):
                 frame_offset = reader.offset
                 frame = reader.unpack(frame_format)[0]
@@ -214,6 +215,13 @@ def read_seanim_bytes(data):
                         % (frame, frame_count),
                         frame_offset,
                     )
+                if frame in seen_frames:
+                    raise AnimationFormatError(
+                        "SEANIM_FRAME_INDEX",
+                        "%s contains duplicate frame %d" % (key_name, frame),
+                        frame_offset,
+                    )
+                seen_frames.add(frame)
                 values = []
                 for component in range(components):
                     value_offset = reader.offset
@@ -593,6 +601,12 @@ def _validate_document(document):
                 scalar_validator,
             ),
         })
+    # The header stores the modifier count in one unsigned byte.
+    if sum(1 for bone in bones if bone["modifier"] is not None) > 255:
+        raise AnimationFormatError(
+            "ANIM_DOCUMENT_INVALID",
+            "at most 255 bones may set a modifier",
+        )
     notes_value = document["notes"]
     if not isinstance(notes_value, list):
         raise AnimationFormatError(

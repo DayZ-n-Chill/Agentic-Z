@@ -186,7 +186,8 @@ a correct deletion turns into a broken `.p3d`.
 any is "foreign". Consequences:
 
 - `lod.faces = [f for f in lod.faces if ...]` creates a NEW list. Every `Selection` remains
-  bound to the old one. In best case it crashes; in worst case, weights serialized to zero silently.
+  bound to the old one, and writing the LOD raises `RuntimeError` ("stale binding") for each such
+  selection (`py3d/__init__.py`, `LOD.write`); recreate it with `lod.new_selection(name)` or mutate in place.
 - The correct way is mutating **in place** from highest to lowest index: `for i in reversed(cut): del
   lod.faces[i]`.
 - Before that you must **remove those faces from each `Selection.faces`** (they are dicts with Face as

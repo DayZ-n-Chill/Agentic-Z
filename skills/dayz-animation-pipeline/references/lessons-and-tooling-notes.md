@@ -29,7 +29,7 @@ A quad rider mod added these to the three layers in `SKILL.md`:
 
 - **Steering rotation is layer 1**: `model.cfg` only, engine source, two axis points (`handlebar-and-steering-config.md`).
 - **A scripted get in is script, between layers 1 and 2**: a `modded class ActionGetInTransport` (`dual-entry-action-pattern.md`), now mostly replaced by the native directional hooks of 1.30.
-- **A rider pose solved from anchors is layer 2**: two bone IK on the player skeleton from six anchors in the `.p3d`, written as SEAnim by `ik_pose_to_seanim.py`. SEAnim rotations are relative to the rest pose, so the script needs `--rest-pose` taken from a vanilla clip to give output the game can use; without it the result is only roughly placed (`vehicle-rider-ik-pose.md`).
+- **A rider pose solved from anchors is layer 2**: two bone IK on the player skeleton from five anchors in the `.p3d` (seat, two grips, two feet), written as SEAnim by `ik_pose_to_seanim.py`. The files hold solved joint positions and identity rotations, with or without `--rest-pose`: the step that turns positions into rotations against a rest pose is not written, so the output is a position reference, not a clip the game can play (`vehicle-rider-ik-pose.md`).
 - **Clips made with DayZATool play as absolute poses**, so a transition between two rider poses has to be written out whole, not as a difference (measured in game on a motorbike rider, 2026-09-28; same reference).
 
 ## On Linux

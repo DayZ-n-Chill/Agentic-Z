@@ -213,9 +213,13 @@ def test_the_curl_floor_compares_the_residual_difference(maps, convention):
     assert raised["verdict"] == "INCONCLUSIVE", raised
     lowered = nc.detect(maps[convention], maps["albedo"], curl_floor=d - 1e-9)
     assert lowered["curl_verdict"] == convention, lowered
-    # a difference exactly equal to the floor is noise too (fails if the <= comparison becomes <)
+    # a difference exactly equal to the floor is noise too
     at = nc.detect(maps[convention], maps["albedo"], curl_floor=d)
     assert at["curl_verdict"] == "INCONCLUSIVE", at
+    # a difference just above the floor, inside the relative tolerance, is still noise
+    # (fails if the tolerance in _curl_verdict is removed)
+    band = nc.detect(maps[convention], maps["albedo"], curl_floor=d / (1.0 + 5e-10))
+    assert band["curl_verdict"] == "INCONCLUSIVE", band
 
 
 def test_residuals_within_one_quantization_step_are_inconclusive():

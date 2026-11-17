@@ -87,7 +87,7 @@ EffectDef {
 | `LifeTimeRND` | float | 0 | Random lifetime variance |
 | `LifetimeShortening` | float | 0 | Reduce lifetime over effect time |
 | `EffectTime` | float | — | Total effect cycle duration (master curves use this) |
-| `Repeat` | int | 0 | **0=one-shot** (auto-deletes), **1=loop** (MUST stop manually!) |
+| `Repeat` | int | not checked | **0=one-shot** (auto-deletes), **1=loop** (MUST stop manually!). With no `Repeat` line, vanilla effects keep running until stopped: `smoke_small_generator_01.ptc`, `water_jet.ptc` and the campfire's `smoke_small_camp_01.ptc` have none. The engine default is not yet checked on `P:\`; write the line explicitly. |
 
 ### Animation
 
@@ -251,11 +251,12 @@ EffectDef {
 
 ### Water jet difference: water_jet vs water_jet_weak
 
-Only two properties change between the strong and weak variants:
+Three properties change between the strong and weak variants, in both emitters:
 - `SizeMultiplier`: 1.0 → 0.3
 - `SizeRND`: 0.5 → 0.15
+- the `Color` curve keys shift slightly (`P:\graphics\particles\water_jet_weak.ptc` lines 26 and 57)
 
-Everything else (MaxNum, BirthRate, Velocity, Color, Alpha) is identical.
+Everything else (MaxNum, BirthRate, Velocity, Alpha) is identical.
 This demonstrates that creating variants is trivial — clone and tweak.
 
 ### Complex fire: fire_small_camp_01.ptc (6 emitters, 4357 bytes)

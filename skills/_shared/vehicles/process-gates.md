@@ -56,14 +56,7 @@ Rules for any model-import gate:
 
 ## Match transformed data by identity, never rounded position
 
-The same rule from the import side is in `invariants-import-mesh-and-winding.md`, "Position is a candidate bucket, not identity".
-
-A glTF/FBX seam can hold several source vertices at the same position with different
-normal and UV values. Nearest/rounded-position matching can select the wrong twin
-and report 180° normal drift or UV drift of 1.0 on an unchanged mesh. Carry the
-source vertex/primitive identity through the operation. Before trusting the gate,
-run source against itself through the same correspondence and require approximately
-zero residual.
+The rule is kept in `invariants-import-mesh-and-winding.md`, section "Position is a candidate bucket, not identity". It applies to every gate that compares mesh data before and after a transform. Breaking it shows up as a false 180° normal drift or a UV drift of 1.0 on a mesh that did not change.
 
 ## Copy the whole lifecycle of a paired mechanism
 
@@ -124,7 +117,7 @@ the centre were 60/68/39/23 at 40/60/85/240 m with the duller silver and 58/68/4
    it before blaming the kit or the method.
 3. **Give a diagnostic marker a positive control.** When an unmistakable marker (a saturated emissive) in
    the rvmat that should come in never shows, that says nothing unless the same capture holds a part that
-   carries that rvmat from the start: the pair rule of the dayz-texture-pipeline skill ("PASS ... is given by the pair")
+   carries that rvmat from the start: the pair rule in `skills/_shared/textures/runtime-material-swaps.md` ("The pass condition is a pair of frames")
    and the self-check in `visual-metrics-and-viewer.md`. The import's red marker had none.
 4. **A control must be able to show the change** ("A control calibrated from the candidate is circular", above). A vanilla Motorbike_02's nearly
    transparent glass looks the same hidden or not, so it cannot witness a glass swap.

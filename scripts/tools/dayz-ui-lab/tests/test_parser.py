@@ -73,7 +73,7 @@ FrameWidgetClass Other {
         actual = json.loads(doc.to_json())
         expected = {
             "schemaVersion": 1,
-            "generator": "renderer/parse.py phase1",
+            "generator": "dayz-ui-lab/parse.py",
             "source": {"path": "snapshot.layout"},
             "canvas": {"width": 200, "height": 100},
             "renderState": {"mode": "raw-layout"},

@@ -100,7 +100,7 @@ A new environmental hazard should copy a vanilla pattern: an `EffectArea` with a
 
 ### 8. An oil pit only does damage in the `BURNING` state
 
-- **Cause:** a random delay of 3 to 10 s before `StartBurning` (`PRE_BURNING_DURATION_MIN`, `P:\scripts\4_world\classes\contaminatedarea\oilpitarea.c:10` to `:11`), then 20 `HeatDamage` every second (`DAMAGE_MULTIPLIER`, `P:\scripts\4_world\entities\scriptedentities\triggers\oilpittrigger.c:7` to `:8`).
+- **Cause:** a random delay of 3 to 9 whole seconds before `StartBurning` (`PRE_BURNING_DURATION_MIN` 3 and `PRE_BURNING_DURATION_MAX` 10, `P:\scripts\4_world\classes\contaminatedarea\oilpitarea.c:10` to `:11`, passed to `Math.RandomInt` at `:54`, whose upper bound is exclusive per `P:\scripts\1_core\proto\enmath.c:26` to `:38`), then 20 `HeatDamage` every second (`DAMAGE_MULTIPLIER`, `P:\scripts\4_world\entities\scriptedentities\triggers\oilpittrigger.c:7` to `:8`).
 - **Fix:** wait for the state before judging a test; a fresh pit looks inert.
 
 ### 9. Shade is not a ray cast every 5 seconds
@@ -128,7 +128,7 @@ A new environmental hazard should copy a vanilla pattern: an `EffectArea` with a
    - **Gear:** with a dust mask, no cough and no silicosis; with glasses, no squint.
    - **Heat:** sustained high heat comfort must raise the thermal bias and turn on `MDF_HEAT_STROKE1` to `MDF_HEAT_STROKE4`.
    - **Washing the head:** removes 10 `EYES_IRRITATION` agents (1.6 from a bottle) and gives 30 s of resistance.
-   - **Oil pit:** wait 3 to 10 s, then expect 20 heat damage per second and the `OIL_FIRE1` or `OIL_FIRE2` particles.
+   - **Oil pit:** wait 3 to 9 s, then expect 20 heat damage per second and the `OIL_FIRE1` or `OIL_FIRE2` particles.
 3. **Logs.** Search the RPT for `ThermalBiasHandler` and `Sandstorm`; `PlayerBase` prints "failed to load ThermalBiasHandler" when the save stream is out of order (`P:\scripts\4_world\entities\manbase\playerbase.c:7522`).
 
 ## Unfinished parts seen in 1.30
@@ -137,7 +137,6 @@ A new environmental hazard should copy a vanilla pattern: an `EffectArea` with a
 2. **Washing the head with a frozen bottle.** `ActionWashHeadItemContinuous` only refuses gasoline, which matches the changelog's known issue.
 3. **Sickness icons.** Rule 4 above.
 4. **Sun on Chernarus.** `ChernarusPlus` does not fill `m_TemperatureUnderSunModifier`, so the sun effect there stays 0.
-5. **Oil pit fire particles.** The ignition branch of `OilPitTrigger.UpdateState` calls `PlayInWorld` without a headless guard, while `DeferredInit` has one.
 
 ## Building and testing the mod
 

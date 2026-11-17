@@ -10,21 +10,21 @@ These are measured results and tool behaviour (AddonBuilder, FileBank, DSSignFil
 
 ## Backups (.bak_*) in scripts/ inflate the PBO and break grep-verify (added 2026-07-14)
 
-`Invoke-Build -packonly` copies the mod tree AS-IS, so any `<file>.c.bak_*` left next to the `.c` (a backup made before editing) gets packed into the PBO. It does not break the game (Enforce compiles only `*.c`, ignores `.bak_*`), but it (a) inflates the PBO and (b) breaks PBO verification by grep-of-the-blob - an old anchor reads as PRESENT because it lives in a `.bak`, not the active `.c`. Measured 2026-07-14 on a helicopter mod: 827,593 bytes with 29 `.bak` inside vs 115,609 bytes after moving them out (7x bloat + stale code shipped).
+`Invoke-Build -packonly` copies the mod tree as it is, so any `<file>.c.bak_*` left next to the `.c` (a backup made before editing) gets packed into the PBO. It does not break the game (Enforce compiles only `*.c`, ignores `.bak_*`), but it (a) inflates the PBO and (b) breaks PBO verification by grep-of-the-blob - an old anchor reads as present because it lives in a `.bak`, not the active `.c`. Measured 2026-07-14 on a helicopter mod: 827,593 bytes with 29 `.bak` inside vs 115,609 bytes after moving them out (7x bloat + stale code shipped).
 
-Rule: in `Invoke-Build`, before packing, move/exclude `*.bak*` from `$src` (or warn if `Get-ChildItem $src -Recurse -Include *.bak*` is non-empty). When verifying a PBO by text, COUNT occurrences (`Cnt`) instead of `Contains` - a `.bak` copy makes `Contains` lie. Never leave `.bak_` files in the mod's `scripts/`; keep them outside the mod source tree. Cross-ref `/dayz-build-pbo` (packaging).
+Rule: in `Invoke-Build`, before packing, move/exclude `*.bak*` from `$src` (or warn if `Get-ChildItem $src -Recurse -Include *.bak*` is non-empty). When verifying a PBO by text, count occurrences (`Cnt`) instead of `Contains` - a `.bak` copy makes `Contains` lie. Never leave `.bak_` files in the mod's `scripts/`; keep them outside the mod source tree. Cross-ref `/dayz-build-pbo` (packaging).
 
 ## Clean storage before any measurement boot - persisted entities re-fire EEInit (added 2026-07-14)
 
-Vehicles (and other persistent entities) saved in the mission's `storage_1` RE-RUN their `EEInit` on the next boot. Any logic ARMED there - a test `CallLater`, a JSON-driven spike/tuning mode, a countdown - re-fires on every persisted instance at once. Real case (2026-07-11): two helicopters from the day before re-armed their W0 spike at boot and flew off on their own after 60 s (two phantom CSV pairs contaminating the corpus, violating one-run-active-at-a-time; the user even saw them fly with no explanation).
+Vehicles (and other persistent entities) saved in the mission's `storage_1` run their `EEInit` again on the next boot. Any logic armed there - a test `CallLater`, a JSON-driven spike/tuning mode, a countdown - fires again on every persisted instance at once. Real case (2026-07-11): two helicopters from the day before re-armed their W0 spike at boot and flew off on their own after 60 s (two phantom CSV pairs contaminating the corpus, so the data no longer came from the one run being measured; the user even saw them fly with no explanation).
 
-Rule: before a boot meant for MEASUREMENT (cells, spikes, telemetry), the mission storage must be clean ALWAYS - rename `storage_1` -> `storage_1.bak_<date>_<reason>` (reversible), not only after a dirty kill. The current SOP only covers the dirty kill / stream-damage case (see the symptom table in `troubleshooting.md`). The rename also purges test entities accumulated from earlier sessions. Cross-ref `dayz-mcp-verify` (one-run-active protocol).
+Rule: before every boot meant for measurement (cells, spikes, telemetry), the mission storage must be clean - rename `storage_1` -> `storage_1.bak_<date>_<reason>` (reversible), not only after a dirty kill. The current SOP only covers the dirty kill / stream-damage case (see the symptom table in `troubleshooting.md`). The rename also purges test entities accumulated from earlier sessions. Cross-ref `dayz-mcp-verify` (`SKILL.md`, "The loop": step 2 takes the session lease, step 8 releases it and stops the run).
 
-## Introducing CF on a mission with persistence written WITHOUT CF = hard server crash (added 2026-08-02)
+## Introducing CF on a mission with persistence written without CF crashes the server (added 2026-08-02)
 
 If a project adds **Community Framework** (and with it Dabs/VPP) to a mission whose `storage_*` was
-written in runs **without** CF, the server starts, loads the mission and **dies** upon reading
-persistence. Exact signature (measured 2026-08-02, server `crash_*.log`):
+written in runs **without** CF, the server starts, loads the mission and **dies** when it reads the
+persisted entities. Exact signature (measured 2026-08-02, server `crash_*.log`):
 
 ```
 SCRIPT (E): Virtual Machine Exception
@@ -35,58 +35,58 @@ Class: 'CF_ModStorageObject<ItemBase>'
 ```
 
 **What is most misleading**: the cited entity is **vanilla and random** (here a `Rangefinder`), so
-the message points anywhere except the mod you just added. And the client does NOT fail -
-loads well (`PlayerBase OnStoreLoad SUCCESS`) and closes cleanly behind the server, reinforcing
-the mistaken reading of "client issue".
+the message points anywhere except the mod you just added. And the client does not fail: it
+loads normally (`PlayerBase OnStoreLoad SUCCESS`) and closes cleanly after the server, which reinforces
+the mistaken reading of a client problem.
 
-**Cause**: DayZServer `dayzOffline.*` missions are SHARED between projects. A project running
+**Cause**: DayZServer's `dayzOffline.*` missions are shared between projects. A project running
 without CF persists entities without CF's `modstorage` data; the next one that does include CF
 reads them and crashes.
 
-**Remedy** (convention already established in the mission folder itself, with 4 occurrences:
-`storage_1_corrupt-modstorage-20260720 / 0728 / 0729 / 0802`): with processes stopped, **rename**
-`storage_1` → `storage_1_corrupt-modstorage-<YYYYMMDD>` and let server regenerate. It is a rename, not
-deletion, so it is reversible - but **starting again with CF on that storage crashes again**:
+**Remedy** (the convention already used in the mission folder itself, with 4 occurrences:
+`storage_1_corrupt-modstorage-20260720 / 0728 / 0729 / 0802`): with the processes stopped, **rename**
+`storage_1` → `storage_1_corrupt-modstorage-<YYYYMMDD>` and let the server regenerate it. It is a rename, not
+a deletion, so it is reversible - but **starting again with CF on that storage crashes again**:
 what is preserved is evidence, not a state you can return to with CF enabled.
 
-**Consequence that must be told to user BEFOREHAND**: world and character are reset.
+**Tell the user before rotating**: the world and the character are reset.
 
-Cross-ref "Clean storage before any measurement boot" above (same action - rename `storage_1` - for a different reason: persisted
-entities that re-fire `EEInit`). Combined rule: **any change in mod set
-altering who writes `modstorage` requires clean storage**, same as a measurement boot.
+Cross-ref "Clean storage before any measurement boot" above (the same action, renaming `storage_1`, for a different reason: persisted
+entities that re-fire `EEInit`). Combined rule: **any change in the mod set that
+changes who writes `modstorage` requires clean storage**, the same as a measurement boot.
 
-### The trap is BIDIRECTIONAL and the rule is decided at LAUNCH (measured 2026-08-21)
+### The trap works in both directions, and the rule is decided at launch (measured 2026-08-21)
 
 The reverse direction also bites, and faster: a server **without** CF starting on a
-`storage_1` written **with** CF enters a VME storm - `!!! Scripted variables corrupted upon
-"<entity>"` for EACH persisted entity (measured: **15,688 in ~3 min**, plain `-mod=@DayZ_MCP`
-on a storage freshly saved by a server with CF) - and can die midway through writing
-leaving the storage WORSE: rewritten entities lose their CF modstorage, and next
-server that DOES include CF crashes with the signature above. Thus crossings chain together:
-server-without-CF rewrites -> server-with-CF crashes -> rotation.
+`storage_1` written **with** CF enters a storm of Virtual Machine Exceptions - `!!! Scripted variables corrupted upon
+"<entity>"` for each persisted entity (measured: **15,688 in about 3 min**, plain `-mod=@DayZ_MCP`
+on a storage freshly saved by a server with CF) - and can die partway through writing,
+leaving the storage worse: rewritten entities lose their CF modstorage, and the next
+server that does include CF crashes with the signature above. So the crossings chain together:
+a server without CF rewrites the storage, a server with CF then crashes on it, and the storage has to be rotated.
 
-**Rule when launching on shared mission**: either `-mod=` includes CF, or `storage_1` is rotated
-BEFORE starting. There is no third stable option - storage becomes "CF-flavored" as soon as a
-server with CF saves once. Rotate = rename with reason
-(`storage_1.bak-<YYYYMMDD>-<HHMM>-<reason>`, with processes stopped; occurrences 2026-08-21:
-`-1605-modstorage-corrupt`, `-1610-cfless-storm`). Which storage needs rotation is told by server's
-own RPT: line `[StorageDirs] :: Selected storage directory:`.
+**Rule when launching on a shared mission**: either `-mod=` includes CF, or `storage_1` is rotated
+before starting. There is no third stable option: the storage carries CF data as soon as a
+server with CF saves once. To rotate, rename it with a reason
+(`storage_1.bak-<YYYYMMDD>-<HHMM>-<reason>`, with the processes stopped; occurrences on 2026-08-21:
+`-1605-modstorage-corrupt`, `-1610-cfless-storm`). The server's own RPT says which storage needs rotating,
+on the line `[StorageDirs] :: Selected storage directory:`.
 
 ## `modstorage` warning has 12 failures: turn it into preflight, not a paragraph (added 2026-08-29)
 
-The section "Introducing CF on a mission with persistence written WITHOUT CF = hard server
-crash" (added 2026-08-02) is correct and **has failed again**. Counted on 2026-08-29 in
+The section "Introducing CF on a mission with persistence written without CF crashes the server"
+(added 2026-08-02) is correct and **has failed again**. Counted on 2026-08-29 in
 the shared mission folder `DayZServer\mpmissions\dayzOffline.chernarusplus`:
 
     12 storage_1*corrupt-modstorage* folders, from 2026-07-20 to 2026-08-29,
     from at least 5 different projects.
 
 12 occurrences in 40 days. A note skipped 12 times is not fixed by reading it more
-carefully the 13th time: precondition is MECHANICAL and is being asked by hand.
+carefully the 13th time: the precondition can be checked by a script, and it is being checked by hand.
 
 **Operational rule: persistence belongs to the mod set that wrote it.** Before launching
-with a `-mod=` different from previous run on that same mission, rotate. It is not "if
-you suspect": it is **whenever list changes**, and adding ONE mod already changes it.
+with a `-mod=` that differs from the previous run on the same mission, rotate. The rule is not "if
+you suspect a problem": it applies **whenever the list changes**, and adding one mod already changes it.
 
     # with processes stopped
     $m = "<mission>"
@@ -95,24 +95,23 @@ you suspect": it is **whenever list changes**, and adding ONE mod already change
 Rename, not deletion: it is reversible. But starting again with CF on that storage crashes again,
 so what is preserved is evidence, not a state you can return to.
 
-**Warning to give BEFORE rotating**: world and character of that mission are reset.
+**Warning to give before rotating**: the world and character of that mission are reset.
 
-And the process failure mode that let it slip this time, which is the one to recognize:
-**precondition was verified against plan A, and plan changed.** The plan was a new,
-private copy of the mission, so "clean mission, no storage" was TRUE when the run was dispatched. Then
+And the process failure that let it slip this time, which is the one to recognize:
+**the precondition was checked against the first plan, and then the plan changed.** The plan was a new,
+private copy of the mission, so "clean mission, no storage" was true when the run was dispatched. Then
 the tool rejected the absolute path (`dayz_test_run` validates the `mission` field against
 `_MISSION_ALIASES` in dayz-mcp's `dayz_test_tool.py` and only accepts `chernarus|livonia|sakhal`),
-which pushed the run onto the SHARED mission. Discard traveled with old plan and no one re-evaluated it.
+which pushed the run onto the shared mission. The precondition had been ruled out under the old plan, and no one checked it again under the new one.
 
-**A discard is surnamed with the plan that justified it: if path changes, preconditions you
-cleared are unverified again.** Applies to any caveat in this skill, not just
-this one.
+**A precondition you ruled out holds only for the plan you ruled it out under: if the plan changes,
+check it again.** This applies to every caveat in this skill, not just this one.
 
-## Measured test-cycle patches promoted on 2026-08-31
+## Test-cycle rules measured up to 2026-08-31
 
-The following rules were measured up to 2026-08-31. When
-they correct a historical section, this block's correction rules; previous section is preserved
-as the record of how the measurement evolved.
+The following rules were measured up to 2026-08-31. Where one of them corrects an earlier
+section, the rule here wins; the earlier section is kept as the record of how the measurement
+changed.
 
 ### Mixed build: `-include` filters sync, does not define PBO
 
@@ -122,9 +121,9 @@ route for `.c`, `.paa`, `.ogg`, `.layout`, and `.csv`. `-include` governs this s
 not the final manifest. An `.rvmat` cited only from `config.cpp` can still be missing.
 
 The published template of this skill does not pass a list today in
-`Invoke-Build` of `templates/dayz-test.ps1`. Therefore, for a mixed mod do not accredit generic `-Build`:
-use a build passing an adequate list for ordinary payload and validate actual PBO entries
-afterward. Require at least equality of paths and counts for source `.c`, and check
+`Invoke-Build` of `templates/dayz-test.ps1`. So for a mixed mod, do not trust the plain `-Build`:
+use a build that passes a suitable `-include` list for the ordinary files, then check the
+entries actually in the PBO. Require at least equality of paths and counts for source `.c`, and check
 separately materials cited by config. Do not add `*.rvmat` to a list and take it as proof.
 Authoritative build semantics and full gate live in
 `skills/dayz-build-pbo/SKILL.md`.
@@ -144,8 +143,8 @@ game will compile:
 1. Extract deployed PBO to a scratch with an extractor that correctly expands `Cprs`
    entries; validate extractor first against a known baseline.
 2. Compute SHA-256 of file inside PBO and of source file cited by plan.
-3. Demand equality for each file underpinning the change. A recent container mtime does not
-   accredit its entries.
+3. Require equal hashes for every file the change depends on. A recent PBO modified time says
+   nothing about the files inside it.
 
 If hashes differ, plan is citing a tree different from runtime. Rebuild and repeat the
 gate before diagnosing logic. This offline check is the cheap discriminant complementing
@@ -294,4 +293,4 @@ an artifact that seems correct in all steps and does not contain the change.
 your wrapper says `[ok] deployed` next. If those two lines coexist in the same
 run, the PBO you are going to test is the old one.
 
-**Two more masks of the same trunk (measured 2026-09-08).** (1) The generated launcher FABRICATES its own destination: `Invoke-Build` creates `<WorkDrive>\Mods\@<Mod>\Addons` with `New-Item -Force` if missing. In copies generated before that date a build-only run reached `Invoke-Build` without passing through the preflight, so a missing `Mods` folder became a PLAIN folder that silently received the PBO - the script printed `[ok] deployed` and the engine never read it (reproduced literally: `exit=0; Mods created=True; junction=False`). The current template runs `Invoke-Preflight` before every build and creates the junction when `Mods` is missing, but when `Mods` exists as a plain folder it only warns and the build goes on. The destination check - exists AND is a reparse point - must run from the build path itself before copying. (2) Add the stdout text gate beside the byte gate: capture AddonBuilder stdout (`Start-Process -RedirectStandardOutput`) and require `Build Successful` while rejecting `[ERROR]: Build failed`. The pair discriminates: a false "Successful" with an untouched PBO dies on the mtime/hash gate; a touched-but-failed build dies on the text gate. A FIRST legit build has no previous PBO, so the byte comparison must be guarded (compare only when a previous PBO existed). The current template carries both gates. [EXACT] (measured)
+**Two more masks of the same trunk (measured 2026-09-08).** (1) The generated launcher FABRICATES its own destination: `Invoke-Build` creates `<WorkDrive>\Mods\@<Mod>\Addons` with `New-Item -Force` if missing. In copies generated before that date a build-only run reached `Invoke-Build` without passing through the preflight, so a missing `Mods` folder became a PLAIN folder that silently received the PBO - the script printed `[ok] deployed` and the engine never read it (reproduced literally: `exit=0; Mods created=True; junction=False`). The current template runs `Invoke-Preflight` before every build and creates the junction when `Mods` is missing, but when `Mods` exists as a plain folder it only warns and the build goes on. The destination check - exists AND is a reparse point - must run from the build path itself before copying. (2) Add the stdout text gate beside the byte gate: capture AddonBuilder stdout (`Start-Process -RedirectStandardOutput`) and require `Build Successful` while rejecting `[ERROR]: Build failed`. The pair discriminates: a false "Successful" with an untouched PBO dies on the mtime/hash gate; a touched-but-failed build dies on the text gate. A FIRST legit build has no previous PBO, so the byte comparison must be guarded (compare only when a previous PBO existed). The current template carries the byte gate and half of the text gate: `Invoke-Build` stops on `Build failed`, but when `Build Successful` is missing it only warns and falls back to the freshness check (`templates/dayz-test.ps1`, `Invoke-Build`). [EXACT] (measured)

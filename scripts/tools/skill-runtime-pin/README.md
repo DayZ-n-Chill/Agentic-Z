@@ -36,8 +36,9 @@ receipt **outside** `<probe-root>`. Assembled consumer prompts do not include it
   isolate `$HOME/.agents`. Homogeneous global copies are not disabled. The pin
   is the versioned alias plus a later probe that must show the nonce **and**
   consumption of the original captured `SKILL.md`.
-- Lazy reads are accepted only for that original and its `references/` in the
-  capture. Zero tool calls are valid only when the host injected that original
+- Lazy reads are accepted only for that original, its `references/` in the
+  capture, and the derived adapter itself. Reading only the adapter does not
+  count as consuming the original. Zero tool calls are valid only when the host injected that original
   body (exact probe path + hash match). A nonce with neither is a false pass.
 
 ## Commands
@@ -64,7 +65,10 @@ For `materialize`, `--task-root` must not exist. It is created as:
 `argv` arrays it prints.
 
 Exit `0` is `PASS`, `1` is `FAIL` or a refused pin, `2` is usage. Reports are
-JSON on stdout.
+JSON on stdout. A missing or unreadable `--transcript` or `--prompt-input`, a
+transcript that is not JSON, or a transcript whose `tool_reads` is not a list or
+whose `injected_bodies` is not a list of objects is a `FAIL` report with code
+`TRANSCRIPT-INVALID` or `PROMPT-INPUT-INVALID`.
 
 ## Operator sequence
 
@@ -183,6 +187,7 @@ foreign absolute path with a copied hash is a failed grade.
 ## Tests
 
 ```powershell
+python -m pytest -q -p no:cacheprovider scripts/tools/skill-runtime-pin
 python -m pytest -q -p no:cacheprovider scripts/dev/knowledge-pack/tests/packctl/test_packctl_runtime_pin.py
 ```
 

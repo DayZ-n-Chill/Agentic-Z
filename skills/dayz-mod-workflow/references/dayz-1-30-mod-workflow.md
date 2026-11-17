@@ -8,7 +8,7 @@ Marks: `[EXACT]` copied from the cited vanilla file; `[DESIGN]` a recommendation
 
 ## Action pipeline: `CanBeStarted` and `CCTLiquid`
 
-Until 1.29, `Can()` (target condition, item condition, `ActionCondition`) was treated as the whole client start gate: a listed action was assumed startable. Since 1.30 the widget can still show an action whose `CanBeStarted()` is false; the client manager then does not call `ActionStart`.
+Until 1.29, `Can()` (target condition, item condition, `ActionCondition`) was treated as the whole client start gate: a listed action was assumed startable. Since 1.30 the widget can still show an action whose `CanBeStarted()` is false; the client manager then does not call `ActionStart`. The 1.29 side is not on `P:\`, so it is not yet checked on `P:\`.
 
 ```c
 // [EXACT] P:\scripts\4_world\classes\useractionscomponent\actionbase.c:276-291
@@ -71,7 +71,7 @@ Vanilla water, wash and fill actions no longer use `CCTWaterSurfaceEx` at the wa
 
 ## Central Economy root classes: `MotorbikeScript` and `HouseDestructible`
 
-Since 1.30, `cfgeconomycore.xml` on Chernarus, Livonia and Sakhal has two more root classes:
+Since 1.30, `cfgeconomycore.xml` on Chernarus, Livonia and Sakhal has two more root classes (that 1.29 lacked them is not yet checked on `P:\`, which holds no 1.29 data):
 
 ```xml
 <!-- [EXACT] P:\DZ\worlds\chernarusplus\ce\cfgeconomycore.xml:15-18 -->
@@ -87,7 +87,7 @@ The same pair is at `P:\DZ\worlds\enoch\ce\cfgeconomycore.xml:17-18` (`Motorbike
 
 ## `cfggameplay.json`: new members
 
-Since 1.30, `CfgGameplayJson` has `ExternalLockData` and `SandstormData`; `ITEM_GeneralData` has `disableBaseDecay`; `ITEM_VehicleData` has the wheel detach and damage flags.
+Since 1.30, `CfgGameplayJson` has `ExternalLockData` and `SandstormData`; `ITEM_GeneralData` has `disableBaseDecay`; `ITEM_VehicleData` has the wheel detach and damage flags. That 1.29 lacked them is not yet checked on `P:\`, which holds no 1.29 data.
 
 ```c
 // [EXACT] P:\scripts\3_game\cfggameplaydatajson.c:14-23
@@ -127,7 +127,7 @@ Since 1.30, `CfgGameplayJson` has `ExternalLockData` and `SandstormData`; `ITEM_
 
 ## Underground trigger editor (`PluginUndergroundTriggerManager`)
 
-Since 1.30 there is an in-game editor for underground triggers, on diag builds only: the whole file is inside `#ifdef DIAG_DEVELOPER`, and the class `PluginUndergroundTriggerManager` starts at `P:\scripts\4_world\plugins\pluginbase\pluginundergroundtriggermanager.c:1-3`. Its key binds:
+Since 1.30 there is an in-game editor for underground triggers, on diag builds only: the whole file is inside `#ifdef DIAG_DEVELOPER`, and the class `PluginUndergroundTriggerManager` starts at `P:\scripts\4_world\plugins\pluginbase\pluginundergroundtriggermanager.c:1-3`. That 1.29 had no such editor is not yet checked on `P:\`, which holds no 1.29 data. Its key binds:
 
 ```c
 // [EXACT] P:\scripts\4_world\plugins\pluginbase\pluginkeybinding.c:55-56
@@ -141,7 +141,7 @@ The trigger JSON schema, the 4096-trigger limit, triggers tied to Object Spawner
 
 ## `NVTypes`: environment variants (custom cameras)
 
-Until 1.29, `NVTypes` ended at the optics and pumpkin night variants. Since 1.30 it has underground and sandstorm variants, and a `switch` over the enum that is not exhaustive misses them. On `P:\`:
+Until 1.29, `NVTypes` ended at the optics and pumpkin night variants (1.29 is not on `P:\`, so that half is not yet checked on `P:\`). Since 1.30 it has underground and sandstorm variants, and a `switch` over the enum that is not exhaustive misses them. On `P:\`:
 
 ```c
 // [EXACT] P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercamera_base.c:54-78
@@ -196,7 +196,7 @@ Since 1.30, `CGame` has `IsHeadless()` and `IsHeadlessOrDedicatedServer()`. The 
 	proto native bool		IsHeadlessOrDedicatedServer();
 ```
 
-Until 1.29, code that skipped particles or sounds on a server tested `IsDedicatedServer()` or `IsServer()`. Since 1.30 vanilla skips client effects with `!g_Game.IsHeadlessOrDedicatedServer()`, so headless roboclients are treated like servers. For "skip the effect", prefer the combined helper so headless roboclients do not run particles. Which call to use as the side guard for authority work is a separate rule: `skills/_shared/conventions/scripts.md`, "Which code runs where".
+Until 1.29, code that skipped particles or sounds on a server tested `IsDedicatedServer()` or `IsServer()` (not yet checked on `P:\`, which holds no 1.29 data). Since 1.30 vanilla skips client effects with `!g_Game.IsHeadlessOrDedicatedServer()`, so headless roboclients are treated like servers. For "skip the effect", prefer the combined helper so headless roboclients do not run particles. Which call to use as the side guard for authority work is a separate rule: `skills/_shared/conventions/scripts.md`, "Which code runs where".
 
 Counted on `P:\`: vanilla calls `IsHeadlessOrDedicatedServer()` 97 times and `IsHeadless()` on its own never (the same numbers were counted on 1.30.164014). Measured on that build: the script log lists `DAYZ_1_30` among the defines, where 1.29 logged `DAYZ_1_29`. A mod that must compile on both can gate the new helper on the version define, which names only the current version (`DAYZ_X_XX`, `P:\scripts\1_core\defines.c:12-14`). 1.29 vanilla is reported to gate the same way in its `DynamicMusicPlayerRegistry.c` (not on `P:\`).
 

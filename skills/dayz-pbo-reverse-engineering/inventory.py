@@ -2,7 +2,7 @@
 
 Step 1 of the skill (the inventory pass): for each .pbo it prints the header prefix,
 the entry count, the entry types, and whether the PBO is a deployable mod, a
-config-only PBO or a source asset distribution. It also names entries an extractor
+config-only PBO, a source asset distribution or a data-only PBO. It also names entries an extractor
 should not be trusted with (path traversal, device names, control characters).
 
 Pure offline reader: it opens only the .pbo files it is given, so it does not gate

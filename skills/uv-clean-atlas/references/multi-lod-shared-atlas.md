@@ -70,7 +70,7 @@ The floor is 495 connected shells in 3D, so 695 islands is nearly optimal, and i
 
 ### The probe that recommended the disaster
 
-The first version of that seam probe measured island count and NaN, and nothing else, so it recommended the 695-island strategy. Every counter downstream in the recipe filters `abs(area) > 1e-14` before measuring, so over the survivors the collapsed run reported **1,308 px/m and 76% occupancy**: better numbers than the correct run's. Only the exact SAT check over the unfiltered triangles found **30,032 collapsed of 38,832, or 77%**.
+The first version of that seam probe measured island count and NaN, and nothing else, so it recommended the 695-island strategy. The figures in this paragraph come from running that strategy through the whole recipe (fold loop and packing), not from the raw unwrap in the table above, which collapsed 100.0%; the fold loop's cuts and re-unwraps brought part of the triangles back. Every counter downstream in the recipe filters `abs(area) > 1e-14` before measuring, so over the survivors the collapsed run reported **1,308 px/m and 76% occupancy**: better numbers than the correct run's. Only the exact SAT check over the unfiltered triangles found that **30,032 of 38,832, or 77%,** were still collapsed after the fold loop.
 
 This is the rule from "Collapsed faces hide from the overlap check" in `SKILL.md`, one level deeper: it is not only the shipped gate that inherits the area filter, it is **the probe you write to choose between strategies**. A probe that cannot see the failure the project already paid for will select for it. Put `collapsed / total` in every comparison table you build, including the throwaway ones.
 

@@ -28,11 +28,11 @@ If the request is strictly technical (choosing an `AnimationSource`, registering
 
 | Animation | Skills added to the director |
 |---|---|
-| Player, hands, custom human or infected | `dayz-characters`. For creatures, first verify their actual bind pose and skeleton (in 1.30 the engine resolves bone indices by name and the 250-bone limit is gone; see `references/dayz-1-30-animation-direction.md`). |
-| Weapon, reload, unjam or P3D mechanism | `dayz-weapons` when the entity contract changes, plus the relevant P3D or model skill (in 1.30: per-weapon bone remaps and dedicated `.asi` profiles). |
+| Player, hands, custom human or infected | `dayz-characters`. For creatures, first verify their actual bind pose and skeleton (1.30 changelog, not yet checked on `P:\`: the engine resolves bone indices by name and the 250-bone limit is gone; see `references/dayz-1-30-animation-direction.md`). |
+| Weapon, reload, unjam or P3D mechanism | `dayz-weapons` when the entity contract changes, plus the relevant P3D or model skill (check the per-weapon bone remap, such as `LugerBoneRemap` at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1621`, and the dedicated `.asi` profile listed in `references/domain-gates.md`). |
 | Occupant, entry or vehicle controls | `dayz-vehicles` (in 1.30: motorbikes on the `MOTO1` and `MOTO2` instances, with two-bone IK on the handlebar). |
 | Mocap or external donor | The retargeting skill that applies (`mixamo-retarget`); never without a source-to-target bone map. |
-| Runtime test | `/dayz-launch-test`, `/dayz-gate` and `/dayz-logwatch`, or `/dayz-test-ingame` and `/dayz-mcp-verify`, with their lease and lifecycle rules (in 1.30: Workbench Live Editing). |
+| Runtime test | `/dayz-launch-test`, `/dayz-gate` and `/dayz-logwatch`, or `/dayz-test-ingame` and `/dayz-mcp-verify`, with their lease and lifecycle rules (Workbench Live Editing; 1.30 changelog, not yet checked on `P:\`). |
 
 `blender-animation` and `dayz-animation-pipeline` stay mandatory for authoring and integration; the skills in the table do not replace them.
 
@@ -120,7 +120,7 @@ Run the sampler in Blender, then the validator (see "How to run"). In addition t
 
 Read `references/evidence-and-integration.md`.
 
-- Test the stances, cameras and states that can alter IK or blending. The 1.30 Workbench Animation Editor can Live Edit graphs on a running client, which helps debug transitions.
+- Test the stances, cameras and states that can alter IK or blending. 1.30 changelog, not yet checked on `P:\`: the Workbench Animation Editor can Live Edit graphs on a running client, which helps debug transitions.
 - Review the RPT and compare timing, contact, clipping and mechanical states against the contract.
 - If the game contradicts Blender, the game wins and the case becomes a regression.
 - If the environment does not allow the test, end in `MANUAL_REQUIRED`, not PASS.

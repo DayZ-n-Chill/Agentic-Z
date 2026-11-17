@@ -35,7 +35,7 @@ Audio is client only.
 
 A `Play` call on a dedicated server is silent and reports no error. To make a sound happen "from the server", sync a change of state and let each client play it. Vanilla gives you `StartItemSoundServer` for item sounds; for anything else, sync your own variable and play in `OnVariablesSynchronized`.
 
-Since 1.30 the item and player sound handlers test `IsHeadlessOrDedicatedServer()`, so headless clients are skipped too (`P:\scripts\4_world\classes\soundhandlers\itemsoundhandler.c:121`). `Object.PlaySoundSet` did not change.
+Since 1.30 a few sound paths test `IsHeadlessOrDedicatedServer()`, which also skips headless clients: the stop path of the item sound handler, `StopItemSoundClient` (`P:\scripts\4_world\classes\soundhandlers\itemsoundhandler.c:121`), the client player sound manager (`P:\scripts\4_world\classes\soundhandlers\playersoundmanager.c:105`) and the registration of the player's sound tables (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgsounds.c:335`). `PlayItemSoundClient` has no such check. `Object.PlaySoundSet` did not change.
 
 ## Which call for which job
 
@@ -114,7 +114,7 @@ Since 1.30 the engine damps noise for rain, snow, fog, wind, sea and sandstorm, 
 | `DynamicMusicPlayer.PlayTrack("...")` can be called | `PlayTrack` is `private` (`P:\scripts\3_game\systems\dynamicmusicplayer\dynamicmusicplayer.c:511`). Use `SetCategory` and `RegisterDynamicLocation` |
 | `ItemBase` has an `OnSoundEvent` override | It does not. Use the item sound handler or `PlaySoundSet` |
 | `StartItemSoundServer` can sync only one sound at a time | True up to 1.29. On 1.30 sounds started in one frame travel together; the comment in the handler still states the old limit |
-| One sound has a master volume call | Only `SetVolumeRelative` on its wave, or `SetSoundVolume` on its `EffectSound`. The shader `volume` is fixed config |
+| One sound has a master volume call | Only `SetVolume` or `SetVolumeRelative` on its wave, or `SetSoundVolume` on its `EffectSound`. The shader `volume` is fixed config |
 | `samples[]` paths need a file extension | They are written without one |
 | `SetFrequency` takes Hz | It takes a pitch factor; 1.0 is the recorded pitch (measured, see `skills/_shared/audio-fx/sound-engine-api.md`) |
 
@@ -151,7 +151,7 @@ More:
 The quoted vanilla lines, what breaks and the full checklist are in `references/dayz-1-30-sound.md`. In short:
 
 - The engine damps noise for weather; `GetEnvironmentNoiseReduction(pos)` replaces the weather helpers, which are obsolete.
-- `IsHeadlessOrDedicatedServer()` guards the item and player sound paths; `Object.PlaySoundSet` still tests `IsDedicatedServer()`.
+- `IsHeadlessOrDedicatedServer()` guards only the stop path of the item sound handler, the player sound manager and the player sound table registration; `PlayItemSoundClient` has no such check, and `Object.PlaySoundSet` still tests `IsDedicatedServer()`.
 - An `EffectSound` with a fade in starts at volume zero.
 - New player sound event `HEAVY_BREATHING` (animation event 907), requested by silicosis.
 - One music registry class per world.

@@ -45,7 +45,7 @@ workflow was run end-to-end on the build named.
 Added **2026-10-01**, while 1.30 was still Experimental (Experimental Update 1
 shipped 2026-09-16). 1.30 reached stable on 2026-10-15.
 
-The 28 skills below hold DayZ 1.30 content. It was first written between 2026-09-16
+The 29 skills below hold DayZ 1.30 content. It was first written between 2026-09-16
 and 2026-10-01 against a local extraction of build `1.30.164014` (scripts,
 `config.cpp` files and the plain-text `.agf` animation graphs). **This table only
 locates that content; it does not re-verify it.** The evidence level of each 1.30
@@ -67,8 +67,9 @@ citation gives" in `skills/_shared/knowledge/dayz-1-30-build-history.md`.
 **Move to 1.30.164289 (2026-11-09).** `1.30.164289`, the Steam update of 2026-11-04, changed
 27 script files, all `.c`, and none of the data PBO entries the 2026-10-28 re-check extracted;
 its models, four navmeshes and `ChernarusPlus.wrp` changed size and were not compared. The
-citations of the 27 files were moved to their `1.30.164289` lines. Where it changed the code
-they cite, the text says what changed: heat stroke and head washing in
+citations of the 27 files give their lines on `P:\`, which holds an older build. Where
+`1.30.164289` changed the code they cite, the text says what changed and marks it as not
+checked on `P:\`: heat stroke and head washing in
 `dayz-environment-hazards`, `CollisionFlags` in `dayz-physics-engine`, the bunker doors in
 `dayz-doors`, and the item-fall box and the part keys in `dayz-basebuilding`.
 
@@ -89,6 +90,7 @@ their own. Other files of the same skill mention 1.30 in passing; search the ski
 | `dayz-doors` | `SKILL.md`, `references/door-model-cfg-and-config.md`, `references/lods-and-object-builder.md`, `references/worked-examples.md` |
 | `dayz-environment-hazards` | the whole skill (1.30 only) |
 | `dayz-mcp-verify` | `references/dayz-1-30-mcp-verify.md` |
+| `dayz-mod-dev` | `SKILL.md` (written later, against `1.30.164289`; targets 1.30 or later only) |
 | `dayz-mod-workflow` | `references/dayz-1-30-mod-workflow.md`, `references/dayz-1-30-server-measured.md` |
 | `dayz-model-pipeline` | `references/dayz-1-30-model-pipeline.md` |
 | `dayz-motorbikes` | the whole skill (1.30 only) |
@@ -151,6 +153,9 @@ their own. Other files of the same skill mention 1.30 in passing; search the ski
 | `dayz-realistic-animation-director` | `cross_checked` | Blender with `bpy`; `blender-animation`; `dayz-animation-pipeline`; optional DayZDiag for the in-game gate | The offline validators compile. No third-party motion model or ARDY weights ship. Not re-run. | `skills/dayz-realistic-animation-director/SKILL.md`; `skills/dayz-realistic-animation-director/scripts/` |
 | `uv-clean-atlas` | `cross_checked` | Blender 4.3 or later, headless; optional PartUV (not shipped) | The scripts compile. Not re-run. | `skills/uv-clean-atlas/SKILL.md`; `skills/uv-clean-atlas/scripts/` |
 | `3d-generation-harness` | `cross_checked` | `blender-assembly`; `blender-visual-review`; `dayz-model-pipeline`; `dayz-p3d-audit`; optional external image-to-3D skill `hunyuan3d-local` (not in this repo) | Process harness. AI mesh generation is done by the optional external skill, which this repo does not ship. Not re-run. | `skills/3d-generation-harness/SKILL.md` |
+| `dayz-mod-dev` | `unverified` (targets 1.30 or later only) | `dayz-mod-workflow`; `dayz-feature-spec`; the domain skills it routes to; `dayz-test-ingame`; `dayz-build-pbo`; optional Community Framework and DayZ Expansion | Reading guide and rule set. Written against 1.30.164289; builds before 1.30 are not covered and it was not checked on 1.29. Its `P:\` citations are 1.30 lines; its measured rules name the 1.30 server build they were measured on. | `skills/dayz-mod-dev/SKILL.md`; `skills/dayz-mod-workflow/references/dayz-1-30-server-measured.md` |
+| `systematic-debugging` | `offline_tested` | `/dayz-lint`; `/dayz-gate`; `/dayz-logwatch`; `/dayz-upgrade-guard` | Engine-independent process skill. Its tests check only that the skill and its reference files are complete and consistent; they do not run DayZ. | `skills/systematic-debugging/SKILL.md`; `skills/systematic-debugging/test_systematic_debugging_docs.py` |
+| `task-observer` | `offline_tested` | `/dayz-record-correction` | Engine-independent process skill: it logs observations and stages skill updates, and touches no DayZ file. The tests run its log scan and id snippets on temporary folders. | `skills/task-observer/SKILL.md`; `skills/task-observer/test_task_observer_docs.py` |
 | `dayz-environment-hazards` | `unverified` (1.30-only feature set) | `enforce-script-reference`; `dayz-underground` | Written against 1.30.164014 Exp; citations re-checked on 1.30.164200 stable (2026-10-28) and 1.30.164289 (2026-11-09); not checked on 1.29. | `skills/dayz-environment-hazards/SKILL.md`; `skills/dayz-environment-hazards/references/vanilla-file-map.md` |
 | `dayz-motorbikes` | `unverified` (targets 1.30 only) | `dayz-vehicles`; `dayz-animation-pipeline`; `dayz-model-pipeline` | 1.30 `MotorbikeScript` contract (`P:\scripts\4_world\entities\vehicles\motorbikescript.c`), written against 1.30.164014 Exp and re-checked on 1.30.164200 stable (2026-10-28); the 1.29 stable scripts contain no `MotorbikeScript` (0 references, checked 2026-10-01). | `skills/dayz-motorbikes/SKILL.md`; `skills/dayz-motorbikes/references/script-api.md` |
 | `dayz-underground` | `unverified` (1.30-only terrain holes) | `dayz-basebuilding`; `dayz-test-ingame` | Written against 1.30.164014 Exp; citations re-checked on 1.30.164200 stable (2026-10-28) and 1.30.164289 (2026-11-09); not checked on 1.29. | `skills/dayz-underground/references/terrain-holes-evidence.md` |

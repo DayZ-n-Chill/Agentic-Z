@@ -6,7 +6,7 @@ parser diagnostics. In it exact widgets keep their declared px at every
 viewport while proportional widgets scale. The engine draws exact units as
 1/1080 of the screen height (`dayz-ui-development` Rule 3, measured in game),
 so off 1080p that difference is this model's, not the game's: the parser lays
-exact units out as pixels (`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py:772-775`). *(Corrected
+exact units out as pixels (`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py:773-776`). *(Corrected
 2026-10-03: this called it the usual "looked right in the mockup, wrong
 in-game" failure.)*
 

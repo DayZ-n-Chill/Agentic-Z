@@ -18,7 +18,7 @@ Adapt to your project's actual state names.
 
 ### Step 2: list every transition function
 
-```powershell
+```text
 Grep "SetState|TransitionTo|m_State\s*=" --type c --output_mode content -n true
 ```
 
@@ -58,7 +58,7 @@ Both are findings.
 
 Search:
 
-```powershell
+```text
 Grep "should not happen|should never|impossible|unreachable|TODO.*remove" --type c --output_mode content -n true
 ```
 
@@ -69,7 +69,7 @@ For each comment claiming impossibility: identify the precondition that makes it
 - A state reachable only by a fail path with no recovery transition out
 - Two functions performing the same transition with different preconditions (a race window where both fire)
 - An EE hook that writes `m_State` without going through a transition function (bypasses validation). The EE hooks are the `EntityAI` events, for example `EEDelete` (`P:\scripts\3_game\entities\entityai.c:946`) and `EEItemAttached` (`entityai.c:1159`).
-- An admin command that sets `m_State` directly (the canonical example: VULN-010)
+- An admin command that sets `m_State` directly, bypassing the transition functions
 
 ## Time budget
 

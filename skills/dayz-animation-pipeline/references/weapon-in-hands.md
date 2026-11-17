@@ -118,7 +118,7 @@ Do not mix up the three kinds of clip. The frame counts are from DayZATool extra
 
 | Artifact | What it is | Vanilla AKM | Where it is named |
 |---|---|---|---|
-| IK pose (`ik/weapons/<weapon>.anm`) | One static placement of hands and fingers on the gun. | 2 frames at 30 frames per second, the second a byte exact copy of the first, so one pose. The AKM's instance reuses the `izh18` pose (`IkPose` line, `P:\DZ\anims\workspaces\player\player_main\weapons\player_main_akm.asi:6`). | The `IkPose` line of the `.asi`; the fourth argument of `AddItemInHandsProfileIK`. |
+| IK pose (`ik/weapons/<weapon>.anm`) | One static placement of hands and fingers on the gun. | 2 frames at 30 frames per second, the second a byte exact copy of the first, so one pose. For the AKM the two places that name the pose disagree: the instance's `IkPose` line names `izh18` (`P:\DZ\anims\workspaces\player\player_main\weapons\player_main_akm.asi:6`), while the script registers `akm.anm` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:412`). Which one the engine uses is not established. | The `IkPose` line of the `.asi` and the fourth argument of `AddItemInHandsProfileIK`, which can differ. |
 | Weapon states (`w_<weapon>_states.anm`) | Drives only the `Weapon_` bones: bolt and bullet. | 2 distinct frames (`Weapon_Bolt` slides, `Weapon_Bullet` ejects). Not a fixed 3; Workbench trims to 2 to 4 keys per channel. | The fifth argument; `SetInitState` reads it. |
 | Action clips (reload, fire, chamber, jam) | Authored as differences, roughly shoulders down, played over the idle. | Magazine removal 22 frames, full swap 55, charging handle 44, chambering 107, fire 11, jam 230, all at 30 frames per second. | The `Lines` of the `.asi`. |
 
@@ -167,9 +167,9 @@ The same method serves any pose the engine's IK resolves (a vehicle rider, a hea
 
 ## An IK pose keys helper targets, not the arm
 
-A real IK pose keys eight IK bones (`LeftHandIKTarget`, `RightHandIKTarget`, `LeftHandOrigin`, `RightHandOrigin`, `LeftForeArmDirection`, `RightForeArmDirection` and the two `ForeArmDirectionOrigin` bones) together with every finger and the `_Dummy` bones. Checked on an extracted grip clip (43 bones). It does not key the raw arm, forearm and hand bones: the hand is placed by the IK target and the elbow by the forearm direction.
+A real IK pose keys seven IK bones (`LeftHandIKTarget`, `LeftHandOrigin`, `RightHandOrigin`, `LeftForeArmDirection`, `RightForeArmDirection` and the two `ForeArmDirectionOrigin` bones) together with every finger and the `_Dummy` bones. Checked on an extracted grip clip (43 bones). It does not key the raw arm, forearm and hand bones: the hand is placed by the IK target and the elbow by the forearm direction.
 
-The weapon viewer's rig without IK bones lacks those eight, so exporting a native IK pose from it would mean synthesizing them, which is not trivial. Prefer a vanilla IK pose plus geometric parity. The viewer's part in grip work is in `weapon-anim-authoring-viewer.md`, "Authoring a grip with the viewer".
+The weapon viewer's rig without IK bones lacks those seven, so exporting a native IK pose from it would mean synthesizing them, which is not trivial. Prefer a vanilla IK pose plus geometric parity. The viewer's part in grip work is in `weapon-anim-authoring-viewer.md`, "Authoring a grip with the viewer".
 
 ## See also
 

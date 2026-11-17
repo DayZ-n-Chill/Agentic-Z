@@ -139,9 +139,11 @@ a tank that may not be empty:
 `Fill(CarFluid.FUEL, GetFluidCapacity(CarFluid.FUEL) * (1.0 - GetFluidFraction(CarFluid.FUEL)))`.
 `OnDebugSpawn` is a separate path and fills on its own. **Measured 2026-09-11 with a vanilla
 `Hatchback_02` as the control**, which must land in 0-35 % if the path runs: neither a plain
-script spawn (`ECE_PLACE_ON_SURFACE`) nor the debug spawner's own flags
-(`ECE_PLACE_ON_SURFACE|ECE_INITAI|ECE_EQUIP_ATTACHMENTS`, the ones
-`4_World/plugins/pluginbase/plugindeveloper.c:454` uses) fire `EEOnCECreate`: both controls
+script spawn (`ECE_PLACE_ON_SURFACE`, which is also what the debug spawner's vehicle path
+`SpawnEntityOnGroundPos` passes when no player is given, or `ECE_KEEPHEIGHT` for a boat in
+DEVELOPER builds, `4_World/plugins/pluginbase/plugindeveloper.c:478-505`) nor the fuller set
+`ECE_PLACE_ON_SURFACE|ECE_INITAI|ECE_EQUIP_ATTACHMENTS` (the AI spawn path `SpawnAI`,
+`plugindeveloper.c:454`) fire `EEOnCECreate`: both controls
 read `fuel_fraction` 0, and so did the modded vehicle. Only a real Central Economy spawn
 exercises the override, so observing it needs a `types.xml` entry plus an event. Without a
 vanilla control in the same run, that zero reads as "my override is broken".

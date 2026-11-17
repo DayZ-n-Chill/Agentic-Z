@@ -3,7 +3,7 @@
 The bones of the DayZ player skeleton, grouped by zone, for mapping a Blender armature onto it when authoring `.txa`, `.anm` or `.rtm` clips. The names come from `P:\DZ\anims\cfg\skeletons.anim.xml`. Two of its blocks matter here:
 
 - `player_testing.xob` (from :110) is the survivor's. `SurvivorBase` names it as `skeletonName` and as `meshObject` (`P:\DZ\characters\data\config.cpp:155` to `:158`). Despite the word "testing" it is the skeleton players use, and it is the block that declares the IK helpers, weapon bones, face bones and camera helpers.
-- `hermit_newbindpose.xob` (from :2) is the one the infected bind (`skeletonName`, `P:\DZ\characters\zombies\config.cpp:76`). It shares the body bone names and is the only block that still carries `index` values.
+- `hermit_newbindpose.xob` (from :2) is the one the infected bind (`skeletonName`, `P:\DZ\characters\zombies\config.cpp:76`). It shares the body bone names and is the only block that still carries `index` values on bones other than `EntityPosition`.
 
 Some guides call the first block a test skeleton and the second the production one. The configs say otherwise: `player_testing.xob` is the survivor's.
 
@@ -41,7 +41,7 @@ Forward kinematics that walks arm to forearm, or upper leg to leg, skips a bone 
 
 Three more facts a guessed hierarchy gets wrong (measured while fitting a quad's rider, where 5 of 77 guessed parents were wrong and the worst would have lifted the pelvis 0.95 m):
 
-- `Pelvis` hangs off `Scene_Root`. `EntityPosition`, the movement bone, is its sibling, not its parent.
+- `Pelvis` hangs off `Scene_Root`. `EntityPosition`, the movement bone, is not in the bind pose parent table, so where it sits in the hierarchy is not checked on `P:\`.
 - The `ElbowExtra` bones hang off the `ArmRoll` bones.
 - The `HipExtra` bones hang off `Pelvis`.
 

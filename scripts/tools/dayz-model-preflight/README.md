@@ -38,7 +38,7 @@ not timestamps or physical paths.
 | Exit | Verdict | Meaning |
 |---:|---|---|
 | `0` | `PASS` | Contract and models are valid; no error finding exists. |
-| `1` | `FAIL` | Evidence is valid but the target violates it. |
+| `1` | `FAIL` | Evidence is valid but the target violates it, or py3d reports an error in the target or the source model (the finding's `model_role` field says which). |
 | `2` | `INVALID` | Input, dependency, transform or lineage evidence is missing/unsupported. |
 
 An output file is replaced atomically only after a complete result exists.

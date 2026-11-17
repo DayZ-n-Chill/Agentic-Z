@@ -10,7 +10,7 @@ Read from the shipped models:
 
 | Model | Animation | `source` | Value range | Angle |
 |---|---|---|---|---|
-| `P:\DZ\vehicles\wheeled\offroadhatchback\offroadhatchback.p3d` | `DrivingWheel` | `steeringwheel` | −1 to 1 | ±3.64 rad (about 209 degrees each way) |
+| `P:\DZ\vehicles\wheeled\offroadhatchback\offroadhatchback.p3d` | `DrivingWheel` | `steeringwheel` | −1 to 1 | ±3.1416 rad (180 degrees each way) |
 | `P:\DZ\vehicles\singletrack\motorbike_01\motorbike_01.p3d` | `TurnFront` | `turnfront` | −1.571 to 1.571 | the value itself, in radians |
 
 So the car's steering source is `steeringwheel`. `DrivingWheel` is the name of the animation class, not a source, and writing `source = "drivingWheel"` drives nothing. Neither source is declared in the vehicle's `AnimationSources`: the engine supplies both.
@@ -102,7 +102,7 @@ If they drift apart, at full lock the part turns to its angle while the hands st
 
 - The bone is in `skeletonBones[]` and its name equals the `selection`.
 - The axis selection exists in the Memory LOD with exactly two points.
-- `/dayz-p3d-audit` with `--model-cfg` passes: it checks both.
+- `/dayz-p3d-audit` with `--model-cfg` passes: it checks that the `selection` exists in the Visual LOD and that the axis has exactly two points. It does not read `skeletonBones[]`; check the bone list by hand, or watch for the warning `gen_model_cfg.py` prints when a `selection` is not in `skeletonBones[]`.
 
 ## Multiplayer: use the engine source, not a script source
 

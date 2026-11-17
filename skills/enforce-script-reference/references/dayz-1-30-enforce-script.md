@@ -285,7 +285,7 @@ Also `:282-285` `UABuldLinkCamToTerrain` / `UABuldCopyTileCoord` / `UABuldMarkUn
 
 ### 7.7 Recipes
 
-Until 1.29, `m_ResultReplacesIngredient` + `TransferItemProperties` could overwrite health from `m_ResultInheritsHealth`. Since 1.30 5th arg is `transfer_health = false`. Signature: `P:\scripts\4_world\static\miscgameplayfunctions.c:269`.
+Until 1.29, `m_ResultReplacesIngredient` + `TransferItemProperties` could overwrite health from `m_ResultInheritsHealth`. Since 1.30 the recipe call passes `false` as the 5th argument, `transfer_health` (`P:\scripts\4_world\classes\recipes\recipebase.c:353`). The parameter itself still defaults to `true` (`P:\scripts\4_world\static\miscgameplayfunctions.c:269`).
 
 ```c
 // [EXACT] P:\scripts\4_world\classes\recipes\recipebase.c:353
@@ -387,7 +387,7 @@ enum ThirdPersonMode
 	}
 ```
 
-`to` is inclusive. `typename.EnumFlagsToString` `P:\scripts\1_core\proto\enconvert.c:614`; `Enum.EnumFlagsToString` `:704` forwards.
+`to` is inclusive. `typename.EnumFlagsToString` `P:\scripts\1_core\proto\enconvert.c:614`; `EnumTools.EnumFlagsToString` `:704` forwards.
 
 ### 8.4 `DoOnce`, `IsFirstRenderFrame`, `DisableSimulation`
 
@@ -416,6 +416,8 @@ class DoOnce
 	proto native bool GetIsSimulationDisabled();
 ```
 
+`DisableSimulation` is not new in 1.30: it was already in 1.29 and is shown here only for reference.
+
 ---
 
 ## What breaks for a 1.29 mod
@@ -434,7 +436,7 @@ class DoOnce
 
 ## Migration checklist
 
-- [ ] `OnCEIterate(currentTime, elapsedTime)` + `super`. Inventory: Validate + Execute* (not `ProcessInputData`).
+- [ ] `OnCEIterate(currentTime, elapsedTime)` + `super`. Inventory: observe completed moves through `ItemBase.EEItemLocationChanged`; `ProcessInputData` has no moddable replacement.
 - [ ] Target* takes. `AddAction(ActionObtainLiquidBase)`. `EntityAI.OverrideActionAnimation` (item and target).
 - [ ] Info actions: `InitInfoData` + `CanBeStarted()==false`. `new CCTLiquid(mask, ...)`. `GetPlayerHeadPosition`.
 - [ ] `GetThirdPersonViewMode() == ThirdPersonMode.ENABLED`. Weather HUD: `GetNoiseReductionByWeatherEx(object)`.

@@ -66,7 +66,7 @@ When a stage has no real texture, vanilla writes a procedural one instead of lea
 
 Fresnel is always procedural: `#(ai,64,64,1)fresnel(n,k)`, or `#(ai,64,64,1)fresnelGlass(n)` for glass. See `rvmat-stages.md`.
 
-Two of these slots have more than one vanilla value, counted over the `.rvmat` files under `P:\DZ`:
+Two of these slots have more than one vanilla value, counted over all the `.rvmat` files under `P:\DZ`, damage and destruct variants included:
 
 - **Detail.** `color(0.5,0.5,0.5,1,DT)` appears 3,846 times and `color(0.5,0.5,0.5,0.5,DT)` 1,299 times, for example at `P:\DZ\vehicles\wheeled\offroad_02\data\offroad_02_decals.rvmat:27`. Copy the one in the material you started from.
 - **Specular.** There is no single neutral value. Of 1,055 procedural `SMDI` textures, the most common is `color(0,0,1,1,SMDI)` (300 times, for example `P:\DZ\characters\bodies\data\jeans_f_grd.rvmat:59`), which has green at 0 and so no highlight at all; `color(1,1,1,1,SMDI)` comes second with 169. The first number (red) is 0 in 593 of them and 1 in 405, so a white red looks conventional, not required; what red does in the shader is not verified. Pick the value by the highlight you want: green is its strength and blue its tightness.

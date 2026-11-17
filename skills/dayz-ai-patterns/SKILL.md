@@ -21,8 +21,8 @@ The Expansion patterns are described in prose, with no Expansion code reproduced
 
 | Question | Read |
 |---|---|
-| How does Expansion AI sleep, enter and leave combat, build its state machine, filter targets by view angle? | `references/eai-fsm-combat.md` (PC-5, PC-11, PC-13, PC-9a) |
-| How does it limit path work, weight doors, spread a squad over targets, keep formation, throttle threat and line of sight? | `references/eai-pathfinding-groups.md` (PC-14, PC-7, PC-2, PC-9b, PC-15, PC-16, PC-17, PC-18) |
+| How does Expansion AI sleep, enter and leave combat, build its state machine, filter targets by view angle? | `references/eai-fsm-combat.md` (P1 to P4) |
+| How does it limit path work, weight doors, spread a squad over targets, keep formation, throttle threat and line of sight? | `references/eai-pathfinding-groups.md` (P5 to P12) |
 | What did 1.30 change for vanilla noise, infected and animal groups, with the literal vanilla blocks? | `references/dayz-1-30-ai.md` |
 | Vanilla creature classes, behaviour templates, noise and visibility, patrols, spawning | the AI pack, front index `skills/_shared/ai/README.md` |
 | Animal territories in the mission (`cfgenvironment.xml`, `env\*_territories.xml`) | `skills/_shared/ai/animal-territories.md` |
@@ -33,69 +33,69 @@ File names are relative to the Expansion scripts repository; the full paths are 
 
 | ID | Pattern | Expansion file |
 |---|---|---|
-| PC-5 | Dormant state: the state machine switches simulation off and on | `eaistate_dormant.c:1-17` |
-| PC-11 | Fighting state: two thresholds and a chain of guards | `eaistate_fighting.c:18-38` |
-| PC-13 | State machine loaded from XML, built from sub state machines | `eAIBase.c:661-666`, `Master.xml:3-8` |
-| PC-9a | Field of view test before the line of sight raycast | `eAIBase.c:8156-8168` |
-| PC-9b | Line of sight throttle that follows the update interval | `eAIBase.c:8089-8097` |
-| PC-14 | Threat value cached for a random 250 to 300 ms | `eAITargetInformationState.c:58-67` |
-| PC-7 | Target scan one entry per tick, restart after a random 0.1 to 0.2 s | `eAIBase.c:2962-2966` |
-| PC-2 | Five times slower updates with no player in visibility range | `ExpansionWorld.c:247-250` |
-| PC-15 | Pathfinding: recalculation thresholds and measured cost | `ExpansionPathHandler.c:581-592` |
-| PC-16 | Path filters: navmesh area costs (open door 10 000) | `expansionpathfilters.c:131-147` |
-| PC-17 | Group targets: distribution by who already tracks a target | `eAIGroup.c:726`, `eAIBase.c:3497-3505` |
-| PC-18 | Formation positions cached per unit, refreshed every 2 to 4 s | `eAIGroup.c:822-830` |
+| P1 | Dormant state: the state machine switches simulation off and on | `eaistate_dormant.c:1-17` |
+| P2 | Fighting state: two thresholds and a chain of guards | `eaistate_fighting.c:18-38` |
+| P3 | State machine loaded from XML, built from sub state machines | `eAIBase.c:661-666`, `Master.xml:3-8` |
+| P4 | Field of view test before the line of sight raycast | `eAIBase.c:8156-8168` |
+| P5 | Line of sight throttle that follows the update interval | `eAIBase.c:8089-8097` |
+| P6 | Threat value cached for a random 250 to 300 ms | `eAITargetInformationState.c:58-67` |
+| P7 | Target scan one entry per tick, restart after a random 0.1 to 0.2 s | `eAIBase.c:2962-2966` |
+| P8 | Five times slower updates with no player in visibility range | `ExpansionWorld.c:247-250` |
+| P9 | Pathfinding: recalculation thresholds and measured cost | `ExpansionPathHandler.c:581-592` |
+| P10 | Path filters: navmesh area costs (open door 10 000) | `expansionpathfilters.c:131-147` |
+| P11 | Group targets: distribution by who already tracks a target | `eAIGroup.c:726`, `eAIBase.c:3497-3505` |
+| P12 | Formation positions cached per unit, refreshed every 2 to 4 s | `eAIGroup.c:822-830` |
 
-PC-2, PC-7 and PC-9b are the Expansion AI instances of general server scheduling rules (a budget per frame, an interval that adapts to load, staggering by index). The general rules for our own code are in `skills/_shared/ai/spawning-and-performance.md` ("Server performance") and `skills/_shared/enscript/patterns/scheduler.md`. The longer write-up is `skills/enforce-script-reference/references/server-performance.md`, which also covers `#ifdef SERVER` against `IsServer()` checks and the `ScriptInvoker` lifecycle (rules 17 to 20 and 28 in `skills/enforce-script-reference/references/hard-rules.md`).
+P5, P7 and P8 are the Expansion AI instances of general server scheduling rules (a budget per frame, an interval that adapts to load, staggering by index). The general rules for our own code are in `skills/_shared/ai/spawning-and-performance.md` ("Server performance") and `skills/_shared/enscript/patterns/scheduler.md`. The longer write-up is `skills/enforce-script-reference/references/server-performance.md`, which also covers `#ifdef SERVER` against `IsServer()` checks and the `ScriptInvoker` lifecycle (rules 17 to 20 and 28 in `skills/enforce-script-reference/references/hard-rules.md`).
 
 ### State machine
 
-**PC-13: loaded from XML, built from sub state machines.** `LoadFSM()` in `eAIBase` calls `ExpansionFSMType.LoadXML(...)`, then `Spawn(...)`, then `StartDefault()`. `Master.xml` includes sub state machines for vehicles, fighting and reloading; Dormant is a state of the master. What follows: the set of states changes through XML, not Enforce Script, so adding or removing a state needs no script recompile.
+**P3: loaded from XML, built from sub state machines.** `LoadFSM()` in `eAIBase` calls `ExpansionFSMType.LoadXML(...)`, then `Spawn(...)`, then `StartDefault()`. `Master.xml` includes sub state machines for vehicles, fighting and reloading; Dormant is a state of the master. What follows: the set of states changes through XML, not Enforce Script, so adding or removing a state needs no script recompile.
 
-**PC-5: the dormant state owns `DisableSimulation`.** On enter the state calls `unit.DisableSimulation(true)`, on exit `unit.DisableSimulation(false)`. The transitions into it require: no combat, no players within visibility range, no pending waypoints, no movement in progress, and a leader that is an AI unit. Do not scatter `DisableSimulation` calls through other logic; let the state own the switch. Leaving the state restores simulation, so no caller has to remember to turn it back on.
+**P1: the dormant state owns `DisableSimulation`.** On enter the state calls `unit.DisableSimulation(true)`, on exit `unit.DisableSimulation(false)`. The transitions into it require: no combat, no players within visibility range, no pending waypoints, no movement in progress, and a leader that is an AI unit. Do not scatter `DisableSimulation` calls through other logic; let the state own the switch. Leaving the state restores simulation, so no caller has to remember to turn it back on.
 
 ### Combat
 
-**PC-11: enter at 0.4, leave at 0.2.** The unit enters combat when `GetThreatToSelf()` is 0.4 or more and leaves when it drops below 0.2 (`eaistate_fighting.c:18-38`; the fire weapon guards are at `eaistate_fighting_fireweapon.c:78`). The gap stops the unit flipping in and out when threat hovers around one value. Guards before entry: `IsRestrained`, `IsUnconscious`, `IsInTransport`, `GetRunningAction`. The fire weapon sub state machine has its own chain: `IsRestrained`, then `GetTarget`, then `IsFighting`. The `IsFightingFSM` flag lets other systems ask about combat without looking inside the state machine. The rule: always set the enter threshold above the exit threshold; a single threshold produces a flip-flop in practice.
+**P2: enter at 0.4, leave at 0.2.** The unit enters combat when `GetThreatToSelf()` is 0.4 or more and leaves when it drops below 0.2 (`eaistate_fighting.c:18-38`; the fire weapon guards are at `eaistate_fighting_fireweapon.c:78`). The gap stops the unit flipping in and out when threat hovers around one value. Guards before entry: `IsRestrained`, `IsUnconscious`, `IsInTransport`, `GetRunningAction`. The fire weapon sub state machine has its own chain: `IsRestrained`, then `GetTarget`, then `IsFighting`. The `IsFightingFSM` flag lets other systems ask about combat without looking inside the state machine. The rule: always set the enter threshold above the exit threshold; a single threshold produces a flip-flop in practice.
 
 ### Threat and targeting
 
-**PC-14: threat cached for 250 to 300 ms.** Each target information state carries its own timestamp and a random cooldown drawn per call with `Math.RandomIntInclusive(250, 300)`; `CalculateThreat` runs at most about once per 275 ms per target, and the random window keeps units from all recalculating on the same server tick.
+**P6: threat cached for 250 to 300 ms.** Each target information state carries its own timestamp and a random cooldown drawn per call with `Math.RandomIntInclusive(250, 300)`; `CalculateThreat` runs at most about once per 275 ms per target, and the random window keeps units from all recalculating on the same server tick.
 
-**PC-7: staggered target scan.** `UpdateTargets` advances one index of the potential target list per tick instead of scanning the whole list. A fresh pass starts only when the index has reached the end and a random interval from `Math.RandomFloat(0.1, 0.2)` has passed, so the units do not all finish a scan together.
+**P7: staggered target scan.** `UpdateTargets` advances one index of the potential target list per tick instead of scanning the whole list. A fresh pass starts only when the index has reached the end and a random interval from `Math.RandomFloat(0.1, 0.2)` has passed, so the units do not all finish a scan together.
 
 ### Line of sight and field of view
 
-**PC-9a: field of view before raycast.** `eAI_CalculateFOVHalfAngleH` gives the effective half angle, narrowed by stance. If the angle to the candidate is larger than the threshold, the candidate is dropped before a raycast is issued. Comparing angles costs nanoseconds; a raycast costs microseconds to milliseconds depending on the scene. Run cheap spatial tests (angle, distance band) before expensive ones (raycast, physics query).
+**P4: field of view before raycast.** `eAI_CalculateFOVHalfAngleH` gives the effective half angle, narrowed by stance. If the angle to the candidate is larger than the threshold, the candidate is dropped before a raycast is issued. Comparing angles costs nanoseconds; a raycast costs microseconds to milliseconds depending on the scene. Run cheap spatial tests (angle, distance band) before expensive ones (raycast, physics query).
 
-**PC-9b: throttled line of sight.** In scheduler mode (`s_eAI_FTO` of 2 or more) the interval between checks is `LOS_CHECK_INTERVAL` scaled by the unit's frame time over `ExpansionWorld.AI_UPDATE_INTERVAL`; otherwise it is `LOS_CHECK_INTERVAL`. Between checks the cached `state.m_LOS` is returned unless `m_eAI_TargetChanged` is set, which forces a fresh check. A unit updated at five times the base interval therefore does not get five times the checks.
+**P5: throttled line of sight.** In scheduler mode (`s_eAI_FTO` of 2 or more) the interval between checks is `LOS_CHECK_INTERVAL` scaled by the unit's frame time over `ExpansionWorld.AI_UPDATE_INTERVAL`; otherwise it is `LOS_CHECK_INTERVAL`. Between checks the cached `state.m_LOS` is returned unless `m_eAI_TargetChanged` is set, which forces a fresh check. A unit updated at five times the base interval therefore does not get five times the checks.
 
-**PC-2: backoff with no player near.** When scheduler mode is on and no player is within the unit's visibility distance, its update interval goes from `AI_UPDATE_INTERVAL` to five times that, about 250 ms instead of 50 ms. The logic keeps running at a fifth of the rate, and each unit decides for itself.
+**P8: backoff with no player near.** When scheduler mode is on and no player is within the unit's visibility distance, its update interval goes from `AI_UPDATE_INTERVAL` to five times that, about 250 ms instead of 50 ms. The logic keeps running at a fifth of the rate, and each unit decides for itself.
 
 ### Pathfinding
 
-**PC-15: recalculation thresholds and measured cost.** `ExpansionPathHandler` does not recalculate on every target update. Three guards: `PATH_RECALCULATE_THRESHOLD` (the smallest change in position before the path is stale), `m_MinTimeUntilNextUpdate` (a cooldown), and `m_TimeIt.GetElapsed()` (the measured cost of each recalculation, usable as feedback for scheduling). The older `eAIPathFinding` is switched on with `#define EAI_USE_LEGACY_PATHFINDING`; `ExpansionPathHandler` is the default.
+**P9: recalculation thresholds and measured cost.** `ExpansionPathHandler` does not recalculate on every target update. Three guards: `PATH_RECALCULATE_THRESHOLD` (the smallest change in position before the path is stale), `m_MinTimeUntilNextUpdate` (a cooldown), and `m_TimeIt.GetElapsed()` (the measured cost of each recalculation, usable as feedback for scheduling). The older `eAIPathFinding` is switched on with `#define EAI_USE_LEGACY_PATHFINDING`; `ExpansionPathHandler` is the default.
 
-**PC-16: path filters with costs.** `SetFilterCost` per area type: crawl, crouch, jump and deep water cost 10; `DOOR_OPENED` costs 10 000. That cost forbids in practice, so the pathfinder routes around an open door instead of through it and avoids the door's physics geometry. Filters encode preferences, not only include and exclude flags.
+**P10: path filters with costs.** `SetFilterCost` per area type: crawl, crouch, jump and deep water cost 10; `DOOR_OPENED` costs 10 000. That cost forbids in practice, so the pathfinder routes around an open door instead of through it and avoids the door's physics geometry. Filters encode preferences, not only include and exclude flags.
 
 ### Group and formation
 
-**PC-17: group target distribution.** `eAIGroup.AddTarget` passes target data to members. Before a member takes target X, `eAIBase` checks `num_ai_in_group_not_tracking`; at 0 (everyone already tracks X) it returns false. The squad spreads over several enemies with no explicit assignment. If all bots chase the same player, check that this logic is intact and that `AddTarget` is being called and not bypassed.
+**P11: group target distribution.** `eAIGroup.AddTarget` passes target data to members. Before a member takes target X, `eAIBase` checks `num_ai_in_group_not_tracking`; at 0 (everyone already tracks X) it returns false. The squad spreads over several enemies with no explicit assignment. If all bots chase the same player, check that this logic is intact and that `AddTarget` is being called and not bypassed.
 
-**PC-18: formation positions per unit.** `GetFormationPosition` checks `m_eAI_FormationPositionUpdateTime` against `Math.RandomFloat(2.0, 4.0)`, per member. When the leader moves, members recalculate at different moments over about two seconds. The recalculation is per unit, not per group; the group never tells all members to recalculate at once.
+**P12: formation positions per unit.** `GetFormationPosition` checks `m_eAI_FormationPositionUpdateTime` against `Math.RandomFloat(2.0, 4.0)`, per member. When the leader moves, members recalculate at different moments over about two seconds. The recalculation is per unit, not per group; the group never tells all members to recalculate at once.
 
 ## Symptom to pattern
 
 | Symptom on a server running Expansion AI | Look at |
 |---|---|
-| Bots do not attack, or flicker in and out of combat | PC-11 (threat thresholds and guards), PC-14 (threat cache) |
-| Bots stand frozen far from players | PC-5 (dormant), PC-2 (backoff) |
-| Bots do not patrol or stop following waypoints | PC-5 entry conditions (pending waypoints), PC-15 |
-| Bots walk around open doors, or will not enter a building | PC-16 (door cost) |
+| Bots do not attack, or flicker in and out of combat | P2 (threat thresholds and guards), P6 (threat cache) |
+| Bots stand frozen far from players | P1 (dormant), P8 (backoff) |
+| Bots do not patrol or stop following waypoints | P1 entry conditions (pending waypoints), P9 |
+| Bots walk around open doors, or will not enter a building | P10 (door cost) |
 | Bots ignore sounds | the vanilla noise system below; `skills/_shared/ai/perception.md` |
-| All bots chase the same enemy | PC-17 |
-| Bots do not spread into formation, or bunch up when the leader moves | PC-18 |
-| Bots notice a target late or do not see it | PC-9a (view angle), PC-9b (throttle), PC-7 (scan) |
+| All bots chase the same enemy | P11 |
+| Bots do not spread into formation, or bunch up when the leader moves | P12 |
+| Bots notice a target late or do not see it | P4 (view angle), P5 (throttle), P7 (scan) |
 
 ## Vanilla: the noise system
 
@@ -104,7 +104,7 @@ Feeding the engine AI a noise it can hear is vanilla and works without Expansion
 - The server calls `g_Game.GetNoiseSystem().AddNoise(entity, params, mult)`, `AddNoisePos(entity, pos, params, mult)` or `AddNoiseTarget(pos, lifetimeSec, params, mult)`.
 - `AddNoiseTarget` creates a decoy at a position for a duration: infected and other AI investigate a place with no entity attached (distraction devices, impacts).
 - Weapon shots are config: `class NoiseShoot` on the weapon (`skills/_shared/weapons/muzzle-effects.md`).
-- Since 1.30 the engine lowers noise for weather itself. Ask for the factor the AI uses with `NoiseSystem.GetEnvironmentNoiseReduction(vector pos)` (`P:\scripts\3_game\noise.c:13`). Do not also multiply `AddNoise` by a weather factor from script: the engine applies its own reduction at the position and the noise would be lowered twice.
+- Since 1.30 the engine lowers noise for weather itself. `NoiseSystem.GetEnvironmentNoiseReduction(vector pos)` returns the absolute noise-strength reduction the engine applies at that point, which the vanilla comment calls the single source of truth used by AI (`P:\scripts\3_game\noise.c:12-13`). It is not a multiplier like `GetNoiseReductionByWeatherEx`, where 1 means no reduction; the debug display starts it at 0 (`P:\scripts\4_world\plugins\pluginbase\pluginpresencenotifier.c:156-158`). Do not also multiply `AddNoise` by a weather factor from script: the engine applies its own reduction at the position and the noise would be lowered twice.
 
 ## Vanilla: the infected cower state (since 1.30)
 
@@ -129,7 +129,7 @@ What changed:
 - `class AIParams` gained `snowfallToNoiseMultiplier=5`, `fogToNoiseMultiplier=10`, `windToNoiseMultiplier=10` and `sandstormToNoiseMultiplier=10` (`P:\DZ\data\aiconfigs\config.cpp:12-21`); 1.29 had the rain and sea keys only (not checkable on `P:\`, which holds 1.30). The official changelog says weather handling is native and that `Weather.GetNoiseReductionByWeather` was removed; the method still exists, marked `[Obsolete]` (`P:\scripts\3_game\weather.c:454-467`), next to `GetNoiseReductionByWeatherEx(object)` (`P:\scripts\3_game\weather.c:407-420`).
 - Vanilla infected: `MINDSTATE_COWER` for sandstorms; the sync range of `m_MindState` ends at 5.
 - The Nasdara animal group templates `DZMouflonGroupBeh` and `DZDogGroupBeh` (not yet checked on `P:\`, see above).
-- The official changelog says the navmesh file format has no backward compatibility, so custom terrains must regenerate their navmesh (this matters to PC-15 and PC-16), and that a navmesh can use a hide animation source through the EntityType navmesh config. Not checked on `P:\`.
+- The official changelog says the navmesh file format has no backward compatibility, so custom terrains must regenerate their navmesh (this matters to P9 and P10), and that a navmesh can use a hide animation source through the EntityType navmesh config. Not checked on `P:\`.
 
 What breaks in an AI or stealth mod written for 1.29:
 
@@ -140,13 +140,13 @@ What breaks in an AI or stealth mod written for 1.29:
 
 Checklist for moving a mod to 1.30:
 
-- [ ] For the factor the AI really uses: `GetGame().GetNoiseSystem().GetEnvironmentNoiseReduction(pos)`.
+- [ ] To read the absolute reduction the engine AI applies at a point: `GetGame().GetNoiseSystem().GetEnvironmentNoiseReduction(pos)`. Do not multiply a noise by it.
 - [ ] For a HUD or old script maths on one object: `weather.GetNoiseReductionByWeatherEx(object)`.
-- [ ] To change how rain, snow, fog, wind and sandstorm lower what infected hear: the `class AIParams` keys in `DZ\data\aiconfigs\config.cpp` (`rainToNoiseMultiplier`, `snowfallToNoiseMultiplier`, `sandstormToNoiseMultiplier` and the rest).
+- [ ] To change how rain, snow, fog, wind and sandstorm lower what infected hear: the `class AIParams` keys in `DZ\data\aiconfigs\config.cpp` (`rainToNoiseMultiplier`, `snowfallToNoiseMultiplier`, `sandstormToNoiseMultiplier` and the rest). That an addon override of `AIParams` takes effect, and which way each multiplier works, is not yet checked on `P:\`; confirm in the in-game test.
 - [ ] Call `AddNoise(entity, params)` without folding weather into `external_strenght_multiplier`.
 - [ ] If you spawn custom infected, keep the `m_MindState` sync range wide enough for `MINDSTATE_COWER` (5).
 - [ ] Custom maps: regenerate the navmesh. Copy or inherit `DZMouflonGroupBeh` or `DZDogGroupBeh` if you want those packs.
-- [ ] The Expansion patterns PC-5 to PC-18 were read in the Expansion scripts as they were at commit `8f75d554`, before 1.30. Treat their line numbers as valid for that version only and read the current Expansion scripts before relying on one.
+- [ ] The Expansion patterns P1 to P12 were read in the Expansion scripts as they were at commit `8f75d554`, before 1.30. Treat their line numbers as valid for that version only and read the current Expansion scripts before relying on one.
 
 ## Building, testing and publishing
 

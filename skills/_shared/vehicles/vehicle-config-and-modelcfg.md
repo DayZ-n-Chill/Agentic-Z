@@ -20,7 +20,7 @@ The full `CarScript` config class and the matching `model.cfg` (skeleton and ani
 - The diesel pattern, an `IsVitalSparkPlug` override, is at `P:\scripts\4_world\entities\vehicles\inheritedcars\offroad_02.c:415`.
 - `GetRuinedReplacement` is at `P:\scripts\4_world\entities\core\inherited\inventoryitem.c:215`.
 - `SetReplacementTypes` is at `P:\scripts\4_world\entities\core\inherited\inventoryitemtype.c:17`.
-- The repair gate on `STATE_RUINED` is at `P:\scripts\4_world\plugins\pluginbase\pluginrepairing.c:96`.
+- The kit-in-hands repair action refuses ruined targets through `CCTNonRuined` at `P:\scripts\4_world\classes\useractionscomponent\actions\singleuse\actionrepairwithtoolfromhands.c:13`.
 - The destroyed-wheel proxy `ProxySedanWheel_destroyed` is at `P:\DZ\vehicles\wheeled\config.cpp:23981`.
 - The `RefTexsMats` list of the Motorbike_02 `Front` zone is at `P:\DZ\vehicles\singletrack\config.cpp:1719`.
 - `Motorbike_02_ShieldFront_ColorBase` is at `P:\DZ\vehicles\singletrack\config.cpp:1083`.
@@ -39,7 +39,7 @@ Read order for a car: (1) `vehicle-structural-parity.md` for the model-structure
 | `config.cpp` | the car class, drivetrain/engine/suspension numbers, crew, damage, lights, cargo, attachments, sound bindings, `AnimationSources` | mass, CoM, the animation geometry (axes) |
 | `model.cfg` | `CfgSkeletons` (bone hierarchy) + `CfgModels` `Animations` (how each bone moves) | physics, which sources are user-driven |
 
-**Mass is NOT in config.cpp.** Every vertex of every Geometry LOD component carries a weight, and the engine computes the vehicle's total mass and centre of mass from those weights. Neither the example 4x4 nor the reference quad has a `mass`, `centerOfMass`, `sprungMass` or `geometryClass` field, and none of the four names occurs in `P:\DZ\vehicles\wheeled\config.cpp` or `P:\DZ\vehicles\singletrack\config.cpp`. See the mass section of `vehicle-structural-parity.md` for assigning the weights. `sprungMass` is an Arma 3 car-config field (there the per-wheel values must add up to the vehicle's weight); whether DayZ's `CarScript` reads it at all is `[unverified]`.
+Mass is not a config field: the rule and how to assign the Geometry LOD vertex weights are in `vehicle-structural-parity.md`, "config.cpp — mass is NOT in config" and its mass section. The field names checked against vanilla are listed in §16.
 
 ## 2. The car class skeleton
 
@@ -148,17 +148,9 @@ class SimulationModule
 | `CentralDifferential` | `ratio`, `type` (`DIFFERENTIAL_LOCKED`/`_OPEN`) | Valid only for AWD and 642 drivetrains. |
 
 ### Suspension tuning — calibrate to mass (don't copy blindly)
-Starting formula, then adjust: `compression = stiffness/10`, `damping = compression*3`; size the stiffness so the spring can carry the mass that gravity pushes down on that wheel. Two working reference points for a 4-wheeler (third-party mod configs):
+The starting formula, the example 4x4's values as an anchor and the catapult trap are in `vehicle-structural-parity.md`, "Suspension: calibrated to the mass". For comparison, the reference quad (third-party mod config, FWD, front differential LOCKED 4.1) uses front stiffness / compression / damping 41000 / 2100 / 7200 with travelMaxUp / travelMaxDown 0.293 / 0.051, and rear 40000 / 2000 / 7000 with 0.414 / 0.012.
 
-| | Example 4x4 (AWD) | Reference quad (FWD) |
-|---|---|---|
-| Front stiffness / compression / damping | 40000 / 2100 / 5400 | 41000 / 2100 / 7200 |
-| Front travelMaxUp / travelMaxDown | 0.10 / 0.06 | 0.293 / 0.051 |
-| Rear stiffness / comp / damp | 40000 / 2100 / 5400 | 40000 / 2000 / 7000 |
-| Rear travelMaxUp / travelMaxDown | 0.10 / 0.06 | 0.414 / 0.012 |
-| drive / front diff | DRIVE_AWD / OPEN 4.0 | DRIVE_FWD / LOCKED 4.1 |
-
-Trap: mass too LOW with stiffness copied from a heavier vehicle catapults the car. Suspension is **not** the spawn-bounce trigger, and neither is a monolithic Geometry LOD (see the spawn-launch corrections in `vehicle-structural-parity.md`). Confirmed spawn-bounce causes: chassis Geometry overlapping the wheel volume, spawn placement, and a stray `#Mass#` tag on a non-Geometry LOD (FireGeo) baking CoM=(0,0,0).
+Suspension is **not** the spawn-bounce trigger, and neither is a monolithic Geometry LOD (see the spawn-launch corrections in `vehicle-structural-parity.md`). Confirmed spawn-bounce causes: chassis Geometry overlapping the wheel volume, spawn placement, and a stray `#Mass#` tag on a non-Geometry LOD (FireGeo) baking CoM=(0,0,0).
 
 For any vehicle that inherits suspension from a different mass (measured in game on a 157 kg motorbike inheriting `Motorbike_02`'s springs, DayZ 1.30.164014): the wheel hangs from the modelled axle, the spring is zero at full extension, and F = k (u + travelMaxDown) with u linear in the damper phase (phase 0 = -travelMaxDown, 1 = +travelMaxUp). Measure each wheel's rest phase in game: the sum of spring forces / 9.81 must equal the configured mass; a shortfall means another collision box is resting on the ground. To seat the body on the axle set travelMaxDown = F / k per wheel keeping the up+down total (so the model.cfg damper zero stays valid); if that asks for too much extension, raise k = F / down and scale damping with √(k·m). Leave compression travel for load transfer (m·h / wheelbase). Full recipe with the measured numbers: `motorbike-invariants.md`, "Measured lessons from a real import".
 
@@ -287,7 +279,7 @@ It reuses the **vanilla Hatchback_02** glass rvmats (both files exist under `P:\
 
 ### Per-slot `"hidden"` and a windscreen that never hid
 
-Vanilla motorbikes put `"hidden"` in the glass slot of a zone with `RefTexsMats[]` (§6): Motorbike_02 `Front`, `Reflector_1_1` and `FuelTank`, and Motorbike_01 `Reflector_1_1` (quoted in `skills/dayz-motorbikes/references/config-contract.md`). In the binarized Motorbike_02 model that glass rvmat sits on three LOD 0 sections, one in each of its three zones, with a procedural texture at 10% alpha (`#(argb,8,8,3)color(0.000,0.000,0.000,0.100,ca)`); `motorbike_02_glass.rvmat` itself sets `renderFlags[] = {"NoZWrite"}` and the `Super` shaders (`P:\DZ\vehicles\singletrack\motorbike_02\data\motorbike_02_glass.rvmat:7-12`). The Motorbike_02 windscreen is not one of them: it is the attachment `Motorbike_02_ShieldFront_ColorBase` (`proxy\Motorbike_02_windshield.p3d`), with its own `GlobalHealth` swap to windshield, damage and destruct rvmats and no `"hidden"`, and its slot is listed in `Front`'s `inventorySlots[]` (`P:\DZ\vehicles\singletrack\config.cpp:1083` for the class and `:1788` for the slot).
+Vanilla motorbikes put `"hidden"` in the glass slot of a zone with `RefTexsMats[]` (§6): Motorbike_02 `Front`, `Reflector_1_1` and `FuelTank` (`P:\DZ\vehicles\singletrack\config.cpp:1703`, `:1864` and `:2160`, with the `"hidden"` entries at `:1773`, `:1929` and `:2221`), and Motorbike_01 `Reflector_1_1` (the only one quoted in `skills/dayz-motorbikes/references/config-contract.md`). In the binarized Motorbike_02 model that glass rvmat sits on three LOD 0 sections, one in each of its three zones, with a procedural texture at 10% alpha (`#(argb,8,8,3)color(0.000,0.000,0.000,0.100,ca)`); `motorbike_02_glass.rvmat` itself sets `renderFlags[] = {"NoZWrite"}` and the `Super` shaders (`P:\DZ\vehicles\singletrack\motorbike_02\data\motorbike_02_glass.rvmat:7-12`). The Motorbike_02 windscreen is not one of them: it is the attachment `Motorbike_02_ShieldFront_ColorBase` (`proxy\Motorbike_02_windshield.p3d`), with its own `GlobalHealth` swap to windshield, damage and destruct rvmats and no `"hidden"`, and its slot is listed in `Front`'s `inventorySlots[]` (`P:\DZ\vehicles\singletrack\config.cpp:1083` for the class and `:1788` for the slot).
 
 One motorbike import wired its windscreen like that body glass, not like the vanilla windscreen: its `Front` declares `RefTexsMats[]` with the glass rvmat in the same slot as in every `healthLevels[]` entry, and `"hidden"` in that slot at 0.0. In the binarized model of the build tested, LOD 0 has 390 sections (the vanilla Motorbike_02 has 22); the windscreen is section 173, textured with a procedural at 35% alpha, and the ninth of the 67 sections of the sectional selection `dmgzone_front`; the glass rvmat is on 149 sections, 146 of them in `dmgzone_back`. With the zones taken down by the vanilla contact-damage call (`process-gates.md`) and levels 2 and 4 logged on server and client, the body panels of `Front` took the damage and destruct rvmats and came back on repair, while the windscreen stayed drawn at level 4 (measured in game on DayZDiag 1.30.164014 and in three runs on 1.30.164200, the last of them with the crack rvmat taken out of the 0.5/0.3 entries). The cause is unknown.
 
@@ -396,11 +388,11 @@ class AnimationSources
     class damper_2_2: damper_1_2 {};
 };
 ```
-Missing a damper source gives the RPT line `unknown animation source damper`. `initPhase` fixes the visual rest position of the damper (front ≈0.486, rear ≈0.400).
+Missing a damper source gives the RPT line `unknown animation source damper`. What a damper's `initPhase` does is explained with the `suspension_damper` pattern in `vehicle-structural-parity.md`.
 
 ## 11. model.cfg — CfgSkeletons (the bone hierarchy)
 
-The **wheel bone chain encodes steering vs rolling vs suspension**: front = `damper → steering → wheel` (3 levels), rear = `damper → wheel` (no steering bone). `isDiscrete=1` (mechanical). Example 4x4, abridged to the vehicle-critical bones:
+The wheel bone chain (front wheels with a steering bone, rear wheels without) is explained in `vehicle-structural-parity.md`, with the `suspension_damper` pattern. `isDiscrete=1` (mechanical). Example 4x4, abridged to the vehicle-critical bones:
 ```cpp
 class cfgSkeletons
 {
@@ -428,7 +420,7 @@ Each pair is `"bone","parent"` (empty parent = root). `crewdriver`/`crewcodriver
 ## 12. model.cfg — CfgModels Animations
 
 `class <Model>: Default { skeletonName="<skeleton>"; sections[]={hiddenSelections + dmgZones}; class Animations {...} }`.
-The four animation families a car needs (example 4x4):
+The four animation families a car needs (example 4x4; the damper family is in `vehicle-structural-parity.md`):
 
 ```cpp
 class Animations
@@ -446,10 +438,8 @@ class Animations
     class steering_hub_2_1 { type="rotation"; source="turnfrontright"; selection="wheel_2_1_steering"; axis="wheel_2_1_steering_axis";
                              minValue=-1.5707964; maxValue=1.5707964; angle0=-1.5707964; angle1=1.5707964; };
 
-    // ---- SUSPENSION damper (translation) — minValue/maxValue FIXED 0/1, travel via offsets ----
-    class suspension_damper_1_1 { type="translation"; source="damper_1_1"; selection="wheel_1_1_damper"; axis="wheel_1_1_damper_axis";
-                                  minValue=0.0; maxValue=1.0; offset0=0.05; offset1=-0.35; };
-    // _2_1 same; rear _1_2/_2_2 use maxValue=0.6 (visual only), same offsets
+    // ---- SUSPENSION dampers suspension_damper_1_1 .. _2_2: the class is written out in
+    //      vehicle-structural-parity.md, "model.cfg — suspension_damper pattern" ----
 
     // ---- steering WHEEL + dials + doors ----
     class DrivingWheel { type="rotation"; source="steeringwheel"; selection="drivewheel"; axis="drivewheel_axis";
@@ -461,7 +451,7 @@ class Animations
     // DoorsCoDriver, DoorsHood, DoorsTrunk same shape
 };
 ```
-Key points: **wheel rolling** uses `sourceAddress=loop` and a full-turn range (`maxValue=2π`), right-side `angle1` negated; **steering** rotates the `*_steering` selection ±90° (±π/2); **damper** is a `translation` with `minValue=0`/`maxValue=1` and the real travel carried by `offset0`/`offset1` (NOT by min/max, a recurring confusion; see the `suspension_damper` pattern in `vehicle-structural-parity.md`). Every animation needs a matching 2-point `*_axis` selection in the Memory LOD or it does nothing and logs nothing (`/dayz-p3d-audit` checks this).
+Key points: **wheel rolling** uses `sourceAddress=loop` and a full-turn range (`maxValue=2π`), right-side `angle1` negated; **steering** rotates the `*_steering` selection ±90° (±π/2); for the **damper**, see the `suspension_damper` pattern in `vehicle-structural-parity.md`. Every animation needs a matching 2-point `*_axis` selection in the Memory LOD or it does nothing and logs nothing (`/dayz-p3d-audit` checks this).
 
 **Two traps measured on a quad build:**
 - **`angle0/angle1="rad N"`: N is the throw in DEGREES, not radians.** `rad 0.45` gives about 0.5° (looks frozen), `rad 30` gives about 30°. Tune handlebar, needle and door throw on a degree scale, not a 0–2π scale (the bare `6.2831855` constants above are radians: see point 4 of the next section).
@@ -523,12 +513,12 @@ Instead of authoring the whole model.cfg, a mod can reuse a vanilla rig by overr
 
 **Use the Diag binary.** Every simulation property can be debugged live in the Diag build of the game: open the diag menu (hold Win + Alt) and go to Game -> Vehicles -> Simulation. This is the fastest way to see live engine, RPM, wheel-contact and suspension state: measure, don't guess.
 
-**`OnDebugSpawn` traps (measured on a quad build).** It must `CreateAttachment` the drivetrain by **CLASS name, not slot name** (`"<Mod>_Wheel_Front"`, not the slot `"<Mod>_wheel_1_1"`); in vanilla the slot and the class share a name, so the bug stays masked until your custom slots differ. Add `Fill(CarFluid.FUEL, GetFluidCapacity(CarFluid.FUEL))` (and `COOLANT` if `IsVitalRadiator()`); the base only drops loose parts into cargo. Also: **`OnDebugSpawn` does NOT fire when the entity is created by the mission server in a headless harness**. Attach parts manually in that path (the MCP or admin spawn), or a "wheels missing / engine won't start" verdict is a false negative, not a real bug.
+**`OnDebugSpawn` traps (measured on a quad build).** It must `CreateAttachment` the drivetrain by **CLASS name, not slot name** (`"<Mod>_Wheel_Front"`, not the slot `"<Mod>_wheel_1_1"`). Vanilla wheel and door slot names differ from their class names: the class `HatchbackWheel` fills the slot `NivaWheel_1_1` (`P:\DZ\vehicles\wheeled\config.cpp:853-862`) and the class `HatchbackDoors_Driver` fills the slot `NivaDriverDoors` (`P:\DZ\vehicles\wheeled\config.cpp:908-917`); only engine parts such as `CarBattery` and `SparkPlug` share a name with their slot. Vanilla `OnDebugSpawn` creates parts by class name with `GetInventory().CreateInInventory("HatchbackWheel")` (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroadhatchback.c:472-475`). Fill the fluids too: the vanilla overrides call the `CarScript` helper `FillUpCarFluids()` (`P:\scripts\4_world\entities\vehicles\carscript.c:2561`), which fills fuel, coolant and oil; call it, or add `Fill(CarFluid.FUEL, GetFluidCapacity(CarFluid.FUEL))` (and `COOLANT` if `IsVitalRadiator()`). Also: **`OnDebugSpawn` does NOT fire when the entity is created by the mission server in a headless harness**. Attach parts manually in that path (the MCP or admin spawn), or a "wheels missing / engine won't start" verdict is a false negative, not a real bug.
 
 ## 16. What is not established (do NOT invent these)
 
 - `simulationclass=` string: not in the example 4x4 or reference quad configs (both rely on extending `CarScript`), and no occurrence in `P:\DZ\vehicles\wheeled\config.cpp`. Do not add one. The Arma 3 equivalent is `simulation="carx"`.
-- `mass`, `centerOfMass`, `sprungMass`, `geometryClass`: not in a DayZ car config (§1). Mass and CoM come from the Geometry LOD vertex weights.
+- `mass`, `centerOfMass`, `sprungMass`, `geometryClass`: neither the example 4x4 nor the reference quad has one, and none of the four names occurs in `P:\DZ\vehicles\wheeled\config.cpp` or `P:\DZ\vehicles\singletrack\config.cpp`. Mass and CoM come from the Geometry LOD vertex weights (`vehicle-structural-parity.md`). `sprungMass` is an Arma 3 car-config field (there the per-wheel values must add up to the vehicle's weight); whether DayZ's `CarScript` reads it at all is `[unverified]`.
 - `CentralDifferential`: the fields seen are `ratio` + `type` (example 4x4: 1.5 / `DIFFERENTIAL_LOCKED`; vanilla truck: 0.75 / `DIFFERENTIAL_LOCKED`, `P:\DZ\vehicles\wheeled\config.cpp:18564-18567`). Any property beyond those is `[unverified]`.
 - `reflectors[]` array: an Arma 3 lights feature; no occurrence in `P:\DZ\vehicles\wheeled\config.cpp`.
 - Custom `CfgSlots` registration in the example 4x4: not in its config.cpp (§8b); mechanism `[unverified]`.
@@ -537,59 +527,34 @@ Instead of authoring the whole model.cfg, a mod can reuse a vanilla rig by overr
 
 ## 17. Crew get-in resolution and the crew proxy frame
 
-> Extends §4 (Crew) with **how the engine resolves which seat a get-in lands in**, and **how a crew proxy's geometry must be shaped** so the player sits upright at the right height facing forward. Verified in game on a quad build whose co-driver seat never worked until its crew ViewGeometry matched the reference quad's: its seat selections were spread across many collision components instead of two dedicated ones. The seat cubes must ALSO be inward-wound with point flags `0x0000003F` or a raycast does not hit them: see the crew get-in sections of `vehicle-structural-parity.md`.
+How the engine picks the seat (`Transport.CrewPositionIndex` over the ViewGeometry collision component the cursor raycast hits), why each seat needs its own dedicated seat cube (and the many-component failure that blocks the co-driver), the seat-cube winding and point flags, the canonical crew-proxy triangle, the anchor that sets seated height, and the headless `CrewPositionIndex` + `RaycastRV` probe are all in `vehicle-structural-parity.md`, the addendum "Crew get-in: dedicated seat components + canonical crew-proxy triangle". This section adds only what that addendum does not cover.
 
-### 17.1 Get-in is resolved per COLLISION COMPONENT (not per selection, not per memory point)
+### 17.1 How the crew proxy frame is derived
 
-The engine maps a get-in to a seat through **`Transport.CrewPositionIndex(int componentIndex)`**: `proto native int CrewPositionIndex( int componentIdx )` at `P:\scripts\3_game\vehicles\transport.c:179` (native; no script body). The `componentIndex` is the **collision component** that the cursor's raycast hits when the player presses "enter". The engine pre-associates each crew slot with the component(s) that contain that slot's `actionSel` selection (the `seat_driver` / `seat_codriver` named selection from the `Crew` config, §4) **in the ViewGeometry LOD**.
-
-So the wiring is: cursor raycast → hit component N → `CrewPositionIndex(N)` → driver / co-driver / cargo. A wheel-hub axis or a `pos_driver` memory point does NOT drive this; **only the geometry of the component carrying `seat_driver`/`seat_codriver` does.**
-
-### 17.2 RULE: each seat needs its OWN dedicated component in the ViewGeometry
-
-The reference quad has exactly **two** crew components in its ViewGeometry: `component24` = `seat_driver` (8 pts / 6 faces, one clean cube), `component25` = `seat_codriver` (8 pts / 6 faces). One selection, one component, per seat.
-
-The broken quad build had the `seat_driver`/`seat_codriver` selections **spread across the whole multi-component grid** that had been copied from the Geometry LOD into the ViewGeometry: **23 crew components, 88/112 points** instead of 2. The engine then generated 23 overlapping crew components; the get-in raycast resolved to the first (driver) component every time and **never** landed on the co-driver. Symptom: **co-driver seat unusable, player only ever boards as driver.**
-
-> **Build rule (do this for every car):** in the ViewGeometry LOD, give each seat its **own single dedicated component**: one connected cube (8 pts / 6 faces is enough) tagged ONLY with that seat's `actionSel` selection (`seat_driver` in one, `seat_codriver` in another, `seat_cargoN` each in its own). Do NOT reuse the multi-component Geometry/collision grid as the crew ViewGeo. Verify with py3d: `count of components carrying seat_* == number of seats`. If it is 20+, the get-in is broken.
-
-To diagnose a case like this, diff the model structure against a working reference with py3d instead of theorizing about the native function, and transplant the reference structure whole instead of patching it piece by piece.
-
-### 17.3 The crew PROXY frame = orientation + seated height (and where height actually comes from)
-
-`Crew.proxyPos` (§4) names a **proxy in the ViewGeometry** (a 3-vertex triangle face placed as `proxy:\...`), and that proxy is what positions the player, **not** the `pos_driver` memory point or the skeleton bone. The proxy's frame is derived by **angle-sort of its three vertices** (the convention `/dayz-proxy-align` uses):
+`Crew.proxyPos` (§4) names a proxy in the ViewGeometry (a 3-vertex triangle placed as `proxy:\...`). Its frame is derived by angle-sort of the three vertices (the convention `/dayz-proxy-align` uses):
 
 | vertex | role |
 |---|---|
-| widest angle | **anchor** = the proxy's position (and thus the seated player's position/height) |
+| widest angle | **anchor** = the proxy's position |
 | middle angle | local **+Y** |
 | smallest angle | local **+Z** |
 
-For a **crew** proxy the target frame is: **+Y → front of the vehicle, +Z → up.** Then:
+For a crew proxy the target frame is **+Y → front of the vehicle, +Z → up.**
 
-- **Anchor = seated height.** Because the anchor vertex is the position, an anchor placed too high puts the player in the air. On the quad build, anchors at Y=1.46 / Y=1.70 left the player floating above the quad; the fix was to drop the anchor to seat height plus the small seat offset. Tune the **anchor Y**, not the memory point.
-- **Use a canonical scalene triangle, never isosceles.** A 90/45/45 isosceles triangle (the shape you get from a hand-rolled 1 mm proxy) makes the middle and smallest angles **tie**, so the +Y/+Z assignment is ambiguous, the frame falls differently per proxy, and the **player sits sideways and spins on entry**. Always emit 3 distinct angles (e.g. 90/63.4/26.6) encoding the exact frame.
-- **Do NOT copy a proxy frame from another sub-model.** The correct frame depends on which crew sub-model the proxy references. Vanilla cars reference `crew_driver` / `crew_cargo` (`proxy:\dz\vehicles\wheeled\proxies\crew_driver`), for which **+Y must point to the vehicle front**. The reference quad references `bus_driver` / `bus_cargo`, and its co-driver derives **+Y → −Z (toward the rear)**. Copying that raw triangle into a car that uses the vanilla crew sub-models gives a back-facing or otherwise wrong orientation. Match the frame to the referenced sub-model; do not transplant raw vertices across sub-models.
+**Match the frame to the referenced crew sub-model; do not copy a proxy frame from another sub-model.** Vanilla cars reference `crew_driver` / `crew_cargo` (`proxy:\dz\vehicles\wheeled\proxies\crew_driver`), for which +Y must point to the vehicle front. The reference quad references `bus_driver` / `bus_cargo`, and its co-driver derives +Y → −Z (toward the rear). Copying that raw triangle into a car that uses the vanilla crew sub-models gives a back-facing or otherwise wrong orientation.
 
-### 17.4 Driver's HANDS = the animation rig, not the model
+### 17.2 Driver's HANDS = the animation rig, not the model
 
 The hands on the wheel or bars come from the player's **animation instance** (the anim set selected via `GetAnimInstance()`, §14; a quad can use a `QUADBIKE` set from a third-party animation mod), NOT from IK and NOT from any memory point on the vehicle. Neither the quad build nor the reference quad has hand memory points in its `.p3d`, and hand placement is **not editable from the `.p3d`**: it is a property of the rig. If the hands sit wrong, fix the anim instance, not the model.
 
-### 17.5 Headless validation loop for crew get-in (and its limits)
+### 17.3 Limits of the headless get-in probe
 
-You can validate the get-in **without a manual in-game test cycle** with a test mission that spawns the vehicle plus an auto-connecting client and probes each seat:
+The probe casts `DayZPhysics.RaycastRV` (signature at `P:\scripts\3_game\global\dayzphysics.c:199`; `contactComponent` is the out parameter to compare with the seat's dedicated component). Its limits, all measured in game on a quad build:
 
-1. For `i` in `0..N`, call `Transport.CrewPositionIndex(i)` and tabulate which component maps to which seat (driver/co-driver/cargo). This alone reveals "23 components all map to driver".
-2. Raycast from outside toward each seat's world position with
-   **`DayZPhysics.RaycastRV(vector begPos, vector endPos, out vector contactPos, out vector contactDir, out int contactComponent, set<Object> results = NULL, Object with = NULL, Object ignore = NULL, bool sorted = false, bool ground_only = false, int iType = ObjIntersectView, float radius = 0.0, CollisionFlags flags = CollisionFlags.NEARESTCONTACT)`** (signature at `P:\scripts\3_game\global\dayzphysics.c:199`) and check that `contactComponent` is the seat's dedicated component. Compare every result against a **control vehicle that already works**.
-
-**Limits (all measured in game on the quad build):**
 - `RaycastRV` finds nothing on a server without a client: with no connected client it returns hit=0. The mission must actually connect a client.
 - A **large `radius`** crosses the boundary between adjacent components and gives a false component id: use a **fine radius (~0.05)** so the hit lands inside one component.
 - The raycast offset must be expressed in **LOCAL space transformed by `ModelToWorld`**, not a fixed world offset: the vehicle spawns with some pitch and roll, so a world-fixed probe misses.
-- The **visual posture is NOT measurable headless**: final orientation (sitting upright vs sideways) and seated height are only confirmable by eye in game. The loop proves *which seat the get-in resolves to*; it cannot prove *how the player looks once seated* (that is §17.3 plus an in-game screenshot).
-
-> Bottom line for a car's crew: (1) one dedicated seat component per seat in ViewGeo, counted with py3d against a working control; (2) crew proxies with canonical scalene triangles, +Y→front, +Z→up, anchor at seat height; (3) match the proxy frame to the referenced crew sub-model, never copy it raw from another; (4) hands come from the anim rig; (5) gate the get-in with the headless `CrewPositionIndex` + `RaycastRV` loop, then confirm posture by eye.
+- The **visual posture is NOT measurable headless**: final orientation (sitting upright vs sideways) and seated height are only confirmable by eye in game. The probe proves *which seat the get-in resolves to*; it cannot prove *how the player looks once seated*.
 
 ## Engine and script identifiers that fail without a log
 
@@ -610,8 +575,8 @@ Keep the override on the LEAF, never on a shared base. The ruined class inherits
 
 **On 1.30 the name is derived, so these overrides are no longer needed.** `GetRuinedReplacement()` returns the name `CarWheelType.SetReplacementTypes()` set when the first wheel of the class was created, `<class>_Ruined`, and that call logs an error when the config class does not exist (`P:\scripts\4_world\entities\core\inherited\inventoryitem.c:215-218`, `P:\scripts\4_world\entities\core\inherited\inventoryitemtype.c:17-46`). A 1.30 mod wheel needs the `_Ruined` config class and an empty script class that extends `CarWheel_Ruined`; overrides like the ones above still compile and return the same names. The vanilla pattern and the in-game runs on 1.30.164200 are in `dayz-1-30-vehicles.md`, section 11.
 
-- **The ruined model needs its own `CfgNonAIVehicles` proxy.** A proxy binds one model file to the slots it may fill, so without it the engine has no route to draw the new mesh once the attachment is replaced. Vanilla declares one per destroyed wheel, `inventorySlot[]` copied verbatim from the healthy proxy and only `model=` changed (`P:\DZ\vehicles\wheeled\config.cpp:23981`, `:24035`, `:24076`, `:24094` and `:24187`). The class name must mirror the proxy file basename: `ProxySedanWheel_destroyed` and `sedanWheel_destroyed.p3d`. Breaking that pair gives the native client crash on the swap at speed described in `rip-import.md`.
-- **Repair needs no config work.** `PluginRepairing.CanRepair` opens with `state != GameConstants.STATE_RUINED` (`P:\scripts\4_world\plugins\pluginbase\pluginrepairing.c:96`) and every repair route (kit in hands, the crafting recipes, `ItemBase.CanRepair`) goes through that one function, so an inherited `repairableWithKits[]` on the ruined class is harmless. Do not invent a mechanic to block what the engine already refuses.
+- **The ruined model needs its own `CfgNonAIVehicles` proxy.** A proxy binds one model file to the slots it may fill, so without it the engine has no route to draw the new mesh once the attachment is replaced. Vanilla declares one per destroyed wheel, `inventorySlot[]` copied verbatim from the healthy proxy and only `model=` changed (`P:\DZ\vehicles\wheeled\config.cpp:23981`, `:24035`, `:24076`, `:24094` and `:24187`). Most vanilla pairs name the class `Proxy` + the model file's basename (`ProxySedanWheel_destroyed` and `sedanWheel_destroyed.p3d`), but vanilla does not hold to it: `ProxyHatchback_02_Wheel_destroyed` draws `Hatchback_02_ruined.p3d` (`:24187-24189`) and `ProxyOffroad_02_Wheel_ruined` draws `Offroad_02_Wheel_destroyed.p3d` (`:24327-24329`). On a mod build, a class name that did not mirror the basename gave the native client crash on the swap at speed described in `rip-import.md`; keep the names mirrored in a mod.
+- **Repair needs no config work.** The action and recipe conditions refuse a ruined item before any repair runs: the kit-in-hands action targets only non-ruined objects (`m_ConditionTarget = new CCTNonRuined(...)` at `P:\scripts\4_world\classes\useractionscomponent\actions\singleuse\actionrepairwithtoolfromhands.c:13`), and the tire kit recipe caps the wheel's damage level below ruined (`m_MaxDamageIngredient[1] = 3` at `P:\scripts\4_world\classes\recipes\recipes\repairwithtirekit.c:19`). `PluginRepairing.CanRepair` is not that gate: its check at `P:\scripts\4_world\plugins\pluginbase\pluginrepairing.c:96` binds `&&` before `||`, so an item whose `CanBeRepairedToPristine()` returns false (the default at `P:\scripts\3_game\entities\object.c:1356`, which `CarWheel` keeps) passes it while ruined. An inherited `repairableWithKits[]` on the ruined class is still harmless. Do not invent a mechanic to block what the engine already refuses.
 - **`GetReplacement()` is diagnostic only.** Its single consumer is under `#ifdef DIAG_DEVELOPER` (`P:\scripts\4_world\entities\core\inherited\inventoryitem.c:350-366`, the debug "fix the whole car"): live in DayZDiag, compiled out of retail. Implement it for parity, never describe it as repair.
 - **Register the heavy in-hands IK for the ruined leaf classes too**, or a destroyed wheel taken in hands falls back to the one-handed profile: the profile is looked up by exact leaf class. Vanilla registers all seven (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:876`, `:884`, `:886`, `:893`, `:903`, `:913`, `:923`), 1.30 also the four ruined motorbike wheels (`:933`, `:935`, `:937`, `:939`), and reuses the healthy `.anm` where no destroyed pose exists.
 

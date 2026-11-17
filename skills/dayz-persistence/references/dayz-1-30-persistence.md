@@ -10,7 +10,7 @@ Every code block was copied from the file named in its first line and compared w
 |---|---|---|---|
 | `GAME_STORAGE_VERSION` | `142` at 1.29 `3_game\global\game.c:5` | `144` at `P:\scripts\3_game\global\game.c:5` | Hook `version` on a 1.30 save is 144. `g_Game.SaveVersion()` is at `:435` (1.29 `game.c:434`). |
 | `EntityAI` prefix | energy-or-nothing, then `SaveVariables` | `GetConstructionBasic().HandleStoreSave` **before** energy; load of that block only if `version >= 143` | Mods that skip `super` or assume a fixed EntityAI prefix misalign on rebuilt houses. |
-| `PlayerBase` MP stream | ends at `ArrowManagerPlayer.Save/Load` | appends `m_ThermalBiasHandler.OnStoreSave/OnStoreLoad` with **no** version gate | A 1.29 `player.bin` (`version` 142) loaded on 1.30 MP fails with `failed to load ThermalBiasHandler`. |
+| `PlayerBase` MP stream | ends at `ArrowManagerPlayer.Save/Load` | appends `m_ThermalBiasHandler.OnStoreSave/OnStoreLoad` with **no** version gate | A 1.29 player record in `storage_1/players.db` (`version` 142) loaded on 1.30 MP fails with `failed to load ThermalBiasHandler`. |
 | `CombinationLock` | `m_Combination`, `m_CombinationLocked` | plus `m_CombinationInside`; load gated `version >= 143` | Subclass `OnStoreLoad` that does not call `super` after v143 desyncs later bytes. |
 | `DigitalCodeLock` | class did not exist | `super` then `CodeLockComponent` PIN / locked / door index | New entity; old worlds have no such items. |
 | `BaseBuildingBase` subclass stream | `m_SyncParts01/02/03` + `m_HasBase` | same order | No 1.30 break at the subclass suffix. |
@@ -315,7 +315,7 @@ Design note: Treat this as a vanilla mission-file exception, not a template. A m
 ## What breaks (1.29 mod → 1.30)
 
 1. `PlayerBase` override that copies the 1.29 MP suffix and omits `ThermalBiasHandler`, or that never calls `super`. Symptom: `---- failed to load ThermalBiasHandler, read fail  ----`.
-2. `CombinationLock` subclass `OnStoreLoad` that does not call `super` or that assumes two ints after `super`. Symptom: later fields (or a following attachment) read as `m_CombinationInside`.
+2. `CombinationLock` subclass `OnStoreLoad` that does not call `super` or that assumes two ints after `super`. Symptom: the subclass's own fields read the third int (`m_CombinationInside`), and every later read in the same entity's record is off by one int. Attachments and cargo are separate records (`skills/_shared/persistence/save-load-contract.md`); whether a misread record affects them is engine behaviour not yet checked on P:\.
 3. Any `EntityAI` subclass on a `Rebuilding` house that skips `super` or seeks a fixed offset past "energy". 1.30 writes construction data first when the component is present.
 4. Claiming a `$mission:` `FileSerializer` overwrite is atomic, or that `BunkerBroadcastPersistenceStorage` follows `JsonFileLoader` + backup.
 
@@ -326,7 +326,7 @@ Design note: Treat this as a vanilla mission-file exception, not a template. A m
 - [ ] Call `super.OnStoreSave` / `super.OnStoreLoad` on `PlayerBase`, `CombinationLock`, `DigitalCodeLock`, and any `EntityAI` with a construction component; do not re-implement the 1.29 suffix by copy.
 - [ ] `CombinationLock.OnStoreLoad`: `if (version >= 143) ctx.Read(m_CombinationInside)` (or rely on `super`).
 - [ ] Do not version-gate `ThermalBiasHandler` yourself on a `PlayerBase` subclass unless you also stop writing it; vanilla always writes it on 1.30 MP save.
-- [ ] Classify a 1.29 `player.bin` on 1.30 as `truncated` / failed load for thermal, not as `legacy-no-header` success. Vanilla does not migrate it.
+- [ ] Classify a 1.29 player record in `players.db` on 1.30 as `truncated` / failed load for thermal, not as `legacy-no-header` success. Vanilla does not migrate it.
 - [ ] Keep `BaseBuildingBase` 93-part packing; do not apply `Rebuilding`'s ten ints / `REBUILDING_STORAGE_VERSION` to player-built fences.
 - [ ] If persisting mission-wide bunker state, do not clone vanilla's unchecked `FileSerializer` overwrite. Use the sidecar contract on `$profile:` / `$saves:`.
 - [ ] Check every `path:line` again on `P:\` after a game update.

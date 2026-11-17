@@ -125,12 +125,13 @@ void EEHitBy(
 )
 ```
 
-Called on the server, after the native code has applied the damage. The inheritance chain:
+Called on the server, after the native code has applied the damage. For a player the inheritance chain is `PlayerBase extends ManBase` (`P:\scripts\4_world\entities\manbase\playerbase.c:49`), `ManBase extends DayZPlayerImplement` (`P:\scripts\4_world\entities\manbase.c:1`), down to `EntityAI`. Each override calls `super.EEHitBy` first, so the bodies run in this order:
 
 1. `EntityAI.EEHitBy` invokes `m_OnHitByInvoker` (`P:\scripts\3_game\entities\entityai.c:1143-1146`).
-2. `ItemBase.EEHitBy` damages cargo or attachments at random, for clothing, containers and tents (`P:\scripts\4_world\entities\itembase.c:1450-1488`).
+2. `DayZPlayerImplement.EEHitBy` resets `m_TransportHitRegistered` and picks the damage or death animation (`P:\scripts\4_world\entities\dayzplayerimplement.c:1563-1607`).
 3. `PlayerBase.EEHitBy` handles the admin log, the unconscious refill modifier, shock to damage transfer, broken legs and the shock check (`P:\scripts\4_world\entities\manbase\playerbase.c:1255-1376`).
-4. `DayZPlayerImplement.EEHitBy` resets `m_TransportHitRegistered` and picks the damage or death animation (`P:\scripts\4_world\entities\dayzplayerimplement.c:1563-1607`).
+
+Items take a separate branch: `ItemBase.EEHitBy` runs after `EntityAI.EEHitBy` and damages cargo or attachments at random, for clothing, containers and tents (`P:\scripts\4_world\entities\itembase.c:1450-1488`). `ItemBase` is not in the player's chain.
 
 ### 7. `EEHitByRemote`
 
@@ -278,9 +279,9 @@ Damage as for a car above 2.0 on the speedometer. The corpse impulse is `5.0 * v
                 m_TransportHitRegistered = false;
                 return;
             }
-            if (m_TransportHitVelocity.Normalize() > 5)     // more than 5 m/s (Normalize returns the original length)
+            if (m_TransportHitVelocity.Normalize() > 5)     // more than 5 m/s (Normalize returns the original length and leaves the vector at length 1)
             {
-                damage = m_TransportHitVelocity.Length() * 0.5;  // half of what a car deals
+                damage = m_TransportHitVelocity.Length() * 0.5;  // always 1 * 0.5 = 0.5, whatever the speed
                 ProcessDirectDamage(DT_CUSTOM, transport, "", "TransportHit", "0 0 0", damage);
             }
             else
@@ -341,7 +342,7 @@ The ammo class is in the game's config, not in script: `class TransportHit: Mele
 // P:\scripts\4_world\entities\dayzplayerimplement.c:1563-1607 (condensed)
 override void EEHitBy(..., string ammo, ...)
 {
-    super.EEHitBy(...);              // PlayerBase.EEHitBy (shock check, broken legs)
+    super.EEHitBy(...);              // EntityAI.EEHitBy (m_OnHitByInvoker); PlayerBase.EEHitBy runs after this override returns
     m_TransportHitRegistered = false; // allows a new hit
 
     if (!IsAlive())
@@ -416,7 +417,7 @@ Health states (`GameConstants.STATE_RUINED` down to `STATE_PRISTINE`, `P:\script
 float GetProtectionLevel(int type, bool consider_filter = false, int system = 0)
 ```
 
-This `ItemBase` function returns the environmental protection (biological and chemical) of masks and filters, not the absorption of weapon damage. Its types are `DEF_BIOLOGICAL` and `DEF_CHEMICAL` (`:4082` and `:4085`), read from the item's `Protection` config class.
+This `ItemBase` function returns the environmental hazard protection of masks and filters, not the absorption of weapon damage. Its types are `DEF_BIOLOGICAL`, `DEF_CHEMICAL`, `DEF_DUST_PARTICLE_BREATH` and `DEF_DUST_PARTICLE_EYES` (`:4082`, `:4085`, `:4088` and `:4091`), read from the entries `biological`, `chemical`, `dust_particle_breath` and `dust_particle_eyes` of the item's `Protection` config class (`:4099-4101`). Any other type falls back to `biological`.
 
 ### How absorption of weapon damage works
 
@@ -592,7 +593,7 @@ A helper for tools that wear with use. It skips the ammo system.
 6. **`DamageType.STUN`** exists in the enum, and the only vanilla script that names it marks it "unused atm" (`P:\scripts\4_world\plugins\pluginbase\pluginadminlog.c:293`).
 7. **`EEHitBy` is server only.** Logic placed in `EEHitBy` runs on the server whether or not you guard it. `EEHitByRemote` is the counterpart on the client that caused the hit.
 8. **`componentName` in `ProcessDirectDamage` is not a model component name.** It is the damage zone name (for example "Head" or "Engine"). The vanilla doc comment says so: "which 'DamageZone' was hit (NOT a component name, actually!)" (`P:\scripts\3_game\entities\object.c:1132`).
-9. **A boat deals half.** The Boat branch multiplies by 0.5 (`m_TransportHitVelocity.Length() * 0.5`, `P:\scripts\3_game\entities\entityai.c:4196`; `1.29:3_game\entities\entityai.c:4129`). The generic branch uses the same factor as a car.
+9. **A boat deals a fixed 0.5, not half the speed.** The Boat branch tests `m_TransportHitVelocity.Normalize() > 5` (`P:\scripts\3_game\entities\entityai.c:4194`). `Normalize` scales the member vector to length 1 in place and returns the original length (`P:\scripts\1_core\proto\enconvert.c:140-153`), so the next line, `m_TransportHitVelocity.Length() * 0.5` (`:4196`; `1.29:3_game\entities\entityai.c:4129`), is always 0.5. Any boat hit above 5 m/s passes a coefficient of 0.5, which is 0.5 Health with `TransportHit`. The car and generic branches scale with the speed.
 10. **`"Brain"` is a real zone.** It is configured on the player (`P:\DZ\characters\data\config.cpp:501`) with `fatalInjuryCoef=1` (`:570`), and script checks `dmgZone == "Brain"` to mark a headshot kill (`P:\scripts\4_world\entities\dayzplayerimplement.c:1592`).
 
 ## What does not exist
@@ -600,7 +601,7 @@ A helper for tools that wear with use. It skips the ammo system.
 - **`ProcessIndirectDamage` on `EntityAI` or `Object`.** Not a script function. Indirect explosion damage is native, through `DamageSystem.ExplosionDamage`.
 - **`DealDamage` as a global script function.** The names are `ProcessDirectDamage` (on `Object`) and `DealAbsoluteDmg` (a helper in `MiscGameplayFunctions`).
 - **`"TransportHit"` in script.** It is a `CfgAmmo` class in the game config (`P:\DZ\weapons\melee\config.cpp:52`). To copy the flow, a mod uses that ammo name, which the base game already has, or defines its own in `config.cpp`.
-- **`GetProtectionLevel` for armor.** The function exists but covers only `DEF_BIOLOGICAL` and `DEF_CHEMICAL`.
+- **`GetProtectionLevel` for armor.** The function exists but covers only the hazard types `DEF_BIOLOGICAL`, `DEF_CHEMICAL`, `DEF_DUST_PARTICLE_BREATH` and `DEF_DUST_PARTICLE_EYES`.
 - **Hit zones defined in script.** The `componentNames[]` of the player's zones are config, in `class DamageZones` (`P:\DZ\characters\data\config.cpp:421` onward).
 - **A getter for `ShockHandler`.** `PlayerBase` holds `m_ShockHandler` and `m_BleedingManagerServer` as plain `ref` members (`P:\scripts\4_world\entities\manbase\playerbase.c:99` and `:85`). The bleeding manager has the getter `GetBleedingManagerServer()` (`:2973`); the shock handler has none.
 - **A script read of `fatalInjuryCoef`.** `RepairDamageTransfer` carries the comment "hack; mirrors" (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionrepairtent.c:155`) and reads only `transferToGlobalCoef`. The key is read by native code.

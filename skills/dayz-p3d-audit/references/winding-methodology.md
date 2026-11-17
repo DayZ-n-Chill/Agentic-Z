@@ -84,10 +84,14 @@ compare the wrong things.
    Coordinate-system-agnostic and independent of the modeler's intent. **Best tool
    for detecting mixed winding after a flip.**
 
-3. **Check C: comparison against vanilla.** Match faces between the target and a
-   geometrically similar vanilla model (e.g. `DZ/gear/camping/wooden_case.p3d`) by
-   centroid proximity, then compare winding-derived normals. Only applicable when a
-   close vanilla equivalent exists.
+3. **Check C: comparison against a reference model.** Match faces between the target
+   and a geometrically similar reference by centroid proximity, then compare
+   winding-derived normals. The reference must be an MLOD py3d can read: vanilla models
+   on `P:\` are binarized ODOL (`P:\DZ\gear\camping\wooden_case.p3d` starts with the
+   bytes `ODOL`), which py3d cannot read and the audit rejects. A debinarized vanilla
+   model keeps the ODOL winding sign, so invert the comparison's sign for it ("MLOD to
+   ODOL is a winding-sign boundary" in `winding-absolute-check.md`). Only applicable
+   when such a reference exists.
 
 4. **Direct in-game test.** Rebuild the PBO → test server → inspect visual +
    collision + actions + ballistics. This is the final filter and the only 100%

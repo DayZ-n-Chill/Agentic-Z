@@ -54,7 +54,7 @@ The damage system reads a zone's `componentNames` from config (`P:\scripts\3_gam
 
 `Transport.OnContact` collects contacts per zone (`transport.c:315`) and `CarScript.CheckContactCache` applies them on the server (`carscript.c:1279`):
 
-- Zone damage is the contact impulse times `m_dmgContactCoef`, `0.023` by default (`transport.c:91`). Vanilla cars leave it at the default; a commented line in each constructor shows a tuned value (`offroad_02.c:9`).
+- Zone damage is the contact impulse times `m_dmgContactCoef` (`carscript.c:1291`). `Transport` declares it as `0.023` (`transport.c:91`), but the `CarScript` constructor sets it to `0.058` for every car (`carscript.c:224`). `Sedan_02` raises it to `0.079` (`sedan_02.c:9`); the other vanilla cars only carry commented-out values (`offroad_02.c:9`).
 - Below `CARS_CONTACT_DMG_MIN = 150` nothing happens; below `CARS_CONTACT_DMG_THRESHOLD = 750` the hit is light and does not transfer to other zones; above it the crew is hurt too (`P:\scripts\3_game\constants.c:888`, `:889`; `carscript.c:1329` to `:1355`).
 - Crew damage is worked out as if the car weighed 1000 kg, so heavy and light cars hurt their crew the same (`carscript.c:1292`). Above `CARS_CONTACT_DMG_KILLCREW = 1200` everyone inside dies; below it each crew member loses 2 to 100 health and 50 to 150 shock (`DamageCrew`, `carscript.c:1374`; `constants.c:890`).
 

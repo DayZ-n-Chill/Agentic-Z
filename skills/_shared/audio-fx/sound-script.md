@@ -1,6 +1,6 @@
 # Sound script: playing sound sets
 
-How Enforce Script plays, loops, fades and stops a sound set, and how to clean it up. The sound set itself is written in config (`sound-config.md`).
+How Enforce Script plays, loops, fades and stops a sound set, and how to clean it up. The sound set itself is written in config (`sound-config.md`). Line numbers are from the 1.30 scripts on `P:\`; statements about 1.29, such as what a version added, are not yet checked on `P:\`.
 
 Sounds are client only (Tier 2, `conventions/scripts.md`, "Client and server ownership"). PlaySoundSet, PlaySoundSetLoop and StopSoundSet do nothing on a dedicated server (object.c:1249, 1316). The memory point helpers (lines 1279 to 1311) have no server check, so put them behind `!GetGame().IsDedicatedServer()` yourself. The code around any helper (timers, fields, particles) needs the check too.
 

@@ -1,6 +1,10 @@
 # Defense-in-depth validation
 
-What to add after the root cause is found so the same bug cannot come back: a check at every layer the bad data passes through. The examples are TypeScript; the method applies to any language.
+What to add, as a separate follow-up after the fix at the root cause is verified, so the same bug cannot come back: a check at every layer the bad data passes through. The examples are TypeScript; the method applies to any language.
+
+## How this fits the fix
+
+These layers are not part of the fix. The fix is the one change at the named root cause from Phase 4 of `SKILL.md`, verified by the reproduction that failed and now passes. Only after that, and only when the user agrees to it, add the layers below as a separate follow-up change. Each layer guards a path the trace showed the bad value can take; if you can delete that path instead, delete it (see "Defaults: cut first" in `SKILL.md`). Debug logging kept in shipped code needs a reason from the failure, the same as any other extra logging.
 
 ## Overview
 
@@ -93,7 +97,7 @@ async function gitInit(directory: string) {
 
 ## Applying the pattern
 
-When you find a bug:
+After the single fix at the root is verified, and the user has agreed to the follow-up:
 
 1. **Trace the data flow.** Where does the bad value originate? Where is it used?
 2. **Map all checkpoints.** List every point the data passes through.
@@ -129,4 +133,4 @@ All four layers were necessary. During testing, each layer caught bugs the other
 - Edge cases on different platforms needed environment guards.
 - Debug logging identified structural misuse.
 
-Don't stop at one validation point. Add checks at every layer.
+In the follow-up, don't stop at one validation point: add checks at every layer the bad value passed through. Keep that follow-up out of the fix itself.

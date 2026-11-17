@@ -25,8 +25,8 @@ These are what the player sees. Several LODs at rising distances reduce the rend
 |---|---|---|
 | LOD 0 | 0.000 | Full detail, the closest view |
 | LOD 1 | 1.000 | About 50 % of the LOD 0 polygon count |
-| LOD 2 | 2.000 | About 25 % of LOD 0 |
-| LOD 3 and up | 4.000, 8.000 ... | Further simplification, down to a box |
+| LOD 2 | 4.000 | About 25 % of LOD 0 |
+| LOD 3 and up | 8.000 ... | Further simplification, down to a box |
 
 The values only have to rise. Most vanilla models count 1, 2, 3, 4 (`P:\DZ\gear\camping\wooden_case.p3d` carries 1 to 4), and the generator in this skill spaces them 0, 1, 4, 8; both load (`_shared/models/lods.md`, "Visual LODs").
 
@@ -97,7 +97,7 @@ Cast shadows on the ground, on other objects and on the object itself. No vanill
 - **It must be slightly smaller than the resolution LOD**, otherwise the object appears fully dark in game (use a Push modifier in Blender to shrink it a little).
 - No textures are applied.
 - All faces are closed.
-- Usually two are made: a detailed one for close range and a very simple one for far range. Shadow Volume 0.000 is the detailed one, Shadow Volume 10.000 the simple one (Object Builder's names; the stored resolution values are `1.0e4` and `1.1e4`, `critical-rules.md`).
+- Usually two are made: a detailed one for close range and a very simple one for far range. The detailed one is stored at resolution `1.0e4` (10000) and the simple one at `1.1e4` (11000) (`critical-rules.md`). Object Builder names a shadow volume LOD by its resolution minus 10000, so it shows them as ShadowVolume 0 and ShadowVolume 1000.
 
 ### Memory LOD
 
@@ -217,7 +217,7 @@ Measured on one project: a rock shaped building generated from Blender, with a h
 
 `[OFFLINE MEASURED]` With 1,150 pieces in Geometry, View and Fire, the rock's MLOD weighed 478 MB; with 827 to 997 pieces of 6 points each and a separate, coarser View Geometry that kept the functional pieces (doors, buttons), 55 to 75 MB. The binarized ODOL does not carry the cost (78.4 MB of MLOD became 2.1 MB of ODOL); the MLOD does, and in a Git repository it needs LFS past GitHub's 100 MB. The separate View did not last: in R7.3 its own set of pieces left 28 % of the skin open to the project's ray test and went past 2,048 components, so the View went back to the Geometry's pieces.
 
-Why it grows that way, from the format rather than from a measurement: an MLOD stores each named selection as one byte per point and one byte per face of its LOD (py3d writes `len(all_points) + len(all_faces)` bytes per selection: `py3d/__init__.py:1968-1974` of py3d in `scripts/tools/py3d`, version 1.10.1), and every `ComponentNN` is a selection. N pieces of k points and f faces each make a LOD of about N·k points and N·f faces, so their selections take about N²·(k + f) bytes in each collision LOD.
+Why it grows that way, from the format rather than from a measurement: an MLOD stores each named selection as one byte per point and one byte per face of its LOD (py3d writes `len(all_points) + len(all_faces)` bytes per selection: `py3d/__init__.py:1980-1986`, read back at line 1947, of py3d in `scripts/tools/py3d`, version 1.10.1), and every `ComponentNN` is a selection. N pieces of k points and f faces each make a LOD of about N·k points and N·f faces, so their selections take about N²·(k + f) bytes in each collision LOD.
 
 Before assembling, clean the source meshes and check the hulls: zero area faces, orphan points, faces wound against their normals and `bmesh.ops.convex_hull` hulls that are not exactly convex are in `dayz-p3d-audit/references/killers-detail.md`, "Source meshes for collision".
 

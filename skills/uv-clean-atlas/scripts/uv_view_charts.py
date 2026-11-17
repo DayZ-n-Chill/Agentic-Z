@@ -86,9 +86,10 @@ def _grow_cone(faces, normals, areas, adj, chart, start_cid, cone):
     return cid
 
 
-def view_charts(nfaces, normals, areas, adj, shell, ns, cone_fallback=math.radians(100),
+def view_charts(nfaces, normals, areas, adj, shell, ns, edge_len, cone_fallback=math.radians(100),
                 frag_limit=6):
-    """Returns (chart list, next_cid). Charts are contiguous ints from 0."""
+    """Returns (chart list, next_cid). Charts are contiguous ints from 0.
+    edge_len maps an edge index (the second item of each adj entry) to its length."""
     chart = [-1] * nfaces
     cid = 0
     shells = defaultdict(list)
@@ -129,9 +130,11 @@ def view_charts(nfaces, normals, areas, adj, shell, ns, cone_fallback=math.radia
             cid = _grow_cone(faces, normals, areas, adj, chart, cid, cone_fallback)
             continue
         # Cap charts per shell at k: keep the largest component of each cluster as
-        # a core; every other component merges into the neighbor it shares the most
-        # edges with (artist behavior: a fender's steep side patches belong
-        # to the top view island, not to islands of their own).
+        # a core; every other component merges into the neighbor it shares the
+        # longest boundary with (artist behavior: a fender's steep side patches
+        # belong to the top view island, not to islands of their own). A pending
+        # component scans the faces of its whole merged group, so a patch that
+        # another patch has merged into still finds the neighbors of that patch.
         comp_faces = defaultdict(list)
         for fi in faces:
             comp_faces[comp_of[fi]].append(fi)
@@ -154,11 +157,15 @@ def view_charts(nfaces, normals, areas, adj, shell, ns, cone_fallback=math.radia
                 break
             still = []
             for ci in pending:
+                r = root(ci)
                 nb = defaultdict(float)
-                for fi in comp_faces[ci]:
-                    for (nj, ei) in adj[fi]:
-                        if nj in faceset and root(comp_of[nj]) != root(ci):
-                            nb[root(comp_of[nj])] += 1.0
+                for cj in comp_faces:
+                    if root(cj) != r:
+                        continue
+                    for fi in comp_faces[cj]:
+                        for (nj, ei) in adj[fi]:
+                            if nj in faceset and root(comp_of[nj]) != r:
+                                nb[root(comp_of[nj])] += edge_len[ei]
                 if nb:
                     merged_into[root(ci)] = max(nb, key=nb.get)
                 else:

@@ -12,7 +12,7 @@ governors, aerodynamic drag, weathervaning), while still being **kinematic** (`S
 
 ## 1. Architecture — `RFFSHeli_S76 : RFFSHeli_base : CarScript`
 
-[VERIFIED-RFFS] Two layers (vs SIB's three):
+[VERIFIED-RFFS] Two script layers on top of `CarScript`, the same depth as SIB:
 
 | Layer | Adds | Cite |
 |---|---|---|

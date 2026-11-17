@@ -3,6 +3,13 @@
 Load this for setup questions, compaction/resume behaviour, or when running
 in an environment without filesystem access.
 
+**Contents:** Recommended activation setup (the activation block, a
+session-start hook, governance-protected config) · Environment mappings ·
+Git as an optional staging medium · First-run backfill · Storage regimes ·
+Bundle manifest · Compaction behaviour · Repo/maintainer sessions — verify
+commit identity before writing · Handoff-doc mode (no persistent storage) ·
+Handoff-doc analysis (when one arrives).
+
 ## Recommended activation setup
 
 Three activation tiers exist, and only the strongest is enforced. Pick one
@@ -16,8 +23,10 @@ knowingly; do not assume the middle one is a guarantee.
    the opening message strongly — topically matched skills have loaded in
    the same turn that the always-load ones were skipped. On platforms with
    no hook mechanism this is the only tier that survives an unmounted or
-   unreachable config file, which is why the description itself carries a
-   session-start trigger.
+   unreachable config file. The description keys on real work underway
+   and says outright that it is not a session-start trigger, so on its
+   own it cannot make the Session Start Protocol run before the first
+   tool call: that takes tier 2 or tier 3.
 2. **Configuration instruction** (better, still probabilistic). A CLAUDE.md
    or project-instruction block, shown below. Empirically skippable under
    the same conditions as tier 1, and silently absent when the file it
@@ -143,7 +152,14 @@ asking the agent to go and look:
 #!/bin/sh
 # SessionStart hook: inject activation + review state as additionalContext.
 d="$OBS_WORKSPACE/skill-observations"      # the pinned absolute path
-open=$(ls "$d/observation-log"/*.md 2>/dev/null | wc -l | tr -d ' ')
+open=0                                     # status open, or no status (read as open)
+for f in "$d/observation-log"/*.md; do     # active folder only; archive/ is not scanned
+  [ -e "$f" ] || continue
+  s=$(awk 'NR==1 && /^---[[:space:]]*$/ {fm=1; next}
+           fm && /^---[[:space:]]*$/ {exit}
+           fm && /^status:/ {sub(/^status:/, ""); gsub(/[" \t\r]/, ""); print; exit}' "$f")
+  case "$s" in ""|open) open=$((open + 1)) ;; esac
+done
 last=$(cat "$d/last-review-date.txt" 2>/dev/null || echo never)
 msg="Invoke the task-observer skill before the first tool call."
 if [ "$open" -gt 0 ]; then
@@ -282,19 +298,20 @@ regimes:
 
 This skill consists of `SKILL.md` and the reference files it lists
 (`weekly-review.md`, `skill-authoring.md`, `environments.md`,
-`observation-log.md`, `signals.md`, `migration.md`). Two helper scripts
-the references mention are not part of this skill: `migrate-log.py` (the
-one-time legacy-log conversion in `migration.md`) and
-`validate-skill-bundle.py` (the pre-delivery gate in `skill-authoring.md`
-and `weekly-review.md`). If a referenced file is missing, the install is
+`observation-log.md`, `signals.md`, `migration.md`). One helper script
+the references mention is not part of this skill: `migrate-log.py` (the
+one-time legacy-log conversion in `migration.md`). The pre-delivery gate
+in `skill-authoring.md` and `weekly-review.md` has no script: it is
+checked by hand. If a referenced file is missing, the install is
 incomplete: proceed using the rules in `SKILL.md` and tell the user which
 files are missing.
 
 ## Compaction behaviour
 
-When context compacts mid-task, the CLAUDE.md structural trigger re-invokes
-this skill on the resumed session automatically (the resumed session reads
-CLAUDE.md anew). Observations before and after compaction are written as
+When context compacts mid-task, the CLAUDE.md structural trigger is likely
+to re-invoke this skill on the resumed session (the resumed session reads
+CLAUDE.md anew), but like any configuration instruction it can be skipped;
+only a session-start hook makes the re-invocation certain. Observations before and after compaction are written as
 separate files under the same `observation-log/` directory, each with its own
 id (the id counter is derived from existing filenames, so it continues
 seamlessly across the compaction boundary). This is the main reason the

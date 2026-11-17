@@ -56,8 +56,30 @@ document = read_rtm("input.rtm")
 written_bytes = write_rtm("roundtrip.rtm", document)
 ```
 
-All readers return plain dictionaries and lists. All writers validate the
-complete semantic document before returning bytes or writing a file.
+All readers return plain dictionaries and lists. `write_rtm_bytes`,
+`write_seanim_bytes` and `write_rtm(path, document)` take a whole document, as
+returned by the matching reader, and validate it completely before returning
+bytes or writing a file.
+
+`write_seanim` has a different signature: it builds the document from a bone
+list and keyword arguments, sets `frame_count` from the highest frame used, and
+returns the written bytes:
+
+```python
+write_seanim(
+    path,
+    bones,  # [{"name": ..., "position_keys": [...], ...}, ...]
+    framerate=30.0,
+    looped=False,
+    anim_type=AnimType.RELATIVE,
+    notes=None,
+    modifiers=None,
+    precision="float32",
+)
+```
+
+To write a whole document returned by `read_seanim`, use
+`Path(path).write_bytes(write_seanim_bytes(document))`.
 `AnimationFormatError` exposes stable `code`, `message` and optional byte
 `offset` fields.
 
@@ -70,8 +92,10 @@ complete semantic document before returning bytes or writing a file.
 - per-bone modifiers, notes and the loop flag;
 - bounded counts, strict UTF-8/NUL strings and exact end-of-stream.
 
-Unknown flags, duplicate names or indices, out-of-range frames, non-finite
-scalars, truncation and trailing bytes are rejected.
+Unknown bits in the header's animation, presence and property flags,
+duplicate names or indices, out-of-range frames, non-finite scalars,
+truncation and trailing bytes are rejected. Per-bone flags (one byte, 0 to
+255) are not checked and are passed through unchanged.
 
 ## Supported RTM contract
 

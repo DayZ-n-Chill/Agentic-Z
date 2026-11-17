@@ -6,7 +6,7 @@ OBJ to game-ready `.p3d`, end to end: parse, transform, decimate, normals, LOD a
 
 ## Vanilla anchors checked on `P:\`
 
-- `units[]` is the `CfgPatches` array step 8 says not to forget: `P:\DZ\vehicles\wheeled\config.cpp:5`.
+- The addon that holds every vanilla car leaves its `CfgPatches` `units[]` empty, so step 8 does not treat `units[]` as required: `P:\DZ\vehicles\wheeled\config.cpp:5`.
 - The vanilla models an import is compared against are binarized: `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` opens with the `ODOL` signature, version 56, so the vanilla winding and normal percentages quoted below were measured on debinarized copies and cannot be read from the file on `P:\` directly.
 
 ## When to use this
@@ -267,8 +267,8 @@ Use the DayZ resolution constants:
 | View Geometry | `6.0e15` |
 | Memory | `1.0e15` |
 
-Do not use the Arma values `2.0e13` for Fire Geometry and `3.0e13` for
-View Geometry: the P3D inspector of the dayz-p3d-inspector skill labels
+Do not use `2.0e13` for Fire Geometry or `3.0e13` for View Geometry, values
+some Arma era guides give: the P3D inspector of the dayz-p3d-inspector skill labels
 them "unknown" (`skills/dayz-p3d-inspector/references/recipe-format.md`).
 
 ## Step 7: PNG → PAA without external tools
@@ -308,9 +308,10 @@ registration as furnace fuel — was identical.
 
 ### Register the new entity everywhere
 
-`CfgPatches.units[]` in `config.cpp` is the most commonly-missed spot.
-Miss it and the class loads but the engine won't create instances for
-mission placement. In a mod with its own registries, also check:
+Listing the class in `CfgPatches.units[]` is tidy but not required for the
+game to spawn it: the addon that holds every vanilla car leaves `units[]`
+empty (`P:\DZ\vehicles\wheeled\config.cpp:5`) and those cars spawn. In a mod
+with its own registries, check:
 
 - The check list of any action that accepts the sibling kits (for
   example a furnace-fuel action), if the new kit should be accepted too

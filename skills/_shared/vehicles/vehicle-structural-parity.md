@@ -26,11 +26,11 @@ The addenda are in the order they were written, and later ones correct earlier o
 > Generating a wheeled vehicle from scratch (procedural / Blender-to-DayZ) reveals the structural
 > pieces a real DayZ vehicle has ONE ERROR AT A TIME in-game. To avoid that whack-a-mole,
 > debinarize a vanilla vehicle ONCE and diff against it BEFORE baking.
-> Reference: civiliansedan (`DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d`, ODOL v54, debinarizable).
+> Reference: civiliansedan (`DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d`, ODOL version 56 in the header of the copy on `P:\`, debinarizable).
 
 ## Parity-first method (do this BEFORE baking a vehicle)
 
-1. Debinarize the civiliansedan (v54) with an external ODOL→MLOD converter whose ODOL reader handles v54.
+1. Debinarize the civiliansedan (ODOL v56 on `P:\`) with an external ODOL→MLOD converter whose ODOL reader handles v56.
 2. Enumerate every LOD (resolution + `named_selections` + `proxies`) with the ODOL reader.
 3. Diff against your model's read-back (py3d) and your `config.cpp`.
 4. Build ALL missing pieces in one pass — do not discover them error-by-error in-game.
@@ -102,7 +102,7 @@ config wires them.
 
 ## Addendum (2026-05-26) — Lessons from "the quad doesn't drive" debugging (LFQuad)
 
-> Verified against civiliansedan v54 (full), hatchback_02/offroadhatchback/offroad_02 (FireGeo), and
+> Verified against civiliansedan (ODOL v54 on DayZ 1.29, not re-checked on `P:\`, whose copy is v56) (full), hatchback_02/offroadhatchback/offroad_02 (FireGeo), and
 > the reference quad v53 (header only). Marked [VERIFIED] vs [HYPOTHESIS]: a divergence from the
 > reference is a candidate, not a verdict; do not assert a cause without reading the mechanism.
 
@@ -151,8 +151,10 @@ SMALL convex component (~0.20x0.18x0.18, sedan), NOT a large box. A from-scratch
 
 ### Wreck [VERIFIED sedan]
 
-The sedan ships 3 dedicated directional wreck .p3d files (wreck/_wreckedfront/back/both.p3d) + script-side
-spawn (no wreck= or class Wrecked* in wheeled/config.cpp). Empty healthLevels {} is valid.
+The sedan ships 3 dedicated directional wreck .p3d files
+(P:\DZ\vehicles\wheeled\civiliansedan\wreck\civiliansedan_wrecked{front,back,both}.p3d). No vanilla script
+under P:\scripts and no vehicle config.cpp under P:\DZ references them, so they ship unused; there is no
+vanilla wreck spawn to copy. Empty healthLevels {} is valid.
 
 ### Tools / reference parity [VERIFIED]
 
@@ -161,7 +163,7 @@ spawn (no wreck= or class Wrecked* in wheeled/config.cpp). Empty healthLevels {}
   parsing. For its real geometry -> Object Builder (handles v53). (Stale: see Correction 2026-05-30c.)
 - The debinarizer INVERTS winding (ODOL->MLOD) -> a debinarized MLOD is NOT a reliable winding
   reference. For collision winding use Check C (cross vs component centroid).
-- Working quad LOD set (the reference quad): visual 0-6, shadow 1100, Geometry 1e13, Memory 1e15, ViewGeo
+- Working quad LOD set (the reference quad): visual 0-6, View Pilot 1100, Geometry 1e13, Memory 1e15, ViewGeo
   6e15, FireGeo 7e15 (without LandContact).
 
 
@@ -564,8 +566,8 @@ ejected: a stray `#Mass#` tag on a NON-Geometry LOD (typically FireGeometry 7e15
 - Placement depends on the baked CoM (`h ~= CoM.y - GeometryYmin`), NOT on Geometry-Ymin / LandContact /
   bbox. No geometry tweak fixes a CoM=0 spawn -- bake the mass first.
 - The build checklist of Addendum 2026-05-30 stays valid as BUILD invariants -- only the "monolith =>
-  spawn launch" diagnosis is invalidated. Mass-only-Geometry check: `dayz-p3d-audit` SKILL.md (#Mass# must
-  live only on the Geometry LOD) + Killer 13. LOD bisection is what isolated the bug.
+  spawn launch" diagnosis is invalidated. Mass-only-Geometry check: `skills/dayz-p3d-audit/references/vehicle-checks.md`
+  (`ERR_MASS_ONLY_GEOMETRY`, in the Killer 13 section). LOD bisection is what isolated the bug.
 
 ## (added 2026-06-22) Audit an INHERITED / imported vehicle BEFORE planning
 
@@ -580,7 +582,8 @@ host-direct BEFORE committing a plan — it reframes the scope and is cheap. Mea
   (Geometry 1e13, Memory 1e15, ViewGeo 6e15, FireGeo 7e15). (Case: the received p3d had 9 LODs + 50
   memory points + wheel/crew proxies → good TEMPLATE, not a sketch.)
 - **Vertex audit of the SOURCE (glTF accessors / FBX) per mesh**: splitting into proxies is a problem of
-  GROUPING meshes under the ceiling (~32768 resolved vertex-normals per LOD and per proxy), NOT of
+  GROUPING meshes under the per-model vertex ceiling of each LOD and each proxy (measured per model, with
+  binarize's verdict as the gate: see `binarize-vertex-budget.md`), NOT of
   decimation. Sum `accessors[POSITION].count` per mesh and group them. (Case: 166 meshes / 236k verts; the
   largest 26.7k —no single one passes— but the aggregate blows through the ceiling ×7.)
 - **Verify the SEMANTICS of inherited selections vs vanilla, not just their presence**: an inherited
@@ -632,7 +635,7 @@ reference for pure-geometry placement.
 
 ### DayZ vehicle axis convention: front = −z, driver = +x
 
-Measured on CivilianSedan v54 (the CONTROL): headlights/engine/`drown_engine` at **z ≈ −1.7..−2.4** (front),
+Measured on CivilianSedan, ODOL v54 on DayZ 1.29, not re-measured on the v56 copy on `P:\` (the CONTROL): headlights/engine/`drown_engine` at **z ≈ −1.7..−2.4** (front),
 reverse light/exhaust/`refill` at **z ≈ +2.2..+2.6** (rear), `seat_driver` at **x = +0.436** (driver on
 +x). So a DayZ car FACES −z. Wheel naming `wheel_<side>_<axle>`: side 1 = +x, side 2 = −x; axle 1 = front
 (−z), axle 2 = rear (+z) — front (steered) wheels are `_X_1`. When importing from a tool whose cars face +z
@@ -919,27 +922,13 @@ Import and regen builders create crew proxies via `add_proxy(..., scale=0.1)` ->
 
 The earlier diagnosis "codriver needs crew proxies in FireGeo" is REFUTED: the cause is collision-component cleanliness + the canonical proxy triangle, not FireGeo presence.
 
-> **VALUE CORRECTED 2026-08-18 — the flag is `0x0000003F`, not `0x02000000`.**
-> Measured directly on the sealed vanilla control with py3d 1.4.0:
-> `civiliansedan_mlod.p3d`, sha256
-> `823585B6EC9727F70C3ABCAD309ECBF7E87DBA1E66FA14A1ECAB9AB1FCA921DD`,
-> ViewGeometry LOD (resolution 6e15) = 478 points / 422 faces, with
-> `0x0000003F` on 478 of 478 points (100%) and `0x02000000` absent from the
-> control entirely. Reproduced on two byte-identical copies of the file.
->
-> **What does NOT change:** the in-game confirmations below (SUB_BRZ,
-> MercedesAMGLF `hit=1 comp=6 crewIdx=1`) stand. Those runs changed winding and
-> point flags together and never isolated the flag as the cause, so the
-> corrected value replaces the number that was written down — not the finding
-> that an inward-wound ComponentNN with vanilla point flags is raycast-hittable.
-
 ### CRITICAL EXTENSION (2026-06-28, SUB_BRZ — in-game CONFIRMED): seat ComponentNN cubes must be INWARD-wound + point flags `0x0000003F`, or they are NOT raycast-collidable
 
 The "2 dedicated clean cubes, all faces outward" rule above is NECESSARY BUT NOT SUFFICIENT for a py3d-authored vehicle. A seat cube with **OUTWARD winding + point flags 0** is **invisible to `DayZPhysics.RaycastRV(..., ObjIntersectView)`** — the get-in action-target raycast never resolves it, so `CrewPositionIndex` falls back to component0 and the **codriver radial never appears** (the driver "works" only by that fallback; even the driver cube isn't truly hit). The crew mapping `CrewPositionIndex(comp)->crewIdx` is already correct (comp0→driver, comp1→codriver) — irrelevant while the geometry isn't raycast-collidable.
 
-Measured (SUB_BRZ vs LFQuad positive control, headless probe): BRZ seat cubes were OUTWARD + flags 0 → `RaycastRV` `hit=0` from every direction at the exact cube center. After rebuilding the BRZ ViewGeo seat ComponentNN with **inward winding + point flags copied from the control** (not just shape/name), `RaycastRV` returns `hit=1 comp=1 crewIdx=1` and the codriver get-in works **in-game (confirmed 2026-06-28)**. The flag value to copy is `0x0000003F`: sealed control `civiliansedan_mlod.p3d` SHA `823585B6EC9727F70C3ABCAD309ECBF7E87DBA1E66FA14A1ECAB9AB1FCA921DD`, ViewGeometry (res 6e15), 478 points / 422 faces, histogram `0x0000003F` → 478 points (100.0%), `0x02000000` → 0 points. The patch changed winding and flags together and never isolated the flag as cause; the safe rule is the sealed vanilla convention. Corroborated on a second working model: the MLOD of the reference quad carries `0x0000003F` on 482 of 482 ViewGeometry points. The `0x02000000` once recorded as the requirement is what the py3d-based exporter emits — 290 of 296 points on the LFQuad body — so that value had been measured on the product, not on the control.
+Measured (SUB_BRZ vs LFQuad positive control, headless probe): BRZ seat cubes were OUTWARD + flags 0 → `RaycastRV` `hit=0` from every direction at the exact cube center. After rebuilding the BRZ ViewGeo seat ComponentNN with **inward winding + point flags copied from the control** (not just shape/name), `RaycastRV` returns `hit=1 comp=1 crewIdx=1` and the codriver get-in works **in-game (confirmed 2026-06-28)**. The flag value to copy is `0x0000003F`: sealed control `civiliansedan_mlod.p3d` SHA `823585B6EC9727F70C3ABCAD309ECBF7E87DBA1E66FA14A1ECAB9AB1FCA921DD`, ViewGeometry (res 6e15), 478 points / 422 faces, histogram `0x0000003F` → 478 points (100.0%), `0x02000000` → 0 points (measured with py3d 1.4.0, reproduced on two byte-identical copies of the file). The patch changed winding and flags together and never isolated the flag as cause; the safe rule is the sealed vanilla convention. Corroborated on a second working model: the MLOD of the reference quad carries `0x0000003F` on 482 of 482 ViewGeometry points. The `0x02000000` once recorded as the requirement is what the py3d-based exporter emits — 290 of 296 points on the LFQuad body — so that value had been measured on the product, not on the control.
 
-**Rule:** build ViewGeometry collision ComponentNN for vehicles (seats, and any cursor/action-targetable component) by COPYING the sealed vanilla control's convention — **inward winding + point flags `0x0000003F`** — not py3d's default outward+flags0. The original patch changed winding and flags at once, so the flag was never isolated as the cause. Outward py3d boxes pass every offline shape/winding/dual-tag check yet are NOT raycast-collidable. Dual-tag and the in-game confirmations stand: SUB_BRZ and MercedesAMGLF headless `hit=1 comp=6 crewIdx=1`.
+**Rule:** build ViewGeometry collision ComponentNN for vehicles (seats, and any cursor/action-targetable component) by COPYING the sealed vanilla control's convention — **inward winding + point flags `0x0000003F`** — not py3d's default outward+flags0. Outward py3d boxes pass every offline shape/winding/dual-tag check yet are NOT raycast-collidable. Dual-tag and the in-game confirmations stand: SUB_BRZ and MercedesAMGLF headless `hit=1 comp=6 crewIdx=1`.
 
 **Diagnostic (reusable, no manual aim):** a headless mission probe that spawns the car + a known-good control, dumps `CrewPositionIndex(0..79)`, and casts `DayZPhysics.RaycastRV` (FIRE+VIEW) at each seat — localizes "mapping vs raycast vs collidability" in one run. Parse the raw `hit=1 comp=N crewIdx=N` lines, NOT a boolean verdict — a regex `-match '1'` also matches `-1` (a false-green seen in practice).
 
@@ -963,8 +952,8 @@ The CRITICAL EXTENSION above is now CONFIRMED on MercedesAMGLF (headless crew-pr
 
 ## REGEN-FROM-glTF BODY + PROXY-SPLIT (added 2026-06-24)
 
-Regenerating a high-poly body from a glTF/FBX and splitting it into proxies to beat the 65535
-resolved-vertex ceiling has two traps that pass every offline gate and
+Regenerating a high-poly body from a glTF/FBX and splitting it into proxies to beat the
+vertex ceiling (measured per model, gated by binarize: see `binarize-vertex-budget.md`) has two traps that pass every offline gate and
 only surface in-game. Measured on MercedesAMGLF, 2026-06-24.
 
 ### glTF→DayZ winding: the offline check can be a tautology
@@ -1063,17 +1052,18 @@ wheels, predicted OFFLINE. Fix = uniform `angle1`. Offline check: `py3d` → `di
 X signs between L and R (reusable script: `skills/dayz-vehicles/scripts/audit_getin_wheels.py`).
 
 ### LOD ladder for a shell+proxy car (re-import of decimated model)
-The body is split into shell-core (carpaint/glass/lights, direct in LOD) + N `mb_` proxies (<65535 resolved
-each). For a ladder of visual LODs from a model decimated by the artist:
+The body is split into shell-core (carpaint/glass/lights, direct in LOD) + N `mb_` proxies (each under the
+per-model vertex ceiling of `binarize-vertex-budget.md`). For a ladder of visual LODs from a model decimated by the artist:
 - Run the proxy and shell builders PER LOD with decimated regions and proxies with
-  suffix (`mb_chassis_lod1`, etc.). LODs whose body resolves <65535 → DIRECT geometry (no proxies); those
+  suffix (`mb_chassis_lod1`, etc.). LODs whose body binarizes under that ceiling → DIRECT geometry (no proxies); those
   exceeding (typically LOD0/LOD1/LOD2) → shell+proxies.
 - Decimate with **headless Blender** (`--background --python`, modifier Decimate COLLAPSE, `use_collapse_triangulate`),
   per-object to preserve groups; re-split by group to regions. Exclude wheels from body (handled via wheel proxy).
 - **Keep support LODs (Geometry/Memory/ViewGeo/FireGeo) from the DEPLOYED .p3d**, not from the donor model —
   ensuring any subsequent edit to those LODs survives (e.g., get-in patch in ViewGeo). Transform (scale)
   IS measured against the stable donor model (not against own output: shrinks ~3%/rebuild).
-- Verify resolved<65535 PER LOD and PER proxy before writing; the car's verifier must stay green.
+- Gate PER LOD and PER proxy on binarize's verdict, not on a fixed number (see `binarize-vertex-budget.md`
+  item 4: the 65535 resolved count is a false friend; the measured cliff was 46,133 triples); the car's verifier must stay green.
 - First gentle step (e.g., −20% LOD0→LOD1) preserves close-up quality; accelerate after. Measured ladder on
   MercedesAMGLF: 5 LODs 182k/145k/73k/23k/7k + shadow.
 

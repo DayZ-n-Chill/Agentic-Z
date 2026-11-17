@@ -2,7 +2,7 @@
 
 Covers the configuration systems of a DayZ server and mission: contaminated areas, weather, underground darkness, wildlife spawners, stamina and temperature keys, surfaces and clutter, server launch parameters, the diag menu, object and gear spawners, and the DayZ Tools licence limits.
 
-Status: not yet checked on `P:\`, except the lines listed under "Checked on `P:\`" at the end. These are mission-file and server-config facts as Bohemia Interactive documents them; the script tree on `P:\` cannot confirm most of them. Treat each data point as a lead until it is confirmed against the vanilla mission files (`cfggameplay.json`, the XML files) or the server you run.
+Status: not yet checked on `P:\`, except the lines listed under "Checked on `P:\`" at the end. These are mission-file and server-config facts; the script tree on `P:\` cannot confirm most of them. Treat each data point as a lead until it is confirmed against the vanilla mission files (`cfggameplay.json`, the XML files) or the server you run.
 
 **Guardrail**: before stating an Enforce Script or config identifier from this note as fact, confirm it on `P:\` or in Bohemia's official documentation. Third-party mirrors and fan wikis are leads only; `public-wiki-harvest.md` says how far each kind of page can be trusted.
 
@@ -33,7 +33,7 @@ Status: not yet checked on `P:\`, except the lines listed under "Checked on `P:\
   `<rain>` + `<thresholds min= max= end=>`; `<wind><maxspeed>` m/s; `<storm density= threshold= timeout=>`.
   Mirrors the `Weather` script API. 3 weather avenues: scripted state machine
   (`WorldData::WeatherOnBeforeChange` in `Enoch.c`), `MissionWeather(true)`+API, or XML.
-  Known limitation (Bohemia feedback tracker T162322, not officially confirmed): with the file active, weather tends toward extremes;
+  Reported limitation, not yet checked: with the file active, weather tends toward extremes;
   reliable mainly to DISABLE weather.
 - **Underground darkness — `cfgundergroundtriggers.json`** ("eye accommodation" 0=dark,1=normal).
   Outer/Transitional/Inner triggers + Breadcrumbs (points with radius and weight by proximity). Trigger:
@@ -80,9 +80,9 @@ Status: not yet checked on `P:\`, except the lines listed under "Checked on `P:\
 - `steamQueryPort = 2305;` in serverDZ.cfg — fix for "server not visible in browser" (set the
   key explicitly; "game port +1" is a myth). Does not contradict "2302 is UDP" (that is the game port, another thing).
 - **`-par=<file>`** — reads params from a file (one option/line; supports C++ comments/#define). Fix for
-  Windows **8192-char command-line limit** when stacking many mods (Bohemia feedback tracker T180950).
+  Windows **8192-char command-line limit** when stacking many mods.
   Useful when a launch stacks many mods (for example `@CF;@Dabs;@VPP;@<Mod>_deps;@DayZ_MCP…` with absolute paths). `[TBD-verify]`:
-  known only from that tracker entry, not from the official parameter documentation → test a `.par` before relying on it.
+  not yet checked, and not in the official parameter documentation → test a `.par` before relying on it.
 - Diag/logging: `-doLogs`, `-adminLog`, `-netLog`, `-freezeCheck`, `-filePatching`, `-cpuCount=`
   (≤ logical cores), `-limitFPS=` (cap, max 200). `priority.txt` (SteamIDs `;`-sep, login queue).
 - BattlEye: `BEServer_x64.cfg` next to `BEServer_x64.dll`; `-bePath`; `RConPassword`, `RestrictRCon 1`.

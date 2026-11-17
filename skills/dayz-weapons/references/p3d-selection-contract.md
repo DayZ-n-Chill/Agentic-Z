@@ -31,7 +31,7 @@ The check is cheap and offline: dump the selection's vertex centre and bounding 
 1. **Paint faces into the selection** with a face painter page (an HTML page made for the one model, in which you click faces into a selection). The pattern of a painter plus a refiner that grows the painted region is described in the dayz-animation-pipeline skill (`skills/dayz-animation-pipeline/references/selection-painter-for-actions.md`); use that, do not derive it again.
 2. **Write the selections into the `.p3d` with py3d directly, not by rebuilding the model from a recipe.** A rebuild from a recipe drops selections. On the SMG 245 vertices of `bolt` and 243 of `trigger` were written into the first visual LOD this way. py3d is at `scripts/tools/py3d/`.
 3. **Copy the selection to the other visual LODs and the shadow LOD by nearest vertex** (centres within 3.4 mm on the SMG), keep a backup of the model first, then reload it and confirm the selection moved to the right region.
-4. **Keep the names.** On the SMG the `bolt` had no `model.cfg` animation at all (it moves through the player animation and the remap); `trigger` and `magazine` animate through `model.cfg` animation sources.
+4. **Keep the names.** On the SMG `bolt` and `trigger` had no `model.cfg` animation at all (they move through the player animation and the remap, on `Weapon_Bolt` and `Weapon_Trigger`); only `magazine` animates through `model.cfg` animation sources.
 
 ## Memory points: the vanilla rifle set
 
@@ -42,7 +42,7 @@ Read in the memory LOD of a debinarized vanilla `akm.p3d` (model space, muzzle t
 - `nabojnicestart` and `nabojniceend`: the shell ejection path, two points; on the AKM the direction is up, right and to the rear.
 - `bolt_axis` (two points): the travel of the bolt or charging handle, parallel to the bore.
 - `trigger_axis` (two points): the trigger animation axis, sideways (along Z).
-- `magazine_axis` and `recoil` (two points each): magazine and recoil axes. Their exact meaning is marked "to be verified" in the animation skill's own note; carry that mark forward.
+- `magazine_axis` and `recoil` (two points each): magazine and recoil axes. Their exact meaning is marked "not checked" in the animation skill's own note; carry that mark forward.
 - `eye`: the iron sight and aiming camera anchor, about 5 cm above the bore on AKM iron sights; a rail changes the camera height. Anchoring the camera is animation work; that the point exists at roughly the right height is entity work.
 - `ce_center` and `ce_radius`, `invview`, `boundingbox_min` and `boundingbox_max`.
 
@@ -68,11 +68,11 @@ The script that draws and checks these, `weapon_grip_viewer.py`, lives with the 
 
 ## Open points
 
-- The meaning of `magazine_axis`, `recoil` and `weapon back` is carried over from the animation skill's reference marked "to be verified"; it was not confirmed here.
+- The meaning of `magazine_axis`, `recoil` and `weapon back` is carried over from the animation skill's reference marked "not checked"; it was not confirmed here.
 
 ## DayZ 1.30: the new firearm scripts have no model in some builds
 
-Until 1.29, comparing with vanilla meant opening the model of the vanilla weapon whose script you inherit. Since 1.30 the scripts for `SCARL_Base`, `Luger_Base`, `LeeEnfield_Base`, `MP18_Base` and `P1907_Bayonet` exist, but the data on `P:\` has no model for them: there is no folder for them under `P:\DZ\weapons\firearms\` or `P:\DZ\weapons\pistols\`. `P:\DZ\weapons\firearms\scarh\scarh.p3d` is there; use that, or the AKM, the CZ61 or a 1.29 pistol, as the memory LOD reference. (Game build 1.30.164200 ships the four weapons' own models in `weapons_nasdara.pbo`, which is not unpacked on `P:\`. See `dayz-1-30-weapons.md`.)
+Until 1.29, comparing with vanilla meant opening the model of the vanilla weapon whose script you inherit (the 1.29 data is not on `P:\`, so not checked there). Since 1.30 the scripts for `SCARL_Base`, `Luger_Base`, `LeeEnfield_Base`, `MP18_Base` and `P1907_Bayonet` exist, but the data on `P:\` has no model for them: there is no folder for them under `P:\DZ\weapons\firearms\` or `P:\DZ\weapons\pistols\`. `P:\DZ\weapons\firearms\scarh\scarh.p3d` is there; use that, or the AKM, the CZ61 or a 1.29 pistol, as the memory LOD reference. (Game build 1.30.164200 ships the four weapons' own models in `weapons_nasdara.pbo`, which is not unpacked on `P:\`. See `dayz-1-30-weapons.md`.)
 
 If you make a stand-in mesh for those class names anyway, W-SEL1 covers the extra selection names the vanilla remaps use (`bone-remap.md`): `slide`, `toggle1` and `toggle2` for the Luger; `bolthandle`, `boltbody` and `bullet1` for the Lee-Enfield. The MP18 drum magazine script drives the animation source `drum` and plays a sound at the memory point `drum_sound` (`P:\scripts\4_world\entities\itembase\magazine\magazines.c:81-95`).
 

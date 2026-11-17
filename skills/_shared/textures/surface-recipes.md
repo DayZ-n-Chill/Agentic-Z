@@ -33,7 +33,7 @@ Start from `P:\DZ\weapons\firearms\akm\data\akm.rvmat` (gun steel with a macro t
 - Polished metal gets a brighter `_smdi` and a higher `specularPower`; rusty or painted metal gets a darker `_smdi` and stays near 50 to 100.
 - Optics and lenses on weapons use `dz\data\data\env_land_optic_co.paa` in `Stage7` (23 of the 94 firearms materials).
 - A mod gun that changes a vanilla gun's look keeps the vanilla material's stages and swaps only the textures.
-- Pick the `Stage7` environment map by how strong the highlight is. DayZ ships 21 of them in `P:\DZ\data\data\` (`env_co.paa` and twenty named `env_*_co.paa`). `env_land_optic_co.paa` has an olive ground half, so a bright silver or mirror surface under it can read olive in game (not checked in game here); `env_land_chrome_co.paa` is neutral. The measured colors of six of the maps are in `dayz-texture-pipeline/references/rvmat-cookbook.md`.
+- Pick the `Stage7` environment map by how strong the highlight is. DayZ ships 23 of them in `P:\DZ\data\data\` (`env_co.paa`, twenty named `env_*_co.paa`, plus `env03_co.paa` and `env2_co.paa`). `env_land_optic_co.paa` has an olive ground half, so a bright silver or mirror surface under it can read olive in game (not checked in game here); `env_land_chrome_co.paa` is neutral. The measured colors of six of the maps are in `dayz-texture-pipeline/references/rvmat-cookbook.md`.
 
 ### Vehicle paint
 

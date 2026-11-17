@@ -1,6 +1,6 @@
 # Enforce Script style: Class layout and comments
 
-Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`. The guide is a mirror of the [TrueDolphin/references wiki](https://github.com/TrueDolphin/references/wiki/EnScript-(Enforce-Script)-Style-Guide).
+Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`.
 
 Vanilla facts: `[NonSerialized()]` is a vanilla attribute class (`P:\scripts\1_core\proto\enscript.c:122`); attributes are covered in `../enscript/references/language_compile.md`.
 

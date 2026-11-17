@@ -258,7 +258,7 @@ def apply_modifiers(obj):
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
 
-    for modifier in obj.modifiers:
+    for modifier in list(obj.modifiers):
         bpy.ops.object.modifier_apply(modifier=modifier.name)
 
     obj.select_set(False)
@@ -286,8 +286,7 @@ bpy.ops.mesh.select_all(action='SELECT')
 bpy.ops.uv.smart_project(
     angle_limit=1.5708,                # ~90 degrees (radians)
     island_margin=0.02,                # Space between UV islands
-    area_weight=0.0,
-    stretch_limit=0.5
+    area_weight=0.0
 )
 
 # Return to object mode
@@ -640,7 +639,7 @@ bpy.ops.wm.obj_export(filepath="model.obj", forward_axis='Y', up_axis='Z')
 def apply_all_modifiers(obj):
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
-    for mod in obj.modifiers:
+    for mod in list(obj.modifiers):
         bpy.ops.object.modifier_apply(modifier=mod.name)
 
 apply_all_modifiers(cube)

@@ -219,7 +219,9 @@ def lint_text(text: str, file_path: str, pdrive_root: Path | None = None) -> lis
                 texgen = texgens.get(str(texgen_ref))
                 uses_tex1 = uses_tex1 or (str((texgen or {}).get("uvSource") or "").lower() == "tex1")
             if not uses_tex1:
-                add(findings, file_path, int(stage4["line"]), "ERROR", "MULTI_MASK_NOT_TEX1", "Multi Stage4 mask should use UVSet1 / tex1.")
+                # A warning, not an error: 587 vanilla Multi materials read the mask from tex
+                # (P:\DZ\rocks_bliss\data\r_rock_general1.rvmat:55), against 1,373 on tex1.
+                add(findings, file_path, int(stage4["line"]), "WARN", "MULTI_MASK_NOT_TEX1", "Multi Stage4 mask does not read tex1; check that the UV set it reads lays the mask over the mesh once, and that the detail textures tile on the other set.")
 
     return findings
 

@@ -148,7 +148,7 @@ More glass starting files, by kind of glass, are in `_shared/textures/surface-re
 
 ## Alpha decal on a vehicle
 
-The vanilla pattern for a decal with alpha on a vehicle is the Super shader plus `renderFlags[]` holding `"nozwrite"`: the offroad's stickers at `P:\DZ\vehicles\wheeled\offroad_02\data\offroad_02_decals.rvmat:7-12`. Of the vanilla Super materials, 154 set `renderFlags[]` to `"nozwrite"` alone and 24 to `"addblend"` with `"nozwrite"`.
+The vanilla pattern for a decal with alpha on a vehicle is the Super shader plus `renderFlags[]` holding `"nozwrite"`: the offroad's stickers at `P:\DZ\vehicles\wheeled\offroad_02\data\offroad_02_decals.rvmat:7-12`. Of the vanilla Super materials, 154 set `renderFlags[]` to `"nozwrite"` alone and 25 to `"addblend"` with `"nozwrite"` (in either order).
 
 - **Measured in game** on a mod car: labels with real alpha in a `_ca`, on a Super material with no render flags, rendered opaque. Adding the flag fixed them; changing the shader was not needed. This is one mod's decal, not a rule that Super ignores alpha: the vanilla window material `P:\DZ\vehicles\wheeled\data\auta_skla.rvmat` is Super with no `renderFlags[]` at all and its glass is see-through. For a decal lying on paint, copy the sticker material; for a window, copy a window (`_shared/textures/surface-recipes.md`).
 - What the flag does not cover, so check it in game: sorting against other see-through surfaces, z-fighting when the decal is almost in the same plane as the paint, and that a symbol does not light itself at night without `emmisive[]`. DXT5 keeps the alpha and softens its edges.
@@ -156,7 +156,7 @@ The vanilla pattern for a decal with alpha on a vehicle is the Super shader plus
 
 ## Stage7: choose the environment map by the specular it serves
 
-DayZ ships 21 environment maps in `P:\DZ\data\data\` (`env_co.paa` and twenty named `env_*_co.paa`), among them `env_land_co.paa` (the common one), `env_land_chrome_co.paa` and `env_chrome_co.paa` for chrome, `env_land_optic_co.paa` for lenses, `env_mirror_co.paa` and `env_land_plastic_co.paa`. The black `#(argb,8,8,3)color(0,0,0,1,CO)` means no reflection.
+DayZ ships 23 environment maps in `P:\DZ\data\data\` (`env_co.paa`, `env2_co.paa`, `env03_co.paa` and twenty named `env_*_co.paa`), among them `env_land_co.paa` (the common one), `env_land_chrome_co.paa` and `env_chrome_co.paa` for chrome, `env_land_optic_co.paa` for lenses, `env_mirror_co.paa` and `env_land_plastic_co.paa`. The black `#(argb,8,8,3)color(0,0,0,1,CO)` means no reflection.
 
 Measured 2026-11-02: mean RGB of the lower (ground) and upper (sky) halves of mip 0 of the 256 x 256 files, decoded with ImageToPAA:
 

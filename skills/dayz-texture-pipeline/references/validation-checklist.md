@@ -31,7 +31,7 @@ How to read it: each line points at the reference that explains it. This file st
 - An emissive material uses checked `emmisive[]` values and has an off material where one is needed.
 - A glass or chrome material was cloned from a similar vanilla one.
 - A penetration material has `surfaceInfo` naming a `.bisurf` and is assigned to the collision LOD faces.
-- A Multi material has its Stage4 mask on the second UV set (`tex1`).
+- A Multi material has its Stage4 mask on the UV set that covers the mesh once (usually `tex1`, or `tex` when the tiling textures read `tex1`).
 - A borrowed vanilla material had its Stage4, Stage5 and every `uvSource` checked for the donor's baked data (`baked-atlas-to-paa.md`).
 
 ## MatPBR and `.emat`

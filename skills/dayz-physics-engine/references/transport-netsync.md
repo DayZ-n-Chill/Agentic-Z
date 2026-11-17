@@ -8,11 +8,11 @@ Citations are `P:\...:line`, opened on `P:\` (a 1.30 build). `1.29:<path>:<line>
 
 The vehicle system has three layers:
 
-1. **`Transport` (native plus script).** The base class of every vehicle. It inherits from `Pawn` when `FEATURE_NETWORK_RECONCILIATION` is defined, and from `EntityAI` in builds without it. This is where replication happens: `Transport` registers `TransportOwnerState` and `TransportMove` and uses `NetworkMoveStrategy.NONE`, its own native network tick, not the player's reconciliation system.
+1. **`Transport` (native plus script).** The base class of every vehicle. It inherits from `Pawn` when `FEATURE_NETWORK_RECONCILIATION` is defined, and from `EntityAI` in builds without it. This is where replication starts: `Transport` registers `TransportOwnerState` and `TransportMove`, and the comment on the class says it uses `NetworkMoveStrategy.NONE`. `Car` and `CarScript` override those types again, and a car can run with `NetworkMoveStrategy.PHYSICS`, where the owning client predicts and is reconciled (see "Why `Transport` replicates and `ItemBase` does not" below). What the engine sends to proxy clients is native and was not checked on `P:\`.
 2. **`Car`, `Boat`, `Helicopter` (native).** They inherit from `Transport` and expose the physics API (throttle, steering, brake, fluids, gears). The simulation is native; script only calls setters.
 3. **`CarScript`, `BoatScript`, `HelicopterScript` (script).** Wrappers that add contact damage, fluids, lights, particles, sound and temperature. The contact cache that feeds damage (`m_ContactCache`) runs on the server only.
 
-Position and rotation sync of a `Transport` is not something `ItemBase` has, and it does not use `SetSynchDirty()`. It is a property of the native `Pawn` and `Transport` type: the engine sends position plus linear and angular velocity to all clients continuously.
+Position and rotation sync of a `Transport` is not something `ItemBase` has, and it does not use `SetSynchDirty()`. It is a property of the native `Pawn` and `Transport` type: the engine sends position plus linear and angular velocity to all clients continuously (native behaviour, not checked on `P:\`).
 
 ## Verified API
 
@@ -189,7 +189,7 @@ protected override event typename GetOwnerStateType() { return TransportOwnerSta
 protected override event typename GetMoveType()        { return TransportMove;       }
 ```
 
-`TransportOwnerState` has `SetWorldTransform` and `GetWorldTransform`, `SetLinearVelocity` and `GetLinearVelocity`, `SetAngularVelocity` and `GetAngularVelocity` (`P:\scripts\3_game\vehicles\transport.c:11-30`). These fields are what the engine serializes and sends to the proxy clients on each vehicle network tick.
+`TransportOwnerState` has `SetWorldTransform` and `GetWorldTransform`, `SetLinearVelocity` and `GetLinearVelocity`, `SetAngularVelocity` and `GetAngularVelocity` (`P:\scripts\3_game\vehicles\transport.c:11-30`). `Car` overrides both types again with `CarOwnerState` and `CarMove` (`P:\scripts\3_game\vehicles\car.c:90-99`), and `CarScript` overrides them once more with `CarScriptOwnerState` and `CarScriptMove`, and adds `ObtainState` and `RewindState` (`P:\scripts\4_world\entities\vehicles\carscript.c:2568-2588`). The owner state is what reconciliation rewinds to. Which of these fields the engine sends to proxy clients is native and not checked on `P:\`.
 
 The comment above the class says so in one line (`P:\scripts\3_game\vehicles\transport.c:65-66`):
 
@@ -198,7 +198,7 @@ The comment above the class says so in one line (`P:\scripts\3_game\vehicles\tra
 class Transport extends Pawn
 ```
 
-`NetworkMoveStrategy.NONE` means it does not use the client reconciliation system (the one the player uses). The engine uses its own vehicle sync instead (owned by the server, proxies on clients), sending position plus velocities to every proxy continuously.
+`NONE` is defined as "Has no support for NetworkMovement" (`P:\scripts\3_game\entities\pawn.c:140`). That comment does not hold for every car: `IsServerOrOwner()` checks for `NetworkMoveStrategy.PHYSICS` (`P:\scripts\4_world\entities\vehicles\carscript.c:2595`), and under `PHYSICS` the driving client simulates the car and is reconciled against the server (gotcha 5 below). A `CarScript` has been measured reporting `PHYSICS` on the owner client (`skills/_shared/vehicles/aviation-networking.md`). Read `GetNetworkMoveStrategy()` on the client before choosing a network model. How the engine sends the vehicle's position and velocities to proxy clients is native and not checked on `P:\`.
 
 ### Why an `ItemBase` with a dynamic body does not replicate by itself
 
@@ -215,7 +215,7 @@ class Transport extends Pawn
 proto native void Synchronize();
 ```
 
-`Synchronize()` pushes the state when the vehicle is not in active simulation (just activated, or the driver left and the car stood still). It confirms that the normal sync is continuous and done by the engine, with this as the manual override.
+The only vanilla description is that comment: it synchronizes the car's state when the simulation is not running. Vanilla calls it only on the server, after a part is attached or detached (`CarScript.EEItemAttached`, `P:\scripts\4_world\entities\vehicles\carscript.c:514-515`, and `CarScript.EEItemDetached`, `:593-594`). It is not a way to wake a vehicle or force a position snapshot: measured in game, an asleep vehicle moved with `SetPosition` plus `Synchronize()` delivered nothing to the client until it woke (SKILL.md, truth 11).
 
 ```cpp
 // P:\scripts\3_game\vehicles\transport.c:810-814
@@ -283,7 +283,7 @@ void CheckContactCache()
 }
 ```
 
-The damage zones (Engine, FuelTank, fenders, front, back) are mapped from memory points of the model (`dmgZone_engine`, `dmgZone_front` and so on, `P:\scripts\4_world\entities\vehicles\carscript.c:369-375`).
+The positions of the engine, front, back and four fender zones are read from memory points of the model (`dmgZone_engine`, `dmgZone_front`, `dmgZone_back`, `dmgZone_fender_1_1` to `dmgZone_fender_2_2`, `P:\scripts\4_world\entities\vehicles\carscript.c:369-375`). `FuelTank` has no memory point there; it is read only as a health zone (`P:\scripts\4_world\entities\vehicles\carscript.c:2137-2138`).
 
 ### Damage to the crew
 
@@ -311,7 +311,10 @@ override void OnInput(float dt)
 ### Fluids from script
 
 ```cpp
-// Fill on a debug spawn (the OffroadHatchback and Boat_01 pattern):
+// Fill to capacity on a debug spawn. Boat_01 does this with BoatFluid.FUEL
+// (P:\scripts\4_world\entities\vehicles\inheritedboats\boat_01.c:76-77).
+// Vanilla cars instead call CarScript.FillUpCarFluids(), which fills FUEL,
+// COOLANT and OIL with a fixed 200.0 each (carscript.c:2561-2566).
 float amount = GetFluidCapacity(CarFluid.FUEL);
 Fill(CarFluid.FUEL, amount);
 
@@ -338,13 +341,13 @@ Vanilla cars (OffroadHatchback, Truck_02, Van_01 and others) hold a `UniversalTe
 
 ## Gotchas
 
-1. **`OnContact` does its work on the server only** (`P:\scripts\3_game\vehicles\transport.c:317`; `1.29:4_world\entities\vehicles\carscript.c:1456`). There is no collision callback for cars on the client.
+1. **`OnContact` does its work on the server only** (`P:\scripts\3_game\vehicles\transport.c:317`; `1.29:4_world\entities\vehicles\carscript.c:1456`). Vanilla's car `OnContact` does nothing off the server; that does not mean the engine never calls it elsewhere. `BoatScript.OnContact` has a branch outside its server check that runs whenever `!IsProxy()` (`P:\scripts\4_world\entities\vehicles\boatscript.c:425-446`), so put client or owner work behind your own check rather than assuming no client call.
 2. **`EOnPostSimulate` runs on both**, but most of its logic is behind `g_Game.IsServer()`.
 3. **`Random`, `RandomRange` and `Random01` only inside `EOnSimulate` or `EOnPostSimulate`** (`P:\scripts\3_game\vehicles\transport.c:280-296`). Using them elsewhere breaks determinism.
 4. **`GetController()` is obsolete.** Use the methods on `Car` (`SetThrottle`, `SetSteering` and so on).
 5. **`IsServerOrOwner()`** (`P:\scripts\4_world\entities\vehicles\carscript.c:2592`). With the new networking (`NetworkMoveStrategy.PHYSICS`) the owner, the client that drives, also runs the simulation. With the classic networking only the server does.
 6. **`dBodyApplyImpulseAt` in `ActionPushCar`** (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionpushcar.c:52`). It uses the global `dBody` API, not `Transport`'s; the result spreads because the physics body exists on the server and `Transport` replicates it.
-7. **`Synchronize()`.** Call it by hand when the vehicle goes from standing to active, to force a snapshot.
+7. **`Synchronize()` is not a wake snapshot.** Vanilla calls it only on the server after a state change while the simulation is not running, namely a part attached or detached (`P:\scripts\4_world\entities\vehicles\carscript.c:515`, `:594`). An asleep vehicle moved with `SetPosition` plus `Synchronize()` delivered nothing to the client (measured; SKILL.md, truth 11).
 8. **The contact data uses `momentumDelta` as its "impulse".** The main calculation does not use `data.Impulse` from the `Contact`; it uses `GetMomentum() - m_MomentumPrevTick`.
 9. **`FEATURE_NETWORK_RECONCILIATION` is defined** (`P:\scripts\1_core\defines.c:64`). `P:\scripts\3_game\vehicles\transport.c:65-69` shows that without it `Transport` would inherit straight from `EntityAI`.
 10. **Cars with no driver.** `SetBrakesActivateWithoutDriver(true)` (`P:\scripts\3_game\vehicles\car.c:212`). When the driver loses control, `OnUpdate` applies a brake of 0.5.
@@ -353,17 +356,17 @@ Vanilla cars (OffroadHatchback, Truck_02, Van_01 and others) hold a `UniversalTe
 
 - **Setting up a `SimulationModule` from script.** It is config only (`CfgVehicles`). Enforce Script has no way to create wheel or axle physics parameters.
 - **A custom `Transport` with no model that has a simulation module.** It needs a P3D with the right geometry (collision, LODs, memory points) registered in config.
-- **`GetCrewIndex()`.** Not under that name. The calls are `CrewPositionIndex(int componentIdx)` (`P:\scripts\3_game\vehicles\transport.c:179`) and `CrewMemberIndex(Human player)` (`:183`).
 - **An `EFluidType` enum for vehicles.** Not under that name. It is `CarFluid` (`P:\scripts\3_game\vehicles\car.c:18`) and `BoatFluid` (`P:\scripts\3_game\vehicles\boat.c:13`).
 - **`EOnSimulate` on `CarScript`.** No car script class overrides it; the simulation is native. (`BoatScript` does, as noted above.)
 - **A `HelicopterScript` with full physics.** `HelicopterScript.EOnPostSimulate` is empty (`P:\scripts\4_world\entities\vehicles\helicopterscript.c:11-13`). The flight is native in `HelicopterAuto`.
+- **Doubt that `GetCrewIndex` exists.** It does: `int GetCrewIndex(string selection)` on `CarScript` maps a seat selection name to a crew index and returns -1 by default (`P:\scripts\4_world\entities\vehicles\carscript.c:2172-2175`). Each car overrides it, for example `OffroadHatchback` (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroadhatchback.c:381`). The lookups by component index and by player are `Transport.CrewPositionIndex(int componentIdx)` (`P:\scripts\3_game\vehicles\transport.c:179`) and `Transport.CrewMemberIndex(Human player)` (`:183`).
 - **Doubt that `BoatScript` exists.** It does: `class BoatScript : Boat` (`P:\scripts\4_world\entities\vehicles\boatscript.c:41`), and `Boat extends Transport` (`P:\scripts\3_game\vehicles\boat.c:28`).
 
 ## Worked case: a rolling stone item
 
 ### Why `Transport` replicates and the stone, an `ItemBase`, does not
 
-`Transport extends Pawn`, and the engine gives every `Pawn` of this kind a continuous stream of `TransportOwnerState` (world transform, linear velocity, angular velocity) to all proxies. `ItemBase` does not inherit from `Pawn`, so the engine creates no such stream.
+`Transport extends Pawn`, and the engine replicates a `Pawn`'s movement natively; the owner state of a vehicle holds the world transform, linear velocity and angular velocity. What exactly the engine sends to proxies is not checked on `P:\`. `ItemBase` does not inherit from `Pawn`, so it gets none of this.
 
 A test in which the client sees the stone roll can be explained by:
 
@@ -391,7 +394,7 @@ Adapted for the stone:
 dBodyApplyImpulseAt(stone, impulse, stone.GetPosition());
 ```
 
-The impulse is body mass times force times a coefficient times the direction. The action runs on the server, so the push moves the body there. The client sees the effect only if the object is synced (the known problem above).
+The mass cancels out: `force` is body mass times `PUSH_FORCE_IMPULSE_INCREMENT` times the push coefficient, and the impulse is then multiplied by the inverse mass (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionpushcar.c:38-48`). The applied impulse is the car's direction times the increment times the coefficient times the push direction, times the random horizontal and vertical factors and the eased progress, so it does not depend on the body's mass. The action runs on the server, so the push moves the body there. The client sees the effect only if the object is synced (the known problem above).
 
 ### `OnContact` as the model for the stone's `EOnContact`
 

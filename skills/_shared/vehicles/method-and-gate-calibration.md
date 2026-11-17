@@ -54,7 +54,7 @@ fired across four gates in one week**, because both read as being about *car ren
 are not: they govern every item below, and capacity, parity, telemetry and policy gates alike. The four
 shapes, so they are recognizable on sight:
 - **A threshold copied instead of measured.** An assembler carried `RESOLVED_LIMIT = 65535`;
-  the engine's real resolved-vertex ceiling on that model is **46.133** (42% lower), so the gate passed
+  the engine's real resolved-vertex ceiling on that model is **46,133** (about 30% lower), so the gate passed
   models `binarize` rejects with `Too many vertices`. The cap is model-dependent (×1.4205 on HH-60G,
   ×1.46 on OH-1) — never copy it between models, re-measure with binarize.
 - **A policy that is a mathematical no-op.** `uniform` and `keepdot` were geometrically inert

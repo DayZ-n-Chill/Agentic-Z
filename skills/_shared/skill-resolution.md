@@ -19,7 +19,7 @@ With no written project policy, the personal copy in `~/.claude/skills/<name>` w
 ## Per-skill policy (decide when a conflict is found)
 
 1. **The personal copy came from the plugin and the plugin now has the same patch.** Delete the personal copy and use the plugin copy. Compare the two `SKILL.md` files with a diff before deleting anything, and read "What the measurement showed" below first: the plugin folder you diff against may not be the copy that is served.
-2. **The personal copy differs a lot** (its own `P:\` paths, numbers tuned to one setup, sections for the user's own mods). Keep the personal copy and switch off the plugin's copy of that one skill with `/plugin manage <plugin>`.
+2. **The personal copy differs a lot** (its own `P:\` paths, numbers tuned to one setup, sections for the user's own mods). Keep the personal copy. The `claude plugin` command has no switch for one skill of a plugin: `claude plugin disable <plugin>` turns off the whole plugin, with all its skills. Use that only when no other skill of the plugin is needed. Otherwise leave the plugin on and write an override that names the bare personal skill, in the format shown under policy 3.
 3. **Not sure.** Keep both and write the conflict down where every agent reads it:
 
 ```markdown

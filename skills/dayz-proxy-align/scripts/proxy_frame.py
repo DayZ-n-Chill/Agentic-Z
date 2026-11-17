@@ -13,11 +13,14 @@ derived from the triangle by angle sort, not by face vertex order:
   x = normalize(y x z); z = normalize(x x y)        # re-orthogonalize
   R = rows [x, y, z]                                 # local -> world orientation
 
-No vanilla file on P: shows the rule; it is MLOD tool and engine behaviour, the
-same for Arma 3 and DayZ proxies.
+Not checked on P:\\: no vanilla file there shows the rule. It is how Arma 3 tools
+read an MLOD proxy; that DayZ reads it the same way is an assumption backed by
+in-game measurements on mods (skills/_shared/models/proxy-frames.md).
 
-Coordinates are raw MLOD (what py3d reads). Vanilla worn clothing is authored in
-this same character space, so the identity frame means "item shown worn, upright".
+Coordinates are raw MLOD (what py3d reads). Not checked on P:\\ and open: the raw
+identity frame was taken to mean "item shown worn, upright" because vanilla worn
+clothing is authored in character space, but the engine renders P'.R (below), so
+the raw identity frame may render 90 degrees off.
 
 Why a rotation used to look approximate: when the two edges from the anchor have
 equal length (the 90/45/45 isosceles triangle that hand-rolled proxy builders

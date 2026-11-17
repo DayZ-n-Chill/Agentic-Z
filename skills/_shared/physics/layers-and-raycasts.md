@@ -49,7 +49,7 @@ They look at different things. Choosing the wrong one is a common cause of "my r
 - `RaycastRVParams` defaults to `ObjIntersectView` (`P:\scripts\3_game\global\dayzphysics.c:88`).
 - An overlap test reports through `CollisionOverlapCallback.OnContact(IEntity other, Contact contact)` (`P:\scripts\3_game\global\dayzphysics.c:115-121`).
 - `CollisionFlags` is FIRSTCONTACT, NEARESTCONTACT, ONLYSTATIC, ONLYDYNAMIC, ONLYWATER, ALLOBJECTS (`P:\scripts\1_core\proto\endebug.c:140-148`). Pass the names, never numbers: a later 1.30 build may put `NONE = 0` first, which shifts every value by one (not checkable on `P:\`, whose copy has no `NONE`).
-- There is no Roadway choice in `ObjIntersect` (`P:\scripts\3_game\constants.c:31-38`), so `RaycastRV` cannot probe a Roadway LOD; see `player-controller.md` for why that matters for lifts.
+- There is no Roadway choice in `ObjIntersect` (`P:\scripts\3_game\constants.c:31-38`), so `RaycastRV` cannot probe a Roadway LOD; see `collision-lods.md` for why that matters for lifts.
 
 Vanilla examples of each family:
 
@@ -63,7 +63,7 @@ Vanilla examples of each family:
 
 ## The action cursor sees View Geometry, not physics
 
-- The cursor's first pass is `RaycastRVProxy` with the default `ObjIntersectView` (above). A model with no View Geometry LOD gets no action prompt and cannot be selected by admin tools, whatever physics body it has. No layer change fixes that; the fix is in the model (`collision-lods.md`).
+- The cursor's first pass is `RaycastRVProxy` with the default `ObjIntersectView` (above). A model with no View Geometry LOD gets no action prompt, whatever physics body it has. No layer change fixes that; the fix is in the model (`collision-lods.md`).
 - The physics world is asked only for the ground under the cursor (the `RayCastBullet` fallback above).
 - At a camera pitch of -45 degrees or lower the cursor also collects entities in a cone in front of the player (`GetEntitiesInCone`, `P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:324-325`) with `c_MaxTargetDistance = 3.0` and `c_ConeAngle = 30.0` (`:841`, `:843`), and scores them by distance to the cursor ray (`DistSqrPoint2Line`, `:528`). So an item on the ground can be picked up without any View Geometry hit. Picking an item up proves nothing about its collision.
 - Since 1.30 a liquid surface with no object is a target too, at utility 0.01 (the `LIQUID_NONE` test, `P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:532-534`).

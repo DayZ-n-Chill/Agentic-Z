@@ -266,6 +266,18 @@ def test_frame_outside_declared_range_is_rejected():
     assert raised.value.offset == 77
 
 
+def test_duplicate_key_frame_in_one_channel_is_rejected_by_reader():
+    """Breaks if the reader returns a document the writer then refuses."""
+    raw = _declared_empty_channel_bytes(1)[:-1]
+    key = b"\x00" + struct.pack("<3f", 1.0, 2.0, 3.0)
+    raw += b"\x02" + key + key
+    with pytest.raises(AnimationFormatError) as raised:
+        read_seanim_bytes(raw)
+    assert raised.value.code == "SEANIM_FRAME_INDEX"
+    assert "duplicate frame 0" in raised.value.message
+    assert raised.value.offset == len(raw) - len(key)
+
+
 @pytest.mark.parametrize(
     "mutation",
     [
@@ -294,3 +306,18 @@ def test_float32_writer_overflow_is_stable_format_error():
     with pytest.raises(AnimationFormatError) as raised:
         write_seanim_bytes(document)
     assert raised.value.code == "ANIM_VALUE_INVALID"
+
+
+def test_more_than_255_modifiers_is_stable_format_error():
+    """Breaks if the one-byte modifier count leaks struct.error past 255."""
+    document = _golden_document()
+    template = document["bones"][0]
+    document["bones"] = []
+    for index in range(256):
+        bone = copy.deepcopy(template)
+        bone["name"] = "bone_%d" % index
+        bone["modifier"] = 0
+        document["bones"].append(bone)
+    with pytest.raises(AnimationFormatError) as raised:
+        write_seanim_bytes(document)
+    assert raised.value.code == "ANIM_DOCUMENT_INVALID"

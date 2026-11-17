@@ -127,20 +127,24 @@ ln -sfn "$W/1559212036/keys/"*.bikey "$TREE/keys/"
 Only subscribed items are in the workshop directory. If a mod is missing, ask the user to subscribe and start
 the launcher once; never `steamcmd +workshop_download_item` into Steam's directories.
 
-### Storage and CF: removing CF is observed, adding CF is a hypothesis
+### Storage and CF: both directions break storage, and one Linux failure is not explained by storage
 
-CF's ModStorage writes extra data into every saved entity. The two directions have different evidence:
+CF's ModStorage writes extra data into every saved entity. Storage belongs to the mod set that wrote it
+(`build-and-storage-traps.md`, measured on Windows): adding CF to storage written without CF crashed the
+server on reading it (`CF_ModStorageObject` ... `OnStoreLoad_CF`, 12 rotations counted). The Linux evidence:
 
 - **Removing CF** (observed, 1.30.164200.56): a tree booted once with `-mod=@CF` and then vanilla logged about 24,000
   `Virtual Machine Exception`s during the CE load, all
   `[EntityAI::OnStoreLoad] :: [WARNING] :: Scripted variables corrupted upon "PileOfWoodenPlanks". Entity will not be loaded correctly.`
   The server kept running, so a boot that "works" proves nothing: grep for `Scripted variables corrupted`.
-- **Adding CF** (hypothesis, not isolated): a boot died with `Unknown type 'CF_Trace'` and `Can't compile "Engine" script module`.
-  That is a compile error of the "Engine" module, not a storage read error, and the trees were rebuilt at the
-  same time, so storage was not isolated as the cause. It reads like a CF/Expansion version conflict. Before
-  wiping, isolate: rebuild with the same storage kept, or copy the storage aside and retry.
+- **Adding CF, `CF_Trace` compile error** (cause not isolated): a boot died with `Unknown type 'CF_Trace'` and
+  `Can't compile "Engine" script module`. That is a compile error of the "Engine" module, not the storage read
+  crash above, and the trees were rebuilt at the same time, so storage was not isolated as its cause. It reads
+  like a CF/Expansion version conflict. Rotating storage does not fix a compile error: isolate first (rebuild
+  with the same storage kept, or copy the storage aside and retry). Rotate storage anyway when the mod set
+  changed, as the Windows rule says.
 
-Do not delete storage to act on the hypothesis. With processes stopped, rotate it to a destination name that
+Do not delete storage. With processes stopped, rotate it to a destination name that
 does not exist yet (rename, never delete; deletion only applies to a disposable test tree you built):
 
 ```sh

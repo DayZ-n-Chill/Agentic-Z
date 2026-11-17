@@ -570,12 +570,14 @@ def is_vehicle_body(p):
 def check_lod0_vertex_budget(p):
     """Check the most detailed Visual LOD against the 16-bit vertex ceiling.
 
-    The ceiling is on resolved vertices, the distinct (point, normal, uv) triples
-    of the face corners, not on the raw point or face-corner counts: a model with
+    The script counts resolved vertices, the distinct (point, normal, uv) triples
+    of the face corners, not the raw point or face-corner counts: a model with
     96,585 face corners that resolved to 22,143 vertices loaded fine. Over 65,535
-    resolved vertices is CRITICAL. Raw counts over 65,536 with fewer resolved
-    vertices are a WARNING, and so is a heavy LOD on a vehicle body, whose proxies
-    add their own vertices in game. A single file cannot add the proxies up.
+    resolved vertices is CRITICAL. The real ceiling is per model and can be lower,
+    because binarize splits vertices further than the triples show, so binarize is
+    the gate. Raw counts over 65,536 with fewer resolved vertices are a WARNING, and
+    so, separately, is a heavy LOD on a vehicle body, whose proxies add their own
+    vertices in game. A single file cannot add the proxies up.
     """
     issues = []
     visual = [(lod.resolution, i, lod) for i, lod in enumerate(p.lods) if classify_lod(lod.resolution) == "Visual"]
@@ -590,14 +592,17 @@ def check_lod0_vertex_budget(p):
             f"LOD[{i}] Visual resolves to {nres} unique vertices (point x normal x uv), over the 65535 "
             f"of a 16-bit index: the model fails to load or renders invisible "
             f"(points={nverts}, face corners={nidx})."))
-    elif nverts > 65536 or nidx > 65536:
+        return issues
+    if nverts > 65536 or nidx > 65536:
         issues.append(("WARNING",
-            f"LOD[{i}] Visual raw counts exceed 65536 (points={nverts}, face corners={nidx}), but it "
-            f"resolves to {nres} unique vertices, under the ceiling. Raw counts alone are not the limit."))
-    elif is_vehicle_body(p) and (nnorm > 16384 or nverts > 32768):
+            f"LOD[{i}] Visual raw counts exceed 65536 (points={nverts}, face corners={nidx}) and it "
+            f"resolves to {nres} unique vertices. The ceiling is per model and can be lower than 65535, "
+            f"because binarize splits vertices further; binarize the model to know whether it loads."))
+    if is_vehicle_body(p) and (nnorm > 16384 or nverts > 32768):
         issues.append(("WARNING",
-            f"LOD[{i}] Visual is heavy for a vehicle body (points={nverts}, normals={nnorm}). Count the "
-            f"body plus every proxy placed on it against 32768 normals and 65536 vertices before "
+            f"LOD[{i}] Visual is heavy for a vehicle body (points={nverts}, normals={nnorm}). The vertex "
+            f"ceiling for the body plus every proxy placed on it is per model and lower than 65536 "
+            f"(46133 resolved vertices on one measured helicopter); find it with binarize before "
             f"adding proxies."))
     return issues
 

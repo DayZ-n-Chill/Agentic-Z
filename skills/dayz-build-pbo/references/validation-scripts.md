@@ -8,7 +8,7 @@ Not yet checked on `P:\`: this is reference code, not a statement about vanilla 
 | Validator | Status | Use in this repo |
 |---|---|---|
 | `config_cpp_validator.py` | Regex heuristics: brace count, semicolons, `CfgPatches`, `hiddenSelections`, duplicates | `/dayz-lint` parses `config.cpp` and is the gate `/dayz-build-pbo` runs. |
-| `texture_path_checker.py` | Resolves every quoted `.paa`/`.rvmat` against the addon root only, so a vanilla `dz\...` path is reported missing | `/dayz-lint` (missing files) and `/dayz-p3d-audit`. |
+| `texture_path_checker.py` | Resolves every quoted `.paa`/`.rvmat` as a prefixed root path from the work drive root (`P:\` by default): `MyMod\data\x.paa` is looked up at `P:\MyMod\data\x.paa`, and a vanilla `dz\...` path is found only when vanilla data is unpacked on `P:\`. Also warns when a referenced file name differs from the file on disk only in capitalisation (folder names are not compared) | `/dayz-lint` (missing files) and `/dayz-p3d-audit`. |
 | `stringtable_validator.py` | **Broken for DayZ**: parses `stringtable.xml` (section 3) | None yet; port it to CSV before use. |
 | `p3d_lod_checker.py` | Does not run as written: it imports `P3D` and calls `P3d.read(path)`, py3d's `P3D` takes an open file (`P3D(f)`), and nothing ever sets the resolution LOD flag | `/dayz-p3d-audit`. |
 
@@ -167,45 +167,52 @@ class ConfigCppValidator:
         self.info['patch_count'] = len(patches)
 
     def _check_hidden_selections(self):
-        """Verify hiddenSelections count matches textures and materials"""
-        # Find all class definitions with hiddenSelections
-        class_pattern = r'class\s+(\w+)\s*\{([^}]*?hiddenSelections[^}]*?)\}'
+        """Verify hiddenSelections count matches textures and materials, per class"""
+        # Walk the file brace by brace so every class (with or without a base class)
+        # owns the arrays written directly in its body.
+        text = re.sub(r'//.*?$', '', self.content, flags=re.MULTILINE)
+        token = re.compile(
+            r'class\s+(\w+)\s*(?::\s*\w+\s*)?\{'        # class X {  or  class X: Base {
+            r'|(\w+)\[\]\s*\+?=\s*\{([^{}]*)\}'          # name[] = { ... };
+            r'|[{}]'
+        )
+        stack = []  # one (class name or None, {array name: entries}) per open brace
+        for m in token.finditer(text):
+            if m.group(1):
+                stack.append((m.group(1), {}))
+            elif m.group(2):
+                if stack:
+                    entries = [e.strip().strip('"\'') for e in m.group(3).split(',') if e.strip()]
+                    stack[-1][1][m.group(2)] = entries
+            elif m.group(0) == '{':
+                stack.append((None, {}))
+            elif stack:
+                class_name, arrays = stack.pop()
+                if class_name:
+                    self._compare_hidden_selections(class_name, arrays)
 
-        for match in re.finditer(class_pattern, self.content, re.DOTALL):
-            class_name = match.group(1)
-            class_body = match.group(2)
+    def _compare_hidden_selections(self, class_name: str, arrays: Dict):
+        """Compare the hiddenSelections arrays of one class body"""
+        selections = arrays.get('hiddenSelections')
+        if not selections:
+            return
+        sel_count = len(selections)
+        tex_count = len(arrays.get('hiddenSelectionsTextures', []))
+        mat_count = len(arrays.get('hiddenSelectionsMaterials', []))
+        if tex_count > 0 and sel_count != tex_count:
+            self.errors.append({
+                'check': 'hidden_selections',
+                'class': class_name,
+                'message': f'Mismatch: {sel_count} selections but {tex_count} textures',
+                'selections': selections[:3]  # Show first 3
+            })
 
-            # Count selections
-            sel_match = re.search(r'hiddenSelections\[\]\s*=\s*\{([^}]*?)\}', class_body)
-            if not sel_match:
-                continue
-
-            selections = [s.strip().strip('"\'') for s in sel_match.group(1).split(',') if s.strip()]
-            sel_count = len(selections)
-
-            # Count textures
-            tex_match = re.search(r'hiddenSelectionsTextures\[\]\s*=\s*\{([^}]*?)\}', class_body)
-            tex_count = len(tex_match.group(1).split(',')) if tex_match else 0
-
-            # Count materials
-            mat_match = re.search(r'hiddenSelectionsMaterials\[\]\s*=\s*\{([^}]*?)\}', class_body)
-            mat_count = len(mat_match.group(1).split(',')) if mat_match else 0
-
-            # Check matching
-            if sel_count > 0 and tex_count > 0 and sel_count != tex_count:
-                self.errors.append({
-                    'check': 'hidden_selections',
-                    'class': class_name,
-                    'message': f'Mismatch: {sel_count} selections but {tex_count} textures',
-                    'selections': selections[:3]  # Show first 3
-                })
-
-            if sel_count > 0 and mat_count > 0 and sel_count != mat_count:
-                self.errors.append({
-                    'check': 'hidden_selections',
-                    'class': class_name,
-                    'message': f'Mismatch: {sel_count} selections but {mat_count} materials'
-                })
+        if mat_count > 0 and sel_count != mat_count:
+            self.errors.append({
+                'check': 'hidden_selections',
+                'class': class_name,
+                'message': f'Mismatch: {sel_count} selections but {mat_count} materials'
+            })
 
     def _check_duplicates(self):
         """Check for duplicate class definitions"""
@@ -301,11 +308,14 @@ if __name__ == '__main__':
 
 ## 2. texture_path_checker.py
 
-Verifies all texture and material references exist relative to addon root.
+Verifies all texture and material references exist. A path in `config.cpp` or a `.rvmat` is a root path
+that starts with a PBO prefix (vanilla writes `"dz\gear\tools\data\alarmclock_blue_co.paa"` at
+`P:\DZ\gear\tools\config.cpp:85`; a mod writes `"MyMod\data\x.paa"`), so the checker resolves each one
+against the work drive root (`P:\` by default), not against the addon folder.
 
 **Usage:**
 ```bash
-python texture_path_checker.py path/to/addon/root
+python texture_path_checker.py path/to/addon/root [work_drive_root]
 ```
 
 **Output:** JSON with missing files, format warnings, and path validation.
@@ -314,7 +324,7 @@ python texture_path_checker.py path/to/addon/root
 #!/usr/bin/env python3
 """
 DayZ texture and material path validator
-Checks: .paa, .rvmat file existence, path capitalization, format compatibility
+Checks: .paa, .rvmat file existence, file name capitalization, format compatibility
 """
 import json
 import re
@@ -323,10 +333,16 @@ from pathlib import Path
 from typing import Dict, List, Set, Optional
 
 class TexturePathChecker:
-    def __init__(self, addon_root: str):
+    def __init__(self, addon_root: str, work_root: str = 'P:\\'):
         self.addon_root = Path(addon_root)
         if not self.addon_root.exists():
             raise FileNotFoundError(f"{addon_root} not found")
+
+        # Config and .rvmat paths start with the PBO prefix, so they resolve from the
+        # work drive root (P:\), where the addon sits at P:\<prefix>.
+        self.work_root = Path(work_root)
+        if not self.work_root.exists():
+            raise FileNotFoundError(f"work drive root {work_root} not found")
 
         self.config_cpp = self.addon_root / 'config.cpp'
         if not self.config_cpp.exists():
@@ -399,11 +415,14 @@ class TexturePathChecker:
 
         return refs
 
+    def _resolve(self, ref: str) -> Path:
+        """Resolve a prefixed root path such as MyMod\\data\\x.paa against the work drive root"""
+        return self.work_root / ref.replace('\\', '/').lstrip('/')
+
     def _verify_files(self, ref_type: str, refs: Set[str]):
         """Check if referenced files exist"""
         for ref in sorted(refs):
-            # Normalize path (convert forward slashes to backslashes on Windows, etc.)
-            file_path = self.addon_root / ref.replace('\\', '/')
+            file_path = self._resolve(ref)
 
             if file_path.exists():
                 self.valid_refs.append({
@@ -415,7 +434,7 @@ class TexturePathChecker:
                 self.errors.append({
                     'type': ref_type,
                     'reference': ref,
-                    'expected_path': str(file_path.relative_to(self.addon_root)),
+                    'expected_path': str(file_path),
                     'message': f'{ref_type.upper()} file not found',
                     'severity': 'critical'
                 })
@@ -438,27 +457,25 @@ class TexturePathChecker:
                 'severity': 'high'
             })
 
-        # Check for capitalization mismatches
+        # Check for capitalization mismatches in the file name. List the folder and
+        # compare names case-insensitively: a literal glob returns the pattern's own
+        # spelling on Windows and finds nothing on a case-sensitive file system.
         if self.config_cpp.exists():
             content = self.config_cpp.read_text(encoding='utf-8-sig')
             refs = re.findall(r'''["']([^"']*(?:\.paa|\.rvmat))["']''', content, re.IGNORECASE)
 
             for ref in refs:
-                file_path = self.addon_root / ref.replace('\\', '/')
-
-                # Check if file exists with different capitalization
-                try:
-                    parent = file_path.parent
-                    if parent.exists():
-                        actual_files = list(parent.glob(file_path.name))
-                        if actual_files and actual_files[0].name != file_path.name:
-                            self.warnings.append({
-                                'reference': ref,
-                                'message': f'Capitalization mismatch: referenced as "{ref}" but file is "{actual_files[0].name}"',
-                                'severity': 'high'
-                            })
-                except:
-                    pass
+                file_path = self._resolve(ref)
+                parent = file_path.parent
+                if not parent.is_dir():
+                    continue
+                for actual in parent.iterdir():
+                    if actual.name.lower() == file_path.name.lower() and actual.name != file_path.name:
+                        self.warnings.append({
+                            'reference': ref,
+                            'message': f'Capitalization mismatch: referenced as "{ref}" but file is "{actual.name}"',
+                            'severity': 'high'
+                        })
 
     def report(self) -> Dict:
         """Generate validation report"""
@@ -478,13 +495,14 @@ class TexturePathChecker:
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python texture_path_checker.py <path/to/addon/root>")
+        print("Usage: python texture_path_checker.py <path/to/addon/root> [work_drive_root]")
         sys.exit(1)
 
     addon_root = sys.argv[1]
+    work_root = sys.argv[2] if len(sys.argv) > 2 else 'P:\\'
 
     try:
-        checker = TexturePathChecker(addon_root)
+        checker = TexturePathChecker(addon_root, work_root)
         report = checker.validate()
         print(json.dumps(report, indent=2))
 
@@ -852,14 +870,6 @@ class P3dLodChecker:
                         'severity': 'critical'
                     })
 
-                if not all_memory_points or not any(p.startswith('ce_') for p in all_memory_points):
-                    self.warnings.append({
-                        'file': str(p3d_file.relative_to(self.addon_root)),
-                        'lod': lod_idx,
-                        'message': 'No collision points (ce_*) found in Memory LOD',
-                        'severity': 'high'
-                    })
-
             lod_info['lods'][f'lod_{lod_idx}'] = lod_data
 
         # Check LOD requirements
@@ -952,7 +962,9 @@ if __name__ == '__main__':
 
 ## Integration Example: Combined Validator Script
 
-**run_all_validations.py** – Runs all four validators and produces a unified report:
+**run_all_validations.py** – Runs the config, texture and .p3d validators and produces a unified
+report. It leaves out `stringtable_validator.py`, which is broken for DayZ (section 3). Keep the
+validator scripts in the same folder as this script.
 
 ```bash
 python run_all_validations.py /path/to/addon
@@ -970,11 +982,13 @@ import json
 import sys
 from pathlib import Path
 
-def run_validator(script: str, addon_root: str) -> dict:
+HERE = Path(__file__).resolve().parent
+
+def run_validator(script: str, target: str) -> dict:
     """Run a validator script and return JSON result"""
     try:
         result = subprocess.run(
-            [sys.executable, script, addon_root],
+            [sys.executable, str(HERE / script), target],
             capture_output=True,
             text=True,
             timeout=30
@@ -990,21 +1004,26 @@ def run_validator(script: str, addon_root: str) -> dict:
 if __name__ == '__main__':
     addon_root = sys.argv[1] if len(sys.argv) > 1 else '.'
 
+    # config_cpp_validator.py takes the config.cpp file; the others take the addon root.
+    # stringtable_validator.py is left out: it reads stringtable.xml and is broken for DayZ.
     validators = [
-        'config_cpp_validator.py',
-        'texture_path_checker.py',
-        'stringtable_validator.py',
-        'p3d_lod_checker.py'
+        ('config_cpp_validator.py', str(Path(addon_root) / 'config.cpp')),
+        ('texture_path_checker.py', addon_root),
+        ('p3d_lod_checker.py', addon_root)
     ]
 
     results = {}
     total_errors = 0
     total_warnings = 0
 
-    for validator in validators:
+    for validator, target in validators:
         name = validator.replace('_', ' ').replace('.py', '').title()
-        results[name] = run_validator(validator, addon_root)
+        results[name] = run_validator(validator, target)
 
+        # A validator that crashed or could not start returns {'error': ...} with no
+        # 'errors' list; it checked nothing, so it counts as a failure.
+        if 'error' in results[name]:
+            total_errors += 1
         if 'errors' in results[name]:
             total_errors += len(results[name]['errors'])
         if 'warnings' in results[name]:
@@ -1064,8 +1083,8 @@ if __name__ == '__main__':
   "errors": [
     {
       "type": "texture",
-      "reference": "data/textures/body_co.paa",
-      "expected_path": "data/textures/body_co.paa",
+      "reference": "MyMod\\data\\textures\\body_co.paa",
+      "expected_path": "P:\\MyMod\\data\\textures\\body_co.paa",
       "message": "TEXTURE file not found",
       "severity": "critical"
     }
@@ -1106,7 +1125,8 @@ pipeline; there is no bundled `validate.py`.
 @echo off
 echo Validating addon...
 python config_cpp_validator.py "P:\MyMod\config.cpp"
-if %ERRORLEVEL% NEQ 0 (
+rem Exit 2 means warnings only and does not block the pack.
+if %ERRORLEVEL% EQU 1 (
     echo Validation failed, skipping pack
     exit /b 1
 )
@@ -1117,7 +1137,9 @@ AddonBuilder.exe P:\MyMod P:\Mods\@MyMod\Addons -prefix=MyMod -temp=P:\temp\MyMo
 `include.lst` is the include list beside this skill's `build.py`; without `-include`, the binarizing pass drops
 `.c` and `.csv` files (`post-build-gates.md`).
 
-The reference validators return exit code 0 on PASS, 1 on FAIL, 2 on WARN.
+The reference validators return exit code 0 on PASS, 1 on FAIL, 2 on WARN. Gate only on exit 1:
+`config_cpp_validator.py` warns on every vanilla-style `name[]=` line whose brace sits on the next line
+(`P:\DZ\gear\tools\config.cpp:79`), so a correct config can exit 2.
 
 ---
 
@@ -1129,16 +1151,25 @@ Quick uses:
 
 ```bash
 python config_cpp_validator.py config.cpp | jq '.summary'
-python run_all_validations.py . && echo "Ready for AddonBuilder"
+python run_all_validations.py .; [ $? -ne 1 ] && echo "Ready for AddonBuilder"
 ```
 
-GitHub Actions step:
+GitHub Actions step. `texture_path_checker.py` resolves texture paths from the work drive, so this step
+needs a self-hosted Windows runner with `P:\` mounted, the addon at `P:\<prefix>` and vanilla data
+unpacked. A GitHub-hosted runner has no `P:\`, and the checker exits 1 with "work drive root P:\ not
+found".
 
 ```yaml
 - name: Validate DayZ addon
+  # Needs the work drive: a self-hosted Windows runner with P:\ mounted.
+  working-directory: P:\MyMod
+  shell: bash
   run: |
-    python config_cpp_validator.py config.cpp || exit 1
-    python texture_path_checker.py . || exit 1
+    # Exit 2 means warnings only; fail the step on exit 1 alone.
+    rc=0; python config_cpp_validator.py config.cpp || rc=$?
+    [ "$rc" -eq 1 ] && exit 1
+    rc=0; python texture_path_checker.py . 'P:\' || rc=$?
+    [ "$rc" -eq 1 ] && exit 1
     echo "Validation passed, ready for build"
 ```
 

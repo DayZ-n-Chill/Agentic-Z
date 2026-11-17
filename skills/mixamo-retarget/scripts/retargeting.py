@@ -389,7 +389,17 @@ def retarget_animation(
 
 def list_animations(armature_name: str) -> List[str]:
     """
-    Return the animation actions of an armature.
+    Return the names of every object-level action in the file.
+
+    The list is not filtered to the given armature: it holds every action in
+    bpy.data.actions that animates an object, which are the candidates for
+    play_animation on that armature. It is empty when the armature has no
+    animation data yet.
+
+    Blender 4.4 and later record the animated ID type on each action slot
+    (slot.target_id_type); Blender 5.0 removed action.id_root, so that
+    attribute is read only on Blender 4.3 and earlier, where actions have
+    no slots.
 
     Args:
         armature_name: Armature name
@@ -407,7 +417,12 @@ def list_animations(armature_name: str) -> List[str]:
     actions = []
     if armature.animation_data:
         for action in bpy.data.actions:
-            if action.id_root == 'OBJECT':
+            slots = getattr(action, "slots", None)
+            if slots is not None:
+                is_object_action = any(slot.target_id_type == 'OBJECT' for slot in slots)
+            else:
+                is_object_action = action.id_root == 'OBJECT'
+            if is_object_action:
                 actions.append(action.name)
 
     return actions
@@ -515,6 +530,10 @@ def import_fbx(filepath: str) -> str:
 def import_dae(filepath: str) -> str:
     """
     Import a Collada (.dae) file.
+
+    Needs Blender 4.x: Blender 5.0 removed the Collada importer, so on 5.x
+    the bpy.ops.wm.collada_import call fails. On 5.x, convert the clip to
+    FBX first and use import_fbx.
 
     Args:
         filepath: Path of the DAE file

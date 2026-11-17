@@ -137,6 +137,7 @@ def add_bevel(obj, width=0.003, segments=2, angle_deg=40):
 def panel_recess(obj, near_point, inset=0.01, depth=0.005):
     """Rule 7 — inset the face whose center is nearest to near_point (world)
     and sink it along -normal. Use +normal translate for a raised panel."""
+    bpy.context.view_layer.update()  # matrix_world is stale after an API move
     bm = bmesh.new(); bm.from_mesh(obj.data)
     bm.faces.ensure_lookup_table()
     target = obj.matrix_world.inverted() @ Vector(near_point)
@@ -236,6 +237,10 @@ def loft_profile(name, profile, path, scales=None, close_caps=True):
         bm.faces.new(list(reversed(rings[0]))); bm.faces.new(rings[-1])
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     bm.to_mesh(mesh); bm.free()
+    # Active and selected, like make_beam and make_cable, so finalize(name)
+    # acts on the loft.
+    bpy.ops.object.select_all(action='DESELECT')
+    bpy.context.view_layer.objects.active = obj; obj.select_set(True)
     return obj
 
 

@@ -13,15 +13,15 @@ Follow Tier 2 (`skills/_shared/dayz-conventions.md` plus `skills/_shared/convent
 
 Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vanilla scripts live under `P:\scripts\`, configs under `P:\dz\`.
 
-Use Bash only to run skill scripts such as `/dayz-lint`.
+Run `/dayz-lint` through Skill; use Bash only for its script when Skill is unavailable.
 
 Your knowledge pack is `skills/_shared/persistence/`. Its front index is `skills/_shared/persistence/README.md`; open only the file a step names.
 
-Three skills hold the depth behind the pack. Load one through Skill only at the step that needs it, then open the one reference its `SKILL.md` table names:
+Three skills hold the depth behind the pack. Load one through Skill only at the step that needs it, then open the references its `SKILL.md` names for that step:
 
 - `dayz-persistence` (steps 2 and 3): Community Framework `ModStorage`, sidecar JSON files, a format change with rollback (`references/migration-matrix.md`), player data that corrupts, and placed objects that vanish after a restart.
 - `dayz-basebuilding` (step 3, for a buildable structure): the part bit mask save and its audit (`references/persistence-audit.md`, `references/fence-gate-case.md`).
-- `rigorous-data-audit` (step 5): run it before a release where a bug can lose player progression. Its findings feed the report format of `skills/_shared/persistence/data-audit.md`, which stays the format you return.
+- `rigorous-data-audit` (step 5): run it before a release where a bug can lose player progression, reading every mechanical check reference its step 1 lists that applies. Its findings feed the report format of `skills/_shared/persistence/data-audit.md`, which stays the format you return.
 
 ## Workflow
 
@@ -37,7 +37,7 @@ Three skills hold the depth behind the pack. Load one through Skill only at the 
 - Other game logic in the same classes: dayz-script-specialist, through the script lead.
 - `config.cpp` entries, including new `Construction` parts: dayz-config-specialist, through the script lead (it goes under the For the config lead heading). You give it the part IDs to use.
 - Economy lifetime and spawn flags in `types.xml`: dayz-server-admin, through the script lead (it goes under the For the server lead heading).
-- Save code inside vehicle script classes (`CarScript`, `BoatScript`, `HelicopterScript` and their subclasses): dayz-vehicle-specialist, who is on the config team, so neither you nor the script lead can start it. Don't write it yourself; return "Reassign: <task> belongs to dayz-vehicle-specialist on the config team", with the fields to save and the save version rules from step 2.
+- Save code inside vehicle script classes (`CarScript`, `BoatScript`, `HelicopterScript`, `MotorbikeScript` and their subclasses): dayz-vehicle-specialist, who is on the config team, so neither you nor the script lead can start it. Don't write it yourself; return "Reassign: <task> belongs to dayz-vehicle-specialist on the config team", with the fields to save and the save version rules from step 2.
 - Errors in `script.log` or RPT files after a restart: dayz-mod-debugger diagnoses them; you fix what it routes to you.
 
 ## Report

@@ -32,7 +32,7 @@ References, read only when the step needs one; the rules below stay the gate:
 
 Script compile errors, `NULL pointer` or `Can't find` errors that name the mod's classes or files, missing config classes, missing textures or models, and a server or client crash.
 
-Three more groups fail the run because the run itself is not a valid test, not because the mod is at fault: a refused join (`0x00020005`, `0x00020017`, `0x00020013`, `0x00010002`), persistence the server cannot read (`Serious stream damage`, `Failed to read modstorage`, `Scripted variables corrupted`) and a server that shuts itself down (`[Server] :: termination in:`, `BattlEye initialization failed`). Report them as such; the categories are in `skills/dayz-gate/triage.md`.
+Three more groups point at the run rather than the mod: a refused join (`0x00020005`, `0x00020017`, `0x00020013`, `0x00010002`), persistence the server cannot read (`Serious stream damage`, `Failed to read modstorage`, `Scripted variables corrupted`) and a server that shuts itself down (`[Server] :: termination in:`, `BattlEye initialization failed`). They follow the same rules as any other error line below: a line that names the mod fails; one that names nothing of the mod is noise when the vanilla-only run has it, a warning when there is no vanilla-only run, and a failure otherwise. When you report one, say that the run itself was not a valid test; the categories are in `skills/dayz-gate/triage.md`.
 
 A `NULL pointer` or `Can't find` line that names nothing of the mod is never a failure: report it as a warning when it is not in the vanilla-only run.
 

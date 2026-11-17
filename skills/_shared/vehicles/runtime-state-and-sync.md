@@ -14,15 +14,13 @@ Which per-tick event a car runs, what a non-owner client reads, why script visua
 
 ## Per-tick events: CarScript has no EOnSimulate (added 2026-07-29, LFHeli OH-1)
 
-**Per-tick event asymmetry (invariant, added 2026-07-29, LFHeli OH-1):** `CarScript` has NO
-`EOnSimulate` — its ctor registers only `POSTSIMULATE`/`POSTFRAME` (`carscript.c:207-208`) and ALL
-its per-tick work (engine, fluids, part health, fuel/engine auto-stop, exhaust and wheel FX, much of
-it gated `IsServerOrOwner()` — vanilla runs it on the owner client, but in mods replica-dependent checks (`CheckVitalItem`) must stay server-only) lives in `EOnPostSimulate`
-(`carscript.c:807`). `BoatScript` overrides BOTH (`boatscript.c:355` and `:393`). Consequences on a
-car: hook `EOnPostSimulate` for per-tick logic; `super.EOnSimulate` is the empty stub at
-`enentity.c:201-203`, so calling or skipping it does nothing either way — treat any comment claiming
-it "runs engine/fluids twice" as false. Custom solvers that add `SetEventMask(EntityEvent.SIMULATE)`
-and pump it by hand (aviation) → `aviation-carscript-base.md` and the dayz-aviation skill.
+Which events a `CarScript` registers, why `super.EOnSimulate` does nothing on a car, and where
+the car's per-tick work runs are written once, in `aviation-carscript-base.md` ("Events: where the
+flight loop runs"), together with the custom solvers that add `SetEventMask(EntityEvent.SIMULATE)`
+and pump it by hand. On a car, hook `EOnPostSimulate` for per-tick logic. Two points that file
+does not cover: `BoatScript`, unlike `CarScript`, overrides both events (`boatscript.c:355` and
+`:393`); and although vanilla runs much of the `EOnPostSimulate` work on the owner client too, a
+mod's checks that depend on replicated items (`CheckVitalItem`) must stay server-only.
 (These are 1.30 line numbers; `dayz-1-30-vehicles.md` covers what 1.30 changed.)
 
 ## Engine state on a non-owner occupant
@@ -91,7 +89,7 @@ in `network-physics-ownership.md`.
 ## Script visual state is not applied to a newly spawned vehicle, and the config default looks like a result (added 2026-09-10, SUB_BRZ)
 
 Visual code running from `OnVariablesSynchronized` **never executes** on a
-vehicle created with a bare spawn: has not synchronized anything yet. Car paints
+vehicle created with a bare spawn, because that vehicle has not synchronized anything yet. Car paints
 `hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]` entries from `config.cpp` and
 nothing else, so all script `SetObjectTexture` / `SetObjectMaterial` calls are missing.
 

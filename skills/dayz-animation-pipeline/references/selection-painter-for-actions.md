@@ -28,7 +28,7 @@ What building one showed:
 - **Seed each brush with a rough guess**, so the user refines instead of painting from nothing.
 - **Draw painted faces with `MeshBasicMaterial`**, not `MeshStandardMaterial`. Lighting and an environment map dim an overlay until a yellow brush on chrome is invisible.
 - **Push painted faces 5 mm out along their normals**, or the overlay flickers against the base as the camera moves.
-- **The page runs from `file://`**, because the user opens it from disk. Use a UMD build of Three.js (r147 or earlier; r148 dropped UMD) and no ES module imports.
+- **The page runs from `file://`**, because the user opens it from disk. Use a UMD build of Three.js (r147 or earlier, because r148 removed the UMD add-ons in `examples/js` such as OrbitControls and the loaders) and no ES module imports.
 
 ## The refiner: grow along shared edges, capped by distance
 
@@ -59,7 +59,7 @@ The quad's numbers: handlebar, 1 step, cap 6 cm, height above 0.83 m and within 
 
 ## Reuse a baked viewer
 
-Parsing a `.p3d` of 10 MB or more with py3d took about 30 seconds when measured, enough to hit a command time limit. An HTML viewer already built for the same model (by the dayz-3d-viewer or dayz-p3d-inspector skills) holds the geometry base64 encoded in a `const DATA = "..."` literal. Read that literal, decode it (about a second) and build the painter on it: the geometry is already in the right frame with materials separated. Parse the `.p3d` again only when no viewer exists or the geometry changed. Say this to a user who asks for a new viewer of a model that already has one.
+Parsing a `.p3d` of 10 MB or more with py3d took about 30 seconds when measured, enough to hit a command time limit. An HTML viewer already built for the same model (by the dayz-3d-viewer or dayz-p3d-inspector skills) holds the geometry in a JSON literal: a dayz-3d-viewer page writes `const M={...}`, with positions, normals, UVs and indices as base64 strings inside the JSON; a dayz-p3d-inspector page writes `const R={...}` as plain JSON with no base64. Read that literal, parse it and decode any base64 arrays (about a second) and build the painter on it: the geometry is already in the right frame with materials separated. Parse the `.p3d` again only when no viewer exists or the geometry changed. Say this to a user who asks for a new viewer of a model that already has one.
 
 ## Overlays in any lit viewer
 

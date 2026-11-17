@@ -41,10 +41,15 @@ anchors.json schema (minimum):
         "steerMax":  0.39,           # radians, MUST match handlebar model.cfg angle1
         "twistFactor": 0.2,          # torso twist per radian of steer (0 = none)
 
-        # Optional per-variant overrides:
+        # Optional per-variant overrides. steer_left and steer_right set steer
+        # to -steerMax and +steerMax, and the shoulders turn by twistFactor
+        # times steer; any other variant gets steer 0 unless it sets "steer"
+        # (radians) itself. The hands go to gripL and
+        # gripR, so give each steer variant the grip points of the handlebar
+        # turned to that side, or its hands stay on the idle grips:
         "variants": {
-            "steer_left":  { "steerSign": -1 },
-            "steer_right": { "steerSign": +1 },
+            "steer_left":  { "gripL": [x, y, z], "gripR": [x, y, z] },
+            "steer_right": { "gripL": [x, y, z], "gripR": [x, y, z] },
             "passenger_idle": {
                 "seat": [x, y, z], "gripL": ..., "gripR": ..., "lean": 0.18
             }
@@ -73,7 +78,9 @@ JOINTS = [
 
 # Default limb lengths (meters), used for every run: --rest-pose does not
 # replace them. These are coarse OFP2_ManSkeleton averages and produce
-# positionally approximate output. The script says so in the SEAnim notes.
+# positionally approximate output. The script says so in a NOTE on stderr
+# when no --rest-pose is given; the SEAnim notes do not mention the limb
+# lengths.
 DEFAULT_LIMB_LENGTHS = {
     "upper_arm": 0.30,
     "fore_arm":  0.27,
@@ -373,9 +380,8 @@ def main(argv=None):
     rest_pose = load_rest_pose(args.rest_pose)
     calibrated = rest_pose is not None
     if not calibrated:
-        print("NOTE: no --rest-pose given; output will be POSITIONALLY APPROXIMATE.",
-              file=sys.stderr)
-        print("See references/vehicle-rider-ik-pose.md for the calibration procedure.",
+        print("NOTE: no --rest-pose given. The output is positionally approximate "
+              "either way: --rest-pose is not yet applied to the rotations.",
               file=sys.stderr)
 
     lengths = dict(DEFAULT_LIMB_LENGTHS)
@@ -396,9 +402,6 @@ def main(argv=None):
         out = write_seanim_for_variant(pose, name, output_dir, calibrated)
         print(f"  wrote {out.name}")
 
-    if not calibrated and not args.dry_run:
-        print("\nNEXT STEP: run DayZATool --extract-anim on a vanilla driver-idle "
-              ".anm and re-run with --rest-pose pointing at the extracted SEAnim.")
     if not args.dry_run:
         print("NOTE: every output holds identity rotations (the positions to "
               "rotations step is not written), so it is not ready for the game.")

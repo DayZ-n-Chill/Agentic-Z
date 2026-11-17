@@ -52,7 +52,7 @@ static Particle PlayInWorld(int particle_id, vector global_pos);
 
 // Legacy aliases (backwards compat)
 static Particle Play(int particle_id, Object parent_obj, vector local_pos, vector local_ori);
-static Particle Play(int particle_id, vector global_pos, vector global_ori);
+static Particle Play(int particle_id, vector global_pos);
 static Particle Create(int particle_id, Object parent_obj, vector local_pos, vector local_ori);
 static Particle Create(int particle_id, vector global_pos, vector global_ori);
 ```
@@ -199,10 +199,10 @@ ParticleSource PlayOnObject(int particle_id, Object parent_obj,
 ParticleSource PlayInWorld(int particle_id, vector global_pos);
 
 // Batch operations (native)
-proto native int CreateParticles(out array<ParticleSource> particles,
-    string path, notnull array<ref ParticleProperties> properties, int count);
+proto native int CreateParticles(array<ParticleSource> particles,
+    string path, notnull ParticlePropertiesArray properties, int count = 1);
 proto native int PlayParticles(out array<ParticleSource> particles,
-    string path, notnull array<vector> positions, int count);
+    string path, notnull array<vector> positions, int count = 1);
 
 // Pool info
 proto native int GetPoolSize();

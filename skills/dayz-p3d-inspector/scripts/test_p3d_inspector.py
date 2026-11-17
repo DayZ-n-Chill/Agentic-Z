@@ -307,6 +307,39 @@ def test_auto_fix_reverses_every_lod_when_most_normals_oppose_the_winding(tmp_pa
     assert "reversed winding on all faces" in result["fixes_applied"][0]
 
 
+def test_auto_fix_checks_a_first_visual_lod_numbered_one(tmp_path):
+    # Vanilla models often number their first visual LOD 1.0, not 0.0.
+    pytest.importorskip("numpy")
+    demo = extract.generate_demo_recipe()
+    demo["lods"][0]["resolution"] = 1.0
+    result, _ = _round_trip(tmp_path, demo, auto_fix_enabled=True)
+    assert len(result["fixes_applied"]) == 1
+
+
+def test_fanned_polygon_leaves_later_faces_their_own_normal(tmp_path):
+    # A hexagon in the XZ plane, then a triangle in the YZ plane. Fails if the
+    # triangle is written with a normal of the hexagon's fan.
+    py3d = _py3d_or_skip()
+    hexagon = [(1, 0, 0), (0.5, 0, 0.87), (-0.5, 0, 0.87), (-1, 0, 0), (-0.5, 0, -0.87), (0.5, 0, -0.87)]
+    triangle = [(0, 0, 0), (0, 1, 0), (0, 0, 1)]
+    demo = extract.generate_demo_recipe()
+    geometry = demo["lods"][1]
+    geometry["wireframe"] = {
+        "positions": [list(p) for p in hexagon + triangle],
+        "faces": [[0, 1, 2, 3, 4, 5], [6, 7, 8]],
+    }
+    geometry["selections"] = {}
+    out = tmp_path / "model.p3d"
+    build.build_p3d(demo, str(out), auto_fix_enabled=False)
+    with open(out, "rb") as f:
+        model = py3d.P3D(f)
+    lod = {extract.classify_lod(lod.resolution): lod for lod in model.lods}["geometry"]
+    tri = [face for face in lod.faces if {v.point_index for v in face.vertices} == {6, 7, 8}]
+    assert len(tri) == 1
+    stored = lod.facenormals[tri[0].vertices[0].normal_index]
+    assert [round(c, 6) for c in stored] == [1.0, 0.0, 0.0]
+
+
 # ------------------------------------------------------------------- viewer
 
 def test_repo_paths_name_the_tool_copy_first():

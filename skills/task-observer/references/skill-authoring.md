@@ -385,6 +385,17 @@ patterns before committing — a scan, not a reminder.
 
 ## Editing skills — always start from the live file
 
+**In an Agentic-Z clone, rules 1, 5 and 6 below do not apply.** There the
+source of a skill is its folder under `skills/` or `.claude/skills/`, and
+sessions edit that folder directly, as `docs/prompt-conventions.md`
+("Editing skills: list the copies first") says: list the copies first,
+write every real copy, and compare them by sha256 when done. Nothing is
+staged under `skill-updates/` and nothing is packaged for each change. A
+skill is packaged only when it goes to another machine, with
+`python scripts/dev/pack_skill.py <skill folder>` as that file's section
+"When a .skill is packaged" describes. Rules 2, 3, 4 and 7 still apply.
+Everywhere else, all seven rules apply.
+
 1. The live file is the authoritative source: in Claude Code,
    `~/.claude/skills/{skill}/SKILL.md`; in Cowork, a read-only mount at
    `.claude/skills/{skill}/SKILL.md` (writes fail with EROFS by design).
@@ -392,8 +403,8 @@ patterns before committing — a scan, not a reminder.
    local-filesystem environments the same files are ordinary writable
    files and nothing stops the write — the discipline is the only thing
    preventing the overwrite. Assume you are in the unprotected case unless
-   you have seen an EROFS yourself. Do not edit skill files in place, in
-   any environment — staging-only is what keeps the autonomous review
+   you have seen an EROFS yourself. Outside an Agentic-Z clone, do not
+   edit skill files in place, in any environment — staging-only is what keeps the autonomous review
    safe, and the way to make it hold where no guard exists is to begin
    every edit with the copy (`mkdir -p` the staging dir, `cp` the live
    file in, `diff -q` to prove it matches), so the live path is never the
@@ -435,8 +446,9 @@ patterns before committing — a scan, not a reminder.
    installation; nothing goes live until the user installs it. Where no
    presentation/upload tool exists (e.g. Claude Code CLI), present the
    staged path and a change summary in chat instead; staging-only applies
-   in every environment — it's the review loop's safety property, not a
-   filesystem constraint. For any
+   in every environment except an Agentic-Z clone (see the note above this
+   list) — it's the review loop's safety property, not a filesystem
+   constraint. For any
    skill with supporting files, zip the staged directory into a `.skill`
    bundle and present the bundle, never the bare SKILL.md: a single-file
    delivery convention applied to a multi-file skill truncates it
@@ -461,10 +473,8 @@ patterns before committing — a scan, not a reminder.
    raw central-directory bytes, because CPython's `zipfile` normalises
    `0x5C` to `/` on read and reports a malformed archive as clean; Windows
    `Compress-Archive` produces exactly this defect for any skill with a
-   subdirectory. A helper script, `validate-skill-bundle.py`, implements
-   all five as assertions and packs a well-formed bundle on any platform;
-   it is not bundled with this skill, so check the five items by hand
-   unless the user has it. Generally: any hard limit the consuming platform
+   subdirectory. This skill ships no script for the gate: check the five
+   items by hand. Generally: any hard limit the consuming platform
    imposes belongs in this gate as a measurement compared to a bound in
    the same step, not as a rule the author is expected to remember — an
    unasserted metric does not merely miss defects, it manufactures
@@ -637,7 +647,9 @@ already sunk, and the loss is invisible because nothing errors.
 ## Principle Propagation
 
 When an observation's Principle applies to skills in general, log it with
-`Skill: All skills` and surface it; if the user approves, add it to
+an empty `skill: []` list (a name in `skill:` must be a skill that exists
+now, and no single skill is the target), state in the body that the
+Principle applies to all skills, and surface it; if the user approves, add it to
 `[workspace folder]/skill-observations/cross-cutting-principles.md`. That
 file is a mandatory checklist during any skill creation or regeneration.
 The user chooses propagation timing: immediate (update all skills now — for

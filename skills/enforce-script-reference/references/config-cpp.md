@@ -21,7 +21,7 @@ class CfgMods
     class MyMod
     {
         type = "mod";
-        dependencies[] = { "World", "Mission" };
+        dependencies[] = { "Game", "World", "Mission" };
 
         class defs
         {

@@ -16,7 +16,7 @@ A subclass writes in this order:
 
 1. Call `super.OnStoreSave(ctx)` so the base class owns the prefix.
 2. Write every subclass field in one declared order and with one declared type.
-3. If the subclass has an independent mod schema, write its own header inside its portion of the stream; do not reinterpret the hook's build version.
+3. If the subclass has an independent mod schema, write its own header inside its portion of the stream; do not reinterpret the hook's storage version.
 
 A subclass loads in this order:
 
@@ -29,7 +29,7 @@ This propagation and fail-closed read behavior follows the vanilla contract at `
 
 ## Version unit
 
-The `version` argument is the DayZ save/build version produced by `g_Game.SaveVersion()` (`P:\scripts\3_game\global\game.c:435`). Vanilla subsystems declare their own storage versions through `GetStorageVersion()` (`P:\scripts\4_world\classes\playerstomach.c:255` and `P:\scripts\4_world\classes\playermodifiers\modifiersmanager.c:178`). These build checks describe engine compatibility; they do not version a mod release. Until 1.29 `GAME_STORAGE_VERSION` was 142 (1.29 `3_game\global\game.c:5`). Since 1.30: `GAME_STORAGE_VERSION` is 144 at `game.c:5`; `SaveVersion()` is at `:435`. `PlayerStomach.OnStoreLoad` is at `playerstomach.c:471` with a `version >= 140` temperature read at `:492`. `ModifiersManager.OnStoreLoad` is at `modifiersmanager.c:273`.
+The `version` argument is the game's storage version produced by `g_Game.SaveVersion()` (`P:\scripts\3_game\global\game.c:435`), which the game sets from `GAME_STORAGE_VERSION` through `StorageVersion(GAME_STORAGE_VERSION)` (`game.c:50`); it is not the game build number. Vanilla subsystems declare their own storage versions through `GetStorageVersion()` (`P:\scripts\4_world\classes\playerstomach.c:255` and `P:\scripts\4_world\classes\playermodifiers\modifiersmanager.c:178`). These build checks describe engine compatibility; they do not version a mod release. Until 1.29 `GAME_STORAGE_VERSION` was 142 (1.29 `3_game\global\game.c:5`). Since 1.30: `GAME_STORAGE_VERSION` is 144 at `game.c:5`; `SaveVersion()` is at `:435`. `PlayerStomach.OnStoreLoad` is at `playerstomach.c:471` with a `version >= 140` temperature read at `:492`. `ModifiersManager.OnStoreLoad` is at `modifiersmanager.c:273`.
 
 ## Variable-width super trap
 
@@ -55,7 +55,7 @@ Since 1.30 energy is no longer the only optional prefix. `EntityAI.OnStoreSave` 
 - Every `ctx.Read` result is checked.
 - State mutation happens only after the complete read succeeds.
 - Both optional-component widths are exercised.
-- The hook build version is not presented as the mod's format version.
+- The hook storage version is not presented as the mod's format version.
 - Uninstall behavior is declared rather than implied.
 - (since 1.30) Construction-present and construction-absent EntityAI prefixes are both exercised; PlayerBase thermal float is present on 1.30 MP saves; CombinationLock `version >= 143` is exercised against a 142 fixture.
 

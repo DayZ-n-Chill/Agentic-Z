@@ -1,6 +1,6 @@
 # Enforce Script style: Types and casting
 
-Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`. The guide is a mirror of the [TrueDolphin/references wiki](https://github.com/TrueDolphin/references/wiki/EnScript-(Enforce-Script)-Style-Guide).
+Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`.
 
 Vanilla facts: The checked type facts are in `../enscript/references/language_types.md`; it cites `P:\scripts\` and wins where the two differ.
 

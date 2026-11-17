@@ -148,8 +148,8 @@ slot = action.slots.new(id_type='OBJECT', name="Suzanne")   # slot.identifier ->
 layer = action.layers.new("Layer")
 strip = layer.strips.new(type='KEYFRAME')
 channelbag = strip.channelbag(slot, ensure=True)
-fcurve = channelbag.fcurves.new("location", index=1, group_name="Object Transform")  # 5.0+ param name;
-                                                                                     # 4.4 used action_group=
+fcurve = channelbag.fcurves.new("location", index=1, group_name="Object Transform")  # group_name= exists from 5.0;
+                                                                                     # on 4.4/4.5 this new() takes no group argument
 anim_data = suzanne.animation_data_create()
 anim_data.action = action
 anim_data.action_slot = anim_data.action_suitable_slots[0]  # only needed if auto-assignment picked the wrong/no slot
@@ -193,9 +193,9 @@ driver_remove(path, index=-1) -> bool
 - `options` (set of flags): `INSERTKEY_NEEDED` (only if the value actually changed),
   `INSERTKEY_VISUAL` (bake the *visual*, constraint-affected transform instead of the raw local
   one), `INSERTKEY_XYZ_TO_RGB` ("no longer in use... here so code that uses it doesn't break" in
-  4.3; **fully removed** as of the Blender 5.0 changelog — passing it in `options` on 5.0+ will
-  simply have no matching flag rather than erroring, since it's a set literal, but don't rely on it
-  meaning anything), `INSERTKEY_REPLACE` (only update existing keys, never add new ones),
+  4.3; **fully removed** as of the Blender 5.0 changelog — do not pass it on 5.0+: bpy checks every
+  identifier in an enum-flag set and raises a `TypeError` for one it does not know),
+  `INSERTKEY_REPLACE` (only update existing keys, never add new ones),
   `INSERTKEY_AVAILABLE` (only insert into F-Curves that already exist), `INSERTKEY_CYCLE_AWARE`.
 - `keytype`: `'KEYFRAME' | 'BREAKDOWN' | 'MOVING_HOLD' | 'EXTREME' | 'JITTER' | 'GENERATED'`
   (same enum as `Keyframe.type`, **[LIVE]** identical on 5.1.1).
@@ -222,7 +222,7 @@ fully confirmed without a live 4.3 instance, **always call `index=` and `frame=`
   with the **full path relative to that ID**: `arm.keyframe_insert(data_path='bones["Bone"].my_prop.nested', frame=1)`.
 - For **built-in** nested structs that Blender itself defines (PoseBone, NodeSocket, ShapeKey),
   calling `keyframe_insert` **directly on the nested struct** works fine and is the normal idiom —
-  e.g. `object.pose.bones["Arm_L"].keyframe_insert("rotation_euler", 1)`
+  e.g. `object.pose.bones["Arm_L"].keyframe_insert("rotation_euler", index=1, frame=1)`
   or `node.inputs["Base Color"].keyframe_insert("default_value", frame=1)`
   (**[LIVE]**, verified below in Materials). The restriction is specifically about ad-hoc custom
   PropertyGroups, not built-in RNA structs.
@@ -430,8 +430,8 @@ Both aim a chosen local axis of the camera at a target; the difference is in *up
 
 | | Track To | Damped Track |
 |---|---|---|
-| `track_axis` | enum `TRACK_X\|Y\|Z\|NEGATIVE_X\|NEGATIVE_Y\|NEGATIVE_Z` (default `TRACK_X`) | same 6 values (default `TRACK_X`) |
-| `up_axis` | enum `UP_X\|UP_Y\|UP_Z` (default `UP_X`) | **does not exist on this constraint** |
+| `track_axis` | enum `TRACK_X\|Y\|Z\|NEGATIVE_X\|NEGATIVE_Y\|NEGATIVE_Z` (`constraints.new()` sets `TRACK_NEGATIVE_Z`) | same 6 values (`constraints.new()` sets `TRACK_Y`) |
+| `up_axis` | enum `UP_X\|UP_Y\|UP_Z` (`constraints.new()` sets `UP_Y`) | **does not exist on this constraint** |
 | `use_target_z` | yes | n/a |
 | roll behavior | "Up" axis stays aligned to world (or target) Z as much as possible — controllable, no flip surprises | takes the *shortest rotation path* to aim — no up-reference at all, so it can roll unpredictably as the target moves overhead, but never gimbal-locks |
 
@@ -439,16 +439,19 @@ Blender's manual
 calls Track To *"the preferred tracking constraint, as it has a more easily controlled constraining
 mechanism"* specifically because of the explicit `up_axis`.
 
-**Camera convention, RNA defaults are wrong for a camera**: a default `TrackToConstraint` is
-`track_axis='TRACK_X'`, `up_axis='UP_X'` — but a Blender camera looks down its **local -Z** with
-+Y up. Set these explicitly:
+**Camera convention**: a Blender camera looks down its **local -Z** with +Y up. The static RNA
+docs list `TRACK_X`/`UP_X` as defaults, but `constraints.new()` runs the constraint's new-data
+initialiser, which since Blender 2.91 sets Track To to `TRACK_NEGATIVE_Z`/`UP_Y` (made for cameras
+and lights) and Damped Track to `TRACK_Y`. Set the axes explicitly anyway, so the script does not
+depend on that initialiser and documents its intent:
 ```python
 con = cam_obj.constraints.new(type='TRACK_TO')
 con.target = target_obj
 con.track_axis = 'TRACK_NEGATIVE_Z'
 con.up_axis = 'UP_Y'
 ```
-Leaving the defaults gives a camera that points sideways at the target instead of straight at it.
+For a **Damped Track** on a camera, set `track_axis = 'TRACK_NEGATIVE_Z'` yourself: its initial
+`TRACK_Y` aims the camera's local +Y, not its view direction, at the target.
 
 ### Follow Path — two different position-control mechanisms
 
@@ -491,8 +494,10 @@ control at all. Prefer the constraint for anything scripted.
 Standard rig: an `Empty` at the pivot point, the camera parented to (or Child-Of / simply offset
 from) the empty. Keyframe the **empty's** `rotation_euler.z` for an orbit/turntable — this
 isolates "orbit" as one clean rotation channel, independent of the camera's own position/lens
-animation, and a `FModifierCycles` (`mode_after='REPEAT'`) on that one rotation FCurve gives an
-infinite, perfectly seamless spin with no extra keys. Dolly/crane moves: chain two empties
+animation. For a constant-speed spin, set both keys (0 and 2π) to `LINEAR` interpolation and add a
+`FModifierCycles` with `mode_after='REPEAT_OFFSET'` on that one rotation FCurve: each cycle carries
+on from 2π, so it spins forever with no extra keys. With the default Bezier keys the spin eases to
+a stop and speeds up again every revolution. Dolly/crane moves: chain two empties
 (dolly-empty carrying horizontal travel, a child crane-empty carrying vertical/height, camera as
 the crane-empty's child) so each artist-facing motion axis is its own independent keyed channel
 instead of one tangled camera transform.
@@ -552,18 +557,18 @@ the list of `.co` vectors in Python.
 `ObjectConstraints.new(type=) -> Constraint`; `.remove(constraint)`; `.clear()`;
 `.move(from_index, to_index)`; `.copy(constraint)` (copy from another object's constraint).
 `bpy.types.ObjectConstraints` [4.3].
-Verified `type` string identifiers actually used above: `TRACK_TO`, `DAMPED_TRACK`, `LOCKED_TRACK`,
-`FOLLOW_PATH`, `CHILD_OF`, `CLAMP_TO` (from the `Constraint Type Items` enum page — a much longer
-full list exists for every constraint category; these are the relationship/animation-relevant ones
-covered in this document).
+Verified `type` string identifiers for the constraints this document covers: `TRACK_TO`,
+`DAMPED_TRACK`, `FOLLOW_PATH`, `CHILD_OF`. `LOCKED_TRACK` and `CLAMP_TO` are listed for reference
+only; this document does not cover them (all six are from the `Constraint Type Items` enum page,
+which lists many more types).
 
 **Base `Constraint`** fields common to every constraint type
 `bpy.types.Constraint` [4.3]:
 `name`, `type` (readonly), `enabled` (bool), `mute` (bool), **`influence`** (float 0-1, default
 0 at RNA level but Blender's `.new()` sets it to 1 in practice — **this is the standard,
 keyframable "blend a constraint in/out" channel**, e.g. fading a Track-To off over a few frames
-to hand control back to manual animation), `owner_space`/`target_space` (enum `WORLD | CUSTOM |
-POSE | LOCAL_WITH_PARENT | LOCAL`), `space_object`/`space_subtarget` (used when space is
+to hand control back to manual animation), `owner_space` (enum `WORLD | CUSTOM | POSE |
+LOCAL_WITH_PARENT | LOCAL`), `target_space` (the same enum plus `LOCAL_OWNER_ORIENT`), `space_object`/`space_subtarget` (used when space is
 `CUSTOM`), `active`, `show_expanded`, `is_valid` (readonly), `error_location`/`error_rotation`
 (readonly residual-error diagnostics, useful for detecting an unsolvable IK/constraint chain from
 script without rendering anything).
@@ -706,8 +711,8 @@ All three reduce to the same recipe: get the node, get `.inputs["X"]`, set `.def
 `.keyframe_insert("default_value", frame=N)` — repeat per keyframe. For a *pulsing* emission
 (rather than a handful of authored beats), key one or two values and add an `FModifierNoise` or
 `FModifierCycles` to the resulting FCurve instead of hand-authoring every cycle — reachable via
-`material.node_tree.animation_data.action.fcurve_ensure_for_datablock(...)` (5.0+ helper) or the
-plain legacy `action.fcurves.find(...)` on 4.3/4.4.
+`material.node_tree.animation_data.action.fcurve_ensure_for_datablock(...)` (4.4+ helper) or the
+plain legacy `action.fcurves.find(...)` on 4.3.
 
 ---
 
@@ -822,8 +827,10 @@ vs. absolute/sequence mode using `Key.eval_time` (float) exactly like `Curve.eva
    numeric jump and fix for plain parenting; for Child Of, `bpy.ops.constraint.childof_set_inverse(...)`
    is the version-safe explicit fix (auto-solve-on-target-assignment was observed on 5.1.1 but is
    not confirmed as guaranteed behavior on 4.3).
-5. Camera **Track To / Follow Path default enum values are wrong for a camera** — must explicitly
-   set `track_axis='TRACK_NEGATIVE_Z'`, `up_axis='UP_Y'` (Track To) to look straight at a target.
+5. Camera **aim axes**: `constraints.new('TRACK_TO')` already sets `TRACK_NEGATIVE_Z`/`UP_Y`
+   (since 2.91), but a new Damped Track sets `TRACK_Y`, which does not aim a camera's view
+   direction. Set `track_axis='TRACK_NEGATIVE_Z'` (and `up_axis='UP_Y'` on Track To) explicitly
+   rather than relying on the initialiser or the static RNA doc defaults.
 6. **Follow Path `offset_factor` only takes effect when `use_fixed_location=True`** — otherwise
    position is driven by the current scene frame through `Curve.path_duration`/`constraint.offset`.
 7. Node-socket, shape-key and node-tree animation all live on a **nested ID's own
@@ -854,9 +861,9 @@ vs. absolute/sequence mode using `Key.eval_time` (float) exactly like `Curve.eva
 15. On `ShaderNodeMix`, `.inputs["A"]`/`["B"]`/`["Factor"]` name-lookup **does** resolve to the
     currently-enabled socket for the live `data_type` (**[LIVE-verified]**, not the naive
     first-in-list match) — but only if you set `data_type` *before* looking the socket up by name.
-16. Since Blender 4.4, **removing a modifier, constraint, or shape key now also
-    removes any driver targeting it** — a driver you added earlier can silently disappear as a
-    side effect of an unrelated cleanup step.
+16. Since Blender 4.4, **removing a modifier, constraint, or shape key also deletes the drivers on
+    that item's own properties** (for example a driver on a constraint's `influence`) — a driver
+    you added earlier can silently disappear as a side effect of an unrelated cleanup step.
 
 ---
 
@@ -894,8 +901,11 @@ noise.scale = 6.0      # lower = faster shake
 noise.strength = 0.02  # radians
 noise.phase = 0.0      # vary per axis so X/Y/Z don't wobble in lockstep
 
-# --- Perfect idle loop via Cycles modifier --- [4.3 FModifierCycles]
-fcurve.modifiers.new(type='CYCLES').mode_after = 'REPEAT_OFFSET'  # keeps moving forward each cycle
+# --- Idle loop via Cycles modifier --- [4.3 FModifierCycles]
+# Use its own F-curve and add CYCLES before any other modifier: it must be first in the list.
+# The curve's first and last keys must share value and tangent for REPEAT to loop cleanly.
+bob = obj.animation_data.action.fcurve_ensure_for_datablock(obj, "location", index=2)
+bob.modifiers.new(type='CYCLES').mode_after = 'REPEAT'   # same motion again each cycle, no drift
 
 # --- Camera aim + orbit rig --- [LIVE-verified empty_add/parenting]
 bpy.ops.object.empty_add(type='PLAIN_AXES', radius=0.2, location=(0, 0, 1))
@@ -910,8 +920,10 @@ pivot.rotation_euler.z = 0
 pivot.keyframe_insert("rotation_euler", index=2, frame=1)
 pivot.rotation_euler.z = 6.283185307  # 2*pi
 pivot.keyframe_insert("rotation_euler", index=2, frame=120)
-pivot.animation_data.action.fcurve_ensure_for_datablock(pivot, "rotation_euler", index=2)\
-    .modifiers.new(type='CYCLES').mode_after = 'REPEAT'   # infinite seamless turntable
+spin = pivot.animation_data.action.fcurve_ensure_for_datablock(pivot, "rotation_euler", index=2)
+for kp in spin.keyframe_points:
+    kp.interpolation = 'LINEAR'                    # constant speed; Bezier would ease in and out each turn
+spin.modifiers.new(type='CYCLES').mode_after = 'REPEAT_OFFSET'   # each turn continues from 2*pi
 
 # --- Dolly along a path, most controllable form --- [4.3 FollowPathConstraint, LIVE-verified numerically]
 con = cam_obj.constraints.new(type='FOLLOW_PATH')
@@ -935,7 +947,7 @@ drv = fcurve.driver
 drv.type = 'SCRIPTED'
 var = drv.variables.new(); var.name = "dist"; var.type = 'TRANSFORMS'
 t = var.targets[0]; t.id = car_obj; t.transform_type = 'LOC_X'; t.transform_space = 'WORLD_SPACE'
-drv.expression = "dist / wheel_radius_m"
+drv.expression = "dist / 1.0"     # divide by the wheel radius in meters, written as a number
 
 # --- Shape key value keyframe --- [LIVE, 5.1.1]
 mesh_obj.shape_key_add(name="Basis")
@@ -954,7 +966,7 @@ bpy.ops.object.paths_clear()
 # --- Boolean/visibility keyframe: keep it CONSTANT so there's no ambiguous half-hidden frame ---
 obj.hide_viewport = True
 obj.keyframe_insert(data_path="hide_viewport", frame=30)
-fc = obj.animation_data.action.fcurve_ensure_for_datablock(obj, "hide_viewport", index=-1)
+fc = obj.animation_data.action.fcurve_ensure_for_datablock(obj, "hide_viewport", index=0)  # non-array property: array_index 0
 for kp in fc.keyframe_points:
     kp.interpolation = 'CONSTANT'
 ```

@@ -1,7 +1,7 @@
 """
-DayZ .layout parser -> LayoutDoc JSON (renderer v2, phase 1).
+DayZ .layout parser for dayz-ui-lab: .layout text in, LayoutDoc JSON out.
 
-This module is the testable parser/resolver side of the v2 architecture:
+This module is the testable parser/resolver side of dayz-ui-lab:
 .layout text is tokenized and parsed into WidgetNode roots, then exported as a
 LayoutDoc JSON document with raw attributes and phase-1 geometry metadata.
 """
@@ -79,7 +79,7 @@ class LayoutDoc:
         stats = collect_stats(self.roots)
         result = {
             "schemaVersion": SCHEMA_VERSION,
-            "generator": "renderer/parse.py phase1",
+            "generator": "dayz-ui-lab/parse.py",
             "source": {
                 "path": self.source_path,
             },
@@ -337,9 +337,9 @@ def _scan_continuation(text: str, index: int) -> tuple[int, int, int] | None:
     return cursor, 1, column
 
 
-# Value counts per attribute key. 127 keys were measured on the 214 vanilla
-# .layout files in this workspace: each key had a single arity under the old
-# line-grouping parser. Four ScriptParams keys used by tests/the IR are listed
+# Value counts per attribute key. The 227 vanilla .layout files under
+# P:\gui\layouts use 128 distinct keys, and each key has a single arity there.
+# Four ScriptParams keys used by tests/the IR are listed
 # too (`Binding_Name`, `Relay_Command`, `Two_Way_Binding`, `Selected_Item`).
 # Inline form cannot use the physical line as a delimiter; parse_values
 # consumes this many tokens instead.
@@ -360,6 +360,7 @@ ATTRIBUTE_ARITY: dict[str, int] = {
     "Margin": 1,
     "Mask": 1,
     "MinHeight": 1,
+    "Name": 1,
     "Padding": 1,
     "Progress": 1,
     "Relay_Command": 1,
@@ -935,7 +936,7 @@ def write_doc(doc: LayoutDoc, out_path: Path) -> None:
 
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Parse DayZ .layout files into renderer v2 LayoutDoc JSON.",
+        description="Parse DayZ .layout files into dayz-ui-lab LayoutDoc JSON.",
     )
     parser.add_argument("layouts", nargs="+", help="layout path(s), or names under --layout-root")
     parser.add_argument(

@@ -2,7 +2,7 @@
 # Run one automated client+server test: start a local server, start the DayZ client headless,
 # wait until the mod's tests print a final line, report, tear everything down.
 #
-#   dayz-client-test.sh -t <server-tree> -s "<server -mod= list>" -c "<client -mod= list>" [options]
+#   sh dayz-client-test.sh -t <server-tree> -s "<server -mod= list>" -c "<client -mod= list>" [options]
 #
 #   -e          experimental: use the experimental client (the tree must be an experimental server tree)
 #   -t TREE     server tree from make-server-tree.sh (mods and keys already linked, BattlEye = 0)
@@ -34,7 +34,7 @@ done
 [ -x "$tree/DayZServer" ] || { echo "no DayZServer in $tree (make-server-tree.sh first)" >&2; exit 2; }
 tree=$(cd "$tree" && pwd -P)
 # One game at a time: check before spending a server start on a client that would be refused.
-"$here/dayz-client-headless.sh" status >&2 || { echo "stop the running DayZ client first (one game at a time)" >&2; exit 1; }
+sh "$here/dayz-client-headless.sh" status >&2 || { echo "stop the running DayZ client first (one game at a time)" >&2; exit 1; }
 [ -n "$out" ] || out=$(mktemp -d /var/tmp/dzct.XXXXXX)
 mkdir -p "$out"
 
@@ -44,7 +44,7 @@ cleanup() {
     [ "$cleaned" = 0 ] || return 0
     cleaned=1
     trap '' INT TERM
-    "$here/dayz-client-headless.sh" stop "$out/client" 2>/dev/null || true
+    sh "$here/dayz-client-headless.sh" stop "$out/client" 2>/dev/null || true
     if [ -n "$spid" ]; then
         kill "$spid" 2>/dev/null || true
         for _ in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$spid" 2>/dev/null || break; sleep 1; done
@@ -56,7 +56,7 @@ trap 'cleanup; exit 130' INT
 trap 'cleanup; exit 143' TERM
 
 # shellcheck disable=SC2046  # two ports, split on purpose
-set -- $("$here/free-ports.sh" 2)
+set -- $(sh "$here/free-ports.sh" 2)
 game=$1 query=$2
 grep -q '^steamQueryPort' "$tree/serverDZ.cfg" || sed -i '1i steamQueryPort = 0;' "$tree/serverDZ.cfg"
 sed -i "s/^steamQueryPort = .*/steamQueryPort = $query;/" "$tree/serverDZ.cfg"
@@ -76,7 +76,7 @@ until grep -q '__SERVER__ CREATED -> CONNECTED' "$out/server.log" 2>/dev/null; d
 done
 
 echo "== client: mods $cmods"
-"$here/dayz-client-headless.sh" $eflag start "$out/client" -name=autotest "-mod=$cmods" -connect=127.0.0.1 -port="$game"
+sh "$here/dayz-client-headless.sh" $eflag start "$out/client" -name=autotest "-mod=$cmods" -connect=127.0.0.1 -port="$game"
 
 # The server's script log of THIS run: the newest one, created after the stamp.
 n=0; log=
@@ -84,12 +84,12 @@ while :; do
     log=$(find "$tree/profiles" -maxdepth 1 -name 'script_*.log' -newer "$stamp" 2>/dev/null | head -1)
     if [ -n "$log" ] && grep -q "$done_re" "$log" 2>/dev/null; then break; fi
     n=$((n + 2)); [ "$n" -lt "$wait_s" ] || { echo "== timeout after ${wait_s}s, no '$done_re'" >&2
-        "$here/dayz-client-headless.sh" shot "$out/client" "$out/timeout.png" 2>/dev/null || true
+        sh "$here/dayz-client-headless.sh" shot "$out/client" "$out/timeout.png" 2>/dev/null || true
         [ -z "$log" ] || grep -F "$prefix" "$log" || true; echo "artifacts: $out"; exit 1; }
     sleep 2
 done
 
-"$here/dayz-client-headless.sh" shot "$out/client" "$out/final.png" 2>/dev/null || true
+sh "$here/dayz-client-headless.sh" shot "$out/client" "$out/final.png" 2>/dev/null || true
 grep -F "$prefix" "$log" | sed -E "s/^[0-9:. ]*SCRIPT +: //"
 echo "artifacts: $out (server.log, final.png; server script log: $log)"
 if grep -F "$prefix" "$log" | grep -q ' FAIL '; then exit 1; fi

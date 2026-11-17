@@ -55,7 +55,7 @@ A mod recoil class is Enforce Script in `4_World` and follows `skills/_shared/en
 
 - `modes[]` lists the mode classes in the order the player cycles them (`cz527\config.cpp:81`: `"Single"`; AKM at `P:\DZ\weapons\firearms\akm\config.cpp:77`: `"SemiAuto"`, `"FullAuto"`).
 - Each mode is a class inheriting a root mode base: `Mode_Single`, `Mode_SemiAuto`, `Mode_Burst` or `Mode_FullAuto` (`cz527\config.cpp:85`; AKM `SemiAuto` at `akm\config.cpp:87`, `FullAuto` at `:119`). `Mode_SemiAuto` and `Mode_Safe` are defined in `P:\DZ\data\config.cpp:3771` and `:3778`; `Mode_Burst` and `Mode_FullAuto` are only forward declared there (`:3776`, `:3777`). Declare whichever you use at the root of your file, as vanilla does.
-- The mode bases themselves are defined in the engine config, at its root: `Mode_SemiAuto` (`P:\bin\config.cpp:237`), `Mode_Single` (`P:\bin\config.cpp:254`), `Mode_Burst` with `burst=3` (`P:\bin\config.cpp:271`), `Mode_Double` (`P:\bin\config.cpp:293`) and `Mode_FullAuto` with `autoFire=1` (`P:\bin\config.cpp:315`). `DZ_Data` only adds to `Mode_SemiAuto` and defines `Mode_Safe`. A mode class declared inside `CfgWeapons` instead of at the root is a different, empty class, and a full auto mode built on it is dropped by the engine; `weapon-config.md`, "Forward declarations", has the symptom and the test.
+- The mode bases are root classes of the engine config, so a mode class declared inside `CfgWeapons` is a different, empty class; `weapon-config.md`, "Forward declarations", has the engine lines, the symptom and the test.
 - Burst sets `burst=3` on a `Mode_Burst` class (AUG at `P:\DZ\weapons\firearms\aug\config.cpp:88`, `:114`).
 - Script hears a mode change through `Weapon_Base.OnFireModeChange` (`weapon_base.c:1048`).
 

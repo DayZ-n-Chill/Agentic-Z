@@ -145,7 +145,8 @@ float AdaptiveInterval(float baseInterval, float refDt)
 
 The same shape appears as a fixed (non-adaptive) throttle for cosmetic work: physics runs
 every tick while dials and HUD throttle to 10 Hz (`DIAL_UPDATE_INTERVAL = 0.1`), because
-the eye does not perceive a UI refresh above about 10-15 Hz. FPS-adaptive is that same
+ten updates a second is enough for a numeric readout to stay readable and current, even
+though a faster refresh would still be visible. FPS-adaptive is that same
 throttle with the interval *driven by measured load* instead of a constant.
 
 ---

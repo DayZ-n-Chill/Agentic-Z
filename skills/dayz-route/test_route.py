@@ -209,6 +209,21 @@ def test_model_changes_still_go_to_object_builder(text):
     assert decide(text)["route"] == "dayz-object-builder"
 
 
+@pytest.mark.parametrize("text", ["inspect the model.cfg of my door", "inspect my model.cfg animations"])
+def test_inspecting_a_model_cfg_is_not_the_p3d_inspector(text):
+    assert decide(text)["route"] != "dayz-p3d-inspector"
+
+
+@pytest.mark.parametrize("text", ["triangulate the quads on my crate", "the ground plane in my model"])
+def test_quads_and_planes_in_a_mesh_are_not_vehicles(text):
+    assert decide(text)["route"] != "dayz-vehicle-specialist"
+
+
+@pytest.mark.parametrize("text", ["add a quad bike to my mod", "my plane wings flap", "make an ATV with four seats"])
+def test_quad_bikes_atvs_and_flying_planes_are_vehicles(text):
+    assert decide(text)["route"] == "dayz-vehicle-specialist"
+
+
 def _assert_confident(text, expected, args):
     d = decide(text)
     assert d["route"] == expected
@@ -580,6 +595,32 @@ def test_reference_skill_work_goes_to_the_specialist(text, expected):
     assert d["route"] == expected
     assert d["kind"] == "agent"
     assert d["confidence"] >= CFG["threshold"]
+
+
+# A whole-mod request stays with the team even when it names a tool or reference skill's phrase.
+@pytest.mark.parametrize(
+    "text",
+    [
+        "build me a new mod that adds a dirt bike with realistic animations",
+        "create a new vest mod, here are the acceptance criteria",
+        "build me a new weapon mod with a feature spec",
+        "build me a motorbike mod and check the get-in points",
+    ],
+)
+def test_a_whole_mod_with_a_skill_phrase_is_still_the_team(text):
+    _assert_confident(text, "orchestrator", None)
+
+
+# A crash with a log stays with the debugger even when it mentions Linux or hot reload.
+@pytest.mark.parametrize(
+    "text",
+    [
+        "my linux server crashes, here is the RPT",
+        "my game crashes when I hot reload scripts",
+    ],
+)
+def test_a_crash_on_linux_or_after_hot_reload_is_the_debuggers(text):
+    _assert_confident(text, "dayz-mod-debugger", None)
 
 
 def test_naming_a_specialist_is_not_its_reference_skill():

@@ -35,10 +35,18 @@ def test_parse_minimal_rvmat(tmp_path):
     assert parsed["pixel_shader"] == "Super"
     assert parsed["textures"]["normal"].replace("\\", "/").endswith("base_nohq.paa")
     assert parsed["textures"]["diffuse"].replace("\\", "/").endswith("base_co.paa")
-    # is_emissive only inspects `emissive` / `forceddiffuse`, not the BI
-    # `emmisive` spelling. The converter still reads `emmisive` for PBR.
-    assert parsed["is_emissive"] is False
+    # is_emissive reads the DayZ `emmisive` spelling first.
+    assert parsed["is_emissive"] is True
     assert len(parsed["stages"]) == 2
+
+    # forcedDiffuse alone is not emission.
+    forced_only = tmp_path / "glass.rvmat"
+    forced_only.write_text(
+        "emmisive[] = {0, 0, 0, 1};\nforcedDiffuse[] = {0.4, 0.4, 0.4, 1};\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    assert parse_rvmat(str(forced_only))["is_emissive"] is False
 
     emissive_only = tmp_path / "led.rvmat"
     emissive_only.write_text(

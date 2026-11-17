@@ -37,7 +37,7 @@ The whole loop can also run from one PowerShell orchestrator, `dayz-test.ps1`, g
 - **An observation is worth what the `-mod=` line of its own run is worth.** Before reading any verdict, read `-mod=` and `-mission=` in that run's RPT (`references/automated-cells.md`).
 - **Do not promise hot-reload.** `-filePatching` is meant to reload scripts and configs from source, never models, textures or materials; on the measured install even scripts came from the PBO. Rebuild the PBO for a script change unless a source-only log-string probe shows your install serves the source (`references/windows-launch-cycle.md`).
 - **A gate that cannot go red proves nothing.** Show the failing case once before trusting a green run (`references/automated-cells.md`).
-- **Mission storage belongs to the mod set that wrote it.** Booting storage written without Community Framework on a mod set that has it, or the reverse, crashed the server, and persisted entities come back as the last run left them (`references/build-and-storage-traps.md`).
+- **Mission storage belongs to the mod set that wrote it.** Booting storage written without Community Framework on a mod set that has it crashed the server; the reverse floods the log with `Scripted variables corrupted` and can rewrite the storage so that the next server with Community Framework crashes; and persisted entities come back as the last run left them (`references/build-and-storage-traps.md`).
 - **The test machine is one shared resource**: one game port, one Steam client. Whoever opens a process closes it (`references/managed-launcher.md`, `references/session-findings.md`).
 
 ## What to read

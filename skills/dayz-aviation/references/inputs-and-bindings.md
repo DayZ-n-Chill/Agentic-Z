@@ -20,7 +20,7 @@ In `scripts/data/Inputs.xml`:
             <!-- groups inputs in keybind menu under "myplane_controls" category -->
         </sorting>
         <exclude name="MyPlane_Controls">
-            <!-- excludes these inputs from default vanilla binding conflicts -->
+            <!-- named exclude group: while script has called GetUApi().ActivateExclude("MyPlane_Controls"), these inputs read zero (vanilla groups: P:\bin\specific.xml:81 onward) -->
         </exclude>
     </inputs>
     <preset>

@@ -92,7 +92,16 @@ def test_raw_counts_over_the_ceiling_are_only_a_warning_when_they_resolve_under_
     model = SimpleNamespace(lods=[_lod(0.0, faces=21846, points=10, distinct=False)])
     issues = audit.check_lod0_vertex_budget(model)
     assert _severities(issues) == ["WARNING"]
-    assert "resolves to 1 unique vertices, under the ceiling" in issues[0][1]
+    assert "resolves to 1 unique vertices" in issues[0][1]
+    assert "under the ceiling" not in issues[0][1] and "binarize" in issues[0][1]
+
+
+def test_raw_count_warning_does_not_hide_the_vehicle_body_warning():
+    body = SimpleNamespace(lods=[_lod(0.0, selections=[("wheel_1_1_damper", 0)], faces=21846, points=10,
+                                      normals=16385, distinct=False)])
+    issues = audit.check_lod0_vertex_budget(body)
+    assert _severities(issues) == ["WARNING", "WARNING"]
+    assert "heavy for a vehicle body" in issues[1][1]
 
 
 def test_heavy_lod_warns_only_on_a_vehicle_body():

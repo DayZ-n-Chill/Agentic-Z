@@ -29,17 +29,15 @@ match the in-game mesh.*
 
 ### Resolution 1100 (ViewPilot) is not a view-pilot kind
 
-`classify_lod` (`p3d_to_gltf.py`) returns `"shadow"` for every
-resolution in `[10, 15000)`, which includes ViewPilot at 1100. It
-does not label 1100 as a visual LOD: `find_best_visual_lod` only
-accepts types that start with `"visual"`, so a 1100 LOD is not chosen
-as the mesh. `classify_lod_resolution` in `scripts/tools/py3d`
-returns `None` for 1100.
+`classify_lod` (`p3d_to_gltf.py`) follows the kinds of
+`classify_lod_resolution` in `scripts/tools/py3d`: visual below 1000,
+`shadowvolume` in `[10000, 20000)`, and the special LODs from geometry
+to fire geometry. ViewPilot at 1100 is none of these, so it is
+reported as `unknown_1100.0`, as py3d returns `None` for it.
+`find_best_visual_lod` only accepts types that start with `"visual"`,
+so a 1100 LOD is not chosen as the mesh.
 
-The misclassification is that 1100 is reported as `shadow`, not as a
-ViewPilot kind.
-
-*Present as a wrong kind. Not treated as the visual mesh.*
+*Present as an unknown kind. Not treated as the visual mesh.*
 
 ## Out of scope here
 

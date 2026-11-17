@@ -61,7 +61,9 @@ Since 1.30 each world builds its own registry. `MissionBase.InitialiseWorldData(
 | `enoch` | `DynamicMusicPlayerRegistryEnoch` | 122 |
 | `sakhal` | `DynamicMusicPlayerRegistrySakhal` | 127 |
 | `nasdara` | `DynamicMusicPlayerRegistryNasdara` | 132 |
-| any other | the base `DynamicMusicPlayerRegistry` | 149 |
+| `samplemap5` | `DynamicMusicPlayerRegistryNasdara` | 137 |
+| `mainmenuscenexbox` (console builds only) | the base `DynamicMusicPlayerRegistry` | 143 |
+| any name not listed in the switch | the base `DynamicMusicPlayerRegistry` | 149 |
 
 For a custom world, write a subclass of `DynamicMusicPlayerRegistry` (`P:\scripts\3_game\systems\dynamicmusicplayer\dynamicmusicplayerregistry.c:1`) and create it for your world name in a modded `MissionBase.InitialiseWorldData()`. The Nasdara registry shows what to override:
 

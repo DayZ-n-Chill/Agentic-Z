@@ -258,7 +258,7 @@ Use Smart UV Project:
 ```python
 bpy.ops.object.mode_set(mode='EDIT')
 bpy.ops.mesh.select_all(action='SELECT')
-bpy.ops.uv.smart_project(use_island_rotate=True, island_margin=0.02)
+bpy.ops.uv.smart_project(island_margin=0.02)
 bpy.ops.object.mode_set(mode='OBJECT')
 ```
 
@@ -291,7 +291,10 @@ DayZ uses Level-of-Detail (LOD) models to optimize performance. Create 2-4 LOD v
 original = bpy.context.active_object
 
 for lod_level, ratio in [(1, 0.5), (2, 0.25), (3, 0.12)]:
-    # Duplicate
+    # Duplicate the original, not the LOD made on the previous pass
+    bpy.ops.object.select_all(action='DESELECT')
+    original.select_set(True)
+    bpy.context.view_layer.objects.active = original
     bpy.ops.object.duplicate()
     lod_obj = bpy.context.active_object
     lod_obj.name = f'{original.name}_lod{lod_level}'

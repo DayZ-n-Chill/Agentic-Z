@@ -2,7 +2,8 @@
 //   [AUTOTEST] PASS <name> <message>
 //   [AUTOTEST] FAIL <name> <message>
 //   [AUTOTEST] DONE passed=<n> failed=<n>      <- the line an outside script waits for
-// Checked by the offline script validator only (scripts/tools/dayz-script-validator), not run in game.
+// The sender binding and godmode restore in this version were checked by the offline script validator
+// only (scripts/tools/dayz-script-validator), not run in game; the earlier four-test version ran on 1.30 stable.
 class AutoTestRunner
 {
 	static ref AutoTestRunner s_Instance;

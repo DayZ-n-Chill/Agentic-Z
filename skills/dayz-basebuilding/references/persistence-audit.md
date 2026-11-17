@@ -38,7 +38,7 @@ Three ints × 31 usable bits = **93 distinct parts maximum per BaseBuildingBase 
 - Base damage-system version: `GetDamageSystemVersionChange()` returns `111` (`basebuildingbase.c:1133-1136`).
 - Fence gate persistence bumped at **v110**, `Fence.OnStoreLoad` reads a discarded bool for `version < 110`, then the gate fields for current versions (`fence.c:256-289`).
 
-When you add a persisted field, bump the version and add a legacy read branch so old saves load with the old layout and new saves with the new one.
+Both of those are the game's versions, which a mod cannot raise. When you add a persisted field, write your mod's own version int first, bump it, and branch on it so old saves load with the old layout and new saves with the new one. Never migrate by the game's `version` (`skills/_shared/persistence/versioning-and-migration.md`).
 
 ## 6. Data audit hand-off checklist
 
@@ -47,7 +47,7 @@ Before declaring a base-building persistence change release-safe, confirm with `
 1. Every part `id` in the `Construction{}` block is unique and in 1..93.
 2. `OnStoreSave` and `OnStoreLoad` write and read the same fields in the same order.
 3. Every subclass writes/reads its fields after `super`, same order both ways.
-4. A new persisted field bumps the version and adds a legacy branch for old saves.
+4. A new persisted field bumps the mod's own version (written first) and adds a branch on it for old saves, not a branch on the game's `version`.
 5. Crash-recovery walk: kill the server between each I/O hop of save/load, does the next boot recover the base or lose parts? (walk it step by step.)
 6. The failsafe relock path (`SetPartFromSyncData`, `basebuildingbase.c:303`) still runs for corrupted sync/storage data.
 7. In-game gate: build parts, restart the server, confirm every part and the base survive (not just an offline audit, the case history behind the data audit skill shows lost-base bugs that only surface on a real restart).

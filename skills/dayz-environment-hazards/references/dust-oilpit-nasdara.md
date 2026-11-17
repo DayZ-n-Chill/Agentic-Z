@@ -65,7 +65,7 @@ No motorbike uses 0.25; `P:\` shows 0.5 and 0.75.
 
 The area type is `EEffectAreaType.OIL_PIT = 8` (`P:\scripts\4_world\classes\contaminatedarea\effectarea.c:10` to `:16`).
 
-`OilPitArea` (`P:\scripts\4_world\classes\contaminatedarea\oilpitarea.c:7`): `PRE_BURNING_DURATION_MIN` 3 and `PRE_BURNING_DURATION_MAX` 10 seconds (`oilpitarea.c:10` to `:11`). `InitZoneServer` creates the trigger and calls `StartBurning` after that random delay (`oilpitarea.c:33` to `:48`). `StartBurning` sets `EOilPitState.BURNING` on the trigger (`oilpitarea.c:57` to `:61`). Until then the pit does no damage, so a freshly loaded pit looks inert for up to 10 s.
+`OilPitArea` (`P:\scripts\4_world\classes\contaminatedarea\oilpitarea.c:7`): `PRE_BURNING_DURATION_MIN` 3 and `PRE_BURNING_DURATION_MAX` 10 (`oilpitarea.c:10` to `:11`). `RandomizeIntervals` passes them to `Math.RandomInt` (`oilpitarea.c:54`), whose upper bound is exclusive (`P:\scripts\1_core\proto\enmath.c:26` to `:38`), so the delay is 3 to 9 whole seconds. `InitZoneServer` creates the trigger and calls `StartBurning` after that random delay (`oilpitarea.c:33` to `:48`). `StartBurning` sets `EOilPitState.BURNING` on the trigger (`oilpitarea.c:57` to `:61`). Until then the pit does no damage, so a freshly loaded pit looks inert for up to 9 s.
 
 Damage:
 
@@ -90,7 +90,7 @@ Damage:
 
 `OnStayStartServerEvent` raises the damage flag only in the `BURNING` state and once per `DAMAGE_TICK_RATE` (`oilpittrigger.c:53` to `:61`).
 
-On the client (`UpdateState`, `oilpittrigger.c:90` to `:126`): a `BonfireLight` 2.5 m above the pit; fire and smoke as either `OIL_FIRE1` with `BONFIRE_SMOKE` or `OIL_FIRE2` with `SMOKE_GENERIC_WRECK`; the sound `oil_pit_burn_SoundSet`, played only within 200 m and re-checked every 2 s (`oilpittrigger.c:3` to `:5`; `UpdateSoundRange` and `UpdateSound`, `oilpittrigger.c:201` to `:224`). The position is snapped to the ground with `SurfaceRoadY` (`oilpittrigger.c:128` to `:134`). `DeferredInit` skips `UpdateState` on a headless or dedicated server (`oilpittrigger.c:37`), but the ignition branch of `UpdateState` itself calls `PlayInWorld` with no such guard (`oilpittrigger.c:105` to `:116`).
+On the client (`UpdateState`, `oilpittrigger.c:90` to `:126`): a `BonfireLight` 2.5 m above the pit; fire and smoke as either `OIL_FIRE1` with `BONFIRE_SMOKE` or `OIL_FIRE2` with `SMOKE_GENERIC_WRECK`; the sound `oil_pit_burn_SoundSet`, played only within 200 m and re-checked every 2 s (`oilpittrigger.c:3` to `:5`; `UpdateSoundRange` and `UpdateSound`, `oilpittrigger.c:201` to `:224`). The position is snapped to the ground with `SurfaceRoadY` (`oilpittrigger.c:128` to `:134`). `UpdateState` runs only on clients: `DeferredInit` skips it on a headless or dedicated server (`oilpittrigger.c:37`), and the other caller, `OnVariablesSynchronized` (`oilpittrigger.c:82` to `:88`), is called only on clients (`P:\scripts\3_game\entities\entityai.c:3067`). So the `PlayInWorld` calls in its ignition branch (`oilpittrigger.c:105` to `:116`) need no guard of their own.
 
 ### Placing one, and writing your own
 

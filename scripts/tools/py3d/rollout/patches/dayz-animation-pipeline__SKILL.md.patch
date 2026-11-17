@@ -19,7 +19,7 @@
  | To author keyframes from scratch or retarget in Blender | Authoring | `references/blender-authoring.md` |
  | To apply Mixamo (or any FBX) mocap onto a rig — auto bone mapping, retarget, NLA — as a keyframe SOURCE for Layer 2 | Sibling skill | invoke `mixamo-retarget` (runs via Blender MCP); output feeds the SEAnim path below. Mixamo FBX download is manual (no API) |
  | To know which tool does what, the walls, and signing | Tooling | `references/tooling-and-walls.md` |
-@@ -78,15 +80,33 @@
+@@ -78,15 +80,32 @@
  
  ## Layer 2 workflow (programmatic intermediate authoring)
  
@@ -51,8 +51,7 @@
  
 -Treat the RTM writer as not-yet-built: read RTM is feasible, write RTM in pure Python is unverified — route RTM authoring through Blender (Arma3ObjectBuilder) or FBXToRTM instead.
 +The pure-Python RTM writer was cross-read by external Arma3ObjectBuilder 2.5.1
-+with first-party motion, phases, metadata and transforms preserved. A3OB is a
-+GPL external oracle only; no A3OB source is imported or redistributed.
++with first-party motion, phases, metadata and transforms preserved.
  
  ## Animating a sub-piece of a proxy requires separating it (added 2026-05-23)
  

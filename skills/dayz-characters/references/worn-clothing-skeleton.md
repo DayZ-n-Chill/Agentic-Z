@@ -18,7 +18,7 @@ What `P:\` shows (text search inside the binarized models):
 - So do the bodies: the infected body `P:\DZ\characters\zombies\hermit_above0.p3d` and the survivor body parts model `P:\DZ\characters\bodies\bodyparts_above0.p3d`. Of the 63 models under `P:\DZ\characters\zombies\`, 62 contain `DayzTemporarySkeleton`; the one without is a static prop.
 - Of the 897 models under `P:\DZ\characters\`, 584 contain `DayzTemporarySkeleton` and only 4 contain `ofp2_manskeleton`: `P:\DZ\characters\pants\jeans_m_above0.p3d`, `P:\DZ\characters\tops\tshirt_m_above0.p3d` and the two `shirt_*_new_anim_system.p3d` models in `tops`. No vanilla `config.cpp` under `P:\DZ\characters\` names those four.
 
-So the name vanilla ships in character and clothing models is `DayzTemporarySkeleton`. The custom infected body in `references/case-log.md` was built with `OFP2_ManSkeleton` as its `model.cfg` skeleton name and did animate in game as an infected (`references/case-log.md`), so a body that is its own entity worked under that name; a worn item did not. When in doubt, use the name vanilla uses.
+So the name vanilla ships in character and clothing models is `DayzTemporarySkeleton`. The custom infected body was built with `OFP2_ManSkeleton` as its `model.cfg` skeleton name (`references/character-rigging.md`, section 6, "Export to `.p3d`") and did animate in game as an infected (`references/case-log.md`), so a body that is its own entity worked under that name; a worn item did not. When in doubt, use the name vanilla uses.
 
 ## The frame a worn mesh must be built in
 
@@ -47,7 +47,7 @@ Each step is cheap in game, and together they isolated the fault in about six cy
 2. **Compare the skeleton name inside the binarized model**, custom against vanilla worn. A compliant clothing ODOL says `DayzTemporarySkeleton`. (The text search above is enough to read it.)
 3. **Structure parity checklist**, custom against vanilla worn:
    - skeleton of 159 bones;
-   - per-vertex weight sums (vanilla stores raw bytes that sum to 255);
+   - per-vertex weight sums (vanilla stores raw bytes that sum to 255; read from the debinarized models, not checked on `P:\`);
    - the sub-skeleton palette;
    - sections: tops use `camomale` alone, and only armbands carry the `camomale_big_a`, `camomale_big_b`, `camomale_small_a` and `camomale_small_b` complexion variants (the same text search finds exactly these names in `P:\DZ\characters\tops\hoodie_m.p3d` and `P:\DZ\characters\tops\armbend_dynamic_m.p3d`);
    - an empty Geometry LOD with `autocenter=0` is the vanilla worn pattern.

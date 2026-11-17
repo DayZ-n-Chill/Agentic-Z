@@ -25,7 +25,7 @@ Where it comes from: the Blender weapon frame is long along X (muzzle toward -X)
 - The clean build v12 removed the old copy, `model=` then resolved to nothing, and the result was "invisible, and a crash on equip or on opening the inventory". Three unrelated theories were disproved with data before the real fix.
 - Fix: `model="\<Mod>\data\<weapon>.p3d"` and a clean rebuild, v12c, the first build whose binarized model actually rendered.
 
-**The rule:** `model=` points at the real path inside the PBO (under `data\`), and the build runs with a clean temp folder after any change to the folder structure (`/dayz-build-pbo <ModName> --clean`). `/dayz-lint` reports a `model=` path that names no file in the mod as `missing-model`. Check the config `model=` against the PBO's contents on each build.
+**The rule:** `model=` points at the real path inside the PBO (under `data\`), and the build runs with a clean temp folder after any change to the folder structure. `/dayz-build-pbo <ModName>` empties its temp folder (`P:\temp\<ModName>`) on every build; its `--clean` flag does something else, wiping `P:\Mods\@<ModName>\Addons\` before the build. `/dayz-lint` reports a `model=` path that names no file in the mod as `missing-model`. Check the config `model=` against the PBO's contents on each build.
 
 ## W-BUILD2: test the binarized build; use the retail game for a pack with loose scripts
 
@@ -40,7 +40,7 @@ A launcher for such a weapon enforces both: retail executable, clean build, bina
 
 1. Assemble the `.p3d` with the swap derived for this weapon and validated against the binarized AKM pattern (at least 60% outward, stored dot geometric -0.85 or lower). Mesh assembly and LODs: the dayz-model-pipeline skill.
 2. `config.cpp`: `model="\<Mod>\data\<weapon>.p3d"`, the real path inside the PBO (W-BUILD1).
-3. Build binarized with a clean temp folder: `/dayz-build-pbo <ModName> --clean`.
+3. Build binarized with a clean temp folder: `/dayz-build-pbo <ModName>`, which empties the temp folder on every build.
 4. Test with the retail game when the mod is built on a weapon pack with loose scripts (W-BUILD2).
 
 ## Cite, then verify

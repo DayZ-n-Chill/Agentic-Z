@@ -1,18 +1,18 @@
 #!/bin/sh
 # Run DayZ Tools (Steam app 830640) and DayZDiag on Linux through Proton.
 #
-#   dayz-proton.sh doctor                         what is installed, versions, prefixes, dayzmake
-#   dayz-proton.sh init [<P-root>]                create the private tools prefix, register the game, map P:
-#   dayz-proton.sh winpath <path>                 the Windows path a tool sees for a Linux path
-#   dayz-proton.sh tool <Tool> [args...]          run a console tool, print its output, return its exit code
-#   dayz-proton.sh gui  <Tool> [args...]          run a GUI tool on the current display
-#   dayz-proton.sh binarize <P-root> <addon> <out> [file.p3d|file.rtm ...]
-#                                                 BI binarize.exe in a confined sandbox, run from the P: root
-#   dayz-proton.sh headless start <state> <Tool|DayZDiag> [args...]   GUI tool in a headless sway
-#   dayz-proton.sh headless shot  <state> <out.png>
-#   dayz-proton.sh headless stop  <state>
+#   sh dayz-proton.sh doctor                         what is installed, versions, prefixes, dayzmake
+#   sh dayz-proton.sh init [<P-root>]                create the private tools prefix, register the game, map P:
+#   sh dayz-proton.sh winpath <path>                 the Windows path a tool sees for a Linux path
+#   sh dayz-proton.sh tool <Tool> [args...]          run a console tool, print its output, return its exit code
+#   sh dayz-proton.sh gui  <Tool> [args...]          run a GUI tool on the current display
+#   sh dayz-proton.sh binarize <P-root> <addon> <out> [file.p3d|file.rtm ...]
+#                                                    BI binarize.exe in a confined sandbox, run from the P: root
+#   sh dayz-proton.sh headless start <state> <Tool|DayZDiag> [args...]   GUI tool in a headless sway
+#   sh dayz-proton.sh headless shot  <state> <out.png>
+#   sh dayz-proton.sh headless stop  <state>
 #
-# Tools: AddonBuilder BankRev Binarize CfgConvert DSCheckSignatures DSCreateKey DSSignFile FileBank
+# Tools: AddonBuilder BankRev Binarize CfgConvert DSCheckSignatures DSCreateKey DSSignFile DSUtils FileBank
 #        ImageToPAA ImageToPAAGUI ObjectBuilder Publisher TerrainBuilder TexView Workbench, and DayZDiag
 #        (the diag executable from the game folder, run in the private *game* prefix).
 #
@@ -113,7 +113,8 @@ find_steam() {
     done
     die "no Steam install found (set STEAM_ROOT)"
 }
-STEAM_ROOT=$(find_steam)
+# STEAM_ROOT is resolved in the command switch at the end, only for commands that need Steam,
+# so the usage text and `winpath` work on a machine without Steam.
 
 libraries() {
     echo "$STEAM_ROOT"
@@ -233,7 +234,7 @@ tool_exe() {
         Workbench)         echo "gui $T/Workbench/WorkbenchApp.exe" ;;
         DayZDiag)          g=$(appdir 221100) || die "DayZ (221100) is not installed"
                            echo "game $g/DayZDiag_x64.exe" ;;
-        *) die "unknown tool '$1' (see: $me with no arguments)" ;;
+        *) die "unknown tool '$1' (see: sh $me with no arguments)" ;;
     esac
 }
 
@@ -849,7 +850,7 @@ do_headless() {
 echo "\$WAYLAND_DISPLAY" > "$state/wayland-display"
 set --
 while IFS= read -r a; do set -- "\$@" "\$a"; done < "$state/args"
-exec "$me" gui "\$@"
+exec /bin/sh "$me" gui "\$@"
 EOF
         chmod +x "$state/run.sh"
         printf 'output HEADLESS-1 resolution %s position 0 0\nxwayland enable\nexec %s/run.sh > %s/run.log 2>&1\n' \
@@ -977,7 +978,7 @@ do_init() {
             echo "prefix $app: P: -> $pr"
         done
     else
-        echo "no P: root given; run '$me init <dir>' to map P:"
+        echo "no P: root given; run 'sh $me init <dir>' to map P:"
     fi
     signal_new_wineservers "$(prefix_dir 830640)" "$_in_snap830" "$_in_ok830" ""
     if [ "$_in_use221" = 1 ]; then
@@ -1027,6 +1028,9 @@ do_doctor() {
 }
 
 cmd=${1:-}; [ $# -gt 0 ] && shift
+case $cmd in
+    doctor|init|tool|gui|binarize|headless) STEAM_ROOT=$(find_steam) ;;
+esac
 case $cmd in
     doctor)   do_doctor ;;
     init)     do_init "$@" ;;

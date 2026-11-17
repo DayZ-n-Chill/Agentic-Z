@@ -8,7 +8,7 @@ The AddonBuilder behaviour and the SUB_BRZ and LFQuad measurements are not yet c
 
 Added 2026-07-06 from the SUB_BRZ binarize experiment.
 
-A binarize build that has scripts and assets must list `*.paa;*.rvmat` too, or the PBO ships without textures: the white car. The usual scripts-only include file (`*.c;*.asi;*.anm`) is not additive. It becomes the only copy list and silently drops every `.paa` and `.rvmat` that config.cpp does not reference. Measured on SUB_BRZ: 47 files dropped (28 paa and 19 rvmat, all body swatches), a PBO of 8.7 MB instead of 11.6 MB, and the classic white car on a dedicated server.
+A binarize build that has scripts and assets must list `*.paa;*.rvmat` too, or the PBO ships without textures: the white car. The usual scripts-only include file (`*.c;*.asi;*.anm`) is not additive. It becomes the only copy list and silently drops every `.paa` and `.rvmat` that the `.p3d` geometry does not reference, which includes the body textures and materials declared only in config.cpp. Measured on SUB_BRZ: 47 files dropped (28 paa and 19 rvmat, all body swatches), a PBO of 8.7 MB instead of 11.6 MB, and the classic white car on a dedicated server.
 
 Use `-include` with `*.c;*.asi;*.anm;*.paa;*.rvmat` for binarize builds. Then diff the entry list of the PBO that came out against the source tree by extension, with explicit allowances: `config.cpp` becoming `config.bin` is fine, a baked `model.cfg` is fine, and every `.p3d`, `.paa`, `.rvmat` and `.c` is required. The import project's wrapper with that diff is `<vehicle-import>\scripts\rip_binarize_experiment.ps1`.
 

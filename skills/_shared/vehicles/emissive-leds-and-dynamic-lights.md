@@ -38,10 +38,14 @@ LEDs).
 
 ### In `config.cpp`
 
-Register that selection as hidden so scripts can target it by index:
+Register that selection as hidden so scripts can target it by index. The
+config base class is `Inventory_Base` (`P:\DZ\data\config.cpp:3162`);
+`ItemBase` is only the script class (section 3), and a config that inherits
+it fails with an undefined base class.
 
 ```cpp
-class YourCustomObject : ItemBase
+class Inventory_Base;
+class YourCustomObject : Inventory_Base
 {
     // Index 0 will map to "led_panel" in scripts
     hiddenSelections[] = {"led_panel"};

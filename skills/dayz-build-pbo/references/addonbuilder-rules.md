@@ -114,8 +114,8 @@ passed as `-temp`: AddonBuilder clears its `-temp` before copying. `build.py` st
    - Not measured: what an empty material does in game.
    - **A direct `binarize.exe` call needs a dedicated `-addon` folder too** (BINARIZE
      1.30.164078.38, a vehicle mod whose source sat outside `P:\`), as the direct-call
-     templates have it (`/dayz-model-pipeline` `SKILL.md` and its
-     `references/py3d-direct-generation.md`, `skills/_shared/vehicles/p3d-vehicle-killers.md`).
+     templates have it (`skills/dayz-model-pipeline/references/py3d-direct-generation.md`,
+     `skills/_shared/vehicles/p3d-vehicle-killers.md`).
      Without it the first model loaded about 5 min after launch in one run; in a later run
      none had come out after 30 min (a timeout; right after it, other processes held more
      than 10 of the 16 threads) or after 13 (stopped by hand). With
@@ -163,7 +163,7 @@ passed as `-temp`: AddonBuilder clears its `-temp` before copying. `build.py` st
 5. **Check that binarize can find every file the p3d cite: before the build, and in the ODOL
    after it.**
    - **Before: the gate.** List every path the faces cite, in every LOD: `face.texture` and
-     `face.material` with py3d (`scripts/tools/py3d/py3d/__init__.py:1855-1856`), or scan the MLOD
+     `face.material` with py3d (`scripts/tools/py3d/py3d/__init__.py:1866-1867` and `1881-1882`), or scan the MLOD
      bytes for `*.paa`/`*.rvmat` paths. Stop if one does not exist under the staging folder:
      rule 1 says binarize looks for it there and nowhere else. Stage each cited `.rvmat` with
      the textures it names (a texture missing on its own was not tested).

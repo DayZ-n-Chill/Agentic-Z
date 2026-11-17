@@ -172,6 +172,9 @@ def defects(path, model):
 
 def main(argv=None):
     paths = list(sys.argv[1:] if argv is None else argv)
+    if any(arg in ("-h", "--help") for arg in paths):
+        print(__doc__.strip())
+        return 0
     if not paths:
         print("USAGE: audit_getin_wheels.py MODEL.p3d [MODEL.p3d ...]", file=sys.stderr)
         return 2

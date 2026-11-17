@@ -10,6 +10,8 @@ fixtures prove the false-pass guards of the ladder without burning an in-game cy
   - R5 ambiguous obstacle/drivetrain -> needs_clear_ground_retest, not a one-shot fix
   - a verb timeout in R5 -> inconclusive, not a model fix
   - world_spawn without `found` -> R1 fails closed
+  - a car the server reads with no wheels or fuel -> R4_conditioned stops the ladder before R5
+  - the identity and lease token travel in every /enqueue, and a fence rejection is reported at once
 
 Run:  python -m pytest -q skills/dayz-mcp-verify/tests, or python test_drive_ladder.py
       (exit 0 = all pass)
@@ -55,7 +57,7 @@ class FakeDaemon:
 
 def mkargs(**over):
     base = dict(vehicle="TEST_CAR", rotation=0, journal="", drive_s=0.0, hold_ttl=12.0,
-                steer_left_sign=-1.0, port=8765, keyfile="")
+                steer_left_sign=-1.0, port=8765, keyfile="", wheels=4, identity="id", lease_token="tok")
     base.update(over)
     return argparse.Namespace(**base)
 
@@ -84,6 +86,9 @@ def base_scripts(**over):
         "world_spawn": {"ok": True, "found": True, "pos": [100.0, 0.0, 100.0]},
         "scene_raycast": raycast_ring,
         "query_get_in_condition": getin_responder(driver_available=True, driver_block=""),
+        "vehicle_enter": {"ok": True, "seated": True},
+        "vehicle_drive": {"ok": True},
+        "telemetry_read": {"ok": True, "found": True, "wheel_count": 4, "fuel_fraction": 1.0},
         "vehicle_get_in_client": {"ok": True, "seated": True, "is_owner": True, "vehicle_fixture_ready": True},
         "engine_set": {"ok": True, "engine_on_server": True},
         "vehicle_control": {"ok": True},
@@ -211,6 +216,39 @@ def test_r1_found_failclosed():
     R = run(sc)
     assert rung(R, "R1").get("PASS") is False, f"R1 NOT PASS (found absent) -- {rung(R, 'R1')}"
     assert R.get("stop") == "R1", "stop == R1"
+
+
+def test_unconditioned_car_stops_before_r5():
+    """vehicle_fixture_ready=1 on the client, but the server reads no wheels and no fuel."""
+    sc = base_scripts(telemetry_read={"ok": True, "found": True, "wheel_count": 0, "fuel_fraction": 0.0})
+    R = run(sc)
+    assert rung(R, "R4_conditioned").get("PASS") is False, f"R4_conditioned NOT PASS -- {rung(R, 'R4_conditioned')}"
+    assert R.get("stop") == "R4_conditioned", f"stop == R4_conditioned -- {R.get('stop')}"
+    assert "R5" not in R["rungs"], "R5 not run on an unconditioned car"
+
+
+def test_enqueue_sends_identity_and_lease_token(monkeypatch):
+    """Every /enqueue body carries the identity and lease token from session_acquire."""
+    d = drive_ladder.Daemon(8765, "k", "agent-1", "tok-1")
+    sent = {}
+
+    def fake_req(method, path, query, body):
+        sent.update(body or {})
+        return 200, {"id": 7}
+
+    monkeypatch.setattr(d, "_req", fake_req)
+    assert d.enqueue("query_player_state", {}) == 7
+    assert sent["identity"] == "agent-1" and sent["lease_token"] == "tok-1", sent
+
+
+def test_wait_ready_stops_on_run_not_owned():
+    """A fence rejection is reported at once, not as 'player never became ready' after 180 s."""
+    class Rejecting:
+        def run(self, cmd, args, timeout=30.0):
+            raise RuntimeError("enqueue query_player_state -> 409 {'error': 'run_not_owned'}")
+
+    with pytest.raises(RuntimeError, match="session_acquire_wait"):
+        drive_ladder.wait_ready(Rejecting())
 
 
 if __name__ == "__main__":

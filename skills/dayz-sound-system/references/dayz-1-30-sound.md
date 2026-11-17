@@ -226,7 +226,7 @@ The 1.30 changelog mentions `SoundHitType` and a `GetSoundHitType()` getter. No 
 ## What changes
 
 - Noise is damped by the engine, and `GetEnvironmentNoiseReduction(pos)` reads the result. `AIParams` gains snowfall, fog, wind and sandstorm multipliers.
-- `IsHeadlessOrDedicatedServer()` guards the item and player sound paths. `Object.PlaySoundSet` still uses `IsDedicatedServer()`.
+- `IsHeadlessOrDedicatedServer()` guards only the stop path of the item sound handler (`StopItemSoundClient`), the player sound manager and the player sound table registration. `PlayItemSoundClient` has no headless check. `Object.PlaySoundSet` still uses `IsDedicatedServer()`.
 - `EffectSound` sets the volume to zero when a wave with a fade in starts.
 - `EPlayerSoundEventID.HEAVY_BREATHING` and `HeavyBreathEvent1` (animation event 907); silicosis requests it.
 - One `DynamicMusicPlayerRegistry` class per world, and `DynamicMusicPlayerTimeOfDay.Translate` (morning, noon and afternoon become `DAY`; evening becomes `NIGHT`).

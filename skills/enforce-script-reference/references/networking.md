@@ -106,7 +106,7 @@ void SendMyRequest(int data1, string data2)
     PlayerIdentity identity = null;  // null = server
 
     rpc.Send(target, rpcId, guaranteed, identity);
-    // ScriptRPC is consumed on Send — no need to delete
+    // No need to delete the ScriptRPC; Send does not clear its buffer (call Reset() before reuse)
 }
 
 // Server sends to specific client
@@ -133,7 +133,7 @@ When your dispatcher routes incoming RPCs through `OnRPC` of a `modded class Pla
 |------------|--------------|------------------------------|
 | `player` (`PlayerBase`) | `sender` (identity) | `player.OnRPC` fires. Use this for every server to client response |
 | `m_Device` (any entity) | `sender` | `m_Device.OnRPC` fires. Use it only when the receiver is on the device, not on `PlayerBase` |
-| `null` | `sender` | Dispatched, but it rarely reaches `PlayerBase.OnRPC`: the UI will not open. It works for simple "write a chat line" RPCs in some builds and is unreliable for the rest |
+| `null` | `sender` | `PlayerBase.OnRPC` never fires: `DayZGame.OnRPC` calls `target.OnRPC` only when `target` is set, and a `null` target goes only to `Event_OnRPC` and the game's global `switch` (`P:\scripts\3_game\dayzgame.c:3144-3155`). The UI will not open |
 | `null` | `null` | Broadcast to all, with no specific handler. Avoid |
 
 A measured case (an ATM menu in a third-party mod, 2026-04):
@@ -151,7 +151,7 @@ rpc.Send(player, MYMOD_RPC_CHANNEL, true, sender);
 - `player` (the target) routes the RPC to that player's `PlayerBase.OnRPC` on the client.
 - `sender` (the identity) is the network filter: only that one client receives the packet.
 
-Passing only the identity without the player as target does restrict who receives the packet, but without a target the handler chain on the client usually does not fire.
+Passing only the identity without the player as target does restrict who receives the packet, but without a target no entity's `OnRPC` fires on the client, so `PlayerBase.OnRPC` never sees it.
 
 ### Receiving: the `OnRPC` override
 
@@ -211,7 +211,7 @@ override void OnRPC(PlayerIdentity sender, int rpc_type, ParamsReadContext ctx)
 
 - `ScriptRPC.Send(Object target, int rpc_type, bool guaranteed, PlayerIdentity recipient = NULL)`: sent from a client it goes to the server; sent from the server with `recipient == NULL` it goes to **every** client. A `null` target makes it a global RPC handled by the game object instead of an entity. `Send` does not reset the buffer: calling it again resends the same data until `Reset()` (`P:\scripts\3_game\gameplay.c:104-117`).
 - Two receivers. An entity gets `OnRPC(PlayerIdentity sender, int rpc_type, ParamsReadContext ctx)` (`P:\scripts\3_game\entities\object.c:860`, overridden in `P:\scripts\3_game\entities\entityai.c:3507`). The game gets the four-argument form with `Object target` (`P:\scripts\3_game\dayzgame.c:3141`), which forwards to the target's `OnRPC` when `target` is set. Read values in exactly the order they were written.
-- Server-side checklist for a request handler, in this order: return unless this is the server; return on a `null` sender; find the acting `PlayerBase` from the sender identity, never from a value in the payload; return if that player is dead; before spawning a class name that came from a client, check it with `g_Game.IsKindOf(name, "Inventory_Base")` or a narrower parent (`P:\scripts\3_game\global\game.c:1436`, which walks `CfgVehicles` then `CfgAmmo` parents); check the distance between the player and the target; and apply a per-player cooldown (rule 6).
+- Server-side checklist for a request handler, in this order: return unless this is the server; return on a `null` sender; find the acting `PlayerBase` from the sender identity, never from a value in the payload; return if that player is dead; before spawning a class name that came from a client, check it with `g_Game.IsKindOf(name, "Inventory_Base")` or a narrower parent (`P:\scripts\3_game\global\game.c:1436`, which looks the class up in `CfgVehicles`, then `CfgAmmo`, `CfgMagazines`, `cfgWeapons` and `CfgNonAIVehicles`, `:1440-1459`, and walks the parents of the first match); check the distance between the player and the target; and apply a per-player cooldown (rule 6).
 
 ### Network ID pattern
 
@@ -285,7 +285,7 @@ void MyVerb_Client(ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Obj
 
 The sample keeps the form this pattern usually ships in, including `ref` on parameters and `new ref`, which the rules in `memory-management.md` tell you not to write in your own code.
 
-- **`Event_OnRPC` fires for all `rpc_type` on both processes** (`P:\scripts\3_game\dayzgame.c:991`; `Invoke` at `:3144` is before the `if (target)` at `:3148` and **outside** the `#ifndef SERVER` / `#ifndef NO_GUI` that guard the vanilla `switch` at `:3157-3158`). `Serializer.Read` **consumes the context even when the type does not match** — there is no rewind (`P:\scripts\1_core\proto\serializer.c:56-64`). A subscriber that calls `ctx.Read` before checking its own `rpc_type` eats another handler's payload; the downstream handler (`CfgGameplayHandler.OnRPC`, `UndergroundAreaLoader.OnRPC`) then gets `false` and the symptom ("cfggameplay never arrives", stamina/lighting glitches) points away from the mod. [MEASURED IN-GAME 2026-08-17: `Read` with `Param1<int>` over a `Param1<T>` payload returned true (value 3); the subsequent correct-type `Read` returned false.] The correct pattern is vanilla's: filter **`rpc_type` and side** before any read (`P:\scripts\3_game\syncevents.c:13`). Vanilla can read unfiltered inside `UndergroundAreaLoader.OnRPC` only because it is called from the `case` that already filtered (`P:\scripts\3_game\dayzgame.c:3146-3150`); a mod in `Event_OnRPC` has no such `case`.
+- **`Event_OnRPC` fires for all `rpc_type` on both processes** (`P:\scripts\3_game\dayzgame.c:991`; `Invoke` at `:3144` is before the `if (target)` at `:3148` and **outside** the `#ifndef SERVER` / `#ifndef NO_GUI` that guard the vanilla `switch` at `:3157-3158`). `Serializer.Read` **consumes the context even when the type does not match** — there is no rewind (`P:\scripts\1_core\proto\serializer.c:56-64`). A subscriber that calls `ctx.Read` before checking its own `rpc_type` eats another handler's payload; the downstream handler (`CfgGameplayHandler.OnRPC`, `UndergroundAreaLoader.OnRPC`) then gets `false` and the symptom ("cfggameplay never arrives", stamina/lighting glitches) points away from the mod. [MEASURED IN-GAME 2026-08-17: `Read` with `Param1<int>` over a `Param1<T>` payload returned true (value 3); the subsequent correct-type `Read` returned false.] The correct pattern is vanilla's: filter **`rpc_type` and side** before any read (`P:\scripts\3_game\syncevents.c:13`). Vanilla can read unfiltered inside `UndergroundAreaLoader.OnRPC` only because it is called from the `case` that already filtered (`case ERPCs.RPC_UNDERGROUND_SYNC:`, `P:\scripts\3_game\dayzgame.c:3169-3172`); a mod in `Event_OnRPC` has no such `case`.
 - **Do not derive mod RPC IDs from `ERPCs.RPC_END`.** The enum contains **a block of entries conditioned on `#ifdef DIAG_DEVELOPER`** (`P:\scripts\3_game\enums\erpcs.c:121-223`) **before** `RPC_END` (`:225`), so its numeric value **differs between diag and retail builds**. A derived ID mismatches in a client-diag / server-retail pair and fails **silently**: the RPC is sent, nobody handles it, no error. Use fixed high literals (`const int` with hex is vanilla idiom: `P:\scripts\1_core\constants.c:35`, `:63-72`). Supporting fact: the `switch` in `DayZGame.OnRPC` has **no `default:`**, so an unknown `rpc_type` produces no engine error.
 - **Hooking `Event_OnRPC` does not require `modded class DayZGame`.** `Event_OnRPC` is `static` and accessed by class name, the way vanilla reads `DayZGame.MISSION_STATE_GAME` (`P:\scripts\4_world\entities\dayzplayerimplement.c:846`), which avoids collision with another mod that overrides `OnRPC`. The `Insert` must not copy vanilla's timing: `SyncEvents.RegisterEvents()` lives in the `MissionGameplay` constructor (`P:\scripts\5_mission\mission\missiongameplay.c:82`), which is **client-side and late**; it can afford that because its RPCs fire in `ClientNew`. A document sent in `ClientPrepare` (`P:\scripts\5_mission\mission\missionserver.c:317-324`) arrives **before** that mission exists and is lost without trace.
 

@@ -15,11 +15,11 @@ conda install -y -c conda-forge 'libstdcxx-ng>=13' 'libgcc-ng>=13'   # GLIBCXX_3
 pip install torch==2.7.1 --index-url https://download.pytorch.org/whl/cu128
 pip install torch-scatter -f https://data.pyg.org/whl/torch-2.7.1+cu128.html
 cd ~/PartUV && pip install -r requirements.txt && pip install partuv bpy
-pip install pytz 'setuptools<81'        # undeclared deps (see quirks)
+pip install pytz 'setuptools<82'        # undeclared deps (see quirks)
 wget https://huggingface.co/mikaelaangel/partfield-ckpt/resolve/main/model_objaverse.ckpt
 ```
 
-The script does not install `pytz` and `setuptools<81`; run that line by hand after it (quirk 1).
+The script does not install `pytz` and `setuptools<82`; run that line by hand after it (quirk 1).
 
 Run from the PartUV repo root, because the checkpoint path is relative to the current folder:
 
@@ -33,7 +33,7 @@ python demo/partuv_demo.py --mesh_path pilot/<mesh>.obj \
 
 Each one cost a failed run.
 
-1. `pytz` and `pkg_resources` are undeclared dependencies. Run `pip install pytz 'setuptools<81'`: setuptools 81 and later removed `pkg_resources`, and lightning 2.2 still imports it.
+1. `pytz` and `pkg_resources` are undeclared dependencies. Run `pip install pytz 'setuptools<82'`: setuptools 82 removed `pkg_resources`, and lightning 2.2 still imports it.
 2. Checkpoint integrity: expect **1,243,631,761 bytes**. A truncated download throws `PytorchStreamReader failed reading zip archive`. Verify with `zipfile.ZipFile(...).testzip()`.
 3. `preprocess()` exports the processed mesh into `<mesh_dir>/<mesh_stem>/`. Create that folder first or it dies with `FileNotFoundError`.
 4. "Invalid mesh data from numpy arrays. Exiting." (exit 3) means it needs a sanitized, pure-triangle OBJ: triangulated, degenerate faces dissolved, loose geometry dropped. `<skill-dir>\scripts\export_objs_tri.py` does exactly this:
@@ -47,7 +47,7 @@ Each one cost a failed run.
 
 ## Measured results
 
-Same meshes, same audit code.
+Same meshes, same audit code. The uv-clean-atlas rows were measured with the pipeline as it stood in the pilot, before stage 5 (boundary straightening and the excision of leftover faces as specks). The current scripts give 54 islands (30 panels) on the retopology and 65 on the rip; see the top of `SKILL.md`.
 
 | Config | Islands | Panels | Specks | Density p05 to p95 | Notes |
 |---|---|---|---|---|---|

@@ -21,27 +21,29 @@ Code labels: `[EXACT]` = ran as shown; `[DESIGN]` = pseudocode/sketch, not execu
 
 These gate everything below — get these wrong and no principle can be implemented.
 
-1. **`action.fcurves` is GONE in 5.0+ (slotted/layered Actions).** Live 5.1.1:
+1. **`action.fcurves` is gone in 5.0+ (slotted/layered Actions).** Live 5.1.1:
    `action.fcurves` raises `AttributeError: 'Action' object has no attribute 'fcurves'`
    **[VERIFIED 5.1.1]**. Slotted Actions landed in Blender 4.4;
    4.4 and 4.5 kept `action.fcurves` as a legacy shim on the first slot, and 5.0 removed it
    (see "Export/handoff of sims" in `physics-sims.md`).
    New hierarchy: `Action -> layers[] -> strips[] -> channelbag(slot) -> fcurves`.
-   Version-portable access **[EXACT]**:
+   Access on 5.x **[EXACT]**:
    ```python
    from bpy_extras import anim_utils
    def get_fcurves(obj):
        ad = obj.animation_data
        if not ad or not ad.action:
            return []
-       cb = anim_utils.animdata_get_channelbag_for_assigned_slot(ad)  # 4.4+
+       cb = anim_utils.animdata_get_channelbag_for_assigned_slot(ad)  # 5.x only
        if cb is not None:
            return list(cb.fcurves)
-       return list(getattr(ad.action, "fcurves", []))                 # <=4.3 fallback
+       return list(getattr(ad.action, "fcurves", []))
    ```
-   This ran on 5.1.1 only. On 4.3 there are no slots, so do not count on the `anim_utils`
-   helper being there: the `get_fcurves` in `physics-sims.md` tests
-   `hasattr(action, "fcurves")` first and is the safer form when 4.3 must work.
+   This ran on 5.1.1 only. `animdata_get_channelbag_for_assigned_slot` is not in
+   `bpy_extras/anim_utils.py` on 4.3, 4.4 or 4.5, so there this function raises
+   `AttributeError` before it reaches the `action.fcurves` fallback. When 4.x must work, use
+   the `get_fcurves` in `physics-sims.md`: it tests `hasattr(action, "fcurves")` first and
+   otherwise calls `action_get_channelbag_for_slot(action, slot)`, which exists from 4.4.
    Helpers verified live: `anim_utils.action_get_channelbag_for_slot(action, slot)`,
    `anim_utils.animdata_get_channelbag_for_assigned_slot(anim_data)`, and
    `action.fcurve_ensure_for_datablock(datablock, data_path, index=0, group_name="")`
@@ -61,9 +63,9 @@ These gate everything below — get these wrong and no principle can be implemen
    - `kp.handle_left_type / handle_right_type`: `FREE, ALIGNED, VECTOR, AUTO, AUTO_CLAMPED`
      (`AUTO_CLAMPED` verified live); `kp.handle_left/right` are editable 2D points.
    - `kp.back` (BACK overshoot size), `kp.amplitude` + `kp.period` (ELASTIC) — set live.
-   - `kp.type`: `KEYFRAME, BREAKDOWN, MOVING_HOLD, EXTREME, JITTER` — the agent can TAG its
+   - `kp.type`: `KEYFRAME, BREAKDOWN, MOVING_HOLD, EXTREME, JITTER` — the agent can tag its
      own pose intent and audit against it later **[VERIFIED 5.1.1]**.
-   - Interpolation set on a key governs the segment from that key to the NEXT one [docs].
+   - Interpolation set on a key governs the segment from that key to the next one [docs].
 5. `fcu.evaluate(frame)` samples the curve; `fcu.update()` re-sorts and recalcs handles
    after bulk edits; `fcu.extrapolation` in `{CONSTANT, LINEAR}`; cyclic motion = add
    `fcu.modifiers.new(type='CYCLES')` with `mode_before/mode_after` in
@@ -96,7 +98,7 @@ Each of the twelve principles of animation, translated to graph-editor mechanics
 
 ### 3. Arcs
 - Theory: organic motion travels on curved world-space paths; straight lines read robotic.
-- F-curves: an arc is NOT visible in one channel — it emerges from phase-shifted sine-like
+- F-curves: an arc is not visible in one channel — it emerges from phase-shifted sine-like
   curves across X/Y/Z. All channels peaking on the same frame = straight-line path.
 - Programmatic: give the perpendicular axis its own key mid-travel (a breakdown that
   offsets the path); verify with motion paths:
@@ -107,7 +109,7 @@ Each of the twelve principles of animation, translated to graph-editor mechanics
 ### 4. Anticipation
 - Theory: telegraph an action with a small counter-move (crouch before jump, pull-back
   before punch).
-- F-curves: a dip BELOW the start value just before the main rise — the curve leaves in
+- F-curves: a dip below the start value just before the main rise — the curve leaves in
   the opposite direction first.
 - Programmatic: insert an anticipation key 2-8f before the action at roughly minus 10-20%
   of the travel (rule of thumb). Alternatively
@@ -134,7 +136,7 @@ Each of the twelve principles of animation, translated to graph-editor mechanics
 ### 7. Secondary action
 - Theory: a supporting motion that enriches the main one without stealing focus (a walk +
   a head bob + a hand gesture).
-- F-curves: extra low-amplitude channels keyed on DIFFERENT frames from the primary; if
+- F-curves: extra low-amplitude channels keyed on different frames from the primary; if
   removed, the main read survives.
 - Programmatic: author after the primary reads well; amplitude a fraction of the primary;
   audit rule: secondary channels must not add keys at the primary's story frames.
@@ -154,7 +156,7 @@ Each of the twelve principles of animation, translated to graph-editor mechanics
   Production work combines both.
 - F-curves: pose-to-pose = a sparse set of story keys on all channels, refined by
   breakdowns; straight-ahead = dense sequential keys (what naive scripts produce).
-- Programmatic: THE agent workflow — block poses with `CONSTANT` interpolation, convert to
+- Programmatic: the agent workflow — block poses with `CONSTANT` interpolation, convert to
   spline later (see ## Iteration structure). A script that computes per-frame positions
   and keys every frame is doing straight-ahead with extra steps; avoid.
 
@@ -169,13 +171,13 @@ Each of the twelve principles of animation, translated to graph-editor mechanics
 - Theory: present one idea at a time, readable in silhouette (the silhouette test). Solid
   drawing in CG = balanced poses with weight over the base of support.
 - F-curves: staging is mostly pose + camera, not curves; its curve trace is separation in
-  TIME — major actions do not overlap each other's story frames.
+  time — major actions do not overlap each other's story frames.
 - Programmatic: schedule beats sequentially with holds between; audit renders in
   silhouette (see ## Review methodology) for readability and balance.
 
 ### 12. Appeal
 - Theory: asymmetry, clear shapes, no "twinning" (mirrored limb poses read boring).
-- F-curves: left/right channel pairs should NOT be exact mirrors (identical values,
+- F-curves: left/right channel pairs should not be exact mirrors (identical values,
   opposite signs) nor keyed on identical frames.
 - Programmatic: when posing limb pairs, perturb one side (offset a few degrees, shift keys
   1-3f); audit check #6 below detects twinning.
@@ -188,7 +190,7 @@ The detection mechanics were verified live (see the audit section).
 | # | Robotic tell | F-curve signature | Fix (programmatic) |
 |---|---|---|---|
 | 1 | Uniform linear interpolation | straight segments everywhere; velocity steps at keys | `kp.interpolation='BEZIER'` + shaped handles, or the easing modes; reserve `LINEAR` for machines/conveyors |
-| 2 | All channels keyed on identical frames | one column of keys per pose across every channel, forever | after splining, offset follower channels +1..+3f (lead with hips/root, delay extremities); keep unison ONLY in blocking |
+| 2 | All channels keyed on identical frames | one column of keys per pose across every channel, forever | after splining, offset follower channels +1..+3f (lead with hips/root, delay extremities); keep unison only in blocking |
 | 3 | Perfect symmetry / twinning | L/R curves are exact mirrors, same frames | perturb one side's values ~2-5% and shift its keys 1-3f (rule of thumb) |
 | 4 | Frozen holds | two identical keys, dead-flat segment >6f | moving hold: drift key 1-5% of prior travel, stagger per-part settle frames; tag `MOVING_HOLD` |
 | 5 | No anticipation | curve leaves directly toward the target | insert counter-dip key, or `BACK`+`EASE_IN` on the departure key |
@@ -201,7 +203,7 @@ The detection mechanics were verified live (see the audit section).
 Noise as seasoning, not fix: `fcu.modifiers.new(type='NOISE')` with `scale` (time
 scaling), `strength` (amplitude), `phase` (seed), `depth` — created and read back live
 **[VERIFIED 5.1.1]** (`bpy.types.FModifierNoise`).
-Good for idle micro-motion and camera; it does NOT repair bad timing/eases.
+Good for idle micro-motion and camera; it does not repair bad timing/eases.
 
 ## Timing reference table
 
@@ -218,24 +220,24 @@ Convert: frames = seconds * fps (`scene.render.fps`).
 | Head turn | 10-14 f | eyes lead, head lags a touch |
 | Quick look / eye dart | 4-6 f + 1-2 f hold | |
 | Hand pick-up | 3-5 f contact + two-stage lift | |
-| Jump (standing) | ~12-18 f total: crouch + takeoff + air + landing | crouch/landing get MORE frames, takeoff/fall FEWER — that contrast sells power vs floaty; the arc bunches at the apex |
+| Jump (standing) | ~12-18 f total: crouch + takeoff + air + landing | crouch/landing get more frames, takeoff/fall fewer — that contrast sells power vs floaty; the arc bunches at the apex |
 | Settle after a stop | ~10-20+ f for heavy objects / emotional holds | arrival -> overshoot -> settle, each stage smaller and shorter |
 | Hold between beats | >= 8-12 f as a moving hold, never frozen | |
 
-Weight through timing: heavy = slower acceleration (shallower initial slope), MORE
+Weight through timing: heavy = slower acceleration (shallower initial slope), more
 anticipation frames, broader stance, longer settle, fewer/lower bounces; light = snappy
 slopes, minimal anticipation, quick high-frequency settle. Same poses + different
 spacing = different mass.
 
 ## Programmatic self-audit checks
 
-Reading f-curves via bpy to detect the robotic tells. Checks 1-3 were EXECUTED live
+Reading f-curves via bpy to detect the robotic tells. Checks 1-3 were executed live
 against a deliberately robotic rig (pure-LINEAR, lockstep-keyed, mirrored pair) and a
 hand-shaped organic curve; measured separation was total (see calibration). Thresholds
 are proposed starting points (rule of thumb), to be tuned per shot type.
 
-Reference implementation `[EXACT]` — ran on 5.1.1, uses the version-portable
-`get_fcurves()` from the API ground rules:
+Reference implementation `[EXACT]` — ran on 5.1.1, uses the 5.x
+`get_fcurves()` from the API ground rules (on 4.x use the `get_fcurves` in `physics-sims.md`):
 
 ```python
 from collections import Counter
@@ -285,11 +287,11 @@ Proposed audit battery (thresholds = proposed defaults, flag do not auto-fail):
 
 1. **Linear-interpolation ratio** `[EXACT above]`. Organic character motion: flag if
    >0.3; 1.0 = certainly robotic. Exception: mechanical objects, constant-speed props.
-2. **Keyframe unison ratio** `[EXACT above]`. STAGE-DEPENDENT: ~1.0 is CORRECT during
+2. **Keyframe unison ratio** `[EXACT above]`. Stage-dependent: ~1.0 is correct during
    blocking (poses keyed on all channels); after the overlap/polish pass flag if still
    >0.8. This is the single strongest "scripted look" tell.
 3. **Zero-overshoot** `[EXACT above]`. If `overshoot_ratio == 0` across every arriving
-   action AND no manual settle keys exist, motion has no follow-through; expect >0 on
+   action and no manual settle keys exist, motion has no follow-through; expect >0 on
    arrivals. (Machines legitimately 0.)
 4. **Velocity discontinuity at keys** `[DESIGN]`: sample `v_in = f(t)-f(t-eps)`,
    `v_out = f(t+eps)-f(t)` via `fcu.evaluate`; flag |v_out - v_in| spikes above ~3x the
@@ -298,7 +300,7 @@ Proposed audit battery (thresholds = proposed defaults, flag do not auto-fail):
 5. **Frozen-hold detector** `[DESIGN]`: consecutive keys with identical values spanning
    >6 f and no `MOVING_HOLD` tag between them -> dead hold; propose drift keys.
 6. **Twinning / perfect symmetry** `[DESIGN]`: for L/R channel pairs (name-matched, e.g.
-   `.L`/`.R` bones), flag if key frames identical AND values correlate >0.999 (sign
+   `.L`/`.R` bones), flag if key frames identical and values correlate >0.999 (sign
    allowing) — verified detectable via exact-mirror comparison in the live run.
 7. **Arc smoothness / jitter** `[DESIGN]`: `bpy.ops.object.paths_calculate` then second
    difference over `motion_path.points[i].co` (world space) **[mechanism VERIFIED
@@ -336,7 +338,7 @@ for f in [1, 12, 24]:                            # contacts/extremes/story beats
 ```
 
 Verified live: wrote a 75 KB PNG at 25% resolution, effectively instant **[VERIFIED
-5.1.1]**. `view_context=False` renders from the SCENE CAMERA with scene settings instead
+5.1.1]**. `view_context=False` renders from the scene camera with scene settings instead
 of whatever viewport happens to exist — mandatory for an agent [docs signature:
 `bpy.ops.render.opengl(animation=False, render_keyed_only=False, sequencer=False,
 write_still=False, view_context=True)`].
@@ -390,10 +392,10 @@ anyway, which suits frame-by-frame review better than a video file it cannot wat
 
 ### Engine + speed knobs
 
-- Engine identifiers are VERSION-DEPENDENT. Live 5.1.1 accepts `BLENDER_EEVEE`,
+- Engine identifiers are version-dependent. Live 5.1.1 accepts `BLENDER_EEVEE`,
   `BLENDER_WORKBENCH`, `CYCLES`; `BLENDER_EEVEE_NEXT` is rejected **[VERIFIED 5.1.1]**.
   In 4.2-4.5 EEVEE's id was `BLENDER_EEVEE_NEXT`; it was renamed back for 5.0. Gotcha verified
-  live: STATIC enum introspection listed only the current engine; probing by try/except
+  live: static enum introspection listed only the current engine; probing by try/except
   assignment is the reliable detection **[VERIFIED 5.1.1]**.
 - `bpy.ops.render.opengl` ignores the heavy engine — it draws viewport-style (solid
   shading), which is exactly the playblast look; use it for all motion checks. Full
@@ -426,7 +428,7 @@ Priority order:
 4. **Breakdowns/passing positions** — mid-motion frames that define the arc; render one
    per major transition (the turning point of a motion path, often the fastest moment).
 5. **Hold midpoints** — one frame mid-hold to confirm the moving hold is alive.
-6. **The frame AFTER an impact** (+1/+2) — where overshoot/settle should be visible
+6. **The frame after an impact** (+1/+2) — where overshoot/settle should be visible
    (an impact lives in the frame it connects and the first two frames after).
 
 If keys were tagged at authoring time (`kp.type`), the frame list derives automatically:
@@ -440,9 +442,9 @@ pose contact-sheet.
 - **Line of action + balance**: one clear curve through the pose; weight over the base of
   support.
 - **Twinning**: limbs mirrored?
-- **Contacts**: feet ON the ground plane, no interpenetration, hand actually wraps the
+- **Contacts**: feet on the ground plane, no interpenetration, hand actually wraps the
   prop.
-- **Spacing between CONSECUTIVE stills**: compare pose deltas across the golden frames —
+- **Spacing between consecutive stills**: compare pose deltas across the golden frames —
   even deltas = even (robotic) timing; the deltas should cluster (small near holds and
   extremes, large mid-action).
 
@@ -463,7 +465,7 @@ budget. Deviations >30% (rule of thumb) either intentional (style) or flagged.
 ## Iteration structure
 
 Block first, then spline, then polish — pose-to-pose is the professional default because
-it locks story, proportions and timing BEFORE motion exists, and it is quicker to iterate
+it locks story, proportions and timing before motion exists, and it is quicker to iterate
 and easier to revise.
 Straight-ahead output risks floaty, unfocused motion and drifting proportions — which is
 exactly what naive per-frame scripted animation produces.
@@ -471,7 +473,7 @@ exactly what naive per-frame scripted animation produces.
 | Stage | Interpolation | What exists | Gate before next stage |
 |---|---|---|---|
 | 1. Layout/plan | none | beat sheet with frame budgets (timing table) | budgets sum to shot length; beats do not overlap (staging) |
-| 2. Blocking | `CONSTANT` on every key | story poses + contacts, ALL channels keyed per pose (unison correct here) | golden stills: silhouette, balance, contacts, spacing deltas; story reads |
+| 2. Blocking | `CONSTANT` on every key | story poses + contacts, all channels keyed per pose (unison correct here) | golden stills: silhouette, balance, contacts, spacing deltas; story reads |
 | 3. Blocking plus | still `CONSTANT` | breakdowns, anticipations, key holds added as poses | stills at breakdowns: arcs plausible, antic present |
 | 4. Spline | convert to `BEZIER` (+ easing modes where wanted) | eases shaped; contacts sharpened (`VECTOR`); overshoots (`BACK`) | audit battery: linear ratio, overshoot, velocity pops; short playblast |
 | 5. Overlap/offset | — | channels staggered 1-3f, follow-through keys, moving holds replace freezes | unison ratio drops below threshold; holds drift; playblast |
@@ -479,23 +481,23 @@ exactly what naive per-frame scripted animation produces.
 
 Programmatic stage 2->4 conversion is trivial: flip `kp.interpolation` from `'CONSTANT'`
 to `'BEZIER'` across all keys (the classic stepped->spline switch). Stay in stepped
-longer, for fewer surprises with timing when going to spline: do NOT spline
+longer, for fewer surprises with timing when going to spline: do not spline
 until the still-based review passes, because stills of stepped blocking are the cheapest
 possible review unit for an agent.
 
 Iteration counts: the stages have approval gates (blocking is approved before refining), not
 a universal pass count. Practical expectation: at least one review-fix cycle
-PER stage, so a believable shot passes through ~4-6 review rounds minimum; treat a shot
+per stage, so a believable shot passes through at least 2 to 4 review rounds; treat a shot
 that "passes" on round 1 as un-audited, not as finished (rule of thumb).
 
 ## Camera feel
 
 - **Motivated moves**: the camera moves because the subject/story moves — follow the
   action, reveal, or reframe; unmotivated drift reads amateur. For an agent: bind camera
-  beats to subject beats — start the move 2-4f AFTER the subject starts (reaction), settle
+  beats to subject beats — start the move 2-4f after the subject starts (reaction), settle
   slightly after the subject settles.
 - **Lead room**: frame ahead of the motion — subject off-center with space in its travel
-  direction, proportional to speed. A tracking camera should LEAD the subject, not center it.
+  direction, proportional to speed. A tracking camera should lead the subject, not center it.
 - **Ease everything**: camera transforms are f-curves like any other — linear pans are
   the same robotic tell (#1). Slow in/out on every move; simple, motivated moves beat
   elaborate ones.

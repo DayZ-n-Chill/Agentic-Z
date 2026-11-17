@@ -177,10 +177,11 @@ read `rotor_main` / `rotor_tail` memory points with sane fallbacks (`GetMemoryPo
 `rotor_1_1_hide`, `rotor_1_1_rotate_hide`, `seat_driver/codriver/cargo1/cargo2`, `seat_con_1..4`) are
 confirmed from script reads.
 
-## 5. Autohover & autoland — kinematic state machines on top of force flight
+## 5. Autohover & autoland — assist modes on top of force flight
 
-MH6 is a **hybrid**: real force-based free flight, but the assist modes switch to kinematic
-`SetVelocity` for scripted precision.
+MH6 is a **hybrid**: real force-based free flight. Autohover is a hold loop on the control channels while
+force flight keeps running; only autoland switches to a kinematic `SetVelocity` state machine that replaces
+the force call.
 
 - **AutoHover** (`UpdateAutoHover`, `:663-698`): a PD altitude+attitude hold that writes *into the control
   channels* (not `SetVelocity`) — throttle `= 0.68 hover + altErr*0.06 - vertVel*0.22` (clamped 0.30..0.95),
@@ -248,7 +249,8 @@ MH6 is the buildable **force-based** reference (all flight logic in one legible 
 skeleton: `MH6 : CarScript` with `MH6OwnerState`/`MH6Move` Pawn replication; per-tick `CachePhysicsState`
 → RPM-authority gates → collective lift force (× ISA density × translational lift × ground effect) along
 body-up → cyclic/tail torques → **PD attitude control** (P from memory-point tilt, D from angular rate) →
-quadratic per-axis drag → `dBodyApplyForce`+`dBodyApplyTorque`. Layer autohover/autoland as kinematic
-`SetVelocity` state machines that *replace* the force call while active. Constants are hard-coded literals
+quadratic per-axis drag → `dBodyApplyForce`+`dBodyApplyTorque`. Layer autohover as a hold loop that writes
+into the control channels while force flight keeps running, and autoland as a kinematic `SetVelocity`
+state machine that *replaces* the force call while active. Constants are hard-coded literals
 (`:141-176`) — you can lift them as a starting tune. What you must author yourself (not on disk): the
 `.p3d`, `model.cfg`, and the `CfgVehicles` config contract (crew/damage/animsources/memory points).

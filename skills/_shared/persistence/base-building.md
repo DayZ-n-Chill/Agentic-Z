@@ -44,13 +44,13 @@ For each part, `SetPartFromSyncData` compares the saved bit with the part's buil
 
 ## A subclass saves after the masks: the Fence gate
 
-`Fence` is the vanilla model for extra saved state on a buildable object. Its `OnStoreSave` calls `super` and then writes `m_GateState` and `m_IsOpened` (`P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:246` to `:254`). Its `OnStoreLoad` calls `super`, then for a save older than version 110 reads one `bool` into `m_ToDiscard` and throws it away, and otherwise reads `m_GateState`, then `m_IsOpened` (`fence.c:256` to `:289`). `AfterStoreLoad` works the gate state out again from the built parts and opens the gate if it was saved open (`fence.c:291` to `:308`).
+`Fence` is the vanilla model for extra saved state on a buildable object. Its `OnStoreSave` calls `super` and then writes `m_GateState` and `m_IsOpened` (`P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:246` to `:254`). Its `OnStoreLoad` calls `super`, then, for a save older than version 110, reads one `bool` into `m_ToDiscard` and throws it away in place of `m_GateState` (which it sets to `GATE_STATE_NONE`), and otherwise reads `m_GateState`; in both cases it then reads `m_IsOpened` (`fence.c:256` to `:289`). `AfterStoreLoad` works the gate state out again from the built parts and opens the gate if it was saved open (`fence.c:291` to `:308`).
 
 Copy that shape: your fields after `super`, the same order both ways, and a branch for every older layout.
 
 ## Since 1.30: the construction component
 
-1.30 moved the construction logic into a component that `EntityAI` creates. What a base building mod has to know:
+On 1.30 the construction logic lives in a component that `EntityAI` creates. That 1.30 moved it there is a comparison with 1.29, and the 1.29 scripts are not on `P:\`, so the move itself is not checked here; the facts in the table are checked against the current scripts. What a base building mod has to know:
 
 | Fact | Source |
 |---|---|
@@ -61,11 +61,11 @@ Copy that shape: your fields after `super`, the same order both ways, and a bran
 | Vanilla actions call `BuildPartServerEx` and `DismantlePartServerEx`; `BuildPartServer` and `DismantlePartServer` are `[Obsolete]` wrappers, so an override of the old names no longer runs | `BuildPartServerEx` at `constructionbase.c:179`; `DismantlePartServerEx` at `constructionbase.c:190`; `BuildPartServer` at `constructionbase.c:1703` |
 | Build collision is `IsCollidingEx(CollisionCheckData)`; `CreateCollisionTrigger` and its siblings are `[Obsolete("no replacement")]` | `IsCollidingEx` at `constructionbase.c:1481`; `CreateCollisionTrigger` at `constructionbase.c:1757` |
 
-None of this changed the save: the three masks and `m_HasBase` are written exactly as before.
+None of this changed the save: the three masks and `m_HasBase` are written exactly as before (the 1.29 scripts are not on `P:\`, so the comparison is not checked here).
 
 ## Rebuildable map buildings are a second, separate save
 
-Since 1.30 a map building (`BuildingBase`) can carry a construction component too. It is a different class with a different save, and its numbers do not apply to player built objects.
+Since 1.30 a map building (`BuildingBase`) can carry a construction component too (the 1.29 scripts are not on `P:\`, so "since 1.30" is not checked here). It is a different class with a different save, and its numbers do not apply to player built objects.
 
 | | `BaseBuildingBase` (fence, watchtower, your mod's wall) | `Rebuilding` on `BuildingBase` (map houses) |
 |---|---|---|

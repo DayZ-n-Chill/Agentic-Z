@@ -97,7 +97,7 @@ Active while `GetSingleAgentCount(eAgents.SILICOSIS)` is above 0 (`P:\scripts\4_
 
 | Agent count | Effect |
 |---|---|
-| from 200 (`HEAVY_BREATH_TRESHOLD_MIN`, `silicosis.c:15`) | `HEAVY_BREATHING` sound events, more often as the count rises (`silicosis.c:93` to `:105`) |
+| above 0, rising from 200 (`HEAVY_BREATH_TRESHOLD_MIN`, `silicosis.c:15`) | `HEAVY_BREATHING` sound events at any agent count: the intensity is `Math.Remap(HEAVY_BREATH_TRESHOLD_MIN, 1000, 0.1, 1.0, agentsCount)`, which clamps by default (`silicosis.c:90`; `P:\scripts\1_core\proto\enmath.c:740` to `:746`), so below 200 it stays at 0.1: a 10% chance about every 22.8 s, checked on the 5 s tick. From 200 the chance rises toward 1.0 and the interval toward 3 s at 1000 agents (`silicosis.c:16` to `:17`, `:91` to `:105`) |
 | 600 or more (`STAMINA_LIMIT_TRESHOLD`, `silicosis.c:3`) | stamina modifier `DISEASE_PNEUMONIA` (`silicosis.c:112` to `:115`) |
 | above 700 (`HEALTH_THRESHOLD`, `silicosis.c:4`) and still rising | `AddHealth` with a loss scaled from `HEALTH_LOSS` 2.0 (`silicosis.c:13`, `:133` to `:136`) |
 | above 800 (`UNCON_THRESHOLD`, `silicosis.c:5`) | the faint effect, then unconsciousness for 5 to 10 s every 60 to 120 s with shock set to 25 (`UNCONSCIOUSNESS_LENGTH_MIN` and the three constants after it, `silicosis.c:8` to `:11`; `RequestUnconsciousness`, `silicosis.c:202` to `:208`) |

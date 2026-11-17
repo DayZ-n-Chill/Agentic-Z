@@ -84,7 +84,8 @@ def _read_summary(path):
         return json.loads(
             Path(path).read_text(encoding="utf-8", errors="strict")
         )
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, RecursionError):
+        # RecursionError: JSON nested too deeply for the parser.
         raise OdolStrictError(
             "ODOL_SUMMARY_INVALID",
             "summary is not readable strict UTF-8 JSON",

@@ -29,8 +29,7 @@ def decode_error_line_number(error):
 def build_input_encoding_error(rel_path, error):
     message = (
         f"[FAIL] {rel_path}: file is not valid UTF-8. Decode error at byte "
-        f"{error.start}: {error.reason}. Convert source to UTF-8 or document "
-        "encoding in assumptions.md."
+        f"{error.start}: {error.reason}. Convert the file to UTF-8."
     )
     return {
         "check": INPUT_ENCODING_ERROR_RULE_ID,

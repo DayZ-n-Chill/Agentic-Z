@@ -17,7 +17,8 @@ and the lines given are the 1.30 lines.
   vanilla refs resolve — zero dangling** (mechanism corroborated by the perfect data-side
   correspondence; not traced in engine binaries).
 - **Style names are scoped to their widget type**: `TextWidget` has `Normal`/`Bold` while
-  MultilineText/RichText/Html use `DayZNormal`/`DayZBold` — the same name can mean different things
+  MultilineText/RichText use `DayZNormal`/`DayZBold` and Html has only `DayZNormal`
+  (`P:\gui\looknfeel\dayzwidgets.styles:3883-3885`) — the same name can mean different things
   under different widget types, and a style must be declared under every widget type that uses it.
 - **Default when `style` is omitted: unknown offline** `[verify in-game]`. 4,000+ vanilla widgets
   omit it (192 text widgets ship with neither `style` nor `font`), so an engine fallback exists, but
@@ -119,7 +120,7 @@ Top vanilla usage: `PanelWidget/rover_sim_colorable` 577×, `GridSpacerWidget/Da
 `PanelWidget/blank` 210×, `TextWidget/Normal` 174×, `ButtonWidget/Colorable` 174×.
 
 Highlights per type (full inventory in the styles file itself):
-- TextWidget: `Normal, Bold, Light, None` · MultilineText/RichText/Html: `DayZNormal, DayZBold`
+- TextWidget: `Normal, Bold, Light, None` · MultilineText/RichText: `DayZNormal, DayZBold` · Html: `DayZNormal`
 - ButtonWidget (22): `Default, Colorable, Empty, EmptyHighlight, MainMenu, MenuDefault, Editor,
   InventoryActionMenu, OldStyle, DayZDefaultButton(+NoBorder/Bottom/Sides/Top/All/_DisabledState),
   DayZInventoryButton(All/Top/Bottom/Right/Left)`
@@ -128,8 +129,10 @@ Highlights per type (full inventory in the styles file itself):
   UIDefaultPanel, rover_sim_black(_2), InventoryPanel, EditorPanel, editor_selection`,
   **`ActionWidget` (DayZ 1.30)**
 - ProgressBarWidget: `Default, DayZLoading, Stamina, Quantity, Loading`
-- Styles exist for XComboBox/SmartPanel/Html/ThreeStateCheckbox/graph widgets too — the 4 graph
-  widgets are the only types with styles but zero vanilla layout instantiation.
+- Styles exist for XComboBox/SmartPanel/Html/ThreeStateCheckbox/graph widgets too. Seven types have
+  styles but no instance in any vanilla layout: the 4 graph widgets (BasicGraph, RingBufferGraph,
+  TimeBasedGraph, TimeBasedGraphWithAxes), GenericListboxWidget, UniversalListboxWidget and
+  SimpleProgressBarWidget.
 
 ### The `ActionWidget` style (added in DayZ 1.30)
 
@@ -243,7 +246,8 @@ The real equivalent of `WindowWidget/Colorable` is
 `Color="4294967295"`, the identical mechanism — a white pixel tinted by the
 widget's own `color`. It is also the most-used panel style in all of vanilla
 (577x, section 6 above), in `day_z_hud.layout`,
-`day_z_connection_dialogue.layout`, `day_z_ingamemenu.layout` and ~10 more.
+`day_z_connection_dialogue.layout`, `day_z_ingamemenu.layout` and about 100 layouts in all
+under `P:\gui\layouts` on 1.30.
 
 **Pick a style by what it draws, never by what it is called.** `ColorablePanel`
 sounds like the panel flavour of `Colorable` and is not; `rover_sim_colorable`

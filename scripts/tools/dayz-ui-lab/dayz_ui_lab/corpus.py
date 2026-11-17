@@ -2,9 +2,8 @@
 
 The corpora may not be redistributed and none of them is kept here. This
 module carries identity only -- pin, hashes, redistribution status -- and reads
-the actual bytes from wherever `sources/local-roots.json` points (looked for
-under the root, then under `scripts/dev/knowledge-pack/`), which is
-machine-local and untracked. A corpus whose root is missing is reported as such
+the actual bytes from wherever `scripts/dev/knowledge-pack/sources/local-roots.json`
+under the root points, which is machine-local and untracked. A corpus whose root is missing is reported as such
 and fails the gate; it is never silently skipped, because "not measured" and
 "passed" must not look alike.
 
@@ -28,12 +27,19 @@ MODULE_DIR = Path(__file__).resolve().parent
 TOOL_DIR = MODULE_DIR.parent
 DEFAULT_MANIFEST = TOOL_DIR / "corpora" / "manifest.json"
 
-# These named fixture directories are the only places where this repository may
-# track .layout files. Everything else may be a leaked third-party layout.
-FIRST_PARTY_LAYOUT_DIR = "scripts/tools/dayz-ui-lab/probe/LF_UIProbe/gui/layouts"
+LOCAL_ROOTS_DIR = "scripts/dev/knowledge-pack/sources"
+LOCAL_ROOTS_FILE = f"{LOCAL_ROOTS_DIR}/local-roots.json"
+
+# Inside this tool's folder, .layout files belong only in these fixture
+# directories; any other .layout under the tool folder is flagged. Layouts
+# elsewhere in the repository (skill templates, other tools' fixtures) are not
+# this tool's to place, so the audit checks them by content only.
+TOOL_PATH = "scripts/tools/dayz-ui-lab"
+FIRST_PARTY_LAYOUT_DIR = f"{TOOL_PATH}/probe/LF_UIProbe/gui/layouts"
 FIRST_PARTY_LAYOUT_DIRS = (
     FIRST_PARTY_LAYOUT_DIR,
-    "scripts/tools/dayz-ui-lab/fixtures/scenarios",
+    f"{TOOL_PATH}/fixtures/scenarios",
+    f"{TOOL_PATH}/fixtures/widget-ids",
 )
 
 
@@ -67,19 +73,17 @@ def resolve_roots(
     file is shared with the API-index resolver and lists roots unrelated to the
     corpora, and reporting those as findings would bury the ones that matter.
     """
-    path = pack_root / "sources" / "local-roots.json"
-    if not path.is_file():
-        # In this repository the `sources/` folder lives under scripts/dev/knowledge-pack/.
-        moved = pack_root / "scripts" / "dev" / "knowledge-pack" / "sources" / "local-roots.json"
-        if moved.is_file():
-            path = moved
+    path = pack_root / LOCAL_ROOTS_FILE
     if not path.is_file():
         return {}, [
             finding(
                 "CORPUS-LOCAL-ROOTS-MISSING",
                 "",
-                "sources/local-roots.json is absent; copy local-roots.example.json "
-                "and point it at your corpora.",
+                f"{LOCAL_ROOTS_FILE} is absent; copy "
+                f"{LOCAL_ROOTS_DIR}/local-roots.example.json to it, "
+                "add a root for any local_root_id in corpora/manifest.json "
+                "that the example does not list, "
+                "and point each root at your corpora.",
                 str(path),
             )
         ]
@@ -197,7 +201,10 @@ def measure_corpus(
             finding(
                 "CORPUS-ROOT-MISSING",
                 corpus_id,
-                f"root {root_id!r} is not configured or not a directory; corpus not measured.",
+                f"root {root_id!r} is not configured or not a directory; corpus not measured. "
+                f"Add it under \"roots\" in {LOCAL_ROOTS_FILE} as "
+                f"\"{root_id}\": {{\"path\": \"<folder>\"}} or "
+                f"\"{root_id}\": {{\"path_env\": \"<variable>\"}}.",
                 str(root) if root else root_id,
             )
         ]
@@ -264,14 +271,17 @@ def audit_redistribution(
 ) -> tuple[dict[str, Any], list[dict[str, str]]]:
     """No third-party layout may live inside the repository.
 
-    Compared by content hash rather than by path, so moving or renaming a leaked
-    file does not hide it.
+    Every .layout in the repository is compared by content hash rather than by
+    path, so moving or renaming a leaked file does not hide it. The location
+    check covers only this tool's own folder.
     """
+    # `output/` (generated deliverables, such as a staged probe) and `workspace/`
+    # (the user's own mods) are gitignored, so nothing there is redistributed.
     # Exclude on the path RELATIVE to the root. Filtering on absolute parts
     # silently matched everything when the root itself lives under a folder
     # named like an exclusion,
     # which made this audit measure zero files while reporting success.
-    excluded_top = {"reports", "dist", "build", ".git"}
+    excluded_top = {"output", "workspace", "dist", "build", ".git"}
     tracked = []
     for path in sorted(pack_root.rglob("*.layout")):
         relative = path.relative_to(pack_root)
@@ -279,13 +289,15 @@ def audit_redistribution(
             continue
         tracked.append(path)
 
+    tool_dir = (pack_root / TOOL_PATH).resolve()
     first_party_dirs = [
         (pack_root / directory).resolve() for directory in FIRST_PARTY_LAYOUT_DIRS
     ]
     outside = [
         str(p.relative_to(pack_root).as_posix())
         for p in tracked
-        if not any(directory in p.resolve().parents for directory in first_party_dirs)
+        if tool_dir in p.resolve().parents
+        and not any(directory in p.resolve().parents for directory in first_party_dirs)
     ]
 
     third_party_digests: dict[str, str] = {}
@@ -315,7 +327,7 @@ def audit_redistribution(
             finding(
                 "CORPUS-LAYOUT-OUTSIDE-FIRST-PARTY",
                 "",
-                "a tracked .layout lives outside the first-party probe fixtures.",
+                "a .layout inside the dayz-ui-lab folder lives outside its fixture directories.",
                 item,
             )
         )

@@ -4,7 +4,7 @@ Why a door, hood or tailgate taken from a game rip shows a see-through edge when
 
 > Status: measured on the SUB_BRZ build, offline and in game, and not yet checked on `P:\`. A citation written with its full `P:\` path was opened on vanilla data. `build_detachable_doors` is a step of that build's own pipeline, which this repo does not ship.
 
-Related file in this pack: `doors-and-panel-edges.md` (measuring a missing door edge and closing it by script; hood and trunk against a door).
+Related file in this pack: `doors-and-panel-edges.md` (measuring a missing door edge; hood and trunk against a door). Its scripted perimeter band ("The recipe that works") is refuted in game: do not apply it, and close the rim as this file describes.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -14,9 +14,12 @@ Related file in this pack: `doors-and-panel-edges.md` (measuring a missing door 
 
 Any door, hood, tailgate or flap coming out of a game rip is a pair of surfaces — outer skin and
 inner card — that are never joined at the edge. The source game never shows that edge, so it was
-never modelled; every DayZ door OPENS, so every imported door shows it. This is the same finding as
+never modelled; every DayZ door OPENS, so every imported door shows it. This is the same defect as
 the end-cap section of `doors-and-panel-edges.md`, measured a week earlier on the same car (leading-edge cap 25 cm² against the ~710 cm² a
-real cap needs, 77 mm of thickness available) — and the fact that this entry was first written without
+real cap needs, 77 mm of thickness available). **Its fix is not the same:** the scripted perimeter band
+and the edge-render parity gate that `doors-and-panel-edges.md` presents as "The recipe that works"
+(15.0% → 25.4% against 26.8% vanilla) are the ones refuted in game below; this file's verdict supersedes
+that recipe. The fact that this entry was first written without
 reading that one is itself the lesson: **before authoring a fix, grep this pack for the defect, not just
 for the car.**
 

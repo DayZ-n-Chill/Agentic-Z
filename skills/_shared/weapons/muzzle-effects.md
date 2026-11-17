@@ -4,7 +4,7 @@ Muzzle flash, smoke and overheating are config entries under `class Particles` o
 
 ## How the effects are played
 
-- `ItemBase.LoadParticleConfigOnFire` reads every child class of `Particles OnFire` and `Particles OnBulletCasingEject` (`P:\scripts\4_world\entities\itembase.c:313` to `:349`). Overheating settings are read at `itembase.c:400` to `:411`.
+- `ItemBase.LoadParticleConfigOnFire` reads every child class of `Particles OnFire` and `Particles OnBulletCasingEject` (`P:\scripts\4_world\entities\itembase.c:313` to `:378`). Overheating settings are read at `itembase.c:400` to `:411`.
 - On each shot `Weapon_Base.EEFired` plays the weapon's fire particles, then a fitted suppressor's own (`P:\scripts\4_world\entities\firearms\weapon_base.c:341` to `:356`). It plays no effects on a dedicated server (`weapon_base.c:345`).
 - Each entry becomes a `WeaponParticlesBase` (`P:\scripts\4_world\entities\weaponparticles.c:7`).
 

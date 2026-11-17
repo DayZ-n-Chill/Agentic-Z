@@ -157,7 +157,7 @@ Both paths are relative to the Agentic-Z repo root; run them from there or give 
 | Button click does not fire | No `SetHandler(this)` in a vanilla handler | Call `SetHandler` when the layout is created; not needed with a Dabs `ViewController` |
 | `OnMouseLeave` never fires | Three parameters instead of four | The signature is `OnMouseLeave(Widget w, Widget enterW, int x, int y)` (`P:\scripts\1_core\proto\enwidgets.c:666`) |
 | Colors look darker than their hex values | The player's HUD brightness setting, applied globally by vanilla | Design against it. Do not call `Widget.SetLV(0)`: it is `proto static` and overwrites the player's setting (`theme-and-color.md`) |
-| Alpha below about 48 is invisible | The engine clamps low alpha | Keep alpha at 0x30 (48) or more. Measured bracket: 0x12 invisible, 0x26 visible |
+| Very low alpha (0x12 or less) is invisible | The engine clamps low alpha | The threshold is above 0x12 and at or below 0x26 (0x12 measured invisible, 0x26 visible). Keep alpha at 0x30 (48) or more as the safe value |
 | A `Relay_Command` runs more than once | The handler returned false or is `void`, so it was called again up the parent chain | Command handlers return true when handled (rule 16) |
 | EditBox text does not update | The binding was not notified | Call `NotifyPropertyChanged("FieldName")` after changing the value |
 | Layout crashes the game on load | An XML format layout, unbalanced braces, or a missing layout file (the crash is inside native `CreateWidgets`; no null check runs) | Brace format only; run the validator (its XML format and missing layout file checks). Not caused by a missing leaf `{ }` (rule 1) |

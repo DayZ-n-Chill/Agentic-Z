@@ -71,16 +71,22 @@ def verify_workspace(modname: str, project_dir: Path) -> Path:
 def gate_on_prefix(prefix_file: Path, modname: str, rel: Path) -> None:
     """Exit unless $PBOPREFIX$ holds exactly <ModName>.
 
-    The build passes -prefix=<ModName> and packs through the P:\\<ModName>\\
-    junction, so the PBO's internal paths are <ModName>\\... A different
+    The build packs the staged copy at P:\\temp\\_stage\\<ModName> with
+    -prefix=<ModName>, so the PBO's internal paths are <ModName>\\... A different
     $PBOPREFIX$ means the mod's own config paths expect another root; packing
     under <ModName> anyway would build a PBO whose paths do not resolve.
     """
-    prefix = prefix_file.read_text(encoding="utf-8-sig").strip()
+    try:
+        prefix = prefix_file.read_text(encoding="utf-8-sig").strip()
+    except UnicodeDecodeError:
+        sys.exit(
+            f"{FAIL} {rel}\\$PBOPREFIX$ is not UTF-8 text (saved as UTF-16 'Unicode'?).\n"
+            f"       Save it as UTF-8 or ANSI holding the single line {modname}."
+        )
     if prefix != modname:
         sys.exit(
             f"{FAIL} {rel}\\$PBOPREFIX$ is {prefix!r}, expected {modname!r}.\n"
-            "       This build packs the mod under the prefix <ModName> (the P:\\<ModName>\\ junction),\n"
+            "       This build packs the mod under the prefix <ModName>,\n"
             "       so the PBO prefix must match. Set the file's content to the single line\n"
             f"       {modname}, and check that config.cpp paths use {modname}\\ as their root."
         )

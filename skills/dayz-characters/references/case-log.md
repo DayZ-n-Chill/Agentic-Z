@@ -18,14 +18,14 @@ The first character imported. An infected at about 1.2 times, with a chest hole 
 
 **Inside-out winding fix (2026-06-25).** The first in-game build rendered inside-out, with textures on the interior. The fix at the time was to reverse every visual face, and the first version of `check_dayz_winding.py` was written and wired in before every pack so this never costs an in-game cycle again. Correction of 2026-10-03: the inside-out render came from the determinant +1 map, not from the source mesh's winding. From Blender, any determinant +1 map mirrors the mesh, and reversing every visual face then hides the mirror. In game on 2026-10-02 the shipped build (determinant +1 with reversed faces) read its chiral marker mirrored and was lit inverted; the Rule 12 build (`(x, z, y)`, faces in their order, normals negated) read it correctly and was lit like a vanilla infected. The gate, rewritten for Rule 12 the same day, passes the Rule 12 build and fails the shipped one on its normals.
 
-**Scale and orientation fixed, proportions left (in game, 2026-06-24).** A deep offline investigation diagnosed the first in-game breakage.
+**Scale and orientation fixed, proportions left (in game, 2026-06-25).** A deep offline investigation diagnosed the first in-game breakage.
 
 - The "camo" texture was a corrupt high to low bake: the noise was in the colour texture, not the normal map, and the body UV was clean. It was replaced with a clean procedural flesh texture.
 - The deformation had two systemic causes, both confirmed in game. Scale: the 2.277 m (1.27 times) mesh fought the canonical bind of about 1.8 m; fixed by a uniform rescale by 0.7901. Orientation: the `(x, z, -y)` map was 180 degrees about the vertical, so the character faced and walked backward; fixed then with `(-x, z, y)`, which is also determinant +1, so it fixed the facing and kept the mirror found later.
 - Both landed: it faces forward, is vanilla sized, and the camo is gone. py3d carried the weights fine; Object Builder was not needed.
 - A later texture fault on the same build (green, grey and brown patches that survived six replacements of the colour texture and the removal of the normal map) was fixed in the `.rvmat`, not in the texture. See the triage table in `SKILL.md` for what that does and does not prove.
 
-**New rig attempt and the false gate wall (2026-06-24; deformation still broken in game).** An attempt to fix the proportion deformation offline.
+**New rig attempt and the false gate wall (2026-06-25; deformation still broken in game).** An attempt to fix the proportion deformation offline.
 
 - Diagnosis of the shipped deformation: asymmetric automatic weights (`LeftUpLeg` 37 vertices against `RightUpLeg` 166), 19 % of weight across the midline, and the cross-side cleanup had amplified it to 21 to 34 times stretch (it keeps the dominant side per vertex; on bled, asymmetric weights it reassigns whole regions to the opposite limb).
 - The bind was replaced by **envelope weighting**: distance to the bone segment, a fade by side, and a column from pelvis to crotch. It is robust for a see-through cavity; a data transfer from a solid `Male_body` weighted the tunnel interior wrong and gave 100 times spikes.

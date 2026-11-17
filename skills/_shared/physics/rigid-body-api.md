@@ -37,7 +37,7 @@ For an item that only has to fall or be thrown, use the native path in `drop-and
 | `dBodySetLinearFactor(body, linearFactor)` | Scales all impulses, velocities and forces per axis; "Zero any axis if you want to do 2D physics" | `P:\scripts\1_core\proto\enphysics.c:84-87` |
 | `dBodyEnableCCD(body, maxMotion, sphereCastRadius)` | Continuous collision detection; see "Fast bodies" in `drop-and-throw.md` | `P:\scripts\1_core\proto\enphysics.c:83` |
 
-- An impulse on a sleeping body is lost. Wake it first: `dBodyActive(ent, ActiveState.ACTIVE)` then `dBodyDynamic(ent, true)`.
+- An impulse on a sleeping body is lost (engine behavior; not checkable on `P:\`, confirm in game). Wake it first: `dBodyActive(ent, ActiveState.ACTIVE)` then `dBodyDynamic(ent, true)`.
 - For a body that must keep rolling, use `ALWAYS_ACTIVE`, a very low but not zero linear and angular damping, and a low sleeping threshold. If it slides without rotating, the surface friction is too low (it lives in the `.bisurf`, below); if it vibrates or never stops, raise the damping. (Tuning seen in game on a rolling stone body; not checkable on `P:\`.)
 
 ## Moving a body

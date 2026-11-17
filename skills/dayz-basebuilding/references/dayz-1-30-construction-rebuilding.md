@@ -457,7 +457,7 @@ Readers are in `constructionparttyped.c` unless another file is named; line numb
 
 ### 9.5 Object Spawner flag
 
-- **The flag.** `ECE_OBJECT_SPAWNER = 256` (`P:\scripts\3_game\ce\centraleconomy.c:15`) is now set by the Object Spawner: it passes `true` as the last argument of `CreateStaticObjectUsingP3D` and adds the flag for the objects it creates by class name (`P:\scripts\3_game\objectspawner.c:44,48`).
+- **The flag.** `ECE_OBJECT_SPAWNER = 256` (`P:\scripts\3_game\ce\centraleconomy.c:15`) is now set by the Object Spawner for the objects it creates by class name (`P:\scripts\3_game\objectspawner.c:48`). Its `.p3d` path calls `CreateStaticObjectUsingP3D` with five arguments (`objectspawner.c:44`): the trailing `true` is `createLocal`, and the sixth parameter `objSpawner` keeps its default `false` (`P:\scripts\3_game\global\game.c:680`).
 - **New parameter.** `CreateObject` and `CreateStaticObjectUsingP3D` gained `bool objSpawner = false` (`P:\scripts\3_game\global\game.c:680,691`).
 - **Unknowns.** Script does not say what the engine does with the flag. Whether a rebuildable building placed by the Object Spawner keeps its parts across a restart is unmeasured.
 

@@ -579,6 +579,10 @@ def evaluate_continuity_limit(report: dict[str, Any], check: dict[str, Any]) -> 
             limit = _finite_number(check[limit_name], limit_name)
             if limit < 0.0:
                 raise ContractError(f"check {_check_id(check)} requires non-negative continuity limits")
+            if not metric_rows[measured_name]:
+                raise ContractError(
+                    f"check {_check_id(check)} declares {limit_name} but has too few frames to measure {measured_name}"
+                )
             limits[limit_name] = limit
             value = measured[measured_name]
             score = value / max(limit, EPSILON) if value > EPSILON else 0.0
@@ -635,6 +639,10 @@ def evaluate_rotation_continuity_limit(report: dict[str, Any], check: dict[str, 
             limit = _finite_number(check[limit_name], limit_name)
             if limit < 0.0:
                 raise ContractError(f"check {_check_id(check)} requires non-negative rotation continuity limits")
+            if not metric_rows[measured_name]:
+                raise ContractError(
+                    f"check {_check_id(check)} declares {limit_name} but has too few frames to measure {measured_name}"
+                )
             value = measured[measured_name]
             limits[limit_name] = limit
             score = value / max(limit, EPSILON) if value > EPSILON else 0.0

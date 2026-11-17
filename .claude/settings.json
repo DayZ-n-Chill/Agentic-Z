@@ -1,22 +1,4 @@
 {
-  "extraKnownMarketplaces": {
-    "superpowers-dev": {
-      "source": {
-        "source": "github",
-        "repo": "obra/superpowers"
-      }
-    },
-    "dayz-n-chill": {
-      "source": {
-        "source": "github",
-        "repo": "DayZ-n-Chill/Agentic-Z"
-      }
-    }
-  },
-  "enabledPlugins": {
-    "superpowers@superpowers-dev": true,
-    "agentic-z@dayz-n-chill": true
-  },
   "permissions": {
     "allow": [
       "Bash(py --version)",
@@ -122,5 +104,16 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "agentic-z@dayz-n-chill": true
+  },
+  "extraKnownMarketplaces": {
+    "dayz-n-chill": {
+      "source": {
+        "source": "github",
+        "repo": "DayZ-n-Chill/Agentic-Z"
+      }
+    }
   }
 }

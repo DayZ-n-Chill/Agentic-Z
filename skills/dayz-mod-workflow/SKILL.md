@@ -8,11 +8,11 @@ description: "Protocol for implementing and debugging a DayZ mod: how to write a
 
 # DayZ mod implementation and debug protocol
 
-Follow `skills/_shared/dayz-conventions.md`. This skill is reference only; it runs no scripts of its own, so there is no preflight gate. The scripts it names (`/dayz-lint`, `/dayz-build-pbo`, `/dayz-launch-test`, `/dayz-gate`, `/dayz-logwatch`) gate themselves.
+Follow `skills/_shared/dayz-conventions.md`. This skill is reference only; it runs no scripts of its own, so there is no preflight gate. Of the scripts it names, `/dayz-build-pbo` and `/dayz-launch-test` gate on preflight, `/dayz-gate` gates through them, and `/dayz-lint` and `/dayz-logwatch` are on the exception list because they only read files and logs.
 
 It is a process skill. The domain knowledge lives in the packs under `skills/_shared/` and in the domain skills; this skill makes sure that knowledge is applied and that gaps are found before they become bugs. Where one of its rules repeats a Tier 2 rule or a pack, the Tier 2 file or the pack wins on detail and is named.
 
-Until 1.29 the six-layer debug order, the sync variable rules and errors E01 to E20 were the whole contract. Since 1.30 the client also checks `CanBeStarted()` before it starts an action, vanilla water actions use `CCTLiquid`, the Central Economy has `MotorbikeScript` and `HouseDestructible` root classes, and `cfggameplay.json` has lock and sandstorm keys: `references/dayz-1-30-mod-workflow.md`.
+Until 1.29 the six-layer debug order, the sync variable rules and errors E01 to E20 were the whole contract. Since 1.30 the client also checks `CanBeStarted()` before it starts an action, vanilla water actions use `CCTLiquid`, the Central Economy has `MotorbikeScript` and `HouseDestructible` root classes, and `cfggameplay.json` has lock and sandstorm keys: `references/dayz-1-30-mod-workflow.md`. The 1.29 side of these changes is not on `P:\`, so it is not yet checked on `P:\`.
 
 Marks used in this skill and its references: a fact with a `P:\` citation was read in that vanilla file. "Measured" facts were observed on a running game or in a mod project and are not yet checked on `P:\`, because a source file cannot show them.
 
@@ -112,7 +112,7 @@ Hard rules:
 - **Sync variable types** are `Bool`, `BoolSignal`, `Int`, `Float` and `Object` only (`RegisterNetSyncVariableBool` starts the list at `P:\scripts\3_game\entities\entityai.c:2832`). There is no `RegisterNetSyncVariableString`. Pattern file: `skills/_shared/enscript/patterns/netsync.md`.
 - **Bitstream alignment.** Client and server register the same variables in the same order. A mismatch corrupts all synced data with no error (E17; not yet checked on `P:\`, the stream layout is native).
 - **`ActionCondition()` runs on both sides:** on the client to list the action, and on the server as the start gate. The server calls `pickedAction.Can(...)` (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerserver.c:168`), and `Can` calls `ActionCondition(player, target, item)` (`P:\scripts\4_world\classes\useractionscomponent\actionbase.c:954`). So `ActionCondition` may read only data both sides have; a client-only cache passes the menu and the server then rejects the start silently. The server does not blindly trust the client's choice.
-- Until 1.29 a listed action was assumed startable once `Can()` passed. Since 1.30 the widget can still show an action whose `CanBeStarted()` is false, and the client then never calls `ActionStart` (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:336`). Info actions return false on purpose (`references/dayz-1-30-mod-workflow.md`).
+- Until 1.29 a listed action was assumed startable once `Can()` passed (not yet checked on `P:\`, which holds no 1.29 data). Since 1.30 the widget can still show an action whose `CanBeStarted()` is false, and the client then never calls `ActionStart` (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:336`). Info actions return false on purpose (`references/dayz-1-30-mod-workflow.md`).
 - `OnStart`, `OnFinish` and `OnUpdate` with the `Server` suffix run on the server. Use server-only data there.
 - A string needed on the client: fill a client cache with a `ScriptRPC`, or encode it as an integer and send it through a sync variable. For data read inside `ActionCondition`, the sync variable is the only safe route, because both sides must read it (E11).
 - **If you are not sure the data is on the client, treat it as not there.**
@@ -235,7 +235,7 @@ The gate takes under a second on a whole addon, so cost is no excuse: run it on 
 
 **What this gate does not allow.** A green result predicts that the module compiles and the asset loads. It says nothing about what the engine does with them. The behavioural gate stays mandatory, separately (`/dayz-gate ingame`, `behavior` and `visual`).
 
-Known coverage: the validator's tables in `scripts/tools/dayz-script-validator/scripts/shared/vanilla_reference.py` are small on purpose (it does not parse `P:\scripts` at run time), so it has false negatives by design and no false positives from that path. Green is not proof of absence.
+Known coverage: the validator's tables in `scripts/tools/dayz-script-validator/scripts/shared/vanilla_reference.py` are small on purpose and cover only some rules. When a vanilla scripts tree is found (`--vanilla-root`, then `DAYZ_VANILLA_ROOT`, then `P:\scripts`), the validator also reads it for `ES-UNDEFINED-CLASS-REF`, `ES-UNDEFINED-BUILTIN-METHOD` and the 1.30 `RegisterConstructionSyncVariables` hook; without one those rules are reported as skipped, not as findings. Rules that rely only on the small tables have false negatives by design. Green is not proof of absence.
 
 **The rule.** Before iterating on an offline metric, ask: does it correlate with the behavioural criterion, or is it a proxy the engine can ignore? For a proxy with no shown correlation, run one behavioural test before polishing it further; if it does not correlate, stop polishing it.
 

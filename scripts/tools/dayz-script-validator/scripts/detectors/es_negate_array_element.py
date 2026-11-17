@@ -1,10 +1,11 @@
 # QUARANTINED — not imported by script_validator.py and not executed.
-# The rule is sound (`!arr[i]` does not compile in Enforce Script; use
-# `arr[i] == 0`; `!arr[i].Method()` is excluded and compiles). The detector
-# has no tests and has not passed review. Wiring it would repeat an earlier
-# mistake (unreviewed detectors produced ~65% false positives).
-# To wire: add tests for tests/fixtures/es/*negate_array*, review the regex
-# against a real corpus, then import and call it from script_validator.py.
+# The premise is FALSE. `!arr[i]` compiles in Enforce Script: vanilla negates
+# an array<int> element in code that ships -
+#   4_world/classes/basebuilding/constructionpart.c:549
+#     if (!animSourceBehaviorInvetrtedOverrides[i])
+# (the array is declared at :541; the same form appears at :572, :595, :647).
+# See pitfalls-advanced.md, section "Negation of an array element compiles".
+# The file remains as a record of the rejected rule. Do not re-wire it.
 
 import re
 
@@ -12,9 +13,8 @@ import re
 ES_NEGATE_ARRAY_ELEMENT_RULE_ID = "ES-NEGATE-ARRAY-ELEMENT"
 
 
-# pitfalls-advanced.md:16-24 — `!arr[i]` does not compile in Enforce Script.
-# The correct form is an explicit comparison (`arr[i] == 0`).
-# The negative lookahead `(?!\s*\.)` excludes `!arr[i].Method()` / `!arr[i].field`
+# Rejected rule: it claimed `!arr[i]` does not compile. It does (see the
+# header). The negative lookahead `(?!\s*\.)` excludes `!arr[i].Method()` / `!arr[i].field`
 # (there the `!` negates the call/field result, which compiles). The trailing
 # lookahead requires an expression boundary after `]`.
 ES_NEGATE_ARRAY_ELEMENT_RE = re.compile(
@@ -26,8 +26,8 @@ ES_NEGATE_ARRAY_ELEMENT_RE = re.compile(
 
 ES_NEGATE_ARRAY_ELEMENT_MESSAGE = (
     "[FAIL] {rel_path} line {line}: logical negation of an array element "
-    "(`!arr[i]`) does not compile in Enforce Script (pitfalls-advanced.md:16-24). "
-    "Use an explicit comparison such as `arr[i] == 0`."
+    "(`!arr[i]`). Rejected rule kept for the record: this form compiles "
+    "(vanilla constructionpart.c:549), so this message is never reported."
 )
 
 

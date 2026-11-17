@@ -1,6 +1,6 @@
 # Pattern: scheduler & periodic ticks
 
-`CallLater`, `Timer`, and `OnUpdate`-style callbacks are the engine's three ways to run code on a schedule. Two traps are reported for long running mods: `CallLater` drifting after hours, which is not verified, and per tick allocation, which is.
+`CallLater`, `Timer`, and `OnUpdate`-style callbacks are the engine's three ways to run code on a schedule. Two traps are reported for long running mods and neither is checked on `P:\`: `CallLater` drifting after hours, and the cost of allocating on every tick.
 
 See also: `examples/09_scheduler_timer.c` for full `CallLater`/`Timer`/`OnScheduledTick` patterns with frame-skip guards.
 
@@ -27,12 +27,12 @@ The report rests on logs from long-running production servers that are not in th
 
 ---
 
-## ⚠️ Per-tick allocation kills perf
+## Reported: per-tick allocation costs frame time
 
-In any function called every tick (`OnUpdate`, `OnPostFrameUpdate`, repeating `CallLater`/`Timer` callback), allocating arrays / maps / `Param` objects creates GC pressure that compounds:
+Not checked on `P:\`: object allocation and freeing are engine code. In any function called every tick (`OnUpdate`, `OnPostFrameUpdate`, repeating `CallLater`/`Timer` callback), allocating arrays, maps or `Param` objects means a new allocation and a free on every call. Managed objects are freed by reference counting when the last strong reference goes (`_shared/enscript-style/memory.md`), so a function-scope `new` is freed when the function returns:
 
 ```c
-// BAD — allocates every tick, GC churn
+// AVOID: allocates and frees an array every tick
 override void OnUpdate(float dt)
 {
     array<Object> nearby = new array<Object>;
@@ -51,7 +51,7 @@ override void OnUpdate(float dt)
 }
 ```
 
-The engine's GC is aggressive on function-scope refs; high-frequency `new` inside ticks shows up as periodic frame-time spikes in the diag profiler.
+Frequent `new` inside ticks is reported to show up as frame-time cost in the diag profiler; this is not measured in this repo.
 
 Rule of thumb: anything inside a function that fires more than once per second should own its working buffers as member fields and `.Clear()` them rather than reallocate.
 
@@ -74,10 +74,4 @@ Detail: `skills/enforce-script-reference/references/runtime-traps.md` and, for s
 
 ## Call categories
 
-When using `CallLater` and `Timer`, the call-category controls which queue the callback drains from. Pick the right one — mismatched category means callbacks pause when the corresponding queue is paused.
-
-| Category | Use for |
-|---|---|
-| `CALL_CATEGORY_SYSTEM` | Engine-side maintenance; rarely correct for mod code |
-| `CALL_CATEGORY_GUI` | HUD / menu / widget updates |
-| `CALL_CATEGORY_GAMEPLAY` | Game logic (default for most mod work) |
+The category passed to `GetCallQueue` or `Timer` decides when the callback can run. Which category ticks when, with vanilla citations, is in `../references/api_scheduling.md`, "Call categories".

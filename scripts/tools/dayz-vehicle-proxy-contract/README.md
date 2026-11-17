@@ -5,6 +5,14 @@ source-to-assembly geometric fit, engine properties, animation overlaps and
 deployed-PBO byte closure. It turns silent proxy misalignment and stale PBO
 payloads into a JSON report before a build is launched.
 
+The PBO closure check compares the bytes of the source MLOD host and proxy
+`.p3d` files with the matching uncompressed PBO entries. The manifest's
+`deployed_pbo` must therefore be packed without binarizing (pack only).
+A binarized build, such as the default `/dayz-build-pbo` run through
+AddonBuilder, stores those `.p3d` files as ODOL, so every host and proxy entry
+reports `PBO-HASH-MISMATCH` and `audit` exits 1 even when the build is fresh
+and correct.
+
 This is an offline check. It does not launch DayZ. In-game verification
 belongs to DayZ-MCP (`skills/dayz-mcp-verify/`).
 
@@ -55,7 +63,7 @@ outside the addon; it never overwrites the source tree.
 | `0` | PASS — audit/preview clean, or `self-test` controls all true |
 | `1` | FAIL — reported contract findings, or repair left unresolved defects / staged a partial plan |
 | `2` | `self-test` ran but a negative control did not discriminate |
-| `3` | `self-test` schema invalid or raised |
+| `3` | `self-test` positive control failed, or its result schema was invalid, or it raised |
 | `4` | input / internal error (bad manifest, missing source hash match, raced output, invalid MLOD). No partial report is published |
 | `64` | usage error (unknown command or missing required flags) |
 
@@ -77,6 +85,8 @@ their own path, not from the current working directory.
 A green run predicts that the declared proxy graph, the source-to-P3D fit,
 the required properties and the deployed PBO bytes match the manifest
 contract. It does **not** predict that the vehicle behaves in the engine.
+The PBO byte match only holds for a pack-only PBO; binarized `.p3d` entries
+always mismatch their MLOD sources.
 
 Out of scope, deliberately:
 

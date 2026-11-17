@@ -399,6 +399,28 @@ class MotionContractTests(unittest.TestCase):
                 }],
             )
 
+    def test_continuity_limits_reject_too_few_frames_to_measure(self):
+        two_frames = {
+            0: frame(
+                points={"shoulder": [0.0, 0.0, 0.0]},
+                transforms={"wrist_local": {"p": [0.0, 0.0, 0.0], "q": IDENTITY}},
+            ),
+            1: frame(
+                points={"shoulder": [0.0, 0.0, 0.0]},
+                transforms={"wrist_local": {"p": [0.0, 0.0, 0.0], "q": IDENTITY}},
+            ),
+        }
+        cases = [
+            {"type": "continuity_limit", "point": "shoulder", "max_acceleration_m_s2": 0.0},
+            {"type": "continuity_limit", "point": "shoulder", "max_jerk_m_s3": 0.0},
+            {"type": "rotation_continuity_limit", "transform": "wrist_local", "max_angular_acceleration_deg_s2": 0.0},
+            {"type": "rotation_continuity_limit", "transform": "wrist_local", "max_angular_jerk_deg_s3": 0.0},
+        ]
+        for case in cases:
+            check = {"id": "short_window", "frames": [0, 1], "fps": 30.0, **case}
+            with self.subTest(check=case), self.assertRaises(ContractError):
+                evaluate(two_frames, [check])
+
     def test_rotation_continuity_limit_rejects_angular_stutter(self):
         quarter_turn = [0.0, 0.0, math.sin(math.pi / 4.0), math.cos(math.pi / 4.0)]
         result = evaluate(

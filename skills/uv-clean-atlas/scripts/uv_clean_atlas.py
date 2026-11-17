@@ -77,7 +77,7 @@ for s in range(nfaces):
 print(f"SHELLS: {ns}")
 
 # --- 1. view-based charts ---
-chart, next_cid = uv_view_charts.view_charts(nfaces, normals, areas, adj, shell, ns)
+chart, next_cid = uv_view_charts.view_charts(nfaces, normals, areas, adj, shell, ns, edge_len)
 cfaces = defaultdict(list)
 for i, c in enumerate(chart):
     cfaces[c].append(i)
@@ -306,8 +306,8 @@ def sat_offenders():
                 checked.add(key)
                 fi, t1 = tris[ti]
                 fj, t2 = tris[tj]
-                if fi == fj:
-                    continue
+                # Same-face pairs are tested too: a folded (bowtie) face overlaps itself,
+                # and fan triangles sharing an edge separate on that edge's axis.
                 if sat(t1, t2):
                     pairs.add((min(fi, fj), max(fi, fj)))
     faces = set()
@@ -354,7 +354,13 @@ print(f"STRAIGHTEN: loops={n_loops} corners={n_corners}")
 did_straighten = n_loops > 0
 
 # --- 5b. excise residual offenders (solver-free): rewrite each offender face's
-# UVs as a detached micro-triangle; the shelf pack files them with the specks.
+# UVs as a detached micro-polygon; the shelf pack files them with the specks.
+def speck_corners(base_u, base_v, n, r=0.002):
+    """n UV corners on a small circle, counter-clockwise in loop order. The polygon
+    is convex, so its fan triangles cannot overlap each other in the SAT check."""
+    return [(base_u + r * math.cos(2 * math.pi * i / n),
+             base_v + r * math.sin(2 * math.pi * i / n)) for i in range(n)]
+
 def excise_faces(faces):
     bm2 = bmesh.new()
     bm2.from_mesh(me)
@@ -364,8 +370,8 @@ def excise_faces(faces):
         f = bm2.faces[fi]
         base_u = 2.0 + 0.01 * (k % 32)
         base_v = 2.0 + 0.01 * (k // 32)
-        for i, lo in enumerate(f.loops):
-            lo[uvl].uv = (base_u + 0.004 * (i % 2), base_v + 0.004 * (i // 2))
+        for lo, uv in zip(f.loops, speck_corners(base_u, base_v, len(f.loops))):
+            lo[uvl].uv = uv
     bm2.to_mesh(me)
     bm2.free()
     me.update()
@@ -400,7 +406,7 @@ if did_straighten and len(pairs2) > 50:
     pairs2, faces2 = sat_offenders()
 print(f"SAT_VERDICT: pairs={len(pairs2)} ({'ZERO OVERLAP PROVEN' if not pairs2 else 'residual overlap'})")
 
-os.makedirs(os.path.dirname(BLEND_OUT), exist_ok=True)
+os.makedirs(os.path.dirname(os.path.abspath(BLEND_OUT)), exist_ok=True)
 bpy.ops.wm.save_as_mainfile(filepath=BLEND_OUT)
 uv_metrics.score_and_render(ob, OUT_DIR, TAG)
 print("DONE_CLEAN_ATLAS_V8")

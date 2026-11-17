@@ -72,7 +72,7 @@ bm = auto_map_bones("Armature", "Hero")
 
 ### 2. Rigify mode
 
-**When to use:** standard Rigify rigs.
+**When to use:** as a starting point for a Rigify rig, after fixing it against that rig's bone list.
 
 ```python
 bm = get_preset_bone_mapping("mixamo_to_rigify")
@@ -80,13 +80,9 @@ bm = get_preset_bone_mapping("mixamo_to_rigify")
 
 **How it works:**
 - Uses a predefined Mixamo to Rigify bone map
-- Meant for the standard Rigify control rig structure
 - Instant map, no matching pass
 
-**Advantages:**
-- No configuration for Rigify users
-- No fuzzy pass, so no near-miss matches
-- Needs only a check that the rig has bones with these names
+**As shipped, the preset matches neither Rigify rig.** It mixes names from the generated control rig (`torso`, `neck`, `head`, `shoulder.L`) with names that exist only in the metarig (`spine`, `spine.001`, `spine.002`, `upper_arm.L`, `forearm.L`, `hand.L`). On either rig some entries name no bone, and `retarget_animation` skips those entries without a warning. Before use, print the bone names of the actual target rig and correct every entry against that list.
 
 **The preset the shipped `retargeting.py` holds** is ten bones, named as below:
 
@@ -233,7 +229,7 @@ critical_bones = [
 ]
 
 if critical_mapped >= 8:
-    quality = 'excellent'  # Safe to auto-apply
+    quality = 'excellent'  # Quick review still required
 elif critical_mapped >= 6:
     quality = 'good'       # Quick review recommended
 elif critical_mapped >= 4:
@@ -298,7 +294,7 @@ The system rates the map automatically.
 
 | Rating | Critical bones | Recommendation |
 |--------|----------------|----------------|
-| **Excellent** | 8-9 | Safe to auto-apply, skipping confirmation |
+| **Excellent** | 8-9 | Review still required; the rating does not check that entries are correct |
 | **Good** | 6-7 | Quick review recommended |
 | **Fair** | 4-5 | Thorough review required |
 | **Poor** | 0-3 | Manual mapping required |
@@ -307,10 +303,10 @@ The system rates the map automatically.
 
 ```json
 {
-  "total_mappings": 52,
+  "total_mappings": 47,
   "critical_bones_mapped": "8/9",
   "quality": "excellent",
-  "summary": "52 bones mapped, 8/9 critical bones"
+  "summary": "47 bones mapped, 8/9 critical bones"
 }
 ```
 
@@ -327,12 +323,10 @@ The system rates the map automatically.
 - The character is standard Rigify
 - Similar maps worked before
 
-**Auto-apply if:**
-- Quality is "Excellent"
-- You are using a trusted custom map
-- You are repeating animations on the same character
+**Apply without review only if:**
+- You load a stored map that was already reviewed for the same pair of rigs
 
-In this skill the review is never skipped on a first map for a rig (see the two-phase rule in `SKILL.md`).
+A map from the fuzzy pass is always reviewed, whatever its rating (see the two-phase rule in `SKILL.md`).
 
 ---
 
@@ -351,7 +345,7 @@ for source_bone, target_bone in bm.items():
 `auto_map_bones` prints three lines of this shape (the first one starts with a check mark character):
 
 ```
-Auto-mapped 52 bones
+Auto-mapped 47 bones
    Quality: EXCELLENT
    Critical bones: 8/9
 ```
@@ -587,11 +581,11 @@ retarget_animation("Armature", "Hero", bone_map=bm)
 
 ### 4. Use a quality threshold
 
-**Decide the confirmation strategy** from the rating: skip the review only for a map rated "excellent" on a rig whose map was reviewed before, and review every other map.
+**Use the rating to set how deep the review goes**, never to skip it: every map from the fuzzy pass is reviewed, and only a stored map that was already reviewed is reused without review.
 
 ```python
 report = get_match_quality_report(bm)
-needs_review = report["quality"] != "excellent"
+thorough_review = report["quality"] in ("fair", "poor")
 ```
 
 ### 5. Document your rigs

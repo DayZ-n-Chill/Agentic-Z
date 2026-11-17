@@ -133,7 +133,7 @@ The real split is:
 | **SIB — advanced** | **Force** — `dBodyApplyForce`/`Torque` in the applicator `qmdkldkpqpmlsib` | **DRM-locked + core integrator missing** | Proof force was *used*, but unbuildable (lost + license-gated) |
 | **RFFS** | **Kinematic** — `SetVelocity`/`SetOrientation`, `dBodyApplyImpulse` only as a commented line (`Core.c:272`) | Clean, complete, DRM-free | The clean **kinematic** reference: physically-grounded (attitude-rotated lift vector, ground effect, ETL, governors, drag, weathervaning), discrete 0-20 collective, typed JSON config, flight HUD |
 | **MH6** | **Force** — real `dBodyApplyForce(this, totalForce)` + `dBodyApplyTorque(this, totalTorque)` every tick (`MH6_flightmodel.c:1165-1166`) | **Readable, clean, complete** | The **force-based** reference: full PD flight controller, ISA air density, rotor-RPM authority, autohover/autoland — buildable today |
-| **LM_Planes** | **Force** — real aerodynamic lift/drag/stall forces applied at `axis_thruster` | Clean (public workshop) | The fixed-wing reference (real aerodynamics + custom Pawn) |
+| **LM_Planes** | **Force** — real aerodynamic lift/drag/stall forces summed and applied through `dBodyApplyForce`; engine thrust is taken at `axis_thruster` | Clean (public workshop) | The fixed-wing reference (real aerodynamics + custom Pawn) |
 
 **Conclusion:** a buildable DayZ *helicopter* can be **either** kinematic (RFFS) or
 force-based (MH6) — both are clean and complete on disk. The impression the SIB mod gave — that the
@@ -152,7 +152,7 @@ already applied real forces, and MH6 carries the same approach onto a rotor.)
 | Flight model | High-kinematic: attitude-rotated lift vector, ground effect, ETL, speed+climb governors, aero drag, weathervaning | Low-kinematic: pitch attitude → scalar forward speed; bank → yaw; passive +0.25 m/s hover | **PD controller**: RPM-gated authority, ISA-density lift, translational lift, ground effect, per-axis quadratic drag, overspeed + climb limiters | Real aerodynamics: lift/drag/stall, ISA atmosphere, PID auto-stab, NaN-safe forces |
 | Collective / thrust | **Discrete 0-20 detent** × `c_thrust_rate` | `m_rotorTurn` ±2.8 momentary + passive baseline | Analog `m_ThrottleTarget` 0-1 → lift force `= mass·g·1.65 · collective · rotorSpeed² · density · …` | Throttle smoothed via Pawn move |
 | Attitude stability | Recovery mode (level-to-velocity) | Attitude auto-recenter | **PD**: proportional (memory-point tilt) + derivative (angular-rate damping) | PID auto-stabilization |
-| Autohover / autoland | none | Autohover **yes** (license-gated `AutopilotState` bot-map, DRM only) | **Autohover + autoland FSM** (kinematic `SetVelocity` assist on top of force flight) | n/a |
+| Autohover / autoland | none | Autohover **yes** (license-gated `AutopilotState` bot-map, DRM only) | **Autohover** (hold loop on the control channels, force flight keeps running) **+ autoland FSM** (kinematic `SetVelocity`, replaces the force call) | n/a |
 | Config store | **Typed named JSON** (`MasterConfig` + `HeliConfig`, `get*` accessors, %-of-baseline) | Positional `map<string,float>` from `$profile` JSON | **Hard-coded const literals** (`:141-176`); config.bin not readable | ~60 `Get*` methods per aircraft (config-as-code) |
 | Replication | Sync vars + `EOnFrame` client pump (animations and input sync only) | Sync vars + `EOnSimulate` mirror | **Custom Pawn** (`MH6OwnerState`/`MH6Move`, prediction + rewind) + 2 sync vars for toggles | **Custom Pawn** (`PlaneOwnerState`/`PlaneMove`, prediction + rewind) |
 | Atmosphere | none (fixed ceiling clamp) | none (hard 1500 m literal) | **ISA `StandardAtmosphere`** density falloff (shared `Heli_Core` helper) | ISA atmosphere |
@@ -170,7 +170,8 @@ Both are now buildable; the choice is a design decision:
 - **Want realism / momentum / inertia / autohover → force-based. Build from MH6.** Real
   `dBodyApplyForce`/`Torque` gives genuine momentum and inertia (the heli carries its velocity, pendulums
   under the rotor, needs anticipation), a full PD stability controller, ISA-density performance falloff,
-  rotor-RPM authority (no control until spun up), and hybrid kinematic autohover/autoland on top. More
+  rotor-RPM authority (no control until spun up), an autohover hold loop on the control channels, and a
+  kinematic `SetVelocity` autoland that replaces the force call while it runs. More
   physically alive, more to tune.
 - Use **SIB** only as a corroborating third data point (it independently confirms CarScript-as-aviation +
   baked-blur rotors + per-component damage, and its config-bitfield sync idea is worth mining) — do **not**

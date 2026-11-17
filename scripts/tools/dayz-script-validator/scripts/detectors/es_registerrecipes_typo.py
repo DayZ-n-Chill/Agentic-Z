@@ -6,7 +6,7 @@ ES_REGISTERRECIPES_TYPO_RULE_ID = "ES-REGISTERRECIPES-TYPO"
 
 # The real recipe-registration hook carries an official typo:
 # `RegisterRecipies()` (double i) -- declared at pluginrecipesmanagerbase.c:14,
-# invoked at pluginrecipesmanager.c:655. The correctly-spelled form
+# invoked at pluginrecipesmanager.c:662. The correctly-spelled form
 # `RegisterRecipes` has 0 occurrences in the vanilla tree (verified 2026-06-10,
 # host-side grep). Consequences of writing the correct spelling:
 #   (a) `override ... RegisterRecipes(` -> compile fail (no base method).
@@ -31,7 +31,7 @@ ES_REGISTERRECIPES_FAIL_MESSAGE = (
 ES_REGISTERRECIPES_WARN_MESSAGE = (
     "[WARN] {rel_path} line {line}: `RegisterRecipes` -- the vanilla hook is "
     "`RegisterRecipies()` (official typo, double i; "
-    "pluginrecipesmanagerbase.c:14, called at pluginrecipesmanager.c:655). A "
+    "pluginrecipesmanagerbase.c:14, called at pluginrecipesmanager.c:662). A "
     "correctly-spelled `RegisterRecipes` is a dead method the engine never "
     "calls: the mod's recipes are silently not registered."
 )

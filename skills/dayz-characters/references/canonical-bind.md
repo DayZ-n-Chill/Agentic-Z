@@ -6,7 +6,7 @@ How to read the marks: a `P:\` path with a line number was opened and checked in
 
 ## The invariant
 
-The engine skins the mesh against the canonical bind of its own skeleton (the shared rig's bone positions), not a bind derived from your mesh (giant infected build, in game, 2026-06-24). The inherited vanilla animations deform correctly only when the mesh matches that bind in three ways:
+The engine skins the mesh against the canonical bind of its own skeleton (the shared rig's bone positions), not a bind derived from your mesh (giant infected build, in game, 2026-06-25). The inherited vanilla animations deform correctly only when the mesh matches that bind in three ways:
 
 - **Scale.** About vanilla size; the rig's `Male_body` is about 1.8 m. A mesh baked oversize is bound against the 1.8 m positions, limbs swing from the wrong pivots, and the result is gross deformation under animation, not just foot sliding. The giant infected build at 2.277 m (about 1.27 times) did this; rescaling to about 1.8 m removed the catastrophic deformation.
 - **Orientation and handedness.** Facing the same way as the rig, and not mirrored. A 180 degree error about the vertical makes the character face and walk backward and deform. A mirror makes limbs fling (see "The mesh can be left and right mirrored against the skeleton" below). The export map `(x, z, -y)` shipped backward; `(-x, z, y)` turned it round but mirrored it. Both have determinant +1. The map that gets facing and side right is the determinant -1 map `(x, z, y)`, Rule 12 of the dayz-model-pipeline skill (corrected 2026-10-01; derivation in `references/character-rigging.md` section 6).
@@ -54,7 +54,7 @@ Since 1.30 the infected bind is unchanged. `infected.agr` is still the graph the
 
 ## The Blender deform test is a false gate
 
-Only the game, or Buldozer, validates deformation (giant infected build, 2026-06-24). This was the most expensive lesson of that build.
+Only the game, or Buldozer, validates deformation (giant infected build, 2026-06-25). This was the most expensive lesson of that build.
 
 Posing the imported rig FBX armature in Blender and measuring edge stretch does not reproduce the engine's deformation. Over three rebuilds (new weights, a thin-plate-spline conform, a depth-preserving conform) the Blender edge stretch fell from 34 times to 6 times while the in-game deformation stayed unchanged and broken, odd at idle and when animating. That was a false green three times over, and about 12 offline iterations that produced no in-game improvement.
 
@@ -72,7 +72,7 @@ After the build's `model.cfg` skeleton was made to match a debinarized vanilla i
 
 Root cause, found 2026-10-01: the reflection was the export map itself. Blender is right-handed and DayZ is left-handed, so every determinant +1 map (`(x, z, -y)`, `(-x, z, y)`) mirrors the mesh, and the face reversal it then needs hides the mirror. A generated or GLB mesh that went through a reflection and then had its winding reversed to render right side out is prone to this, and a 180 degree turn about Y can leave a reflection behind.
 
-**The test, offline and decisive.** Debinarize a vanilla male, read the embedded skeleton bones and the visual LOD's per-vertex bone references, and compute each bone's vertex X relative to the spine centre. Vanilla puts `left*` on +X and `right*` on -X, the same across shoulder, hip and arm (use bones with many vertices; pelvis and hand centroids are noisy). The opposite side means mirrored. The conversion adds only the bounding centre and reverses winding; it does not negate an axis, so the comparison holds. One trap: a vanilla ODOL's named selections carry the bone names with empty vertex lists; the real membership is the per-vertex bone reference pairs, mapped through the sub-skeleton table to the skeleton bone index.
+**The test, offline.** On your own MLOD (its positions are the ones you wrote), compute each bone selection's vertex X relative to the spine centre. The DayZ bind puts `left*` on +X and `right*` on -X, the same across shoulder, hip and arm (use bones with many vertices; pelvis and hand centroids are noisy), and the front on -Z. The opposite side means mirrored; check the front too, because a mirror plus a 180 degree turn also puts `left*` on +X (the full assert list is in `references/character-rigging.md`, "Verify offline"). The +X left reference comes from the worn-clothing frame, whose fix held in game (`references/worn-clothing-skeleton.md`), and from the rig FBX `Male_body` (vertices weighted to `LeftArm` at x = +0.22, a sign that the `(x, z, y)` export keeps). Do not take the reference from the visual LOD of a debinarized vanilla model: the conversion corrupts those positions for character bodies (see "The vanilla body route" below), and whether the corruption keeps the sign of X has not been checked.
 
 **The fix, two options; prefer the second.**
 

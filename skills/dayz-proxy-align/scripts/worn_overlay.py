@@ -53,8 +53,9 @@ DEFAULT_MAP = {
 }
 
 def find_odol_backend(arg):
-    # External ODOL->MLOD backend (not shipped with Agentic-Z); same contract as
-    # scripts/tools/dayz-odol-strict: a scripts dir with odol_to_mlod.py.
+    # External ODOL->MLOD backend (not shipped with Agentic-Z): a scripts dir with
+    # odol_reader.py and odol_to_mlod.py. scripts/tools/dayz-odol-strict reads ODOL
+    # only and supplies no odol_to_mlod.py, so its backend does not satisfy this.
     cands = [arg, os.environ.get("DAYZ_ODOL_BACKEND_ROOT")]
     for c in cands:
         if c and os.path.isfile(os.path.join(c, "odol_to_mlod.py")):
@@ -143,8 +144,12 @@ def main():
             print("DRY  %-9s [%s] -> %s" % (slot, tag, bn)); continue
         ml = to_mlod(path, debin)
         pos, faces = lod0_geo(ml)
+        try:
+            source = os.path.relpath(path, a.dz)
+        except ValueError:  # model on another drive than --dz: keep the absolute path
+            source = os.path.abspath(path)
         by_slot[slot]["worn"] = {"positions": pos, "faces": faces, "variant": bn,
-                                 "source": os.path.relpath(path, a.dz), "default": tag == "DEFAULT"}
+                                 "source": source, "default": tag == "DEFAULT"}
         done += 1
         print("OK   %-9s [%s] <- %-26s (%d verts, %d tris)" % (slot, tag, bn, len(pos), len(faces)))
 

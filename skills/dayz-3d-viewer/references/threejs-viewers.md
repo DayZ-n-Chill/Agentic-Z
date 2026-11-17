@@ -10,17 +10,17 @@ Measured on 2026-09-01 by HTTP probe and headless render (Chrome 151, no permiss
 
 | Loading lane | Works from `file://` (double click) | Highest three version |
 |---|---|---|
-| UMD `<script src=".../three.min.js">` | yes | 0.160.0 |
+| UMD `<script src=".../three.min.js">` | yes | 0.160.1 |
 | ESM with an `importmap` pointing at an https CDN | yes | 0.185.1 (the latest then) |
 | ESM with an `importmap` pointing at local copies of the module files | no (CORS) | http only |
 
-- `build/three.min.js` (UMD) answers HTTP 200 up to 0.160.0 and 404 from 0.161.0. A viewer on the UMD lane has no upgrade path: it is a dead branch, not just an old version.
+- `build/three.min.js` (UMD) answers HTTP 200 up to 0.160.1 and 404 from 0.161.0. A viewer on the UMD lane has no upgrade path: it is a dead branch, not just an old version.
 - `examples/js/` (the non-module OrbitControls and TransformControls) answers 200 at 0.147.0 and 404 from 0.148.0. That is why legacy viewers sit at 0.147: a hard limit, not a preference.
 - ESM with an importmap against the https CDN works from `file://` with no browser flags. Notes that say otherwise are wrong. What fails from `file://` is importing local module files. Do not bundle a local copy of three to make a viewer work offline: local module files need http.
 - `three.module.js` is no longer one bundle. It re-exports from `three.core.js` (in 0.185.1: 650 KB plus 1.44 MB). Copying only the first gives a silent 404 and a blank page.
 - Going from r160 to r185.1 changed nothing for the API this tool uses (raw `BufferGeometry`, `MeshStandardMaterial`, `OrbitControls`, `Raycaster`, `shadowMap`, tone mapping): the same raycast distance, the same `outputColorSpace`, no page errors and no deprecation warnings. The one deprecation nearby is `PCFSoftShadowMap` (r182; use `PCFShadowMap`), which still works.
 
-Emit new viewers on the ESM, importmap and CDN lane. Drop to UMD only for a measured reason, knowing it caps that viewer at 0.160.0 for good.
+Emit new viewers on the ESM, importmap and CDN lane. Drop to UMD only for a measured reason, knowing it caps that viewer at 0.160.1 for good.
 
 The viewer tool and `/dayz-proxy-align` are on that lane already: both take their page scaffold from `viewer_core.py`, which pins three 0.185.1 on jsDelivr. A generated page therefore needs a network to render.
 

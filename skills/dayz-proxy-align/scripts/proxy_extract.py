@@ -52,11 +52,12 @@ def main(src, out):
             anchor, R, ambiguous, angles = derive_frame(tri)
             frame = R.tolist()
         else:
-            anchor, frame, ambiguous, angles = (tri[0] if tri else [0,0,0]), None, None, []
+            anchor, frame, ambiguous, angles = (list(tri[0]) if tri else [0,0,0]), None, None, []
         proxies.append({
             "name": name, "slot": slot_of(name), "lod": lod0_i,
             "point_indices": ordered, "triangle": tri,
-            "origin": list(lod.points[ordered[0]].coords) if ordered else [0, 0, 0],
+            # The anchor is the largest-angle corner (derive_frame), not face vertex 0.
+            "origin": list(anchor),
             "ref_model": ref_model(name),
             "frame": frame, "ambiguous": ambiguous,
             "angles_deg": [round(a, 2) for a in angles],

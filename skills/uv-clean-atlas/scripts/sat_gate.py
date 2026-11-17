@@ -1,7 +1,8 @@
 # Exact zero-overlap gate: SAT tri-tri over the active UV layer (grid-accelerated).
 # MC has a ~0.06% noise floor; "zero overlap" is only provable with SAT pairs == 0.
 # Triangles with a UV area of 1e-14 or less are skipped before pairing, so a pass
-# does not cover collapsed faces; count those separately.
+# does not cover collapsed faces. SAT_INPUT reports the totals and how many were
+# filtered as collapsed or NaN; the gate exits 1 when nothing is left to test.
 # Usage: blender -b <file.blend> -P sat_gate.py -- <object_name>
 import bpy, bmesh, sys
 from collections import defaultdict
@@ -14,15 +15,37 @@ bm.faces.ensure_lookup_table()
 uv = bm.loops.layers.uv.active
 
 tris = []
+n_faces = len(bm.faces)
+n_tris = n_nan_tris = n_collapsed_tris = 0
+collapsed_faces = 0  # faces none of whose triangles entered the test
 for f in bm.faces:
     loops = f.loops[:]
     p2 = [l[uv].uv.copy() for l in loops]
+    kept = 0
     for i in range(1, len(p2) - 1):
         a, b, c = p2[0], p2[i], p2[i + 1]
+        n_tris += 1
         area = abs((b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1])) * 0.5
+        if area != area:  # NaN UVs give a NaN area, which the filter below also drops
+            n_nan_tris += 1
+            continue
         if area > 1e-14:
             tris.append((f.index, ((a[0], a[1]), (b[0], b[1]), (c[0], c[1]))))
+            kept += 1
+        else:
+            n_collapsed_tris += 1
+    if kept == 0:
+        collapsed_faces += 1
 bm.free()
+
+# SAT = 0 only covers the triangles that entered the test, so publish what was filtered.
+print(f"SAT_INPUT: faces={n_faces} tris={n_tris} tested={len(tris)} "
+      f"collapsed_tris={n_collapsed_tris} nan_tris={n_nan_tris} "
+      f"collapsed_faces={collapsed_faces}/{n_faces}")
+if not tris:
+    print("SAT_GATE_FAIL: no triangle with a valid, non-zero UV area is left to test "
+          "(the UV layer is empty, all NaN or fully collapsed)")
+    sys.exit(1)
 
 def sat_tri_overlap(t1, t2, eps=1e-9):
     for tri_a, tri_b in ((t1, t2), (t2, t1)):
@@ -64,8 +87,8 @@ for lst in grid.values():
             checked.add(key)
             fi, t1 = tris[ti]
             fj, t2 = tris[tj]
-            if fi == fj:
-                continue
+            # Same-face pairs are tested too: a folded (bowtie) face overlaps itself,
+            # and fan triangles sharing an edge separate on that edge's axis.
             if sat_tri_overlap(t1, t2):
                 pairs.add((min(fi, fj), max(fi, fj)))
 

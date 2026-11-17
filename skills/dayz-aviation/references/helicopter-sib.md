@@ -4,7 +4,7 @@ How the SIB helicopter mod (Workshop `3485438937`, internal `ver=8.041`) flies a
 
 Third-party mod behaviour, not vanilla, and not yet checked on `P:\`. The mod ships obfuscated. Its two script PBOs (server and client) were de-obfuscated and the readable scripts were read; those files are not in this repo and carry generated names. Citations are `file:line` into them (`SERVER\unknown_16894.c`, `CLIENT\unknown_15761.c`). Tags: `[VERIFIED-SIB]` read in the mod's scripts, `[INFERRED]` reasoned from them, `[UNVERIFIED]` not readable, so do not invent it, `[DESIGN]` yours to design.
 
-Unlike the fixed-wing notes, this is a real rotary-wing flight model read from source, not a guess. Two limits apply (see the last sections): the advanced variant's core integrator is not readable, and the whole model is a homegrown kinematic hack, not a physically modelled rotor. Learn the pattern from it and write the mod's own code; `skills/_shared/vehicles/helicopters.md` says which model to build from.
+This is a rotary-wing flight model read from the mod's scripts. Two limits apply (see the last sections): the advanced variant's core integrator is not readable, and the whole model is a homegrown kinematic hack, not a physically modelled rotor. Learn the pattern from it and write the mod's own code; `skills/_shared/vehicles/helicopters.md` says which model to build from.
 
 ---
 
@@ -31,13 +31,14 @@ Size variants are pure `Cargo`-size subclasses of `HeliTest_SIB`:
 
 ## 2. Flight model — the two variants
 
-The mod ships **two flight models under the same class name**. Document both; **build from the
-simple one** (the advanced one is license-gated and its core is not readable).
+The mod ships **two flight models under the same class name**. Both are documented here as a
+second example only; do not build from either. Build from RFFS (`helicopter-rffs.md`, kinematic)
+or MH6 (`helicopter-mh6.md`, force based), as `skills/_shared/vehicles/helicopters.md` says.
 
 ### 2a. Simple model — kinematic, `SetVelocity`-based [VERIFIED-SIB, fully legible]
 
 File `SERVER\unknown_16894.c` (client copy `CLIENT\unknown_16894.c` is identical through the class
-body). Not license-gated. This is the teachable pattern.
+body). Not license-gated. This is the fully legible part of the mod.
 
 **Coefficients** (defaults in the class body; overwritten at runtime from JSON via `go_conf()`):
 
@@ -286,11 +287,14 @@ the *other* community heli (`HelicopterSIB_Hommade_LF`) described at the end of
 
 ## Takeaway for building your own heli
 
-Buildable today from `[VERIFIED-SIB]` material: the class chain (`HeliTest_SIB : Heli_sib_cript :
-CarScript`), the `AnimationSources`/`DamageZones`/`Crew` config, the input set + engine-start/stop
-actions, the rotor blur-swap animation, and the **simple kinematic flight loop** (`KeyboardPilot` +
-`Simulate` with `SetVelocity`/`SetOrientation`). That is a complete, self-contained flyable heli.
+Use SIB as a corroborating example only, not as the base for a build. Its simple model is a minimal
+kinematic hack (a constant `+0.25` m/s lift term and a hard `1500` m ceiling), and its advanced
+model is license-locked with the core integrator missing. What it confirms: the `CarScript` class
+chain, `AnimationSources`/`DamageZones`/`Crew` config, custom `UA*` inputs, engine start and stop
+actions, and the rotor blur-swap animation, all of which the other references share.
 
-Do not reach for the advanced force-based model — its core is missing and it's license-locked. If you
-want true `dBodyApplyForce` rotor physics, treat `qmdkldkpqpmlsib` (`unknown_10783.c:454`) as the only
-readable anchor and design the lift curve yourself (mark it `[DESIGN]`).
+For a kinematic build, take RFFS (`helicopter-rffs.md`). For force-based flight with
+`dBodyApplyForce`/`dBodyApplyTorque`, take MH6 (`helicopter-mh6.md`) or the Expansion rotor module
+(`helicopter-expansion.md`); both are legible force models. Inside SIB, `qmdkldkpqpmlsib`
+(`unknown_10783.c:454`) is the only readable force anchor, and it is only an applicator, not a
+lift model.

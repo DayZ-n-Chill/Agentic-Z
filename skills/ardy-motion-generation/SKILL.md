@@ -14,7 +14,7 @@ This skill is a setup and usage guide; it ships no script and runs nothing again
 
 The goal of this skill is **full-body survivor locomotion** (running, jumping, vaulting, scene traversal), not weapon animation.
 
-The real bottleneck of a weapon grip in DayZ is geometric parity between the weapon model and the reference `.anm` on the `Weapon_Root` and `RightHand_Dummy` bones. Both are in the vanilla bone list of the player skeleton `player_testing.xob`: `RightHand_Dummy` at `P:\DZ\anims\cfg\skeletons.anim.xml:115` and `Weapon_Root` at `P:\DZ\anims\cfg\skeletons.anim.xml:254`. The parity problem was measured in game on one weapon project; that result is not checkable on `P:\`. ARDY works on a full-body skeleton (about 27 "core" bones) with hand control as an end-effector position. It has no concept of held object geometry, individual fingers or the DayZ ASI and IK system. Bringing ARDY to a weapon grip problem would be solving the wrong layer. For grip work use `dayz-realistic-animation-director` and `dayz-animation-pipeline`.
+The real bottleneck of a weapon grip in DayZ is geometric parity between the weapon model and the reference `.anm` on the `Weapon_Root` and `RightHand_Dummy` bones. Both are in the vanilla bone list of the player skeleton `player_testing.xob`: `RightHand_Dummy` at `P:\DZ\anims\cfg\skeletons.anim.xml:115` and `Weapon_Root` at `P:\DZ\anims\cfg\skeletons.anim.xml:254`. The parity problem was measured in game on one weapon project; that result is not checkable on `P:\`. ARDY works on a full-body "core" skeleton (its bone count is unconfirmed; count the joints in the first generated `.npz`) with hand control as an end-effector position. It has no concept of held object geometry, individual fingers or the DayZ ASI and IK system. Bringing ARDY to a weapon grip problem would be solving the wrong layer. For grip work use `dayz-realistic-animation-director` and `dayz-animation-pipeline`.
 
 ## What it is
 
@@ -23,17 +23,17 @@ The real bottleneck of a weapon grip in DayZ is geometric parity between the wea
 - Repo: https://github.com/nv-tlabs/ardy
 - Landing page and paper: https://research.nvidia.com/labs/sil/projects/ardy/
 - Models: https://huggingface.co/collections/nvidia/ardy
-- License: Apache-2.0 for the code; the weights are under a separate "NVIDIA Open Model" license. Read its exact terms before redistributing any derivative (personal research use is not affected).
+- Read the code's and the model weights' terms before redistributing anything derived from them.
 
 ## VRAM budget (read before launching anything)
 
-The text encoder alone (Llama-3-8B-Instruct, bf16) asks for about **14 GB**. The documented total is 16 to 18 GB at minimum and about **24 GB for smooth real time**. A 24 GB card such as an RTX 3090 has no margin at all; for comparison, TRELLIS2-4B, another heavy model, was measured peaking at only 6.5 GB on that card. WSL2 adds its own VRAM overhead on top. Expect a real risk of running out of memory in real-time mode.
+The text encoder alone (Llama-3-8B-Instruct, bf16) asks for about **14 GB**; the README also offers CPU text-encoder options (`cpu / bfloat16`, `cpu / float32`) that encode prompts more slowly but need less VRAM. The total is an estimate, not stated by the project: 16 to 18 GB at minimum and about **24 GB for smooth real time** (unverified). A 24 GB card such as an RTX 3090 has no margin at all; for comparison, TRELLIS2-4B, another heavy model, was measured peaking at only 6.5 GB on that card. WSL2 adds its own VRAM overhead on top. Expect a real risk of running out of memory in real-time mode.
 
 Mitigations to try, in order, when memory runs out:
 
 1. Launch `run_text_encoder_server.py` in a separate process, which shows its footprint alone before the rest of the model is added.
 2. Close every other process that reserves VRAM (a browser with GPU acceleration, another loaded model) before launching the demo.
-3. If it still does not fit smoothly, accept generation that is not real time (batched or offline) if the repo allows it. The README does not confirm this; check the demo's `--help` output after installing (see "Launch the interactive demo").
+3. If it still does not fit smoothly, generate offline from the command line instead of the real-time demo: `python "$ARDY_SCRIPTS/generate.py" "<prompt>" --model core` (with `ARDY_SCRIPTS` set as in "Launch the interactive demo" below), run from the root of the ARDY clone. Output goes to `outputs/`.
 
 ## Setup: WSL2, a dedicated conda env
 
@@ -61,7 +61,7 @@ Clone the repo onto a mounted data drive (a `/mnt/<drive>/...` path), not onto t
 
 ### Model weights: downloaded automatically, behind a Hugging Face gate
 
-**The weights do not need to be downloaded by hand**: the repo downloads them when the demo is used. Available models: `ARDY-Core-RP-20FPS-Horizon40/8` and `ARDY-G1-RP-25FPS-Horizon52/8`.
+**The weights do not need to be downloaded by hand**: the repo downloads them when the demo is used. Available models: `ARDY-Core-RP-20FPS-Horizon40/8`, `ARDY-G1-RP-25FPS-Horizon52/8`, `ARDY-SOMA-RP-30FPS-Horizon60` and `ARDY-SOMA-RP-30FPS-KimodoRep-Horizon60`. SOMA is the default `--model`; without `--model core` you get SOMA output, not core.
 
 The text encoder uses `meta-llama/Meta-Llama-3-8B-Instruct`, a **gated** model on Hugging Face. Request access on its model page (approval is usually fast but not instant, so allow for it) and then authenticate:
 
@@ -89,9 +89,13 @@ python "$ARDY_SCRIPTS/run_text_encoder_server.py"
 
 Browser UI: **http://localhost:2333** (the visualization viewer is at **http://localhost:2334**).
 
-**Unverified:** the README does not confirm an explicit flag for choosing the `core` or the `g1` skeleton in the demo command. It is probably selected through a config or through which checkpoint is loaded. Check the `--help` output after installing before assuming a flag.
+The skeleton is chosen with `--model`. It takes a nickname (`soma`, `soma-kimodo`, `core`, `g1`), a nickname with a horizon (`core8`, `g152`) or a full checkpoint name (`ARDY-Core-RP-20FPS-Horizon40`). The default is `soma`, so always pass `--model core`:
 
-For survivor locomotion use the **`core`** skeleton (a generic humanoid), not `g1`: `g1` is the rig of the real Unitree G1 bipedal robot, not a character skeleton.
+```bash
+python "$ARDY_SCRIPTS/run_demo.py" --model core
+```
+
+For survivor locomotion use the **`core`** skeleton (a generic humanoid), not `g1` or the default `soma`: `g1` is the rig of the real Unitree G1 bipedal robot, not a character skeleton.
 
 ## What it produces
 
@@ -110,7 +114,7 @@ By default outputs go to the repo's `outputs/` folder.
 
 Everything in this section is design, not tested code. Before writing any retargeting script, read `references/dayz-integration-plan.md` in full (it holds the complete checklist) and the skills it names. Do not assume the pipeline described here works as written.
 
-The pending chain in short: `.npz` (world-space joints, "core" skeleton of about 27 bones), then import into Blender, then **retarget to the DayZ player skeleton** (`player_testing.xob`, which the RPT calls `OFP2_ManSkeleton`; the same kind of problem `mixamo-retarget` faces and that skill is still experimental: a generic external skeleton onto the specific DayZ one, with no official ARDY mapping to any game format), then export `.txa`, then the existing `dayz-animation-pipeline` route to `.anm`, then the in-game gate.
+The pending chain in short: `.npz` (world-space joints, "core" skeleton, bone count unconfirmed), then import into Blender, then **retarget to the DayZ player skeleton** (`player_testing.xob`, which the RPT calls `OFP2_ManSkeleton`; the same kind of problem `mixamo-retarget` faces and that skill is still experimental: a generic external skeleton onto the specific DayZ one, with no official ARDY mapping to any game format), then export `.txa`, then the existing `dayz-animation-pipeline` route to `.anm`, then the in-game gate.
 
 No part of that chain is tested. See `references/dayz-integration-plan.md` for the detail and the open questions before trying it.
 

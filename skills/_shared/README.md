@@ -2,7 +2,7 @@
 
 A knowledge pack is Tier 3 reference material: notes, API tables and worked examples for one kind of work. Any DayZ worker may load any pack for one task. Packs are loaded only when the task needs them, never by default. Tier 1 (`.claude/CLAUDE.md`) and Tier 2 (`dayz-conventions.md` plus `conventions/*.md`) still apply on top of every pack.
 
-This file is the one index of every pack. Paths are relative to `skills/`. The repo integrity test (`scripts/dev/test_repo_integrity.py`) fails when a pack folder or pack file is missing from this index, or when the index names a file that does not exist.
+This file is the one index of every pack. Paths are relative to `skills/`. The repo integrity test (`scripts/dev/test_repo_integrity.py`) fails when a pack folder or pack file is missing from this index, or when the index names a `_shared/` or `dayz-*` path that does not exist. It does not check that paths under other skills' `references/` folders exist.
 
 ## Pack layout
 
@@ -10,7 +10,7 @@ This file is the one index of every pack. Paths are relative to `skills/`. The r
 - **File naming.** Lowercase, words joined with `-` or `_` to match the neighbouring files, ending in `.md`. Name the file after its subject (`ptc-format-reference.md`, `singleton.md`), not after a ticket or a date.
 - **Front index.** Every pack folder has one front index that says which file to open for which question. For a `_shared/` folder it is the folder's `README.md`; for a skill's `references/` folder it is the table in that skill's `SKILL.md`. Each pack file opens with a title and one line saying what it covers.
 - **Loaded only when needed.** Agents and skills name the pack file they need at the step that needs it. They never tell a worker to read a whole pack up front.
-- **Checked against vanilla.** Facts about the game cite the vanilla file on `P:\` they came from, so a reviewer can check them. The integrity test fails when a pack file has no vanilla citation (a `P:\` path, or a file:line such as `itembase.c:261`), except the files it lists as exempt: the style guide and its section files, the answer format note, the py3d notes, the Expansion style note, the Linux and Proton note, the skill resolution note, the server layout notes, the Tier 2 core, `textures/checking-the-look.md` and the folder indexes. It checks that each file cites vanilla at least once; the line by line check is done by the reviewer. A file still marked "not yet checked on `P:\`" below has not been checked line by line; treat its facts as leads, not answers. A row marked "part checked" has its cited `P:\` lines checked, while its measured results, tool behaviour and facts about other mods are not checked; the file's own opening lines say which is which.
+- **Checked against vanilla.** Facts about the game cite the vanilla file on `P:\` they came from, so a reviewer can check them. The integrity test fails when a pack file under `_shared/` has no vanilla citation (a `P:\` path, or a file:line such as `itembase.c:261`), except the files it lists as exempt: the style guide and its section files, the answer format note, the py3d notes, the Expansion style note, the Linux and Proton note, the skill resolution note, the server layout notes, the Tier 2 core, `textures/checking-the-look.md` and the folder indexes. It checks that each file cites vanilla at least once; skill `references/` packs are not part of this check, and the line by line check is done by the reviewer. A file still marked "not yet checked on `P:\`" below has not been checked line by line; treat its facts as leads, not answers. A row marked "part checked" has its cited `P:\` lines checked, while its measured results, tool behaviour and facts about other mods are not checked; the file's own opening lines say which is which.
 - **Which build a citation is from.** A vanilla line number is right for one game build. Some files cite the lines of the build they were checked on, up to 1.30.164289, which can be newer than the extraction on `P:\`; a measurement keeps the build it was made on. When a cited line does not match on `P:\`, find the symbol by name before deciding the fact is wrong. The build timeline and the files each 1.30 build changed are in `_shared/knowledge/dayz-1-30-build-history.md` ("Which line a citation gives").
 - **Registered here.** A new pack gets a row in this index in the same change.
 
@@ -62,7 +62,7 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/patterns` | Recurring implementation patterns. |
 | `_shared/enscript/integrations` | Outside frameworks and vanilla systems. |
 | `_shared/enscript/references` | API surface by topic. |
-| `_shared/enscript/examples` | Complete `.c` and `.layout` files to start from. Checked on `P:`: `02`, `03`, `07`, `10` and the three layouts. Not yet checked on `P:\`: `01`, `04`, `05`, `06`, `08`, `09`. |
+| `_shared/enscript/examples` | Complete `.c` and `.layout` files to start from. Checked on `P:`: `01` to `10` and the three layouts. |
 
 | File | Purpose |
 |---|---|
@@ -72,7 +72,7 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/patterns/rpc.md` | Checked on `P:`: RPC IDs, `ScriptRPC`, the `OnRPC` template, client to server validation. |
 | `_shared/enscript/patterns/singleton.md` | Checked on `P:`, with its reported `JsonSerializer` behavior marked: static instance with lazy init, `LoadFile` and `SaveFile`, the `ScriptInvoker` shutdown null guard. |
 | `_shared/enscript/patterns/actions.md` | Checked on `P:`: action classes and their `ActionConstructor` registration, condition components, stopping pickup, client and server check mismatch. |
-| `_shared/enscript/patterns/scheduler.md` | Checked on `P:`, with its one unverified report marked: the `CallLater` drift report and the `Timer` alternative, per tick allocation, call categories. |
+| `_shared/enscript/patterns/scheduler.md` | Checked on `P:`, with each reported claim marked as not checked: the `CallLater` drift report and the `Timer` alternative, per tick allocation cost, traps with scheduled calls, call categories. |
 | `_shared/enscript/patterns/physics_items.md` | Checked on `P:`: making spawned items physics active: `ThrowPhysically` or manual dynamic physics. |
 | `_shared/enscript/patterns/json_config_migration.md` | Checked on `P:`: JSON config schema versions and forward migration with `LoadFile` and `SaveFile`. |
 | `_shared/enscript/patterns/language_workarounds.md` | Checked on `P:`: missing language features (ternary, lambdas, exceptions) and their workarounds; overloading, `auto` and `foreach` with an index, which do work. |
@@ -309,7 +309,7 @@ Front index: `_shared/textures/README.md`, which also has a symptom to cause tab
 
 ### Knowledge notes pack (`_shared/knowledge`)
 
-Front index: `_shared/knowledge/README.md`, which also says how far to trust each file. Each file states what was checked in the `Status:` line under its title.
+Front index: `_shared/knowledge/README.md`, which also says how far to trust each file. Each file states what was checked in a `Status:` line under its title or in its opening paragraph.
 
 | Folder or file | Purpose |
 |---|---|

@@ -60,7 +60,7 @@ For a model inside `workspace\<ModName>\`, always pass `--output`, for example `
 | Exit | Meaning |
 |---|---|
 | `0` | The conversion or parse finished. |
-| `1` | The input was readable but the conversion failed (`build-viewer`: the `errors` list is not empty). |
+| `1` | The input is missing or is not an MLOD `.p3d` (a binarized ODOL model), or the conversion failed (`build-viewer`: the `errors` list is not empty). |
 | `2` | Usage error, or an optional package is missing (Pillow, LZO). The message is one line on stderr, not a traceback. |
 
 The same input gives the same `.glb` and `.html` bytes: neither file carries a timestamp or a path of the machine.
@@ -105,11 +105,20 @@ The public names are `convert_paa_to_png`, `parse_rvmat`, `extract_geometry_for_
 
 ## What the page offers
 
+The embedded page (`mode='embedded'`) offers:
+
 - Orbit controls: left button rotates, right button pans, wheel zooms; a camera reset.
 - Toggles for a wireframe overlay, the grid and auto rotation; five background colors to cycle through.
 - A panel with the vertex, triangle and material counts.
 - ACES filmic tone mapping and four lights (key, fill, rim, ambient).
 - Materials built from the RVMAT values: metalness and roughness from the specular keys, emissive materials for LEDs. It resizes with the window.
+
+The web page (`mode='web'`) has the same orbit controls, camera reset, count panel and tone mapping, with these differences:
+
+- No wireframe toggle; only the grid and auto rotation toggles.
+- Four background colors to cycle through instead of five.
+- Two lights (ambient and key) instead of four.
+- Materials come from the `.glb` file as `p3d_to_glb` wrote them, not from RVMAT values in the page.
 
 ## Limits
 

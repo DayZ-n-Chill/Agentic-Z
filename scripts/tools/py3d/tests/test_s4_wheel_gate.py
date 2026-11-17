@@ -26,11 +26,14 @@ V2_FIELDS = {
     "source_version",
 }
 
+pytestmark = pytest.mark.skipif(
+    shutil.which("powershell") is None or shutil.which("cmd") is None,
+    reason="Windows PowerShell and cmd are required for the wheel gate tests",
+)
+
 
 def _powershell():
-    executable = shutil.which("powershell")
-    assert executable is not None, "powershell is required for rollout tests"
-    return executable
+    return shutil.which("powershell")
 
 
 def _v2_manifest(**overrides):

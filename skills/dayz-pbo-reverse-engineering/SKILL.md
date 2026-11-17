@@ -79,7 +79,7 @@ If it is missing, install it from https://mikero.bytex.digital/Downloads. Allow 
 
 ### Step 1: inventory pass
 
-Classify every PBO before any deep work, with `inventory.py` above (or `ExtractPbo -LB -P <pbo>`, which lists contents without extracting). The marker to look for: a PBO whose config is absent or zero bytes is a source distribution, with nothing to load as a mod; a PBO with a substantial config plus `.c` scripts and `.p3d` models is a deployable mod.
+Classify every PBO before any deep work, with `inventory.py` above (or `ExtractPbo -LB -P <pbo>`, which lists contents without extracting). The marker to look for: a PBO whose config is absent or zero bytes has nothing to load as a mod. It is a source distribution when it holds archives or source art, and data only when it holds neither (the kind table above); a PBO with a substantial config plus `.c` scripts and `.p3d` models is a deployable mod.
 
 In one measured Workshop item, 42 of 43 PBOs turned out to be source-only distributions. The inventory pass saved weeks of misdirected work. Always do it first, and re-scope on the first day if it contradicts the assumption.
 
@@ -94,7 +94,7 @@ In one measured Workshop item, 42 of 43 PBOs turned out to be source-only distri
 - `-LB`: listing only.
 - `-R`: do not convert binarised param files. Required when the listing shows `config.bin` and a packaged `config.cpp` in the same folder: without `-R` the converter writes a `.cpp` from the `.bin`, collides with the packaged one, and extraction aborts at the first collision (exit 11, "already exists. Will not overwrite it."). Measured with ExtractPbo 2.35 / DePbo DLL 10.13, 2026-09-26.
 - Keep `<workdir>` short and shallow (a folder near a drive root): nested PBO folders under a long destination exceed MAX_PATH and abort with "cannot make folder" (exit 11).
-- ExtractPbo creates `<destination>\<pbo basename>\` from the PBO prefix.
+- ExtractPbo writes the files under `<destination>\<prefix path>\`, where the prefix path is the PBO's prefix, not its file name: `ai.pbo` has the prefix `DZ\AI`, so its files land in `<destination>\DZ\AI\`.
 - ExtractPbo prints to stderr. Windows PowerShell 5.1 shows that as `NativeCommandError`, which is a wrapper artifact and not a failure. Do not redirect stderr with `2>&1`.
 - Extract to a scratch folder, never beside a read-only Workshop source, and prove the payload was decoded before reading it (`references/pitfalls.md`).
 

@@ -26,7 +26,7 @@ Status: every `P:\` citation below was opened and confirmed on 2026-11-17. The r
 | ViewGeometry | **`6e15`** | cursor/actions raycast; without this actions fail |
 | FireGeometry | **`7e15`** | bullets/projectiles; without this bullets pass through |
 
-FireGeo=`3e13` and ViewGeo=`7e13` are legacy Arma 3 values, not DayZ values; a tool that classifies LODs with them misreads a DayZ model. `skills/dayz-p3d-audit/scripts/audit_p3d.py` uses the values in the table above (see `skills/_shared/conventions/assets.md`).
+FireGeo=`3e13` and ViewGeo=`7e13`, quoted by some online guides, are not DayZ LOD values; a tool that classifies LODs with them misreads a DayZ model. `skills/dayz-p3d-audit/scripts/audit_p3d.py` uses the values in the table above (see `skills/_shared/conventions/assets.md`).
 
 Verification: the LOD list of `P:\DZ\gear\camping\wooden_case.p3d` → 9 LODs with Visual(1..4) + Geometry(`1e13`) + Memory(`1e15`) + LandContact(`2e15`) + ViewGeo(`6e15`) + FireGeo(`7e15`).
 
@@ -129,7 +129,7 @@ proto native void ThrowPhysically(DayZPlayer player, vector force, bool collideW
 ```
 Internally does `CreateDynamicPhysics(ITEM_LARGE)` + `SetDynamicPhysicsLifeTime(...)` + applies force as impulse (inferred from behaviour; the native body is not in the scripts).
 
-It is the vanilla pattern: vanilla calls `ThrowPhysically(null, force, false)` at `P:\scripts\4_world\static\miscgameplayfunctions.c:1321` and `:1345`, and in `plugindeveloper.c`.
+It is the vanilla pattern: vanilla calls `ThrowPhysically(null, force, false)` at `P:\scripts\4_world\static\miscgameplayfunctions.c:1321` and `:1345`. `P:\scripts\4_world\plugins\pluginbase\plugindeveloper.c:430` uses the other form, `ThrowPhysically(null, "0 0 0")`, which keeps `collideWithCharacters` at its default of true.
 
 ```enforce
 ItemBase debrisEnt = ItemBase.Cast(spawned);

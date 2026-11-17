@@ -12,7 +12,7 @@ Related file in this pack: `binarize-vertex-budget.md` (the measured vertex ceil
 
 ## `#Mass#` must live only in the Geometry LOD
 
-Measured on a quad bike mod: a spurious `#Mass#` tagg (every value 0) in the Fire Geometry LOD made AddonBuilder and `binarize` bake the mass of that LOD. The deployed ODOL had `CoM=(0,0,0)` and inertia 0, `ECE_PLACE_ON_SURFACE` placed the vehicle at the height of a centre of mass of 0, and it spawned 0.48 m underground and was ejected. Bisecting the model LOD by LOD isolated the defect.
+A `#Mass#` tagg in any LOD other than Geometry is baked instead of the Geometry mass, and the vehicle spawns below ground and is ejected. This file holds the check and the repair; the measured quad bike case (the baked centre of mass, the spawn depth and the LOD bisection) is in `vehicle-structural-parity.md`, section "2026-06-02 — Spawn-launch root cause CORRECTED".
 
 ### The check
 
@@ -38,7 +38,8 @@ import py3d  # py3d.P3D(f) is the reader; py3d.read_p3d does not exist
 with open(path, "rb") as f:
     m = py3d.P3D(f)
 for lod in m.lods:
-    if lod.resolution != 1e13:  # Anything but Geometry
+    # resolution is a float32 (1e13 reads back as 9999999827968.0), so compare with a band
+    if abs(lod.resolution - 1e13) >= 1e12:  # Anything but Geometry
         has_mass_tagg = any(
             p.mass is not None for p in (lod.points if hasattr(lod, "points") else [])
         )
@@ -56,7 +57,7 @@ Bisect by LOD before trying fixes one at a time: that is what found this defect.
 
 ## Wheel-well clearance: measure against the wheel radius, not the hub
 
-Measured on a quad bike mod: a check that the hubs sat outside the hull passed, using the 8-point hub boxes. The wheel itself (radius 0.34) went into the chassis: the smallest distance from wheel centre to chassis was 0.16 to 0.19 m. The physics pushed the overlapping bodies apart and ejected the vehicle. A working quad bike control with 0.43 to 0.46 m of clearance sat clean.
+A chassis that reaches inside the wheel radius makes the physics push the wheel collider out of the chassis on spawn, and the vehicle is ejected. This file holds the check; the measured quad bike case (the clearances of the broken model and of a working control) is in `vehicle-structural-parity.md`, section "Correction (2026-06-01) — spawn-launch is wheel-collision + placement, NOT mass/inertia".
 
 ### The check
 
@@ -65,17 +66,13 @@ For each wheel of the model (each `wheel_*_*` proxy):
 1. Read the effective radius from config (the wheel's radius in `class Wheels { ... }`) or from the wheel `.p3d` (half the Y size of the cylinder's bounding box).
 2. Compute the smallest distance from the chassis Geometry LOD hull to the wheel proxy centre with py3d (project the proxy centre onto the hull).
 3. Under the wheel radius: **CRITICAL**. The wheel collider is inside the chassis and the vehicle is ejected on spawn.
-4. Under 1.20 times the wheel radius: **WARNING**, a minimal margin (vibration, contact that comes and goes). The working control sat at a ratio of about 1.27.
+4. Under 1.20 times the wheel radius: **WARNING**, a minimal margin (vibration, contact that comes and goes). A working control sat at a ratio of about 1.27.
 
 A failure message that says what to do:
 
 > `Wheel '<wheel_proxy_name>': chassis-to-wheel-center distance = X.XX m < wheel_radius (Y.YY m). The physics treats this as self-penetration on spawn and ejects the vehicle. FIX: reshape the chassis Geometry LOD to open the wheel wells (target clearance >= wheel_radius * 1.25 to 1.30). Measure against the wheel volume (a cylinder of wheel_radius), not the hub.`
 
-### The false pass this replaces
-
-A "hubs outside hull" check measures against the hub box (8 small vertices), which passes even when the full wheel (a cylinder of the effective radius) is inside the chassis. It is a reproducible false PASS on any vehicle whose hub is centred while its wheel well is narrow.
-
-`vehicle-structural-parity.md` covers the same clearance from the building side, with the wheel collider and the contact diagnosis.
+Do not replace this with a "hubs outside hull" check: it measures the 8-point hub box, so it passes when the full wheel cylinder is inside the chassis. `vehicle-structural-parity.md` covers building the wheel collider and diagnosing wheel contact, not this check.
 
 ---
 

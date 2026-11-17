@@ -1,6 +1,6 @@
 ---
 name: rip-vehicle-import
-description: "Guides the import of a ripped racing-game car (a Grub rip that is proxy-split and has moving doors, hood and trunk, called family B) into a drivable DayZ car: the six contract deltas, the single asset-contract ledger entry, the B1 to B7 check allowlist, the human visual signoff, the session A classification viewer and five symptom cookbooks. Use when the user imports a ripped racing-game vehicle or a non-Forza Grub rip, or when such a car shows no get-in prompt, wheelPresent=0, a white body, an invisible attachment or no door radial. For a vanilla-style CarScript car use dayz-vehicles."
+description: "Guides the import of a ripped racing-game car (a Grub rip that is proxy-split and has moving doors, hood and trunk, called family B) into a drivable DayZ car: the six contract deltas, the single asset-contract ledger entry, the B1 to B7 check allowlist, the human visual signoff, the session A classification viewer and five symptom cookbooks. Use when the user imports a ripped racing-game vehicle (a Grub rip), or when such a car shows no get-in prompt, wheelPresent=0, a white body, an invisible attachment or no door radial. For a vanilla-style CarScript car use dayz-vehicles."
 ---
 
 <!-- skill-dir-note -->
@@ -17,7 +17,7 @@ Follow `skills/_shared/dayz-conventions.md`.
 - **Ships:** this adapter, the classification viewer (`export_car_glb.py` and `classify-viewer\index.html`) and the reference files listed at the end.
 - **Expects:** the import project, written `<vehicle-import>` below. Its scripts, contracts, profiles and goldens are not in this repo. Every gate and primitive named here runs from that project. When a canonical path is missing, stop; never substitute a copy or another tool.
 - **Evidence status:** the facts about the import project, its gates and its measured cars (SUB_BRZ, sub_wrxsti_04, MercedesAMGLF, LFQuad, LFQuad3, LFHeli) are not yet checked on `P:\`. Facts about the vanilla game cite the file on `P:\`; those citations are in the cookbooks.
-- **Scope:** if the asset is already in flight, use its frozen runbook. If an entry that applies is missing, STOP. The previous runbook is in `references/history-family-b-runbook.md` and is not executable. A ForzaTech or ForzaDayZ rip is out of scope: it uses the same family B template, but its adapter is not shipped here. A vanilla-style `CarScript` car that is not a rip belongs to `dayz-vehicles`.
+- **Scope:** if the asset is already in flight, use its frozen runbook. If an entry that applies is missing, STOP. The previous runbook is in `references/history-family-b-runbook.md` and is not executable. A vanilla-style `CarScript` car that is not a rip belongs to `dayz-vehicles`.
 
 ## Six mandatory deltas
 

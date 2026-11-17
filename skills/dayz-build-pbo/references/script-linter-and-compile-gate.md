@@ -6,13 +6,16 @@ check that shows a deployed mod's script modules really compile.
 Not yet checked on `P:\` except where a vanilla file is cited: the validator figures and the project cases
 below are measurements on mod projects, not vanilla data.
 
-`/dayz-lint` is the gate `/dayz-build-pbo` runs; it checks the mod's setup. The script validator in
-`scripts/tools/dayz-script-validator/` checks the code itself. The notes below apply whenever the validator
+`/dayz-lint` is the gate `/dayz-build-pbo` runs. It checks the mod's setup first, then runs the code rules of
+the script validator in `scripts/tools/dayz-script-validator/` as its second stage, without
+`--external-scripts`, so a code error already stops every build. The notes below apply whenever the validator
 runs, alone or behind `/dayz-lint`.
 
 ## Running the validator
 
-**Run the script validator first. It is not optional before packaging a PBO.**
+Run it on its own only when you need what the build does not do: pass `--external-scripts` for a mod that
+depends on another mod (through `/dayz-lint <ModName> --external-scripts <folder>`), or compare the result
+before and after a change.
 
 ```
 python scripts/tools/dayz-script-validator/scripts/script_validator.py <addon_root>
@@ -31,7 +34,7 @@ checkout, or the command dies with `No such file or directory` and reads as "not
 - **It is not a compiler.** Enforce only compiles upon loading the world. It does catch dangling
   references after a deletion, which is what a symbol grep misses. Measured 2026-09-08 on a mod of
   271 files: about 60 s; removing 8 left them at 263, with 0 errors on both sides.
-- ⚠ **And it has a blind spot that costs a startup: it does not see an undeclared variable.** Detail,
+- ⚠ **And it has a blind spot that costs a startup: it does not see an undeclared member.** Detail,
   measured case, and the sweep that does catch it, in
   `dayz-test-ingame/references/windows-launch-cycle.md`, Step 0.
 

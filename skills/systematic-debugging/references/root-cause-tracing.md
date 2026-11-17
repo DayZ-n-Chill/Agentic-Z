@@ -14,16 +14,19 @@ Bugs often show up deep in the call stack (git init in the wrong directory, a fi
 digraph when_to_use {
     "Bug appears deep in stack?" [shape=diamond];
     "Can trace backwards?" [shape=diamond];
-    "Fix at symptom point" [shape=box];
+    "Add instrumentation or HOLD" [shape=box];
     "Trace to original trigger" [shape=box];
-    "Better: also add defense-in-depth" [shape=box];
+    "Fix at source, verify" [shape=box];
 
     "Bug appears deep in stack?" -> "Can trace backwards?" [label="yes"];
     "Can trace backwards?" -> "Trace to original trigger" [label="yes"];
-    "Can trace backwards?" -> "Fix at symptom point" [label="no - dead end"];
-    "Trace to original trigger" -> "Better: also add defense-in-depth";
+    "Can trace backwards?" -> "Add instrumentation or HOLD" [label="no - dead end"];
+    "Add instrumentation or HOLD" -> "Can trace backwards?" [label="new evidence"];
+    "Trace to original trigger" -> "Fix at source, verify";
 }
 ```
+
+At a dead end, do not fix at the symptom point. Add the stack-trace instrumentation below to get the next fact, or return a HOLD (see the HOLD table in `SKILL.md`) saying what measurement is missing.
 
 Use it when:
 
@@ -134,7 +137,7 @@ The first test file after which the artefact exists is the one to trace. The loo
 
 **Fix:** made tempDir a getter that throws if accessed before beforeEach.
 
-**Also added defense-in-depth** (see `defense-in-depth.md`):
+**Then, as a separate change after the fix was verified, added defense-in-depth** (see `defense-in-depth.md`):
 
 - Layer 1: Project.create() validates the directory.
 - Layer 2: WorkspaceManager validates it is not empty.
@@ -156,11 +159,11 @@ digraph principle {
 
     "Found immediate cause" -> "Can trace one level up?";
     "Can trace one level up?" -> "Trace backwards" [label="yes"];
-    "Can trace one level up?" -> "Never fix just the symptom" [label="no"];
+    "Can trace one level up?" -> "Never fix just the symptom" [label="no: instrument or HOLD"];
     "Trace backwards" -> "Is this the source?";
     "Is this the source?" -> "Trace backwards" [label="no - keeps going"];
     "Is this the source?" -> "Fix at source" [label="yes"];
-    "Fix at source" -> "Add validation at each layer";
+    "Fix at source" -> "Add validation at each layer" [label="later, separate change the user agrees to"];
     "Add validation at each layer" -> "Bug impossible";
 }
 ```

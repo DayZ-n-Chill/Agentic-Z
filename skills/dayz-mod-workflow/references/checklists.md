@@ -97,7 +97,7 @@ The order of checks in `ActionBase.Can` (`P:\scripts\4_world\classes\useractions
 7. Full-body stance  for a full-body action, can the player change to the stance        (:957-963)
 ```
 
-The server runs the same `Can` before it accepts a client's action (`pickedAction.Can(...)`, `P:\scripts\4_world\classes\useractionscomponent\actionmanagerserver.c:168`). Until 1.29 these seven steps were treated as the whole client start gate. Since 1.30, after the widget lists the action, `CanBeStarted()` must also be true or the client never calls `ActionStart` (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:336`).
+The server runs the same `Can` before it accepts a client's action (`pickedAction.Can(...)`, `P:\scripts\4_world\classes\useractionscomponent\actionmanagerserver.c:168`). Until 1.29 these seven steps were treated as the whole client start gate (not yet checked on `P:\`, which holds no 1.29 data). Since 1.30, after the widget lists the action, `CanBeStarted()` must also be true or the client never calls `ActionStart` (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:336`).
 
 - [ ] `CreateConditionComponents` is overridden with the right target and item conditions.
 - [ ] (since 1.30) `CanBeStarted()` returns true for an action the player can perform; info-only actions return false.

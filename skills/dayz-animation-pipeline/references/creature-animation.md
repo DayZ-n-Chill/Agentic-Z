@@ -24,7 +24,7 @@ Start with the smallest graph that can run, one state with one clip, and see it 
 
 | Bone | Vanilla | Note |
 |---|---|---|
-| `EntityPosition` | `<bone name="EntityPosition" index = "0" movement = "true" lod = "0" />` (`P:\DZ\anims\cfg\skeletons.anim.xml:5`; the same line opens every animal block, the wolf's at `:899`) | The bone the engine moves the entity with. Graphs name it: the wolf's attack source predicts on it (`AnimSrcNodePrediction PredictionTurn` with `Bone "EntityPosition"`, `P:\DZ\animals\animations\!graph_files\wolf\wolf_maingraph.agf:52`, `:53`). |
+| `EntityPosition` | `<bone name="EntityPosition" index = "0" movement = "true" lod = "0" />` (`P:\DZ\anims\cfg\skeletons.anim.xml:5`; the same line follows `Scene_Root` at the top of every animal block; the wolf block starts at `:897`, with `Scene_Root` at `:898` and `EntityPosition` at `:899`) | The bone the engine moves the entity with. Graphs name it: the wolf's attack source predicts on it (`AnimSrcNodePrediction PredictionTurn` with `Bone "EntityPosition"`, `P:\DZ\animals\animations\!graph_files\wolf\wolf_maingraph.agf:52`, `:53`). |
 | `LookAt` | `P:\DZ\anims\cfg\skeletons.anim.xml:17` in the block the infected bind (`hermit_newbindpose.xob`), `:444` in `z_hermit.xob` | The look target. There is no `Pin` bone; the "Pin Look At" of some tutorials is this. |
 
 Practice, not checked on `P:\`:

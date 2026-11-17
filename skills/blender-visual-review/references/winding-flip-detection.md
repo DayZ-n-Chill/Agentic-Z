@@ -16,12 +16,16 @@ Blender's standard shading lights a surface by the declared normals of its verti
 Both read the orientation derived from the winding and ignore the declared normals.
 
 1. **Face Orientation overlay** (set up under "Setup that keeps captures honest" in `SKILL.md`). From outside the model, any red face has flipped winding. Take a screenshot of the 4 standard angles with the overlay on. A uniformly red exterior means the whole mesh is flipped.
-2. **A second render with backface culling.** Set `mat.use_backface_culling = True` on every material (EEVEE honors it), render the same 4 angles again, and compare each with its original render using `vr_delta.py`, one angle at a time. Faces that vanish (holes, or a silhouette IoU under 0.95 on any view) had flipped winding. The verdict is `FLIPPED_LIKELY`: do not approve the export.
+2. **A second render with backface culling.** `vr_capture` renders with Workbench, which ignores the material flag `mat.use_backface_culling`; turn culling on in the scene's Workbench shading instead, render the same 4 angles again, and compare each with its original render using `vr_delta.py`, one angle at a time. Faces that vanish (holes, or a silhouette IoU under 0.95 on any view) had flipped winding. The verdict is `FLIPPED_LIKELY`: do not approve the export.
 
 ```python
-for mat in bpy.data.materials:
-    mat.use_backface_culling = True
+scene = bpy.context.scene
+scene.display.shading.show_backface_culling = True   # Workbench: the setting vr_capture's engine reads
+# ... render the 4 angles again with vr_capture(..., tag="culled"), then set it back:
+scene.display.shading.show_backface_culling = False
 ```
+
+If you render the pair with EEVEE instead, set `mat.use_backface_culling = True` on every material and render both images of the pair with EEVEE, so the only difference between them is the culling.
 
 A render-side alternative to the overlay is a shader that colors by the sign of `dot(geometric_normal, view_direction)`: back faces red, front faces green.
 

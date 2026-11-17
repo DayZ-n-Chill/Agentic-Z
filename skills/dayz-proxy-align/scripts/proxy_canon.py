@@ -4,8 +4,11 @@ proxy_canon.py - rewrite every proxy triangle as a canonical, unambiguous frame.
 
 Reads recipe.json (proxy_extract.py) and writes edits.json (for proxy_apply.py)
 that replaces each proxy's triangle with a canonical right triangle (distinct
-90/63.4/26.6 angles) at the same anchor. The frame is identity by default (item
-shown worn upright, the vanilla character-space pose) or a rotation per slot.
+90/63.4/26.6 angles) at the same anchor. The frame is the raw identity by default
+or a rotation per slot. Not checked on P:\\ and open: identity was meant as "item
+shown worn upright" (vanilla worn clothing is authored in character space), but
+the engine renders P'.R (proxy_frame.py), so the default may render 90 degrees
+off; then pass --rot for that slot.
 
 Why: a 90/45/45 isosceles proxy makes the angle sort tie, so the frame comes out
 rotated and the clothing is turned. Canonical triangles give the derived frame

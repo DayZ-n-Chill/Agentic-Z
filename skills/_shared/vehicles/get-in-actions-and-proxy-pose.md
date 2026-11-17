@@ -52,10 +52,10 @@ accepts a seat only when all four links pass:
    maps `seat_driver`, `seat_codriver`, `seat_cargo1` and `seat_cargo2` to
    `seat_con_1_1`, `seat_con_2_1`, `seat_con_1_2` and `seat_con_2_2`
    respectively, requires that memory point to exist, ignores vertical
-   distance and applies a default 1 m horizontal limit.
+   distance and applies the 1 m horizontal limit that the action passes.
 
 (until 1.29: the four gates above, with door clearance via `IsAreaAtDoorFree`.)
-(since 1.30: `ActionGetInTransport.ActionCondition` first rejects when `!transport.CanGetIn()` (`actiongetintransport.c:36`; default `true` on `Transport` at `transport.c:672`). Gate 3 in this build is `IsAreaAtDoorFreeDiag(crewIndex)` combined with `CrewCanGetThrough` (`actiongetintransport.c:54`). Gate 4 **is called from script** — see the section on the 1 m limit below. Motorbikes that inherit `Motorbike_01_ColorBase` additionally require `GetAnimationPhase("SeatDriver") == 0.0` inside `CanGetIn()` (`motorbike_01.c:92`).)
+(since 1.30: the condition first asks `CanGetIn()` and wraps gate 3 as `IsAreaAtDoorFreeDiag`; the code and the 1.29 comparison are in `dayz-1-30-vehicles.md`, section 5, and the motorbike `SeatDriver` check inside `CanGetIn()` is in `motorbike-invariants.md`, item 4.)
 
 Inspect and fix them in that order. Rebuilding `seat_con_*` cannot help while
 the cursor resolves an envelope component, and script changes cannot help while
@@ -67,29 +67,29 @@ Source anchors (line numbers of the 1.30 build on `P:\`; on 1.29 the condition w
 - `CrewPositionIndex` at `P:\scripts\3_game\vehicles\transport.c:179`, `CrewCanGetThrough` at `:724` to `:731`, and the two `IsAreaAtDoorFree` overloads at `:844` to `:899`.
 - `GetDoorConditionPointFromSelection` at `P:\scripts\4_world\entities\vehicles\carscript.c:2141` to `:2160`, and `CanReachSeatFromDoors` at `:2177` to `:2199`.
 
-```c
-// P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:36-37
-		if (!transport.CanGetIn())
-			return false;
-```
-
 The envelope-component failure was cross-checked in a custom vehicle; vanilla
 source establishes the component-to-seat and subsequent condition order.
 
-## Cursor-targeted world action: two registrations, not the entity list
+## Cursor-targeted world action: the constructor and the vehicle's own action list
 
-A custom `ActionInteractBase` offered
-while the player looks at a vehicle needs both:
+A custom `ActionInteractBase` offered while the player looks at a vehicle needs both:
 
 1. insertion of its typename from a `modded class ActionConstructor` override
    of `RegisterActions(TTypenameArray actions)`, after `super`;
-2. addition from the existing `modded class PlayerBase` override of
-   `SetActions(out TInputActionMap InputActionMap)`, after `super`.
+2. addition to the vehicle's own action list, from the vehicle script class's
+   `SetActions()` override with `AddAction(MyAction)`, after `super`.
 
-Adding the action only to the vehicle/entity action list does not make the
-player cursor evaluate it. In a measured failure, constructor registration was
-present but `ActionCondition` was never called until the PlayerBase map also
-registered the action.
+The cursor reads the target's own list. `ActionInteractBase` uses
+`InteractActionInput`, which inherits `ContinuousInteractActionInput`, and that
+input sets `m_DetectFromTarget = true`; `UpdatePossibleActions` then collects the
+actions of `target.GetObject()` and of its parent. Vanilla relies on this:
+`ActionOpenCarDoorsOutside` and `ActionGetInTransport` are added only in
+`CarScript.SetActions` and appear nowhere in `PlayerBase.SetActions`, yet the
+cursor offers them.
+
+The `PlayerBase.SetActions` map is what an action with no cursor target needs,
+such as one offered to a seated occupant; that case is in `proxies-and-get-in.md`,
+section "In-vehicle actions need two registrations".
 
 Probe one boot with rate-limited log markers at: registration, action
 construction, and `ActionCondition` after a successful target cast. Absence at
@@ -98,7 +98,10 @@ each marker identifies the dead link without changing the condition blindly.
 Source anchors:
 
 - `RegisterActions` starts at `P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:27`, and it inserts `ActionGetInTransport` at `:302`.
-- `SetActions` runs from `P:\scripts\4_world\entities\manbase\playerbase.c:1695` to `:1745`.
+- `ActionInteractBase.GetInputType` returns `InteractActionInput`: `P:\scripts\4_world\classes\useractionscomponent\actions\actioninteractbase.c:61`.
+- `ContinuousInteractActionInput` sets `m_DetectFromTarget = true`: `P:\scripts\4_world\classes\useractionscomponent\actioninput.c:552`; `InteractActionInput` inherits it at `:558`, and the target's actions are read at `:382` to `:386`.
+- `CarScript.SetActions` adds `ActionOpenCarDoorsOutside`, `ActionCloseCarDoorsOutside` and `ActionGetInTransport`: `P:\scripts\4_world\entities\vehicles\carscript.c:2315` to `:2317`.
+- `PlayerBase.SetActions` runs from `P:\scripts\4_world\entities\manbase\playerbase.c:1695` to `:1745` and holds the in-seat vehicle actions: start and stop engine with their boat and motorbike variants (`:1707` to `:1712`), `ActionSwitchSeats` (`:1713`), the inside door actions (`:1714` to `:1715`) and `ActionGetOutTransport` (`:1728`). It holds none of the outside door or get-in actions.
 
 ## Multi-LOD submodel instantiated by proxy
 
@@ -123,29 +126,22 @@ claim that every single-LOD engine proxy follows the same path.
 
 ## Two caveats from the measured case (added 2026-07-26)
 
-- only ONE `modded class PlayerBase` per mod — put SetActions inside the existing one.
+- several `modded class PlayerBase` files may coexist in a mod, but two of them must not add the same field or the same non-override method; a `SetActions` override can go in any of them, and each must call `super.SetActions()`.
 - prompt shown + hand animation playing + server state flipping (`[LFHELI-DBG] door open=true`) with NO visible door motion = the SCRIPT chain is fine; suspect the baked-anim side (selection content in the binarized ODOL, skeleton bone, axis) — the script/anim boundary is exactly SetAnimationPhase.
 
-## The 1 m limit is a signature default, not what the caller passes (added 2026-09-07)
+## Vanilla script passes the 1 m limit; instrument before moving the condition point (added 2026-09-07)
 
-Gate 4 above says `CanReachSeatFromDoors` "applies a default 1 m horizontal limit". That number
-is the **default in the signature** (`carscript.c:2177`), and it is not evidence about what runs:
-**no vanilla script calls that method**. The engine invokes it natively, so neither `pDistance`
-nor `pFromPos` are observable from script.
+Gate 4 above says `CanReachSeatFromDoors` applies a 1 m horizontal limit. Vanilla script calls
+the method itself and passes `1.0` as `pDistance`, with the player's position as `pFromPos`
+(`actiongetintransport.c:64`); `1.0` is also the default in the signature (`carscript.c:2177`).
+The call, the code and what changed in 1.30 are in `dayz-1-30-vehicles.md`, section 5.
 
-(until 1.29: the two sentences above — "no vanilla script calls that method"; native-only. `dayz-1-30-vehicles.md`, section 5, later corrects this for 1.29 too: the 1.29 condition already ended with the same call.)
-(since 1.30: **false**. `ActionGetInTransport.ActionCondition` loops selections and calls `transport.CanReachSeatFromDoors(selections[i], playerPosition, 1.0)` at `actiongetintransport.c:64`, inside the loop at `:62` to `:66`. The third argument vanilla passes is `1.0`. The LFQuad2 measurement below remains a valid warning against guessing `pFromPos` from memory-point choice; instrument the 1.30 call if you change `GetDoorConditionPointFromSelection`.)
+Note: an earlier version of this file read the 1 m as a signature default only and said no
+vanilla script calls the method. That is false on the 1.30 data on `P:\` and, per
+`dayz-1-30-vehicles.md` section 5, on 1.29 too.
 
-```c
-// P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:62-66
-		for (int i = 0; i < selectionCount; ++i)
-		{
-			if (transport.CanReachSeatFromDoors(selections[i], playerPosition, 1.0))
-				return true;
-		}
-```
-
-Measured cost of taking it at face value (LFQuad2, 2026-09-07): a quad whose
+What still holds is a warning against guessing the result of a memory-point change.
+Measured cost of guessing (LFQuad2, 2026-09-07): a quad whose
 `GetDoorConditionPointFromSelection` returned the approach points `pos_driver`/`pos_codriver`
 instead of centred ones was "corrected" to return the centred crew points. The change had three
 true supports — two vanilla vehicles return centred points (`van_01.c:269`,
@@ -156,7 +152,7 @@ Reverted.
 
 Before changing which memory point this method returns, **instrument it**: a logging override
 that prints `pSeatSelection`, `pFromPos` and `pDistance` on every call costs one cycle and
-settles what the engine actually passes. If it cannot be instrumented, the change is a bet:
+settles which point and distance each call actually uses. If it cannot be instrumented, the change is a bet:
 ship it **alone**, never bundled with other changes, so the outcome is attributable.
 
 ## The occupant's pose comes from the ViewGeometry crew proxy, not the Memory point (added 2026-09-07)

@@ -7,6 +7,12 @@ behind the rules. Load it when setting up the directory for the first
 time, when archiving, when something about ids or frontmatter looks wrong,
 and before changing how any other tool or skill reads the log.
 
+**Contents:** Layout · Frontmatter fields · Scanning cheaply · Skill
+families and the sibling check · Assigning an id (why this is the entire
+concurrency story) · Editing an existing observation · When the workspace
+is under version control · Archival · Referencing observations · Why the
+checkpoints are writes, not questions.
+
 ## Layout
 
 ```
@@ -137,7 +143,7 @@ model* too, because it decides what "fixing drift" means:
 Duplication is sometimes correct and absence is not always drift — that is
 exactly what the shared/member-specific split records.
 
-**2. Logging-time check** (SKILL.md, "How to Log"). Before writing an
+**2. Logging-time check** (SKILL.md, "What to Watch For"). Before writing an
 observation, resolve the target against the registry. If it belongs to a
 family, evaluate each sibling and either add it to `skill:` or state in the
 body why it does not apply. **No registry yet, or the target is not in

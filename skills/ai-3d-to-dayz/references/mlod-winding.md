@@ -42,7 +42,7 @@ Read a Rule 12 export with `/dayz-p3d-audit` instead:
 - A healthy single-sided MLOD reads about 100% agreement (that skill's `references/winding-absolute-check.md`, reading rule 1).
 - The direction comes from the signed volume by winding of each closed shell, even at 100% agreement, never from the sum over the LOD: one shell reversed with its normals negated keeps 100% agreement and a negative sum (Check A in that skill's `references/winding-diagnostics.md`).
 - Open sheets and double-sided parts take the visibility checks of "From Check B to fix" in `winding-diagnostics.md`.
-- Isolate a mixed result part by part before any bulk fix (reading rule 2 of the same file).
+- Isolate a mixed result part by part before any bulk fix (reading rule 2 of `winding-absolute-check.md`).
 
 ## A profile signal, not a universal gate
 

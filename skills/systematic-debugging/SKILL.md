@@ -27,7 +27,7 @@ The method is complete in this file. The files below are optional extras for one
 | Question | Read |
 |---|---|
 | The error is deep in a call stack: how do I trace the bad value back to where it came from? How do I find which test leaves a stray file behind? | `references/root-cause-tracing.md` |
-| I found the root cause: how do I make the same bug impossible, not just fixed? | `references/defense-in-depth.md` |
+| The single fix at the root is verified: how do I make the same bug impossible, as a separate follow-up the user agrees to (not part of the fix)? | `references/defense-in-depth.md` |
 | A test is flaky because it sleeps for a guessed time: how do I wait for the real condition? | `references/condition-based-waiting.md` |
 | What does a full set of condition-based wait helpers look like in code? | `references/condition-based-waiting-example.ts` |
 
@@ -350,7 +350,7 @@ When you see these, stop and return to Phase 1.
 | "Multiple fixes at once saves time" | You can't isolate what worked, and it causes new bugs. |
 | "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read it completely. |
 | "I see the problem, let me fix it" | Seeing symptoms is not understanding the root cause. |
-| "One more fix attempt" (after 2 or more failures) | 3 or more failures means an architectural problem. Question the pattern; don't fix again. |
+| "One more fix attempt" (after 2 or more failures) | After 2 failures, return to Phase 1 before a third attempt. After 3 failures, stop and question the architecture; don't attempt a fourth fix. |
 
 ## Quick reference
 

@@ -13,8 +13,9 @@ the rules of scripts/tools/dayz-script-validator/ on the Enforce Script,
 
 The first output line is the verdict: PASS (exit 0, warnings allowed), FAIL
 (exit 1, at least one error) or ERROR (exit 2: bad arguments, no project, no
-mod folder). Every finding carries file:line and its triage from
-dayz-gate/known-errors.json (owner agent and fix). /dayz-gate build and
+mod folder). Every finding carries file:line and its triage (owner agent and
+fix): a stage 1 finding from dayz-gate/known-errors.json, a stage 2 finding
+from the CODE_RULES table unless a lint or learned entry matches it. /dayz-gate build and
 /dayz-build-pbo call lint_mod() first and stop on errors. See SKILL.md.
 """
 from __future__ import annotations
@@ -54,8 +55,9 @@ P_DRIVE = Path("P:\\")
 ERROR, WARNING = "error", "warning"
 
 # Stage 2 findings keep the validator's rule id. Each one maps to the agent that owns the fix and
-# to the fix itself; an id that is not listed gets CODE_DEFAULT. A "lint-<rule>" entry in
-# dayz-gate/known-errors.json, when one exists, wins over this table.
+# to the fix itself; an id that is not listed gets CODE_DEFAULT. A "lint" scope entry in
+# dayz-gate/known-errors.json or a learned entry, when one matches, wins over this table;
+# "log" scope entries are not matched against code findings.
 SCRIPT, CONFIG, UI, ASSET = "dayz-script-specialist", "dayz-config-specialist", "dayz-ui-specialist", "dayz-asset-specialist"
 CODE_DEFAULT = (SCRIPT, "Change the code as the finding says.")
 CODE_RULES = {
@@ -110,7 +112,8 @@ CODE_RULES = {
 # Not an error of the mod: the engine still loads a file that is not UTF-8; only the code rules cannot read it.
 CODE_WARNING_ONLY = {"INPUT-ENCODING-ERROR"}
 
-# Every rule lint can report; each has a "lint-<rule>" entry in dayz-gate/known-errors.json.
+# Every setup-stage (stage 1) rule; each has a "lint-<rule>" entry in dayz-gate/known-errors.json.
+# Stage 2 findings report the validator's rule ids instead (see CODE_RULES).
 RULES = (
     "config-missing", "config-syntax", "cfgpatches-missing", "cfgpatches-empty", "cfgpatches-field",
     "cfgpatches-field-missing", "required-addons-missing", "required-addon-name", "required-addon-duplicate", "pboprefix-missing", "pboprefix-encoding", "pboprefix-mismatch",
@@ -524,13 +527,12 @@ class Lint:
         for severity, items in ((ERROR, result["errors"]), (WARNING, result["warnings"])):
             for item in items:
                 rule = item["rule_id"]
-                if rule in CODE_WARNING_ONLY:
-                    severity = WARNING
+                sev = WARNING if rule in CODE_WARNING_ONLY else severity
                 # The validator's message starts "[FAIL] <file> line <n>: "; file and line have their own fields here.
                 head = r"^\[(?:FAIL|WARN)\] (?:" + re.escape(item["file"]) + r"(?: line \d+)?: )?"
-                self.add(rule, severity, self.mod_dir / item["file"], item["line"], re.sub(head, "", item["message"]).strip())
+                self.add(rule, sev, self.mod_dir / item["file"], item["line"], re.sub(head, "", item["message"]).strip())
                 self.findings[-1]["stage"] = "code"
-                count[severity] += 1
+                count[sev] += 1
         return {
             "errors": count[ERROR],
             "warnings": count[WARNING],
@@ -630,13 +632,16 @@ def lint_mod(
     note = lint.run()
     code = lint.check_code(external_roots) if note is None else None
     known = triage.load_known(triage.KNOWN_ERRORS, triage.learned_path(project_dir) if project_dir else None)
+    # Code findings match only "lint" entries and learned ones (no compiled regex): a log-line
+    # pattern that happens to appear in a validator message must not replace the CODE_RULES fix.
+    code_known = [e for e in known if e.get("scope") == "lint" or "_re" not in e]
     context = {"ModName": mod}
     folder = lint.rel(mod_dir)
     for f in lint.findings:
-        f["triage"] = triage.match_line(f["text"], known, context)
+        f["triage"] = triage.match_line(f["text"], code_known if f.get("stage") == "code" else known, context)
         t = f["triage"]
         if f.get("stage") == "code":
-            if t["status"] != "known":  # no catalog or learned entry: the built-in table
+            if t["status"] != "known":  # no lint or learned entry: the built-in table
                 owner, fix = CODE_RULES.get(f["rule"], CODE_DEFAULT)
                 f["triage"] = {"status": "known", "id": f"lint-{f['rule'].lower()}", "meaning": f["message"],
                                "fix": fix, "owner_agent": owner, "fingerprint": t["fingerprint"]}

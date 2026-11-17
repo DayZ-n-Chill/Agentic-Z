@@ -6,7 +6,7 @@ Every block marked `[EXACT]` is copied from the cited file on `P:\`. `[VERIFIED-
 
 ## W-STAGING1: scripts without a config class or a model
 
-Until 1.29, any vanilla firearm with a script under `4_World\Entities\Firearms\` also shipped a model and a `CfgWeapons` class in the matching weapons PBO.
+Until 1.29, any vanilla firearm with a script under `4_World\Entities\Firearms\` also shipped a model and a `CfgWeapons` class in the matching weapons PBO (the 1.29 data is not on `P:\`, so not checked there).
 
 Since 1.30, four new firearm scripts and a bayonet compile, register their hand animations, and in two cases have their own bone remaps, while the vanilla data on `P:\` has no model and no `CfgWeapons` or `CfgMagazines` class for them. For a comparison, use a weapon that ships in the data you have: the SCAR-H for a rifle shaped like the SCAR-L, the P1 or Glock for a pistol, the CZ527 or Mosin for a bolt action, the CZ61 or PM73 for an open bolt SMG.
 
@@ -139,7 +139,7 @@ Until 1.29, `OpenBolt_Base.SetActions()` only removed `FirearmActionLoadBullet` 
 
 `FirearmActionDetachMagazine` is at `P:\scripts\4_world\classes\useractionscomponent\actions\weapons\firearmactiondetachmagazine.c:151` and extends `ActionSequentialBase`. The old class, `FirearmActionDetachMagazine_Old`, is marked `[Obsolete("1.30: Use class FirearmActionDetachMagazine instead")]` at `:13`. The new action returns `true` from `CanBePerformedFromInventory()` (`:262-265`).
 
-Attaching is stricter: the `ActionCondition` of `FirearmActionAttachMagazine` now requires `weapon.TestAttachMagazine(weapon.GetCurrentMuzzle(), mag, false, true)` (`P:\scripts\4_world\classes\useractionscomponent\actions\weapons\firearmactionattachmagazine.c:256-257`). A 1.29 override of `TestAttachMagazine` that gets this case wrong now blocks the reload animation.
+Quick reload is stricter: the `ActionCondition` of `FirearmActionAttachMagazineQuick` (class at `P:\scripts\4_world\classes\useractionscomponent\actions\weapons\firearmactionattachmagazine.c:225`, condition at `:231`) requires `weapon.TestAttachMagazine(weapon.GetCurrentMuzzle(), mag, false, true)` (`:256-257`). The `ActionCondition` of the plain `FirearmActionAttachMagazine` (`:26-35`) checks `WeaponManager.CanAttachMagazine` or `CanSwapMagazine` and does not call `TestAttachMagazine`. A 1.29 override of `TestAttachMagazine` that gets this case wrong blocks quick reload, not every magazine attach.
 
 ## `Weapon_Base`: removing a magazine validates the state machine; `EEFired` effects are client only
 

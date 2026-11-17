@@ -89,9 +89,10 @@ Purpose: bullet penetration and its materials.
 - Give them penetration RVMATs that fit the material.
 - Keep the names in line with the matching components.
 - Simple includes the relevant parts for penetration.
-- Button and Expert use a copy of View Geometry with penetration RVMATs.
+- Button uses a copy of View Geometry with penetration RVMATs.
+- Expert uses View Geometry without the lever's component, with penetration RVMATs: its Fire Geometry has `Component01` to `Component08` and leaves the lever in no component (see [Expert Mode lever](#expert-mode-lever-in-no-component-measured-2026-10-02)).
 
-A literal copy of View Geometry is what those two patterns do, not a general rule. Check what the new prop needs ballistically.
+Building Fire Geometry from View Geometry is what those patterns do, not a general rule. Check what the new prop needs ballistically.
 
 ## Memory LOD
 

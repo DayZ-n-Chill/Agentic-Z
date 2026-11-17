@@ -12,8 +12,8 @@ revision 7acd58b, without the guards and DayZ additions):
 - Anti-corruption guards: paths that used to corrupt a .p3d silently or
   crash late now fail EARLY with an actionable message (selection weight
   validation, #Property# length limit, stale-binding detection).
-- DayZ LOD constants and `LOD.kind()` / `P3D.get_lod()`. Note DayZ does NOT
-  use the Arma-3-era e13 ids for FireGeo/ViewGeo: they are 7e15 / 6e15.
+- DayZ LOD constants and `LOD.kind()` / `P3D.get_lod()`. In DayZ the
+  FireGeo and ViewGeo LODs are 7e15 / 6e15; Geometry is the only e13 id.
 - Geometry helpers: `bbox`, `triangulate`, `set_selection`,
   `set_total_mass`, `set_memory_point`, and a proxy lifecycle
   (add / inspect / align / remove) with explicit raw<->engine frames.
@@ -92,10 +92,10 @@ def _read_asciiz(f, encoding="utf-8"):
 # DIFFERENT absolute tolerance (+-1e11, +-5e13, +-1e13 and ad-hoc ranges).
 # Here there is ONE relative tolerance.
 #
-# DayZ versus Arma 3: the legacy e13-family ids that circulate in Arma
-# tooling (FireGeo/ViewGeo at 2e13/3e13/7e13) are NOT valid in DayZ. DayZ
-# uses ViewGeometry=6e15 and FireGeometry=7e15. kind() returns None for
-# those values and validate() emits WARN_LOD_KIND_UNKNOWN.
+# DayZ uses ViewGeometry=6e15 and FireGeometry=7e15; Geometry (1e13) is the
+# only e13 id in the table. Any other e13 value (2e13, 3e13, 7e13 and so on)
+# is not a DayZ LOD kind: kind() returns None for it and validate() emits
+# WARN_LOD_KIND_UNKNOWN.
 LOD_RESOLUTIONS = collections.OrderedDict([
     ("geometry",      1.0e13),
     ("memory",        1.0e15),
@@ -2116,8 +2116,8 @@ class LOD:
 
     def kind(self):
         """This LOD's canonical DayZ kind, or None if the resolution is not
-        recognised - for example the legacy Arma 3 ids 2e13/3e13/7e13,
-        which validate() reports as WARN_LOD_KIND_UNKNOWN."""
+        recognised - for example 2e13/3e13/7e13, which are not DayZ LOD
+        ids and which validate() reports as WARN_LOD_KIND_UNKNOWN."""
         return classify_lod_resolution(self.resolution)
 
     def bbox(self):
@@ -2753,11 +2753,14 @@ class LOD:
             if kb >= 63 or vb >= 63:
                 if kb > 63 or vb > 63:
                     msg = ("property %r: key/value exceeds 63 utf-8 bytes "
-                           "(write will raise - quirk 6 guard)" % k)
+                           "(write will raise: a #Property# key or value "
+                           "over 63 utf-8 bytes would be silently "
+                           "truncated to fit its 64-byte field)" % k)
                 else:
                     msg = ("property %r: key/value is exactly 63 utf-8 "
-                           "bytes - fingerprint of silent truncation by "
-                           "other tooling (quirk 6)" % k)
+                           "bytes - the length a tool that silently "
+                           "truncates #Property# fields to 64 bytes "
+                           "leaves behind" % k)
                 findings.append(Finding(
                     "WARN_PROPERTY_TRUNCATION", "WARN", lod_index, msg))
         return findings
@@ -2964,7 +2967,8 @@ class LOD:
             value_bytes = bytes(v, "utf-8")
             # A bare struct.pack("64s64s") silently truncates
             # anything longer (and a 64-byte value loses its NUL
-            # terminator, corrupting the read side). Quirk 6.
+            # terminator, corrupting the read side), so a #Property#
+            # key or value over 63 UTF-8 bytes raises here instead.
             if len(key_bytes) > 63 or len(value_bytes) > 63:
                 raise ValueError(
                     "property %r: key and value must each encode to at "
@@ -3300,8 +3304,8 @@ class P3D:
                 findings.append(Finding(
                     "WARN_LOD_KIND_UNKNOWN", "WARN", i,
                     "unrecognized LOD resolution %g - not a known DayZ id "
-                    "(Arma-3-era e13 FireGeo/ViewGeo ids are NOT valid in "
-                    "DayZ: use 7e15/6e15)" % lod.resolution))
+                    "(DayZ FireGeo/ViewGeo are 7e15/6e15; Geometry is the "
+                    "only e13 id)" % lod.resolution))
                 continue
             if k in _GEOMETRY_CLASS_KINDS:
                 findings.extend(_check_component_naming(lod, i, k))
@@ -3345,6 +3349,13 @@ class P3D:
         WARN_PDRIVE_PATH, WARN_LOD_KIND_UNKNOWN.
         Codes from 1.3.0: ERR_MASS_ONLY_GEOMETRY (a #Mass# tag in a
         non-Geometry LOD, which makes binarize bake CoM=(0,0,0)).
+        Codes of the absolute winding check (_check_winding_absolute, run
+        on every visual, Geometry, View and Fire LOD), added after the
+        August 2026 audit and present by 1.7.0; the release that added
+        them is not recorded: ERR_WINDING_VS_NORMALS,
+        WARN_WINDING_NORMAL_MISMATCH, WARN_WINDING_EDGE_INCOHERENT, and WARN_WINDING_UNVERIFIABLE (no
+        face has both a non-degenerate winding and a non-degenerate
+        declared normal, so the LOD's winding could not be checked).
         Changed in 1.9.0: ERR_COMPONENT_NAMING flags a Geometry, View or
         Fire LOD with faces outside its proxy triangles and no selection
         whose name starts with 'component' (it ran on the Geometry LOD

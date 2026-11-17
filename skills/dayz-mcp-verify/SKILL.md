@@ -10,7 +10,7 @@ description: "Tests a DayZ mod in the running game through the dayz-mcp MCP serv
 
 Drives a DayZDiag client that is already running, through the tools of the dayz-mcp MCP server, to verify a mod without a human at the keyboard: it spawns the object, looks at it from several angles (camera plus a grab of the game window), checks collision by raycast, reads placement and telemetry, and writes a report with pass and fail criteria and evidence. It is the automated observation loop between "the PBO builds and deploys" and "it looks and behaves right in game", for the properties that need no keyboard input.
 
-Follow `skills/_shared/dayz-conventions.md`. dayz-mcp is a third-party tool (an MCP server and its `@DayZ_MCP` mod); this repo does not ship it. Every statement about its verbs here and in `references/` was measured in game sessions with that tool and is not yet checked on `P:\`; vanilla facts cite the vanilla file.
+Follow `skills/_shared/dayz-conventions.md`. dayz-mcp is a third-party tool (an MCP server and its `@DayZ_MCP` mod); this repo does not ship it. The statements about its verbs here and in `references/` come from game sessions with that tool or from reading dayz-mcp's own source; the references mark which ones are a source reading, not tested in game, or a design proposal for a verb that does not exist yet. None of it is checked on `P:\`; vanilla facts cite the vanilla file.
 
 ## Where it sits next to the other skills
 
@@ -84,7 +84,7 @@ Say this in every report.
 - Doors open and close only with `door_index`, and cannot be held at a static pose.
 - `exec_enforce` does not run on the headless diag server.
 - A HUD gated on the first-person vehicle camera cannot be photographed with `camera_set`.
-- After `camera_set` the user cannot take the player back; a manual test needs a relaunch without `@DayZ_MCP`.
+- After `camera_set` the user may not get the player back: `restore_gameplay` can answer `restore_unverified`, so a clean manual test needs a relaunch without `@DayZ_MCP`.
 
 The detail and the workarounds (a key-driven test addon, a mission driver) are in `references/actions-ui-and-inventory.md`.
 

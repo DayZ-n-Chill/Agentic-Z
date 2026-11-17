@@ -14,7 +14,7 @@ When damage shows only as a color tint, the `_damage.rvmat` has a procedural `co
 
 ## Third-party mod patterns (not vanilla)
 
-These patterns are third-party mod behaviour, not vanilla, read on aircraft, a car and a hangar on 2026-05-23. They were applied to aircraft there but are reusable in general.
+These patterns are third-party mod behaviour, not vanilla, read on aircraft, a car and a hangar on 2026-05-23. They were applied to aircraft there but are reusable in general. The exception is the dashboard material swap, whose config properties and script are vanilla (see the toggle pattern below).
 
 ### Toggle rvmat pattern (lights on/off without duplicating material)
 
@@ -34,7 +34,7 @@ Stage5 SMDI:
 Everything else identical.
 ```
 
-**Pattern**: only `forcedDiffuse` (controls overall brightness) + Stage5 SMDI texture (specular/material mask with glowing elements) differ. Toggle via script using vehicle-level `dashboardMatOn`/`dashboardMatOff` properties in CfgVehicles:
+**Pattern**: only `forcedDiffuse` (controls overall brightness) + Stage5 SMDI texture (specular/material mask with glowing elements) differ. This two-rvmat diff was read on a mod. The swap itself is vanilla: `dashboardMatOn` and `dashboardMatOff` are vanilla CfgVehicles properties (for example `P:\DZ\vehicles\wheeled\config.cpp:1336-1337` on the offroad hatchback), and vanilla `CarScript` and `MotorbikeScript` register them with their `VehicleLightsComponent`, which swaps the dashboard material with the lights (`P:\scripts\4_world\entities\vehicles\carscript.c:230-231`, `P:\scripts\4_world\entities\vehicles\motorbikescript.c:121-122`). A class that inherits `CarScript` only sets the two properties:
 
 ```cpp
 class MyPlane: CarScript {
@@ -48,7 +48,7 @@ Related vehicles can share the pair: the config of one aircraft can name the rvm
 
 ### Glass rvmat distinctives
 
-Transparency requires specific flags + values:
+Transparency comes from the alpha of the `_ca` color texture, not from the rvmat (`_shared/textures/surface-recipes.md`, "Glass"). The values below are one mod's glass material:
 
 ```cpp
 ambient[]      = {0.55,0.55,0.55,1};
@@ -57,7 +57,7 @@ forcedDiffuse[] = {0,0,0,1};
 emmisive[]     = {0,0,0,1};
 specular[]     = {0.25,0.25,0.25,1};
 specularPower  = 1320;                      // HIGH — glassy reflection
-renderFlags[]  = {"noZwrite"};              // MANDATORY for transparency
+renderFlags[]  = {"noZwrite"};              // optional; this mod's choice
 PixelShaderID  = "Super";
 VertexShaderID = "Super";
 
@@ -68,10 +68,10 @@ class Stage6 { texture = "#(ai,64,64,1)fresnel(1,0)"; uvSource = "tex1"; ... }; 
 class Stage7 { texture = "dz\data\data\env_land_chrome_co.paa"; ... };     // CHROME env map, not env_land
 ```
 
-Vanilla glass sets the same flag: `renderFlags[]` with `"noZwrite"` in `P:\DZ\characters\headgear\data\firehelmetvisor.rvmat:9` to `:12` (its `specularPower` is 200, lower than the 1320 above).
+Some vanilla glass sets the same flag: `renderFlags[]` with `"noZwrite"` in `P:\DZ\characters\headgear\data\firehelmetvisor.rvmat:9` to `:12` (its `specularPower` is 200, lower than the 1320 above). Vanilla car glass does not: `P:\DZ\vehicles\wheeled\data\auta_skla.rvmat` has no `renderFlags[]`.
 
 Key points:
-- `renderFlags[] = {"noZwrite"}` — without this, glass fails to render transparent or causes z-fighting
+- `renderFlags[] = {"noZwrite"}` is optional. A window does not need it (`_shared/textures/rvmat-stages.md`); a see-through window needs a `_ca` color texture with a non-white alpha
 - `specularPower = 1320` — much higher than opaque materials (typical 50-200)
 - Glass usually omits real textures for Stage4/5 (uses procedural `color(...)` placeholders)
 - Stage7 uses `env_land_chrome_co.paa` for reflective chrome look, not the regular `env_land_co.paa`
@@ -117,15 +117,15 @@ that never hid although config and ODOL
 matched the vanilla motorbike glass slot in the two respects checked (glass rvmat in its `RefTexsMats[]`
 slot, section inside `dmgzone_front`), with a zone of 67 sections against two to five in vanilla.
 
-### 6-stage rvmat variant (omit env stage)
+### 6-stage rvmat layout (AS stage dropped): not checked on P:\
 
-A standard Super rvmat has 7 stages (NOHQ, DT, MC, AS, SMDI, Fresnel, env), the order of vanilla's `P:\DZ\gear\camping\data\wooden_case.rvmat`. For cosmetic materials that don't need world environment reflection, a third-party variant fits in 6 stages plus StageTI:
+A standard Super rvmat has 7 stages (NOHQ, DT, MC, AS, SMDI, Fresnel, env), the order of vanilla's `P:\DZ\gear\camping\data\wooden_case.rvmat`. A 6-stage layout read on a car body material drops the AS stage and moves SMDI up to Stage4:
 
 ```
 Stage1=NOHQ, Stage2=DT, Stage3=MC, Stage4=SMDI, Stage5=Fresnel, Stage6=env (combined), StageTI=thermal
 ```
 
-It was read on a car body material. Slightly cheaper, valid for simple opaque materials. **Don't use for aircraft canopies, mirrors, or anything reflective** — those need the full env Stage7.
+This layout is not checked on `P:\` and departs from the seven-stage Super rule in `_shared/textures/rvmat-stages.md` (Stage4 is AS, Stage5 is SMDI, and all seven numbered stages are kept even when most hold placeholders). Do not use it: write all seven stages, with the AS placeholder `#(argb,8,8,3)color(1,1,1,1,AS)` in Stage4 when the material has no ambient shadow map.
 
 ### HDR emissive trick (super-bright lights)
 

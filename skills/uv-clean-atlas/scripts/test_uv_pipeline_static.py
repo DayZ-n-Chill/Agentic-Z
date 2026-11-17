@@ -62,6 +62,22 @@ def test_sat_gate_skips_collapsed_triangles_at_the_threshold_skill_md_states():
     assert "`1e-14` or less" in SKILL_MD
 
 
+@pytest.mark.parametrize("n", [3, 4, 5, 8])
+def test_excised_speck_cannot_overlap_itself(n):
+    # SKILL.md stage 5: excised offenders become specks so the run can end at SAT = 0.
+    # The gate tests fan triangles of one face against each other, so the corners
+    # must form a convex polygon in loop order (no bowtie).
+    speck_corners = _lift_function(PIPELINE, "speck_corners")
+    sat_tri_overlap = _lift_function("sat_gate.py", "sat_tri_overlap")
+    p = speck_corners(2.0, 2.0, n)
+    fan = [(p[0], p[i], p[i + 1]) for i in range(1, n - 1)]
+    for i in range(len(fan)):
+        a, b, c = fan[i]
+        assert (b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1]) > 1e-12
+        for j in range(i + 1, len(fan)):
+            assert not sat_tri_overlap(fan[i], fan[j]), (n, i, j)
+
+
 def test_shelf_pack_pca_angle_finds_the_long_axis():
     pca_angle = _lift_function("uv_shelf_pack.py", "_pca_angle")
     angle, center = pca_angle([(0.0, 0.0), (1.0, 1.0), (2.0, 2.0), (3.0, 3.0)])

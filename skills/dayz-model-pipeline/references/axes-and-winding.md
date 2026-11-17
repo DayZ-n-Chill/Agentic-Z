@@ -136,7 +136,7 @@ the source winding, reverse the vertices of every **visual** MLOD face before bi
 chirality on an asymmetric feature.")* *(Aligned 2026-10-03: this sentence read "For other raw OBJ or
 glTF imports whose measured axis transform preserves the source winding".)*
 Never include proxy triangles: their winding encodes the proxy frame. This is the generic
-DCC profile only. Imported vehicles continue to use the domain profile in Path A, where
+DCC profile only. Imported vehicles use the vehicle import profile (the `rip-vehicle-import` skill), where
 preserve-versus-flip is decided from the measured transform and source lineage.
 
 A pre-binarize census of `dot(cross(v1-v0, v2-v0), mean_stored_normal)` per visual LOD, excluding

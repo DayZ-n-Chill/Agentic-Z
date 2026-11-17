@@ -333,8 +333,6 @@ def build_parser():
 
 
 def emit_skip(reason, json_mode):
-    head = "SKIP - %s" % reason
-    print(head)
     if json_mode:
         print(
             json.dumps(
@@ -344,6 +342,8 @@ def emit_skip(reason, json_mode):
                 ensure_ascii=True,
             )
         )
+    else:
+        print("SKIP - %s" % reason)
     return 2
 
 
@@ -397,7 +397,7 @@ def emit_comparison(comparison, json_mode):
     return exit_code
 
 
-def emit_update(path, comparison, created, unexplained=()):
+def emit_update(path, comparison, created, unexplained=(), json_mode=False):
     if created:
         head = "UPDATED - created %s" % path
     elif comparison is None:
@@ -406,16 +406,38 @@ def emit_update(path, comparison, created, unexplained=()):
         head = "UPDATED - wrote %s (unchanged vs previous)" % path
     else:
         head = "UPDATED - wrote %s" % path
-    print(head)
+    details = []
     if comparison is not None:
         _ignored_head, details = format_human(comparison)
-        for line in details:
-            print(line)
-    for rule_id, file_name in unexplained:
+    unexplained_lines = [
+        "  NO REASON WRITTEN  %s  %s; an entry without a note is a "
+        "finding nobody triaged" % (rule_id, file_name)
+        for rule_id, file_name in unexplained
+    ]
+    if json_mode:
         print(
-            "  NO REASON WRITTEN  %s  %s; an entry without a note is a "
-            "finding nobody triaged" % (rule_id, file_name)
+            json.dumps(
+                {
+                    "baseline": str(path),
+                    "created": created,
+                    "details": details,
+                    "exit_code": 0,
+                    "status": "UPDATED",
+                    "unexplained_entries": [
+                        {"file": file_name, "rule_id": rule_id}
+                        for rule_id, file_name in unexplained
+                    ],
+                    "verdict": head,
+                },
+                indent=2,
+                sort_keys=True,
+                ensure_ascii=True,
+            )
         )
+    else:
+        print(head)
+        for line in details + unexplained_lines:
+            print(line)
     return 0
 
 
@@ -444,7 +466,11 @@ def main(argv=None):
             return emit_skip("baseline is not writable: %s" % error, args.json)
         comparison = compare(run, previous) if previous is not None else None
         return emit_update(
-            baseline_path, comparison, created, unexplained_entries(document)
+            baseline_path,
+            comparison,
+            created,
+            unexplained_entries(document),
+            args.json,
         )
 
     if not baseline_path.is_file():

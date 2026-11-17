@@ -8,11 +8,11 @@ Tool behaviour measured on mod models, not yet checked on `P:\`. What a selectio
 
 **Status: not fixed in the builder.**
 
-A memory selection is a membership set: which points belong to it. The builder's `build_memory_lod()` rebuilds the Memory LOD from `recipe.memory_points[].selections` alone. On real models the extractor can leave those empty; the true membership sits in `recipe.lods[memory].selections`, which the builder ignores. A rebuild can therefore wipe memory selections while their names and the geometry still look right. Measured on a vehicle model with a weapon rig: 79 memory selections and 132 faces lost.
+A memory selection is a membership set: which points, and which faces, belong to it. The builder's `build_memory_lod()` rebuilds the Memory LOD as points only, from `recipe.memory_points` alone, and ignores the `lods` entry of type `memory`. Point membership survives: the extractor fills `memory_points[].selections` and `lods[memory].selections` from the same points, so the two always agree. What is dropped is everything else: the Memory LOD's faces, the face membership of every selection, any selection that holds only faces (its name disappears too), and the selection weights (every point is written with weight 1). Measured on a vehicle model with a weapon rig: 79 memory selections and 132 faces lost.
 
-What the skill's own tests show (`test_p3d_inspector.py`, next to the scripts): on the small demo model a round trip keeps every memory selection with its point count, because there the extractor does fill `memory_points[].selections`; and a selection that exists only in `recipe.lods[memory].selections` is dropped by the builder. So a clean demo round trip proves nothing about a real model: run the test below on the model itself.
+What the skill's own tests show (`test_p3d_inspector.py`, next to the scripts): on the small demo model, whose Memory LOD has no faces, a round trip keeps every memory selection with its point count; and a selection added by hand only to `recipe.lods[memory].selections` is dropped by the builder. So a clean demo round trip proves nothing about a real model whose Memory LOD has faces: run the test below on the model itself.
 
-In game the model then loses whatever those selections carried: door, wheel and suspension axes, damage zones, seats, proxies. A backup of the Recipe does not help, since the Recipe is what is incomplete.
+In game the model then loses whatever the dropped faces and face-only selections carried, such as damage zones, seats and proxies. A backup of the Recipe does not help, since the Recipe is what is incomplete.
 
 **Round-trip test** (run it before a rebuild you mean to keep):
 
@@ -57,5 +57,5 @@ List the model's proxies, look at their sizes and open the large ones. The confi
 ## Planned, not built
 
 - **Proposal from a raw mesh.** Turning an OBJ, FBX or GLB into a Recipe with guessed memory points and selections is not written; the extractor only reads an existing `.p3d`.
-- **Selection painting.** Colouring faces by selection, clicking faces to assign them, showing inverted faces, checking component coverage. The animation pipeline skill already has a selection painter that writes back with py3d; start from that one.
+- **Selection painting.** Colouring faces by selection, clicking faces to assign them, showing inverted faces, checking component coverage. The animation pipeline skill has a written pattern for a selection painter, not a tool, in `dayz-animation-pipeline/references/selection-painter-for-actions.md`; start from that one.
 - **Animation preview.** Reading `model.cfg`, sliders for animation phases, switching material states.

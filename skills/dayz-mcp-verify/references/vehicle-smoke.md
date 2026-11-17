@@ -27,7 +27,7 @@ Verified end to end on a `CarScript` car mod on 2026-06-24. Repeat it without de
   - `engine_set("start" | "stop")`.
   - `vehicle_control(throttle, steer, brake, handbrake, hold_ttl_s)`: sustained control, fail-closed.
   - `vehicle_telemetry()` and `vehicle_release()`.
-  - `query_get_in_condition(pos, component)`: runs on the server peer and says which of the 7 checks of `ActionGetInTransport` blocks the get-in (the vanilla `ActionCondition` of that action is at `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:26`).
+  - `query_get_in_condition(pos, component)`: runs on the server peer and says which of its checks blocks the get-in. It covers the checks of `ActionGetInTransport` only in part: it skips `CanGetIn()` and calls `IsAreaAtDoorFree` where the action calls `IsAreaAtDoorFreeDiag`, so its `available=1` is partial (see R3b in `acceptance-ladder.md`; the vanilla `ActionCondition` of that action is at `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:26`).
 - The acceptance ladder runs on top of them, in order: R1 spawns, R2 renders, R3 get-in available, R4 seated, R5 drives, R6 wheel direction. Each rung reads ground truth in the game and maps its failure to a known fix in the vehicle pack. The reference orchestrator `references/drive_ladder.py` drives R1 to R6 and writes `verdict.json`; it applies no fix and rebuilds nothing. Its fixtures are in `tests/test_drive_ladder.py`. Verbs, the verified owner-side mechanism, preconditions, spawn placement, the restore-gameplay step (R2.5), the guards against a false green, the ladder table and the failure to fix mapping are all in `acceptance-ladder.md`.
 - The gear index in `vehicle_telemetry` is 0 = reverse, 1 = neutral, 2 = first, up to 7 = sixth, the order of the vanilla `CarGear` enum (`P:\scripts\3_game\vehicles\car.c:32`).
 
@@ -69,7 +69,7 @@ Verified on a car mod, 2026-07-22: a "misaligned parts" scare turned out to be e
 - **One process lifetime** for run, verbs and teardown (`run-lifecycle.md`).
 - **`entities_query` only with the player inside the area, and a canopy check before any teleport to unverified coordinates** (`verb-gotchas.md`, "`entities_query`, `surface_query` and unverified coordinates").
 - **Keepalive.** The diag client dies after about 6 minutes without commands; run `vehicle_telemetry` every 45 s or so (`run-lifecycle.md`).
-- **Three agent families drove it** (2026-08-24): three different AI coding agents, one of them with MCP access only, each drove spawn, fixture, seat, a drive of 100 to 163 m, a door by `object_id`, delete and release from a minimal brief. The claim "agents from three model families drive it" has that evidence in dayz-mcp's own session records, not in this repo.
+- **Three agent families drove it** (2026-08-24): three different AI coding agents, one of them with MCP access only, each drove spawn, fixture, seat, a drive of 100 to 163 m, a door by `object_id`, delete and release from a minimal brief. Not yet checked on P:\ or in this repo.
 
 ## Driving bench: orphans, the wrong car and old dumps (added 2026-09-24)
 

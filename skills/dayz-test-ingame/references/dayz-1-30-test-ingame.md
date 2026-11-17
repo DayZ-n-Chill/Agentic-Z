@@ -67,8 +67,10 @@ dummy bots.
 
 ## Launching the 1.30 DayZDiag directly (outside the managed lifecycle)
 
-The managed launcher runs the 1.29 install. Probing the Exp install by hand
-(measured 2026-09-26 with the dayz-mcp tooling)
+On 2026-09-26 the managed launcher still ran the 1.29 install (managed runs on
+1.30.164200 are recorded from 2026-10-26 in
+`skills/dayz-mcp-verify/references/dayz-1-30-mcp-verify.md`). Probing the Exp install by hand
+on that date (measured with the dayz-mcp tooling)
 hit six traps, each costing a run:
 
 1. **The script log is the define oracle.** Each module logs

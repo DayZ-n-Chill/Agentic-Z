@@ -2,6 +2,7 @@
 (extract_empties.py) into rig_dayz.json, the rig the weapon viewer loads.
 
     python build_rig_dayz.py
+    python build_rig_dayz.py --help
 
 Needs numpy. Reads and writes in the scratch folder (DAYZ_ANIM_SCRATCH, default
 <tempdir>/dayz-anim-pipeline). The rig FBX holds its armature and its mesh in
@@ -10,6 +11,10 @@ and one translation, then turns both into the viewer's frame (Y up, right
 handed, meters). That frame is not DayZ model space, which is left handed:
 coordinates from rig_dayz.json written into a .p3d as they are land mirrored.
 """
+import sys
+if any(a in ("-h", "--help") for a in sys.argv[1:]):
+    print(__doc__)
+    raise SystemExit(0)
 import json, os, tempfile, numpy as np
 # Working directory shared by every stage of this pipeline. Override with
 # DAYZ_ANIM_SCRATCH; the default is stable across runs so each stage finds the

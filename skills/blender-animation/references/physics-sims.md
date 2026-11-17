@@ -242,11 +242,11 @@ Related operators in the same module (all share the same context requirement, no
 re-tested beyond `bake`): `bake_all(bake=True)`, `bake_from_cache()`, `free_bake()`,
 `free_bake_all()`, `add()`, `remove()`.
 
-### Is manual `scene.frame_set()` stepping a valid alternative to baking? — Yes, verified
+### Is manual `scene.frame_set()` stepping a valid alternative to baking? — For viewing, not for keys
 
 Stepping the frame range yourself, with **no baking and no context override at all**, correctly
-drives rigid body (and cloth — see below) simulation and leaves the point cache in the same
-`is_baked = True` state:
+drives rigid body (and cloth — see below) simulation and fills the point cache, but it does not
+mark the cache as baked:
 
 ```python
 scene.frame_set(scene.frame_start)
@@ -256,11 +256,13 @@ for f in range(scene.frame_start, scene.frame_end + 1):
 ```
 
 Empirically verified on a falling cube: it descended from z=5.0 to a settled rest at z≈1.0 (correct
-for a half-height-1 cube resting on a z=0 plane) purely from repeated `frame_set()` calls, and
-`rigidbody_world.point_cache.is_baked` was `True` afterward — Blender's cache system considers a
-fully frame-stepped range "baked" the same as an explicit `ptcache.bake` call. This is the
-simplest possible pattern and needs zero context tricks, so it's the recommended default for a
-script/MCP context whenever you don't need a disk-persisted cache file.
+for a half-height-1 cube resting on a z=0 plane) purely from repeated `frame_set()` calls.
+Stepping writes each frame to the cache, but Blender sets the baked flag only from an explicit
+bake (`BKE_ptcache_bake`) or when it loads an external cache, so `point_cache.is_baked` stays
+`False` and a later pass over the range can simulate again (read in Blender 5.1.1 source,
+`source/blender/blenkernel/intern/pointcache.cc`; not run here). Stepping is fine for a quick
+look at the motion. Before you sample frames to insert keys, bake with `ptcache.bake` under the
+`point_cache` override shown above (hard rule 7 in `SKILL.md`).
 
 ### `bpy.ops.rigidbody.bake_to_keyframes` — fails headlessly; this is a known Blender bug, not user error
 
@@ -380,10 +382,9 @@ Empirically verified working headlessly with `{'FINISHED'}`. Doc:
 always be passed explicitly. The modifier is created with the **default name `"Cloth"`**
 (live-confirmed: `obj.modifiers['Cloth']`).
 
-There is no lower-level data-API way to add a Cloth modifier other than through this operator
-(consistent with every other modifier type — modifiers in general are only addable via
-`object.modifier_add` or `object.modifiers.new(name, type)`; both were not separately diffed here
-since the operator path was already confirmed sufficient).
+The modifier can be added either with `bpy.ops.object.modifier_add(type='CLOTH')` or with the
+data API, `obj.modifiers.new("Cloth", 'CLOTH')`, which needs no active object or context. Only
+the operator path was run here.
 
 The modifier exposes **two separate sub-structs**, easy to conflate:
 
@@ -414,8 +415,8 @@ Core fabric-feel parameters (all confirmed present, with their documented ranges
 | `vertex_group_bending`, `vertex_group_intern`, `vertex_group_pressure`, `vertex_group_shear_stiffness`, `vertex_group_shrink`, `vertex_group_structural_stiffness` | `""` | spatially-varying overrides for each of those parameters |
 | `goal_default`, `goal_min`, `goal_max`, `goal_spring`, `goal_friction` | 0/0/1/1.0/0 | legacy "reactor"-style goal pinning; superseded by `vertex_group_mass` pinning for most uses |
 | `rest_shape_key` | `None` | use a Shape Key as the rest/reference geometry instead of the base mesh (useful for sewing patterns / pre-shaped garments) |
-| `gravity` | `(0, 0, -9.81)` | **cloth has its own gravity override**, independent of `scene.gravity` — see Determinism section |
-| `voxel_cell_size` | 0.1 | self-collision broad-phase grid cell size |
+| `gravity` | `(0, 0, -9.81)` | not read by the cloth solver; cloth uses `scene.gravity` scaled by `effector_weights.gravity` — see Determinism section |
+| `voxel_cell_size` | 0.1 | size of the voxel grid cells for interaction effects |
 | `effector_weights` | — | force-field response (wind, turbulence, etc.) |
 | `time_scale` | 1.0 | speeds up/slows down the sim relative to scene time |
 | `use_dynamic_mesh` | off | make the sim respect base-mesh deformation from other modifiers |
@@ -831,9 +832,10 @@ via the collection-exporter's `export_properties`): `filepath`, `start`, `end`, 
 `visible_objects_only` is **not** present in 5.1.1 (see version note below), `global_scale`,
 `flatten`, `uvs`, `vcolors`, `normals`, `face_sets`, `subdiv_schema`, `apply_subdiv`,
 `curves_as_mesh`, `export_hair`, `export_particles`, `export_custom_properties`,
-`use_instancing`, `triangulate`, `quad_method`, `ngon_method`, `packuv`, `orcos`, `gsamples`
-(motion-blur shutter samples), `sh_open`/`sh_close` (shutter open/close), `sort_method`,
-`init_scene_frame_range`, `evaluation_mode`, `as_background_job`, `display_type`,
+`use_instancing`, `triangulate`, `quad_method`, `ngon_method`, `packuv`, `orcos`, `xsamples`
+(transform samples per frame), `gsamples` (geometry samples: how many times per frame object
+data is sampled), `sh_open`/`sh_close` (shutter open/close), `sort_method`,
+`init_scene_frame_range`, `evaluation_mode`, `as_background_job`, `collection`, `display_type`,
 `check_existing`, `filemode`, plus standard file-browser filter fields.
 
 **Version note (Blender 4.2+ collection exporters)**: 5.1 also exposes Alembic (and USD) export
@@ -863,15 +865,18 @@ it matters.
 
 ## Determinism & scale gotchas
 
-### Gravity is not one single setting
+### Gravity is one scene setting, scaled per simulation
 
-`scene.gravity` is a `Vector`, live-confirmed default `(0.0, 0.0, -9.81)` — this drives rigid body
-simulation. But **Cloth and Soft Body each carry their own independent gravity override**:
-`ClothSettings.gravity` (Vector, confirmed default `(0, 0, -9.81)`, matching the scene) and
-`SoftBodySettings.gravity` (a **float**, not a vector — confirmed the add-operator actually
-initializes it to `9.8`, not the RNA schema's stated `0.0` default, per the **Soft body** section
-above). Changing `scene.gravity` alone will **not** change already-configured cloth/soft-body sims
-— all three need to be set for consistency if that matters for the shot.
+`scene.gravity` is a `Vector`, live-confirmed default `(0.0, 0.0, -9.81)`. With
+`scene.use_gravity` on, it drives rigid body, cloth and soft body alike; each simulation scales it
+by its own `effector_weights.gravity`. `ClothSettings.gravity` (Vector, default `(0, 0, -9.81)`)
+and `SoftBodySettings.gravity` (a float; the add-operator initializes it to `9.8`) exist in the
+API but the solvers do not read them, so setting them changes nothing. In Blender 5.1.1 source,
+`cloth_calc_force` in `source/blender/simulation/intern/SIM_mass_spring.cc` takes gravity from
+`scene->physics_settings.gravity`, and `source/blender/blenkernel/intern/softbody.cc` copies the
+same scene value with its `sb->grav` line commented out as unused (read in source, not run here).
+To change gravity for a shot, change `scene.gravity`; to change it for one simulation only, change
+that simulation's `effector_weights.gravity`.
 
 ### The classic "scene scale" slow-motion bug (mechanism verified, symptom not reproduced here)
 
@@ -879,13 +884,15 @@ Blender's physics assumes **1 Blender unit = 1 real-world meter** — gravity is
 `9.81` units/s² constant (confirmed above), and `rigidbody.mass_calculate`'s density presets are
 real-world kg/m³ values (confirmed via the live ~45-item material enum: `Air`, `Steel`, `Gold`,
 etc.). If a scene/asset was authored or imported at the wrong real-world scale (e.g., 1 Blender
-unit representing 1 cm instead of 1 m, so a visually "human-sized" object is actually 100× too
-small in Blender units), gravity will look wrong **relative to the object's own size**: an
-object too small in Blender units falls the same fixed number of *units*/s² as anything else, so
-relative to its own tiny extent it visibly crawls — this reads as slow-motion/moon-gravity. An
-object modeled too *large* looks unnaturally fast/violent by the same logic. Fix: match Scene
-Properties → Units → Unit Scale to the asset's real dimensions (1.0 = meters), or literally rescale
-geometry so 1 Blender unit ≈ 1 meter before simulating. The mechanism (a fixed,
+unit representing 1 cm instead of 1 m, so a human-sized object is 180 units tall, 100× too
+large in Blender units), gravity will look wrong **relative to the object's own size**: an
+object too large in Blender units falls the same fixed number of *units*/s² as anything else, so
+per second it covers only a tiny fraction of its own height — this reads as slow motion or moon
+gravity. An object too *small* in Blender units covers many body lengths per second and looks
+unnaturally fast and violent by the same logic. Fix: rescale the geometry so 1 Blender unit ≈
+1 meter before simulating, or scale `scene.gravity` by the same factor (for 1 unit = 1 cm, use
+`-981` on Z). Changing Scene Properties → Units → Unit Scale does not help: it only changes the
+values Blender displays, and the solvers still read `scene.gravity` in Blender units. The mechanism (a fixed,
 unit-independent gravity constant, confirmed above) is verified; the visual symptom was not
 reproduced in a dedicated test.
 
@@ -1082,7 +1089,8 @@ items were empirically verified unless marked otherwise.
     right after `modifier_add(type='SOFT_BODY')` (`gravity` reads 9.8 not the doc's stated 0.0,
     `mass` reads 1.0 not 0.0, `use_goal`/`use_edges` read `True` not `False`). Always read settings
     back after adding the modifier rather than trusting the bare property doc string for "what will
-    this look like out of the box."
+    this look like out of the box." The `gravity` value is not read by the solver; soft body falls
+    under `scene.gravity` scaled by `effector_weights.gravity` (see Determinism).
 
 ## Verified bpy snippets
 
@@ -1126,13 +1134,13 @@ con.breaking_threshold = 50.0
 ```
 Doc: `bpy.ops.rigidbody.constraint_add`, `bpy.types.RigidBodyConstraint`.
 
-### 3. Simulating via plain frame-stepping (no bake needed) — rigid body or cloth
+### 3. Simulating via plain frame-stepping (preview only) — rigid body or cloth
 
 ```python
 scene.frame_start, scene.frame_end = 1, 60
 for f in range(scene.frame_start, scene.frame_end + 1):
     scene.frame_set(f)                                # bpy.types.Scene.frame_set (drives the sim)
-    # scene.rigidbody_world.point_cache.is_baked becomes True once the full range has been stepped
+    # fills the cache but is_baked stays False; bake (snippet 4) before sampling frames for keys
 ```
 
 ### 4. `ptcache.bake` from script — the verified working context override

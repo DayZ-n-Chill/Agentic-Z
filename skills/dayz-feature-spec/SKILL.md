@@ -43,9 +43,9 @@ In this repo the plan is `output/<ModName>-plan/plan.md`, written by `dayz-mod-a
 Fill in `references/spec-template.md`. It is short on purpose. Four sections carry the DayZ-specific weight:
 
 - **Acceptance scenarios.** Given/When/Then, each with concrete in-game repro steps (spawn what, do what, observe what). "It works" is not a scenario.
-- **Success criteria.** Measurable and, where possible, independent of the implementation. DayZ examples: "the bolt moves when firing", "0 `Error` lines in `script_*.log` after the test", "hands within 0.5 cm of the grip", "the car reaches at least X km/h on flat ground". Vague adjectives ("looks good", "works") are not criteria. When a criterion is settled by an experiment, the position of each event is a mandatory covariate: record it and report it with the result. The mechanism is proven by stratifying on position: if the treatment stops mattering inside each stratum, position was the cause.
+- **Success criteria.** Measurable and, where possible, independent of the implementation. DayZ examples: "the bolt moves when firing", "0 `Error` lines in `script_*.log` after the test", "hands within 0.5 cm of the grip", "the car reaches at least X km/h on flat ground". Vague adjectives ("looks good", "works") are not criteria.
 - **Assumptions.** Mark every guess `ASSUMED`. If an assumption decides whether the work is correct (a path, a classname, a version, a format), resolve it with the user now, not after coding (ask with AskUserQuestion where the agent has it). Saying a risk out loud is not managing it.
-- **Forward contract.** List every symbol the next phase or another consumer reads: `config.cpp` classnames, `model.cfg` selections and bones, `.p3d` proxy paths, `hiddenSelections`, stringtable keys, layout names. Each one carries a verify status: a `path:line` you opened (Tier 2, "Cite, then verify"), or `[UNVERIFIED]`. The analyze gate treats an `[UNVERIFIED]` reference as CRITICAL. This is the class of bug the contract exists to catch: a proxy path that points at a file that does not exist, and selections `model.cfg` needs that the model does not have. Before spending an experiment arm on a field, grep for the code that reads it, not counting its declaration, default, clamp and serialization. A field nobody reads is a placebo; when the reader is conditional, prove on recorded run data that the condition is reached.
+- **Forward contract.** List every symbol the next phase or another consumer reads: `config.cpp` classnames, `model.cfg` selections and bones, `.p3d` proxy paths, `hiddenSelections`, stringtable keys, layout names. Each one carries a verify status: a `path:line` you opened (Tier 2, "Cite, then verify"), or `[UNVERIFIED]`. The analyze gate treats an `[UNVERIFIED]` reference as CRITICAL. This is the class of bug the contract exists to catch: a proxy path that points at a file that does not exist, and selections `model.cfg` needs that the model does not have. Before spending an in-game test on changing a field (a `config.cpp` value, a JSON setting, a script member), grep for the code that reads it, not counting its declaration, default, clamp and serialization. Changing a field nobody reads changes nothing in game; when the reader runs only under a condition, show from the test's logs that the condition was reached.
 
 ## Step 2: spec quality checklist
 
@@ -61,7 +61,7 @@ This gate works on the documents. Tracing an invariant to every call site in the
 
 ## Forward contract for injected objects
 
-When a plan injects an object that replaces another implementation (a planner, a bridge, a transport, a repository), the forward contract lists every field and method the consumer reads, not only the field that motivated the test double. Grep every access on the injected value, and prefer the existing result type over a partial look-alike. The generator of experiment variants applies the consumer's clamp rules before it calls something a treatment, and the manifest records the effective value, not the requested one: a variant that clamps back to the control value is a mislabelled control.
+When a plan injects an object that replaces another implementation (a planner, a bridge, a transport, a repository), the forward contract lists every field and method the consumer reads, not only the field that motivated the test double. Grep every access on the injected value, and prefer the existing result type over a partial look-alike. When a test build changes a value to compare it with the original, apply the consumer's clamp rules first and record in the test notes the value the code actually uses, not the one written in the config: a value the consumer clamps back to the original is no change at all.
 
 The failure is concrete: a consumer can read `.status.value`, `.proposal` and `.source` when the plan mentions only `.proposal`, and the partial object then fails at run time although it satisfies the written spec.
 
@@ -101,7 +101,7 @@ Name the emitter of both records and state the transformation from `X_RAW` to `X
 
 The flow is the specify, clarify, analyze, implement sequence of spec-driven development, cut down to what a DayZ mod needs. Left out on purpose:
 
-- **Test-first, red-green and contract tests.** A DayZ mod has no unit-test harness for its scripts; the acceptance test is the in-game gate. The verification path replaces test-first.
+- **Test-first, red-green and contract tests.** The engine has a script test framework (`TestHarness` at `P:\scripts\2_gamelib\tests\testingframework.c:137`, `TestBase` at `:181`), but its tests run only inside a running game, so they cannot gate a spec before the build; the acceptance test stays the in-game gate. The verification path replaces test-first.
 - **Each user story as an independent MVP.** DayZ features are often all or nothing (a vehicle drives or it does not; a grip pose is right or wrong). Priorities and scenarios stay; the per-story MVP ceremony does not.
 - **A scaffolding CLI and a tech-stack research phase.** The stack is fixed (Enforce Script, `config.cpp`, `model.cfg`, `.p3d`) and so is the toolchain (AddonBuilder, DayZDiag).
 - **Exporting tasks to issues, extension marketplaces.** Overkill for one mod.
@@ -111,7 +111,7 @@ Do not add generic application scaffolding back in.
 ## How it fits the other rules and skills
 
 - The plan comes first (`dayz-mod-architect`); run this skill right after it.
-- Clarify before assuming, and plan with approval for big changes: Step 1's `ASSUMED` resolution applies that at spec time.
+- A guess that decides whether the work is correct is settled with the user before coding, not after: Step 1's `ASSUMED` resolution does that at spec time. Anything beyond the request still needs the user's say first (Tier 1, "Never add what wasn't asked for").
 - Cite, then verify (Tier 2): every forward-contract reference and cross-file symbol is a `path:line` someone opened.
 - Report honestly what was checked and how: the success criteria say it up front.
 - `rigorous-data-audit`: for data-critical mods this skill comes first; the spec's crash-recovery and admin scenarios feed that audit.

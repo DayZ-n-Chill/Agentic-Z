@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Extract the code files (scripts, configs) of the installed vanilla game PBOs with dayzmake.
 #
-# usage: extract-dayz-sources.sh [--force] <DayZ-install-dir | mod-dir> <out-dir>
-#   e.g. extract-dayz-sources.sh ~/.steam/debian-installation/steamapps/common/DayZ /var/tmp/dayz-sources
+# usage: bash extract-dayz-sources.sh [--force] <DayZ-install-dir | mod-dir> <out-dir>
+#   e.g. bash extract-dayz-sources.sh ~/.steam/debian-installation/steamapps/common/DayZ /var/tmp/dayz-sources
 #   a Workshop mod dir (steamapps/workshop/content/221100/<id>, with an addons/ folder) works the same way
 #   --force allows replacing a non-empty <out-dir> that has no pbo-map.tsv (not an earlier extraction).
 #

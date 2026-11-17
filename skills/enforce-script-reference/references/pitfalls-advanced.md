@@ -15,17 +15,16 @@ Compiler quirks, runtime crashes, `modded class` rules, scoping traps, debugging
 // Workaround: avoid comparing against int.MIN directly
 ```
 
-### 2. Negation of Array Element Doesn't Compile
+### 2. Negation of an array element compiles
+
+`if (!list[i])` is valid. Vanilla 1.30 negates an `array<int>` element this way at `P:\scripts\4_world\classes\basebuilding\constructionpart.c:549` (`if (!animSourceBehaviorInvetrtedOverrides[i])`, the array declared at `:541`), and uses the same form at `:572`, `:595` and `:647`.
 
 ```
-// BROKEN — doesn't compile
-if (!list[1])  // compile error
-
-// CORRECT
-if (list[1] == 0)  // compiles fine
+if (!list[i])      // compiles
+if (list[i] == 0)  // also compiles; same test for an int
 ```
 
-### 3. switch/default Return Bug
+### 3. switch/default Return Bug (reported, not checked on `P:\`)
 
 ```
 // BROKEN — compiler claims "not all paths return a value"
@@ -80,7 +79,7 @@ Not measured: a block with nothing at all inside, a retail build, DayZ 1.29. The
 
 ### **`Expected ',' or ')', not a '0'`** + cascade (`Unexpected scope`, `Syntax error`) on a signature line
 
-- The lexer splits an identifier that STARTS with a reserved keyword followed by a digit: `out vector out0` is tokenized as keyword `out` + type `vector` + keyword `out` + literal `0`, so the parser sees a stray `'0'` that "does not exist" on the line at first glance. Same family as a keyword used as a name (the `owned` row in `review-and-troubleshooting.md`), but the trigger is keyword+digit, not keyword alone. Affected prefixes: `out`, `ref`, `new`, `auto`, `inout`. Vanilla contains zero `out<digit>` identifiers (full grep of `P:\scripts`)
+- The lexer splits an identifier that starts with a reserved keyword followed by a digit: `out vector out0` is tokenized as keyword `out` + type `vector` + keyword `out` + literal `0`, so the parser sees a stray `'0'` that "does not exist" on the line at first glance. Same family as a keyword used as a name (the `owned` row in `review-and-troubleshooting.md`), but the trigger is keyword+digit, not keyword alone. Affected prefixes: `out`, `ref`, `new`, `auto`, `inout`. Vanilla contains zero `out<digit>` identifiers (full grep of `P:\scripts`)
 - Rename to a non-keyword prefix: `dst0`, `res0`, `val0`, etc. Diag: if the error names a digit token (`'0'`, `'1'`, …) you cannot find on the line, suspect a parameter or variable whose name starts with a reserved keyword. Measured in a mod compile (2026-08-07): the compile failed at three signature lines, and renaming `out0..out3` to `dst0..dst3` compiled clean.
 
 ### **`Unknown operator '%'`**: `%` in an expression with a float literal
@@ -102,7 +101,7 @@ The compiler can stop after the first family and expose the next one only after 
 
 ## Runtime Crashes (Segfaults)
 
-### 6. Compound Expression Assigned to Array Element
+### 6. Compound Expression Assigned to Array Element (reported, not checked on `P:\`)
 
 ```
 // SEGFAULT
@@ -114,8 +113,8 @@ m_IsInside[index] = isInside;
 ```
 
 **Rule**: Never assign the result of a compound expression (comparison,
-arithmetic, function call chain) directly to an array element. Always
-use an intermediate local variable.
+arithmetic, function call chain) directly to an array element. Use an
+intermediate local variable.
 
 ### 7. NormalMapMacro Shader on Dedicated Server
 
@@ -145,10 +144,10 @@ ghost entities accumulate.
 
 ```
 // REQUIRED override in Hologram
-override EntityAI PlaceEntity(EntityAI newEntity)
+override EntityAI PlaceEntity(EntityAI entity_for_placing)
 {
     // Prevent ghost spawn by returning the projected entity
-    return newEntity;
+    return entity_for_placing;
 }
 ```
 
@@ -165,7 +164,7 @@ ref array<int> m_Values;
 
 `Widget` is a valid `map` key in vanilla: `m_RadialItemCards` is a `map<Widget, float>` (`P:\scripts\3_game\gui\effects\radialmenu.c:17`), `m_MultiOptionSelectors` is keyed by `Widget` (`P:\scripts\5_mission\gui\newui\charactercreation\charactercreationmenu.c:32`) and so is `m_SpawnButtonsOriginalText` (`P:\scripts\5_mission\gui\scriptconsoleitemstab.c:22`). So the crash the mod saw is not a rule of the language; the cause in that mod was not isolated. `production-patterns.md` uses `map<Widget, int>` for its hover cache. If a map keyed by widgets crashes, check first whether the map outlives the widgets it holds.
 
-### 10. ScriptView Constructor from RPC Context
+### 10. ScriptView Constructor from RPC Context (reported, not checked on `P:\`)
 
 ```
 // CRASH — new ScriptView() calls CreateWidgets() internally
@@ -189,10 +188,10 @@ class MissionGameplay
 
 ---
 
-## Operator Precedence Trap
+## Operator Precedence Trap (reported, not checked on `P:\`)
 
 Enforce Script follows C/C++ precedence where bitwise operators have
-LOWER priority than comparison operators:
+lower priority than comparison operators:
 
 ```
 // WRONG — interpreted as a & (b == b) = a & true = a & 1
@@ -220,18 +219,18 @@ modded class PlayerBase
         // Custom code
     }
 
-    // Can ADD new methods
+    // Can add new methods
     void MyCustomMethod()
     {
     }
 }
 ```
 
-**CRITICAL RULES:**
+**Rules:**
 1. A `modded class` can add member variables as well as methods and overrides. (Rule 25 in `hard-rules.md` and the prefix convention further down this file both add members, and vanilla's own modding example adds a `static const int` member to `modded class ParticleList`, `P:\scripts\3_game\particles\particlelist.c:5`.) Prefix every member you add.
-2. Two `modded class` declarations for the same class CAN coexist in different files
+2. Two `modded class` declarations for the same class can coexist in different files
 3. Call `super.MethodName()` in overrides to preserve vanilla behavior
-4. Only ONE `modded class Hologram` can exist across ALL files, because multiple declarations conflict (reported in a third-party mod; it contradicts rule 2 for this one class and was not checked on `P:\`)
+4. Only one `modded class Hologram` can exist across all files, because multiple declarations conflict (reported in a third-party mod; it contradicts rule 2 for this one class and was not checked on `P:\`)
 
     - **`modded class MissionServer` — `OnGameplayDataHandlerLoad` has a vanilla implementation.** It sets `m_RespawnMode`, the debug monitor, and calls `InitialiseWorldData()` (`P:\scripts\5_mission\mission\missionserver.c:161-167`). A `modded` override that omits `super` silently breaks world data. The same applies to `OnClientPrepareEvent`, which decides `useDB` from `GetHive()` (`P:\scripts\5_mission\mission\missionserver.c:449-463`): without `super`, character loading breaks.
     - **CE-safe spawn timing is `GlobalsInit()`, not `OnGameplayDataHandlerLoad`.** The vanilla spawn and the comment *«CE being initialized before spawning them»* live inside `GlobalsInit()` (`P:\scripts\3_game\dayzgame.c:1158`, opens with `if (GetCEApi())` at `:1160`, spawn at `:1173-1174`), queued separately at `:1096`. The Mission hook runs much earlier: `MissionServer.OnInit` calls `CfgGameplayHandler.LoadData()` at `P:\scripts\5_mission\mission\missionserver.c:88` (`OnInit` from `:85`, carriers at `:91`). Citing the `GlobalsInit` spawn lines to justify a spawn in `OnGameplayDataHandlerLoad` is a misattributed citation. The derived rule is not "always spawn late": vanilla spawns Underground carriers in `OnInit` (`UndergroundAreaLoader.SpawnAllTriggerCarriers`, `P:\scripts\5_mission\mission\missionserver.c:91`) because they do not touch the CE. Spawn where vanilla spawns the family you are creating: items / `ItemBase` with CE lifetime go through the ObjectSpawner route.
@@ -243,7 +242,7 @@ Declaring a variable whose name is already a type name does not compile:
 `Variable name 'map' already used as type name` and the whole module dies
 (`Can't compile "Mission" script module!`). The compiler also reports decoys
 on later lines (`Trying to modify write protected variable '(null)'`,
-`Undefined function 'map.GetFlags'`): the root cause is always the FIRST
+`Undefined function 'map.GetFlags'`): the root cause is always the first
 line of the block; the rest is noise. Same risk with any type name
 (`set`, `array`, `vector`, `string`, `Class`). Indirect symptom: the client
 boots, never enters, and dies on its own; the server writes it clearly in
@@ -412,11 +411,11 @@ Each entry notes whether it was checked against vanilla on `P:\`.
   method body (section 5 above). A block with nothing at all inside, a
   retail build and DayZ 1.29 are not measured. Remove a block that holds no code.
 
-- **`1 < int.MIN` returns TRUE** — and `1 < -2147483647` also returns TRUE. Integer
-  comparison against `int.MIN` is broken. Always guard MIN/MAX comparisons explicitly.
+- **`1 < int.MIN` returns true** — and `1 < -2147483647` also returns true. Integer
+  comparison against `int.MIN` is broken. Guard comparisons against `int.MIN` and `int.MAX` explicitly.
   *(Reported; not checked on `P:\`.)*
 
-- **Switch with `default` STILL requires a return outside** — even though every case
+- **Switch with `default` still requires a return outside** — even though every case
   including default returns, the compiler complains "function must return a value".
   Workaround: move the default branch's return to a final `return Y;` after the switch:
 
@@ -434,18 +433,18 @@ Each entry notes whether it was checked against vanilla on `P:\`.
   ```
 
 - **`if (a & b == b)` parses as `a & (b == b)`** — bitwise has lower precedence than
-  comparison in EnScript (C/C++ semantics). Always parenthesize:
+  comparison in EnScript (C/C++ semantics). Parenthesize:
 
   ```c
   if ((a & b) == b)   // CORRECT
   ```
 
-- **Compiler errors with undefined classes / name conflicts point to the WRONG file** —
-  the error shows the last `.c` parsed at EOF, NOT the line that triggered the issue.
+- **Compiler errors with undefined classes / name conflicts point to the wrong file** —
+  the error shows the last `.c` parsed at EOF, not the line that triggered the issue.
   When the error location seems wrong, search the entire codebase for the symbol and
   check that all required addons are loaded.
 
-- **`crash_<date>_<time>.log` contains EXCEPTIONS, NOT segfaults** — actual crashes
+- **`crash_<date>_<time>.log` contains exceptions, not segfaults** — actual crashes
   (memory faults) write a different dump. When debugging, check both: exception logs
   for handled errors, separate crash dumps for hard segfaults.
 
@@ -533,8 +532,8 @@ void DoStuff(notnull EntityAI entity)
 
 ### Modded class member-var prefix convention
 
-When adding members to `modded class X` or to a class extending vanilla, ALWAYS
-prefix the member to avoid collision with other mods that also extend `X`:
+When adding members to `modded class X` or to a class extending vanilla, prefix
+the member to avoid collision with other mods that also extend `X`:
 
 ```c
 modded class ItemBase
@@ -547,7 +546,7 @@ modded class ItemBase
 
 ### `EXTrace.Start` (Expansion / Community Framework only)
 
-Modern minimal-overhead tracing. **NOT in vanilla DayZ.** Available when Expansion
+Modern minimal-overhead tracing. Not in vanilla DayZ. Available when Expansion
 or DayZ Community Framework is loaded. Replaces older `CF_Trace_0` pattern that
 required `#ifdef EXPANSIONTRACE` guards.
 
@@ -583,7 +582,7 @@ Then in script:
 
 *(Version-gated: works only on DayZ 1.26 and later. Not checked on `P:\`.)*
 
-### Cross-mod `#ifdef` gates: use the CfgMods auto-define, NOT a manual `#define`
+### Cross-mod `#ifdef` gates: use the CfgMods auto-define, not a manual `#define`
 
 The CfgMods `defines[]` (or just the implicit `#define <ModClassName>` from
 DayZ 1.26+) is visible to **other mods' compilation units**. A manual
@@ -613,14 +612,14 @@ matching `#define` in `scripts/Common/Define.c` to propagate.
 
 ### `#ifdef DEVELOPER` ≠ `DIAG_DEVELOPER` — read the actual compile defines
 
-Vanilla has APIs guarded by `#ifdef DEVELOPER` (e.g. `DayZPlayerSyncJunctures.SendGetInVehicle` → `SJ_DEBUG_GET_IN_VEHICLE`, much of `plugindeveloper.c`). Standard `DayZDiag_x64` defines `DIAG_DEVELOPER` but does **NOT** define `DEVELOPER`. Emitting a `DEVELOPER`-only symbol from your mod breaks the compilation of the **entire PBO** (cross-mod compile failure, no clean RPT, only "PBO not loaded" / addons missing) — not a silent no-op. Before relying on any `#ifdef <SYMBOL>` API, verify the `defines:` line of `<profiles>\script_*.log` for BOTH server and client peers (the runtime tells you what is defined). That `OnDebugSpawn` (`#ifdef DIAG_DEVELOPER`) works does NOT prove `DEVELOPER` is active — different macros. Measured in a mod, 2026-06-28: the real compile logs showed `DEVELOPER` was not defined, and the PBO would have shipped broken.
+Vanilla has APIs guarded by `#ifdef DEVELOPER` (e.g. `DayZPlayerSyncJunctures.SendGetInVehicle` → `SJ_DEBUG_GET_IN_VEHICLE`, much of `plugindeveloper.c`). Standard `DayZDiag_x64` defines `DIAG_DEVELOPER` but does not define `DEVELOPER`. Emitting a `DEVELOPER`-only symbol from your mod breaks the compilation of the entire PBO (cross-mod compile failure, no clean RPT, only "PBO not loaded" / addons missing) — not a silent no-op. Before relying on any `#ifdef <SYMBOL>` API, verify the `defines:` line of `<profiles>\script_*.log` for both server and client peers (the runtime tells you what is defined). That `OnDebugSpawn` (`#ifdef DIAG_DEVELOPER`) works does not prove `DEVELOPER` is active — different macros. Measured in a mod, 2026-06-28: the real compile logs showed `DEVELOPER` was not defined, and the PBO would have shipped broken.
 
 ### PluginDeveloper is dead in release — use the retail substitutes
 
-`PluginDeveloper` registers ONLY under `#ifdef DIAG_DEVELOPER` (`RegisterPluginDiag`, `P:\scripts\4_world\plugins\pluginmanager.c:65`, `:249-254`): in `DayZServer_x64` release, `GetPlugin(PluginDeveloper)` returns null and any teleport/give built on it (`TeleportAtCursor`, `SpawnEntityInInventory`…) is DEAD even though it compiles and works in DayZDiag. The retail substitutes (the pattern admin tools such as Community Online Tools use, which runs on retail):
+`PluginDeveloper` registers only under `#ifdef DIAG_DEVELOPER` (`RegisterPluginDiag`, `P:\scripts\4_world\plugins\pluginmanager.c:65`, `:249-254`): in `DayZServer_x64` release, `GetPlugin(PluginDeveloper)` returns null and any teleport/give built on it (`TeleportAtCursor`, `SpawnEntityInInventory`…) does nothing even though it compiles and works in DayZDiag. The retail substitutes (the pattern admin tools such as Community Online Tools use, which runs on retail):
 
 - **Teleport**: `player.SetPosition(pos)` (if y==0, resolve `GetGame().SurfaceY(x, z)` first).
-- **Seated player + vehicle**: `HumanCommandVehicle vc = player.GetCommand_Vehicle();` (`P:\scripts\3_game\human.c:1528`), then `Transport veh = vc.GetTransport();` (`P:\scripts\3_game\human.c:716`), then `veh.GetTransform(mat); mat[3] = pos; veh.SetTransform(mat);` — vehicle and occupant move together. **The occupant's position lags one frame**: to report the applied position, read `veh.GetPosition()`, not `player.GetPosition()`.
+- **Seated player + vehicle**: `HumanCommandVehicle vc = player.GetCommand_Vehicle();` (`P:\scripts\3_game\human.c:1528`), then `Transport veh = vc.GetTransport();` (`P:\scripts\3_game\human.c:716`), then `veh.GetTransform(mat); mat[3] = pos; veh.SetTransform(mat);` — vehicle and occupant move together. The occupant's position lags one frame: to report the applied position, read `veh.GetPosition()`, not `player.GetPosition()`.
 - **Give**: `player.GetInventory().CreateInInventory(cls)` / `player.GetHumanInventory().CreateInHands(cls)` (`P:\scripts\3_game\systems\inventory\humaninventory.c:44`) with `player.GetItemInHands()` as the hands-occupied guard.
 
 ### `foreach` on getter results re-calls the getter
@@ -643,7 +642,7 @@ foreach (string t : m_Test) { Print(t); }
 
 A `modded class X` declaration must be compiled in the same script module that defines `X`. This is stricter than merely referring to the type from a method in a higher module. `PPERequesterBank` is defined in `3_Game` (`P:\scripts\3_game\ppemanager\pperequesterbank.c:4`): referring to it from `4_World` can compile, but declaring `modded class PPERequesterBank` under `Scripts/4_World/` fails with `Unknown type 'PPERequesterBank'` and kills the entire World module. Put that declaration under `Scripts/3_Game/<Mod>/`.
 
-Do not hide the declaration with `#ifndef SERVER`. That can make the dedicated-server compile pass only by excluding the failing code, while the client still compiles it and fails. The release gate must compile **both the dedicated-server and client views**. A server-only gate cannot cover UI, camera, or post-process code excluded by `#ifndef SERVER`; a client-only gate cannot cover `#ifdef SERVER` code. Keep rebuilding both views until neither reports a script-module failure.
+Do not hide the declaration with `#ifndef SERVER`. That can make the dedicated-server compile pass only by excluding the failing code, while the client still compiles it and fails. The release gate must compile both the dedicated-server and client views. A server-only gate cannot cover UI, camera, or post-process code excluded by `#ifndef SERVER`; a client-only gate cannot cover `#ifdef SERVER` code. Keep rebuilding both views until neither reports a script-module failure.
 
 ### Long concatenation diagnostic cascades
 

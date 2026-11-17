@@ -16,7 +16,7 @@ Related notes: `wiki-systems-reference.md` (gameplay and server configuration) a
 
 ## 2. Enforce Script: gotchas
 
-4. Enforce Script lacks many C++, C# and Java conveniences: **no** ternary `?:`, **no** `do…while`, **no** `try/catch/throw`, **no** multiple inheritance, **no** lambdas or native delegates, **no** `#include` (modules come from `config.cpp`), **no** namespaces; use `null` or `NULL` (not `nullptr`); `switch`/`case` **does** fall through without `break`; default parameter values must be literals or `NULL`.
+4. Enforce Script lacks many C++, C# and Java conveniences: **no** ternary `?:`, **no** `do…while`, **no** `try/catch/throw`, **no** multiple inheritance, **no** lambdas or native delegates, **no** `#include` (modules come from `config.cpp`), **no** namespaces; use `null` or `NULL` (not `nullptr`); `switch`/`case` **does** fall through without `break`; default parameter values must be compile-time values: literals, `NULL`, or named constants and enum values (`int dialogButtonType = DBT_OK`, `float maxYawSpeed = FLT_MAX`).
 
 5. `GetGame().GetPlayer()` returns the **local** player and is **`null` on a dedicated server**. Server-side iteration uses `GetGame().GetPlayers(...)`, not a local player.
 
@@ -54,4 +54,5 @@ Opened on 2026-11-17. A line here confirms only what it says.
 
 - Fact 5: the server-side player list call is `GetPlayers`, declared at `P:\scripts\3_game\global\game.c:945`.
 - Fact 6: `IsDedicatedServer` is declared at `P:\scripts\3_game\global\game.c:1125`.
+- Fact 4, default parameters: `int dialogButtonType = DBT_OK, int defaultButton = DBB_OK` at `P:\scripts\3_game\global\errormodulehandler\errorhandlermodule.c:233`, and `float maxYawSpeed = FLT_MAX` at `P:\scripts\3_game\human.c:1261`.
 - Fact 7: `class Object extends IEntity` is at `P:\scripts\3_game\entities\object.c:64`, and `class EntityAI extends Entity` at `P:\scripts\3_game\entities\entityai.c:115`.

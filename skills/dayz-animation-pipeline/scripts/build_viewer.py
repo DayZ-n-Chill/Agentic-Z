@@ -3,13 +3,21 @@
 
 Reads rig_dayz.json (from build_rig_dayz.py) and weapon.json (from
 extract_weapon.py) in the scratch folder and writes a page that shows the
-character on the player skeleton with the weapon on the RightHand_Dummy anchor.
-The page has drag handles with two bone IK for the hands, feet and head, direct
-sliders (torso lean, wrist roll, finger curl, elbow swivel, head), a keyframe
-timeline and a JSON export of local bone quaternions per frame, which
-seanim_export.py turns into SEAnim.
+character on the player skeleton holding the weapon. On load and on the
+"Ready pose" button the page puts the weapon grip at a fixed idle point,
+(-0.06, 1.02, 0.32) in the viewer frame, muzzle forward and slightly down, and
+solves both arms to it. The RightHand_Dummy anchor from rig_dayz.json is used
+only by poseReady(), which no button calls; it is reachable from the browser
+console as window.__VIEWER__.poseReady(). Without that anchor poseReady() uses
+(0, 1.3, 0.2).
+The page has drag handles with two bone IK for the hands and feet, a head handle
+that turns the head to look at it, direct sliders (torso lean, wrist roll,
+finger curl, elbow swivel, head pitch and yaw), a keyframe timeline and a JSON
+export of local bone quaternions per frame, which seanim_export.py turns into
+SEAnim.
 
     python build_viewer.py [out.html] [--viewer-core <viewer_core.py>]
+    python build_viewer.py --help
 
 The default output is viewer.html in the scratch folder (DAYZ_ANIM_SCRATCH,
 default <tempdir>/dayz-anim-pipeline).
@@ -68,6 +76,9 @@ def _arguments(argv):
     rest = list(argv)
     while rest:
         arg = rest.pop(0)
+        if arg in ("-h", "--help"):
+            print(__doc__)
+            raise SystemExit(0)
         if arg == "--viewer-core":
             if not rest:
                 raise SystemExit("build_viewer: --viewer-core needs a path")
@@ -307,6 +318,16 @@ function solveArms(){
   solveLimb('RightArm','RightForeArm','RightHand',targets['rhand'].position,new T.Vector3(-0.35,-1,-0.35),st.er||0);
   solveLimb('LeftArm','LeftForeArm','LeftHand',targets['lhand'].position,new T.Vector3(0.35,-1,-0.35),st.el||0);
 }
+// head handle: turn the Head bone so its rest forward (+Z, where the handle sits at rest) points at the handle
+function solveHead(){
+  const h=bones['Head']; if(!h||!h.parent) return;
+  const dir=targets['head'].position.clone().sub(worldPos(h));
+  if(dir.length()<1e-4) return;
+  const dq=new T.Quaternion().setFromUnitVectors(new T.Vector3(0,0,1),dir.normalize());
+  const desiredWorld=dq.multiply(worldQuat(h));
+  h.quaternion.copy(worldQuat(h.parent).invert().multiply(desiredWorld));
+  h.updateMatrixWorld(true);
+}
 function solveLegs(){
   solveLimb('RightUpLeg','RightLeg','RightFoot',targets['rfoot'].position,new T.Vector3(0,0.2,1),0);
   solveLimb('LeftUpLeg','LeftLeg','LeftFoot',targets['lfoot'].position,new T.Vector3(0,0.2,1),0);
@@ -323,7 +344,7 @@ function boreForwardQuat(){
 }
 function poseIdle(){
   const q=boreForwardQuat();
-  q.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),-8*Math.PI/180)); // slight muzzle-down
+  q.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),8*Math.PI/180)); // slight muzzle-down: +8 deg about +X turns the +Z bore toward -Y
   weaponGrp.quaternion.copy(q);
   const Pp=new T.Vector3(-0.06,1.02,0.32); weaponGrp.position.copy(Pp); weaponGrp.updateMatrixWorld(true);
   targets['rhand'].position.copy(Pp);
@@ -363,7 +384,7 @@ function applyFK(){
 function applyPose(){
   boneArr.forEach(b=>b.quaternion.copy(restLocalQ[b.name]));
   scene.updateMatrixWorld(true);
-  solveLegs(); solveArms();
+  solveLegs(); solveArms(); solveHead();
   applyFK();
   scene.updateMatrixWorld(true);
   if(weaponFollow){

@@ -57,8 +57,10 @@ for o in bpy.data.objects:
         w = world_of(o)
         out[o.name] = [[round(w[r][c], 6) for c in range(4)] for r in range(4)]
 
-# build_viewer.py places the weapon on RightHand_Dummy; without it, at a fixed
-# (0, 1.3, 0.2) and without a word. Exit code 1 in Blender.
+# build_rig_dayz.py turns RightHand_Dummy into the anchor that build_viewer.py's
+# poseReady() puts the weapon on (the page's default idle pose uses a fixed
+# point instead); without it poseReady() falls back to (0, 1.3, 0.2) without a
+# word, so stop here. Exit code 1 in Blender.
 if "RightHand_Dummy" not in out:
     raise SystemExit("extract_empties: no RightHand_Dummy empty in %s; nothing written" % fbx)
 

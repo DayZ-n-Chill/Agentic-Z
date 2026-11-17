@@ -108,8 +108,9 @@ special LODs, not an empty Geometry. Measured on the control's driver door (poin
 Geometry `32/24`, Memory `7/0`, ViewGeo `32/24`, FireGeo `72/56`, with `autocenter=0` on the visual
 LOD and on Geometry. Budget the item LODs before promising the feature.
 
-Custom inventory slots fall under Bohemia ticket T148506 (`skills/_shared/conventions/config.md`): if the slot name and the
-`inventorySlot` string diverge, the item never attaches and the proxy never draws.
+For a custom inventory slot, the slot name and the item's `inventorySlot` string must match exactly: if they
+diverge, the item never attaches and the proxy never draws. A separate trap, appending with `inventorySlot[] += {...}`
+to a parent that uses the string form (Bohemia ticket T148506), is in `skills/_shared/conventions/config.md`.
 
 > The rule for rewriting a proxy triangle is in `rip-geometry-and-winding.md`, "Rewriting a proxy triangle".
 

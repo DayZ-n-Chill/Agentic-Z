@@ -26,7 +26,7 @@ Finding players, telling them apart, the connect hooks in `MissionServer`, and r
 | `GetPlayerId()` | Session number, reused after the player leaves. Never store it. | `:371` |
 | `GetPingAvg()` and the other ping and bandwidth calls | Connection stats. | `:341` to `:357` |
 
-The engine owns identities (`P:\scripts\3_game\gameplay.c:382`): hold them without `ref` and null check them. `PlayerIdentity` is the moddable class (`:386`).
+The engine owns identities (`P:\scripts\3_game\gameplay.c:382`): hold them without `ref` and null check them. `PlayerIdentity` is the moddable class (`:387` to `:388`).
 
 ## Connect and disconnect hooks (server)
 

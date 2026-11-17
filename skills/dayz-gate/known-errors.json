@@ -277,7 +277,7 @@
     "id": "storage-stream-damage",
     "pattern": "Serious stream damage detected during load",
     "meaning": "The mission's persistence storage is half written, usually after a server was killed while saving. The server dies before it binds its port, which looks like a mod bug and is not one.",
-    "fix": "Tell the user the world and characters will reset. With the server stopped, rename .server/<instance>/mission/storage_1 (for example to storage_1_corrupt-<date>); the server writes a fresh one on the next start.",
+    "fix": "Ask the user first: renaming the storage resets their world and characters. Only after they agree, and with the server stopped, rename .server/<instance>/mission/storage_1 (for example to storage_1_corrupt-<date>); the server writes a fresh one on the next start.",
     "owner_agent": "dayz-server-admin",
     "source": "dayz-test-ingame references/troubleshooting.md and references/session-findings.md (measured, not on P:\\)"
   },
@@ -285,7 +285,7 @@
     "id": "storage-modstorage-unreadable",
     "pattern": "Failed to read modstorage for entity",
     "meaning": "Community Framework could not read its data on a persisted entity: the storage was written by a server that ran without CF and is now loaded with it. The entity named on the line is a random vanilla one, not the cause.",
-    "fix": "Tell the user the world and characters will reset. With the server stopped, rename .server/<instance>/mission/storage_1 (for example to storage_1_corrupt-modstorage-<date>) and start again; keep one mod set per instance from then on.",
+    "fix": "Ask the user first: renaming the storage resets their world and characters. Only after they agree, and with the server stopped, rename .server/<instance>/mission/storage_1 (for example to storage_1_corrupt-modstorage-<date>) and start again; keep one mod set per instance from then on.",
     "owner_agent": "dayz-server-admin",
     "source": "dayz-test-ingame references/build-and-storage-traps.md (measured, not on P:\\)"
   },
@@ -293,7 +293,7 @@
     "id": "storage-scripted-variables-corrupted",
     "pattern": "Scripted variables corrupted",
     "meaning": "A persisted entity was saved by a different mod set than the one loading it, for example storage written with Community Framework and loaded without it. The server keeps running and prints the line once per entity; saving in this state damages the storage further.",
-    "fix": "Stop the server. Launch with the mod set that wrote the storage (name the missing mods first: /dayz-launch-test CF <ModName>, or --deps CF on the gate), or, after telling the user the world will reset, rename .server/<instance>/mission/storage_1 with the server stopped.",
+    "fix": "Stop the server. Launch with the mod set that wrote the storage (name the missing mods first: /dayz-launch-test CF <ModName>, or --deps CF on the gate), or ask the user whether to reset their world and characters, and only after they agree rename .server/<instance>/mission/storage_1 with the server stopped.",
     "owner_agent": "dayz-server-admin",
     "source": "dayz-test-ingame references/build-and-storage-traps.md and references/linux-native-server.md (measured, not on P:\\)"
   },

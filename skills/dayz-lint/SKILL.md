@@ -14,7 +14,7 @@ A script reads the mod's files and reports every problem it is sure of, in two s
 1. **Setup**: `config.cpp`, `CfgPatches`, the prefix and its link, script modules and files (the [Rules](#rules) table).
 2. **Code**: the script validator in `scripts/tools/dayz-script-validator/` reads the Enforce Script, `.layout`, `config.cpp`, `inputs.xml` and `.rvmat` files themselves (the [Code rules](#code-rules-second-stage) table).
 
-It starts no process and needs no DayZ Tools. The code stage reads the vanilla scripts on `P:\scripts\` when they are there, which adds roughly 3 to 10 seconds. The AI only reads the findings and hands each one to its owner.
+It starts no process and needs no DayZ Tools. The code stage reads the vanilla scripts on `P:\scripts\` when they are there, which adds roughly 10 to 15 seconds on a full `P:\scripts\` (under a second without it). The AI only reads the findings and hands each one to its owner.
 
 Follow `skills/_shared/dayz-conventions.md`.
 
@@ -27,7 +27,7 @@ python "<skill-dir>\lint.py" --mod-dir <folder> [--json] [--external-scripts <fo
 
 | Argument | Notes |
 |---|---|
-| `<ModName>` | A mod under `workspace/<ModName>/` in the project cached by `/dayz-init`. A plain folder name: a name holding `/`, `\`, `:` or `..` is refused with ERROR; pass a path with `--mod-dir`. |
+| `<ModName>` | A mod under `workspace/<ModName>/` in the project cached by `/dayz-init`. A plain folder name: a name that is `.` or `..`, or contains `/`, `\` or `:`, is refused with ERROR; pass a path with `--mod-dir`. |
 | `--mod-dir` | Lint any folder instead. Its name is the mod name unless `<ModName>` is given too. Paths in findings and fixes are shown from the current folder. |
 | `--json` | Print the full report as JSON after the verdict line. |
 | `--external-scripts` | The folder of a mod this one depends on (the folder that holds its `config.cpp`), for example Community Framework. Its classes then count as declared in the code stage. Repeatable. A folder that does not exist is an ERROR. |
@@ -102,7 +102,7 @@ A finding is an error only when it stops the mod packing or loading. Everything 
 
 ## Code rules (second stage)
 
-The second stage runs every rule of the script validator on the mod folder and reports its findings in the shape above. The validator's FAIL findings are errors and its WARN findings are warnings, with one exception: a file that is not UTF-8 (`INPUT-ENCODING-ERROR`) is a warning, because the engine still loads it and only the code rules cannot read it. The owner and fix of each rule come from the `CODE_RULES` table in `lint.py`; a `lint-<rule>` entry in `known-errors.json` or a learned entry wins when one matches.
+The second stage runs every rule of the script validator on the mod folder and reports its findings in the shape above. The validator's FAIL findings are errors and its WARN findings are warnings, with one exception: a file that is not UTF-8 (`INPUT-ENCODING-ERROR`) is a warning, because the engine still loads it and only the code rules cannot read it. The owner and fix of each rule come from the `CODE_RULES` table in `lint.py`; a `lint-<rule>` entry in `known-errors.json` or a learned entry wins when one matches. Log-line entries of `known-errors.json` are not matched against code findings.
 
 | Rules | Owner | Finds |
 |---|---|---|

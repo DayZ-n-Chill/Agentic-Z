@@ -28,7 +28,7 @@ python "<skill-dir>\build.py" <ModName> [--clean]
 
 1. **Project** - reads the project root cached by `/dayz-init`.
 2. **Preflight gate** - runs `/dayz-preflight`; halts on non-zero, so an unmounted `P:\` is the first error shown.
-3. **Workspace check** - `workspace/<ModName>/` exists and contains `config.cpp` and `$PBOPREFIX$`, and `$PBOPREFIX$` holds exactly `<ModName>` (surrounding whitespace and a BOM are ignored; case must match). The build always packs with `-prefix=<ModName>` through the `P:\<ModName>\` junction, so a different prefix means the mod's config paths expect another root; it refuses rather than build a PBO whose paths do not resolve. A payload-only bundle (prebuilt `Addons\*.pbo` and no `config.cpp`) has nothing to build, so it is refused with a pointer to `/dayz-deploy-pbo <ModName>`. This check runs before lint, so a missing file gets its own repair hint rather than a lint error.
+3. **Workspace check** - `workspace/<ModName>/` exists and contains `config.cpp` and `$PBOPREFIX$`, and `$PBOPREFIX$` holds exactly `<ModName>` (surrounding whitespace and a BOM are ignored; case must match). The build always packs a staged copy of the mod at `P:\temp\_stage\<ModName>\` with `-prefix=<ModName>` (the `P:\<ModName>\` junction only lets the mod's `P:\` paths resolve), so a different prefix means the mod's config paths expect another root; it refuses rather than build a PBO whose paths do not resolve. A payload-only bundle (prebuilt `Addons\*.pbo` and no `config.cpp`) has nothing to build, so it is refused with a pointer to `/dayz-deploy-pbo <ModName>`. This check runs before lint, so a missing file gets its own repair hint rather than a lint error.
 4. **Lint gate** - runs `/dayz-lint <ModName>`, both of its stages: the mod setup checks (`config.cpp`, `CfgPatches`, `$PBOPREFIX$`, script modules, files) and the code rules of the script validator (Enforce Script, `.layout`, `inputs.xml`, `.rvmat`). It stops with `[FAIL]` and each `file:line` if either stage finds an error, so a code error stops the build too. Lint warnings print as `[WARN]` and the build goes on. The build passes no `--external-scripts`, so for a mod that depends on another mod the rule `ES-UNDEFINED-CLASS-REF` is not checked here; run `/dayz-lint <ModName> --external-scripts <folder>` for its verdict. The `P:\<ModName>\` link is left to step 6, which gives the repair hint.
 5. **P:\Mods junction check** - `P:\Mods\` is a junction to the DayZ `!Workshop` folder.
 6. **Mod junction check** - `P:\<ModName>\` is a link pointing at `workspace/<ModName>/` (created by `/dayz-new-mod` or `/dayz-import-mod`).
@@ -51,7 +51,7 @@ python "<skill-dir>\build.py" <ModName> [--clean]
 
 ## exclude.lst
 
-`exclude.lst` (next to `build.py`) is applied by `build.py` while it stages the mod: files matching its patterns (one per line, `;` starts a comment) are not copied, so they stay out of the final PBO. Each pattern matches the whole path relative to the mod root, ignoring case, and `*` crosses folders. It drops `.gui-sources\` (the sprite source PNGs for `/dayz-build-imageset`; only the packed atlas and `.imageset` under `gui/imagesets/` ship), the `workbench\` folder, Workbench plugins under `scripts\editor\`, version-control folders, binarization logs, archives, signatures and keys, and the `Source\`, `Doc\` and `Temp\` folders at the mod root. Those three are anchored to the root, so a nested folder with the same name (for example `scripts\4_World\Temp\` or `data\doc\`) still ships.
+`exclude.lst` (next to `build.py`) is applied by `build.py` while it stages the mod: files matching its patterns (one per line, `;` starts a comment) are not copied, so they stay out of the final PBO. Each pattern matches the whole path relative to the mod root, ignoring case, and `*` crosses folders. It drops `.gui-sources\` (the sprite source PNGs for `/dayz-build-imageset`; only the packed atlas and `.imageset` under `gui/imagesets/` ship), the `workbench\` folder, Workbench plugins under `scripts\editor\`, version-control folders, binarization logs, archives, signatures and keys, and the `Source\`, `Doc\` and `Temp\` folders at the mod root. Those three are anchored to the root, so staging keeps a nested folder with the same name (for example `scripts\4_World\Temp\` or `data\doc\`), but it still does not ship: FileBank packs with DayZ Tools' own `Bin\PboUtils\exclude.lst`, whose `*\Source\*`, `*\Temp\*` and `*\Doc\*` patterns drop those folders at any depth. Rename such a folder; the content check in step 16 flags files lost this way.
 
 ## Refuses to run if
 
@@ -95,7 +95,7 @@ Preflight complete.
 ... AddonBuilder's own output, streamed live ...
 
 [OK]    Built: P:\Mods\@MyMod\Addons\MyMod.pbo (12,345 bytes)
-[OK]    MyMod.pbo holds 10 entries; all 9 packable staged files are in it
+[OK]    MyMod.pbo holds 10 entries; all 8 packable staged files are in it
 [OK]    Cleaned temp and stage dirs
 ```
 

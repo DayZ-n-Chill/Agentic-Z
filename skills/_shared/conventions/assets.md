@@ -8,7 +8,8 @@ Part of Tier 2. Asset conventions (textures, materials, models) and the DayZ LOD
   - `_co`: color (diffuse); `_ca` when it carries alpha
   - `_nohq`: normal map
   - `_smdi`: specular
-- The other suffixes vanilla ships under `P:\DZ` (all with TexConvert rules): `_lco`, `_lca` (terrain layer color), `_no`, `_non`, `_nopx` (other normal maps), `_sm` (specular), `_as`, `_ads`, `_adshq` (ambient shadow), `_mc`, `_mco` (macro, multiply color), `_dt`, `_detail`, `_cdt`, `_dtsmdi` (detail), `_mask` and `_sky`. `/dayz-pack-texture` accepts exactly this set.
+- The other suffixes `/dayz-pack-texture` accepts (all with TexConvert rules and all used by vanilla textures under `P:\DZ`): `_lco`, `_lca` (terrain layer color), `_no`, `_non`, `_nopx` (other normal maps), `_sm` (specular), `_as`, `_ads`, `_adshq` (ambient shadow), `_mc`, `_mco` (macro, multiply color), `_dt`, `_detail`, `_cdt`, `_dtsmdi` (detail), `_mask` and `_sky`.
+- A few vanilla textures use further suffixes that also have TexConvert rules but that `/dayz-pack-texture` rejects: `_nofhq` (`P:\DZ\data\data\water_nofhq.paa`), `_can` (`P:\DZ\plants_bliss\bush\data\b_betula_nana_lod1_can.paa`), `_dxt5` (`P:\DZ\plants\tree\data\t_base_dxt5.paa`), `_dxt1` (`P:\DZ\data\data\edgefoam_dxt1.paa`), `_4444` (`P:\DZ\data\data\detailmap_4444.paa`) and `_raw` (`P:\DZ\data\data\noise_raw.paa`).
 - Materials are `.rvmat` files referencing the textures and assigning shaders.
 - Models are `.p3d` files exported from Object Builder. Code that reads `.p3d` with py3d follows `skills/_shared/py3d-mlod-notes.md`.
 
@@ -26,7 +27,7 @@ DayZ inherits Bohemia's `.p3d` scheme where a LOD's resolution value is its type
 | LandContact | `2.0e+15` | Foot/wheel contact |
 | Roadway | `3.0e+15` | Surface characters walk on (buildings, rocks, the base building fence). A new item never needs one |
 | Paths | `4.0e+15` | Walking routes inside buildings |
-| HitPoints | `5.0e+15` | Hit points of vehicles and wrecks |
+| HitPoints | `5.0e+15` | Hit points of vehicles, wrecks and many buildings and walls (for example `P:\DZ\structures\residential\houseblocks\houseblock_1f_corner.p3d`, `P:\DZ\structures\walls\wall_gate_camp.p3d`) |
 | ViewGeometry | `6.0e+15` | Cursor / action raycast. Recommended: vanilla interactive gear carries one; proxies and clutter cutters don't |
 | FireGeometry | `7.0e+15` | Bullet / projectile collision |
 

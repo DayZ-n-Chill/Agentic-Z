@@ -27,7 +27,7 @@ All in `<skill-dir>\scripts\`. They pass their files through the folder named by
 2. `extract_empties.py` (Blender, same FBX) writes the helper empties through their parent chain to `empties_armworld.json`. It exits 1 and writes nothing when the FBX has no `RightHand_Dummy`. It removes the previous run's file before the FBX import, read only or not, so a failed run leaves step 3 nothing stale to build on; a file it cannot remove stops it with that error.
 3. `build_rig_dayz.py` (Python, numpy) aligns bones and mesh and writes `rig_dayz.json` in the viewer's frame, with the helpers as its `anchors`.
 4. `extract_weapon.py` (Python, the DayZ fork of py3d) writes the weapon's first visual LOD and memory points to `weapon.json`. It is independent of steps 1 to 3.
-5. `build_viewer.py` (Python) writes the page from `rig_dayz.json` and `weapon.json`, with the weapon on the `RightHand_Dummy` anchor.
+5. `build_viewer.py` (Python) writes the page from `rig_dayz.json` and `weapon.json`. On load and on "Ready pose" the page puts the weapon grip at a fixed idle point, (-0.06, 1.02, 0.32) in the viewer frame. The `RightHand_Dummy` anchor is used only by `poseReady()`, which no button calls; run it from the browser console as `window.__VIEWER__.poseReady()`.
 6. `seanim_export.py` (Python) turns the page's animation JSON into SEAnim; its paths are arguments.
 
 ```cmd

@@ -16,7 +16,7 @@ The open/close actions are `P:\scripts\4_world\classes\useractionscomponent\acti
 
 `CreateAreaDamage` (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:981-1026`) builds an `AreaDamageLoopedDeferred_NoVehicle` from the `<slot>_min` / `<slot>_max` memory points, ammo `"BarbedWireHit"`, hitting Torso / hands / legs / feet. Fence rotates that area damage with the gate (`fence.c:604-612`) so the damage volume follows the gate leaf as it swings.
 
-Barbed wire is a `mountables[]` attachment (proxy physics toggled, see `config-contract.md §2`); its damage zone also unmounts the wire when destroyed.
+Barbed wire is a `mountables[]` attachment (proxy physics toggled, see `config-contract.md §2`); vanilla has no handler that unmounts the wire when its own damage zone is ruined. What vanilla does is drop the wire when the wall part it hangs on goes: `Fence.OnPartDestroyedServer` drops `Wall_Barbedwire_1` when `wall_base_down` is destroyed and `Wall_Barbedwire_2` when `wall_base_up` is destroyed (`P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:391-403`), and `GateAttachmentsSanityCheck` drops either wire whose wall base is not built (`fence.c:799-814`).
 
 ## 3. Gate persistence and the version bump
 
@@ -25,7 +25,7 @@ The gate state is persisted after the base three sync ints, following the strict
 - `Fence.OnStoreSave` (`fence.c:246-254`): calls `super.OnStoreSave` first (which writes `m_SyncParts01/02/03` then `m_HasBase`), then writes `m_GateState`, `m_IsOpened`.
 - `Fence.OnStoreLoad` (`fence.c:256-289`): calls `super.OnStoreLoad` first, then handles a legacy branch: for `version < 110` it reads and discards a bool, then reads the gate state + opened for current versions.
 
-**Version note:** Fence gate persistence was bumped at **v110**. The base damage-system version is `GetDamageSystemVersionChange()` returning `111` (`basebuildingbase.c:1133-1136`). When you add a persisted field to a subclass, you bump the version and add a legacy branch exactly like this, read the old layout for old saves, the new layout for new ones, so existing bases don't corrupt on the first load after the update. Getting this wrong loses every fence on the server, so treat it as data-critical and run the data audit (`persistence-audit.md`).
+**Version note:** Fence gate persistence was bumped at **v110**. The base damage-system version is `GetDamageSystemVersionChange()` returning `111` (`basebuildingbase.c:1133-1136`). The Fence branch tests the game's storage version, which only the game can raise; a mod cannot reuse that pattern. When you add a persisted field to a subclass, write your mod's own version int first (after `super`) and branch on it, reading the old layout for old saves and the new layout for new ones, so existing bases don't corrupt on the first load after the update. Never migrate by the game's version (`skills/_shared/persistence/versioning-and-migration.md`). Getting this wrong loses every fence on the server, so treat it as data-critical and run the data audit (`persistence-audit.md`).
 
 ## 4. Repair
 
@@ -35,7 +35,7 @@ The gate state is persisted after the base three sync ints, following the strict
 
 1. Add the state field(s) and register them for netsync in the ctor, alongside the base `m_SyncParts*`.
 2. Persist them in `OnStoreSave`/`OnStoreLoad` after `super`, in the exact same order both ways.
-3. Bump the version and add a legacy read branch for old saves.
+3. Write your mod's own version int first, bump it when the layout changes, and branch on it to read old saves; never branch on the game's `version`.
 4. If the behaviour has a physical volume (area damage, a moving leaf), rotate/relocate it in the same handler that mutates the state (`fence.c:604-612` pattern).
 5. Gate the whole thing behind server authority, the state mutation runs server-side and syncs to clients.
 

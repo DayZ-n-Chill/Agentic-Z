@@ -36,18 +36,23 @@ class LM_Spitfire extends LlamaPlaneScript
     protected bool m_canShoot;
     static const string SPIT_PROJECTILE_CLASS = "LM_Planes_Tracer";
     
-    override void OnInput(float dt)
+    static const string SPIT_AMMO_TYPE        = "RGD5Grenade_Ammo";
+    
+    override void EOnPostSimulate(IEntity other, float timeSlice)
     {
-        // ... base flight inputs
+        super.EOnPostSimulate(other, timeSlice);
+        // ... pilot-seat and air-mode checks
+        Input inp = GetGame().GetInput();
         if (inp.LocalHold("UALlamaPlaneShoot") && m_canShoot)
         {
+            // Client asks the server to fire; the server runs DoFire in OnRPC
+            GetGame().RPCSingleParam(this, SPIT_RPCserver.RPC_SHOT_FIRED, new Param1<bool>(true), true);
             m_canShoot = false;
-            DoFire();
-            // cooldown re-enables m_canShoot via timer
+            // cooldown re-enables m_canShoot via CallLater(ShotReady, ...)
         }
     }
     
-    protected void DoFire()
+    protected void DoFire()  // server only
     {
         vector mw = /* muzzle world position */;
         vector axis = /* forward axis */;
@@ -55,14 +60,14 @@ class LM_Spitfire extends LlamaPlaneScript
         Object hitObj;
         DayZPhysics.RaycastRV(mw, mw + axis * 1500, hitPos, null, hitComp, m_HitObjects,
                               null, this, false, false, ObjIntersectFire);
+        // Use up one Ammo_308Win or Ammo_308WinTracer round from inventory
         // Spawn LM_Planes_Tracer at mw, accelerating along axis
-        // Apply damage at hitPos if raycast hit
-        // Use vanilla DayZ Ammo_308WinTracer for damage profile
+        // Apply SPIT_AMMO_TYPE (RGD5Grenade_Ammo) damage at hitPos if raycast hit
     }
 }
 ```
 
-Hitscan (1500m raycast) does damage, visual tracer is the projectile spawn — combo gives instant hits with visible bullet trail.
+Hitscan (1500m raycast) does damage, visual tracer is the projectile spawn — combo gives instant hits with visible bullet trail. The full pattern below shows the RPC, ammo and damage steps in detail.
 
 ### Combat aviation: Spitfire shooting pattern (full)
 

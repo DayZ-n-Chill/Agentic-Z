@@ -685,6 +685,15 @@ def test_script_that_is_not_utf8_is_a_warning_not_an_error(mod, p_drive):
     assert f["triage"]["fix"].startswith("Save the file as UTF-8")
 
 
+def test_error_after_a_not_utf8_script_stays_an_error(mod, p_drive):
+    (mod / "scripts" / "4_World" / "a_enc.c").write_bytes(b"// caf\xe9\nmodded class PlayerBase\n{\n}\n")
+    write("scripts/4_World/b_bad.c", RESERVED_WORD)(mod)
+    report = run(mod, p_drive)
+    severities = {f["rule"]: f["severity"] for f in report["findings"]}
+    assert severities == {"INPUT-ENCODING-ERROR": "warning", "ES-RESERVED-WORD-IDENTIFIER": "error"}
+    assert (report["verdict"], report["code"]["errors"], report["code"]["warnings"]) == ("FAIL", 1, 1)
+
+
 def test_unknown_class_is_an_error_until_its_mod_is_passed_as_an_external_root(mod, tmp_path, p_drive):
     vanilla_scripts(p_drive)
     write("scripts/4_World/vest.c", "modded class PlayerBase\n{\n\tvoid MyModTick()\n\t{\n\t\tOtherModHelper.Refresh();\n\t}\n}\n")(mod)
@@ -707,6 +716,17 @@ def test_learned_entry_wins_over_the_built_in_owner_of_a_code_finding(mod, p_dri
     lint.triage.learn("team-reserved-word", f["text"], learned, [], meaning="m", fix="Ask the team lead.", owner="user")
     [f] = lint.lint_mod("MyMod", mod, project, p_drive=p_drive, project_dir=project)["findings"]
     assert (f["triage"]["id"], f["triage"]["owner_agent"], f["triage"]["fix"]) == ("team-reserved-word", "user", "Ask the team lead.")
+
+
+def test_log_entry_in_a_code_message_does_not_replace_the_built_in_fix(mod, p_drive):
+    # The message names "Undefined base class '...'", the pattern of the log entry config-undefined-base-class.
+    with open(mod / "config.cpp", "a", encoding="utf-8") as cfg:
+        cfg.write("class CfgVehicles\n{\n    class MyMod_Base;\n    class MyMod_Car: MyMod_Base\n    {\n"
+                  "        class SimulationModule: SimulationModule\n        {\n        };\n    };\n};\n")
+    [f] = [f for f in run(mod, p_drive)["findings"] if f["rule"] == "ES-CONFIG-NESTED-OVERRIDE-NO-FORWARDREF"]
+    t = f["triage"]
+    assert (t["id"], t["owner_agent"]) == ("lint-es-config-nested-override-no-forwardref", CONFIG_OWNER)
+    assert t["fix"] == lint.CODE_RULES["ES-CONFIG-NESTED-OVERRIDE-NO-FORWARDREF"][1]
 
 
 def test_every_rule_the_validator_can_report_has_an_owner_and_a_fix():

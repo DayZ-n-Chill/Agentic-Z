@@ -41,7 +41,7 @@ Follow `skills/_shared/dayz-conventions.md`. This skill runs no scripts, so ther
 
 ## Hard rules (the pitfalls that break DayZ)
 
-- **AI output is only a high-poly blockout. It does not produce an asset that is ready for DayZ.** The Bohemia Interactive and Enfusion pipeline needs manifold, closed, convex geometry, and its Model Quality Assurance marks non-manifold, ngon and non-convex geometry as defects, which is exactly what AI generation plus auto-retopo produces. AI output always goes through manual retopology (Retopoflow or Quad Remesher), UVs, the bake and validation in Object Builder before it becomes a `.p3d`. AI auto-retopo alone is not sufficient. This ties in with the binarize vertex limit, covered in `dayz-model-pipeline`.
+- **AI output is only a high-poly blockout. It does not produce an asset that is ready for DayZ.** AI generation plus auto-retopo produces non-manifold geometry and ngons, and the collision parts (the `ComponentNN` selections of the Geometry, Fire Geometry and View Geometry LODs) must be closed and convex (Rule 1 of `dayz-model-pipeline` `references/critical-rules.md`); the visual LODs have no convexity rule. AI output always goes through manual retopology (Retopoflow or Quad Remesher), UVs, the bake and validation in Object Builder before it becomes a `.p3d`. AI auto-retopo alone is not sufficient. This ties in with the binarize vertex limit, covered in `dayz-model-pipeline`.
 - **Never trust AI vision for the placement, orientation or scale of a `.p3d`.** It is the documented weak link: it rotates by 90 degrees and does not reposition. Use numeric checks (`verify_bounds`) and a diff against the reference image (`blender-visual-review`).
 - A texture tool must texture over the existing UVs, not remesh a model that has already been retopologized. Verify this on any new tool before putting it into the pipeline.
 - DayZ vertices are point × normal × uv, per LOD. The budget is not "faces"; shared normals reduce the count.
@@ -52,13 +52,13 @@ Follow `skills/_shared/dayz-conventions.md`. This skill runs no scripts, so ther
 | Tool | Role | Status |
 |---|---|---|
 | Hunyuan 2.1 (local) | Generate the high-poly blockout, with polygon control | Available; no skill in this repo automates it |
-| Tripo / 3D AI Studio | Generate a low-poly mesh, retopo, PBR | Access confirmed; ranked first, at 71.8%, in a third-party low-poly comparison (not checked here); Smart Low-Poly is behind a paywall |
+| Tripo / 3D AI Studio | Generate a low-poly mesh, retopo, PBR | Access confirmed; Smart Low-Poly is behind a paywall |
 | Blender with Retopoflow or Quad Remesher (or ZRemesher, InstaLOD) | Manifold retopology, UVs, bake | Core and unavoidable: AI does not replace it |
 | Arma 3 Object Builder (Blender add-on) | Native MLOD `.p3d`: LODs, proxies, named selections, RVMAT, RTM | In common use for DayZ, and a dependency of DayZ-LOD-Tools; replaces or complements py3d |
 | Modddif (formerly "Modif" or "Motif") | Color (`_co`) and normal (`_nohq`) over existing UVs | Free; no roughness or metallic |
 | 3D AI Studio / Meshy Texture | Full PBR (albedo, normal, roughness, metallic) over existing UVs | Confirmed; repack to `_smdi` |
 | Sloyd (parametric) | Templated props (barrels, crates, weapons) with quads, UVs and LODs out of the box | Less cleanup than AI for simple props |
-| Rodin (Hyper3D) | Mesh editing, parts, PBR | Access confirmed; ranked third in the same low-poly comparison |
+| Rodin (Hyper3D) | Mesh editing, parts, PBR | Access confirmed |
 | AI animation (Mixamo, AccuRig, Cascadeur and others) | Humanoid rig and animation | Low value for DayZ props |
 
 ## Validation backlog (harden this skill as items close)

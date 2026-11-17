@@ -13,13 +13,19 @@ assignment file.
 This is the projector as it was run on one mesh, the LFQuad quad-bike body.
 It is tied to that mesh: main() exits with code 2 unless the opened .blend
 hashes to EXPECTED_BLEND_SHA256, the face invariant expects
-EXPECTED_FACE_COUNT faces, the two controls read shells S06 and S03, and the
-G7 to G9 layouts name that body's shells. The stage is chosen by the name of
-<outdir> (out_g7, out_g8, out_g9, out_g10; any other name runs the axis search and
+EXPECTED_FACE_COUNT faces, the two controls read shells S06 and S03
+(CONTROL_A_SHELL, CONTROL_B_SHELL), and the G7 to G10 stages name that body's
+shells and its one corrected face: G7_ATLAS_A_SHELLS, G7_ATLAS_B_SHELLS,
+G7_CROSSING_SHELLS, G7_MIRROR_PAIRS, LEGACY_CORRECTION_FACE and
+LEGACY_CORRECTION_FACE_ISLAND, which the G7 to G10 gates check. --placement-override always runs the
+G10 stage, whatever <outdir> is called. Without it, the stage is chosen by the name
+of <outdir> (out_g7, out_g8, out_g9, out_g10; any other name runs the axis search and
 the earlier block packer), and each stage reads atlas_metrics.json from the folder that
 holds the assignment file. To use it on another mesh, change those constants
-first. The PNG step (render_atlas_pngs) runs draw_atlas_fallback.ps1 from this
-folder through powershell.exe; that renderer is not shipped with the skill.
+first. With --placement-override, after the G10 summary and a green gate check, the
+PNG step (render_atlas_pngs) runs draw_atlas_fallback.ps1 from this folder through
+powershell.exe; that renderer is not shipped with the skill, so the step logs
+PNG_RENDER_SKIPPED and the run ends normally.
 """
 from __future__ import annotations
 
@@ -106,6 +112,11 @@ G7_OVERLAP_BASELINE_TOLERANCE = 0.002
 G7_CROSSING_SHELLS = ("S02", "S03", "S05", "S08")
 G7_MIRROR_PAIRS = (("S07", "S06"), ("S10", "S09"))  # (left, right)
 G7_ATLAS_A_SHELLS = ("S02", "S03", "S05", "S06", "S07", "S08", "S09", "S10")
+G7_ATLAS_B_SHELLS = ("S00", "S01", "S04", "S11", "S12")
+# The one face moved between islands in G8 (it straddled X=0), and the island
+# it must end up in. The G7 to G10 gates check both.
+LEGACY_CORRECTION_FACE = 4053
+LEGACY_CORRECTION_FACE_ISLAND = "S08|+Z|R|+"
 G7_SIGN_SPLIT_X = 0.0
 G7_SIGN_CONVENTION = (
     "world face-centroid X<0 maps to atlas u<0.5 (left); "
@@ -116,7 +127,7 @@ G7_LONGITUDINAL_CONVENTION = (
     "(tail at bottom, nose at top)"
 )
 
-# G8: the paint skin and the hidden faces are separate planar panels.  The
+# G8: the paint skin and the hidden faces are separate planar panels.
 # A measured sweep from 60/40 through 66/34 found 60.5/39.5 maximized the final
 # 512-grid silhouette IoU while keeping both panels feasible at the 0.22 floor.
 G8_OCCUPANCY_FLOOR = 0.22
@@ -907,7 +918,7 @@ SMOKE_ELONG_MAX = 3.0
 # A priori rationale (not fitted to island count):
 #   Whole mechanical pieces sit at vis_share 0.0085-0.0187. The smallest
 #   paint piece is ~0.023. 0.5 % of exterior first-hits is below a coil
-#   spring's whole-piece share, and above (paint_min / 4) so a 4-way split
+#   spring's whole-piece share, and below (paint_min / 4, about 0.0058) so a 4-way split
 #   of the smallest paint piece does not dump every half just for being
 #   small. The island count is a reading, not a target.
 # ---------------------------------------------------------------------------
@@ -1993,7 +2004,7 @@ def overlap_from_grid(grid, n, bbox, face_perimeters_uv):
     if ge1 == 0:
         return {
             "overlap_area_frac": 0.0,
-            "overlap_status": "no medible",
+            "overlap_status": "not measurable",
             "reason": "zero covered pixels",
             "grid_n": n,
             "bbox": bbox,
@@ -2005,7 +2016,7 @@ def overlap_from_grid(grid, n, bbox, face_perimeters_uv):
     err_frac = err_area / union_area if union_area > 0 else float("inf")
     status = "ok"
     if err_frac > 0.5 and err_frac > frac:
-        status = "no medible"
+        status = "not measurable"
     return {
         "overlap_area_frac": float(frac),
         "overlap_status": status,
@@ -5182,7 +5193,7 @@ def g10_apply_frame_layout(base_islands, reused_assignment, frame_layout, model_
         "displacement": {
             "method": (
                 "One affine u=a*X+b,v=a*Y+c per whole frame; a is identical in all "
-                "all frames. Only b/c change. No island-local translation runs."
+                "frames. Only b/c change. No island-local translation runs."
             ),
             "mean_uv": 0.0,
             "worst_uv": 0.0,
@@ -5407,7 +5418,7 @@ def pack_and_scale_islands_g10(islands, f_cent, model_xy_bbox, g9_metrics):
         "source_literal_raster_verification": literal_raster_verification,
         "source_literal_exact_collision_pair_count": len(literal_exact_same_layer),
         "source_literal_exact_collision_pairs": literal_exact_same_layer,
-        "source_literal_zero_collision_verdict": False,
+        "source_literal_zero_collision_verdict": not literal_exact_same_layer,
         "exact_conflict_graph": exact_conflicts,
         "combined_conflict_graph": {
             "method": "union_of_G9_raster_edges_and_continuous_triangle_area_edges",
@@ -5859,7 +5870,7 @@ def g9_side_purity_from_legacy(legacy_metric, total_faces):
         "semantic_definition": (
             "Fraction of atlas-A faces whose frozen L/R island label matches the "
             "independently re-read world-X sign of the face centroid. This is the "
-            "invariant corrected by moving face 4053 in G8."
+            "invariant corrected by moving face %d in G8." % LEGACY_CORRECTION_FACE
         ),
         "legacy_uv_half_area_note": (
             "Reported separately, not used as G9 side_purity: a literal affine leaves "
@@ -6489,7 +6500,7 @@ def overlap_metrics_for(islands):
     if not tris_all:
         return {
             "overlap_area_frac": 0.0,
-            "overlap_status": "no medible",
+            "overlap_status": "not measurable",
             "reason": "no triangles",
         }
     grid, bbox, n = raster_tris(tris_all, OVERLAP_GRID_N, bbox=(0.0, 0.0, 1.0, 1.0))
@@ -6943,7 +6954,7 @@ def estimate_strict_grouping_cost(islands, blocks):
     estimated = min(1.0, shape_fill * current_inter)
     optimistic_upper = min(1.0, current_inter)
     return {
-        "label": "ESTIMACION_NO_IMPLEMENTADA",
+        "label": "ESTIMATE_NOT_IMPLEMENTED",
         "method": (
             "Replace strict piece-block rectangles by the sum of island bboxes, "
             "retain the measured final inter-pack efficiency, and do not credit "
@@ -7089,7 +7100,7 @@ def write_assignment_g9_frozen(path, raw_assignment, selected_specs):
     log("WROTE %s" % path)
 
 
-def write_assignment_g10_frozen(path, raw_assignment, selected_specs):
+def write_assignment_g10_frozen(path, raw_assignment, selected_specs, g10_layering):
     """Copy G9 assignment and prove G10 changed only whole-frame placement."""
     payload = json.loads(json.dumps(raw_assignment))
     input_axes = dict(raw_assignment.get("projection_axes") or {})
@@ -7109,14 +7120,26 @@ def write_assignment_g10_frozen(path, raw_assignment, selected_specs):
         "changed": changed,
         "all_axis_values_equal_to_input": selected_axes == input_axes,
     }
+    literal_pairs = int(g10_layering["source_literal_exact_collision_pair_count"])
+    minimum = g10_layering["minimum_by_family"]
+    if literal_pairs:
+        verification = (
+            "G10 continuous triangle-area verification found %d same-layer pair(s) "
+            "the G9 raster missed, so the coloring is repaired with the minimum "
+            "number of island color changes" % literal_pairs
+        )
+    else:
+        verification = (
+            "G10 continuous triangle-area verification found no same-layer pair in "
+            "the G9 coloring"
+        )
     payload["g10_note"] = (
-        "Atlas A starts from the family-preserving G9 coloring. G10 continuous "
-        "triangle-area verification found a missed same-layer edge, so the coloring "
-        "is repaired with the minimum number of island color changes; the continuously "
-        "measured minimum is four n+ skin frames plus two n- internal frames. Islands keep literal XY "
-        "centers, one common scale per variant and zero frame-local displacement. "
-        "Projection axes, membership, split flags, X=0 correction and threshold 0.005 "
-        "remain frozen from G9."
+        "Atlas A starts from the family-preserving G9 coloring. %s; the continuously "
+        "measured minimum is %d n+ skin frame(s) plus %d n- internal frame(s). Islands "
+        "keep literal XY centers, one common scale per variant and zero frame-local "
+        "displacement. Projection axes, membership, split flags, X=0 correction and "
+        "threshold 0.005 remain frozen from G9."
+        % (verification, int(minimum["skin"]), int(minimum["internal"]))
     )
     with open(path, "w", encoding="utf-8", newline="\n") as fh:
         json.dump(payload, fh, indent=2)
@@ -7229,7 +7252,7 @@ def texel_density_ratio(islands):
     if not dens:
         return {
             "texel_density_ratio": None,
-            "texel_density_status": "no medible",
+            "texel_density_status": "not measurable",
             "per_island": per,
         }
     dmin = min(dens)
@@ -7522,10 +7545,10 @@ Status: **{status}**. Main variant: **B, cropped frames**. Measured recommendati
 
 ## A -- WHAT WAS DONE
 
-- The start was the G9 family split of **3 skin layers + 2 internal layers** in `intra_layer_overlap.layering_by_panel`; `global_aligned_z_layering` was discarded because it mixes `n+` and `n-`. Continuous clipping added **{continuous_only_edges} sub-pixel edges** that the G9 raster did not see; **{literal_exact_collisions}** of them fell inside one literal layer and made the 3+2 split invalid. So the literal split was not applied blindly: the same graph was repaired with the smallest real change of partition (**{repair_changed_count} islands**) and the corrected minimum became **{skin_layers}+{internal_layers} = {n_layers} layers**. Extraction, verification and repair: `project_atlas.py:{line_layout}`.
+- The start was the G9 family split of **{literal_skin} skin layers + {literal_internal} internal layers** in `intra_layer_overlap.layering_by_panel`; `global_aligned_z_layering` was discarded because it mixes `n+` and `n-`. Continuous clipping added **{continuous_only_edges} sub-pixel edges** that the G9 raster did not see; **{literal_exact_collisions}** of them fell inside one literal layer and made the {literal_skin}+{literal_internal} split invalid. So the literal split was not applied blindly: the same graph was repaired with the smallest real change of partition (**{repair_changed_count} islands**) and the corrected minimum became **{skin_layers}+{internal_layers} = {n_layers} layers**. Extraction, verification and repair: `project_atlas.py:{line_layout}`.
 - The corrected split was rasterized again before use and after placing each variant (`project_atlas.py:{line_verify}`): aligned source **{source_collisions} collisions**, variant B **{cropped_collisions}**, variant A **{full_collisions}**. The corrected continuous gate also gives **{corrected_exact_collisions}**.
-- Variant B (`atlas_a.png`): {n_layers} frames cropped to the bounding box of their content and packed as indivisible rectangles, with no frame rotation and no island packing. Occupancy **{cropped_occupancy:.12f}**, common scale **{cropped_scale:.15f}**.
-- Variant A (`atlas_a_full_frames.png`): {n_layers} full XY footprints that can be compared directly. Occupancy **{full_occupancy:.12f}**, common scale **{full_scale:.15f}**.
+- Variant B (`atlas_a_islands.json`): {n_layers} frames cropped to the bounding box of their content and packed as indivisible rectangles, with no frame rotation and no island packing. Occupancy **{cropped_occupancy:.12f}**, common scale **{cropped_scale:.15f}**.
+- Variant A (`atlas_a_full_frames_islands.json`): {n_layers} full XY footprints that can be compared directly. Occupancy **{full_occupancy:.12f}**, common scale **{full_scale:.15f}**.
 - Vote: **{recommended}**. {recommendation_reason}
 
 ### Final measured layers
@@ -7550,11 +7573,11 @@ Status: **{status}**. Main variant: **B, cropped frames**. Measured recommendati
 
 Variant B gives **{linear_gain:.3f}%** more useful linear resolution than A; the declared threshold for recommending the loss of comparability was **{gain_threshold:.1f}%**.
 
-### UV area taken by the 15 G9 overlaps
+### UV area taken by the {g9_pair_count} G9 overlaps
 
-- Continuous sum of the 15 pairwise intersections: **{continuous_pairwise:.15f} UV²**, **{continuous_unit_pct:.6f}%** of the unit atlas and **{continuous_occ_pct:.6f}%** of the G9 occupancy. It comes from exact triangle-triangle clipping and can count a triple intersection twice; it is not a polygon union.
+- Continuous sum of the {continuous_pair_count} pairwise intersections: **{continuous_pairwise:.15f} UV²**, **{continuous_unit_pct:.6f}%** of the unit atlas and **{continuous_occ_pct:.6f}%** of the G9 occupancy. It comes from exact triangle-triangle clipping and can count a triple intersection twice; it is not a polygon union.
 - Conservative raster union of the pixels covered by at least two islands: **{unique:.15f} UV²**, **{unit_pct:.6f}%** of the unit atlas and **{occ_pct:.6f}%** of the G9 occupancy.
-- Raster control: sum of the 15 pairs **{pairwise:.15f} UV²** at {overlap_grid}×{overlap_grid}. The structure read was the final G9 UV rebuilt in this run, before the {n_layers} layers were separated.
+- Raster control: sum of the {g9_pair_count} pairs **{pairwise:.15f} UV²** at {overlap_grid}×{overlap_grid}. The structure read was the final G9 UV rebuilt in this run, before the {n_layers} layers were separated.
 
 ### Scale constants
 
@@ -7569,21 +7592,18 @@ Variant B gives **{linear_gain:.3f}%** more useful linear resolution than A; the
 - `out_g9/atlas_metrics.json` kept SHA-256 `{g9_metrics_sha}`.
 - `out_g9/assignment_REAL.json` kept SHA-256 `{g9_assignment_sha}`.
 - The frame packing is at `project_atlas.py:{line_frames}`. No island packer was run.
-- The PNG files were drawn with `draw_atlas_fallback.ps1` / System.Drawing; PIL and a headless render were not used.
+- This run drew no PNG files. Drawing the atlas images is a separate manual step that needs a renderer not shipped with this skill.
 
 [EXACT]
 
 ```powershell
-python -m py_compile .\project_atlas.py
 blender -b '.\retopo_final.blend' --python '.\project_atlas.py' -- '.\out_g9\assignment_REAL.json' '.\out_g10'
-& '.\draw_atlas_fallback.ps1' -OutDir '.\out_g10'
-Get-FileHash -Algorithm SHA256 '.\retopo_final.blend'
 ```
 
 ## C -- RISKS AND UNCERTAINTY
 
 - The ghost silhouette of B is **visual context fitted to each frame**; it does not use the UV scale of the islands and does not count in occupancy or in the gates. This choice resolves the geometric conflict between cropping to the content's bounding box and showing the full footprint inside the same rectangle.
-- The 3+2 minimum was measured again on the union of the G9 raster graph and the continuous triangle-triangle graph. The literal G9 split was not zero in the continuous check; the corrected one is. The 1024² raster is still the requested gate for the variants.
+- The {literal_skin}+{literal_internal} G9 minimum was measured again on the union of the G9 raster graph and the continuous triangle-triangle graph. {literal_continuous_sentence} The 1024² raster is still the requested gate for the variants.
 - Layers with a single island: {singleton_note}.
 - Titles carry family, ordinal and Z range; the full island list is in the side legend, so no unreadable text sits inside small frames.
 - Working assumption so the run does not stop: **10% useful linear gain** is the threshold that justifies losing immediate comparability. The raw figure is published so the owner can replace that criterion.
@@ -7606,12 +7626,30 @@ Get-FileHash -Algorithm SHA256 '.\retopo_final.blend'
         line_layout=line_layout, line_verify=line_verify, line_frames=line_frames,
         source_collisions=metrics["g10_layering"]["source_verification"]["collision_pair_count"],
         literal_exact_collisions=metrics["g10_layering"]["source_literal_exact_collision_pair_count"],
+        literal_continuous_sentence=(
+            "The literal G9 split had %d same-layer pair(s) in the continuous check; "
+            "the corrected one has %d."
+            % (
+                metrics["g10_layering"]["source_literal_exact_collision_pair_count"],
+                metrics["g10_layering"]["corrected_exact_collision_pair_count"],
+            )
+        ),
         continuous_only_edges=sum(
             "G9_raster_1024" not in row["sources"]
             for row in metrics["g10_layering"]["combined_conflict_graph"]["pairs"]
         ),
         corrected_exact_collisions=metrics["g10_layering"]["corrected_exact_collision_pair_count"],
         repair_changed_count=metrics["g10_layering"]["repair_changed_count"],
+        literal_skin=sum(
+            layer["family"] == "skin"
+            for layer in metrics["g10_layering"]["source_literal_layers"]
+        ),
+        literal_internal=sum(
+            layer["family"] == "internal"
+            for layer in metrics["g10_layering"]["source_literal_layers"]
+        ),
+        g9_pair_count=overlap["collision_pair_count"],
+        continuous_pair_count=overlap["continuous_original_g9_pair_count"],
         skin_layers=metrics["g10_layering"]["minimum_by_family"]["skin"],
         internal_layers=metrics["g10_layering"]["minimum_by_family"]["internal"],
         n_layers=metrics["g10_layering"]["minimum_total_layers"],
@@ -7652,8 +7690,12 @@ Get-FileHash -Algorithm SHA256 '.\retopo_final.blend'
 
 
 def render_atlas_pngs(outdir):
-    """Run the existing dependency-free System.Drawing atlas renderer."""
+    """Run draw_atlas_fallback.ps1 next to this script, or skip when it is absent."""
     renderer = os.path.join(os.path.dirname(os.path.abspath(__file__)), "draw_atlas_fallback.ps1")
+    if not os.path.isfile(renderer):
+        log("PNG_RENDER_SKIPPED renderer not found: %s; draw the PNG files from "
+            "atlas_a_islands.json another way" % renderer)
+        return
     command = [
         "powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass",
         "-File", renderer, "-OutDir", os.path.abspath(outdir),
@@ -7781,7 +7823,7 @@ def run_g10_delivery(outdir, assign_arg, raw_assignment, assignment, selected_sp
     face_4053_island = next(
         (
             isl["id"] for isl in cropped_islands
-            if 4053 in set(isl["face_indices"])
+            if LEGACY_CORRECTION_FACE in set(isl["face_indices"])
         ),
         None,
     )
@@ -7791,7 +7833,7 @@ def run_g10_delivery(outdir, assign_arg, raw_assignment, assignment, selected_sp
     axis_frozen = input_axes == selected_axes and not axis_changes
     fixed_assignment = (
         tuple(a_shells) == G7_ATLAS_A_SHELLS
-        and tuple(assignment["atlas_b"]) == ("S00", "S01", "S04", "S11", "S12")
+        and tuple(assignment["atlas_b"]) == G7_ATLAS_B_SHELLS
         and abs(ISLAND_VIS_THRESHOLD - 0.005) <= 1e-15
         and axis_frozen
     )
@@ -7910,20 +7952,22 @@ def run_g10_delivery(outdir, assign_arg, raw_assignment, assignment, selected_sp
             "pass": (
                 side_purity["worst"] >= 1.0 - 1e-12
                 and side_purity["label_face_sign_mismatch_count"] == 0
-                and face_4053_island == "S08|+Z|R|+"
+                and face_4053_island == LEGACY_CORRECTION_FACE_ISLAND
             ),
-            "evidence": "purity=%.1f; mismatches=%d; face4053=%s" % (
+            "evidence": "purity=%.1f; mismatches=%d; face%d=%s" % (
                 side_purity["worst"], side_purity["label_face_sign_mismatch_count"],
-                face_4053_island,
+                LEGACY_CORRECTION_FACE, face_4053_island,
             ),
         },
         "7_assignment_threshold_and_projection_axes_frozen": {
             "pass": (
                 fixed_assignment
-                and face_changes["unique_faces"] == [4053]
+                and face_changes["unique_faces"] == [LEGACY_CORRECTION_FACE]
                 and face_changes["changed_island_count"] == 2
             ),
-            "evidence": "threshold=0.005; axis_changes=%d; only legacy correction face 4053" % len(axis_changes),
+            "evidence": "threshold=0.005; axis_changes=%d; only legacy correction face %d" % (
+                len(axis_changes), LEGACY_CORRECTION_FACE,
+            ),
         },
         "8_internal_island_self_overlap_at_most_0_06": {
             "pass": (
@@ -8092,6 +8136,7 @@ def run_g10_delivery(outdir, assign_arg, raw_assignment, assignment, selected_sp
     )
     write_assignment_g10_frozen(
         os.path.join(outdir, "assignment_REAL.json"), raw_assignment, selected_specs,
+        result["g10_layering"],
     )
 
     visibility = selected_run["visibility"]
@@ -8210,9 +8255,7 @@ def run_g10_delivery(outdir, assign_arg, raw_assignment, assignment, selected_sp
         json.dump(metrics, handle, indent=2)
         handle.write("\n")
     log("WROTE %s" % metrics_path)
-    if override_active:
-        render_atlas_pngs(outdir)
-    else:
+    if not override_active:
         report_path = os.path.join(os.path.dirname(os.path.abspath(outdir)), "REPORT_G10.md")
         write_g10_report(report_path, metrics)
     log("G10_SUMMARY " + json.dumps({
@@ -8226,6 +8269,8 @@ def run_g10_delivery(outdir, assign_arg, raw_assignment, assignment, selected_sp
     }))
     if not all_green:
         raise SystemExit(3)
+    if override_active:
+        render_atlas_pngs(outdir)
 
 
 def find_body_object():
@@ -9079,7 +9124,7 @@ def main():
             g9_silhouette[panel]["pass"] for panel in ("skin", "internal")
         )
         face_reassignment_gate = (
-            g9_face_changes["unique_faces"] == [4053]
+            g9_face_changes["unique_faces"] == [LEGACY_CORRECTION_FACE]
             and g9_face_changes["changed_island_count"] == 2
         )
         displacement_gate = (
@@ -9100,7 +9145,7 @@ def main():
         )
         fixed_assignment_gate = (
             tuple(a_shells) == G7_ATLAS_A_SHELLS
-            and tuple(assignment["atlas_b"]) == ("S00", "S01", "S04", "S11", "S12")
+            and tuple(assignment["atlas_b"]) == G7_ATLAS_B_SHELLS
             and abs(ISLAND_VIS_THRESHOLD - 0.005) <= 1e-15
             and axis_policy_ok
         )
@@ -9124,7 +9169,7 @@ def main():
             g8_silhouette["pass"] and g7_silhouette_control["discriminates"]
         )
         face_reassignment_gate = (
-            g8_face_changes["unique_faces"] == [4053]
+            g8_face_changes["unique_faces"] == [LEGACY_CORRECTION_FACE]
             and g8_face_changes["changed_island_count"] == 2
         )
         placement_hard_gate = (
@@ -9134,7 +9179,7 @@ def main():
         )
         fixed_assignment_gate = (
             tuple(a_shells) == G7_ATLAS_A_SHELLS
-            and tuple(assignment["atlas_b"]) == ("S00", "S01", "S04", "S11", "S12")
+            and tuple(assignment["atlas_b"]) == G7_ATLAS_B_SHELLS
             and abs(ISLAND_VIS_THRESHOLD - 0.005) <= 1e-15
             and axis_policy_ok
         )
@@ -9161,7 +9206,7 @@ def main():
         )
         fixed_assignment_gate = (
             tuple(a_shells) == G7_ATLAS_A_SHELLS
-            and tuple(assignment["atlas_b"]) == ("S00", "S01", "S04", "S11", "S12")
+            and tuple(assignment["atlas_b"]) == G7_ATLAS_B_SHELLS
             and abs(ISLAND_VIS_THRESHOLD - 0.005) <= 1e-15
             and axis_policy_ok
         )

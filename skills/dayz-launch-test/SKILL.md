@@ -9,7 +9,7 @@ argument-hint: "<ModName> [<ModName2> ...] [--server-only <ModName>]... [--serve
 
 # /dayz-launch-test
 
-Run-only: launches a local DayZ test session for one or more built mods. Always starts the **server first**, then the **client** connecting to it (DayZ cannot be tested standalone, per L2 conventions). Both run from `DayZDiag_x64.exe` with `-filePatching` for fast iteration on Enforce Script and config edits.
+Run-only: launches a local DayZ test session for one or more built mods. Always starts the **server first**, then the **client** connecting to it (DayZ cannot be tested standalone, per L2 conventions). Both run from `DayZDiag_x64.exe` with `-filePatching`, which is meant to serve script and config edits from source. On the measured install it did not do so for scripts, so rebuild with `/dayz-build-pbo` after a script change (see "When the session starts but does not work").
 
 **Prerequisite:** the instance must have been added with `/dayz-add-server <instance>`, which owns the `.server/<instance>/` layout (mission copy, `serverDZ.cfg`, `Profiles/`, the template junction) and documents how to edit the mission. This skill verifies that state and runs.
 
@@ -115,10 +115,10 @@ This skill checks what it can before it spawns anything; the cases below pass th
 
 | What you see | Likely cause | Read |
 |---|---|---|
-| The client closes about a second after it starts; its RPT holds only the header and an `ErrorMessage_DayZDiag_x64_*.mdmp` appears | `steam.exe` is running but no user is signed in, or the registry value `HKCU\Software\Valve\Steam\ActiveProcess` holds the pid of a Steam that has exited. The Steam check in step 7 only looks for the process. | `skills/dayz-test-ingame/references/troubleshooting.md`, the section on the Steam `pid` in the registry |
+| The client hangs on a modal dialog `unable to locate running instance of Steam`: the process stays alive with 0 CPU, its RPT holds only the header, and an `ErrorMessage_DayZDiag_x64_*.mdmp` with exception `0x80000003` appears | `steam.exe` is running but no user is signed in, or the registry value `HKCU\Software\Valve\Steam\ActiveProcess` holds the pid of a Steam that has exited. The Steam check in step 7 only looks for the process. | `skills/dayz-test-ingame/references/troubleshooting.md`, the section on the Steam `pid` in the registry |
 | The server counts down `[Server] :: termination in: N` and exits | `serverDZ.cfg` has no `class Missions` block or no `instanceId`. `/dayz-add-server` writes both; a hand-edited cfg can lose them. | `skills/dayz-test-ingame/references/windows-launch-cycle.md` |
-| The server dies before it binds the port with `!!! Serious stream damage detected during load`, or crashes with `Failed to read modstorage for entity`, or floods the log with `Scripted variables corrupted` | The mission's `storage_1` is half written, or was written by a different mod set (with or without Community Framework) than the one now loading it | `skills/dayz-test-ingame/references/build-and-storage-traps.md` |
-| The client is refused with `0x00020017`, `0x00020013` or `0x00010002` | A diag client on a server that is not diag, different game builds, or a signature mismatch | `skills/dayz-test-ingame/references/troubleshooting.md` |
+| The server dies before it binds the port with `!!! Serious stream damage detected during load`, or crashes with `Failed to read modstorage for entity`, or floods the log with `Scripted variables corrupted` | The mission's `storage_1` is half written, or was written by a different mod set (with or without Community Framework) than the one now loading it | `skills/dayz-test-ingame/references/troubleshooting.md`, the symptom table; `skills/dayz-test-ingame/references/build-and-storage-traps.md` |
+| The client is refused with `0x00020017`, `0x00020013` or `0x00010002` | A diag client on a server that is not diag, different game builds, or a signature mismatch | `skills/dayz-gate/triage.md`, the `connection` row |
 | The mod's change is not in game although the build said it succeeded | A stale or locked PBO, or `-filePatching` not serving what you expect. On the measured install scripts came from the PBO even with `-filePatching`, so rebuild for a script change. | `skills/dayz-test-ingame/references/build-and-storage-traps.md`, `skills/dayz-test-ingame/references/windows-launch-cycle.md` |
 
 `/dayz-gate` and `/dayz-logwatch` name the storage, countdown and refusal lines with their fix (`skills/dayz-gate/triage.md`). Renaming `storage_1` resets the world and characters, so ask the user first.

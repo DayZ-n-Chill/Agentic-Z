@@ -2,7 +2,7 @@
 
 Four `.layout` files to copy as a starting point, the stringtable their text keys need, and the four construction mistakes they exist to prevent.
 
-**How facts are marked here.** A `P:\` path with a line was opened and checked on `P:\` (DayZ 1.30). "Measured" means measured on a running client (DayZ 1.29) and not yet repeated on 1.30. Counts of vanilla use are over the 227 layouts under `P:\gui\layouts` (9,575 widgets).
+**How facts are marked here.** A `P:\` path with a line was opened and checked on `P:\` (DayZ 1.30). "Measured" means measured on a running client (DayZ 1.29) and not yet repeated on 1.30. Counts of vanilla use are over the 227 layouts under `P:\gui\layouts` (9,525 widgets).
 
 ## How to use them
 
@@ -12,7 +12,7 @@ Copy a template, rename the widgets, and put the `#STR_` keys in your stringtabl
 - The CSV holds the key without the leading `#`. The `#` belongs only to the reference in the layout.
 - A stringtable belongs to an addon: it is read from the PBO at load, so unlike a layout in `$profile:` it does not hot reload.
 
-`Message` in `modal_panel.layout` draws very large glyphs because its box is 0.58 of a panel that is 0.70 of the screen tall (292 px at 720p), and glyph height was measured to follow the widget height. `text_proportion` is honored on `TextWidgetClass` and `ButtonWidgetClass` (glyph height = 0.74 x value x box height, measured to within 2% on 2026-08-21) and ignored on `MultilineTextWidgetClass`, which is why a sweep of six values on 2026-08-20 changed nothing. On a multiline widget, size the box; the attribute does nothing. The numbers and controls are in `../references/hot-iteration.md`, section 6.
+`Message` in `modal_panel.layout` draws very large glyphs because its box is 0.58 of a panel that is 0.70 of the screen tall (292 px at 720p), and glyph height was measured to follow the widget height. `text_proportion` is honored on `TextWidgetClass` and `ButtonWidgetClass` (glyph height = 0.74 x value x box height, measured to within 2% on 2026-08-21) and ignored on `MultilineTextWidgetClass`, which is why a sweep of six values on 2026-08-20 changed nothing. On a multiline widget, size the box; the attribute does nothing. The `TextWidgetClass` and `MultilineTextWidgetClass` numbers and controls are in `../references/hot-iteration.md`, section 6. The button numbers (values 0.20 and 0.60 in an 86.4 px box, +1.6% and -1.0%) are in the comment on `BtnYes` in `modal_panel.layout`.
 
 Iterate from `$profile:` with `ui_reload_layout`; the loop is described in [`../references/hot-iteration.md`](../references/hot-iteration.md).
 
@@ -35,7 +35,7 @@ python scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py skills/dayz-ui-development
 python scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py skills/dayz-ui-development/templates/<this.layout> --canvas-width 1280 --canvas-height 720
 ```
 
-`--check` tests that the file parses and has a sound structure (it prints OK and a widget count). It is not a geometry lint. The JSON dump is that parser's geometry, including `right_ref` and `bottom_ref`, which subtract the offset inward (`parse.py:790-803`).
+`--check` tests that the file parses and has a sound structure (it prints OK and a widget count). It is not a geometry lint. The JSON dump is that parser's geometry, including `right_ref` and `bottom_ref`, which subtract the offset inward (`parse.py:791-792` for `right_ref`, `parse.py:803-804` for `bottom_ref`).
 
 ## Reading the `.rects` files
 
@@ -103,7 +103,7 @@ The four measured failures of the `$profile:` loop are in [`../references/hot-it
 
 ## What these files are not
 
-They are not verified in game. The `dayz-ui-lab` parser checks format and geometry offline. Load them with `ui_reload_layout` and look at the frame before you trust a color or a wrap.
+They are not fully verified in game. The geometry of `modal_panel` and `form_row` was seen on screen in game on DayZ 1.29; `hud_overlay` and `scroll_list` have not been loaded in game; none of the four has been re-checked on 1.30. The `dayz-ui-lab` parser checks format and geometry offline. Load a template with `ui_reload_layout` and look at the frame before you trust a color or a wrap.
 
 ## Notes on the files
 

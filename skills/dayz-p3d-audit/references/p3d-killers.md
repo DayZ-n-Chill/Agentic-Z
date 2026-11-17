@@ -271,11 +271,21 @@ limits: `killers-detail.md`, "Needle triangles in a collision component".
 
 These aren't P3D issues but commonly co-occur during debugging:
 
-- `IsTakeable()` MUST return `true` for `ActionManagerClient` to include the entity
-  in the action targeting pipeline. Use `CanPutInCargo()=false` +
-  `CanPutIntoHands()=false` + `RemoveAction(ActionTakeItem)` for non-pickup items.
-- `SetFullyRaised()` in group creation → flags start at progress=1.0 → only
-  `LowerFlag` appears initially, not `RaiseFlag` (checks `< 1.0`).
+- `IsTakeable()` controls pickup, the inventory vicinity list and the target name label,
+  not whether the object can be targeted by actions. Vanilla checks it in the take actions
+  (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiontakeitem.c:36`),
+  in the vicinity filter (`P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:63`)
+  and in the name label (`P:\scripts\5_mission\gui\actiontargetscursor.c:719`).
+  `BaseBuildingBase.IsTakeable()` returns `false`
+  (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:909`), and fences and
+  watchtowers keep their actions. Return `false` from it for a non-pickup item.
+- The `flag_mast` animation phase decides which flag action shows, and phase 1 means
+  fully lowered: `TerritoryFlag` starts at `initPhase=1` (`P:\DZ\gear\camping\config.cpp:12626`),
+  raising lowers the phase (`actionraiseflag.c:61`). `ActionRaiseFlag` needs phase `> 0`
+  (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionraiseflag.c:48`)
+  and `ActionLowerFlag` needs phase `< 1` (`...\continuous\actionlowerflag.c:43`), both with a
+  flag attached. A script that sets a new flag to phase 0 (fully raised) therefore offers only
+  `LowerFlag` at first, not `RaiseFlag`.
 - SyncVar timing vs RPC cache timing can deadlock ActionConditions.
 - `autocenter=0` on FlagKit (handheld) causes it to float when dropped: only set
   on placed objects, not kits.

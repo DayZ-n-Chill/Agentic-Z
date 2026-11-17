@@ -41,16 +41,18 @@ The pattern is the vanilla one. `ParticleManager.GetInstance().PlayOnObject` is 
 - The UH-1Y wreck, with `Vector(-0.5, 0, -1.0)` (`P:\scripts\4_world\entities\building\wrecks\wreck_uh1y.c:7`).
 - The Chinook wreck, which takes the offset from a memory point, `GetMemoryPointPos("emitter")`, and forces world rotation so the smoke rises straight up (`P:\scripts\4_world\entities\building\wrecks\wreck_chinook.c:8`).
 
-The 1.30 client check sits in front of each of them:
+Most vanilla particle code switched to the 1.30 client check:
 
 - `IsHeadlessOrDedicatedServer` in the Mi-8 constructor (`P:\scripts\4_world\entities\building\wrecks\wreck_mi8.c:6`).
 - `IsHeadlessOrDedicatedServer` in the UH-1Y constructor (`P:\scripts\4_world\entities\building\wrecks\wreck_uh1y.c:5`).
 - `IsHeadlessOrDedicatedServer` in the `PlayParticle` helper of the fireplace (`P:\scripts\4_world\entities\itembase\fireplacebase.c:1112`).
 - `IsHeadlessOrDedicatedServer` in the boat's effect code (`P:\scripts\4_world\entities\vehicles\boatscript.c:382`).
 
+The Chinook and Mi-24 wrecks still use the dedicated server check alone, `!g_Game.IsDedicatedServer()` (`P:\scripts\4_world\entities\building\wrecks\wreck_chinook.c:6` and `P:\scripts\4_world\entities\building\wrecks\wreck_mi24_tk.c:5`). For particle code use `IsHeadlessOrDedicatedServer()` instead. It includes the dedicated server check that the general client-only rule in `skills/_shared/conventions/scripts.md` names, and also skips headless clients.
+
 ## Key points
 
-- Particles are client only. The server must never call `PlayOnObject`: it draws nothing there, and on a headless client it would still take objects from the particle pool. Do not use `IsClient()` for this check; it is not valid during load, while the dedicated server checks are (`skills/_shared/conventions/scripts.md`, "Client and server ownership").
+- Particles are client only. The server must never call `PlayOnObject`: it draws nothing there, and on a dedicated server or a headless client `ParticleManager.GetInstance()` returns null (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:65`), so the call fails on a null reference. Do not use `IsClient()` for this check: vanilla notes that `IsDedicatedServer()` is valid much sooner during load than `IsMultiplayer()`, `IsClient()` and `IsServer()` (`P:\scripts\3_game\global\game.c:1118-1125`). `IsHeadlessOrDedicatedServer()` combines `IsDedicatedServer()` with `IsHeadless()` (`P:\scripts\3_game\global\game.c:1132-1136`), so it also skips headless clients; vanilla gives no load-time note for it.
 - Use the named constants of `ParticleList`, never a bare number. `SMOKING_HELI_WRECK` is registered at `P:\scripts\3_game\particles\particlelist.c:288`. There is no `ParticleList.FIRE_SMALL_CAMP`; the campfire constant is `CAMP_SMALL_FIRE` (`P:\scripts\3_game\particles\particlelist.c:29`).
 - The offset vector is in the parent object's local space.
 - Keep what `PlayOnObject` returns. `CrashBase` stops it in `EEDelete` with `m_ParticleEfx.Stop()`, behind the same client check (`P:\scripts\4_world\entities\building\crashbase.c:51`). A class that does not extend `CrashBase` needs its own member and its own stop.

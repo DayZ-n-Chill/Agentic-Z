@@ -11,7 +11,7 @@
 #   workshop.toml       written by `workshop create`; kept in git, copied into the content folder
 #   build/@<MyMod>/     the Workshop content folder: addons/*.pbo + *.bisign, keys/ (+ mod.cpp if you have one)
 #
-# Usage: dayz-mod-pack.sh [-C <projectdir>] <command> [options]
+# Usage: bash dayz-mod-pack.sh [-C <projectdir>] <command> [options]
 #   init <ModName> [--servermod]
 #                           create the folders, .gitignore, .workshopignore; WORKSHOP_TAGS in .dayzmod
 #                           defaults to "Mod" ("Server" with --servermod; exactly one of the two)
@@ -49,7 +49,7 @@ case $APP_ID in ''|*[!0-9]*) die "WORKSHOP_APP_ID must contain digits only: $APP
 PBO_EXCLUDES=('*.psd' '*.xcf' '*.kra' '*.blend' '*.blend1' '*.bak' '*.tmp' '*.biprivatekey' 'Thumbs.db' '.DS_Store')
 
 load_conf() {
-    [ -f "$PROJECT/.dayzmod" ] || die "no $PROJECT/.dayzmod; run: $0 init <ModName>"
+    [ -f "$PROJECT/.dayzmod" ] || die "no $PROJECT/.dayzmod; run: bash $0 init <ModName>"
     # Parse .dayzmod as data, never source it: KEY=value, value bare or in one pair of
     # single/double quotes, no escapes, no $ ` ; | & , blank and # comment lines only.
     local _env_key_name=${KEY_NAME:-}
@@ -152,14 +152,14 @@ cmd_init() {
     done
     # Belt and braces for the uploader: pass this with --ignore-file (see publish-hint).
     [ -f "$PROJECT/.workshopignore" ] || printf '*.biprivatekey\nsecrets/\n*.psd\n*.xcf\n*.kra\n*.blend\n*.blend1\n.git*\n' > "$PROJECT/.workshopignore"
-    # A private key left in the project root by mistake should never be committed either.
+    # Give each addon already in src/ a $PREFIX$ file naming its folder, unless it has one.
     local addon
     for addon in "$PROJECT"/src/*/; do
         [ -d "$addon" ] || continue
         [ -f "$addon/\$PREFIX\$" ] || printf '%s\n' "$(basename "$addon")" > "$addon/\$PREFIX\$"
     done
     say "initialised $name in $PROJECT; put each addon in src/<Addon>/ (config.cpp + scripts/ + ...)"
-    say "next: $0 keygen"
+    say "next: bash $0 keygen"
 }
 
 cmd_keygen() {
@@ -236,7 +236,7 @@ cmd_build() {
     scan_static
     need_dayzmake
     local priv="$PROJECT/secrets/$KEY_NAME.biprivatekey"
-    [ -f "$priv" ] || die "no private key at $priv; run: $0 keygen"
+    [ -f "$priv" ] || die "no private key at $priv; run: bash $0 keygen"
     local addons=()
     for a in "$PROJECT"/src/*/; do [ -d "$a" ] && addons+=("${a%/}"); done
     [ ${#addons[@]} -gt 0 ] || die "no addon folders in src/ (expected src/<Addon>/config.cpp)"

@@ -213,10 +213,9 @@ More of the same kind, each opened on `P:\`:
 | `array<T>.Slice(int from, int to)` | In 1.30 (reported as new in that version). `to` is included. | `P:\scripts\1_core\proto\enscript.c:720-727` |
 | `typename.EnumFlagsToString(enumType, value)` | In 1.30 (reported as new in that version); `EnumTools.EnumFlagsToString` wraps it. | `P:\scripts\1_core\proto\enconvert.c:614`, `:704` |
 | `TStringStringMap`, `TStringMap` | Both are `map<string, string>`. | `P:\scripts\1_core\proto\enscript.c:1004`, `P:\scripts\3_game\tools\tools.c:988` |
-| `string.Replace(sample, replace)` | Changes the string in place and returns an `int`, so two `Replace` calls cannot be chained. | `P:\scripts\1_core\proto\enstring.c:156` |
 | A `map` keyed by `Widget` | Valid; vanilla has `map<Widget, float> m_RadialItemCards`. | `P:\scripts\3_game\gui\effects\radialmenu.c:17` |
 
-Generic classes of your own use the containers' syntax, `class Box<Class T>` (measured on a 1.30.164289 server as `Box<int>` and `Box<string>`), and a method takes at most 16 parameters (`language_compile.md`, "Compiler traps").
+Generic classes of your own use the containers' syntax, `class Box<Class T>` (measured on a 1.30.164289 server as `Box<int>` and `Box<string>`), and a method takes at most 16 parameters (`language_compile.md`, "Compiler traps"). Why two `Replace` calls cannot be chained is in the same table.
 
 ---
 

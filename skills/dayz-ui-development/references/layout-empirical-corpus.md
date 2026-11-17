@@ -54,7 +54,7 @@ This file complements `layout-format.md`, `widget-api.md` and `dabs-framework.md
 - **v1 must-have:** TextWidgetClass, ImageWidgetClass, FrameWidgetClass,
   PanelWidgetClass, ButtonWidgetClass, GridSpacerWidgetClass,
   WrapSpacerWidgetClass, ScrollWidgetClass, EditBoxWidgetClass — 9 classes
-  cover 89% of widget instances in the corpus.
+  cover 87% of widget instances in the corpus (11,530 of 13,220).
 - **v2 should-have:** CheckBoxWidgetClass, MultilineTextWidgetClass,
   RichTextWidgetClass, SliderWidgetClass, XComboBoxWidgetClass,
   TextListboxWidgetClass — adds ~10% more coverage.
@@ -297,8 +297,10 @@ false-positive generator.
   capture — never on the file alone.
 
 - **A child overflowing its parent's box: 18 cases / 12 files, deliberate.**
-  Vanilla's `compassimage` is 4.0 wide; `details_mode_result` is 6.0 tall
-  (scrollable content). Not a defect either.
+  A `compassimage` widget 4.0 wide in a third-party mod layout of the mixed
+  corpus (no vanilla layout has it); vanilla's `details_mode_result` is 6.0 tall
+  (`P:\gui\layouts\new_ui\server_browser\pc\server_browser_tab_pages.layout:1406`,
+  scrollable content). Not a defect either.
 
 - **Duplicate widget name: 5 files (0.6%); duplicate name where at least one is
   clickable: 1 file (0.1%)** — vanilla's `scene_editor`. Rare enough to be a

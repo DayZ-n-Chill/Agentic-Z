@@ -227,6 +227,18 @@
       "patterns": ["\\bdayz-particles\\b", "\\bparticles?\\s+(?:catalog(?:ue)?|reference|api)\\b", "\\bparticles?\\b[^\\n]{0,30}?\\bcatalog(?:ue)?\\b"]
     },
     {
+      "route": "dayz-recipe",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\bdayz-recipe\\b", "(?<!craft )(?<!crafting )\\brecipes?\\b[\\w\\s]{0,20}?\\bnew\\s+(?P<recipe>weapon|vest|craftable)\\b", "(?<!craft )(?<!crafting )\\b(?:new\\s+)?(?P<recipe>weapon|vest|craftable)\\s+recipe\\b", "\\b(?:mod|plan)\\s+recipes?\\b"]
+    },
+    {
+      "route": "orchestrator",
+      "confidence": 0.95,
+      "absorbs": "all",
+      "patterns": ["\\b(?:build|make|create|write)\\s+(?:me\\s+)?(?:a|an)\\s+(?:new\\s+)?[\\w\\s,'-]{0,60}?\\bmod\\b", "\\b(?:scaffold|start)\\s+(?:me\\s+)?(?:a|an)\\s+(?:(?:whole|full|complete|new)\\s+)*(?!(?:new|empty|blank|bare|whole|full|complete)\\b)[\\w'-]+(?:[\\s,]+[\\w'-]+){0,5}?\\s+mod\\b", "\\b(?:scaffold|start)\\s+(?:me\\s+)?(?:a|an)\\s+[\\w\\s,'-]{0,60}?\\bmod\\s+(?:with|that|which|where)\\b"]
+    },
+    {
       "route": "dayz-3d-viewer",
       "confidence": 0.95,
       "absorbs": true,
@@ -236,7 +248,7 @@
       "route": "dayz-p3d-inspector",
       "confidence": 0.95,
       "absorbs": true,
-      "patterns": ["\\bdayz-p3d-inspector(?![\\w-])", "\\bp3d\\s+inspector\\b", "\\binspect\\b[^\\n]{0,30}?\\b(?:p3d|model)\\b", "\\brecipe\\s+json\\b", "\\bround-?trip\\b[^\\n]{0,30}?\\bp3d\\b", "\\b(?:view|show|move|drag)\\b[^\\n]{0,30}?\\bmemory\\s+points?\\b"]
+      "patterns": ["\\bdayz-p3d-inspector(?![\\w-])", "\\bp3d\\s+inspector\\b", "\\binspect\\b[^\\n]{0,30}?\\b(?:p3d|model\\b(?!\\.cfg))\\b", "\\brecipe\\s+json\\b", "\\bround-?trip\\b[^\\n]{0,30}?\\bp3d\\b", "\\b(?:view|show|move|drag)\\b[^\\n]{0,30}?\\bmemory\\s+points?\\b"]
     },
     {
       "route": "dayz-pbo-reverse-engineering",
@@ -371,12 +383,6 @@
       "patterns": ["\\bdayz-sound-system(?![\\w-])", "\\b(?:sound|audio)\\s+(?:system\\s+)?(?:reference|guide)\\b"]
     },
     {
-      "route": "dayz-test-ingame",
-      "confidence": 0.95,
-      "absorbs": true,
-      "patterns": ["\\bdayz-test-ingame(?![\\w-])", "\\bin-?game\\s+test(?:ing|s)?\\s+(?:reference|guide)\\b", "\\bhot[\\s-]?reload(?:s|ed|ing)?\\b", "\\bheadless\\s+client\\b", "\\b(?:linux|proton)\\b[^\\n]{0,30}?\\b(?:server|client|test)\\b"]
-    },
-    {
       "route": "dayz-ui-development",
       "confidence": 0.9,
       "absorbs": true,
@@ -393,18 +399,6 @@
       "confidence": 0.9,
       "absorbs": true,
       "patterns": ["\\bdayz-weapons(?![\\w-])", "\\b(?:weapons?|firearms?)\\s+(?:reference|guide)\\b"]
-    },
-    {
-      "route": "dayz-recipe",
-      "confidence": 0.95,
-      "absorbs": true,
-      "patterns": ["\\bdayz-recipe\\b", "(?<!craft )(?<!crafting )\\brecipes?\\b[\\w\\s]{0,20}?\\bnew\\s+(?P<recipe>weapon|vest|craftable)\\b", "(?<!craft )(?<!crafting )\\b(?:new\\s+)?(?P<recipe>weapon|vest|craftable)\\s+recipe\\b", "\\b(?:mod|plan)\\s+recipes?\\b"]
-    },
-    {
-      "route": "orchestrator",
-      "confidence": 0.95,
-      "absorbs": "all",
-      "patterns": ["\\b(?:build|make|create|write)\\s+(?:me\\s+)?(?:a|an)\\s+(?:new\\s+)?[\\w\\s,'-]{0,60}?\\bmod\\b", "\\b(?:scaffold|start)\\s+(?:me\\s+)?(?:a|an)\\s+(?:(?:whole|full|complete|new)\\s+)*(?!(?:new|empty|blank|bare|whole|full|complete)\\b)[\\w'-]+(?:[\\s,]+[\\w'-]+){0,5}?\\s+mod\\b", "\\b(?:scaffold|start)\\s+(?:me\\s+)?(?:a|an)\\s+[\\w\\s,'-]{0,60}?\\bmod\\s+(?:with|that|which|where)\\b"]
     },
     {
       "route": "figma-node-normalizer",
@@ -523,6 +517,12 @@
       "patterns": ["can't compile", "null pointer", "\\bcrash(?:es|ed|ing|\\.log)?\\b", "\\bscript\\.log\\b", "\\.rpt\\b", "\\bstack trace\\b"]
     },
     {
+      "route": "dayz-test-ingame",
+      "confidence": 0.95,
+      "absorbs": true,
+      "patterns": ["\\bdayz-test-ingame(?![\\w-])", "\\bin-?game\\s+test(?:ing|s)?\\s+(?:reference|guide)\\b", "\\bhot[\\s-]?reload(?:s|ed|ing)?\\b", "\\bheadless\\s+client\\b", "\\b(?:linux|proton)\\b[^\\n]{0,30}?\\b(?:server|client|test)\\b"]
+    },
+    {
       "route": "dayz-server-kit",
       "confidence": 0.95,
       "absorbs": true,
@@ -626,7 +626,7 @@
     {
       "route": "dayz-vehicle-specialist",
       "confidence": 0.85,
-      "patterns": ["\\b(?:cars?|trucks?|pickups?|sedans?|hatchbacks?|vans?|boats?|helicopters?|helis?|vehicles?)\\b", "\\b(?:car|boat|helicopter)script\\b", "\\bfuel\\s+tank\\b", "\\bgearbox\\b", "\\bsimulationmodule\\b", "\\b(?:motorbikes?|motorcycles?|dirt\\s?bikes?|bikes?|scooters?|quads?|atvs?|planes?|airplanes?|seaplanes?|aircraft)\\b", "\\brotors?\\b", "\\bflight\\s+model\\b", "\\bgrub\\s+rip\\b", "\\bmotorbikescript\\b"]
+      "patterns": ["\\b(?:cars?|trucks?|pickups?|sedans?|hatchbacks?|vans?|boats?|helicopters?|helis?|vehicles?)\\b", "\\b(?:car|boat|helicopter)script\\b", "\\bfuel\\s+tank\\b", "\\bgearbox\\b", "\\bsimulationmodule\\b", "\\b(?:motorbikes?|motorcycles?|dirt\\s?bikes?|bikes?|scooters?|quad\\s?bikes?|atvs?|airplanes?|seaplanes?|aircraft)\\b", "\\bplanes?\\b[^\\n]{0,40}?\\b(?:fly|flies|flying|flight|takes?\\s?off|takeoff|landing|wings?|stalls?|pilot|cockpit|propellers?|runway)\\b", "\\b(?:fly|flies|flying|flight|takes?\\s?off|takeoff|wings?|pilot|cockpit|propellers?|runway)\\b[^\\n]{0,40}?\\bplanes?\\b", "\\brotors?\\b", "\\bflight\\s+model\\b", "\\bgrub\\s+rip\\b", "\\bmotorbikescript\\b"]
     },
     {
       "route": "dayz-weapon-specialist",

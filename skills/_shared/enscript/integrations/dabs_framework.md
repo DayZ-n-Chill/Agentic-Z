@@ -202,9 +202,10 @@ class MyMod_Menu: ScriptViewMenuTemplate<MyMod_StatusController>
 		return "MyMod/gui/layouts/menu.layout";
 	}
 
-	void OnCloseExecute(ButtonCommandArgs args)
+	bool OnCloseExecute(ButtonCommandArgs args)
 	{
 		Close();
+		return true;
 	}
 }
 ```

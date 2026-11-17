@@ -7,7 +7,6 @@
       "name": "VPP Admin Tools",
       "role": "positive-external",
       "local_root_id": "ui_corpus_vpp",
-      "source_url": null,
       "pin": {
         "kind": "git-commit",
         "value": "dc22e420df3b54e821055f9764da1e48f4a31e71",
@@ -16,12 +15,6 @@
       },
       "expected_layout_count": 69,
       "expected_parse_ok": 69,
-      "license": {
-        "name": "SARL v1.0",
-        "spdx": null,
-        "redistribution": "prohibited",
-        "note": "Permits study as a reference and prohibits copying any portion, snippets and assets included."
-      },
       "redistributed_in_pack": false
     },
     {
@@ -29,7 +22,6 @@
       "name": "DayZ Expansion Scripts",
       "role": "positive-external",
       "local_root_id": "ui_corpus_expansion",
-      "source_url": null,
       "pin": {
         "kind": "git-commit",
         "value": "8d3a453b2b6786a0bef728dbdfdc9a1ef0383a9b",
@@ -38,12 +30,6 @@
       },
       "expected_layout_count": 234,
       "expected_parse_ok": 234,
-      "license": {
-        "name": null,
-        "spdx": null,
-        "redistribution": "prohibited",
-        "note": "No root licence is exposed in the pinned snapshot. Absence of a licence grants no copying permission."
-      },
       "redistributed_in_pack": false
     },
     {
@@ -51,7 +37,6 @@
       "name": "TraderPlus V1",
       "role": "positive-external-historical",
       "local_root_id": "ui_corpus_traderplus",
-      "source_url": null,
       "pin": {
         "kind": "git-commit",
         "value": "d0cd39f105fba57104bf93798129626228a263e6",
@@ -60,12 +45,6 @@
       },
       "expected_layout_count": 16,
       "expected_parse_ok": 16,
-      "license": {
-        "name": null,
-        "spdx": null,
-        "redistribution": "prohibited",
-        "note": "No standard licence file. The README prohibits using the code in other mods without explicit permission."
-      },
       "redistributed_in_pack": false
     },
     {
@@ -74,7 +53,6 @@
       "role": "positive-external",
       "local_root_id": "ui_corpus_traderx_layouts",
       "identity_root_id": "ui_corpus_traderx_pbo",
-      "source_url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3560310973",
       "pin": {
         "kind": "workshop-manifest",
         "value": "3069958660046119589",
@@ -105,33 +83,21 @@
       },
       "expected_layout_count": 46,
       "expected_parse_ok": 46,
-      "license": {
-        "name": null,
-        "spdx": null,
-        "redistribution": "prohibited",
-        "note": "The local package carries no standard licence authorising redistribution. Local access permits audit and private fixtures only."
-      },
       "redistributed_in_pack": false
     },
     {
       "corpus_id": "lfpowergrid",
       "name": "LFPowerGrid",
-      "role": "first-party-regression",
+      "role": "positive-external",
       "local_root_id": "lfpowergrid_source",
-      "source_url": null,
       "pin": {
         "kind": "operator-local",
         "value": null,
-        "note": "First-party mod owned by the operator; pinned by whatever working copy local-roots.json points at."
+        "note": "Third-party mod whose source is not in this repository; pinned by whatever working copy local-roots.json points at."
       },
+      "note": "The gate only parses this corpus; every layout, the Sorter V4 TEST layouts included, is expected to parse. Its root lfpowergrid_source is not in local-roots.example.json; add it to local-roots.json by hand.",
       "expected_layout_count": 11,
       "expected_parse_ok": 11,
-      "license": {
-        "name": "operator-owned",
-        "spdx": null,
-        "redistribution": "not-applicable",
-        "note": "First-party. Its Sorter V4 TEST layouts are the negative fixture for the diff detectors and are expected to parse; being a negative fixture is about diff findings, not syntax."
-      },
       "redistributed_in_pack": false
     }
   ]

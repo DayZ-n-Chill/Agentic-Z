@@ -272,7 +272,7 @@ for (int a = 0; a < input.AlternativeCount(); a++) {
 
 ```
 g_Game.CopyToClipboard(stringValue);
-int timeMs = g_Game.GetTime();         // ms since game start
+int timeMs = g_Game.GetTime();         // mission time in milliseconds
 ```
 
 ### Window Resize Detection
@@ -479,7 +479,7 @@ Result: `[""]` — one empty element, no exception, no empty list. Looks like a 
 
 There is no Enforce method named `GetObjectTextures()` (plural). Runtime texture and material state is singular and index-based: `GetObjectTexture(int)` / `GetObjectMaterial(int)` (`P:\scripts\3_game\entities\entityai.c:2882-2885`). Iterate from zero to `GetHiddenSelections().Count() - 1` when a per-selection snapshot is required.
 
-The config-array getters are `GetHiddenSelectionsTextures()` and `GetHiddenSelectionsMaterials()` (`P:\scripts\3_game\entities\object.c:125-140`). For the embedded material list of a vobject, use `GetObjectMaterials(vobject, out string[])` (`P:\scripts\1_core\proto\envisual.c:6-27`). Do not invent a plural runtime getter; an undefined call prevents the whole script module from compiling.
+The config-array getters are `GetHiddenSelectionsTextures()` and `GetHiddenSelectionsMaterials()` (`P:\scripts\3_game\entities\object.c:125-140`). For the embedded material list of a vobject, use `GetObjectMaterials(vobject object, string materials[])` (`P:\scripts\1_core\proto\envisual.c:6-27`). Do not invent a plural runtime getter; an undefined call prevents the whole script module from compiling.
 
 ### Reflection limits and fail-closed test fixtures
 
@@ -503,7 +503,7 @@ The 1.30 additions, each opened on `P:\`:
 - (through 1.29: `TakeEntityToCargo` / `TakeEntityToCargoEx` / `TakeEntityAsAttachment` / `TakeEntityAsAttachmentEx`). (since 1.30: all four `[Obsolete]` at `P:\scripts\3_game\systems\inventory\inventory.c:1345-1386`. Use `TakeEntityToTargetCargo` `:1077`, `TakeEntityToTargetCargoEx` `:1084`, `TakeEntityAsTargetAttachmentEx` `:1100`, `TakeEntityAsTargetAttachment` `:1142`.)
 - (through 1.29: `World.Is3rdPersonDisabled()` bool). (since 1.30: `[Obsolete]`; `GetThirdPersonViewMode()` returns `ThirdPersonMode` {`DISABLED`,`ENABLED`,`VEHICLES_ONLY`}: `P:\scripts\3_game\global\world.c:177`, `:291-305`.)
 - (through 1.29: `Weather.GetNoiseReductionByWeather()`). (since 1.30: **not deleted**. It is `[Obsolete]` in favour of `GetNoiseReductionByWeatherEx(notnull Object object)` at `P:\scripts\3_game\weather.c:407-408`, itself `[Obsolete]` "Kept for HUD and old mods" because AI damping is native AIParams. Vanilla still calls `GetNoiseReductionByWeatherEx`: `P:\scripts\4_world\static\sensesaievaluate.c:23`.)
-- `vector.Cross(vector v)` is a script method in the scripts unpacked on `P:\` (`P:\scripts\1_core\proto\enconvert.c:239-246`), as it was in 1.30.164014 Exp and 1.30.164078. Whether a later 1.30 stable build removed it is not confirmed on `P:\`, where the method is present. If a mod must compile on every 1.30 build, inline the cross product instead of calling `Cross`.
+- `vector.Cross(vector v)` was a script method in 1.30.164014 Exp and 1.30.164078 (`P:\scripts\1_core\proto\enconvert.c:239-246`). 1.30.164200 stable removed it: comparing the script trees finds it in no script file of that build. `P:\` still shows the method only because its extraction predates 1.30.164200. Inline the cross product instead of calling `Cross`.
 - `array<T>.Slice(int from, int to)` with an inclusive `to` (`P:\scripts\1_core\proto\enscript.c:720-727`).
 - `typename.EnumFlagsToString` / `EnumTools.EnumFlagsToString` (`P:\scripts\1_core\proto\enconvert.c:614`, `:704`).
 - `class DoOnce` (`P:\scripts\3_game\doonce.c:1`); `DayZPlayer.IsFirstRenderFrame()` (`P:\scripts\3_game\dayzplayer.c:1186-1189`); `Entity.DisableSimulation` / `GetIsSimulationDisabled` (`P:\scripts\3_game\entities\entity.c:3-6`).

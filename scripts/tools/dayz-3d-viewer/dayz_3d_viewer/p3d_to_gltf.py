@@ -33,9 +33,13 @@ TARGET_ELEMENT = 34963
 def classify_lod(resolution: float) -> str:
     """Classify a LOD by its resolution value.
 
-    Known gaps (see KNOWN-ISSUES.md): resolutions in [10, 15000) — including
-    ViewPilot at 1100 — are labelled ``shadow``. Proxy triangles are not
-    filtered here.
+    Visual LODs are [0, 1000), split into ``visual_0`` .. ``visual_3`` below
+    10 and ``visual`` above. ShadowVolume is [10000, 20000). The special
+    LODs (geometry at 1e13, then memory at 1e15 to fire geometry at 7e15)
+    match within 5 %, as in ``py3d.classify_lod_resolution``. Anything
+    else, including ViewPilot at 1100 and the 2e13 and 3e13 resolutions
+    (which the engine does not read as Fire or View Geometry), is
+    ``unknown_<resolution>`` (see KNOWN-ISSUES.md).
     """
     if resolution < 0.5:
         return "visual_0"
@@ -45,20 +49,22 @@ def classify_lod(resolution: float) -> str:
         return "visual_2"
     if resolution < 10.0:
         return "visual_3"
-    if resolution < 1.5e4:
-        return "shadow"
-    if abs(resolution - 1.0e13) < 1e11:
-        return "geometry"
-    if abs(resolution - 2.0e13) < 1e11:
-        return "fire_geometry"
-    if abs(resolution - 3.0e13) < 1e11:
-        return "view_geometry"
-    if abs(resolution - 6.0e15) < 1e13:
-        return "view_geometry"
-    if abs(resolution - 7.0e15) < 1e13:
-        return "fire_geometry"
-    if resolution > 1.0e14:
-        return "memory"
+    if resolution < 1.0e3:
+        return "visual"
+    if 1.0e4 <= resolution < 2.0e4:
+        return "shadowvolume"
+    for kind, canon in (
+        ("geometry", 1.0e13),
+        ("memory", 1.0e15),
+        ("landcontact", 2.0e15),
+        ("roadway", 3.0e15),
+        ("paths", 4.0e15),
+        ("hitpoints", 5.0e15),
+        ("view_geometry", 6.0e15),
+        ("fire_geometry", 7.0e15),
+    ):
+        if abs(resolution - canon) <= 0.05 * canon:
+            return kind
     return "unknown_%s" % resolution
 
 
@@ -206,8 +212,7 @@ def p3d_to_glb(
         output_path = os.path.splitext(p3d_path)[0] + ".glb"
     if verbose:
         print("Reading: %s" % p3d_path)
-    with open(p3d_path, "rb") as handle:
-        p3d_file = py3d.P3D(handle)
+    p3d_file = _read_mlod(py3d, p3d_path)
     if verbose:
         print("LODs found: %s" % len(p3d_file.lods))
         for lod in p3d_file.lods:
@@ -459,11 +464,26 @@ def p3d_to_glb(
     return output_path
 
 
+def _read_mlod(py3d, p3d_path: str):
+    """Read an MLOD .p3d, or raise ViewerError with a one-line reason."""
+    try:
+        handle = open(p3d_path, "rb")
+    except OSError as exc:
+        raise ViewerError("Cannot open %s: %s" % (p3d_path, exc.strerror or exc)) from exc
+    with handle:
+        try:
+            return py3d.P3D(handle)
+        except Exception as exc:
+            raise ViewerError(
+                "%s is not an MLOD .p3d (binarized or damaged); debinarize first"
+                % p3d_path
+            ) from exc
+
+
 def p3d_info(p3d_path: str) -> dict:
     """Return LOD anatomy without converting."""
     py3d = require_dayz_py3d()
-    with open(p3d_path, "rb") as handle:
-        p3d_file = py3d.P3D(handle)
+    p3d_file = _read_mlod(py3d, p3d_path)
     lods_info = []
     for lod in p3d_file.lods:
         textures = set()

@@ -77,7 +77,7 @@ for v in low.data.vertices:
 
 On the giant infected build the arms were 28 and 34 degrees narrower than canonical; this opened them onto the bones cleanly.
 
-The angle is not enough: the joint positions must match too (giant infected build, in game, 2026-06-24). The rotation above conforms each limb's direction, but the engine binds against the canonical bone positions (`references/canonical-bind.md`). When the mesh's anatomical joints (elbow, knee, shoulder, wrist) sit at other positions, which a generated mesh always has because its proportions are its own, the limbs overextend and stretch under animation even though scale, orientation and winding are right and the rest pose looks fine. The giant infected build shipped with this unfixed (arms about 0.12 m shorter than the armature: length, not angle) and showed visible arm overextension in game.
+The angle is not enough: the joint positions must match too (giant infected build, in game, 2026-06-25). The rotation above conforms each limb's direction, but the engine binds against the canonical bone positions (`references/canonical-bind.md`). When the mesh's anatomical joints (elbow, knee, shoulder, wrist) sit at other positions, which a generated mesh always has because its proportions are its own, the limbs overextend and stretch under animation even though scale, orientation and winding are right and the rest pose looks fine. The giant infected build shipped with this unfixed (arms about 0.12 m shorter than the armature: length, not angle) and showed visible arm overextension in game.
 
 The fix is a proportion conform: move the mesh's joint regions onto the canonical bone positions, weight-masked like the angle conform, so every bone sits on the anatomy it drives, then bind and weight again. Check it offline with the distance from each bone head to the weighted centroid of its vertices; a large distance means that limb will deform. (This repo ships no script for that check. The position conform had not shipped on the giant infected build when this was written.)
 
@@ -96,7 +96,7 @@ Remove automatic-weight bleed across the midline. This is the "totally deformed 
 - Fix per vertex: keep only the dominant side plus the centre bones (spine, pelvis, neck, head), zero the minority side, normalize again.
 - Verify: zero vertices with both a `left*` and a `right*` weight, and binarize reports no "shared with bone".
 - Giant infected build: 1,847 vertices bled, and the mesh was totally deformed in game.
-- Limit of that fix (giant infected build, 2026-06-24): on weights that are already asymmetric it makes things worse. Keeping the dominant side per vertex reassigned whole regions to the opposite limb and raised the measured stretch to 21 to 34 times. See the envelope weighting note in `references/case-log.md`.
+- Limit of that fix (giant infected build, 2026-06-25): on weights that are already asymmetric it makes things worse. Keeping the dominant side per vertex reassigned whole regions to the opposite limb and raised the measured stretch to 21 to 34 times. See the envelope weighting note in `references/case-log.md`.
 
 ## 5. Deform sanity check (gross motion only, not the deform gate)
 
@@ -131,7 +131,7 @@ Two stages.
 - **Coordinate map `(x, y, z)` to `(x, z, y)`, determinant -1** (Rule 12 of the dayz-model-pipeline skill), applied to every point and normal of every LOD and to the bone and memory points. Corrected 2026-10-01: this step used to prescribe `(x, z, -y)`, determinant +1, as "the inverse of the armature matrix, the exact space of the bind". That derivation dropped a handedness change. What the frames measure:
   - The rig in Blender is a body that is not mirrored: front -Y, anatomical left +X, Z up. Measured offline 2026-10-01 in Blender 5.1.1 with both FBX importers: `LeftArm` head x = +0.16; `LeftToeBase` head 0.135 m in -Y from `LeftFoot`; `Male_body` vertices weighted to `LeftArm` at x = +0.22, toe vertices at y = -0.10.
   - The armature's `matrix_world` is a rotation of +90 degrees about X (same run), and its inverse `(x, z, -y)` returns to the FBX file's own frame: Y up, front +Z, left +X. That frame is right-handed. Read as DayZ numbers, which are left-handed, it is a mirrored body that faces backwards.
-  - The DayZ bind is a body that is not mirrored, in a left-handed frame: front -Z, left +X. A debinarized vanilla male has its `left*` bones on +X, and the worn-clothing frame is -Z front and +X left (`references/worn-clothing-skeleton.md`, verified in game).
+  - The DayZ bind is a body that is not mirrored, in a left-handed frame: front -Z, left +X. The worn-clothing frame is -Z front and +X left (`references/worn-clothing-skeleton.md`, verified in game). Do not take this from the visual LOD of a debinarized vanilla male: the conversion corrupts its positions (`references/canonical-bind.md`, "The vanilla body route"), and whether it keeps the sign of X has not been checked.
   - So the FBX frame differs from DayZ by `z -> -z`, and Blender to DayZ is `(x, z, -y)` followed by `z -> -z`: `(x, z, y)`. It sends front -Y to -Z and keeps left on +X. Every determinant +1 map lands the body mirrored: left and right swapped relative to where it faces.
   - The build history matches (in game): `(x, z, -y)` shipped the giant infected build facing and walking backward; `(-x, z, y)` turned it round but left it mirrored, and the limbs flung back and up until the left and right selections were swapped. That shipped build (`(-x, z, y)`, reversed faces, left and right swap) is the mirror image of the authored mesh.
   - In game on 2026-10-02 the chiral check at the end of this section ran: the `(x, z, y)` build reads its marker correctly and is lit like a vanilla infected; the shipped recipe reads it mirrored.
@@ -186,7 +186,7 @@ Result. The giant infected build was rebuilt three ways from one dump, each with
 | Spiky or pinched vertices in game | Vertices without a weight, or a selection with no weight |
 | Mesh explodes | A selection not in `skeletonBones[]`, or the wrong skeleton name in `model.cfg` |
 | `Bone X doesn't exist` in the RPT | Bone name casing or underscore mismatch |
-| Limbs drift during animations | Mesh not in the canonical bind, or baked-scale drift (accepted for about 1.2 times) |
+| Limbs drift during animations | Mesh not in the canonical bind, or baked-scale drift (only up to about 1.1 times may pass; verify in game, see `references/custom-infected-recipe.md` section 3) |
 | Faces and walks backward, proportions fine | Determinant +1 export `(x, z, -y)` sends the rig front (-Y) to +Z. Export again with `(x, z, y)` (Rule 12), not `(-x, z, y)` |
 | Limbs fling back or up at idle, sane rest pose; an off-centre detail on the wrong side | Mirrored export (any determinant +1 map, for example `(-x, z, y)`). Export again with `(x, z, y)`; a left and right selection swap only relabels the mirror |
 

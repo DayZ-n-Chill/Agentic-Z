@@ -25,7 +25,7 @@ body.labels .w:hover>.lbl{opacity:1;z-index:9}
 .txt>span{width:100%}
 .ph{position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,#2a2f3a 0 6px,#20242d 6px 12px);opacity:.5}
 .badge{position:absolute;top:1px;right:1px;font-size:8px;line-height:10px;padding:0 3px;border-radius:2px;color:#000;pointer-events:none}
-.b-assumed{background:var(--warn)} .b-unknown{background:var(--bad);color:#fff} .b-spacer{background:#3aa0a0;color:#001}
+.b-unknown{background:var(--bad);color:#fff} .b-spacer{background:#3aa0a0;color:#001}
 .b-bind{position:absolute;left:1px;bottom:1px;background:var(--bind);color:#fff;font-size:8px;line-height:10px;padding:0 3px;border-radius:2px;pointer-events:none}
 body.debug .w{outline:1px dashed #ffffff22}
 body.debug .w[data-render="1"]{outline:1px dashed #4a90d966}
@@ -58,7 +58,7 @@ kbd{background:#0c0d10;border:1px solid var(--edge);border-radius:3px;padding:0 
   <div id="side">
     <div class="card"><h3>Hover a widget</h3><div id="info">Move the mouse over the preview.</div></div>
     <div class="card"><h3>Approximation -- trust in-game for</h3>
-      <div class="note">- pixel colors (many set via script <kbd>SetColor</kbd>)<br>- fonts (Metron bitmap atlases; here approximated)<br>- PAA/EDDS textures (shown hatched)<br>- spacer auto-layout (Grid/Wrap/Scroll; shows authored values)<br>- anchors marked <span style="color:var(--warn)">assumed</span> (phase-1)</div>
+      <div class="note">- pixel colors (many set via script <kbd>SetColor</kbd>)<br>- fonts (Metron bitmap atlases; here approximated)<br>- PAA/EDDS textures (shown hatched)<br>- spacer auto-layout (Grid/Wrap/Scroll; shows authored values)<br>- anchors badged <span style="color:var(--bad)">?</span> (unsupported value; placed as left/top)</div>
     </div>
     <div class="card"><h3>Parser diagnostics (<span id="dn">0</span>)</h3><div id="diag"></div></div>
   </div>
@@ -118,8 +118,7 @@ function widgetEl(node){
     if(!bg && cls==='ButtonWidgetClass') el.style.outline='1px solid #ffffff22';
     t.appendChild(span);el.appendChild(t);
   }
-  if(g.status==='assumed'){var ba=document.createElement('div');ba.className='badge b-assumed';ba.textContent='≈';ba.title=(g.notes||[]).join(' | ');el.appendChild(ba);}
-  else if(g.status==='unknown-anchor'){var bu=document.createElement('div');bu.className='badge b-unknown';bu.textContent='?';bu.title=(g.notes||[]).join(' | ');el.appendChild(bu);}
+  if(g.status==='unknown-anchor'){var bu=document.createElement('div');bu.className='badge b-unknown';bu.textContent='?';bu.title=(g.notes||[]).join(' | ');el.appendChild(bu);}
   if(isSpacer){var bs=document.createElement('div');bs.className='badge b-spacer';bs.textContent='⊞';bs.title='Spacer: children auto-laid-out by the engine in-game; preview shows AUTHORED child positions.';el.appendChild(bs);}
   if(node.bindingName){var bb=document.createElement('div');bb.className='b-bind';bb.textContent='→'+node.bindingName;el.appendChild(bb);}
   var lbl=document.createElement('div');lbl.className='lbl';lbl.textContent=cls.replace('WidgetClass','')+(node.name?(' · '+node.name):'');el.appendChild(lbl);

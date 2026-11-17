@@ -14,7 +14,7 @@ This folder fills the gap between those: the recurring patterns themselves (nets
 
 Files in this folder are in one of two states:
 
-- **Checked on `P:\`**, every fact cites the vanilla file and line it was read from: all of `references/`; in `patterns/`, `modded_class.md` (which marks its two native compiler reports as such), `netsync.md`, `persistence.md`, `rpc.md`, `singleton.md` (which marks the `JsonSerializer` behavior it could not read in script), `actions.md`, `json_config_migration.md`, `language_workarounds.md`, `physics_items.md`, `scheduler.md` (which marks its one unverified report as such) and `server_tick_budget.md` (which cites the vanilla calls and marks the third-party techniques as reported); in `integrations/`, `vanilla_plugins.md`, `central_economy.md` and `input_bindings.md`; in `examples/`, `01` to `10`, the three layouts and `layouts.md`.
+- **Checked on `P:\`**, every fact cites the vanilla file and line it was read from: all of `references/`; in `patterns/`, `modded_class.md` (which marks each of its reported claims as such), `netsync.md`, `persistence.md`, `rpc.md`, `singleton.md` (which marks the `JsonSerializer` behavior it could not read in script), `actions.md`, `json_config_migration.md`, `language_workarounds.md`, `physics_items.md`, `scheduler.md` (which marks each of its reported claims as such) and `server_tick_budget.md` (which cites the vanilla calls and marks the third-party techniques as reported); in `integrations/`, `vanilla_plugins.md`, `central_economy.md` and `input_bindings.md`; in `examples/`, `01` to `10`, the three layouts and `layouts.md`.
 - **Checked against the framework's own scripts**, not vanilla: `integrations/community_framework.md` (`P:\Mods\@CF\Addons\scripts.pbo`) and `integrations/dabs_framework.md` (the Dabs scripts PBO).
 
 When you add or change a fact in a checked file, check it on `P:\` (or in the framework's PBO) and cite the line. Never overwrite a checked file with content that was not checked.
@@ -39,11 +39,11 @@ enscript/
 | `rpc.md` | `ScriptRPC`, `RPCSingleParam`, `OnRPC` switch template, client-to-server validation, **ID-collision symptom** |
 | `singleton.md` | Static `s_Instance`, lazy init, `GetInstance()`, `LoadFile`/`SaveFile`, **`ScriptInvoker` shutdown null-guard** |
 | `actions.md` | `ActionBase`, registering in `ActionConstructor`, `CCINonRuined` vs `CCINone`, the condition component table, stopping pickup (`IsTakeable`, `CanPutInCargo`, `CanPutIntoHands`), conditions that read unsynced state |
-| `scheduler.md` | The unverified `CallLater` drift report and the `Timer` alternative, per tick allocation, call categories |
+| `scheduler.md` | The unverified `CallLater` drift report and the `Timer` alternative, per tick allocation, reported traps with scheduled calls |
 | `physics_items.md` | `ThrowPhysically` vs manual `CreateDynamicPhysics`, `SetDynamicPhysicsLifeTime` mandatory call |
 | `json_config_migration.md` | `SCHEMA_VERSION` + forward-migration, `LoadFile` parse-failure handling for admin-edited JSON |
 | `language_workarounds.md` | No ternary, `auto` inference, no lambdas, no exceptions; overloading and `foreach` with an index do work |
-| `server_tick_budget.md` | Keeping periodic server work inside the tick: one manager with a work budget, staggering, backoff, events in place of polling, compile-time side gates, what lowers server script memory. The techniques are third-party mod behaviour (Expansion AI and a power grid mod), marked as reported; the vanilla calls they use are cited |
+| `server_tick_budget.md` | Keeping periodic server work inside the tick: one manager with a work budget, staggering, backoff, events in place of polling, compile-time side gates. The techniques are third-party mod behaviour (Expansion AI and a power grid mod), marked as reported; the vanilla calls they use are cited |
 
 ### integrations/
 
@@ -120,7 +120,7 @@ When debugging, jump to the file that owns the symptom.
 | `GetPlugin(MyPlugin)` returns `null` | `integrations/vanilla_plugins.md` (register it in `PluginManager.Init`) |
 | Items declared in `config.cpp` never spawn | `integrations/central_economy.md` (the CE reads mission XML only) |
 | Long running callback drifts after hours | `patterns/scheduler.md` (unverified `CallLater` report, `Timer` alternative) |
-| Frame-time spikes every N seconds | `patterns/scheduler.md` (per-tick allocation) |
+| Frame-time spikes every N seconds | `patterns/scheduler.md` (reported per-tick allocation cost) |
 | Item appears frozen in air after spawn | `patterns/physics_items.md` (`ThrowPhysically`) |
 | Admin's edited JSON resets / loses fields after mod update | `patterns/json_config_migration.md` (schema migration) |
 | RPC fires "wrong handler" with another mod loaded | `patterns/rpc.md` (ID-collision symptom) |

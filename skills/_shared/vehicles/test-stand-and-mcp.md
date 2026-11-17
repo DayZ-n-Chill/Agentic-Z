@@ -9,7 +9,7 @@ Measured limits of driving, seating and unseating a vehicle from an automated te
 - `ActionGetOutTransport.ActionCondition` needs a vehicle command that is not `IsTransitioning` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetouttransport.c:70-73`) and then `CrewCanGetThrough` and `IsAreaAtDoorFreeDiag` for the crew index (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetouttransport.c:79`); its target condition is `CCTNone` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetouttransport.c:57`).
 - `ActionSwitchLights` requires the player to sit at `VEHICLESEAT_DRIVER` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actionswitchlights.c:34`).
 - A door reads as closed at or below phase 0.5 in `TranslateAnimationPhaseToCarDoorState` (`P:\scripts\4_world\entities\vehicles\carscript.c:2248-2250`), and the door action moves it with `SetAnimationPhase` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actioncardoors.c:91`).
-- The debug spawner creates objects with `ECE_PLACE_ON_SURFACE` among its flags (`P:\scripts\4_world\plugins\pluginbase\plugindeveloper.c:454`).
+- The debug spawner's `SpawnEntityOnGroundPos`, when called without a player, creates a non-AI object such as a vehicle with the flag `ECE_PLACE_ON_SURFACE` (`P:\scripts\4_world\plugins\pluginbase\plugindeveloper.c:498`); in a `DEVELOPER` build a `Boat` gets `ECE_KEEPHEIGHT` instead (`P:\scripts\4_world\plugins\pluginbase\plugindeveloper.c:499-502`).
 
 ## Scripted pilot: UAInput has no injection API
 

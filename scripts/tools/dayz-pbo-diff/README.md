@@ -25,7 +25,7 @@ else and never modifies either PBO.
 | Exit | Meaning |
 |---:|---|
 | `0` | Both PBOs read and the report written, whatever it holds |
-| `1` | An input refused or unreadable, or `--out` already exists; nothing written |
+| `1` | An input refused or unreadable, `--out` already exists, or `--out` cannot be created; nothing written |
 | `2` | Usage error |
 
 stdout carries the same report with every list of 12 or more items replaced by

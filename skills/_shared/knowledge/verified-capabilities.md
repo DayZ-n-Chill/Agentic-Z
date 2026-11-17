@@ -58,10 +58,13 @@ with `LoadImageFile`.
 - **`StaticObj_Wreck_Train_Wagon_*` are static PhysX bodies** —
   `dBodyApplyImpulse` is discarded on them. Viable path: detect collision
   with `OnContact`, delete the static and replace with own dynamic entity.
-- **Vanilla plastic explosive does NOT detonate when ruined** — intentional Bohemia
-  safety feature. Only detonates via Remote Detonation Unit; `Detonate()`
-  is private. Alternative: orchestrate manually (particle + soundset +
-  `AreaDamageManager`) or call `Detonate()` via reflection.
+- **Vanilla plastic explosive does NOT detonate when ruined.** `ExplosivesBase.EEKilled`
+  calls `InitiateExplosion()`, but `Plastic_Explosive.EEKilled` overrides it without
+  calling `super`, so killing the charge never explodes it. It explodes only from
+  `OnActivatedByItem` (the paired remote detonator), which calls `InitiateExplosion()`.
+  `InitiateExplosion()` is `protected`: a mod reaches it from a `modded class
+  Plastic_Explosive` (for example by calling it in its own `EEKilled` override), or
+  orchestrates the blast manually (particle + soundset + `AreaDamageManager`).
 
 ## Gotchas measured in mods
 
@@ -75,8 +78,10 @@ hard rules in `skills/enforce-script-reference/references/hard-rules.md` and the
   subfolders (`Actions`) separately. Pointing to a folder automatically includes
   new files → `config.cpp` does not need to be touched when adding
   a `.c` to that folder.
-- Texture paths in `config.cpp` need **double backslash**
-  (`\\dz\\gear\\…`); with a single one the engine does not resolve.
+- Texture and model paths in `config.cpp` take **single** backslashes
+  (`"dz\gear\camping\data\tent_pristine_co.paa"`). Double backslashes belong in
+  Enforce Script string literals, where `\` is the escape character
+  (`"dz\\gear\\cultivation\\data\\…"` in a `.c` file).
 - Proxy classes: must inherit from `ProxyAttachment` and proxy model
   paths take an initial `\` (`"\LFPowerGrid\data\…"`). `hiddenSelections[]`
   necessary for material swaps by script.
@@ -88,13 +93,13 @@ hard rules in `skills/enforce-script-reference/references/hard-rules.md` and the
 **Enforce Script:**
 - No `do...while`. Standard DayZ pattern:
   `bool keep=true; while(keep){ …; keep=FindNextFile(...); }`.
-- Does not allow expressions split across multiple lines.
+- A call's argument list may be split across lines (vanilla does it); a
+  multi-line expression that fails to compile is usually a missing `)` or `;`
+  at a line end, not the line break itself.
 - If the parent class has a parameterized constructor, **all** children
   must have identical signature → solution: parent without parameterized
   constructor, each child defines its own.
 - `ref` only on class member fields, **never** on locals.
-- `JsonKeyExists` must include the `:` in the pattern (`"key":`) to avoid
-  matching substrings.
 - `Print()` writes to the **script log** (where the `SCRIPT :` appear);
   `PrintToRPT()` writes to the `.rpt`. Confusing them = "nothing appears in the log".
 - To notify the player: `player.MessageStatus()` — not `GetGame().Chat()`
@@ -106,7 +111,8 @@ hard rules in `skills/enforce-script-reference/references/hard-rules.md` and the
   `requiredAddons`.
 
 **Other:**
-- Bohemia feedback tracker T148506: `inventorySlot` string-vs-array when porting classes.
+- `inventorySlot` is written as a string in some configs and as an array in others; check which form
+  the base class uses when porting a class. Not yet checked on `P:\`.
 - Damage rvmat that only changes tint = Stage3 uses proc `color()` instead
   of the vanilla overlay texture (`weapons_damage_wood_mc.paa`, tiling 4×).
 - DayZ 1.29 renamed vanilla SoundSets: `VSS_Vintorez_*` → `VSS_silencer_*`;
@@ -213,3 +219,6 @@ Opened on 2026-11-17. A line here confirms only what it says; the verdicts above
 - `ThrowPhysically` is declared at `P:\scripts\3_game\entities\inventoryitem.c:26`; see `technical-notes.md` for the full pattern.
 - `MessageStatus` is declared at `P:\scripts\4_world\entities\manbase\playerbase.c:6924`.
 - `PrintToRPT` is declared at `P:\scripts\1_core\proto\endebug.c:99`.
+- `config.cpp` paths use single backslashes: `P:\DZ\gear\camping\config.cpp:61` (`"dz\gear\camping\data\tent_pristine_co.paa"`) and `:10162` (`model="\DZ\gear\camping\wooden_case.p3d"`). Script strings double them: `P:\scripts\4_world\entities\gardenbase.c:4`.
+- Plastic explosive: `protected void InitiateExplosion()` is at `P:\scripts\4_world\entities\explosivesbase.c:172` and `ExplosivesBase.EEKilled` calls it at `:72-77`; `Plastic_Explosive.EEKilled` skips `super` at `P:\scripts\4_world\entities\explosivesbase\plastic_explosive.c:27-32`; `OnActivatedByItem` calls `InitiateExplosion()` at `:236-258`. No `Detonate` method exists in `P:\scripts`.
+- A call split across lines: `P:\scripts\4_world\entities\firearms\weaponfsm.c:545-546`.

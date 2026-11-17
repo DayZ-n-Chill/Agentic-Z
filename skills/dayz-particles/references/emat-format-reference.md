@@ -23,10 +23,9 @@ These are the two material classes particles use. Vanilla `.emat` files outside 
 Used when particles need additive blending, transparency sorting, or emissive glow.
 Supports sprite sheet animation (TileU/TileV).
 
-### `ParticleSprite` — Simpler (steam, flares, opaque billboards)
+### `ParticleSprite` — Billboards (steam, flares, flames, dust)
 
-Used for simpler particles that just need diffuse+ambient lighting.
-No BlendMode property available.
+Takes the same properties as `Particle`, including `BlendMode`, `Sort`, `TileU`, `TileV`, `CameraBlendFar` and `BidirLightScale`. For example, `P:\graphics\particles\materials\fire\fire_flame_01.emat` is a `ParticleSprite` with `BlendMode Additive_AlphaModulate` and `TileU 3` / `TileV 3`, and `P:\graphics\particles\materials\smoke\smoke_dust_01_w.emat` is a `ParticleSprite` with `Sort translucent` and `BlendMode Additive_AlphaModulate`.
 
 ### Postprocess `.emat` files are not particle materials
 
@@ -35,7 +34,7 @@ These two shaders cover the `.emat` files a `.ptc` may name. Weather effects als
 - The sandstorm material opens with the shader `SnowEffect` (`P:\graphics\materials\postprocess\sandstorm.emat:1`) and sets its tint with `ParticlesColor 0.69 0.49 0.29 1` (`P:\graphics\materials\postprocess\sandstorm.emat:29`).
 - The Nasdara rain material opens with the shader `RainEffect` (`P:\graphics\materials\postprocess\rainnasdara.emat:1`).
 
-Do not put either file on the `Material` line of a `.ptc`. Both arrived with 1.30; see `dayz-1-30-particles.md`.
+Do not put either file on the `Material` line of a `.ptc`. Both are present on `P:\` in 1.30; that they are new in 1.30 is not yet checked on `P:\`, which holds only 1.30. See `dayz-1-30-particles.md`.
 
 ---
 
@@ -48,13 +47,13 @@ Do not put either file on the `Material` line of a `.ptc`. Both arrived with 1.3
 | `Diffuse` | Both | RGBA float | Diffuse lighting response |
 | `Ambient` | Both | RGBA float | Ambient lighting response |
 | `Emissive` | Both | RGBA float | Self-illumination / glow intensity |
-| `BlendMode` | Particle only | string/int | Blending: `Additive_AlphaModulate`, `2`, or omit |
+| `BlendMode` | Both | string/int | Blending: `Additive_AlphaModulate`, `2`, or omit |
 | `Sort` | Both | string/int | Render sorting: `translucent`, `overlay`, `0` |
 | `Softness` | Both | float | Soft-particle edge blending (0=hard, 2=very soft) |
-| `TileU` | Particle only | int | Sprite sheet columns (for animated textures) |
-| `TileV` | Particle only | int | Sprite sheet rows |
-| `CameraBlendFar` | Particle only | float | Distance fade threshold |
-| `BidirLightScale` | Particle only | float | Bidirectional light scaling (0=disable) |
+| `TileU` | Both | int | Sprite sheet columns (for animated textures) |
+| `TileV` | Both | int | Sprite sheet rows |
+| `CameraBlendFar` | Both | float | Distance fade threshold |
+| `BidirLightScale` | Both | float | Bidirectional light scaling (0=disable) |
 
 ---
 

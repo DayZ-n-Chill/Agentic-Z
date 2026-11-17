@@ -61,7 +61,7 @@ VertexShaderID="Super";
 More on two of these keys:
 
 - A light that switches on and off is two materials that differ in the last number of `emmisive[]`: the sedan's lit lights have `emmisive[]={1,1,1,120}` (`P:\DZ\vehicles\wheeled\sedan_02\data\sedan_02_lights_e.rvmat:4`) and the unlit ones `emmisive[]={1,1,1,0}` (`P:\DZ\vehicles\wheeled\sedan_02\data\sedan_02_lights.rvmat:4`). The vehicle config names the pair.
-- Of the Super materials under `P:\DZ`, 154 set `renderFlags[]` to `"nozwrite"` alone and 25 to `"addblend"` with `"nozwrite"`. A decal with alpha that lies on paint uses it, as the offroad's stickers do (`P:\DZ\vehicles\wheeled\offroad_02\data\offroad_02_decals.rvmat:7-12`). A window does not need it: `P:\DZ\vehicles\wheeled\data\auta_skla.rvmat` has no `renderFlags[]`.
+- Of all the Super materials under `P:\DZ`, damage and destruct variants included, 154 set `renderFlags[]` to `"nozwrite"` alone and 25 to `"addblend"` with `"nozwrite"`. A decal with alpha that lies on paint uses it, as the offroad's stickers do (`P:\DZ\vehicles\wheeled\offroad_02\data\offroad_02_decals.rvmat:7-12`). A window does not need it: `P:\DZ\vehicles\wheeled\data\auta_skla.rvmat` has no `renderFlags[]`.
 
 ## Super stages
 
@@ -94,9 +94,9 @@ class Stage1
 | `Stage7` | Environment (reflection) map | `dz\data\data\env_land_co.paa`, or `#(argb,8,8,3)color(0,0,0,1,CO)` for none |
 | `StageTI` | Thermal texture `_ti_ca` (optional) | leave the stage out |
 
-Stage6 is written two ways in vanilla Super materials: with `uvSource="none"` and no `uvTransform` in 2,091 of them (`P:\DZ\characters\tops\data\bomberjacket.rvmat:72`), and with `uvSource="tex"` and a `uvTransform` in 3,601 (`P:\DZ\vehicles\parts\data\aircraft_battery.rvmat:72`). Both load; copy the form of the vanilla material you started from.
+Stage6 is written two ways in vanilla Super materials (counted over all of them, damage and destruct variants included): with `uvSource="none"` and no `uvTransform` in 2,091 of them (`P:\DZ\characters\tops\data\bomberjacket.rvmat:72`), and with `uvSource="tex"` and a `uvTransform` in 3,601 (`P:\DZ\vehicles\parts\data\aircraft_battery.rvmat:72`). Both load; copy the form of the vanilla material you started from.
 
-`dir[]` has no single identity value. Vanilla writes `dir[]={0,0,0}` 66,451 times, as in the block above (`P:\DZ\vehicles\parts\data\aircraft_battery.rvmat:17`), and `dir[]={0,0,1}` 46,672 times (`P:\DZ\vehicles\wheeled\van_01\data\van_01_wheel.rvmat:17`), both under Super. A review that checks whether a texture samples one to one looks at `aside[]`, `up[]` and `pos[]`, where `{1,0,0}`, `{0,1,0}` and `{0,0,0}` are the identity and other values are tiling factors.
+`dir[]` has no single identity value. Across all vanilla Super materials, damage and destruct variants included, vanilla writes `dir[]={0,0,0}` 29,166 times, as in the block above (`P:\DZ\vehicles\parts\data\aircraft_battery.rvmat:17`), and `dir[]={0,0,1}` 8,889 times (`P:\DZ\vehicles\wheeled\van_01\data\van_01_wheel.rvmat:17`). A review that checks whether a texture samples one to one looks at `aside[]`, `up[]` and `pos[]`, where `{1,0,0}`, `{0,1,0}` and `{0,0,0}` are the identity and other values are tiling factors.
 
 Keep all seven numbered stages, even when most hold placeholders. In the clothing, weapon, tool and glasses folders every vanilla Super material has Stage1 to Stage7. A `Stage0` with the color texture appears only on some glass, glowing and vehicle parts (for example `riothelmet_glass.rvmat` and `P:\DZ\gear\tools\data\flashlight_glass.rvmat`); ordinary gear does not need it.
 

@@ -30,10 +30,11 @@ This is the historical, per-session record of sessions s14 to s23 across LFQuad,
    indexed by `vertex.normal_index`, so reusing the index would NOT flip it) and add the twin to the same
    selections. Additive ⇒ it cannot invert the car; identify roof/floor by region + geometric normal, but the
    driver-seat view is the gate. (MercedesAMGLF s14, applied; in-game pending.)
-   (c) **Debug-spawn fluid gauges read RED unless you fill ALL four.** `OnDebugSpawn` must also
-   `Fill(CarFluid.OIL,…)` + `Fill(CarFluid.BRAKE,…)`, not just FUEL/COOLANT, or the dash oil/brake needles spawn
-   red-empty and the car looks broken (enum order FUEL/OIL/BRAKE/COOLANT, `P:\scripts\3_game\vehicles\transport.c:52-57`, the `ETransportFluid` that `CarFluid` aliases on 1.30; capacities are
-   engine-default, no config field needed).
+   (c) **Debug-spawn fluid gauges read RED when a fluid is left empty.** An empty reservoir puts its dash
+   needle at red-empty and the car looks broken. Which fluids the vanilla debug spawn fills, and the `Fill`
+   call to add, are in `fluids-and-engine.md`, section "Test kits and spawn fuel". The capacities are
+   inherited from `CarScript`'s config (`fuelCapacity`, `brakeFluidCapacity`, `oilCapacity`,
+   `coolantCapacity`, `P:\DZ\vehicles\wheeled\config.cpp:243-246`), so a car that inherits it needs no new key.
 
    (d) **The see-through raycast winding oracle is a useful HEADLESS hint, but its RAW output is ~94% false
    positives — filter by body selection or it lies.** Casting backface-cull rays from many exterior directions
@@ -41,7 +42,7 @@ This is the historical, per-session record of sessions s14 to s23 across LFQuad,
    pool-of-normals-independent (unlike the #7 normal-vs-normal tautology), so it catches inverted body faces a
    render might miss — and headlessly. BUT volumetric/concave geometry — `suspension`, `trim`, `interior`,
    undercarriage — is legitimately "seen from inside" and floods the count: on the deployed SUB_BRZ, **9152 of
-   9736 single-sided faces (94%) were `suspension`/`trim`; only 584 were body (`color`/`glass`)**. Three rules
+   9736 single-sided faces (94%) were `suspension`/`trim`; only 584 were body (`color`/`glass`)**. Four rules
    make it actionable: (1) **filter by selection** — keep body selections (`color`/`glass`), exclude
    `suspension`/`trim`/`interior`; map face→selection via `(src,fidx)` over `lods[0]` (the visual LOD — verified
    the same LOD the oracle indexes `fidx` on). (2) **full raycast params** — reducing them LIES (`60/40/48`→3127
@@ -104,7 +105,7 @@ This is the historical, per-session record of sessions s14 to s23 across LFQuad,
 
    (h) [FIX SUPERSEDED by (j), s20 2026-07-02: the detector below (welded-position antiparallel stored
    normals) remains valid, but do NOT heal toward the authored/deployed orientation — the deployed exterior
-   at 0.5% stored·cross>0 is the anomaly (prime B1 candidate); stored normals = smooth(+cross) of the FINAL
+   at 0.5% stored·cross>0 is the anomaly (the prime candidate for the bright triangles described below); stored normals = smooth(+cross) of the FINAL
    winding, and source-inconsistent components are repaired by MAJORITY flood-fill per connected component,
    never the area criterion (it inverted the BRZ rear glass).]
    **Bright/reflective TRIANGLES scattered on imported car PAINT (they catch sky/specular, distinct from the body
@@ -172,8 +173,8 @@ This is the historical, per-session record of sessions s14 to s23 across LFQuad,
      faces the cabin): do NOT delete them as "z-fight" — with correct orientation there is none.
    This entry supersedes the Phase 5 "WINDING" section of `rip-import.md`, pending that in-game gate.
 
-   **s21 STATUS (2026-07-02): the rule is now TOOLING with offline gates GREEN — in-game Gd still pending.**
-   **UPDATE 2026-07-06: the in-game Gd gate has since run — s23 cycle 1 was deployed 2026-07-03 and judged
+   **s21 STATUS (2026-07-02): the rule is now TOOLING with offline gates GREEN — the in-game render check still pending.**
+   **UPDATE 2026-07-06: the in-game render check has since run — s23 cycle 1 was deployed 2026-07-03 and judged
    in game 2026-07-05; the issues that round found are fixed offline and wait for one joint deploy.**
    Car #N starts from `rip_p2_build_v2.py` (+ `rip_winding_core.py`,
    `rip_p2_interior.py`) and the `gates_v2.py` step gate — NEVER from rip_p2_shellproxy v1
@@ -181,10 +182,11 @@ This is the historical, per-session record of sessions s14 to s23 across LFQuad,
    importable; copy constants instead). Measured on the BRZ:
    - The majority repair flips ENTIRE minority subregions, not just the mixed-edge seam faces: a glass
      piece can flip 24-39% of its own faces while the car-wide total stays ~0.5% (BRZ: 2148/440911 =
-     0.49%). Per-piece Ga warnings >1% are the EXPECTED census of source-inconsistent pieces, not a
+     0.49%). Per-piece warnings from the step gate's flip-share check (pieces with >1% of faces flipped) are the EXPECTED census of source-inconsistent pieces, not a
      builder failure — do not panic-revert per piece.
-   - Face-level validation pattern: build the full-detail FINAL vs VERBATIM (R2/R3 off) pair from the
-     same npz and Gb+ them — coverage ~100%, opposite == the repair count EXACTLY. A doctrine-scale
+   - Face-level validation pattern: build the full-detail FINAL vs VERBATIM (the winding repair passes
+     switched off, the majority repair among them) pair from the same npz and compare them face by face (match each
+     face to its counterpart, count matched faces and faces with opposite winding) — coverage ~100%, opposite == the repair count EXACTLY. A doctrine-scale
      regression (any orient_authored-class pass) reads ~90-97% opposite (measured 97.23% vs the v1
      shell); repair-scale reads ~0.5%. Compare at WHOLE-car granularity, not shell-only (repairs
      concentrate in lights/glass: a shell-only diff reads 1-3% and false-fails the band).
@@ -204,7 +206,7 @@ This is the historical, per-session record of sessions s14 to s23 across LFQuad,
    orientation). Process rule: any policy that changes a face's view role must pair the re-type
    with an orientation decision — DOUBLE-SIDE (anti-parallel twin, same per-vertex UV = reversed
    per-corner UV rows) when both sides are seen (a simple flip covered the outside equally in
-   simulation but de-renders the rim from the cabin). Emit twins AFTER the R3 majority repair
+   simulation but de-renders the rim from the cabin). Emit twins AFTER the majority flood-fill repair of (j)
    (pre-repair they make every band edge non-manifold and corrupt the flood-fill graph). Gate
    offline BEFORE burning the in-game cycle: orientation census dot(cross, outward) + occlusion
    raycast — the `occ01`/`occ02` scripts (post-fix use the PAIR-aware census
@@ -332,7 +334,9 @@ spits false positives on hollow hulls and L-shapes. But the correct reading is n
 "ignore those findings", it is also **"their absence proves nothing"**.
 
 Verification that does discriminate, in order of cost:
-1. Compare vertex order of a face against debinarized vanilla equivalent.
+1. Compare vertex order of a face against debinarized vanilla equivalent. The debinarizer
+   inverts winding (ODOL to MLOD, see `vehicle-structural-parity.md`), so read the
+   reference's sign reversed: a face that matches the debinarized order is the inverted one.
 2. `cross(e1,e2) . declared_normal` per face -- both vectors in SAME space, so
    left-handed (DayZ) vs right-handed (Three.js) confusion disappears. Measured over 15 vanilla
    LODs: 1274/1274 faces = 100.0000%, versus a `pct_outward` swinging between 0% and
@@ -345,7 +349,7 @@ How to read each py3d winding finding is in
 `skills/dayz-p3d-audit/references/winding-absolute-check.md`.
 
    - **Winding ratios do not predict render (LFHeli OH-1 2026-07-19).** Neither the interior edge-pair (`winding_consistency.py`, `#10(f)`) nor the ODOL dot-neg cross-vs-stored-normals ratio vs vanilla predicts the render. Real case: edge-pair ≤0.0025%, ODOL 98-100% dot-neg ≈ civiliansedan 96% → methodical PASS, and the model rendered INVERTED (stored normals coherent with the winding: both inverted vs the engine — the ratio measures internal coherence, not the absolute sign the engine renders).
-   - **Cheap definitive discriminant = all-flipped A/B in-game.** Reverse vertex order of ALL visual faces (~1 line in the assembler, or a short py3d script), binarize, A/B in-game with the user's eye (~40 min). EXCLUDE proxy triangles from the flip: their winding encodes the proxy frame (P′). Before the A/B, census the ODOL of BOTH variants: if they come out equal, the A/B is null (anti-nullity gate).
+   - **Cheap definitive discriminant = all-flipped A/B in-game.** Reverse vertex order of ALL visual faces (~1 line in the assembler, or a short py3d script), binarize, A/B in-game with the user's eye (~40 min). EXCLUDE proxy triangles from the flip: their winding encodes the proxy's orientation frame. Before the A/B, census the ODOL of BOTH variants: if they come out equal, the A/B is null (anti-nullity gate).
    - **Binarize PRESERVES source winding.** Same reader, both variants' ODOL dot-neg census: 99.1% → 0.95%. Do not trust "binarize already normalises to the convention": it normalises nothing. Distinct from the debinarizer ODOL→MLOD inversion (`vehicle-structural-parity.md`). When pinning the flip in an assembler: recalibrate its winding gates (the expected fraction inverts) and exclude dots ≈0 from the census (merged symmetric normals give a null dot with no information; on OH-1 they were ~17% of the shell and sank the fraction). OH-1 assembler already ships reversed visual winding on purpose (`FLIP_VISUAL_WINDING = True`): `rip-geometry-and-winding.md`. See also `skills/rip-vehicle-import/SKILL.md` and `skills/dayz-p3d-audit/references/winding-diagnostics.md`.
 
 

@@ -118,6 +118,33 @@ def test_make_server_tree_links_steam_and_keeps_storage_in_the_tree(tmp_path: Pa
     assert (tree / "profiles").is_dir()
 
 
+def test_make_server_tree_finds_the_install_when_scripts_are_not_executable(tmp_path: Path) -> None:
+    steam = fake_steam(tmp_path)
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    for name in ("make-server-tree.sh", "find-dayzserver.sh"):
+        shutil.copyfile(SCRIPTS / name, scripts / name)
+        (scripts / name).chmod(0o644)
+    tree = tmp_path / "tree"
+    done = subprocess.run(
+        ["sh", str(scripts / "make-server-tree.sh"), str(tree)],
+        env=isolated_env(tmp_path, steam), capture_output=True, text=True, timeout=60, check=False,
+    )
+    assert done.returncode == 0, done.stderr
+    assert (tree / "DayZServer").is_symlink()
+
+
+def test_make_server_tree_with_no_mission_creates_no_star_directory(tmp_path: Path) -> None:
+    steam = fake_steam(tmp_path)
+    install = steam / "steamapps" / "common" / "DayZServer"
+    shutil.rmtree(install / "mpmissions" / "dayzOffline.chernarusplus")
+    tree = tmp_path / "tree"
+    done = run("make-server-tree.sh", str(tree), str(install), env=isolated_env(tmp_path, steam))
+    assert done.returncode == 0, done.stderr
+    assert (tree / "mpmissions").is_dir()
+    assert list((tree / "mpmissions").iterdir()) == []
+
+
 def test_make_server_tree_refuses_a_tree_inside_the_install(tmp_path: Path) -> None:
     steam = fake_steam(tmp_path)
     install = steam / "steamapps" / "common" / "DayZServer"

@@ -55,7 +55,7 @@ The action classes are in `P:\scripts\4_world\classes\useractionscomponent\actio
 
 Changes in 1.30:
 
-- The attach action's condition requires `weapon.TestAttachMagazine(weapon.GetCurrentMuzzle(), mag, false, true)` (`P:\scripts\4_world\classes\useractionscomponent\actions\weapons\firearmactionattachmagazine.c:256`). A mod that overrides `TestAttachMagazine` and gets this case wrong stops the reload from starting.
+- The quick attach action used for quick reload, `FirearmActionAttachMagazineQuick` (`P:\scripts\4_world\classes\useractionscomponent\actions\weapons\firearmactionattachmagazine.c:225`), requires `weapon.TestAttachMagazine(weapon.GetCurrentMuzzle(), mag, false, true)` in its condition (`:256`). A mod that overrides `TestAttachMagazine` and gets this case wrong stops the quick reload from starting. The plain `FirearmActionAttachMagazine` condition checks `WeaponManager.CanAttachMagazine` or `CanSwapMagazine` instead (`:26-35`).
 - `FirearmActionDetachMagazine` extends `ActionSequentialBase` (`P:\scripts\4_world\classes\useractionscomponent\actions\weapons\firearmactiondetachmagazine.c:151`) and can be performed from the inventory (`:262-265`).
 - `OpenBolt_Base.SetActions()` removes the load bullet actions and adds `FirearmActionDetachMagazine` (`P:\scripts\4_world\entities\firearms\openbolt_base.c:382-389`), so an open bolt gun needs no workaround to drop its magazine.
 

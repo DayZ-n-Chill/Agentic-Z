@@ -353,7 +353,7 @@ Each absence was checked by search across `P:\scripts`.
 ```c
 PhysicsGeomDef geoms[] = {PhysicsGeomDef("", dGeomCreateSphere(0.5), "material/default",
     PhxInteractionLayers.DYNAMICITEM)};
-dBodyCreateDynamicEx(this, GetCenterOfMassOffset(), 80.0, geoms);
+dBodyCreateDynamicEx(this, vector.Zero, 80.0, geoms);              // centre of mass offset from the pivot (P:\scripts\2_gamelib\entities\scriptmodel.c:40-44 passes the bounds centre)
 dBodySetInteractionLayer(this, PhxInteractionLayers.DYNAMICITEM);  // collides as a dynamic item
 dBodyActive(this, ActiveState.ALWAYS_ACTIVE);                      // never sleeps
 dBodySetDamping(this, 0.05, 0.2);

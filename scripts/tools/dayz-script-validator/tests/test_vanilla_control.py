@@ -300,5 +300,38 @@ class TestUnexplainedEntries(unittest.TestCase):
         self.assertIn("3_game/b.c", blob)
 
 
+class TestJsonOutputIsOneDocument(unittest.TestCase):
+    def test_skip_with_json_prints_only_json(self):
+        with redirect_stdout(io.StringIO()) as captured:
+            code = vanilla_control.emit_skip("no vanilla tree", True)
+        report = json.loads(captured.getvalue())
+        self.assertEqual(2, code)
+        self.assertEqual("SKIP", report["status"])
+        self.assertEqual("no vanilla tree", report["reason"])
+
+    def test_skip_without_json_prints_the_text_line(self):
+        with redirect_stdout(io.StringIO()) as captured:
+            vanilla_control.emit_skip("no vanilla tree", False)
+        self.assertEqual("SKIP - no vanilla tree\n", captured.getvalue())
+
+    def test_update_with_json_prints_only_json(self):
+        with redirect_stdout(io.StringIO()) as captured:
+            code = vanilla_control.emit_update(
+                pathlib.Path("baseline.json"),
+                None,
+                True,
+                [("ES-BAR", "3_game/b.c")],
+                True,
+            )
+        report = json.loads(captured.getvalue())
+        self.assertEqual(0, code)
+        self.assertEqual("UPDATED", report["status"])
+        self.assertTrue(report["created"])
+        self.assertEqual(
+            [{"file": "3_game/b.c", "rule_id": "ES-BAR"}],
+            report["unexplained_entries"],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

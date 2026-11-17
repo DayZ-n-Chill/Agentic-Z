@@ -9,7 +9,8 @@ other than a 21-byte trailer are refused, never skipped.
 Read-only: the one file written is the new --out report.
 
 Exit 0: both PBOs read and the report written, whatever they contain.
-Exit 1: an input refused or unreadable, or --out already exists; nothing written.
+Exit 1: an input refused or unreadable, --out already exists, or --out cannot be
+created; nothing written.
 Exit 2: usage error.
 """
 

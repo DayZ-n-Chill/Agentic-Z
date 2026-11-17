@@ -17,9 +17,11 @@ reason you care about.** A clean result from any of them is not evidence.
 
 ### `save(verify=True)` does not verify geometry
 
-`_verify_against` compares LOD counts, point/face counts, selection names and
-total mass. It does **not** compare coordinates, UVs, winding, indices, normals,
-flags, materials or textures.
+`_verify_against` compares the LOD count and, per LOD, the point, normal and
+face counts, the selection names and each selection's point and face counts, the
+presence and size of `#Selected#`, the properties, the UV set ids and the mass.
+It does **not** compare coordinates, UV values, winding, indices, normal
+values, flags, materials or textures.
 
 Reproduced: two models identical except for one point at `(0,0,0)` vs
 `(99,99,99)` — verify passes. It also accepts out-of-range point indices.

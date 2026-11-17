@@ -5,7 +5,7 @@
 # ranges (2300-2309, 27015-27017), and is at least 10 away from the others, because the server
 # also uses ports next to the game port.
 #
-# Usage: free-ports.sh [N]      e.g.  set -- $(free-ports.sh 3); GAME=$1 QUERY=$2 RCON=$3
+# Usage: sh free-ports.sh [N]   e.g.  set -- $(sh free-ports.sh 3); GAME=$1 QUERY=$2 RCON=$3
 set -eu
 exec python3 - "${1:-3}" <<'PY'
 import random, socket, sys

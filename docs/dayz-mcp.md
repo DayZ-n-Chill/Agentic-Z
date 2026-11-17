@@ -6,7 +6,7 @@ It is not part of this repo and nothing here starts it. DayZ-MCP is a third-part
 
 ## What it offers
 
-75 tools, plus `exec_enforce` when an allowlist is configured. `exec_enforce` is an escape hatch: off by default, behind an exact-match allowlist. The tools group into:
+The exact tool count depends on the installed version; its tool list is the authority. `exec_enforce` is an escape hatch: off by default, behind an exact-match allowlist. The bridge protocol note lists the tools by group:
 
 - a session lease, so two agents cannot fight over one game
 - queries on player state
@@ -14,12 +14,6 @@ It is not part of this repo and nothing here starts it. DayZ-MCP is a third-part
 - scene reads: raycast, surface query, object inspect, telemetry
 - camera and capture
 - vehicles: enter, engine, control, telemetry, trace
-- weapons
-- actions and input
-- UI
-- knowledge
-- playbooks
-- the pipeline inbox
 - lifecycle: `dayz_test_run` builds a mod, starts a diag server and client with it loaded, and waits for readiness; `dayz_test_stop` ends the run
 
 The invariants that keep it safe: server-authoritative, one FIFO lease, fail-closed ingress, controls held by a deadman.
@@ -29,7 +23,7 @@ The invariants that keep it safe: server-authoritative, one FIFO lease, fail-clo
 The split is not by tool group, it is by peer.
 
 - `vehicle_enter` seats a player on the server. Only `vehicle_get_in_client`, which makes the client take ownership, lets the agent actually drive.
-- `SetThrottle` sets a future input value (`P:\scripts\3_game\vehicles\car.c:190-191`), and `CarScript.OnInput` (`P:\scripts\4_world\entities\vehicles\carscript.c:1041`) then overwrites it. Calling `SetThrottle` alone never moves a car.
+- `SetThrottle` sets a future input value (`P:\scripts\3_game\vehicles\car.c:190-191`), and the engine's input simulation step replaces it. Set it inside an `OnInput` override after `super.OnInput(dt)`, which runs after every input simulation step and is where setters belong (`P:\scripts\3_game\vehicles\transport.c:346-349`). Calling `SetThrottle` from anywhere else never moves a car.
 - `DEVELOPER` is not defined in DayZDiag; `DIAG_DEVELOPER` is. Vanilla guards its diag code with `#ifdef DIAG_DEVELOPER` (`P:\scripts\3_game\global\game.c:22`).
 - Freecam freezes the simulation that is being measured.
 
@@ -61,7 +55,7 @@ The installer creates `tools\.venv-mcp` inside the clone and registers the serve
 - Keep an example of this wiring under a name other than `.mcp.json` until the bridge is installed. Agents auto-start the servers declared in `.mcp.json`, and a failed launch on every session is worse than no config.
 - `MAX_MCP_OUTPUT_TOKENS` raises the per-tool output cap so screenshots come back at a usable resolution. At the 25k default a frame lands around 580 px wide.
 
-The skill that uses the bridge is `dayz-mcp-verify`. Its acceptance ladder for a drivable vehicle is spawn, render, get in, drive, wheel direction. Player UI, door interaction, inventory use and firing stay manual.
+Two skills use the bridge: `dayz-mcp-verify`, and the managed runs in `dayz-test-ingame`, which start and stop the game with `dayz_test_run` and `dayz_test_stop`. The acceptance ladder of `dayz-mcp-verify` for a drivable vehicle is spawn, render, get in, drive, wheel direction. It can also open and close doors with `door_index` and open and click a mod's UI. Free player input (shooting, reloading, interactive inventory, vanilla menus), holding a door at a static pose, and continuous actions stay manual.
 
 ## What it is not
 

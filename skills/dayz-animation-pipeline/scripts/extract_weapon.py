@@ -1,6 +1,7 @@
 """Extract a weapon's first visual LOD and its memory points to weapon.json.
 
     python extract_weapon.py <weapon.p3d>
+    python extract_weapon.py --help
 
 The .p3d must be MLOD (not binarized) and in its final model space. The path
 comes from the first argument, else from DAYZ_ANIM_WEAPON_P3D. Needs the DayZ
@@ -8,7 +9,11 @@ fork of py3d (scripts/tools/py3d/, py3d.IS_DAYZ_FORK true): the py3d on PyPI is
 an unrelated library. Writes into the scratch folder (DAYZ_ANIM_SCRATCH,
 default <tempdir>/dayz-anim-pipeline), where build_viewer.py reads it.
 """
-import json, math, os, sys, tempfile
+import sys
+if any(a in ("-h", "--help") for a in sys.argv[1:]):
+    print(__doc__)
+    raise SystemExit(0)
+import json, math, os, tempfile
 import py3d
 if not getattr(py3d, "IS_DAYZ_FORK", False):
     raise SystemExit("extract_weapon: %s is not the DayZ fork of py3d; install the one in scripts/tools/py3d/ (install_py3d.py)" % py3d.__file__)

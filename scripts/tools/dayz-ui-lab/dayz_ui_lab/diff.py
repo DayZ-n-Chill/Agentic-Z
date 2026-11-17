@@ -824,7 +824,12 @@ def main(argv: list[str] | None = None) -> int:
             if arguments.expected is not None
             else None
         )
-        report = build_report(observed, expected, arguments.scenario)
+        # A --scenario typed on the command line is relative to the working
+        # directory, like --observed, --expected and --report.
+        scenario = (
+            arguments.scenario.resolve() if arguments.scenario is not None else None
+        )
+        report = build_report(observed, expected, scenario)
         _write_report(arguments.report, report)
         _print_report(report)
         return 0 if report["verdict"] == "PASS" else 1

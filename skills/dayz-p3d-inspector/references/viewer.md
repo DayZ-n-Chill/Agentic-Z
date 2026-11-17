@@ -2,7 +2,7 @@
 
 What the HTML page written by `p3d_inspector_viewer.py` shows, how the user works in it, and the design choices that must not be undone when the script is changed.
 
-Tool behaviour, not game facts. The point names it colours are the vanilla ones in `_shared/models/memory-points.md`, for example `ce_center`, which vanilla script reads at `P:\scripts\3_game\entities\object.c:1363`.
+Tool behaviour, not game facts. Of the point names it colours, only `ce_center`, `box_placing_min`, `box_placing_max` and the `_axis` names are vanilla (`_shared/models/memory-points.md`); vanilla script reads `ce_center` at `P:\scripts\3_game\entities\object.c:1363`. `pos center`, `actionPos`, `port_*` and `cable_*` are mod conventions.
 
 ## Layers
 
@@ -30,8 +30,8 @@ Each layer has a toggle in the toolbar. The seven wireframe LOD layers start off
 
 | Category | Colour | Points |
 |---|---|---|
-| Center | cyan | `pos center`, `ce_center` |
-| Interaction | red | `actionPos` and other action points |
+| Center | cyan | `ce_center` (vanilla), `pos center` (a mod convention, not vanilla) |
+| Interaction | red | `actionPos` (a mod convention, not vanilla) and other action points |
 | Axis | purple | the two end points of an animation axis |
 | Placing | orange | `box_placing_min`, `box_placing_max` |
 | Port | deep orange | `port_*`, `cable_*` (electrical port points of power grid mods; third-party mod names, not vanilla) |

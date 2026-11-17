@@ -29,8 +29,8 @@ CASE_QUESTIONS = {
     "api-enforce": ("dayz-script-specialist", ["api-enforce"]),
     "api-index-liveness": ("dayz-script-specialist", ["api-index-liveness"]),
     "stardz-negatives": ("dayz-script-specialist", [
-        "stardz-negatives-autoptr", "stardz-negatives-overload", "stardz-negatives-managed",
-        "stardz-negatives-jsonloadfile", "stardz-negatives-ondrop", "stardz-negatives-dabs"]),
+        "enforce-negatives-autoptr", "enforce-negatives-overload", "enforce-negatives-managed",
+        "enforce-negatives-jsonloadfile", "enforce-negatives-ondrop", "enforce-negatives-dabs"]),
     "persistence": ("dayz-persistence-specialist", ["persistence"]),
     "persistence-deprecated-api": ("dayz-persistence-specialist", ["persistence-deprecated-api"]),
     "persistence-migration-rollback": ("dayz-persistence-specialist", ["persistence-migration-rollback"]),
@@ -209,13 +209,17 @@ def test_case_has_its_questions(case_id):
         assert q.get("verified") and q.get("must_include")
 
 
+# The day the case questions were added to evals/questions/; no run before it asked them.
+CASE_QUESTIONS_ADDED = "2026-11-17"
+
+
 def test_unrun_case_questions_are_not_claimed_as_passed_without_a_run():
-    """The baseline may list a case question as passed only after a real run has stamped a newer date."""
+    """The baseline may list a case question as passed only from a run made on or after the day it was added."""
     baseline = _load(EVALS / "baseline.json")
     for agent, ids in CASE_QUESTIONS.values():
         entry = baseline[agent]
         claimed = set(entry["passed"]) & set(ids)
-        assert not claimed or entry["recorded"] > "2026-11-17", f"{agent}: {sorted(claimed)}"
+        assert not claimed or entry["recorded"] >= CASE_QUESTIONS_ADDED, f"{agent}: {sorted(claimed)}"
 
 
 def test_eval_case_files_are_english_ascii_text():

@@ -27,7 +27,7 @@ Work that belongs elsewhere:
 | Topic | Go to |
 |---|---|
 | Base building parts, rebuilding, locks | `_shared/persistence/base-building.md` and the `dayz-basebuilding` skill |
-| The state file of the bunker broadcast | `_shared/persistence/save-load-contract.md` |
+| The state file of the bunker broadcast | `_shared/persistence/versioning-and-migration.md` |
 | Trigger volumes in general (`ScriptedEntity`, `TriggerEvents`) | `_shared/physics/scripted-triggers.md` |
 | Sandstorm and heat on Nasdara | `dayz-environment-hazards` |
 | Starting the game and checking a result | `/dayz-launch-test` |
@@ -112,7 +112,7 @@ This is a cross check by fit: the cell size was not read from the header of the 
 - A trigger can be tied to an object (`CustomSpawn`), through `ParentNetworkId` for a map object or through `Tag` for an object placed by Object Spawner. The vanilla pattern, the schema and a mod recipe are in `references/underground-triggers.md`.
 - In-game editor, new in 1.30: `LCTRL+/` (`KC_SLASH`, `P:\scripts\4_world\plugins\pluginbase\pluginkeybinding.c:55`). It exists only in the diag build (`P:\scripts\4_world\plugins\pluginbase\pluginundergroundtriggermanager.c:1` is `#ifdef DIAG_DEVELOPER`) and `EditorToggle` returns at once in multiplayer (`pluginundergroundtriggermanager.c:358` to `:360`).
   - A double click creates a trigger (`Event_OnDoubleClick`, `pluginundergroundtriggermanager.c:305`); boxes and breadcrumbs can be edited.
-  - It exports to `$mission:cfgundergroundtriggers.json` (`pluginundergroundtriggermanager.c:821`) and first keeps a copy named `cfgundergroundtriggers.json.backup-<date>` (`pluginundergroundtriggermanager.c:922` to `:923`).
+  - It overwrites `$mission:cfgundergroundtriggers.json` (`pluginundergroundtriggermanager.c:821`), then calls `OnExport` (`:830`), which copies the new file to `cfgundergroundtriggers.json.backup-<date>` (`pluginundergroundtriggermanager.c:922` to `:923`). The backup holds the file just written, so the earlier version is lost unless you copy it by hand before exporting.
 
 ## Underground presence
 

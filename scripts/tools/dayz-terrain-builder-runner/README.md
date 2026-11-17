@@ -63,6 +63,8 @@ python scripts/tools/dayz-terrain-builder-runner/tbrunner.py close
 
 Every command addresses only the instance whose pid the state file records.
 Output is JSON (or, for `menu`, one line per entry) on stdout.
+`command` and `save_loop` print two JSON documents back to back: first a one-line `{"item": ...}` object naming the menu item and whether it is disabled, then the indented report.
+Parse them one at a time (for example with `json.JSONDecoder().raw_decode`), not with a single `json.loads`.
 
 | Exit | Meaning |
 |---:|---|

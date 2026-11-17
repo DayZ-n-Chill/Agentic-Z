@@ -106,7 +106,7 @@ class AIParams
 	noiseDampeningMultiplier=0.69999999;
 ```
 
-`[DESIGN]` To make infected hear less in a sandstorm, raise `sandstormToNoiseMultiplier` (or one of the other `*ToNoiseMultiplier` keys). Do not override `GetNoiseReductionByWeather` and expect the engine AI to follow.
+`[DESIGN]` To change how much infected hear in a sandstorm, change `sandstormToNoiseMultiplier` (or one of the other `*ToNoiseMultiplier` keys) in your own addon that requires `DZ_data_aiconfigs`. Not yet checked on `P:\`: no vanilla file shows an addon overriding `AIParams`, and nothing shows whether raising a multiplier makes infected hear less or more; confirm both in the in-game test. Do not override `GetNoiseReductionByWeather` and expect the engine AI to follow.
 
 ## Infected `MINDSTATE_COWER`
 
@@ -172,4 +172,4 @@ The dog life cycle uses `zoneType = "HuntingGround"` (`:114`) with `siegeAttackC
 
 ## Navmesh
 
-The official 1.30 experimental modding changelog says the navmesh file is a newer version with no backward compatibility, so custom terrains must regenerate it, and that a navmesh can use a hide animation source if the EntityType navmesh config sets one up. Neither statement has been checked against binary navmesh files. It matters to any path code on a custom map, including Expansion's (PC-15 and PC-16 in `eai-pathfinding-groups.md`).
+The official 1.30 experimental modding changelog says the navmesh file is a newer version with no backward compatibility, so custom terrains must regenerate it, and that a navmesh can use a hide animation source if the EntityType navmesh config sets one up. Neither statement has been checked against binary navmesh files. It matters to any path code on a custom map, including Expansion's (P9 and P10 in `eai-pathfinding-groups.md`).

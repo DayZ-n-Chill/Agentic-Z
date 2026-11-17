@@ -3,10 +3,10 @@
 # CALLS it, in shipped code with no #ifdef -
 #   3_game/entities/entityai.c:4153
 #     ProcessDirectDamage(DT_CUSTOM, transport, "", "TransportHit", "0 0 0", damage);
-# and again at :4130 and :4141 inside RegisterTransportHit. The comment the
+# and again at :4172, :4197 and :4208 inside RegisterTransportHit. The comment the
 # detector cited as proof of absence is the proto documentation for the parameter
-# (object.c:1126, "@param damageType DT_CLOSE_COMBAT/DT_FIRE_ARM/DT_EXPLOSION/DT_CUSTOM").
-# There is no local #define that would rescue those three calls, so DT_CUSTOM
+# (object.c:1130, "@param damageType DT_CLOSE_COMBAT/DT_FIRE_ARM/DT_EXPLOSION/DT_CUSTOM").
+# There is no local #define that would rescue those four calls, so DT_CUSTOM
 # resolves for real or EntityAI would not compile.
 #
 # DamageType.CUSTOM also exists (damagesystem.c:16). Both spellings being valid is
@@ -20,7 +20,7 @@ ES_DT_ALIAS_RULE_ID = "ES-PROCESSDIRECTDAMAGE-DT-ALIAS"
 
 
 # The `DT_*` identifiers are NOT vanilla symbols
-# in current DayZ (they appear only in a comment in object.c:1126). The real
+# in current DayZ (they appear only in a comment in object.c:1130). The real
 # argument is the `DamageType` enum (damagesystem.c:10-17), e.g.
 # `DamageType.FIRE_ARM`. Using `DT_FIRE_ARM` etc. compile-fails with `Undefined`.
 ES_DT_ALIAS_RE = re.compile(

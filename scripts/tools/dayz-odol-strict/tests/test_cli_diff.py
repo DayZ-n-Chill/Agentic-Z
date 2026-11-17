@@ -177,6 +177,17 @@ def test_invalid_diff_cli_exits_two_without_traceback(tmp_path, capsys):
     )
 
 
+def test_deeply_nested_summary_exits_two_without_traceback(tmp_path, capsys):
+    deep = tmp_path / "deep.json"
+    deep.write_text("[" * 200000 + "]" * 200000, encoding="utf-8")
+    assert main(["diff", str(deep), str(deep)]) == 2
+    captured = capsys.readouterr()
+    assert captured.err == ""
+    assert json.loads(captured.out)["error"]["code"] == (
+        "ODOL_SUMMARY_INVALID"
+    )
+
+
 def test_inspect_cli_success_and_error_exits(
     tmp_path, capsys, monkeypatch
 ):

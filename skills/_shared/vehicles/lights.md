@@ -63,17 +63,17 @@ Grep before blaming anything else: `"\\MOD[^"]*\.rvmat"`.
 
 Rip-imported cars arrive with the lamp split in two: a large piece (`tail`, `light_left_static`,
 `light_right_static`, `light_dashboard_static`) that is absent from `hiddenSelections[]`, plus a
-small switchable insert that is in it. On SUB_BRZ that was **19.310 faces that nothing can ever
+small switchable insert that is in it. On SUB_BRZ that was **19,310 faces that nothing can ever
 switch** against inserts of 42 and 318 faces.
 
 The symptoms read as material bugs and are not:
 - "the red piece is always faintly lit and has no glass" -> the big piece wears a crude constant
   emissive that no setter reaches.
 - "only one bulb of the two lights up" -> only the insert is in the selection.
-- "the position lamps do not light" -> they do; 42 lit faces against 1.555 unlit around them.
+- "the position lamps do not light" -> they do; 42 lit faces against 1,555 unlit around them.
 
 Discriminator, before touching any material: count faces per selection and cross them with
-membership. A bounding box is NOT enough — `tail` spanned 3.788 mm of a 4.086 mm car and still was
+membership. A bounding box is NOT enough — `tail` spanned 3,788 mm of a 4,086 mm car and still was
 only the two rear clusters plus two corner markers. Plot every face centroid; the distribution
 answers what the box cannot.
 

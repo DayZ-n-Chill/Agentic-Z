@@ -34,7 +34,7 @@ _index_data = None
 # under the class that actually declares it.
 VANILLA_BASE_MEMBERS = {
     "CarScript": {
-        "m_NoiseSystem",  # carscript.c:266 (protected NoiseSystem m_NoiseSystem;)
+        "m_NoiseSystem",  # carscript.c:2770 (protected NoiseSystem m_NoiseSystem;)
     },
 }
 
@@ -43,7 +43,7 @@ VANILLA_BASE_MEMBERS = {
 # override's parameter NAMES to match the base signature exactly. Keyed by
 # method name -> list of parameter names in order.
 VANILLA_OVERRIDE_PARAMS = {
-    "OnExecuteServer": ["action_data"],  # animatedactionbase.c:175
+    "OnExecuteServer": ["action_data"],  # animatedactionbase.c:179
 }
 
 

@@ -48,7 +48,7 @@ Measured on one rifle model with a broken and a fixed render of the same object,
 | Finished object against bare boxes | 10/12 | Pre-filter |
 | Consistent proportions | (10 to 12/12, withdrawn) | Do not delegate (retracted 2026-08-22). That score is unfalsified: the broken and fixed pair it was measured on held no proportion defect, so answering "yes" always scored perfectly. See the next section |
 | Bevels, chamfered edges | 6/12 | Do not delegate. It sits at the constant-answer floor, which confirms the 2026-07-30 warning that the two models gave opposite bevel verdicts |
-| Faceted cylinders | At chance across 8 framings | Do not delegate, and do not rewrite it. Four phrasings were tested (2026-08-17) and the existing one is the best: 6/6 in framings where the round piece fills the frame, 1 or 2 of 3 in a framing of the whole object. Framing outweighs phrasing. The underlying failure is that the test object cannot answer it; see "Faceting question: closed" |
+| Faceted cylinders | Depends on framing and grouping, not on phrasing | Do not delegate, and do not rewrite it. Four phrasings were tested (2026-08-17) and the existing one is the best: 6/6 in framings where the round piece fills the frame, 1 or 2 of 3 in a framing of the whole object. Framing outweighs phrasing. The underlying failure is that the test object cannot answer it; see "Faceting question: closed" |
 
 Two notes on the shipped JSON against this table. The bevel question has no `skip`, so it is still sent to the model, but its answer is not delegated. The eighth entry, ground contact, is active and has no row in the table because it was not calibrated.
 
@@ -65,13 +65,13 @@ That measurement substitute is not implemented here: there is no `probe_truth.py
 
 ### Where it enters the loop
 
-Between step 2 (capture the angles) and step 3 (look) of the loop in `SKILL.md`:
+Between step 2 (capture the angles) and step 3 (look) of the loop in `SKILL.md`. The four renders of `vr_capture` (front, right, top, iso) do not cover the three framings the five active questions of `checks_hardsurface.json` use (`assembled__iso`, `assembled__profile_L` and the receiver close-up `zoom_receiver__right_iso`), so render those framings yourself first; see "The view token" in `checklist-format.md`. With only the `vr_capture` renders, pass one PNG positionally without `--view` and every active question goes to that image.
 
 ```cmd
-python "<skill-dir>\vr_score.py" ask --checklist "<skill-dir>\checks_hardsurface.json" --model gemma4:26b --json --view assembled__iso _review\m__iso__iter3.png --view assembled__profile_R _review\m__profile_R__iter3.png --view assembled__profile_L _review\m__profile_L__iter3.png --view zoom_receiver__right_iso _review\m__receiver__iter3.png --view zoom_muzzle__front_iso _review\m__muzzle__iter3.png
+python "<skill-dir>\vr_score.py" ask --checklist "<skill-dir>\checks_hardsurface.json" --model gemma4:26b --json --view assembled__iso _review\m__iso__iter3.png --view assembled__profile_L _review\m__profile_L__iter3.png --view zoom_receiver__right_iso _review\m__receiver__iter3.png
 ```
 
-If any of the five active questions triggers, fix and render again before spending the user's eyes. If none triggers, look anyway: the filter has approved nothing. The three excluded questions do not appear in the model's answers: inverted faces go to the mechanical comparison, and proportions and cylinders keep their declared gap until `probe_truth.py` and `facet_report.py` exist.
+If any of the three pre-filter questions (connectivity, gaps, finished object) triggers, fix and render again before spending the user's eyes. The bevel and ground-contact answers are logged evidence only: bevel sits at the constant-answer floor and ground contact was never calibrated, so neither one triggers a fix. If no pre-filter question triggers, look anyway: the filter has approved nothing. The three excluded questions do not appear in the model's answers: inverted faces go to the mechanical comparison, and proportions and cylinders keep their declared gap until `probe_truth.py` and `facet_report.py` exist.
 
 ### The calibration gate: per question, with a broken and a fixed render
 
@@ -113,7 +113,7 @@ The whole shipped checklist, over a pair of renders differing only in facet coun
 | `ornith-1.5:9b` | 7/8 | Calls the smooth variant holed, 2 of 3 seeds |
 | `muse-glimmer:30b` | 7/8 | Reads the faceted variant as bevelled, 3 of 3 seeds |
 
-The incumbent is the cleanest of the three, and a bigger or newer model did not beat it. Scope: one object, one pair, one framing where the round part fills the frame, which is the condition where the faceting question is already known to work. It screens models; it does not rank them.
+`qwen3-vl:30b` is the cleanest of the three, and a bigger or newer model did not beat it. The current defaults, `qwen3.5:27b` in `vr_score.py` and `gemma4:26b` in the commands above, were not part of this screen. Scope: one object, one pair, one framing where the round part fills the frame, which is the condition where the faceting question is already known to work. It screens models; it does not rank them.
 
 ## Faceting question: closed
 

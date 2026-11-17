@@ -56,6 +56,17 @@ is optional; inventing the missing file is not.
 | How is the skill activated and configured, what happens at compaction, what is in the bundle, and how does handoff-doc mode work where there is no storage? | Setup questions, after compaction, or when there is no filesystem. | `references/environments.md` |
 | How is a legacy single-file `log.md` converted, once, by script? | Only when the Session Start Protocol detects a legacy log. Fresh installs never read it. | `references/migration.md` |
 
+**Why this body is longer than the ~500-line guideline** in
+`references/skill-authoring.md` (Lean Content): the sections that stay here
+(intake, HOLD, defaults, method card, recurrence, Session Start Protocol,
+how to log, surfacing, acting, the return check) are run on every
+invocation, and the method card is the fallback when a reference file is
+missing, so moving them out would make each session depend on a second
+load. Episodic material (review procedure, authoring rules, log internals,
+environment setup, migration) is already in `references/`. Before adding
+to this body, move anything that is used only in one kind of episode into
+a reference file instead.
+
 ## In an Agentic-Z clone
 
 The method below is written for any environment. In this repo, Tier 1
@@ -72,6 +83,16 @@ The method below is written for any environment. In this repo, Tier 1
   link is a write to the live file. In a plugin install the plugin's files
   are replaced on every update: treat them as the "writable but volatile"
   case in `references/weekly-review.md`, Step 2.
+- **Edit skills in place, not through staging.** Wherever this file or its
+  references say to stage an update under `skill-updates/`, hand over a
+  staged copy or a `.skill` bundle, or never edit a live file, that does
+  not apply here. Sessions edit the skill folder directly, following
+  `docs/prompt-conventions.md` ("Editing skills: list the copies first"):
+  list the copies, write every real copy, compare them by sha256. Nothing
+  is packaged for each change; a skill is packaged only when it goes to
+  another machine, as that file's section "When a .skill is packaged"
+  says. Approval is unchanged: substantial edits and new skills still go
+  to the user before they are made.
 - **Rules live in the repo, never in the log.** `.claude/local-memory/`
   holds notes, not rules. A correction the user states goes to
   `/dayz-record-correction` first: it asks for their yes and writes the
@@ -86,7 +107,7 @@ The method below is written for any environment. In this repo, Tier 1
   The open-source skill template in `references/skill-authoring.md`
   (author block, licence statement) is for a skill published outside this
   repo.
-- **After a staged update is installed.** Run the checks Tier 1 names:
+- **After editing a skill.** Run the checks Tier 1 names:
   `python -m pytest -q .claude skills scripts/dev hooks scripts/tools`, then `/docs-sync`.
 - **Activation.** The activation block in `references/environments.md` is
   a Tier 1 rule here: it goes into `.claude/CLAUDE.md`, `AGENTS.md` and

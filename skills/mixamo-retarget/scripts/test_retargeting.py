@@ -154,6 +154,26 @@ def test_store_bone_mapping_fails_without_registered_scene_properties(blender):
         blender.module.store_bone_mapping("Src", "Dst", {"Hips": "pelvis"})
 
 
+def test_list_animations_reads_slots_without_id_root(blender):
+    # Blender 5.x actions have slots and no id_root attribute.
+    actions = _Objects()
+    actions["Walk"] = SimpleNamespace(name="Walk", slots=[SimpleNamespace(target_id_type="OBJECT")])
+    actions["Mat"] = SimpleNamespace(name="Mat", slots=[SimpleNamespace(target_id_type="MATERIAL")])
+    blender.bpy.data.actions = actions
+    blender.objects["Rig"] = _armature("Rig", ["Hips"], action=actions["Walk"])
+    assert blender.module.list_animations("Rig") == ["Walk"]
+
+
+def test_list_animations_reads_id_root_on_actions_without_slots(blender):
+    # Blender 4.3 and earlier: no slots, id_root on the action.
+    actions = _Objects()
+    actions["Walk"] = SimpleNamespace(name="Walk", id_root="OBJECT")
+    actions["Key"] = SimpleNamespace(name="Key", id_root="KEY")
+    blender.bpy.data.actions = actions
+    blender.objects["Rig"] = _armature("Rig", ["Hips"], action=actions["Walk"])
+    assert blender.module.list_animations("Rig") == ["Walk"]
+
+
 def test_imports_reject_a_missing_file(blender, tmp_path):
     with pytest.raises(ValueError, match="File not found"):
         blender.module.import_fbx(str(tmp_path / "missing.fbx"))

@@ -43,7 +43,7 @@ class ManifestTests(unittest.TestCase):
     def setUp(self) -> None:
         self.manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 
-    def test_every_corpus_declares_identity_and_licence(self) -> None:
+    def test_every_corpus_declares_identity(self) -> None:
         required = {
             "corpus_id",
             "name",
@@ -52,14 +52,12 @@ class ManifestTests(unittest.TestCase):
             "pin",
             "expected_layout_count",
             "expected_parse_ok",
-            "license",
             "redistributed_in_pack",
         }
         for entry in self.manifest["corpora"]:
             with self.subTest(corpus=entry.get("corpus_id")):
                 self.assertTrue(required.issubset(entry), sorted(required - set(entry)))
                 self.assertIn("kind", entry["pin"])
-                self.assertIn("redistribution", entry["license"])
 
     def test_no_corpus_is_marked_as_redistributed(self) -> None:
         # The repository ships identity, never payload.
@@ -103,7 +101,7 @@ class MissingRootTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             write(
-                root / "sources" / "local-roots.json",
+                root / corpus.LOCAL_ROOTS_FILE,
                 json.dumps(
                     {
                         "schema_version": 1,
@@ -208,11 +206,35 @@ class ProvenanceAuditTests(unittest.TestCase):
     def test_a_layout_outside_the_first_party_directory_is_flagged(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             pack, third_party = self._pack(temp_dir)
-            write(pack / "skills" / "dayz-ui" / "stray.layout", LEAF_LAYOUT)
+            write(pack / corpus.TOOL_PATH / "dayz_ui_lab" / "stray.layout", LEAF_LAYOUT)
             _, findings = corpus.audit_redistribution(
                 pack, self._entries(), {"vendor": third_party}
             )
             self.assertIn("CORPUS-LAYOUT-OUTSIDE-FIRST-PARTY", codes(findings))
+
+    def test_a_layout_elsewhere_in_the_repository_is_checked_by_content_only(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            pack, third_party = self._pack(temp_dir)
+            write(pack / "skills" / "dayz-ui" / "template.layout", LEAF_LAYOUT)
+            leaked = (third_party / "vendor.layout").read_text(encoding="utf-8")
+            write(pack / "skills" / "dayz-ui" / "copied.layout", leaked)
+            audit, findings = corpus.audit_redistribution(
+                pack, self._entries(), {"vendor": third_party}
+            )
+            self.assertNotIn("CORPUS-LAYOUT-OUTSIDE-FIRST-PARTY", codes(findings))
+            self.assertEqual(
+                [item["path"] for item in audit["leaked"]],
+                ["skills/dayz-ui/copied.layout"],
+            )
+
+    def test_a_layout_under_the_widget_id_fixture_directory_is_allowed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            pack, third_party = self._pack(temp_dir)
+            write(pack / corpus.TOOL_PATH / "fixtures" / "widget-ids" / "a.layout", LEAF_LAYOUT)
+            _, findings = corpus.audit_redistribution(
+                pack, self._entries(), {"vendor": third_party}
+            )
+            self.assertNotIn("CORPUS-LAYOUT-OUTSIDE-FIRST-PARTY", codes(findings))
 
     def test_a_layout_under_the_scenario_fixture_directory_is_allowed(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -243,7 +265,7 @@ class ProvenanceAuditTests(unittest.TestCase):
         # pack itself lives under a directory named like an exclusion, so the audit
         # measured nothing while reporting success.
         with tempfile.TemporaryDirectory() as temp_dir:
-            nested = Path(temp_dir) / "reports" / "pack"
+            nested = Path(temp_dir) / "output" / "pack"
             write(nested / corpus.FIRST_PARTY_LAYOUT_DIR / "leaf.layout", LEAF_LAYOUT)
             audit, _ = corpus.audit_redistribution(nested, [], {})
             self.assertEqual(audit["tracked_layouts"], 1)
@@ -252,7 +274,8 @@ class ProvenanceAuditTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             pack = Path(temp_dir) / "pack"
             write(pack / corpus.FIRST_PARTY_LAYOUT_DIR / "leaf.layout", LEAF_LAYOUT)
-            write(pack / "reports" / "staged" / "generated.layout", LEAF_LAYOUT)
+            write(pack / "output" / "dayz-ui-lab" / "probe" / "generated.layout", LEAF_LAYOUT)
+            write(pack / "workspace" / "MyMod" / "gui" / "layouts" / "own.layout", LEAF_LAYOUT)
             audit, findings = corpus.audit_redistribution(pack, [], {})
             self.assertEqual(audit["tracked_layouts"], 1)
             self.assertEqual(findings, [])

@@ -189,12 +189,18 @@ anywhere in a boat's `SimulationModule`.
 - `ActionStartEngineBoat` (continuous) / `ActionStopEngineBoat` (single-use):
   both cast target to `BoatScript`, require `CrewDriver()==player`, and guard
   `GetNetworkMoveStrategy()==PHYSICS` to skip server exec —
-  `actionstartengineboat.c:9-70`, `actionstopengineboat.c:1-52`. On execute they
-  call `vehicle.OnIgnition()`; on finish, `EngineStart()`.
+  `actionstartengineboat.c:9-70`, `actionstopengineboat.c:1-52`. The start
+  action calls `vehicle.OnIgnition()` in `OnExecute` and `EngineStart()` in
+  `OnFinishProgress` (`actionstartengineboat.c:58,69`). The stop action calls
+  `vehicle.EngineStop()` in `OnExecute` (`actionstopengineboat.c:51`).
 - `ActionPushBoat extends ActionPushObject` — full-body, syncs `SyncSoundPushBoat`
   on start/end (server) — `actionpushboat.c:17-46`.
-- `ActionRepairBoatChassis/Engine extends ActionRepairVehiclePartBase` — repairs
-  non-`Engine` zones between WORN and RUINED — `actionrepairboatchassis.c:1-46`.
+- `ActionRepairBoatChassis` and `ActionRepairBoatEngine` both extend
+  `ActionRepairVehiclePartBase`. The chassis action repairs any zone except
+  `Engine` whose health level is above WORN and below RUINED
+  (`actionrepairboatchassis.c:33-37`). The engine action repairs only the
+  `Engine` zone in that same band, needs the engine off and a blowtorch with
+  enough energy (`actionrepairboatengine.c:26-48`).
 
 (since 1.30: `BoatScript.GetHeatComfortOverride()` at `scripts\4_world\entities\vehicles\boatscript.c:256-259`. Config AI noise `class NoiseBoatEngine { type = "sound"; strength = 30; }` at `DZ\vehicles\water\config.cpp:41-45`.)
 
@@ -213,7 +219,7 @@ NOT a new class. It is a plain `CarScript` config; the deltas are pure config.
 |---|---|---|
 | Axle count | **3 axles**: `class Front`, `class Middle: Rear`, `class Rear: Rear` — `config.cpp:18569-18672` | 2 axles (Front/Rear) |
 | Drivetrain | `drive="DRIVE_642"` (6×4) — `config.cpp:18539`; `class CentralDifferential { type="DIFFERENTIAL_LOCKED"; }` — `:18564-18568` | typically DRIVE_4x2/4x4 |
-| Wheel slots | 6 driven hubs `Truck_01_Wheel_1_1..2_3` + 2 spares — `config.cpp:18441-18448` | 4 hubs |
+| Wheel slots | 6 wheel hubs `Truck_01_Wheel_1_1..2_3` + 2 spares — `config.cpp:18441-18448`; only the 4 Middle and Rear hubs are driven, since `class Front` has no `Differential` (`config.cpp:18571-18597`, base `:287-308`) | 4 hubs |
 | Double wheel | Middle+Rear hubs take **`Truck_01_WheelDouble`** — `config.cpp:18128-18141`; its `inventorySlot[]` = the 4 rear slots `1_2,1_3,2_2,2_3`. `width=0.40` (vs single `0.20`), `weight=50000` (vs 30000), better grip/resistance | single `Truck_01_Wheel` |
 | Dual-wheel craft | `Truck_01_Wheel + Truck_01_Wheel → Truck_01_WheelDouble` recipe — `crafttruck01doublewheel.c:27-46`; reverse decraft needs Crowbar/LugWrench → 2 wheels — `decrafttruck01doublewheel.c:36,48-60` | n/a |
 | Crew | **2 seats**: Driver + CoDriver. `Truck_01_Base` declares no `class Crew` of its own and inherits the two-seat one of the config base `CarScript` (`config.cpp:265-283`); its script maps only seats 0 and 1 (`truck_01_base.c:130-138`). The four-seat `Crew` block at `config.cpp:1348-1366` belongs to `OffroadHatchback`, not to the truck. | 2-4 depending |

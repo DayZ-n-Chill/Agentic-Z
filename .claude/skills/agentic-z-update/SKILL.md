@@ -15,7 +15,7 @@ Pull template improvements (agents, skills, conventions, docs) from the `main` b
 2. **Local customizations to template files are not overwritten silently.** A three-way per-file classification (local file, file at the baseline, upstream file) detects when both the clone and upstream edited the same file and leaves it alone unless the user picks "take" in `--per-file` mode. File contents are never merged: each file is either kept or replaced whole.
 3. **No two updates can apply at once.** A PID-based lock covers the first-run baseline write and the apply phase (checkout, delete, commit, baseline write); previews and `--check` do not take it. The lock file is created atomically with its content already in it, so two runs that start together cannot both get it. A lock left by a dead process is taken over under a short-lived second lock (`.claude/.upstream-update.lock.takeover`), and the stale lock is removed only if it is still the one that was judged stale, so two runs that find the same dead lock cannot both end up holding it.
 
-The first run records the commit your clone was made from (the merge base with upstream main) as the baseline, so changes upstream made since you cloned are offered; with no shared history it records upstream HEAD and adds nothing. A template file that is in the baseline but missing locally is treated as one you deleted on purpose (`locally-deleted`): it is left alone and offered for restore in `--per-file`. Every later run compares the local file, the file at the baseline and upstream's current file to decide what to do per file. The comparison uses git blob ids, with the local file hashed through the clone's line-ending settings (`git hash-object --stdin-paths`, which applies the same filters as `git add`), so a CRLF checkout under `core.autocrlf=true` is not mistaken for a local edit. The ids come from one `git ls-tree` per revision and one `git hash-object` for the working tree, so the check costs the same handful of git calls whether 3 or 500 files drifted. The script works from the repo root (`git rev-parse --show-toplevel`), so it can be started from any subfolder.
+The first run records the commit your clone was made from (the merge base with upstream main) as the baseline, so changes upstream made since you cloned are offered; with no shared history it records upstream HEAD, so no file the clone has is overwritten on that run, but a template file the clone never had is still offered as `new`. A template file that is in the baseline, missing locally, and once committed in the clone is treated as one you deleted on purpose (`locally-deleted`): it is left alone and offered for restore in `--per-file`. Every later run compares the local file, the file at the baseline and upstream's current file to decide what to do per file. The comparison uses git blob ids, with the local file hashed through the clone's line-ending settings (`git hash-object --stdin-paths`, which applies the same filters as `git add`), so a CRLF checkout under `core.autocrlf=true` is not mistaken for a local edit. The ids come from one `git ls-tree` per revision and one `git hash-object` for the working tree, so the check costs the same handful of git calls whether 3 or 500 files drifted. The script works from the repo root (`git rev-parse --show-toplevel`), so it can be started from any subfolder.
 
 ## How to run
 
@@ -28,7 +28,7 @@ python "<skill-dir>\update.py" [--check] [--quiet] [--yes] [--per-file] [--force
 | Flag | Behavior |
 |---|---|
 | (default) | Preview drift, prompt y/N, apply safe changes (conflicts left alone). When the only drift is `local-only-edit` or `locally-deleted` files, it lists them, says `Up to date.` and exits 0 without prompting (with `--per-file`, a `locally-deleted` file still gets the prompt so it can be restored) |
-| `--check` | Preview only: fetches upstream (adding the upstream remote if it is missing) and writes no files; exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date (`local-only-edit` and `locally-deleted` files do not count) |
+| `--check` | Preview only: fetches upstream (adding the upstream remote if it is missing) and writes no files; exits 1 if upstream changes are pending, no baseline exists yet, or a newer prebuilt search index release is available (see "Search index notification"), 0 if none of these (`local-only-edit` and `locally-deleted` files do not count) |
 | `--quiet` | With `--check`: single-line output for hooks, and always exits 0 so the hook shows the line. Rejected without `--check` |
 | `--yes` | Skip the confirmation prompt (CI / scripted use) |
 | `--per-file` | Walk each conflict and `locally-deleted` file interactively: keep / take / diff / skip. Keep is a decision: the file stays yours and no longer holds the baseline back. Skip (also Enter, or no terminal) decides later: the file is offered again on the next run |
@@ -89,7 +89,6 @@ package-lock.json
 .github/
 CONTRIBUTING.md
 LICENSE
-THIRD_PARTY_NOTICES.md
 .gitattributes
 .markdownlint.json
 .markdownlint-cli2.jsonc

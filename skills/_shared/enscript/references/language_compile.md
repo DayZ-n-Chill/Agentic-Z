@@ -59,7 +59,7 @@ The defines come from the engine. `P:\scripts\1_core\defines.c` lists them for d
 | `SERVER` | A dedicated server. Only defined when `IsDedicatedServer()` is true, and preferred over that call when possible. | `:106`, `:112` to `:115` |
 | `NO_GUI`, `NO_GUI_INGAME` | Server builds. Wrap any code that names GUI types. | `:27` to `:34` |
 | `DIAG`, `DEVELOPER`, `DIAG_DEVELOPER` | Diag builds, internal builds, and either one. | `:75` to `:92` |
-| `RELEASE` | Retail builds. A build is always `DEVELOPER` or `RELEASE`. | `:80` to `:87` |
+| `RELEASE` | Retail and Diag builds (the source notes it "includes Diag"). A build is always `DEVELOPER` or `RELEASE`. | `:80` to `:87` |
 | `BUILD_EXPERIMENTAL` | Experimental builds. | `:95` to `:97` |
 | `DAYZ_X_XX` | The game version, such as `DAYZ_1_16`. | `:12` to `:14` |
 | `ENABLE_LOGGING` | The `-doScriptLogs=1` launch parameter. | `:37` to `:39` |
@@ -106,7 +106,7 @@ Measured in compiles on DayZDiag and retail servers; the compiler is native, so 
 | `a & b == b` | Nothing: it compiles as `a & (b == b)`, as in C | Write `(a & b) == b` |
 | `text.Replace(a, b).Replace(c, d)` | The second call is made on an `int`: `Replace` changes the string and returns a count (`P:\scripts\1_core\proto\enstring.c:156`) | One `Replace` per statement, on a local copy |
 
-The measurements behind the last seven rows are in `skills/enforce-script-reference/references/pitfalls-advanced.md`.
+The measurement behind the 17th-parameter row is in `skills/enforce-script-reference/references/verified-api-catalog.md`; the measurements behind the other six of the last seven rows are in `skills/enforce-script-reference/references/pitfalls-advanced.md`.
 
 Two things that do compile, against a common belief: C style casts, as in `(float)random_int / (float)max_range` (`P:\scripts\1_core\proto\enmath.c:110`), and a `string` plus a `bool`.
 

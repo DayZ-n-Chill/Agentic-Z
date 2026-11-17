@@ -1,5 +1,5 @@
 {
-  "note": "Name chains (the widget first, then each ancestor up to but not including the layout root) and the ID that a DayZ vanilla layout stores for that widget. positive: the stored ID equals 00000000 followed by the CRC of the concatenated chain. negative: it does not (a 64-bit ID, or one set by hand). Measured 2026-11-09 on the vanilla gui/layouts of 1.30.164200; source is the vanilla layout and line that stores the ID.",
+  "note": "Name chains (the widget first, then each ancestor up to but not including the layout root) and the widget ID for each. Every entry except seven is an ID that a DayZ vanilla layout stores for that widget. positive: the ID equals 00000000 followed by the CRC of the concatenated chain. negative: it does not (a 64-bit ID, or one set by hand). The seven exceptions are day_z_ingamemenu.layout:540 (dayz_logo) and the six day_z_hud.layout entries (DefaultActionWidget :10, ActionsPanel :32, CrossHairs :293, NotificationFrameWidget :362, ChatChannelPanel :373, HudPanel :404). Those layouts declare the widget by name and store no ID; each such entry holds the ID derived from the chain by the same chain-to-ID rule, so it only checks the derivation against itself and is not evidence for the rule. The other 20 positives are the evidence. Measured 2026-11-09 on the vanilla gui/layouts of 1.30.164200; source is the vanilla layout and line that declares the widget, which for a stored ID is the line that stores it.",
   "check_value": {
     "input": "123456789",
     "crc": "B995A485"
@@ -48,42 +48,42 @@
         "DefaultActionWidget"
       ],
       "id": "00000000E4E67D3A",
-      "source": "day_z_hud.layout:11"
+      "source": "day_z_hud.layout:10"
     },
     {
       "parts": [
         "ActionsPanel"
       ],
       "id": "000000007206B96B",
-      "source": "day_z_hud.layout:34"
+      "source": "day_z_hud.layout:32"
     },
     {
       "parts": [
         "CrossHairs"
       ],
       "id": "000000007B7BDB10",
-      "source": "day_z_hud.layout:316"
+      "source": "day_z_hud.layout:293"
     },
     {
       "parts": [
         "NotificationFrameWidget"
       ],
       "id": "000000005AC60D14",
-      "source": "day_z_hud.layout:389"
+      "source": "day_z_hud.layout:362"
     },
     {
       "parts": [
         "ChatChannelPanel"
       ],
       "id": "00000000721FEE9F",
-      "source": "day_z_hud.layout:401"
+      "source": "day_z_hud.layout:373"
     },
     {
       "parts": [
         "HudPanel"
       ],
       "id": "00000000D5349E9A",
-      "source": "day_z_hud.layout:434"
+      "source": "day_z_hud.layout:404"
     },
     {
       "parts": [

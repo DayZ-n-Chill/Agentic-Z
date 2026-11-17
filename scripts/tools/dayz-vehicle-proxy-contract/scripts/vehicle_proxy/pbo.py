@@ -420,7 +420,12 @@ def verify_paths_against_pbo(
 
 
 def verify_deployed_closure(manifest, nodes: Iterable[object]) -> list[PboFinding]:
-    """Verify the host and every reachable proxy against the deployed PBO."""
+    """Verify the host and every reachable proxy against the deployed PBO.
+
+    The check compares source MLOD bytes, so the PBO must be packed without
+    binarizing. A binarized PBO holds ODOL .p3d entries, and every one of them
+    reports PBO-HASH-MISMATCH.
+    """
     paths = [Path(manifest.host_p3d)]
     paths.extend(Path(node.proxy_path) for node in nodes)
     return verify_paths_against_pbo(

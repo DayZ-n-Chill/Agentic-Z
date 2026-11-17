@@ -116,7 +116,9 @@ typedef array<ref MyData> MyDataRefArray;
 1. **Method Parameters:**
 
 ```
-// AVOID: ref on parameters and return type is not needed in mod code (style)
+// WRONG: ref on a parameter fails to compile on DayZDiag
+// ("Method argument can't be strong reference", then "Can't compile "World"
+// script module!"); retail lets it pass. ref on the return type is style only.
 ref MyClass MyMethod(ref MyClass1 a, ref MyClass2 b)
 {
     // ...
@@ -264,14 +266,15 @@ ref array<EntityAI> GetItems()
 
 - **Freed too early**: a member made with `new` and no `ref` is freed at once, so later uses find `null` (`../enscript/references/language_memory.md`, rule 1, engine behaviour)
 - **Leaks**: two objects holding `ref`s to each other are never freed (`../enscript/references/language_memory.md`, rule 3, engine behaviour)
+- **Failed compile on DayZDiag**: `ref` on a method parameter stops the build with `Method argument can't be strong reference`, then `Can't compile "World" script module!`; the retail compiler lets it pass (`../enscript/references/language_compile.md`, compile traps table)
 - **Unverified**: crashes or effects on other mods. No vanilla source on `P:\scripts\` shows that a `ref` mistake causes either.
 
-`ref` on parameters, return types and locals is a style point only (Quick Reference Rules, rule 2); it is not on this list.
+`ref` on return types and locals is a style point only (Quick Reference Rules, rule 2); it is not on this list.
 
 #### Quick Reference Rules
 
 1. **USE `ref` for:** Member variables you own, and the element type of containers that hold objects you create (`ref array<ref MyData>`, as in `typedef array<ref Managed> TManagedRefArray;`, `P:\scripts\1_core\proto\enscript.c:737`)
-2. **Do not use `ref` for (style, not needed in mod code):** Method parameters, return types, local variables, and the aliased type of a typedef (`typedef ref T`)
+2. **Do not use `ref` for:** method parameters (a compile error on DayZDiag), and, as a style point, return types, local variables and the aliased type of a typedef (`typedef ref T`)
 3. **Do not use (style):** `new ref ClassName()`. No vanilla file uses `new ref` (grep of `P:\scripts`); whether it compiles is unverified
 4. **ALWAYS use:** `new ClassName()`
 5. **Goal:** One strong reference per object when possible

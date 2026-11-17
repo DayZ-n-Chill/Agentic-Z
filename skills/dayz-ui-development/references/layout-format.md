@@ -425,8 +425,13 @@ Widget root = GetGame().GetWorkspace().CreateWidgets(layoutPath, parentWidget);
 // (P:\scripts\1_core\proto\enwidgets.c:179), so call it on the workspace, not on any widget.
 Widget w = GetGame().GetWorkspace().CreateWidget(WidgetType, left, top, width, height, flags, color, sort, parent);
 
-// Insert at specific position in child list
-parent.AddChildAfter(newChild, afterThisChild);
+// Append to any widget's child list (Widget.AddChild, P:\scripts\1_core\proto\enwidgets.c:161)
+parent.AddChild(newChild);
+
+// Insert at a specific position: only on spacer widgets (SpacerBaseWidget.AddChildAfter,
+// P:\scripts\1_core\proto\enwidgets.c:462), so the parent must be a spacer (WrapSpacer, GridSpacer) or a ScrollWidget (:481)
+SpacerBaseWidget spacer = SpacerBaseWidget.Cast(parent);
+spacer.AddChildAfter(newChild, afterThisChild);
 
 // Remove from parent
 parent.RemoveChild(child);
@@ -728,7 +733,7 @@ ImageWidgetClass ClickBlocker {
     on that exact input, emitted only `position` with the collapsed
     list (reproduced 2026-08-19, then fixed the same
     day). It now consumes `ATTRIBUTE_ARITY` tokens per key, which
-    fixes the 131 attributes that table lists and no others: a key absent
+    fixes the 132 attributes that table lists and no others: a key absent
     from it still falls back to the physical line, so two unknown keys
     written inline still collapse into one (measured 2026-08-19). Any new
     parser must split by key arity, not by the physical line.
@@ -737,7 +742,7 @@ ImageWidgetClass ClickBlocker {
     `ClearFlags` substracts; `SetSort` replaces. Layout-side z-order = the `priority` attribute.
 12. **`GetPos` returns relative-to-parent**, `GetScreenPos` returns absolute — critical for drag
 13. **JSON file > 64KB causes truncation** in DayZ file I/O (not checked on `P:\`). Split large data across multiple files or compress.
-14. **ImageSets** (`set:dayz_gui image:icon_name`) only work with `LoadImageFile` on ImageWidget or inline in RichTextWidget — not in layout `color` property.
+14. **ImageSets** (`set:dayz_gui image:icon_name`) work in the layout `image0` attribute of an ImageWidget (`image0 "set:dayz_inventory image:missing"` at `P:\gui\layouts\new_ui\hud\simpleicontemplate.layout:56`), with `LoadImageFile` on an ImageWidget, or inline in a RichTextWidget — not in the layout `color` property.
 
 ---
 

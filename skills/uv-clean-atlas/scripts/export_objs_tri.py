@@ -31,7 +31,7 @@ for o in bpy.data.objects:
 bpy.context.view_layer.objects.active = ob2
 tris = sum(len(p.vertices) - 2 for p in me2.polygons)
 print(f"SANITIZED: verts={len(me2.vertices)} tris={tris}")
-os.makedirs(os.path.dirname(OUT_OBJ), exist_ok=True)
+os.makedirs(os.path.dirname(os.path.abspath(OUT_OBJ)), exist_ok=True)
 bpy.ops.wm.obj_export(filepath=OUT_OBJ, export_selected_objects=True,
                       export_materials=False, export_uv=False, export_normals=False,
                       apply_modifiers=True)

@@ -7,6 +7,7 @@ import os
 import shutil
 from pathlib import Path
 
+from .errors import ViewerError
 from .paa_to_png import convert_paa_to_png
 from .p3d_to_gltf import p3d_info, p3d_to_glb
 from .rvmat_parser import parse_rvmat
@@ -25,8 +26,9 @@ def run_pipeline(
 ) -> dict:
     """Run the P3D + textures + materials → 3D viewer pipeline.
 
-    Returns a dict of generated paths. Search directories are recorded as
-    given; generated file names are relative to `output_dir`.
+    Returns a dict of results. `glb_path`, `viewer_path` and each
+    `converted_textures[].output` are absolute paths. An input that cannot
+    be read as an MLOD .p3d ends the run with one entry under `errors`.
     """
     results = {
         "input_p3d": Path(p3d_path).name,
@@ -65,7 +67,13 @@ def run_pipeline(
         print("STEP 1: Analyzing P3D: %s" % p3d_path)
         print("=" * 60)
 
-    info = p3d_info(p3d_path)
+    try:
+        info = p3d_info(p3d_path)
+    except ViewerError as exc:
+        results["errors"].append(str(exc))
+        if verbose:
+            print("  x %s" % exc)
+        return results
     p3d_textures = set()
     p3d_materials = set()
     for lod_info in info["lods"]:
@@ -155,8 +163,10 @@ def run_pipeline(
                                 try:
                                     convert_paa_to_png(src, png_out)
                                     texture_map[tex_stem] = png_out
-                                except Exception:
-                                    pass
+                                except Exception as exc:
+                                    results["errors"].append(
+                                        "PAA convert failed: %s: %s" % (Path(src).name, exc)
+                                    )
                     if verbose:
                         print(
                             "  + %s: stages=%s, emissive=%s"

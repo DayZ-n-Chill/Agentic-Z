@@ -34,7 +34,8 @@ These are patterns for complex interactive UI elements. They target the most com
 
 **Key constraints:**
 - Outside spacer widgets, layout positioning is absolute (there is no flexbox). `WrapSpacerWidgetClass` and `GridSpacerWidgetClass` place their own children, as section 1 shows
-- Enforce Script has **no ternary operator** (the only confirmed restriction). `++`, `+=` and `foreach` all work
+- Enforce Script has **no ternary operator** (rule 11). `++`, `+=` and `foreach` all work
+- A local has method scope, not block scope: declare a name once at the top of the method, not in two `if` blocks (rule 13; `skills/_shared/enscript/references/language_compile.md`, "Compiler traps")
 - All widgets render in tree order (later siblings on top)
 - A widget with `ignorepointer 1` takes no mouse events itself; its children still do. The vanilla pause menu's `continuebtn` (`P:\gui\layouts\day_z_ingamemenu.layout:122`) is clickable inside a `WrapSpacerWidgetClass bottom` that sets `ignorepointer 1` (`:99-101`)
 
@@ -103,7 +104,7 @@ void OnItemsUpdated()
 - `OnHide()`
 - After calling `Show(bool)` or `Hide()` on any widget
 - After changing array counts (items added/removed)
-- In `ScriptView.OnBinding()` to initial-layout
+- Once for the first layout, in your `ScriptView` subclass constructor after `super` has created the layout (Dabs `ScriptView` has no `OnBinding` hook; its constructor builds `m_LayoutRoot`, see `dabs-framework.md`, "ScriptView lifecycle")
 
 ### Alternative: WrapSpacer for Automatic Flow
 
@@ -734,8 +735,9 @@ class StatusNotifier extends ScriptView
         Dabs_WidgetAnimator animator = Dabs_WidgetAnimator.Create(m_StatusBg);
         animator.AnimateProperty(Dabs_WidgetAnimatorProperty.COLOR_A, 1.0, 200);
 
-        // Auto-hide after 3 seconds
-        GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLater(this, "HideStatus", 3000, false);
+        // Auto-hide after 3 seconds. CallLater takes the method itself
+        // (P:\scripts\2_gamelib\tools.c:61); a name string needs CallLaterByName (:63)
+        GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLater(HideStatus, 3000, false);
     }
 
     void HideStatus()
@@ -745,7 +747,7 @@ class StatusNotifier extends ScriptView
         animator.AnimateProperty(Dabs_WidgetAnimatorProperty.COLOR_A, 0.0, 500);
 
         // Hide widget after fade completes
-        GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLater(this, "HideStatusImmediate", 500, false);
+        GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLater(HideStatusImmediate, 500, false);
     }
 
     void HideStatusImmediate()
@@ -851,12 +853,16 @@ class AmountInputController extends ScriptView
 
     override bool OnChange(Widget w, int x, int y, bool finished)
     {
+        // Locals have method scope: declare each one once, before the branches
+        string raw;
+        float val;
+
         if (w == m_EditBtcAmount)
         {
-            string raw = m_EditBtcAmount.GetText();
+            raw = m_EditBtcAmount.GetText();
 
             // Parse float (Enforce: no float(), use ToFloat())
-            float val = raw.ToFloat();
+            val = raw.ToFloat();
 
             // Validate: clamp to range
             if (val < 0)
@@ -874,8 +880,8 @@ class AmountInputController extends ScriptView
 
         if (w == m_EditEurAmount)
         {
-            string raw = m_EditEurAmount.GetText();
-            float val = raw.ToFloat();
+            raw = m_EditEurAmount.GetText();
+            val = raw.ToFloat();
 
             // Reverse: EUR to BTC
             float btcVal = val / m_BtcPrice;

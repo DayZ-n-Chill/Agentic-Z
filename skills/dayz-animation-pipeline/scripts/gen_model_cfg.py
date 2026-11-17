@@ -182,7 +182,9 @@ def _self_test():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 2 and sys.argv[1] == "--self-test":
+    if len(sys.argv) == 2 and sys.argv[1] in ("-h", "--help"):
+        sys.stdout.write(__doc__)
+    elif len(sys.argv) == 2 and sys.argv[1] == "--self-test":
         _self_test()
     elif len(sys.argv) == 2:
         with open(sys.argv[1], encoding="utf-8") as f:

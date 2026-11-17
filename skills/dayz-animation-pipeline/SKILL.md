@@ -132,7 +132,7 @@ Outside an agent session, `scripts\dayz\anim-model-cfg.bat` runs `gen_model_cfg.
 
 ## Names tutorials get wrong
 
-Correct these whenever the user repeats the tutorial spelling. Each is checked in `references/anim-graph.md` or `references/player-skeleton.md`.
+Correct these whenever the user repeats the tutorial spelling. Each is checked in `references/anim-graph.md` or `references/player-skeleton.md`, except the `model.cfg` key, which is in `references/config-driven-animation.md` and is not checked on `P:\` because vanilla ships no `model.cfg` text.
 
 | Tutorial says | Real name |
 |---|---|

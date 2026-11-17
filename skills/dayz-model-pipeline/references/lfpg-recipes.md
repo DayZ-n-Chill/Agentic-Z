@@ -21,10 +21,11 @@ How to read the numbers: coordinates in the memory point lists are millimetres i
 - **Indicators**: Colored LEDs (red, green, yellow) — self-illuminating via emissive maps
 
 ### Scale & Dimensions
-- **Handheld**: 15–25cm (push buttons, small adapters)
-- **Wall-mounted**: 30–50cm (switches, circuit breakers)
-- **Tabletop/Floor**: 40–80cm (batteries, sorters, control boxes)
-- **Large machinery**: 60–120cm (generators, junction boxes)
+Largest dimension of each recipe:
+- **Under 10 cm**: push button (36 mm), battery adapter (80 mm), wall switch (85 mm)
+- **10–30 cm**: junction box (150 mm), sorter (200 mm)
+- **31–60 cm**: generator (600 mm)
+- **Cable**: 1 m segments, 20 mm in diameter
 
 ### Visual Cues
 - **Edges**: Consistent 2–3mm bevels on all major panels
@@ -36,9 +37,9 @@ How to read the numbers: coordinates in the memory point lists are millimetres i
 ### Texture Resolution Strategy
 | Device Size | Diffuse | Normal | SMDI | Notes |
 |-------------|---------|--------|------|-------|
-| ≤30cm | 512×512 | 512×512 | 512×512 | Handheld — readable detail |
-| 31–60cm | 1024×1024 | 1024×1024 | 1024×1024 | Wall panels, buttons |
-| 61–120cm | 2048×2048 | 1024×1024 | 1024×1024 | Generators, large cabinets |
+| ≤30cm | 512×512 | 512×512 | 512×512 | Push button, battery adapter, wall switch, junction box, sorter |
+| 31–60cm | 1024×1024 | 1024×1024 | 1024×1024 | Generator |
+| 61–120cm | 2048×2048 | 1024×1024 | 1024×1024 | None of the recipes |
 
 ---
 
@@ -46,29 +47,29 @@ How to read the numbers: coordinates in the memory point lists are millimetres i
 
 **Status**: Production-tested, 218KB p3d
 
-This is the complete worked example of the skill, generated entirely in Python: 9 LODs in a 218KB `.p3d`, 328 vertices at LOD 0 (32 segment cylinders and a dome), an animated button (translation, 3mm travel), an LED with three material states (green, red, off through `hiddenSelections`), 12 procedural textures (rust, wear, dirt, fingerprints, brushed metal), 7 `.rvmat` files including the 3 emissive LED states, and a complete `model.cfg`, `config.cpp` and `$PBOPREFIX$`.
+This is the complete worked example of the skill, generated entirely in Python: 9 LODs in a 218KB `.p3d`, about 192 vertices at LOD 0 (cylinders and a torus), an animated button (translation, 3mm travel), an LED with three material states (green, red, off through `hiddenSelections`), 12 procedural textures (rust, wear, dirt, fingerprints, brushed metal), 7 `.rvmat` files including the 3 emissive LED states, and a complete `model.cfg`, `config.cpp` and `$PBOPREFIX$`.
 
 **Purpose**: User-interface control point; activates electrical devices via script event.
 
-**Dimensions**: 30mm diameter, 20mm total height, 3mm button travel.
+**Dimensions**: 36mm overall diameter (mounting flange), 30mm body diameter, 28mm total height at rest (3mm flange + 20mm body + 5mm of button cap above the body), 3mm button travel. The origin is the centre of the flange's underside, so Z runs from 0 to 28mm.
 
 ### Geometry Specification
 
 | Component | Shape | Dimensions | Segments | Vertices | Notes |
 |-----------|-------|-----------|----------|----------|-------|
-| Main body | Cylinder | Ø30mm, H20mm | 32 | 64 | Base housing, centered at origin |
-| Button cap | Cylinder | Ø12mm, H8mm | 16 | 32 | Animated, -3 to 0mm Z travel |
-| LED ring | Torus | OD 14mm, tube Ø2mm | 16 | 32 | Embedded 2mm into body top |
-| Mounting flange | Cylinder | Ø36mm, H3mm | 32 | 64 | Base for wall/panel mounting |
-| **Total LOD0** | — | — | — | **~328** | 32-segment cylinders standard |
+| Mounting flange | Cylinder | Ø36mm, H3mm | 32 | 64 | Base for wall/panel mounting, Z 0 to 3mm |
+| Main body | Cylinder | Ø30mm, H20mm | 32 | 64 | Housing on top of the flange, Z 3 to 23mm |
+| Button cap | Cylinder | Ø12mm, H8mm | 16 | 32 | Animated; Z 20 to 28mm at rest (3mm sits in a bore in the body top), Z 17 to 25mm pressed |
+| LED ring | Torus | OD 14mm, tube Ø2mm | 16 | 32 | Around the cap, embedded in the body top at Z 23mm |
+| **Total LOD0** | — | — | — | **~192** | Sum of the rows above |
 
 ### Memory Points (Named Selections)
 ```
 Memory Points:
-  - button_axis_top: [0, 0, 20]  (Z-axis rotation for button animation)
-  - button_axis_bot: [0, 0, 17]  (second point defining axis)
-  - actionPos: [0, 0, 10]         (player interaction center)
-  - ce_center: [0, 0, 10]         (electrical center, port location)
+  - button_axis_top: [0, 0, 28]  (start of the translation axis: top of the cap at rest)
+  - button_axis_bot: [0, 0, 25]  (end of the axis: top to bot is the 3mm downward travel)
+  - actionPos: [0, 0, 28]         (top of the button cap, player interaction)
+  - ce_center: [0, 0, 14]         (geometric centre of the object)
 
 Named Selections:
   - body                          (main housing)
@@ -84,7 +85,7 @@ Named Selections:
 **button_press** (translation, Z-axis, 3mm travel, 0.1s phase):
 ```
 Type: Translation
-Axis: [0, 0, 1]  (Z, downward)
+Axis: [0, 0, -1]  (-Z, downward, from button_axis_top to button_axis_bot)
 Source: button (named selection)
 Offset: 3mm
 Duration: 0.1s (fast click feedback)
@@ -162,10 +163,13 @@ Three points where this block differs from the Arma way of writing it:
 ```
 Memory Points:
   - actionPos: [0, 0, 17.5]       (center of battery slot, player interaction)
-  - ce_center: [0, 0, 5]          (electrical reference point)
-  - port_in: [0, -25, 5]          (cable gland back, input)
-  - port_out_pos: [8, 0, 2]       (positive terminal output)
-  - port_out_neg: [-8, 0, 2]      (negative terminal output)
+  - ce_center: [0, 0, 0]          (geometric centre of the housing)
+  - port_input_1: [0, -25, 5]     (cable gland on the back, input)
+  - port_input_1_dir: [0, -35, 5] (10mm further back: the cable leaves through the gland)
+  - port_output_1: [8, 0, 2]      (positive terminal output)
+  - port_output_1_dir: [8, 0, 12] (10mm above the post: the cable leaves upward)
+  - port_output_2: [-8, 0, 2]     (negative terminal output)
+  - port_output_2_dir: [-8, 0, 12]
 
 Named Selections:
   - body                          (main housing, painted metal)
@@ -178,6 +182,8 @@ Named Selections:
   - mount_tab_l                   (left bracket)
   - mount_tab_r                   (right bracket)
 ```
+
+The port names must match the device script's `LFPG_AddPort` calls (here `input_1`, `output_1` and `output_2`), and each port needs its `_dir` point, or the cable cannot attach (`memory-and-selections.md`, "LF_PowerGrid electrical port convention"). The same holds for every recipe below.
 
 ### Animations (0 Total)
 Static device — all state indicated via LEDs and script UI.
@@ -223,20 +229,23 @@ Static device — all state indicated via LEDs and script UI.
 ```
 Memory Points:
   - actionPos: [0, 0, 40]         (front panel center, UI interaction)
-  - ce_center: [0, 0, 0]          (device center, routing reference)
-  - port_in: [-100, 0, 0]         (input cable gland, left side)
-  - port_out_0: [100, 35, 27]     (output 0, top-right)
-  - port_out_1: [100, 35, 0]      (output 1, mid-right)
-  - port_out_2: [100, 35, -27]    (output 2, bot-right)
-  - port_out_3: [100, -35, 27]    (output 3, top-right lower)
-  - port_out_4: [100, -35, 0]     (output 4, mid-right lower)
-  - port_out_5: [100, -35, -27]   (output 5, bot-right lower)
+  - ce_center: [0, 0, 0]          (geometric centre of the housing)
+  - port_input_1: [-100, 0, 0]    (input cable gland, left side)
+  - port_input_1_dir: [-110, 0, 0]
+  - port_output_1: [100, 35, 27]  (output 1, front column, top)
+  - port_output_2: [100, 35, 0]   (output 2, front column, middle)
+  - port_output_3: [100, 35, -27] (output 3, front column, bottom)
+  - port_output_4: [100, -35, 27] (output 4, rear column, top)
+  - port_output_5: [100, -35, 0]  (output 5, rear column, middle)
+  - port_output_6: [100, -35, -27] (output 6, rear column, bottom)
+  - port_output_N_dir: each output's point moved 10mm further along +X
+                                  (for example port_output_1_dir: [110, 35, 27])
 
 Named Selections:
   - body                          (main housing)
   - front_panel                   (display surface)
   - led_strip                     (6 segments, per-output control)
-  - input_port, output_port_0–5   (cable glands)
+  - input_port, output_port_1–6   (cable glands)
   - din_clip                      (mounting bracket)
 ```
 
@@ -247,7 +256,7 @@ All state shown via LED positions and panel graphics (rendered to texture at run
 
 | Output | LED Selection | Color | Script Control |
 |--------|---------------|-------|----------------|
-| 0–5 | led_strip segments | Green when active | Script toggles per logic |
+| 1–6 | led_strip segments | Green when active | Script toggles per logic |
 
 Via script: one method on the sorter sets the LED of one output, taking the output index and the color state, and swaps that segment's texture or material with `SetObjectTexture` or `SetObjectMaterial`. An Arma SQF call (`[sorterObj, outputIndex, colorState] call LFPG_fnc_set_sorter_led`) does not exist in DayZ; write it as an Enforce Script method.
 
@@ -287,7 +296,7 @@ Memory Points:
                                    identical points make a zero length axis, which cannot
                                    turn anything: spread them along X, the hinge line)
   - actionPos: [0, 0, 7]          (lever center, interact point)
-  - ce_center: [0, 0, 5]          (electrical reference)
+  - ce_center: [0, 0, 5]          (geometric centre of the object)
 
 Named Selections:
   - body                          (backplate)
@@ -344,8 +353,9 @@ Memory Points:
   - fuel_cap_pivot: [300, 0, 220]  (cap hinge point)
   - panel_pivot: [-250, 0, 150]    (panel top edge for opening animation)
   - actionPos: [-200, 0, 300]      (control panel center, player interact)
-  - ce_center: [0, 0, 0]           (generator electrical center)
-  - port_out: [250, 0, 80]         (main output cable port)
+  - ce_center: [0, 0, 0]           (geometric centre of the generator)
+  - port_output_1: [250, 0, 80]    (main output cable port)
+  - port_output_1_dir: [270, 0, 80] (20mm further out: the cable leaves sideways)
   - fuel_input: [-150, 180, 100]   (fuel cap opening, for script fuel calc)
 
 Named Selections:
@@ -403,45 +413,36 @@ Offset: [-250, 0, 150]  (top edge hinge)
 
 ## Recipe 6: Cable Segment (Modular Lengths)
 
-**Status**: Production-tested, scalable
+**Status**: Measured in game (the client local cable segment in `domain-recipes.md`)
 
-**Purpose**: Connects devices to grid; available in 0.5m, 1m, 2m, 5m lengths.
+**Purpose**: The visible piece of a cable between two devices, drawn on the client.
 
-**Dimensions**: Parameterized length, 8mm outer diameter.
+**Dimensions**: One unit segment, 1 m long, radius 0.01 m (Ø20mm). This recipe is the measured segment in `domain-recipes.md`, "Client local cable segment model"; build that one. Fixed length variants and connector ends were not measured and are not part of it.
 
 ### Geometry Specification
 
-| Component | Shape | Dimensions | Segments | Vertices | Notes |
-|-----------|-------|-----------|----------|----------|-------|
-| Cable spline | Tube | Ø8mm OD, length L | 8/cross-section | ~100 per 1m | Flexible appearance |
-| Connector-A | Cylinder | Ø12mm, L6mm | 12 | 24 | Plug end, indexed texture |
-| Connector-B | Cylinder | Ø12mm, L6mm | 12 | 24 | Socket end, indexed texture |
-| **Total (1m)** | — | — | — | **~150** | Scales linearly per segment |
+Units here are metres in the DayZ frame (Y up), not the millimetre Z-up frame of the other recipes.
 
-### Variants
-- **cable_05m.p3d**: 50cm, 75 verts (LOD0)
-- **cable_1m.p3d**: 100cm, 150 verts (LOD0)
-- **cable_2m.p3d**: 200cm, 300 verts (LOD0)
-- **cable_5m.p3d**: 500cm, 750 verts (LOD0)
+| LOD | Shape | Sides | Notes |
+|-----|-------|-------|-------|
+| Visual LOD 0 | Open cylinder, radius 0.01 m, 1 m along +Z, centred on the origin | 8 | No end caps |
+| Visual LOD 1 | Same | 5 | |
+| Visual LOD 2 | Same | 3 | |
+| Collision | None | — | No Geometry, Fire or View Geometry LOD |
 
-### Memory Points & Named Selections
+### Named Selections
 ```
-Memory Points:
-  - port_a: [0, 0, 0]             (connector A position)
-  - port_b: [L, 0, 0]             (connector B position, L = cable length)
-
 Named Selections:
-  - cable_main                    (spline tube body)
-  - connector_a                   (input end)
-  - connector_b                   (output end)
+  - camo                          (every visual face, in every visual LOD)
 ```
 
-### Texture Maps (3 Total: 2 Surfaces × 3 Maps)
+Wind the faces inward, as `domain-recipes.md` records. Give the model a name with the mod's prefix, since `CfgModels` classes are global across mods.
+
+### Texture Maps (3 Total: 1 Surface × 3 Maps)
 
 | Surface | _co (Diffuse) | _nohq (Normal) | _smdi (SMDI) |
 |---------|---------------|---------------|-------------|
 | Cable insulation | Black rubber + color bands | Woven texture | Rough 0.8, metal 0.0 |
-| Connector plugs | Brass/chrome | Machined ridges | Rough 0.3, metal 1.0 |
 
 ---
 
@@ -466,18 +467,23 @@ Named Selections:
 ### Memory Points & Named Selections
 ```
 Memory Points:
-  - ce_center: [0, 0, 0]          (hub center, routing reference)
+  - ce_center: [0, 0, 0]          (geometric centre of the hub)
   - actionPos: [0, 0, 50]         (top center, UI interaction)
-  - port_0: [75, 0, 0]            (port on right face)
-  - port_1: [-75, 0, 0]           (port on left face)
-  - port_2: [0, 75, 0]            (port on front face)
-  - port_3: [0, -75, 0]           (port on rear face)
-  - port_4: [0, 0, 50]            (port on top)
-  - port_5: [0, 0, -50]           (port on bottom)
+  - port_input_1: [-75, 0, 0]     (input on left face)
+  - port_input_2: [0, -75, 0]     (input on rear face)
+  - port_input_3: [0, 0, -50]     (input on bottom)
+  - port_output_1: [75, 0, 0]     (output on right face)
+  - port_output_2: [0, 75, 0]     (output on front face)
+  - port_output_3: [0, 0, 50]     (output on top)
+  - port_input_N_dir, port_output_N_dir: each port's point moved 10mm further
+                                  out along its face normal
+                                  (for example port_output_1_dir: [85, 0, 0])
 
 Named Selections:
   - body, port_0–5, led_0–5, din_mount
 ```
+
+Which ports are inputs and which are outputs is the device script's choice; name each memory point after the `LFPG_AddPort` call that uses it.
 
 ### Texture Maps (6 Total: 2 Surfaces × 3 Maps)
 
@@ -505,7 +511,7 @@ Use this checklist for any new LFPG device:
 | **Total LOD0** | | | | **[X]** | |
 
 ### Memory Points & Named Selections
-- List all actionPos, ce_center, electrical ports
+- List all actionPos, ce_center, electrical ports (port_input_N / port_output_N, each with its _dir point)
 - List all named selections for animation/texturing
 
 ### Animations ([N] Total)
@@ -535,14 +541,16 @@ class lfpg_[device_name]
 
 ## Performance Budgets
 
-### Vertex Allocation by Device Type
+### Vertex Allocation by Detail Tier
 
-| Category | LOD0 | LOD1 | LOD2 | LOD3 | Notes |
+Pick the tier by how much visible detail the device carries, not by its size: the 200 mm sorter carries about 900 vertices at LOD 0, more than the 450 of the 80 mm battery adapter and four times the 220 of the 85 mm wall switch. The last column places each recipe by its own LOD 0 total.
+
+| Tier | LOD0 | LOD1 | LOD2 | LOD3 | Recipes in this tier |
 |----------|------|------|------|------|-------|
-| Handheld (≤30cm) | 200–500 | 100–250 | 50–125 | 25–60 | Push buttons, adapters |
-| Wall panel (31–60cm) | 500–1000 | 250–500 | 100–250 | 50–125 | Switches, sorters |
-| Floor unit (61–120cm) | 1000–2000 | 500–1000 | 250–500 | 125–250 | Generators, junction boxes |
-| Machinery (>120cm) | 2000–3000 | 1000–1500 | 500–750 | 250–375 | Large substations |
+| Light | 200–500 | 100–250 | 50–125 | 25–60 | Push button (~192), wall switch (~220), battery adapter (~450) |
+| Medium | 500–1000 | 250–500 | 100–250 | 50–125 | Junction box (~700), sorter (~900) |
+| Heavy | 1000–2000 | 500–1000 | 250–500 | 125–250 | Generator (~1900) |
+| Machinery | 2000–3000 | 1000–1500 | 500–750 | 250–375 | None of the recipes |
 
 **Collision geometry (Geometry/Fire/View)**: 8–20 convex verts max per object. Use bounding box approximation.
 
@@ -551,6 +559,9 @@ class lfpg_[device_name]
 ## Naming Conventions
 
 ### File Structure
+
+This is a suggested layout for a new mod built from these recipes, not the layout of LF_PowerGrid itself: that mod keeps a device's model in its own folder under `LFPowerGrid\data\` (the battery adapter is `\LFPowerGrid\data\battery_adapter\LFPG_BatterySlot.p3d`, see `config-and-packing.md` and `memory-and-selections.md`). The `model` path in Recipe 1's `config.cpp` follows this suggested layout.
+
 ```
 \lfpg_objects\devices\
   push_button.p3d
@@ -586,12 +597,15 @@ Examples:
 [device_specific]_[purpose]
 Examples:
   - actionPos              (universal: player interaction)
-  - ce_center              (universal: electrical center/reference)
+  - ce_center              (universal: geometric centre of the object)
   - button_axis            (button devices)
   - switch_axis_x          (switch devices)
   - fuel_cap_pivot         (generator)
-  - port_in, port_out      (power flow direction)
-  - port_out_0–5           (multi-port sorters/hubs)
+  - port_input_N, port_output_N
+                           (cable ports; N matches the LFPG_AddPort calls)
+  - port_input_N_dir, port_output_N_dir
+                           (paired direction points: the cable exits along the line
+                            from the port to its _dir point)
 ```
 
 ---
@@ -603,8 +617,8 @@ Examples:
 | Object clips through terrain | Collision box too large, not convex | Use 8–12 vertex box, then look at the Geometry LOD in Object Builder or probe it from script (`_shared/physics/collision-lods.md`). `#show collisions` is not a DayZ command |
 | LEDs not visible at distance | Emissive map resolution too low, not on viewport | Use 1024×1024 for LED texture, embed in diffuse OR use separate surface |
 | Animation stutter/jumpy | Keyframe timing not frame-aligned (base 60Hz; the mod's rule of thumb, not measured) | Use durations: 0.05s, 0.1s, 0.15s, 0.2s, 0.3s, 0.5s, 0.6s |
-| Cable doesn't connect visually | Port positions not symmetrical (A vs B) | Verify port_a=[0,0,0], port_b=[L,0,0] for cables; match socket depth |
-| Textures seam/repeat poorly | UV layout assumes 512×512, applied to 1024×1024 | Adjust UV scale: 1024 res = 1.0; 2048 res = 2.0 multiplier |
+| Cable doesn't connect visually | Unit segment not centred or not along +Z | Verify the segment runs from Z -0.5 m to +0.5 m about its origin (Recipe 6) |
+| Textures seam/repeat poorly | UV islands too close together, so mipmaps blend neighbouring islands | Leave padding between UV islands and extend each island's colour past its edge. UV coordinates run 0 to 1 whatever the texture resolution, so do not rescale them for a larger texture |
 | Memory points offset in-game | Coordinates in editor ≠ exported p3d origin | Re-export with model origin at [0,0,0]; verify in p3d inspector |
 
 ---
@@ -631,8 +645,8 @@ For each new LFPG object before production release:
 
 ## Standards and tools
 
-- **DIN 43700**: Industrial rack/cabinet mounting (59mm pitch, 84.1mm centers)
-- **DIN 43305**: Cable gland threads (M16×1.5, M20×1.5 standard)
+- **DIN 43700**: Front frame and panel cutout sizes for panel mounted measuring instruments (48, 72 and 96 mm frames)
+- **EN 60423 / EN 50262**: Metric threads for conduit fittings and cable glands (M16×1.5, M20×1.5)
 - **IEC 61076**: Circular connectors (12mm Ø standard in LFPG)
 - **RAL 7016**: Anthracite gray, industrial standard
 - **Blender with the Arma 3 Object Builder add-on**: one way to export a `.p3d` from Blender instead of assembling it with py3d; the final binarized `.p3d` comes from Addon Builder (`/dayz-build-pbo`)

@@ -49,12 +49,14 @@ FABRIK and CCD are not needed. An analytic two bone solve for each arm and leg, 
 ```
 ARM (per side)
   in:  shoulder position (from the spine chain), grip target (from the anchor),
-       upper arm and forearm lengths (from the rest pose),
+       upper arm and forearm lengths (fixed defaults in the script, 0.30 and 0.27 m;
+       --rest-pose does not replace them),
        pole hint: forward and slightly down, which stops the elbow flipping
-  out: rotations of Shoulder, Arm, ForeArm; Hand looks along the grip axis
+  out: elbow and hand positions; turning them into rotations of Shoulder, Arm,
+       ForeArm and Hand is the step the script does not do yet (next section)
 
 LEG (per side)
-  the same shape, hip to knee to ankle, pole hint forward
+  the same shape, hip to knee to ankle (fixed defaults 0.42 and 0.41 m), pole hint forward
 
 SPINE
   Pelvis at the seat anchor, tilted forward by lean
@@ -62,7 +64,7 @@ SPINE
   Neck and Head along the same line, with an optional small look ahead
 ```
 
-`lean` is the only freedom the torso has: 0 is upright (a sport rider over the tank), 0.2 a slight forward lean (a typical car driver), 0.5 a strong one. Above about 0.6 the spine clips, so cap it.
+`lean` is the only freedom the torso has: 0 is an upright rider (as on a cruiser or a quad), 0.2 a slight forward lean (a typical car driver), 0.5 a strong one. Above about 0.6 the spine clips, so cap it.
 
 Optional: a slight torso twist with the steering. When `steerMax` is not zero the spine twists by 0.2 times the steering angle between `Pelvis` and `Spine3`, which keeps the elbows at a natural angle. Turn it off for cars, where the body stays neutral.
 
@@ -70,7 +72,7 @@ Optional: a slight torso twist with the steering. When `steerMax` is not zero th
 
 The script solves the joints from an `anchors.json` (seat, two grips, two feet, `lean`, `steerMax`, `twistFactor`, and per variant overrides) and writes one SEAnim per variant: idle, steer left, steer right, and a passenger idle when asked.
 
-Its output is not ready for the game. Each file holds the solved joint positions and identity rotations: the step that turns positions into bone rotations against a rest pose is not written, with or without `--rest-pose`. Use the files as a position reference for posing, or finish that step first. The notes it writes are free text, which DayZATool has refused as malformed events. The script's own header says the same; read it before promising output from it.
+Its output is not ready for the game. Each file holds the solved joint positions and identity rotations: the step that turns positions into bone rotations against a rest pose is not written, with or without `--rest-pose`. The limb lengths are the script's fixed defaults (`DEFAULT_LIMB_LENGTHS`) on every run, so the positions are approximate for any body. Use the files as a position reference for posing, or finish that step first. The notes it writes are free text, which DayZATool has refused as malformed events. The script's own header says the same; read it before promising output from it.
 
 ## Rest pose calibration
 
@@ -105,7 +107,7 @@ Config driven parts around the rider (the handlebar turning, accessories that hi
 
 ## Where the hands come from
 
-None of the ten IK nodes in `vehicles.agf` reads a vehicle memory point, a bone of the vehicle or a config value. Each `AnimSrcNodeIK2Target` takes a child pose and the two chain bindings `LHandIKTarget` and `RHandIKTarget` (`AnimNodeIK2Target0` over `SteeringBlend`, `P:\DZ\anims\workspaces\player\player_main\vehicles.agf:17` to `:30`). Each `AnimSrcNodeIK2` solves those chains again (`AnimNodeIK2hands`, `P:\DZ\anims\workspaces\player\player_main\vehicles.agf:31` to `:46`). `SteeringBlend` picks between the two steering pose nodes (`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:2614` to `:2626`). The file has no foot IK at all: the text `FootIK` does not occur in it.
+None of the ten IK nodes in `vehicles.agf` reads a vehicle memory point, a bone of the vehicle or a config value. An `AnimSrcNodeIK2Target` takes a child pose and chain bindings, and the matching `AnimSrcNodeIK2` solves those chains again. Most of the ten nodes bind both hand chains, `LHandIKTarget` and `RHandIKTarget` (`AnimNodeIK2Target0` over `SteeringBlend`, `P:\DZ\anims\workspaces\player\player_main\vehicles.agf:17` to `:30`, and `AnimNodeIK2hands`, `:31` to `:46`). The engine-start pair binds the left hand only (`MotoEngineIKTarget`, `P:\DZ\anims\workspaces\player\player_main\vehicles.agf:1436`, and `MotoEngineVehicleIK`, `:1446`). `SteeringBlend` picks between the two steering pose nodes (`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:2614` to `:2626`). The file has no foot IK at all: the text `FootIK` does not occur in it.
 
 So, by inference from those nodes, the hand targets are wherever the steering pose clip leaves the hands.
 
@@ -163,7 +165,7 @@ A design for a sport bike: stopped, the feet are down and the rider leans furthe
 
 The same child `.asi` route with generated clips, riding included. Measured on a Kawasaki H2R model, DayZDiag 1.30.164014, dedicated server and the owning client, one player, four runs on 2026-09-28. The test mod kept a config table (one class per pose, each with a vehicle class and an `.asi`), registered every `.asi` in `RegisterCustom`, switched in `OnCommandVehicleStart`, `CommandHandler` and a client poll every frame, and latched off from the start of the get out.
 
-**A generated clip plays.** A clip made with `DayZATool --generate-anim <file>.seanim 100` plays. DayZATool writes `ANIMSET5`, and 1.30 ships player clips in three versions (counted in the player clip PBO: 10 `ANIMSET4`, 2,398 `ANIMSET5`, 4,980 `ANIMSET6`). A vanilla steering pose with `Spine1` bent 20 degrees put the stopped rider's head 0.4 mm (median of 129 client samples) from the clip's forward kinematics and 19 cm from the vanilla one. Later first person probe runs saw the stopped head move by several centimetres between runs and looks (see the last bullet of this section). The `Resource` line of the `.asi` loaded both as a bare path and with an invented `{GUID}` in front; vanilla ships no `.meta` for its clips.
+**A generated clip plays.** A clip made with `DayZATool --generate-anim <file>.seanim 100` plays. DayZATool writes `ANIMSET5`, and 1.30 ships player clips in three versions (counted in the player clip PBO: 10 `ANIMSET4`, 2,398 `ANIMSET5`, 5,007 `ANIMSET6`). A vanilla steering pose with `Spine1` bent 20 degrees put the stopped rider's head 0.4 mm (median of 129 client samples) from the clip's forward kinematics and 19 cm from the vanilla one. Later first person probe runs saw the stopped head move by several centimetres between runs and looks (see the last bullet of this section). The `Resource` line of the `.asi` loaded both as a bare path and with an invented `{GUID}` in front; vanilla ships no `.meta` for its clips.
 
 **The steering clip always spans 45 degrees each way.** The motorbike steering poses are read at `Time "clamp((VehicleSteering + 0.785) * 0.63694..., 0.0, 1.0)"` (`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:50` for `DriverSteeringMain`, and the same `Time` expression at `P:\DZ\anims\workspaces\player\player_main\vehicles.agf:1466` for `DriverSteeringExtreme`). `VehicleSteering` is the wheel angle in radians, so the clip always covers −45 to +45 degrees of wheel angle, whatever the bike's lock. Author frame `i` of `N` at `(2i/(N−1) − 1) × 45` degrees, clamped to the lock. The node reads normalized time, so the frame count is free: 37 frames put a 20 degree lock exactly on a frame.
 
@@ -194,7 +196,7 @@ For a motorbike or another single track vehicle on 1.30:
 
 1. **Getting in and out by side.** The side is chosen at run time by a dot product in `ActionGetInTransport` when `HasDirectionalInOutAction()` of the transport is true (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:81` to `:100`; the method on `Transport` is at `P:\scripts\3_game\vehicles\transport.c:677`). The graph has separate states: `GetIn_L` starts on `GetCommandI(CMD_Vehicle_GetIn) == 0` (`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:1612` to `:1618`), `GetIn_R` on 1, and there are `GetOut_L`, `GetOut_R`, `JumpOut_L` and `JumpOut_R` states as well. A custom vehicle with its own mounting clips needs a left and a right version of each.
 2. **Hands held on the bars.** Vanilla uses the node `AnimNodeIK2hands` with `SnapRotation 1` (`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:31` to `:35`) to hold the wrists on the grips, and reads the steering pose over −0.785 to +0.785 radians of `VehicleSteering`. That is the wheel angle, not a fraction of the bike's lock: author the steering frames over 45 degrees each way (above).
-3. **Ejection when the bike falls.** `CrewShouldEject` on the motorbike returns `IsFallen()` (`P:\scripts\4_world\entities\vehicles\motorbikescript.c:464` to `:466`). When the bike is down the player code activates `MDF_UNCONSCIOUSNESS` to get the rider off (`P:\scripts\4_world\entities\dayzplayerimplement.c:2458`); Bohemia's own comment just above calls this temporary until a ragdoll command exists. When the driver dies, `motorbike.FallOver()` tips the bike (`P:\scripts\4_world\entities\dayzplayerimplement.c:731`).
+3. **Ejection when the bike falls.** `CrewShouldEject` on the motorbike returns `IsFallen()` (`P:\scripts\4_world\entities\vehicles\motorbikescript.c:464` to `:466`). When the bike is down the player code activates `MDF_UNCONSCIOUSNESS` to get the rider off (`P:\scripts\4_world\entities\dayzplayerimplement.c:2458`); Bohemia's own comment just above calls this temporary until a ragdoll command exists. When any rider dies on the bike, driver or passenger, `motorbike.FallOver()` tips it; the call sits after the driver-only seat check, not inside it (`P:\scripts\4_world\entities\dayzplayerimplement.c:713` and `:728` to `:731`).
 
 The rider side in more detail, the clip list (`Jawa_05` is `Motorbike_01`, `Jawa_Bitrak` is `Motorbike_02`) and the vehicle config are in the dayz-motorbikes skill.
 

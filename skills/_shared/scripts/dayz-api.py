@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """Look up the DayZ script API from compressed indexes (dayz-api.txt.xz, mod-*.txt.xz) you built locally.
 
-  dayz-api.py class NAME [--inherited]   members of a class (--inherited: also every base class)
-  dayz-api.py find REGEX [-c CLASS]      member lines matching REGEX (case-insensitive), with their class
-  dayz-api.py sub NAME [--all]           classes extending NAME (--all: transitively)
-  dayz-api.py enum NAME                  enum values; `find` also searches enum values and top-level declarations
-  dayz-api.py src NAME                   source files declaring a class/enum, with ready `dayzmake cat` commands
-  dayz-api.py chain NAME                 base class chain
-  dayz-api.py defines [REGEX]            #ifdef defines of the indexed mods (e.g. EXPANSIONMODMARKET, CF_MODULES)
+  python3 dayz-api.py class NAME [--inherited]   members of a class (--inherited: also every base class)
+  python3 dayz-api.py find REGEX [-c CLASS]      member lines matching REGEX (case-insensitive), with their class
+  python3 dayz-api.py sub NAME [--all]           classes extending NAME (--all: transitively)
+  python3 dayz-api.py enum NAME                  enum values; `find` also searches enum values and top-level declarations
+  python3 dayz-api.py src NAME                   source files declaring a class/enum, with ready `dayzmake cat` commands
+  python3 dayz-api.py chain NAME                 base class chain
+  python3 dayz-api.py defines [REGEX]            #ifdef defines of the indexed mods (e.g. EXPANSIONMODMARKET, CF_MODULES)
 
 Vanilla (dayz-api.txt.xz) is always searched. Add mods with -m/--mod: expansion (the whole Expansion bundle), cf, cot,
 dabs, or `-m all`; several with a comma (`-m cf,expansion`). Results of a mod are tagged [mod]; a mod's `modded class X`
 parts show up under their own tag next to the vanilla class (`class X -m expansion --mods-only` prints just those). Output is capped at --max lines (default 120).
-Run `dayz-api.py class X` before relying on a method.
+Run `python3 dayz-api.py class X` before relying on a method.
 """
 import argparse, glob, lzma, os, re, sys
 
@@ -105,8 +105,8 @@ def main():
     if a.cmd == 'defines':
         mods = mods or available()
     if not os.path.isfile(os.path.join(API, 'dayz-api.txt.xz')):
-        sys.exit(f"no index in {API}: extract the scripts with extract-dayz-sources.sh <DayZ install> <dir>, then run\n"
-                 f"  build-api-index.py <dir>/scripts {API}   (or set DAYZ_API_DIR)")
+        sys.exit(f"no index in {API}: extract the scripts with bash extract-dayz-sources.sh <DayZ install> <dir>, then run\n"
+                 f"  python3 build-api-index.py <dir>/scripts {API}   (or set DAYZ_API_DIR)")
     blocks, info = load(mods)
     multi = len(info) > 1
     out = []
@@ -125,7 +125,7 @@ def main():
                 break
             name = base_of(bl)
         if not out:
-            sys.exit(f'no class {a.arg!r}; try: dayz-api.py find {a.arg}{hint}')
+            sys.exit(f'no class {a.arg!r}; try: python3 dayz-api.py find {a.arg}{hint}')
     elif a.cmd == 'src':
         bl = blocks.get(('CLASS', a.arg)) or blocks.get(('ENUM', a.arg))
         if not bl:

@@ -28,6 +28,7 @@ Report high-signal findings. Do not paste raw artifacts into the report.
 ### B. Contradiction and drift
 
 - Spec and code contradict each other (the spec says the bolt moves toward -Z, the code ejects toward +Z): HIGH.
+- Forward-contract contradiction in raw and canonical records (see "Raw producer records and canonical derived records" in `SKILL.md`): one record name with two emitters, or a derived field or enum (one the offline step owns) assigned to the raw producer's `X_RAW` record: HIGH.
 - Terminology drift (one concept, different names across spec, plan and code): MEDIUM.
 - Duplicate or near-duplicate requirements: MEDIUM (merge them).
 
@@ -38,13 +39,14 @@ Report high-signal findings. Do not paste raw artifacts into the report.
 
 ### D. Rule alignment
 
-- Any spec, plan or code element that conflicts with a hard rule of Tier 1 or Tier 2 (an API nobody verified on `P:\`, an invariant not traced to every call site, a style rule from `skills/_shared/enscript-style.md`): CRITICAL for correctness rules, HIGH for style.
+- Any spec, plan or code element that conflicts with a hard rule of Tier 1 or Tier 2: CRITICAL. Examples: an API nobody verified on `P:\` (Tier 2, "Cite, then verify"), or a rule of `skills/_shared/enscript-style.md`. The style guide counts as a Tier 2 hard rule, because `skills/_shared/dayz-conventions.md:12` makes all Enforce Script work follow it.
+- A changed invariant whose other call sites the plan or code does not update: HIGH. This is a Tier 3 working convention (`skills/_shared/knowledge/working-rules.md:18`, "Trace an invariant to every call site"), not a hard rule, so it does not block the in-game session on its own.
 - A mandated gate is missing (a data-critical change with no `rigorous-data-audit` queued): CRITICAL.
 
 ## Severity
 
 - **CRITICAL**: a hard rule violated; a criterion with no verification path; an `[UNVERIFIED]` dependency; an unresolved `ASSUMED` that decides correctness; a missing mandated audit.
-- **HIGH**: spec and code contradict; a requirement with no coverage; an acceptance criterion that cannot be tested; an orphan task or requirement.
+- **HIGH**: spec and code contradict; a forward-contract contradiction (one record name with two emitters, or a derived field on the raw producer); a requirement with no coverage; an acceptance criterion that cannot be tested; an orphan task or requirement; a changed invariant not traced to every call site.
 - **MEDIUM**: terminology drift; a duplicate requirement; an underspecified edge case.
 - **LOW**: wording or style that does not affect execution.
 

@@ -17,15 +17,31 @@ verdict.json. It does NOT apply fixes or rebuild - that is the agent/human loop 
 outside the known taxonomy STOPS and escalates; no blind rebuild).
 
 Hardening: R3 gates on the DRIVER seat
-(crew_index 0), not any seat; R4 is fail-closed on seated+is_owner+fixture_ready; a preflight aborts if
-the player is already in a vehicle (re-run would measure the old car); R5 requires engine_on+is_owner and
-emits needs_clear_ground_retest instead of a one-shot obstacle/drivetrain guess; every verb is checked for
-timeout/ok (a harness error is NOT a model fix); R6 is reported uncalibrated.
+(crew_index 0), not any seat; R4_conditioned seats the player on the server and runs the car's
+OnDebugSpawn there (vehicle_enter + a 0.5 s vehicle_drive), then requires wheel_count and fuel_fraction
+from telemetry_read, because vehicle_get_in_client runs OnDebugSpawn on the client only and can report
+vehicle_fixture_ready=1 on a car with no wheels and no fuel; R4 is fail-closed on
+seated+is_owner+fixture_ready; a preflight aborts if the player is already in a vehicle (re-run would
+measure the old car); R5 requires engine_on+is_owner and emits needs_clear_ground_retest instead of a
+one-shot obstacle/drivetrain guess; every verb is checked for timeout/ok (a harness error is NOT a model
+fix); R6 is reported uncalibrated.
+
+Lease: the daemon's idle-run fence rejects every /enqueue on a run that has no owner, reads included
+(run-lifecycle.md), and a raw /enqueue carries {identity, lease_token} in its body as well as ?key=
+(vehicle-smoke.md). Adopt the run with session_acquire_wait from your MCP session first, pass the
+identity and lease token it returned, and keep sending session_heartbeat from that session at least
+every 90 s while the script runs: the lease lasts 120 s and this script does not renew it.
 
 Usage:
-  python drive_ladder.py --vehicle SUB_BRZ --keyfile <dayz-mcp>\\tools\\.dayz_mcp.key --journal output\\ladder\\SUB_BRZ\\run_1
+  python drive_ladder.py --vehicle SUB_BRZ --keyfile <dayz-mcp>\\tools\\.dayz_mcp.key \\
+      --identity <identity> --lease-token <token> --journal <TargetMod>_dev\\_ladder\\run_<n>
+
+Pass a new run_<n> folder on each pass (acceptance-ladder.md, guardrail 3). Without --journal the
+verdict goes to ./_ladder/<vehicle>/verdict.json and the next pass overwrites it.
 
 The key file comes from --keyfile or the DAYZ_MCP_KEYFILE environment variable; there is no default path.
+The identity and lease token come from --identity/--lease-token or the DAYZ_MCP_IDENTITY and
+DAYZ_MCP_LEASE_TOKEN environment variables.
 """
 from __future__ import annotations
 
@@ -40,6 +56,11 @@ import urllib.request
 from pathlib import Path
 
 DEF_KEYFILE = os.environ.get("DAYZ_MCP_KEYFILE", "")
+DEF_IDENTITY = os.environ.get("DAYZ_MCP_IDENTITY", "")
+DEF_LEASE_TOKEN = os.environ.get("DAYZ_MCP_LEASE_TOKEN", "")
+
+# Rejections that waiting cannot cure: the run has no owner, or the lease is gone.
+LEASE_ERRORS = ("run_not_owned", "lease_expired", "lease_invalid")
 
 # first_block (MCPBridge.c:589-708) -> SUB_BRZ taxonomy fix anchor (the vehicles pack, skills/_shared/vehicles/).
 FIRST_BLOCK_FIX = {
@@ -69,9 +90,11 @@ def _bad(res: dict) -> bool:
 class Daemon:
     """Raw /enqueue + /await against the broker daemon. Mirrors tramoA_gate_driver.Daemon."""
 
-    def __init__(self, port: int, key: str):
+    def __init__(self, port: int, key: str, identity: str, lease_token: str):
         self.base = f"http://127.0.0.1:{port}"
         self.key = key
+        self.identity = identity
+        self.lease_token = lease_token
 
     def _req(self, method: str, path: str, query: dict, body: dict | None):
         q = dict(query or {})
@@ -93,7 +116,8 @@ class Daemon:
                 return exc.code, {}
 
     def enqueue(self, cmd: str, args: dict) -> int:
-        status, payload = self._req("POST", "/enqueue", {}, {"cmd": cmd, "args": args})
+        body = {"cmd": cmd, "args": args, "identity": self.identity, "lease_token": self.lease_token}
+        status, payload = self._req("POST", "/enqueue", {}, body)
         if status != 200 or "id" not in payload:
             raise RuntimeError(f"enqueue {cmd} -> {status} {payload}")
         return payload["id"]
@@ -131,6 +155,10 @@ def wait_ready(d: Daemon, timeout: float = 180.0):
         try:
             res = d.run("query_player_state", {}, timeout=8)
         except RuntimeError as e:
+            if any(code in str(e) for code in LEASE_ERRORS):
+                raise RuntimeError(f"the daemon rejected the enqueue ({e}); adopt the run with "
+                                   "session_acquire_wait, pass its identity and lease token, and "
+                                   "keep sending session_heartbeat") from e
             print(f"  enqueue err {e}", flush=True)
             time.sleep(2.0)
             continue
@@ -248,8 +276,43 @@ def run_ladder(d, args) -> dict:
     else:
         print("[R3] PASS (driver seat is available)", flush=True)
 
+    # ---- R4_conditioned: server seat + server-side OnDebugSpawn (hard for R5/R6) ----
+    # vehicle_get_in_client runs OnDebugSpawn on the client, which does nothing under server authority,
+    # and can still report vehicle_fixture_ready=1 with wheel_count=0 and fuel=0 (vehicle-smoke.md).
+    # vehicle_enter seats the player on the server; the preparation phase of vehicle_drive runs
+    # OnDebugSpawn on the server, and the 0.01 throttle for 0.5 s is negligible. vehicle_drive needs
+    # the server seat, so this runs before the owner seat of R4. A spawn without conditioning would
+    # read pos_delta ~0 in R5 and look like a drivetrain defect.
+    ent = d.run("vehicle_enter", {"pos": car, "timeout_s": 30}, timeout=40)
+    drv = d.run("vehicle_drive", {"throttle": 0.01, "duration": 0.5}, timeout=20) \
+        if not _bad(ent) and _truthy(ent.get("seated")) else {"ok": False, "error": "not_seated"}
+    obj = d.run("telemetry_read", {"mode": "object_at", "type": args.vehicle, "pos": car, "radius": 2},
+                timeout=20)
+    wheels = obj.get("wheel_count")
+    fuel = obj.get("fuel_fraction")
+    cond = {"seated_server": ent.get("seated"), "wheel_count": wheels, "fuel_fraction": fuel,
+            "expected_wheels": args.wheels}
+    if _bad(ent) or not _truthy(ent.get("seated")) or _bad(drv) or _bad(obj) or not _truthy(obj.get("found")):
+        R["rungs"]["R4_conditioned"] = {"PASS": False, "inconclusive": True, **cond}
+        fail("R4_conditioned", f"server seat or conditioning did not run: vehicle_enter={json.dumps(ent)[:120]} "
+             f"vehicle_drive={json.dumps(drv)[:120]} telemetry_read found={obj.get('found')}",
+             "harness, not a model fix: retry vehicle_enter with timeout_s=30 and check the server seat with query_player_state", hard=True)
+        R["stop"] = "R4_conditioned"
+        return R
+    r4c_pass = isinstance(wheels, int) and wheels >= args.wheels and float(fuel or 0.0) > 0.0
+    R["rungs"]["R4_conditioned"] = {"PASS": r4c_pass, **cond}
+    if not r4c_pass:
+        fail("R4_conditioned", f"after the server-side OnDebugSpawn wheel_count={wheels} (expected {args.wheels}), fuel_fraction={fuel}",
+             "wheels missing -> the car's OnDebugSpawn attaches no wheels, or an Axles override lists only one axle "
+             "(skills/_shared/vehicles/invariants-wheels-and-hubs.md); fuel 0 -> read telemetry_read again before concluding, "
+             "then check that OnDebugSpawn fills the tank", hard=True)
+        R["stop"] = "R4_conditioned"
+        return R
+    print(f"[R4_conditioned] PASS wheel_count={wheels} fuel_fraction={fuel}", flush=True)
+
     # ---- R4 seated through MCP (hard for R5/R6) ----
     # Fail-closed on the full contract: not timeout, ok, seated, is_owner, vehicle_fixture_ready.
+    # vehicle_fixture_ready reflects the client-side conditioning only; R4_conditioned is the real check.
     gi = d.run("vehicle_get_in_client", {"pos": car}, timeout=40)
     r4_pass = (not gi.get("_timeout") and not _bad(gi)
                and _truthy(gi.get("seated")) and _truthy(gi.get("is_owner"))
@@ -258,7 +321,7 @@ def run_ladder(d, args) -> dict:
                         "fixture_ready": gi.get("vehicle_fixture_ready"), "error": gi.get("error")}
     if not r4_pass:
         fail("R4", f"vehicle_get_in_client did not satisfy seated+is_owner+fixture_ready -> {json.dumps(gi)[:200]}",
-             "not seated -> reachability / crew bone-selection / seat anim; not is_owner -> ownership not transferred (StartCommand_Vehicle client-side); not fixture_ready -> OnDebugSpawn conditioning. See vehicle-config-and-modelcfg.md", hard=True)
+             "not seated -> reachability / crew bone-selection / seat anim; not is_owner -> ownership not transferred (StartCommand_Vehicle client-side); not fixture_ready -> client-side OnDebugSpawn (the server-side conditioning already passed in R4_conditioned). See vehicle-config-and-modelcfg.md", hard=True)
         R["stop"] = "R4"
         return R
     print(f"[R4] PASS seated+owner+fixture", flush=True)
@@ -311,7 +374,7 @@ def run_ladder(d, args) -> dict:
             R["rungs"]["R5"]["verdict"] = "needs_clear_ground_retest"
             hint = f"speedo={speedo} gear={gear}"
             fail("R5", f"engine_on+owner but pos_delta={pos_delta}, speedo={speedo} -> AMBIGUOUS (obstacle vs drivetrain); {hint}",
-                 "MANDATORY before any fix: re-run on CLEAR ground (relocate / --rotation into open space). If it then moves -> was an obstacle (false FAIL). If still ~0 with the engine revving -> wheel sim (FireGeo) rip-import.md / drivetrain config. Do NOT apply a model fix on this single reading.", hard=False)
+                 "MANDATORY before any fix: re-run on CLEAR ground (relocate to a site with at least 150 m clear ahead; --rotation is a placement flag and does not set the heading). If it then moves -> was an obstacle (false FAIL). If still ~0 with the engine revving -> wheel sim (FireGeo) rip-import.md / drivetrain config. Do NOT apply a model fix on this single reading.", hard=False)
     else:
         print(f"[R5] PASS pos_delta={pos_delta:.1f}m speedo={speedo} engine_on owner", flush=True)
 
@@ -367,7 +430,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument("--keyfile", default=DEF_KEYFILE)
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--vehicle", required=True, help="classname of the rip-under-test")
-    ap.add_argument("--rotation", type=int, default=0, help="spawn yaw; point into open space for R5")
+    ap.add_argument("--identity", default=DEF_IDENTITY,
+                    help="identity from session_acquire_wait (or DAYZ_MCP_IDENTITY); sent in every /enqueue body")
+    ap.add_argument("--lease-token", default=DEF_LEASE_TOKEN,
+                    help="lease token from session_acquire_wait (or DAYZ_MCP_LEASE_TOKEN); sent in every /enqueue body")
+    ap.add_argument("--rotation", type=int, default=0,
+                    help="world_spawn rotation: a Central Economy RF_* placement flag passed to CreateObjectEx, "
+                         "not a yaw (0 keeps RF_DEFAULT 512; see collision-probes.md)")
+    ap.add_argument("--wheels", type=int, default=4, help="wheel_count the conditioned car must report (R4_conditioned)")
     ap.add_argument("--journal", default="", help="dir for verdict.json (default: ./_ladder/<vehicle>)")
     ap.add_argument("--drive-s", type=float, default=5.0)
     ap.add_argument("--hold-ttl", type=float, default=12.0)
@@ -386,8 +456,12 @@ def main() -> int:
     if not args.keyfile:
         print("[FAIL] no key file: pass --keyfile or set DAYZ_MCP_KEYFILE (the .dayz_mcp.key of your dayz-mcp checkout)", flush=True)
         return 2
+    if not (args.identity and args.lease_token):
+        print("[FAIL] no identity or lease token: adopt the run with session_acquire_wait and pass the identity "
+              "and lease token it returned (--identity/--lease-token or DAYZ_MCP_IDENTITY/DAYZ_MCP_LEASE_TOKEN)", flush=True)
+        return 2
     key = Path(args.keyfile).read_text(encoding="utf-8").strip()
-    d = Daemon(args.port, key)
+    d = Daemon(args.port, key, args.identity, args.lease_token)
     R = run_ladder(d, args)
     return write_verdict(R, args)
 

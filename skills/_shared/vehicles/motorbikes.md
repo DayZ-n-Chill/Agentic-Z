@@ -56,7 +56,7 @@ Two ways to make a motorbike, as for a car:
 | Car subsystem | On a motorbike | Where |
 |---|---|---|
 | `class Axles` in `SimulationModule` | None. `class Wheels` holds `class Front` and `class Rear` directly. | `P:\DZ\vehicles\singletrack\config.cpp:73-91` |
-| Doors | None. `IsAreaAtDoorFree` returns `true`, and the seat and door reach checks all return `true`. | `P:\scripts\3_game\vehicles\motorbike.c:60-68`; the reach checks at `motorbikescript.c:469-504` |
+| Doors | None. `IsAreaAtDoorFree` returns `true`; `CrewCanGetThrough`, `CanReachSeatFromSeat` and `CanReachDoorsFromSeat` return `true`; `CanReachSeatFromDoors` returns `true` only when the player stands within `pDistance` of the seat memory point (height ignored). | `P:\scripts\3_game\vehicles\motorbike.c:60-68`; the reach checks at `motorbikescript.c:469-504` |
 | Radiator and coolant | Not vital: `IsVitalRadiator()` returns `false`. | `P:\scripts\4_world\entities\vehicles\motorbikescript.c:321-324` |
 | Fluids | Capacities for fuel, oil, coolant and brake fluid are declared (`fuelCapacity`, `oilCapacity`, `coolantCapacity`, `brakeFluidCapacity`), but the script only uses `MotorbikeFluid.FUEL`. | `P:\DZ\vehicles\singletrack\config.cpp:30-33` |
 | Battery | Depends on the override. `NeedElectricitySourceDevice()` returns `true` by default and `MotorbikeScript` does not change it; both vanilla bikes return `false`. | `P:\scripts\3_game\vehicles\transport.c:821-824`; `motorbike_01.c:33-36`, `motorbike_02.c:34-37` |

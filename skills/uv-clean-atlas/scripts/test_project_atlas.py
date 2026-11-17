@@ -256,6 +256,6 @@ def test_opposite_cameras_are_horizontal_mirrors(atlas):
 
 def test_report_template_and_labels_are_english():
     text = SCRIPT.read_text(encoding="utf-8")
-    for leftover in ("cero solapes", "QUE HICISTE", "PIEL", "INTERNAS", "MAS ALTA", "ninguna", "C:\\Program Files"):
+    for leftover in ("cero solapes", "QUE HICISTE", "PIEL", "INTERNAS", "MAS ALTA", "ninguna", "no medible", "ESTIMACION_NO_IMPLEMENTADA", "C:\\Program Files"):
         assert leftover not in text, f"untranslated or machine-specific text left: {leftover!r}"
     assert "# REPORT_G10 — zero overlaps with N frames" in text

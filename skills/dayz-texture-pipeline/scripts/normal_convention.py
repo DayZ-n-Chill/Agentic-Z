@@ -62,7 +62,7 @@ DayZ Tools ImageToPAA; a `_nohq` name makes it write the RGB normal.
 Usage:
   python normal_convention.py --normal heater_Normal.png --albedo heater_BaseColor.png [--json]
 Exit: 0 = both readings agree on a candidate (DirectX or OpenGL), stable across the blocks,
-2 = INCONCLUSIVE, 1 = bad input (a missing or unreadable file, sizes that differ, or numpy or
+2 = INCONCLUSIVE or bad arguments (argparse, for example no --albedo), 1 = bad input (a missing or unreadable file, sizes that differ, or numpy or
 Pillow not installed).
 JSON keeps the key "verdict" for that candidate; undefined numbers are null. A non-finite
 correlation is INCONCLUSIVE, never a convention.

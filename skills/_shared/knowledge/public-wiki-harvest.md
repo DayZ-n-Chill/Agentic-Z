@@ -59,5 +59,5 @@ Under the `BohemiaInteractive` organisation: `DayZ-Central-Economy` (the mission
 
 ## Related notes
 
-- `wiki-systems-reference.md`: the gameplay and server facts taken from the wiki, with what was checked.
+- `wiki-systems-reference.md`: gameplay and server configuration facts (contaminated areas, stamina and `cfggameplay.json`, diag menu, object and gear spawners, surfaces), with what was checked on `P:\`.
 - `environment-and-infra.md`: server and launch infrastructure.

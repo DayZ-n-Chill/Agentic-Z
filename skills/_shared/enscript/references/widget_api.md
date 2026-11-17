@@ -2,7 +2,7 @@
 
 The script side of DayZ UI: every widget class a mod uses, its methods, widget events and `ScriptedWidgetEventHandler`, loading layouts, `UIScriptedMenu` and imagesets. The `.layout` file format itself is in `gui_layout.md`.
 
-Every fact here is vanilla and was read from these files on `P:\`:
+Every fact here is vanilla and was read from these files on `P:\`, except the `CfgMods` imageset registration, which is marked as not checkable on `P:\`:
 
 - `P:\scripts\1_core\proto\enwidgets.c`: widget classes, `WidgetFlags`, `ScriptedWidgetEventHandler` (line 656), `LoadWidgetImageSet` (line 692).
 - `P:\scripts\1_core\proto\proto.c`: `ARGB` and `ARGBF`.
@@ -136,7 +136,7 @@ class MyMod_PanelHandler : ScriptedWidgetEventHandler
 
 ### Attaching a handler from the layout
 
-Put the class name in the widget's `scriptclass` property. When the layout loads, the engine creates that class and calls its `void OnWidgetScriptInit(Widget w)`. Vanilla `HoverEffect` (`P:\scripts\3_game\gui\effects\hovereffect.c`) stores `w` and calls `w.SetHandler(this)` there. Other vanilla `scriptclass` values in `P:\gui\layouts\` are `SizeToChild`, `SizeToParent`, `TabberUI` and `RadialMenu`. Read the instance back with `widget.GetScript(out instance)`.
+Put the class name in the widget's `scriptclass` property. When the layout loads, the engine creates that class and calls its `void OnWidgetScriptInit(Widget w)`. Vanilla `HoverEffect` (`P:\scripts\3_game\gui\effects\hovereffect.c`) stores `w` and calls `w.SetHandler(this)` there. Other vanilla `scriptclass` values in `P:\gui\layouts\` include `SizeToChild`, `SizeToParent`, `TabberUI` and `RadialMenu`. Read the instance back with `widget.GetScript(out instance)`.
 
 Values in a `ScriptParamsClass` block under the widget fill the script class's fields that are marked `reference`. Dabs Framework uses this for its bindings; see `../integrations/dabs_framework.md`.
 
@@ -196,7 +196,7 @@ Using an image:
 - In script: `ImageWidget.LoadImageFile(0, "set:dayz_gui image:cartridge_int")` loads into slot 0 (vanilla `P:\scripts\5_mission\gui\inventorynew\containeditems\icon.c` line 1541). `SetImage(n)` switches between loaded slots.
 - In rich text: `<image set="<set>" name="<image>" />` (vanilla `P:\scripts\3_game\tools\inpututils.c` line 178).
 
-The engine must know a mod's imageset before a layout can use it. Register it in `config.cpp` under `CfgMods`:
+Not checkable on `P:\`: no vanilla `config.cpp` registers imagesets, and the only vanilla `CfgMods` classes (in `DZ\data` and `DZ\data_sakhal`) have no `imageSets` entry. Mods register their imagesets in `config.cpp` under `CfgMods` so a layout can use them:
 
 ```cpp
 class CfgMods

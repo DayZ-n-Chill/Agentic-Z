@@ -1,6 +1,8 @@
-# Imported-model gate ladder before CHANGE-0 (archived snapshot)
+# Imported-model gate ladder before change 0 (archived snapshot)
 
 History only: the rule that set the order of the old ladder of visual gates for an imported car, kept for manual diagnosis and for vehicles already built against it.
+
+Change 0 is the family B cutover of 2026-08-05: from then on a new ripped car runs only the offline check allowlist of `skills/rip-vehicle-import/SKILL.md` (B1 to B6, with B7 added on 2026-08-16), and every other gate, this ladder included, is run by hand only.
 
 > Status: the measurement below was taken on a third-party vehicle mod (SUB_BRZ); it is third-party mod behaviour, not vanilla, and was not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. `gate_car` is a script of that mod's work folder, which is not part of this repo.
 

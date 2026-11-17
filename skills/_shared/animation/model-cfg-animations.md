@@ -85,10 +85,10 @@ Read from the shipped models on `P:\DZ\`. Each row is one animation as the game 
 | `P:\DZ\gear\camping\fence.p3d` | `Wall_Gate_Rotate` | `user` | 0 to 100 | rotation, 0 to 1.7453 rad (100 degrees) | skeleton `fence_skeleton`, bones `wall_gate`, `wall_interact`, axis `rotate_axis` |
 | `P:\DZ\structures\Residential\HouseBlocks\houseblock_3f_corner1.p3d` | `Doors5` | `doors5` | 0 to 1 | rotation, 0 to minus 1.5708 rad (90 degrees the other way) | bone `doors5`, axis `doors5_axis`, sound point `doors5_action` |
 | `P:\DZ\gear\containers\55galDrum.p3d` | `Lid`, `Lid2` | `lid`, `lid2` | 0 to 1 | hide at 0.6 | skeleton `55galDrum_skeleton`, bones `lid`, `lid2` |
-| `P:\DZ\vehicles\wheeled\offroadhatchback\offroadhatchback.p3d` | `DrivingWheel` | `steeringwheel` | minus 1 to 1 | rotation, 3.64 rad each way | the steering wheel |
+| `P:\DZ\vehicles\wheeled\offroadhatchback\offroadhatchback.p3d` | `DrivingWheel` | `steeringwheel` | minus 1 to 1 | rotation, 3.1416 rad (180 degrees) each way | the steering wheel |
 | same | `SeatDriver`, then `SeatDriverRot` | `seatdriver` for both | 0 to 0.5, then 0.5 to 1 | two moves played one after the other | the driver seat |
 | same | `wheel_1_1` | `wheelfrontleft` | 0 to 6.283 | one full turn | a wheel |
-| `P:\DZ\vehicles\singletrack\motorbike_01\motorbike_01.p3d` | `TurnFront` | `turnfront` | minus 1.571 to 1.571 | rotation by the value itself | the front fork and handlebar |
+| `P:\DZ\vehicles\singletrack\motorbike_01\motorbike_01.p3d` | `TurnFront` | `turnfront` | minus 1.571 to 1.571 | rotation by minus the value (value 1.571 turns it minus 1.571 rad) | the front fork and handlebar |
 
 What this shows:
 

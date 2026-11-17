@@ -14,10 +14,14 @@ Two ways the inventory preview of a door, hood or other part renders empty: the 
 
 ### 1. `rotationFlags` is per SIDE, and the wrong one renders an empty preview
 
-Left-hand doors take `8`, right-hand doors take `4`. Vanilla applies this in every family —
-`Hatchback_02_Door_1_1`/`1_2` use 8 while `2_1`/`2_2` use 4 (`P:\DZ\vehicles\wheeled\config.cpp:9029`,
-`:9153`, `:9164`, `:9288`), and `Truck_01_Door_2_1` inherits from its left-hand parent and overrides the value to 4
-(`:18348`). A mirrored door that inherits the left-hand value shows a **blank item-inspect preview**
+Left-hand doors take `8`, right-hand doors take `4` in the four families that override the right-hand doors:
+`HatchbackDoors_CoDriver` sets `rotationFlags=4` against the driver door's 8 (`P:\DZ\vehicles\wheeled\config.cpp:1039`, `:919`),
+`CivSedanDoors_CoDriver` and `CivSedanDoors_BackRight` set 4 against 8 (`:4936`, `:4957`, `:4813`),
+`Hatchback_02_Door_1_1`/`1_2` use 8 while `2_1`/`2_2` use 4 (`:9029`, `:9153`, `:9164`, `:9288`), and
+`Truck_01_Door_2_1` inherits from its left-hand parent and overrides the value to 4 (`:18348`). Two families do
+not override: `Sedan_02_Door_2_1` and `Sedan_02_Door_2_2` declare no `rotationFlags` and inherit 8 from
+`Sedan_02_Door_1_1` (`:13566`, `:13695`, `:13455`), and `Offroad_02_Door_2_1` and `Offroad_02_Door_2_2` inherit 8
+from `Offroad_02_Door_1_1` (`:20723`, `:20743`, `:20586`). A mirrored door that inherits the left-hand value shows a **blank item-inspect preview**
 while its opposite renders normally, with everything else identical: same LOD table, same named
 properties, same bounding box, same distance to origin, same selections, same winding. Symmetric
 config plus symmetric geometry plus one side blank means look at `rotationFlags` before the model.
@@ -32,7 +36,7 @@ icon forces `SetModelOrientation("0 0 0")` + `SetView(GetViewIndex())`
 null and the render comes out empty. Measured on the two SUB_BRZ doors (in game, DayZ
 1.30.164014 Exp): both had `invview` within 3e-8 m of the bbox centre (and of `ce_center` / `pos
 center`); vanilla puts it ~1.07 m from the centre, OUTSIDE the box, on the side to show, and reuses
-the same point on both mirrored doors. Never write `invview = (min+max)/2`; offline gate:
+the same point on both mirrored doors (not checked on `P:\`: the vanilla door models there are binarized). Never write `invview = (min+max)/2`; offline gate:
 |invview - bbox centre| > 0.3 m for every part with a preview. With `invview2` present,
 ATTACHMENT/GROUND render view 1 and CARGO/HANDS view 0 (`scripts/3_game/entities/entityai.c:3769-3811`) -
 design both point sets together or not at all.

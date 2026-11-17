@@ -89,7 +89,7 @@
       "verified": "evals/fixtures/dayz-script-specialist/api_liveness.c lines 1 to 4 (class ActiveApi, active), 6 to 9 (class CommentedApi, every line commented out), 11 to 16 (class GuardedApi inside #ifdef DEVELOPER, which the retail game does not define)"
     },
     {
-      "id": "stardz-negatives-autoptr",
+      "id": "enforce-negatives-autoptr",
       "question": "Answer only, do not edit any file. A wiki page says every member that owns an object must be declared autoptr in Enforce Script, and that ref is not enough. Is that right? Start with yes or no, then say which qualifier mod code should use for an owning member.",
       "must_include": [
         "re:\\A\\W*no\\b",
@@ -101,7 +101,7 @@
       "verified": "skills/_shared/enscript/references/language_memory.md section autoptr (the older owning qualifier; use ref in mod code); P:/scripts/1_core/proto/enscript.c:834 (autoptr map<string, int> prg_count, a 1_core example) and :737 (TManagedRefArray, typedef array<ref Managed>)"
     },
     {
-      "id": "stardz-negatives-overload",
+      "id": "enforce-negatives-overload",
       "question": "Answer only, do not edit any file. A wiki page says Enforce Script cannot have two methods with the same name and different parameters in one class. Is that right? Start with yes or no and name one vanilla class that proves it either way, citing the file.",
       "must_include": [
         "re:\\A\\W*no\\b",
@@ -113,7 +113,7 @@
       "verified": "P:/scripts/3_game/gameplay.c:652-653 (ShowWalkieTalkie(bool show) and ShowWalkieTalkie(int fadeOutSeconds) in class Hud); skills/_shared/enscript/patterns/language_workarounds.md section 'Overloading works, but keep it simple'. Vanilla declares overloads in one class, so the claim that they are unsupported is false."
     },
     {
-      "id": "stardz-negatives-managed",
+      "id": "enforce-negatives-managed",
       "question": "Answer only, do not edit any file. Someone told me that a class deriving from Managed is owned by the engine, so I never need a ref to keep my helper object alive. Is that right? Start with yes or no and say what keeps a Managed object alive.",
       "must_include": [
         "re:\\A\\W*no\\b",
@@ -125,7 +125,7 @@
       "verified": "P:/scripts/1_core/proto/enscript.c:117 (class Managed) and :737 (TManagedRefArray, typedef array<ref Managed>); skills/_shared/enscript/references/language_memory.md sections 'The two roots' (Managed is the root for objects script owns; entities are the engine-owned ones) and 'ref keeps an object alive'"
     },
     {
-      "id": "stardz-negatives-jsonloadfile",
+      "id": "enforce-negatives-jsonloadfile",
       "question": "Answer only, do not edit any file. Is JsonLoadFile a global helper function in vanilla DayZ that I can call as JsonLoadFile(path, data) and that tells me whether the load worked? Say where it is really declared, what it returns, and which call vanilla tells you to use instead. Cite the vanilla file.",
       "must_include": [
         "JsonFileLoader",
@@ -136,7 +136,7 @@
       "verified": "P:/scripts/3_game/tools/jsonfileloader.c:105 (static void JsonLoadFile, a method of JsonFileLoader<Class T>, under the DEPRECATED comment at :99, with 'use JsonFileLoader::LoadFile instead' at :104) and :7 (static bool LoadFile(string filename, out T data, out string errorMessage))"
     },
     {
-      "id": "stardz-negatives-ondrop",
+      "id": "enforce-negatives-ondrop",
       "question": "Answer only, do not edit any file. I want code to run when a player drops my item on the ground, so I plan to write override bool OnDrop(...) in my ItemBase class. Is OnDrop a callback every entity has? Say which vanilla class declares OnDrop and what it is for, citing the file.",
       "must_include": [
         "re:\\bno\\b|\\bnot\\b|isn't|doesn't",
@@ -149,7 +149,7 @@
       "verified": "P:/scripts/1_core/proto/enwidgets.c:679 (bool OnDrop(Widget w, int x, int y, Widget reciever), a drag and drop event of class ScriptedWidgetEventHandler at :656); the item side hook is P:/scripts/3_game/entities/entityai.c:976 (EEItemLocationChanged)"
     },
     {
-      "id": "stardz-negatives-dabs",
+      "id": "enforce-negatives-dabs",
       "question": "Answer only, do not edit any file. A tutorial uses a class named ViewController from Dabs Framework for a menu. Is ViewController part of the vanilla scripts under P:\\scripts, so my mod can use it with no extra dependency? Start with yes or no and say what my mod's config.cpp needs if I use it.",
       "must_include": [
         "re:\\A\\W*no\\b",

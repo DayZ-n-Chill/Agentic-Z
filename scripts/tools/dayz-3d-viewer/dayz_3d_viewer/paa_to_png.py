@@ -259,7 +259,11 @@ class PAAFile:
         self.mipmaps = []
 
         if filepath:
-            with open(filepath, "rb") as handle:
+            try:
+                handle = open(filepath, "rb")
+            except OSError as exc:
+                raise ViewerError("Cannot open %s: %s" % (filepath, exc.strerror or exc)) from exc
+            with handle:
                 self._parse(handle)
         elif fileobj:
             self._parse(fileobj)

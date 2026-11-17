@@ -36,7 +36,7 @@ What the viewer tool in `scripts/tools/dayz-3d-viewer` supports in `.paa`, `.p3d
 Other limits of the converter, all still present (`scripts/tools/dayz-3d-viewer/KNOWN-ISSUES.md`):
 
 - Proxy triangles are exported as visible geometry. Strip them first when the view has to match the in-game mesh.
-- A LOD with resolution 1100 (the pilot view LOD) is classified as `shadow`, so it is never picked as the mesh to show.
+- A LOD with resolution 1100 (the pilot view LOD) is reported as an unknown kind (`unknown_1100.0`), so it is never picked as the mesh to show.
 - Only the best visual LOD is shown. There is no LOD switcher.
 - There is no PNG to PAA encoder.
 

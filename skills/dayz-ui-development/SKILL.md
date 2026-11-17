@@ -111,7 +111,7 @@ The 18 numbered rules, each traced to a real crash or visual failure, are in `re
 | How is the Expansion Market menu built end to end: MVC, the seven state machine, confirmation before the RPC, the server's price recheck, reserve, stock, money, spawn and save, trader permissions, the four step RPC handshake? | `references/expansion-market-menu-pattern.md` |
 | How do I build group and map UI: layout manager registry, map widget calls, canvas drawing, 3D marker projection, compass strip, text width measuring, chat ring buffer, dirty checks, tabs, color picker, drag and drop on the map, JSON settings, tactical ping? | `references/lbgroups-patterns.md` |
 | How do admin tools build floating windows, ESP overlays, resizable widgets and a free camera? | `references/admin-ui-patterns.md` |
-| Which UI facts were verified in production use of a shipped mod (80 and more)? | `references/lfpg-knowledge-base.md` |
+| What do the engine widget protos and the Dabs Framework source say, how does rich text markup behave, which early UI assumptions turned out wrong, and which runtime tests are still open? | `references/lfpg-knowledge-base.md` |
 | How do I build an in game color test panel and run an A/B comparison? | `references/color-test-harness.md` |
 | Which vanilla classes does a loading screen mod hook, why is an imageset's file name not its set name, how does file order decide draw order, what does a layout typo do, and how do image based and segmented progress bars work? | `references/community-findings.md` |
 | Which starting layout do I copy, and which four construction mistakes do the templates prevent? | `templates/README.md` |

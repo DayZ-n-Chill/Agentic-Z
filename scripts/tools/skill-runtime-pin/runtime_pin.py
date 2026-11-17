@@ -258,7 +258,9 @@ def list_probe_files(probe_root: Path) -> tuple[list[str], list[tuple[str, str]]
         for name in dirnames:
             child = current / name
             rel = posix_path(str(child.relative_to(probe_root)))
-            if name == ".git" or rel == ".git" or rel.startswith(".git/"):
+            # Only the probe root's own .git is ignored; a nested .git folder
+            # is ordinary content and must show up as extra files.
+            if rel == ".git":
                 continue
             if is_link_or_reparse(child):
                 links.append((rel, link_kind(child)))
@@ -765,7 +767,7 @@ def materialize(
         "source_commit": commit_sha,
         "probe_root": str(probe_root),
         "adapter_path": adapter_path,
-        "allowed_read_prefixes": [original, references_prefix(skill)],
+        "allowed_read_prefixes": [original, references_prefix(skill), adapter_path],
         "forbidden_outside_probe": True,
     }
     write_json(task_root / MANIFEST_NAME, manifest)
@@ -1065,7 +1067,14 @@ def inspect_prompt_input(task_root: Path, prompt_input: Path) -> dict[str, objec
         raise PinError("PREFLIGHT-FAILED", "Capture failed verify; refuse to inspect a catalog dump.")
     manifest, _receipt, probe_root = load_pin(task_root)
     alias = str(manifest["alias"])
-    text = prompt_input.read_text(encoding="utf-8")
+    try:
+        text = prompt_input.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as error:
+        raise PinError(
+            "PROMPT-INPUT-INVALID",
+            f"Cannot read the prompt input as UTF-8 text: {error}.",
+            path=str(prompt_input),
+        ) from error
     blocks = catalog_blocks(text)
     alias_entries: list[tuple[str, str, Mapping[str, str]]] = []
     merged_roots: dict[str, str] = {}
@@ -1167,13 +1176,25 @@ def grade_transcript(task_root: Path, transcript_path: Path) -> dict[str, object
     if verified["verdict"] != "PASS":
         raise PinError("PREFLIGHT-FAILED", "Capture failed verify; refuse to grade a probe.")
     manifest, receipt, probe_root = load_pin(task_root)
-    payload = load_json(transcript_path)
+    try:
+        payload = load_json(transcript_path)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise PinError(
+            "TRANSCRIPT-INVALID",
+            f"Cannot read the transcript as UTF-8 JSON: {error}.",
+            path=str(transcript_path),
+        ) from error
     if not isinstance(payload, dict):
         raise PinError("TRANSCRIPT-INVALID", "Transcript root must be an object.")
     consumer = str(payload.get("consumer", "")).strip().lower()
     stdout = str(payload.get("stdout", ""))
-    tool_reads = [str(item) for item in payload.get("tool_reads", [])]
-    injected = list(payload.get("injected_bodies") or [])
+    raw_reads = payload.get("tool_reads") or []
+    if not isinstance(raw_reads, list):
+        raise PinError("TRANSCRIPT-INVALID", "Transcript tool_reads must be a list.")
+    tool_reads = [str(item) for item in raw_reads]
+    injected = payload.get("injected_bodies") or []
+    if not isinstance(injected, list) or not all(isinstance(item, dict) for item in injected):
+        raise PinError("TRANSCRIPT-INVALID", "Transcript injected_bodies must be a list of objects.")
     canary = str(receipt["canary"]).strip()
     findings: list[dict[str, object]] = []
     if consumer not in {"cursor", "codex"}:

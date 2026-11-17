@@ -71,7 +71,7 @@ For data-critical stores (quarantine, persistence flags, money), use disk-first.
 
 For each concept, the reset path must clear all stores:
 
-```powershell
+```text
 Grep "Reset|Clear|Purge|Wipe" --type c --output_mode content -n true
 ```
 

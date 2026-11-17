@@ -23,7 +23,7 @@ Workbench plugin APIs are thinly documented and change between DayZ Tools versio
 
 ## Where plugin files go
 
-Workbench compiles plugins from the `workbench` script module of the gproj it opens. In vanilla `<DayZ Tools>\Bin\Workbench\dayz.gproj` that module's `Paths` hold only `"scripts/editor/Workbench"` and `"scripts/editor/plugins"`. The mod's `workbench\dayz.gproj` is a copy of it with mod paths added to the `game`, `world` and `mission` modules only, so it does not load the mod's plugins yet. To fix that:
+Workbench compiles plugins from the `workbench` script module of the gproj it opens. In vanilla `<DayZ Tools>\Bin\Workbench\dayz.gproj` that module's `Paths` hold only `"scripts/editor/Workbench"`, `"scripts/editor/plugins"` and `"ToolAddons"`. The mod's `workbench\dayz.gproj` is a copy of it with mod paths added to the `game`, `world` and `mission` modules only, so it does not load the mod's plugins yet. To fix that:
 
 1. Write plugin scripts to `workspace/<ModName>/scripts/editor/plugins/`, the vanilla folder name inside the mod.
 2. In `workspace/<ModName>/workbench/dayz.gproj`, add `"<ModName>/scripts/editor/plugins"` as the last line of the `workbench` module's `Paths { }`, in the same form as the scaffold's `"<ModName>/scripts/3_Game"` entries. Add it only if it is missing.

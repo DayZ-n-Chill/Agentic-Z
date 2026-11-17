@@ -32,6 +32,7 @@ Every vanilla file the `dayz-motorbikes` skill and its references cite, with its
 | `P:\scripts\3_game\dayzplayer.c` | 1413 | Player constants |
 | `P:\scripts\3_game\dustkickupeffects.c` | 256 | Projectile dust effects singleton |
 | `P:\scripts\3_game\enums\evehiclevfxtypes.c` | 17 | `EVehicleVFXEffect`, `EVehicleVFXEffectGroup` |
+| `P:\scripts\3_game\entities\object.c` | 1467 | `GetBonePivotsForAnimationSource`, `GetBoneRotationMS` |
 
 ### 2. Gameplay and entity scripts (4_World)
 
@@ -59,7 +60,6 @@ Every vanilla file the `dayz-motorbikes` skill and its references cite, with its
 | `P:\scripts\4_world\entities\itembase\blowtorch.c` | 146 | Exclusive registration of chassis, engine, and bike part repair actions |
 | `P:\scripts\4_world\entities\core\inherited\inventoryitem.c` | 1377 | `ActionPickUpMotorbike` on the `Motorbike_02` side fairings |
 | `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c` | 1658 | `AddItemInHandsProfileIK` registrations, `DayZPlayerTypeRegisterItems`, animation instance preload |
-| `P:\scripts\3_game\entities\object.c` | 1467 | `GetBonePivotsForAnimationSource`, `GetBoneRotationMS` |
 
 ### 3. User actions (4_World)
 

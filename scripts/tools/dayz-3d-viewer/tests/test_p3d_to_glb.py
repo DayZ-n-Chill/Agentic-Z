@@ -47,10 +47,37 @@ def test_no_host_paths_in_glb(tmp_path):
     assert document["asset"]["generator"] == "dayz-3d-viewer"
 
 
-def test_classify_lod_res1100_is_shadow_not_visual():
-    assert classify_lod(1100.0) == "shadow"
+def test_classify_lod_res1100_is_unknown_not_visual():
+    assert classify_lod(1100.0) == "unknown_1100.0"
     assert not classify_lod(1100.0).startswith("visual")
     assert classify_lod(0.0) == "visual_0"
+
+
+def test_classify_lod_matches_py3d_kinds():
+    assert classify_lod(20.0) == "visual"
+    assert classify_lod(10000.0) == "shadowvolume"
+    assert classify_lod(1.0e13) == "geometry"
+    assert classify_lod(1.0e15) == "memory"
+    assert classify_lod(2.0e15) == "landcontact"
+    assert classify_lod(3.0e15) == "roadway"
+    assert classify_lod(4.0e15) == "paths"
+    assert classify_lod(5.0e15) == "hitpoints"
+    assert classify_lod(6.0e15) == "view_geometry"
+    assert classify_lod(7.0e15) == "fire_geometry"
+    assert classify_lod(1.04e13) == "geometry"
+    assert classify_lod(2.0e13) == "unknown_%s" % 2.0e13
+    assert classify_lod(3.0e13) == "unknown_%s" % 3.0e13
+    for res in (20.0, 10000.0, 1.04e13, 2.0e13, 3.0e13, 1100.0, 7.0e15):
+        kind = py3d.classify_lod_resolution(res)
+        ours = classify_lod(res)
+        assert (kind is None) == ours.startswith("unknown_")
+
+
+def test_visual_lod_at_resolution_20_is_found(tmp_path):
+    path = save_model(tmp_path / "res20.p3d", [make_triangle_lod(resolution=20.0)])
+    with path.open("rb") as handle:
+        model = py3d.P3D(handle)
+    assert find_best_visual_lod(model) is not None
 
 
 def test_proxy_faces_are_exported_as_geometry(tmp_path):

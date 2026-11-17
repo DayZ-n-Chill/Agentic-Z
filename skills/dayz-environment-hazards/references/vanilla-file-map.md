@@ -38,7 +38,7 @@ Which vanilla file holds which part of the 1.30 hazard systems, what could not b
 | `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionwashheadwettingclothesbase.c` | washing the head |
 | `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionwashheaditemcontinuous.c` | washing from a bottle |
 | `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionwetclothinginhandsbase.c` | wetting clothing in hands |
-| `P:\scripts\4_world\classes\contaminatedarea\oilpitarea.c` | the 3 to 10 s ignition delay |
+| `P:\scripts\4_world\classes\contaminatedarea\oilpitarea.c` | the 3 to 9 s ignition delay |
 | `P:\scripts\4_world\classes\contaminatedarea\effectarea.c` | `OnCEIterate`, `OIL_PIT = 8`, `SurfaceRoadY` |
 | `P:\scripts\4_world\entities\scriptedentities\triggers\oilpittrigger.c` | 20 heat damage per second |
 | `P:\scripts\4_world\classes\dust\dusteffectceilinghandler.c` | ceiling dust |

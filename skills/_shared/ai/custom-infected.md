@@ -36,6 +36,8 @@ Inherit the infected chain, never an animal. The reason is visible in vanilla sc
 
 ## 1.30: new classes, a new mind state, new attacks
 
+`P:\` holds 1.30 only, so that the classes, mind state and clips below are new in 1.30 rather than older is not checkable on `P:\`. That they exist in 1.30 is checked at the lines cited.
+
 **Female military infected.** Config classes and their templates:
 
 | Class | Parent | Template | Where |
@@ -48,7 +50,7 @@ In script, `ZmbF_SoldierNormal_Base` and `ZmbF_eastSoldier_Base` extend `ZombieF
 
 The Nasdara classes are plain children of the sex bases: `ZmbM_takiCitizenUrbanA_Base` (`P:\scripts\4_world\entities\creatures\infected\zombiemalebase.c:160`) and `ZmbF_takiCitizenUrbanA_Base` (`P:\scripts\4_world\entities\creatures\infected\zombiefemalebase.c:163`) onward.
 
-**`MINDSTATE_COWER`.** The mind state list gains `MINDSTATE_COWER` after `MINDSTATE_FIGHT` (`P:\scripts\3_game\entities\dayzinfected.c:18`). The engine AI stops the creature, and `ZombieBase` holds the calm idle pose: the `MINDSTATE_COWER` case at `P:\scripts\4_world\entities\creatures\infected\zombiebase.c:475` calls `SetIdleState(0)`, under a comment that names sandstorm cowering. A mod that switches on the mind state in `HandleMindStateChange` or in its own hooks must handle the new value, or the creature falls through the switch. The other states are in `creatures.md`.
+**`MINDSTATE_COWER`.** The mind state list gains `MINDSTATE_COWER` after `MINDSTATE_FIGHT` (`P:\scripts\3_game\entities\dayzinfected.c:18`). How `ZombieBase` reacts to it and what a mod has to handle are in `creatures.md`, section "Infected mind states".
 
 **Heavy running attacks.** Two new clips ship in `P:\DZ\anims\anm\infected\attacks\erected\`: `z_erc_run_attackl_heavy.anm` and `z_erc_run_attackr_heavy.anm`. A mod that replaces the infected combat graph should expect them.
 

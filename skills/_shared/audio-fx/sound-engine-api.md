@@ -88,7 +88,7 @@ A case measured in game on DayZ 1.30 experimental (not checked on `P:\`) shows w
 
 ## The wave handle
 
-`AbstractWave` methods (all `proto`):
+`AbstractWave` methods (all `proto` except `GetEvents()`, which is a script method):
 
 | Line | Method | Note |
 |---|---|---|

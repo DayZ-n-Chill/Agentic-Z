@@ -280,9 +280,10 @@ anim_group.position.add(axisOrigin);
 ```javascript
 // Pre-load all material variants
 const ledMaterials = {
-    off:   new THREE.MeshStandardMaterial({ color: [0.4,0.4,0.4], ... }),
-    green: new THREE.MeshStandardMaterial({ color: [0,0.8,0], emissive: [0,1,0], ... }),
-    red:   new THREE.MeshStandardMaterial({ color: [0.8,0,0], emissive: [1,0,0], ... }),
+    // Colors must be THREE.Color objects: a plain [r,g,b] array is ignored without an error.
+    off:   new THREE.MeshStandardMaterial({ color: new THREE.Color(0.4,0.4,0.4), ... }),
+    green: new THREE.MeshStandardMaterial({ color: new THREE.Color(0,0.8,0), emissive: new THREE.Color(0,1,0), ... }),
+    red:   new THREE.MeshStandardMaterial({ color: new THREE.Color(0.8,0,0), emissive: new THREE.Color(1,0,0), ... }),
 };
 
 // On state change:

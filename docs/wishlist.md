@@ -26,7 +26,6 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 | `sat_gate.py`: print evaluated, skipped and total triangle counts, and stop cleanly when every triangle is collapsed. Share one module for the SAT check and the island finder, which exist two and three times. | Models review | 2026-11-17 |
 | A Blender-gated end-to-end test for `uv-clean-atlas` (unwrap a small generated mesh, assert zero overlapping pairs). | Models review | 2026-11-17 |
 | Write `probe_truth.py` and `facet_report.py`, which `blender-visual-review` documents but does not ship. | Models review | 2026-11-17 |
-| A plain-ASCII output mode for `correction_loop.py`, to remove its crash on cp1252 consoles. | Models review | 2026-11-17 |
 | A checker for shorthand citations (`file.c:123`, a bare `:123` after a path), which the integrity test skips. | Animation review | 2026-11-17 |
 | Name the graph layer in the opening sentence of `skills/_shared/animation/README.md`. | Animation review | 2026-11-17 |
 | A pytest for `gen_model_cfg.py` (it has only `--self-test`), one that builds the animation viewer page against `viewer_core.py`, and tests for `ik_pose_to_seanim.py` and `weapon_grip_viewer.py --data`. | Animation review | 2026-11-17 |

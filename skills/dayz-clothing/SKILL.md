@@ -12,7 +12,7 @@ Takes a wearable from "the worn model does not sit on the player" to a working i
 
 Follow `skills/_shared/dayz-conventions.md`. The four scripts here work offline on the files you name and do not run `/dayz-preflight`; packing and testing go through `/dayz-build-pbo` and `/dayz-launch-test`, which do.
 
-Everything marked **Measured** was found while building a plate body armor (a mod delivered as worn models) on DayZ 1.29 diag: about six in-game test cycles to separate three independent failures that leave no log error. The worn model contract is the same on 1.30.
+Each item marked **Measured** comes from a real run. Unless the item names another run, it comes from building a plate body armor (a mod delivered as worn models) on DayZ 1.29 diag: about six in-game test cycles to separate three independent failures that leave no log error. The worn model contract is the same on 1.30. The other Measured items name their own run: the offline FBX round trip in Blender, the reader comparison on vanilla character bodies, and the Linux notes.
 
 ## What to read
 
@@ -82,8 +82,8 @@ Build with `/dayz-build-pbo <ModName>`, then test with `/dayz-launch-test`. The 
 | Symptom | Cause | Check with |
 |---|---|---|
 | Item unknown or cannot be spawned, no RPT error | The class did not register (failure 1) | Spawn it in game; list the PBO entries |
-| Worn item is a rigid block floating about 1 m up, rotated, not animating | Skeleton name is not `DayzTemporarySkeleton` (failure 3) | The skeleton name in the built model against a vanilla one |
-| Worn item is exploded into separate pieces above the head | Mesh frame flipped 180 degrees (failure 2) | Z signs of anatomical components against the chainmail |
+| Worn item is a rigid block anchored above the player, not animating | Skeleton name is not `DayzTemporarySkeleton` (failure 3) | The skeleton name in the built model against a vanilla one |
+| Worn item is exploded into separate rigid pieces floating about 1 m above the player | Mesh frame flipped 180 degrees (failure 2) | Z signs of anatomical components against the chainmail |
 | It fits, but plates are misaligned on arms or legs | The source's proportions differ from the canonical bind | The alignment viewer below, or an artist pass |
 | Body or arms invisible when equipped | Expected: classes in the torso slots hide the skin | Wear it with the intended slot class |
 | Coarse joints while moving | 0 or 1 plate weights, no transition bones | An optional weight-smoothing pass |

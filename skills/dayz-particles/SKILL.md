@@ -69,7 +69,7 @@ Property groups, all listed in `references/ptc-format-reference.md`:
 - Sprite animation and rotation: `AnimOnce`, `AnimFPS`, `LifetimeByAnim`, `RandomFrame`, `RandomRotDir`, `RotMultiplier`, `RandomAngle`.
 - Curves over a particle's life: `Color`, `Alpha`, `Size`, `RotationSpeed`. Curves over the effect time: `ColorMast`, `AlphaMast`, `SizeMast`, `BRateMast`, `VelocityMast`, `AirResistanceMast`.
 
-A particle `.emat` uses one of two shaders, `Particle` (fire, sparks, water, most effects; it has `BlendMode`, `Sort`, `TileU` and `TileV`) or `ParticleSprite` (steam, flares, glow billboards). Both are in `references/emat-format-reference.md`. Weather `.emat` files with other shaders, such as the sandstorm's `SnowEffect`, are postprocess materials and must not be named by a `.ptc`.
+A particle `.emat` uses one of two shaders, `Particle` (fire, sparks, water, most effects) or `ParticleSprite` (steam, flares, flames, glow billboards). Both shaders take `BlendMode`, `Sort`, `TileU` and `TileV`. Both are in `references/emat-format-reference.md`. Weather `.emat` files with other shaders, such as the sandstorm's `SnowEffect`, are postprocess materials and must not be named by a `.ptc`.
 
 ## GUID references
 
@@ -78,7 +78,7 @@ Resources reference each other as `{HEXGUID}relative/path.ext`.
 - Mod `.ptc` to vanilla `.emat`, or mod `.emat` to vanilla `.edds`: copy the vanilla GUID plus path, exactly as vanilla files do.
 - Mod `.ptc` to mod `.emat`: path only; mod-owned resources resolve by PBO path.
 
-Path-only references resolve: vanilla itself ships one. `P:\graphics\particles\contaminated_area_gas_around_tiny.ptc:13` has `Material "Graphics/Particles/materials/enviroment/water_splash_01_em.emat"` with no GUID, and that effect is registered at `P:\scripts\3_game\particles\particlelist.c:316` and played by the contaminated area (`P:\scripts\4_world\classes\contaminatedarea\effectarea.c:80`). Every vanilla `.emat` texture reference carries a GUID, so for vanilla resources copy GUID plus path to match vanilla, and the path alone is a working fallback.
+Path-only references resolve: vanilla itself ships one. `P:\graphics\particles\contaminated_area_gas_around_tiny.ptc:13` has `Material "Graphics/Particles/materials/enviroment/water_splash_01_em.emat"` with no GUID, and that effect is registered at `P:\scripts\3_game\particles\particlelist.c:316` and played by the contaminated area (`P:\scripts\4_world\classes\contaminatedarea\effectarea.c:80`). Every texture reference in the vanilla particle materials under `P:\graphics\particles\materials` carries a GUID (other vanilla `.emat` files do not always: `P:\DZ\worlds\sakhal\data\sakhal_sea.emat:4` names its `DeepMap` by path alone), so for vanilla resources copy GUID plus path to match vanilla, and the path alone is a working fallback.
 
 More evidence that the path, not the GUID, is what resolves: vanilla names the material `smoke_anim_02.emat` with two different GUIDs, `{00BEA27443975BEB}` in the bonfire (`P:\graphics\particles\fire_bonfire.ptc:217`) and `{0BEA27443975BE0B}` in the failing hatchback engine (`P:\graphics\particles\hatchback_engine_failing.ptc:11`), and both effects draw their smoke.
 
@@ -114,7 +114,7 @@ Packing: `/dayz-build-pbo` already packs `.ptc`, `.emat` and `.edds` (its includ
 
 ## Pitfalls
 
-1. Particles are client-only. Guard with a runtime `GetGame().IsHeadlessOrDedicatedServer()` check, as every pattern in `references/integration-patterns.md` does (Pattern A shows it first). It is the same gate vanilla's particle pool uses (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:65`); `IsDedicatedServer()` alone lets the code run on a headless client. Vanilla `PowerGeneratorBase` gates its smoke on `IsClient() || !IsMultiplayer()` instead (`P:\scripts\4_world\entities\itembase\powergenerator.c:196`); Pattern D, which follows that class, still uses `IsHeadlessOrDedicatedServer()` so one gate covers every pattern. Do not use `#ifndef SERVER`: testing runs `DayZDiag_x64.exe` for both ends, and a compile-time define does not separate them.
+1. Particles are client-only. Guard with a runtime `GetGame().IsHeadlessOrDedicatedServer()` check, as every pattern in `references/integration-patterns.md` does (Pattern A shows it first). It is the same gate vanilla's particle pool uses (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:65`); `IsDedicatedServer()` alone lets the code run on a headless client. The general client-only rule in `skills/_shared/conventions/scripts.md` names `!GetGame().IsDedicatedServer()`; for particles this skill narrows it to `IsHeadlessOrDedicatedServer()`, which includes that check. Vanilla `PowerGeneratorBase` gates its smoke on `IsClient() || !IsMultiplayer()` instead (`P:\scripts\4_world\entities\itembase\powergenerator.c:196`); Pattern D, which follows that class, still uses `IsHeadlessOrDedicatedServer()` so one gate covers every pattern. Do not use `#ifndef SERVER`: testing runs `DayZDiag_x64.exe` for both ends, and a compile-time define does not separate them.
 2. Looping particles (`Repeat 1`) never end on their own. Stop them and null the reference; clean up in `EEDelete`, power-off and the destructor.
 3. `Stop()` fades out gradually; use `StopParticleFlags.IMMEDIATE` for instant removal.
 4. `ObjectDelete(particle)` is valid only for a `ParticleSource` with `DisableAutoDestroy()`.
@@ -123,7 +123,7 @@ Packing: `/dayz-build-pbo` already packs `.ptc`, `.emat` and `.edds` (its includ
 7. `EffectTime` is the master-curve cycle; `Repeat` loops the whole effect. A one-shot (`Repeat 0`) plays once for `EffectTime`.
 8. Clean up an `Effect` started through `SEffectManager` only with `SEffectManager.DestroyEffect()`, never with `delete`.
 9. Particles stop being drawn at a distance: about 200 m, an engine limit with no workaround. The figure is an observation in game, not yet checked on `P:\`.
-10. A dedicated server check alone is a 1.29 habit. Up to 1.29 vanilla wrecks tested `!g_Game.IsDedicatedServer()` (1.29, not yet checked on `P:\`); since 1.30 vanilla tests `!g_Game.IsHeadlessOrDedicatedServer()` (`P:\scripts\4_world\entities\building\wrecks\wreck_mi8.c:6`). When updating an older mod, search for the old check around particle code.
+10. A dedicated server check alone is a 1.29 habit. Up to 1.29 vanilla wrecks tested `!g_Game.IsDedicatedServer()` (1.29, not yet checked on `P:\`); since 1.30 most vanilla particle code tests `!g_Game.IsHeadlessOrDedicatedServer()` (`P:\scripts\4_world\entities\building\wrecks\wreck_mi8.c:6`), but the Chinook and Mi-24 wrecks still use the dedicated server check alone (`P:\scripts\4_world\entities\building\wrecks\wreck_chinook.c:6` and `P:\scripts\4_world\entities\building\wrecks\wreck_mi24_tk.c:5`). When updating an older mod, search for the old check around particle code.
 11. A valid `cfgeffectarea.json` and a server that boots do not prove a contaminated area shows gas at its edge. Each area is capped at 1,000 emitters; work out the budget first (`references/effect-area-particles.md`).
 
 ## Effect areas
@@ -134,7 +134,7 @@ Before choosing the radius of a contaminated area in `cfgeffectarea.json`, read 
 
 Full detail, with the vanilla lines: `references/dayz-1-30-particles.md`. In short:
 
-- The client check for particles is `!g_Game.IsHeadlessOrDedicatedServer()` (wrecks, `FireplaceBase`, `ParticleManager`).
+- The client check for particles is `!g_Game.IsHeadlessOrDedicatedServer()` (most wrecks, `FireplaceBase`, `ParticleManager`).
 - Ceiling dust is spawned from the server with `SEffectManager.CreateParticleServer` and a `ParticleEffecterParameters("CeilingDustEffecter", ...)`.
 - Vehicle effects are retuned through `ParticleParamsOverrideData.m_FloatModifiers`, owned by `VehicleVFXComponent`.
 - Surface particle IDs come from `SurfaceInfo` (`GetStepParticleId`, `GetWheelParticleId`, `GetVehicleDustParticleId`, `GetCeilingDustParticleId`); the `Surface.GetStepsParticleID` and `Surface.GetWheelParticleID` wrappers are obsolete.

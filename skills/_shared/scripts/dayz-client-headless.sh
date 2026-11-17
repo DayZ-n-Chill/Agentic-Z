@@ -1,10 +1,10 @@
 #!/bin/sh
 # Run the DayZ *client* in a headless sway session: no monitor, nothing shown on your desktop.
 #
-#   dayz-client-headless.sh [-e] start <state-dir> [DayZ args...]   start sway + the game, return at once
-#   dayz-client-headless.sh        shot  <state-dir> <out.png>      screenshot of the headless output
-#   dayz-client-headless.sh        stop  <state-dir>                stop the game and the session
-#   dayz-client-headless.sh        status                           list running DayZ clients (exit 1 if any)
+#   sh dayz-client-headless.sh [-e] start <state-dir> [DayZ args...]   start sway + the game, return at once
+#   sh dayz-client-headless.sh        shot  <state-dir> <out.png>      screenshot of the headless output
+#   sh dayz-client-headless.sh        stop  <state-dir>                stop the game and the session
+#   sh dayz-client-headless.sh        status                           list running DayZ clients (exit 1 if any)
 #
 # -e = the experimental client (app 1024020, "DayZ Exp") instead of stable (221100, "DayZ").
 # Only ONE game runs at a time: `start` refuses while any DayZ client is running (even the

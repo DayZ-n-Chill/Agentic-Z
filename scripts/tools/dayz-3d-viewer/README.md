@@ -59,11 +59,12 @@ sandboxed iframe can render without `fetch`.
 | Exit | Meaning |
 |---:|---|
 | `0` | Conversion or parse completed |
-| `1` | The input was readable but conversion failed |
+| `1` | The input is missing or not an MLOD `.p3d`, or conversion failed |
 | `2` | Usage error or a declared extra is missing |
 
-Missing Pillow or LZO is reported as a one-line message on stderr, not
-as a traceback. `build-viewer` is the exception: it keeps going, lists
+Missing Pillow or LZO, a missing input file and a binarized (non-MLOD)
+`.p3d` are each reported as a one-line message on stderr, not as a
+traceback. `build-viewer` is the exception: it keeps going, lists
 each failed step (a missing extra included) under `errors` in the JSON
 it prints, and exits `1` when that list is not empty.
 
@@ -104,7 +105,7 @@ timestamp or a host path.
 - It does not encode PNG → PAA.
 - It does not apply the PAA `SWIZ` tag to normal maps.
 - It does not hide proxy triangles; they export as visible geometry.
-- It classifies resolution 1100 (ViewPilot) as `shadow`, not as a
+- It reports resolution 1100 (ViewPilot) as `unknown_1100.0`, not as a
   view-pilot LOD. `find_best_visual_lod` will not pick it as the visual
   mesh. See `KNOWN-ISSUES.md`.
 - ODOL (binarized) `.p3d` is out of scope. Debinarize first.

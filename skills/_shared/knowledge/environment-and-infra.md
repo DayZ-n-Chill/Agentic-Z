@@ -1,6 +1,6 @@
 # DayZ environment and infrastructure notes
 
-Covers the work drive and mod layout, the diag binaries, `serverDZ.cfg` settings, build and launch commands with their measured gotchas, mission files, BattlEye kick codes and log files.
+Covers the work drive and mod layout, the diag binaries, `serverDZ.cfg` settings, build and launch commands with their measured gotchas, mission files, engine connect-error codes and log files.
 
 Status: field notes from mod projects, not yet checked on `P:\` line by line; the lines that cite a `P:\` file were opened and confirmed. Tool behaviour (AddonBuilder, CfgConvert, FileBank, BattlEye) was measured on one Windows machine; the VPP AdminTools section is third-party mod behaviour, not vanilla. Where this note and Tier 2 (`skills/_shared/dayz-conventions.md`, `skills/_shared/conventions/server.md`) cover the same rule, Tier 2 wins: this repo keeps test servers under `.server/<instance>/`, not the `workspace\_server\` layout the commands below show.
 
@@ -47,8 +47,10 @@ Status: field notes from mod projects, not yet checked on `P:\` line by line; th
 ## `serverDZ.cfg` — `allowFilePatching = 1;` is required
 
 If the client connects with `-filePatching` and the server does NOT have
-`allowFilePatching = 1;`, BattlEye rejects with code `0x00020005`:
-*"The server does not support the client's current filePatching setting"*.
+`allowFilePatching = 1;`, the server refuses the connection with engine connect-error code `0x00020005`:
+*"The server does not support the client's current filePatching setting"*. This is not a BattlEye
+kick: the code is `EConnectErrorServer.FILE_PATCHING` ("Bad file patching",
+`P:\scripts\3_game\global\errormodulehandler\connecterrorservermodule.c:10`). See "Connect error codes" below.
 
 ```
 // serverDZ.cfg
@@ -199,7 +201,7 @@ Set in Object Builder via *Edit → Named Properties*:
 | `mass` | (kg) | Geometry LOD: physics weight |
 | `mapType` | `building`, `vehicle`, etc. | Icon shown on in-game map |
 | `class` | `house`, `car`, etc. | Engine behavior category |
-| `damage` | named selection | Defines damage zone |
+| `damage` | `no`, `building`, `tree`, `tent` | Destruction type: how the object breaks when destroyed (e.g. `building` in `P:\DZ\structures\military\houses\mil_barracks_round.p3d`) |
 
 ## Server and Central Economy: relevant files
 
@@ -219,13 +221,16 @@ Standard layout under `<mission>/`:
 | `mapgroupproto.xml` + `mapgrouppos.xml` | Loot tier locations (military, residential, etc.) |
 | `storage_1/` | Active persistence. **Backup BEFORE touching economy.** |
 
-## BattlEye — most common kick codes
+## Connect error codes
 
-| Code | Typical cause | Fix |
-|---|---|---|
-| `0x00020005` | filePatching mismatch | `allowFilePatching = 1;` in serverDZ.cfg |
-| `0x00010002` | Mismatched mod signatures | Rebuild PBO with AddonBuilder, verify `.bisign` |
-| Public Variable Restriction | BattlEye filter detects unexpected sync | Whitelist in `publicvariable.txt` |
+A `CONNECTING FAILED (0xCCCCNNNN)` message is an engine connect error, not a BattlEye kick. The full code is two shorts: the high short is the `ErrorCategory` and the low short is the code inside it (`P:\scripts\3_game\global\errormodulehandler\errormodulehandler.c:4-26`). Category `0x0001` is `ConnectErrorClient` and `0x0002` is `ConnectErrorServer`: the measured `0x00020017` "Client is using Diag exe while the server is not" (`linux-proton-findings.md`) is `EConnectErrorServer.CLIENT_DIAG` = 23 (`connecterrorservermodule.c:29`). The usage examples in the comments of `errormodulehandler.c` number the categories one higher; the measured messages are what the engine does.
+
+| Code | Enum value | Meaning | Fix |
+|---|---|---|---|
+| `0x00020005` | `EConnectErrorServer.FILE_PATCHING` (`connecterrorservermodule.c:10`) | Client runs `-filePatching`, server does not allow it | `allowFilePatching = 1;` in serverDZ.cfg |
+| `0x00010002` | `EConnectErrorClient.ALREADY_CONNECTING` (`connecterrorclientmodule.c:7`) | Client is already trying to join a server | Wait for the first attempt to finish or fail, then retry |
+
+The enums are in `P:\scripts\3_game\global\errormodulehandler\`.
 
 ## When the RPT cites that a script fails
 

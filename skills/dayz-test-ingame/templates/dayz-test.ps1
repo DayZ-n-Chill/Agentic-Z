@@ -1,4 +1,5 @@
 #Requires -Version 5.1
+
 <#
 .SYNOPSIS
   DayZ local test launcher - build + deploy + filepatching launch on DayZDiag_x64.exe.
@@ -8,7 +9,9 @@
   deploys it to the P:\Mods junction (-> DayZ\!Workshop), and launches DayZDiag in
   offline / server / client / all modes with -filePatching.
 
-  Path resolution order (infrastructure note, section on the optional environment variables): DAYZ_* env var -> Steam default.
+  Path resolution order used by this script: a DAYZ_GAME_PATH, DAYZ_DIAG_PATH, DAYZ_TOOLS_PATH or DAYZ_SERVER_PATH
+  environment variable first, then the default Steam library folder. Unlike the order in the infrastructure note,
+  it skips the registry lookup for DayZ Tools.
 
 .PARAMETER Mod
   Mod name (CfgPatches identifier, no dashes). Drives @<Mod>, P:\<Mod> source, PBO name.
@@ -67,7 +70,7 @@ function Warn($m) { Write-Host "   [warn] $m"   -ForegroundColor Yellow }
 function Die($m)  { Write-Host "   [FAIL] $m"   -ForegroundColor Red; exit 1 }
 
 # ---------------------------------------------------------------------------
-# Path resolution: env var override -> Steam default (infrastructure note, section on the optional environment variables)
+# Path resolution: environment variable override, then the default Steam library folder (no registry lookup).
 # ---------------------------------------------------------------------------
 $SteamCommon   = 'C:\Program Files (x86)\Steam\steamapps\common'
 $GamePath      = if ($env:DAYZ_GAME_PATH)  { $env:DAYZ_GAME_PATH }  else { Join-Path $SteamCommon 'DayZ' }
@@ -77,7 +80,8 @@ $ToolsPath     = if ($env:DAYZ_TOOLS_PATH) { $env:DAYZ_TOOLS_PATH } else { Join-
 $AddonBuilder  = Join-Path $ToolsPath 'Bin\AddonBuilder\AddonBuilder.exe'
 $ServerInstall = if ($env:DAYZ_SERVER_PATH) { $env:DAYZ_SERVER_PATH } else { Join-Path $SteamCommon 'DayZServer' }
 $Workshop      = Join-Path $GamePath '!Workshop'
-$WorkDrive     = if ($env:DAYZ_WORK_DRIVE) { $env:DAYZ_WORK_DRIVE } else { 'P:\' }
+# Always P:\ itself. DAYZ_WORK_DRIVE names the folder mounted as P:\ (see /dayz-workdrive), not the drive root.
+$WorkDrive     = 'P:\'
 $ModsDir       = Join-Path $WorkDrive 'Mods'
 
 # Diag is mandatory for -filePatching past the loading screen (infrastructure note, section on the Diag binary being mandatory for iteration).
@@ -242,6 +246,8 @@ function Invoke-ManagedStart {
         [string]$MissionValue,
         [string]$ExtendRunId = ''
     )
+    # The finalizer below runs $LifecyclePython, so check the environment before it.
+    Assert-LifecycleEnvironment
     $request = [ordered]@{
         argv = @($Argv)
         cwd = $Cwd
@@ -476,16 +482,18 @@ function Invoke-Preflight {
     if ($Mode -in @('offline', 'client', 'all')) {
         if (-not (Test-Path $ClientProfiles)) { New-Item -ItemType Directory -Force -Path $ClientProfiles | Out-Null }
         $steamKey = 'HKCU:\Software\Valve\Steam\ActiveProcess'
-        $steamFailure = 'The DayZ client will die at bootstrap with a ~1 KB RPT and an ErrorMessage_*.mdmp. Recovery: run steam.exe -shutdown, then relaunch Steam. Your login is preserved; no re-login is required, and the registry key repopulates in ~20 s.'
+        $steamFailure = 'The DayZ client will die at bootstrap with a header-only RPT and an ErrorMessage_*.mdmp ("unable to locate running instance of Steam"). Remedy: copy the live steam.exe pid into the pid value of this key (key stable between two reads, ActiveUser non-zero, a single live steam.exe; recheck before writing and verify after). Restarting Steam keeps the login but may not rewrite the key, so recheck it against a live process before launching (dayz-test-ingame skill, references\troubleshooting.md, section on the dead Steam pid).'
         try {
             $steam = Get-ItemProperty -LiteralPath $steamKey -ErrorAction Stop
             $steamProcessId = [int64]$steam.pid
             $steamActiveUser = [int64]$steam.ActiveUser
-            if (($steamProcessId -ne 0) -and ($steamActiveUser -ne 0)) {
-                Ok "Steam session: pid=$steamProcessId ActiveUser=$steamActiveUser"
+            # A non-zero pid can be the pid of a dead process (after a crash the key keeps the old one).
+            $liveSteamIds = @(Get-Process -Name steam -ErrorAction SilentlyContinue | ForEach-Object { [int64]$_.Id })
+            if (($steamProcessId -ne 0) -and ($steamActiveUser -ne 0) -and ($liveSteamIds -contains $steamProcessId)) {
+                Ok "Steam session: pid=$steamProcessId (live steam.exe) ActiveUser=$steamActiveUser"
             }
             else {
-                Warn "STEAM CLIENT PREFLIGHT: unusable session (pid=$steamProcessId ActiveUser=$steamActiveUser). $steamFailure"
+                Warn "STEAM CLIENT PREFLIGHT: unusable session (registry pid=$steamProcessId ActiveUser=$steamActiveUser; live steam.exe pid(s)=$($liveSteamIds -join ',')). $steamFailure"
             }
         }
         catch {
@@ -764,6 +772,8 @@ Invoke-Preflight
 if ($Preflight) { Info 'Preflight only - exiting.'; exit 0 }
 if ($Mode -in @('server', 'all') -and $RunId) { Die 'server/all reject an input RunId because they create a new managed run.' }
 if ($Mode -eq 'client' -and [string]::IsNullOrWhiteSpace($RunId)) { Die 'client requires the exact -RunId to adopt.' }
+# Every launch mode needs the managed lifecycle; fail before spending time on a build.
+Assert-LifecycleEnvironment
 if ($Build) { Invoke-Build } else { Info 'Skipping build (-Build to re-pack the PBO).' }
 
 switch ($Mode) {

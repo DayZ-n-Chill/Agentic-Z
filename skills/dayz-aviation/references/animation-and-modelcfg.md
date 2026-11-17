@@ -105,7 +105,7 @@ class rotor_1_1
 };
 ```
 
-Because the aircraft uses `CarScript`, vanilla wheel-RPM sources are easier than custom. Visual prop spin is tied to right-front wheel rotation. **Scripts override this during flight** by manipulating wheel state OR by using `dBodySetAngularVelocity` directly. `rotor_1_1_blur` bone is for the blurred-prop visual effect, controlled by script (no animation in cfg).
+Because the aircraft uses `CarScript`, vanilla wheel-RPM sources are easier than custom. Visual prop spin is tied to right-front wheel rotation. To spin the propeller from the engine instead of a wheel, point the bone at a user `AnimationSource` and drive it from script with `SetAnimationPhase`, or keep the wheel source. Do not use `dBodySetAngularVelocity` for this: it sets the angular velocity of the whole rigid body, not of a model animation. `rotor_1_1_blur` bone is for the blurred-prop visual effect, controlled by script (no animation in cfg).
 
 ### Multi-engine bone naming inconsistency
 
@@ -139,8 +139,7 @@ Pair this with `damper_susp_X_Y` rotation animations for the spring-mount visual
 
 ### isDiscrete flag
 
-- `isDiscrete = 1` for vehicles (respects `sourceAddress` strictly)
-- `isDiscrete = 0` for static props (Hangar) with simple continuous animation
+`isDiscrete` is a flag on the `CfgSkeletons` skeleton class, not on an animation: `1` for mechanical parts (vehicles, aircraft), `0` for organic movement such as a creature. It has nothing to do with `sourceAddress`. See `skills/_shared/animation/model-cfg-animations.md`.
 
 ## Aviation Damage Zones
 

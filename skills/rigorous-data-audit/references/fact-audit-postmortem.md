@@ -1,31 +1,31 @@
-# Fact audit postmortem: an audit that was about 55% confabulated
+# Fact audit postmortem: an audit that was about 45% confabulated
 
-The index page of a fact audit of a set of DayZ skills, run by four parallel agents with no verification step, kept as the case study behind step 3 of this skill. When its critical findings were checked against the real files, most were invented. Open this to see what a convincing but confabulated audit looks like and which patterns to watch for.
+The index page of a fact audit of a set of DayZ skills, run by four parallel agents with no verification step, kept as the case study behind step 3 of this skill. When its critical findings were checked against the real files, nearly half were invented and only two were fully real. Open this to see what a convincing but confabulated audit looks like and which patterns to watch for.
 
 Nothing below the notice is a fact about DayZ or about any skill in this repo. The skill and file names are those of the audited skill set as the audit wrote them, not this repo's skills, even where a name matches; do not act on any row. The one vanilla line the audit mentions is quoted only as an example of an unverified claim.
 
 > **Notice: this audit confabulates**
 >
-> A second verification against the real files (not against the audit's own narrative) showed that most critical findings were **invented**. Out of 11 P0/P1 claims verified one by one:
+> A second verification against the real files (not against the audit's own narrative) showed that nearly half of the critical findings were **invented**. Out of 11 P0/P1 claims verified one by one:
 >
-> - **6 fully confabulated** (1a, 1b, 1d, 2, 3, 4)
+> - **5 fully confabulated** (1a, 1b, 1d, 2, 3)
 > - **2 real** (1c LOD bug in `dayz-3d-viewer/p3d_to_gltf.py`, 1e Arma 3 demo code in `py3d-direct-generation.md`)
-> - **3 partial/exaggerated** (5 unverified, 6 partial, only Motorcycle/Helicopter not HouseNoDestruct, 7 exaggerated)
+> - **4 partial/exaggerated** (4 partial: `foreach`, `++` and `+=` are valid Enforce Script, for example `foreach (string s: types)` at `P:\scripts\3_game\billboardset.c:108`, `setIndex++` at `billboardset.c:33` and `return_path += ...` at `P:\scripts\3_game\global\game.c:635`, but the ternary `?:` does not compile, so it was rightly listed as forbidden; 5 unverified; 6 partial, see F2 below; 7 exaggerated)
 >
-> **Confabulation rate ≈ 55%.** This audit is not citable as a source. For any action depending on a finding here: **open the real file, grep, verify against `path:line`** before acting. Individual per-skill reports likely share the same confabulation rate, treat them equally.
+> **Confabulation rate ≈ 45%** (5 of 11). This audit is not citable as a source. For any action depending on a finding here: **open the real file, grep, verify against `path:line`** before acting. Individual per-skill reports likely share the same confabulation rate, treat them equally.
 >
 > **Real actionable actions (the only 2 verified):**
 >
 > 1. `dayz-3d-viewer\scripts\p3d_to_gltf.py:30-51`, `classify_lod()` only recognizes Arma 3 LODs (`2e13`/`3e13`). Modern DayZ (`6e15`/`7e15`) fall back to "memory". Fix: add bands `5.9e15..6.1e15` → `view_geometry`, `6.9e15..7.1e15` → `fire_geometry` before `else`.
 > 2. `dayz-model-pipeline/references/py3d-direct-generation.md:538-545`, copy-paste `classify_lod()` snippet teaches Arma 3 values without marking as legacy. Fix: add modern bands or mark snippet as historical demo.
 >
-> **F2 from fix-tracker (`_shared/dayz-conventions.md`):** purge only `Motorcycle`, `Helicopter` from `dayz-pbo-build/references/validation-scripts.md:226-228`. Keep `HouseNoDestruct`, `Vehicle` (valid in DayZ).
+> **F2 from fix-tracker (`_shared/dayz-conventions.md`):** purge only `Motorcycle` from `dayz-pbo-build/references/validation-scripts.md:226-228`: no `class Motorcycle` is declared in `P:\bin\config.cpp`, and the vanilla motorbike script class is `Motorbike`. Keep `HouseNoDestruct` (`P:\DZ\data\config.cpp:3119`) and `Helicopter` (`class Helicopter: Air`, `P:\bin\config.cpp:1563`). `Vehicle` is not confirmed: a search of `P:\bin\config.cpp` and `P:\scripts` finds no `class Vehicle`, so check it against the audited mod's real parent classes before keeping it.
 >
 > Everything else from audit: read but **DO NOT act without verification against primary source**.
 
 ---
 
-**Date**: 2026-05-11 **Scope**: 12 DayZ skills **Depth**: Deep (conventions doc + py3d source + Bohemia wiki + cite-then-verify; P:\ marked for manual verification) **Work done by**: 4 general-purpose agents in parallel + aggregation
+**Date**: 2026-05-11 **Scope**: 11 DayZ skills **Depth**: Deep (conventions doc + py3d source + Bohemia wiki + cite-then-verify; P:\ marked for manual verification) **Work done by**: 4 general-purpose agents in parallel + aggregation
 
 ---
 

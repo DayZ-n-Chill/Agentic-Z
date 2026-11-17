@@ -14,7 +14,7 @@ FrameWidgetClass ModalRoot {
 	// All four flags 0: fraction of the screen. hexact* 1 would be units of
 	// 1/1080 of the screen height, measured in game (references/rules-and-checklist.md rule 3, corrected
 	// 2026-10-03; this comment called them physical pixels that break 1280x720).
-	// Vanilla (227 layouts, 9575 widgets): hexactsize 0 is 6167x vs 3265x for 1.
+	// Vanilla (227 layouts, 9525 widgets): hexactsize 0 is 6167x vs 3265x for 1.
 	hexactpos 0
 	vexactpos 0
 	hexactsize 0
@@ -27,9 +27,10 @@ FrameWidgetClass ModalRoot {
 			// RGB from gui/layouts/dialog.layout:5; alpha 0.9608 seen on screen in
 			// game on 2026-08-19. rover_sim_colorable tints WhitePixel with this.
 			color 0.1176 0.1176 0.1176 0.9608
-			// center_ref + position 0 0: the offline lint ignores position under
-			// center_ref; the engine ADDS it (references/layout-format.md, Zeroing +0.06).
-			// Keep the offset at 0 so lint and engine agree.
+			// center_ref + position 0 0: under center_ref both the offline parser and
+			// the engine ADD position to the centred spot (references/layout-format.md,
+			// Zeroing +0.06). This template keeps the offset at 0 0 so the panel sits
+			// exactly in the centre.
 			position 0 0
 			size 0.38 0.70
 			halign center_ref

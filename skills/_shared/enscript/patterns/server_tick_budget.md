@@ -106,14 +106,4 @@ Every `Insert` needs a matching `Remove` in the consumer's destructor, with a nu
 
 ## What lowers server script memory
 
-Measured in the power grid mod on a dedicated server (static script memory of the World module, in kB; not re-run here):
-
-| Lever | Result |
-|---|---|
-| Merging or repackaging files under `4_World` | 0 kB |
-| Removing comments and whitespace | about 0 kB |
-| Removing a few dead classes | 0 kB at that scale |
-| `#ifndef SERVER` around client only code | Lowers it |
-| Using one generic specialization (`array<EntityAI>` plus a cast) where many were used | Lowers it |
-
-Before a "remove dead code" pass, measure how much of the code is already inside `#ifndef SERVER`: in that mod a UI fork that looked like 182 KB of savings had about 5.5 KB compiled on the server. Measure each change against a baseline in the same boot, twice; the noise was 1 kB.
+What does and does not shrink a script module's memory (file layout, comments, classes, generic specializations, `#ifndef SERVER`), and how to measure it, is in `../references/script_module_arena.md`.

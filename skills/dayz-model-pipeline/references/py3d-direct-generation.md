@@ -277,10 +277,8 @@ def rot_normal(n):
 for lod in model.lods:
     for pt in lod.points:
         pt.coords = rot_coords(pt.coords)
-    new_normals = []
-    for n in lod.facenormals:
-        new_normals.append(rot_normal(n))
-    lod.facenormals = new_normals
+    # Change the list in place: Vertex.normal reads this same list object
+    lod.facenormals[:] = [rot_normal(n) for n in lod.facenormals]
 ```
 
 With py3d itself: `model.transform(((1, 0, 0), (0, 0, 1), (0, 1, 0)))` maps points and normals and, because det<0, reverses every face; reverse them back and negate the normals, and the result equals the loop above. `py3d.BLENDER_TO_DAYZ` is the old det=+1 rotation: `model.transform(py3d.BLENDER_TO_DAYZ)` on its own renders inside out **and** mirrored in game (2026-10-01).
@@ -1009,10 +1007,9 @@ def apply_axis_rotation(lod):
         x, y, z = pt.coords
         pt.coords = (x, z, y)
 
-    new_normals = []
-    for nx, ny, nz in lod.facenormals:
-        new_normals.append((-nx, -nz, -ny))   # mapped, then negated: MLOD normals point inward
-    lod.facenormals = new_normals
+    # Mapped, then negated: MLOD normals point inward. Change the list in place,
+    # because Vertex.normal reads this same list object.
+    lod.facenormals[:] = [(-nx, -nz, -ny) for nx, ny, nz in lod.facenormals]
 
     # Keep the face vertex order: after this map it is already the MLOD (inward) order.
 ```

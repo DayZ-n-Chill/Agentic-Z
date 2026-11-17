@@ -70,4 +70,4 @@ More keys seen in vanilla:
 
 ## Changing a vanilla gun
 
-Redeclare the vanilla class with its original parent and only the keys you change, and add its addon to `requiredAddons[]`. When you change an array such as `attachments[]` or `magazines[]`, write the whole array with `=` and keep the vanilla entries; Tier 2 (`conventions/config.md`) explains why `+=` is unsafe.
+Redeclare the vanilla class with its original parent and only the keys you change, and add its addon to `requiredAddons[]`. When you change an array such as `attachments[]` or `magazines[]`, write the whole array with `=` and keep the vanilla entries. The vanilla parent comes from an already compiled PBO, and a child's `+=` onto an array inherited across that PBO boundary is not a safe basis for the merged list (`../vehicles/proxies-and-get-in.md`, rule 2, covers this for `attachments[]`; not yet checked on `P:\` for `magazines[]`). With `=` the effective list is exactly what you wrote.

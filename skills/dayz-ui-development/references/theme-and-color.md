@@ -1,6 +1,6 @@
 # Theme and color: where UI colors come from, how to scope a recolor, and the color system
 
-Why "change all the red" is hours of work in DayZ, the three places a UI color can come from, how to scope a theme request, what the Colorful UI mod does and does not give you, and the rules of the color system (HUD brightness, low alpha, float against integer ranges).
+Why "change all the red" is hours of work in DayZ, the three places a UI color can come from, how to scope a theme request, what is and is not known about CUI and the Colorful UI mod, and the rules of the color system (HUD brightness, low alpha, float against integer ranges).
 
 The Tier 2 rule for this topic is `skills/_shared/conventions/ui.md`; it holds the checked override routes (recolor one widget after `super`, or replace a whole layout) with their vanilla lines. This file adds scoping advice and color measurements on top of it. Where the two differ, the Tier 2 file wins.
 
@@ -10,7 +10,7 @@ The Tier 2 rule for this topic is `skills/_shared/conventions/ui.md`; it holds t
 
 ## DayZ has no central theme
 
-DayZ has no central theme system. There is no `PrimaryAccentColor` constant that flows through every widget. A color comes from three independent places, and each needs a different override. No framework closes this gap (see "Colorful UI" below).
+DayZ has no central theme system. There is no `PrimaryAccentColor` constant that flows through every widget. A color comes from three independent places, and each needs a different override. No framework has been confirmed to close this gap (see "CUI and Colorful UI" below).
 
 ### The three sources of UI color
 
@@ -66,21 +66,21 @@ A request like "change all the red UI to blue" is hours of work, not minutes. It
 When the user asks for a UI color change, ask first:
 
 - **A single element** ("the bleeding icon", "the menu hover state"): feasible. It is one method override, one layout swap, or on 1.30 one layout variant.
-- **All red to all blue** ("retheme the whole UI"): push back. Define the scope piece by piece and treat it as a batch. No framework makes it a one property edit.
+- **All red to all blue** ("retheme the whole UI"): push back. Define the scope piece by piece and treat it as a batch. No framework has been confirmed to make it a one property edit.
 
 Never accept "change all the red" as a one file task. Tell the user what this section says before estimating the effort.
 
-### Colorful UI, and what "CUI" means
+### CUI and Colorful UI (unverified)
 
-Third-party mod behaviour, not vanilla, and not yet checked against the mod's own files.
+Third-party mods, not vanilla. This repo has not checked any UI framework's source or API, so everything in this section is unverified, the same status the Tier 2 file gives it: CUI is reported to offer the theme layer the engine lacks, and you confirm the API in the framework's own source before you build on it or recommend it.
 
-- There is no DayZ project named "Community UI Framework". In the DayZ community, CUI means **Colorful UI**, a mod template that comes in a free community edition and a separate "Pro" variant. The Pro variant's terms forbid commercial use, which matters for monetized servers; read the terms of the edition you pick before you build on it.
-- Its mechanism is to ship every default layout again as a file you can edit on its own. That is the same per layout mechanism this file calls heavy. It is not a central theme layer that spreads one color everywhere.
+- What "CUI" names is itself unconfirmed. The Tier 2 file expands it as Community UI Framework. It is also used as short for **Colorful UI**, a mod template said to come in a free community edition and a separate "Pro" variant whose terms forbid commercial use, which matters for monetized servers; read the terms of the edition you pick before you build on it.
+- Colorful UI is said to work by shipping every default layout again as a file you can edit on its own. If so, that is the same per layout mechanism this file calls heavy, not a central theme layer that spreads one color everywhere. Check its files before you rely on either reading.
 
 What follows from that:
 
-1. Do not promise that adopting Colorful UI turns a retheme into one property edits. Nothing in the ecosystem does that.
-2. Colorful UI is useful as a starting template when the goal is "reskin the whole vanilla UI": it has already done the work of shipping the layouts again.
+1. Do not promise that adopting CUI or Colorful UI turns a retheme into one property edits until its source shows a central theme API that does it.
+2. Colorful UI may be useful as a starting template when the goal is "reskin the whole vanilla UI", if it does ship the layouts again as described.
 3. For a one off recolor in an existing mod, stay scoped to the one element. On 1.30 a layout variant does that without shipping the whole layout: `layout-variants-130.md`.
 
 Community Framework (CF) ships no MVC or UI layer (its changelog marks MVC as deprecated in 1.1 and removed in 1.3.1; not yet checked against the CF files). The only CF UI surface worth knowing is its `NotificationSystem`, which is server aware.

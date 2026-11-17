@@ -14,7 +14,7 @@
 #   cp --remove-destination "$(readlink <tree>/mpmissions/<m>/init.c)" <tree>/mpmissions/<m>/init.c
 # Re-running refreshes the symlinks after a Steam update; real files in the tree are kept.
 #
-# Usage: make-server-tree.sh <tree> [<steam DayZServer dir>]   (default: find-dayzserver.sh)
+# Usage: sh make-server-tree.sh <tree> [<steam DayZServer dir>]   (default: find-dayzserver.sh)
 set -eu
 
 if [ $# -lt 1 ] || [ -z "${1:-}" ]; then
@@ -22,7 +22,8 @@ if [ $# -lt 1 ] || [ -z "${1:-}" ]; then
     exit 2
 fi
 tree=$1
-src=${2:-$("$(dirname "$0")/find-dayzserver.sh")}
+# Run the helper through sh: the scripts may be checked out without the executable bit.
+src=${2:-$(sh "$(dirname "$0")/find-dayzserver.sh")}
 src=$(cd "$src" && pwd -P)
 src_slash=${src%/}/
 
@@ -131,6 +132,7 @@ for f in "$src"/*; do
             ensure_real_dir "$tree/mpmissions"
             for m in "$f"/*/; do
                 m=${m%/}
+                [ -d "$m" ] || continue
                 link_contents "$m" "$tree/mpmissions/${m##*/}"
             done ;;
         *) link_entry "$f" "$tree/$name" ;;

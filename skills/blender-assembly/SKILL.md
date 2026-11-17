@@ -121,12 +121,12 @@ bpy.ops.mesh.primitive_cube_add(size=2, location=(x, y, z))
 obj = bpy.context.active_object
 obj.name = name
 obj.scale = (sx, sy, sz)
-bpy.ops.object.transform_apply(scale=True)   # immediately, inside the loop
+bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)   # immediately, inside the loop
 
 # WRONG: the scale may silently not apply
 obj.scale = (sx, sy, sz)
 # ... more operations ...
-bpy.ops.object.transform_apply(scale=True)   # too late; active_object may have changed
+bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)   # too late; active_object may have changed
 ```
 
 ### Rule 4: derive spanning dimensions from verified neighbour bounds
@@ -182,7 +182,7 @@ Booleans are the main source of broken meshes. Three rules, then cleanup:
 2. Do not leave coplanar faces between the operands. The cutter overshoots every surface it cuts through by at least 1 mm. A flush cutter is a coplanar cutter, the first cause of boolean failure (degenerate slivers, open holes).
 3. The solver is always `'EXACT'`.
 
-`boolean_cut(target, cutter, op)` enforces all three plus the cleanup (`remove_doubles` and `dissolve_degenerate`). After every boolean, run `verify_mesh_integrity` before building anything on top. A broken mesh found three parts later costs the whole session.
+`boolean_cut(target, cutter, op)` sets the EXACT solver (point 3) and runs the cleanup (`remove_doubles` and `dissolve_degenerate`). It does not apply scale or check the overshoot: the caller applies scale on both operands (point 1) and sizes the cutter to overshoot (point 2) before calling it. After every boolean, run `verify_mesh_integrity` before building anything on top. A broken mesh found three parts later costs the whole session.
 
 Point 2 is a strong recommendation, not an absolute. Measured on Blender 5.1.1: the EXACT solver handled an exactly flush, axis-aligned cutter without breaking the mesh: the open pocket and the volume were identical to the overshoot cut and the hard counters were clean; only the layout of the ring ngons differed. Keep the 1 mm overshoot as the default for robustness (float drift, oblique cuts), but a flush cut that passes the integrity gate and the visual checkpoint is acceptable, not an automatic fail. The gate reports ngons as warnings, never as failures.
 
@@ -206,7 +206,7 @@ Known pitfalls, all controllable:
 
 - No UVs on the low mesh is a hard error. Run `smart_uv` first.
 - High and low not occupying the same space, or `ray` too small or too large, gives patchy garbage in the map. Set `max_ray_distance` slightly above the largest gap between the high and low surfaces; use a cage for parts with deep recesses. The default `ray=0.01` gave clean 1024 px NORMAL and AO bakes at a gap of about 4 mm (measured on Blender 5.1.1).
-- Blender bakes tangent normals in the OpenGL convention (Y+). DayZ's `_nohq` is the DirectX convention (Y-): invert the green channel (G' = 255 - G) on every Cycles bake before export. The convention was measured by calibration against a vanilla `_nohq`; it is not checked on `P:\` here. A `.paa` `_nohq` stores X in alpha (the DXT5nm swizzle), so un-swizzle before auditing a converted map. The evidence and the calibration method are in the `dayz-texture-pipeline` skill (`references/map-conventions.md`).
+- Blender bakes tangent normals in the OpenGL convention (Y+). DayZ's `_nohq` is the DirectX convention (Y-): invert the green channel (G' = 255 - G) on every Cycles bake before export. The convention was measured by calibration against a vanilla `_nohq`; it is not checked on `P:\` here. A `.paa` `_nohq` stores 1 minus X in alpha and 1 minus the source alpha in red (`DayZ Tools\Bin\ImageToPAA\TexConvert.cfg`, class `normalmap_hq`: `channelSwizzleA = "1-R"`, `channelSwizzleR = "1-A"`). This is not the standard DXT5nm layout, so un-swizzle with X = 1 minus the stored alpha before auditing a converted map. The evidence and the calibration method are in the `dayz-texture-pipeline` skill (`references/map-conventions.md`).
 
 The output feeds `dayz-model-pipeline` and `/dayz-pack-texture`: the normal PNG becomes `_nohq.paa`, and the AO PNG becomes a multiply layer in the `_co` composite.
 
@@ -220,7 +220,7 @@ Call these after creating each part. Catching a defect immediately is far cheape
 
 **`verify_mesh_integrity(name, require_closed, allow_ngons)`** is the broken-geometry gate. `verify_bounds` proves position and passes happily on a non-manifold mess. This gate proves the mesh itself is sound. Run it after every boolean, every modifier apply, every loft, and once per part at finalization. Reading the result:
 
-- `non_manifold_edges > 0`: an edge shared by 3 or more faces, almost always a boolean leftover or two parts joined without merging. Fix it at the operation that caused it; do not patch around it.
+- `non_manifold_edges > 0`: an edge with no face (a loose wire edge) or shared by 3 or more faces, almost always a boolean leftover or two parts joined without merging. Fix it at the operation that caused it; do not patch around it.
 - `duplicate_verts > 0`: run `remove_doubles` on the real mesh (the gate's own pass runs on a throwaway copy).
 - `boundary_edges > 0` with `require_closed=True`: a hole. Collision geometry must be closed. For a visual mesh with intentional openings, call with `require_closed=False` and record why in a comment in the build script.
 - `ngons`: on curved surfaces they shade badly and decimate badly, so triangulate or inset again. On large flat faces they are tolerable, which is why this is a warning and not a failure.
@@ -235,7 +235,7 @@ A failed gate means stop and fix before the next part. The discipline and the re
 
 ## Phase 4: finalization
 
-Apply to every mesh object: `finalize(name)` (transforms applied, origin set, shade smooth), then `audit_all()` to confirm rotation (0,0,0) and scale (1,1,1) across the whole scene. Both are in the helper library.
+Call `finalize(name)` on each part right after it is created, while it is still the active object: the helper renames and transforms `bpy.context.active_object` and does not look the name up (transforms applied, origin set, shade smooth). When every part is built, run `audit_all()` to confirm rotation (0,0,0) and scale (1,1,1) across the whole scene. Both are in the helper library.
 
 ## Further rules
 
@@ -258,7 +258,7 @@ Every Blender model, every time:
 3. **Detail list.** Scanned by zone (`grid-3x3` or `component-zones`), at or above the count floor for its complexity, every row mapped to a technique or a texture channel, at least 3 feature types on a hero object, reference image in hand.
 4. **`size=2`** for all cube primitives: scale is the half-extent.
 5. **`make_beam()`, `make_cable()`, `loft_profile()`** for A to B and compound shapes: no Euler rotations.
-6. **`transform_apply(scale=True)` immediately** after every scale assignment, inside the loop.
+6. **`transform_apply(location=False, rotation=False, scale=True)` immediately** after every scale assignment, inside the loop.
 7. **Spanning dimensions from `verify_bounds()`**: measured, never guessed.
 8. **Booleans by protocol.** Scale applied, cutter overshoots by at least 1 mm, EXACT, cleanup, gate.
 9. **Bevel every visible part.** Angle-limited, applied, after all booleans.

@@ -355,7 +355,7 @@ bool StopSoundSet(out EffectSound sound);
 
 `PlaySoundSet`, `PlaySoundSetLoop` and `StopSoundSet` do nothing on a dedicated server: the test is `g_Game && !g_Game.IsDedicatedServer()` (`P:\scripts\3_game\entities\object.c:1249`). `PlaySoundSetAtMemoryPoint` has no such test: its body goes straight to the memory point lookup and `SEffectManager.PlaySoundEnviroment` (`P:\scripts\3_game\entities\object.c:1294`), so guard it yourself, as `skills/_shared/audio-fx/sound-script.md` says.
 
-`PlaySoundSet` on `Object` kept the dedicated server test in 1.30. The item and player sound handlers moved to `IsHeadlessOrDedicatedServer()`.
+`PlaySoundSet` on `Object` kept the dedicated server test in 1.30. `IsHeadlessOrDedicatedServer()` is tested only in `StopItemSoundClient` (`P:\scripts\4_world\classes\soundhandlers\itemsoundhandler.c:121`), the player sound manager (`P:\scripts\4_world\classes\soundhandlers\playersoundmanager.c:105`) and the player sound table registration; `PlayItemSoundClient` has no headless check.
 
 ### CreateSoundOnObject
 
@@ -379,7 +379,7 @@ It is a different route from `SEffectManager`. `Object.PlaySound` and `Object.Pl
 
 ### Volume by category
 
-`AbstractSoundScene` sets the volume of whole categories (sound, music, radio, speech, VOIP). There is no call for one sound beyond `SetVolumeRelative` on its wave and `SetSoundVolume` on its `EffectSound`.
+`AbstractSoundScene` sets the volume of whole categories (sound, music, radio, speech, VOIP). There is no call for one sound beyond `SetVolume` and `SetVolumeRelative` on its wave and `SetSoundVolume` on its `EffectSound`.
 
 ## Sounds on items
 
@@ -597,13 +597,13 @@ The controller names, from the comment above the first function: `rain`, `night`
 |---|---|
 | `GetGame().CreateSoundOnObject(obj, "MySoundSet", ...)` fits every case | It exists, but returns a `SoundOnVehicle`, not an `EffectSound`. Prefer `SEffectManager.PlaySoundOnObject`. |
 | `SEffectManager` plays sound on a server | Its sound maps are created on clients only. A server gets `InitServer()`, which is for particle effecters. |
-| Script can set a master volume for one sound | Only `SetVolumeRelative` on the wave. The `volume` of a shader is fixed in config. |
+| Script can set a master volume for one sound | Only `SetVolume` or `SetVolumeRelative` on the wave, or `SetSoundVolume` on its `EffectSound`. The `volume` of a shader is fixed in config. |
 | `ItemBase` has an `OnSoundEvent` callback | No such override. Start item sounds with `StartItemSoundServer` or `PlaySoundSet`. |
 | `PlaySoundSet` is heard from a dedicated server | It tests `!g_Game.IsDedicatedServer()` and does nothing there. |
 | `DynamicMusicPlayer.PlayTrack(string)` is public | `PlayTrack` is `private`. The public call is `SetCategory`. |
 | `StartItemSoundServer` cannot send several sounds at once | True up to 1.29. Since 1.30 every sound started in a frame goes in one `RPC_ITEM_SOUND_PLAY`, and each stop is its own `RPC_ITEM_SOUND_STOP`. The handler comment that states the limit was not updated. |
 
-Since 1.30 the `PlaySoundSet` row is still true for `Object.PlaySoundSet`; the handlers also skip headless clients. Do not write `GetNoiseReductionByWeather()` in new code.
+Since 1.30 the `PlaySoundSet` row is still true for `Object.PlaySoundSet`; the item sound stop path and the player sound manager also skip headless clients. Do not write `GetNoiseReductionByWeather()` in new code.
 
 ## Recipes
 

@@ -242,7 +242,7 @@ The rule and the audit's behaviour are in `p3d-killers.md` section 3. Two more p
 
 Same as `p3d-killers.md` section 4. A LandContact LOD (`2e15`, ground placement contact points) is also recommended for objects that rest on the ground; 980 vanilla models carry one (`_shared/models/lods.md`).
 
-The `2e13` and `3e13` resolutions are the Arma 3 values for View and Fire Geometry, which are `6e15` and `7e15` in DayZ. That does not make every `e13` resolution foreign to DayZ: `P:\DZ\vehicles\water\boat_01\boat_01.p3d` carries a `2e13` LOD in its header (its buoyancy geometry), and eight vanilla models carry a `4e13` GeoPhys LOD (`_shared/conventions/assets.md`).
+Some online guides quote `7e13` for View Geometry and `3e13` for Fire Geometry; those values misclassify DayZ LODs, where View and Fire Geometry are `6e15` and `7e15`. That does not make every `e13` resolution foreign to DayZ: `P:\DZ\vehicles\water\boat_01\boat_01.p3d` carries a `2e13` LOD in its header (its buoyancy geometry), and eight vanilla models carry a `4e13` GeoPhys LOD (`_shared/conventions/assets.md`).
 
 ## 5. Missing `pos center` Memory Point
 

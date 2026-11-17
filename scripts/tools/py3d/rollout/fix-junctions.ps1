@@ -7,7 +7,7 @@
 # Scope: ALL junctions under ~\.agents\skills with that target pattern.
 # Safety: junctions are removed with 'cmd /c rmdir' (it only deletes the reparse point,
 # NEVER the target's contents). PowerShell 5.1+, ASCII only.
-# The wheel smoke check is version-agnostic (py3d-*.whl).
+# The wheel smoke check is version-agnostic (py3d-*.whl or py3d_dayz-*.whl).
 
 $ErrorActionPreference = 'Continue'
 $rootB = Join-Path $env:USERPROFILE '.agents\skills'
@@ -48,14 +48,27 @@ Get-ChildItem -LiteralPath $rootB -Directory -Force | ForEach-Object {
 }
 
 Write-Host "`n=== SMOKE: the rollout skills are readable from the host + wheel present ==="
+# Like the applicator, a skill that is absent is skipped, and the wheel is
+# only required where the skill already has a wheels/ folder.
 $skills = @('dayz-model-pipeline','dayz-3d-viewer','dayz-p3d-inspector',
             'dayz-p3d-audit','dayz-pbo-build','dayz-proxy-align','dayz-animation-pipeline')
 $smokeFail = 0
 foreach ($s in $skills) {
-  $sk = Join-Path $rootB "$s\SKILL.md"
-  $whDir = Join-Path $rootB "$s\wheels"
+  $skDir = Join-Path $rootB $s
+  # Get-Item -Force also finds a junction whose target dangles, so a broken
+  # link is checked (and fails) instead of being skipped as absent.
+  if (-not (Get-Item -LiteralPath $skDir -Force -ErrorAction SilentlyContinue)) {
+    Write-Host "[SKIP] absent skill: $s"; continue
+  }
+  $sk = Join-Path $skDir 'SKILL.md'
+  $whDir = Join-Path $skDir 'wheels'
   $r = $false; try { $null = Get-Content -LiteralPath $sk -TotalCount 1 -ErrorAction Stop; $r = $true } catch {}
-  $w = (Test-Path -LiteralPath $whDir) -and (@(Get-ChildItem -LiteralPath $whDir -Filter 'py3d-*.whl' -ErrorAction SilentlyContinue).Count -ge 1)
+  if (-not (Test-Path -LiteralPath $whDir)) {
+    if ($r) { Write-Host "[OK]   $s (SKILL.md readable, no wheels folder)" }
+    else { Write-Host "[FAIL] $s (readable=$r)" -ForegroundColor Red; $smokeFail++ }
+    continue
+  }
+  $w = @(Get-ChildItem -LiteralPath $whDir -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -like 'py3d-*.whl' -or $_.Name -like 'py3d_dayz-*.whl' }).Count -ge 1
   if ($r -and $w) { Write-Host "[OK]   $s (SKILL.md readable, wheel present)" }
   else { Write-Host "[FAIL] $s (readable=$r wheel=$w)" -ForegroundColor Red; $smokeFail++ }
 }

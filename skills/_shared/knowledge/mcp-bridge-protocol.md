@@ -14,7 +14,9 @@ That is what the bridge is for. It turns *"the config looks right"* into *"the c
 
 ## Tool surface
 
-39 tools are registered; **38 are advertised by default** — `exec_enforce` is an escape hatch behind an off-by-default flag and an exact-match allowlist.
+The tool count grows with each bridge release, so this note does not fix one: the bridge's own `tools/list` answer is the current list (107 tools on the build measured in `linux-proton-findings.md`), and the `dayz-mcp-verify` skill (`skills/dayz-mcp-verify/SKILL.md` and its `references/`) documents the tools a verification run uses, including `dayz_test_close`, `wait_for`, `key_press`, `player_move`, `player_look_at`, `action_use`, `action_cursor`, `ui_tree`, `ui_click` and `entities_query`. `exec_enforce` is an escape hatch behind an off-by-default flag and an exact-match allowlist, and is not advertised by default.
+
+The table below is a selection of the core groups, not the full list.
 
 | Group | Tools |
 |---|---|
@@ -53,7 +55,7 @@ These were each paid for with in-game cycles. All citations are vanilla DayZ scr
 
 **`SetThrottle` and `SetSteering` set *future* input, and `super` overwrites them.** The vanilla headers say so literally — "Sets the future throttle value" (`P:\scripts\3_game\vehicles\car.c:190-191`), same for steering at `:184-185`. Calling them from a mission-side tick does nothing visible, because `CarScript.OnInput` (`P:\scripts\4_world\entities\vehicles\carscript.c:1041`) runs afterwards and re-reads the local driver's input, which is zero. The working shape is to apply the values **after** `super` inside a `modded class CarScript.OnInput`, mirroring how the vanilla debug autopilot does it.
 
-**`DEVELOPER` is not defined in DayZDiag; `DIAG_DEVELOPER` is.** Emitting code under `#ifdef DEVELOPER` compiles to nothing, and worse, a broken assumption about which defines exist can fail the whole PBO compile — which takes every tool down with it, not just the new verb.
+**Generated code must use only the macros DayZDiag defines.** Which ones it defines is in `engine-findings-from-pack-history.md` ("Which macros DayZDiag defines"). Emitting code under a macro it does not define compiles to nothing, and worse, a broken assumption about which defines exist can fail the whole PBO compile — which takes every tool down with it, not just the new verb.
 
 **Freecam kills the simulation.** Setting the camera to free mode stops the sim; a look-at camera does not. Any acceptance ladder that screenshots from freecam between two driving rungs is measuring a frozen world.
 

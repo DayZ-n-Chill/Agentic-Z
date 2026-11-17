@@ -29,8 +29,9 @@ class ScriptConsoleTabRegistry
 ```
 
 Vanilla `InitializeRegistry` (`scriptconsole.c:50-66`) registers GENERAL through WEATHER.
-`ScriptConsole` ctor calls `InitializeRegistry()` then iterates `GetAll()`
-(`scriptconsole.c:293-296`).
+`ScriptConsole.BuildContextMenu()` (`scriptconsole.c:279`) calls `InitializeRegistry()` then
+iterates `GetAll()` (`scriptconsole.c:293-296`); `Init()` calls `BuildContextMenu()` at
+`scriptconsole.c:227`, and on console builds `OnInputDeviceChanged` calls it again at `:249`.
 
 [DESIGN] A verification / debug tab for a mod: `modded` the registry
 initializer or register from a mission module **after** vanilla init, with a
@@ -140,7 +141,8 @@ Method and traps:
 
 [DESIGN] For the MCP: server verbs `bot_dummy_spawn(n, pos)` plus `bot_start(action)`
 and `bot_stop()` on this path would give N moving players on one machine for load
-and soak tests. They need a 1.30 lane; the managed launcher runs 1.29 today. This
+and soak tests. They need a 1.30 lane; on 2026-09-26 the managed launcher still ran
+1.29 (managed runs on 1.30.164200 are recorded from 2026-10-26, below). This
 is not a way to offload simulation: dummies and roboclients alike run under server
 authority.
 

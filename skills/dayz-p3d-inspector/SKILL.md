@@ -69,9 +69,9 @@ Outside an agent session, `scripts\dayz\p3d-inspector-extract.bat`, `scripts\day
 ## Rules that keep a rebuild safe
 
 1. **Never build over the only copy of a model.** Build to a new file name and keep the original.
-2. **A rebuild can wipe Memory LOD selections.** On real models the builder can lose which points belong to which memory selection (axes, damage zones, crew positions, proxies) while every name still looks right. Before any rebuild you mean to keep, run the round-trip test in `references/round-trip-caveats.md` and compare selection counts, not names. To move a point on a model with important memory selections, edit the MLOD with py3d directly.
+2. **A rebuild can wipe Memory LOD selections.** The builder rebuilds the Memory LOD as points only: its faces, the face membership of its selections (damage zones, crew positions, proxies), any selection that holds only faces, and selection weights are dropped. Point membership, which the axes use, survives. Before any rebuild you mean to keep, run the round-trip test in `references/round-trip-caveats.md` and compare selection counts, not names. To move a point on a model with important memory selections, edit the MLOD with py3d directly.
 3. **The `.p3d` is the truth, not the Recipe.** If the model was edited elsewhere since the Recipe was made, extract again before trusting the viewer.
-4. **Auto-fix reverses every face of every LOD.** The builder does that when over half the faces of the first Visual LOD disagree with their stored normals. That disagreement does not say which of the two is wrong (`dayz-p3d-audit/references/winding-absolute-check.md`), so on a model that rendered correctly, build with `--no-autofix`.
+4. **Auto-fix reverses every face of every LOD.** The builder does that when over half the faces of the first Visual LOD (the visual LOD with the lowest resolution, whether that is 0.0 or 1.0) disagree with their stored normals. That disagreement does not say which of the two is wrong (`dayz-p3d-audit/references/winding-absolute-check.md`), so on a model that rendered correctly, build with `--no-autofix`.
 5. **Audit after every build.** Run `/dayz-p3d-audit` on the new file. The builder checks nothing beyond what it writes.
 
 ## References
@@ -89,5 +89,5 @@ Facts about memory points and selections themselves are in `_shared/models/memor
 - Source (MLOD) models only.
 - The viewer has no textures and no axis lock: a point moves in the plane facing the camera.
 - The extractor does not record per-point mass; the builder estimates it (`references/recipe-format.md`).
-- The builder writes no proxies and no sharp edges, and it drops any LOD the extractor could not name (`references/recipe-format.md`, "LOD types").
+- The builder writes no sharp edges, and it drops any LOD the extractor could not name (`references/recipe-format.md`, "LOD types").
 - On Linux the scripts run natively; opening the result in Object Builder goes through Proton as the shared Linux notes describe (`_shared/linux-proton.md`).

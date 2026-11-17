@@ -51,7 +51,7 @@ Physics uses the sum of the point masses on the Geometry LOD, which Object Build
 
 A placed object needs all three:
 
-1. The `autocenter` = `0` named property on the Geometry LOD, and on any GeoPhys or Fire Geometry LOD the model has. The audit checks it (`check_autocenter_prop` in `skills/dayz-p3d-audit/scripts/audit_p3d.py`).
+1. The `autocenter` = `0` named property on the Geometry LOD, and on any GeoPhys or Fire Geometry LOD the model has. The audit checks it on the Geometry LOD only (`check_autocenter_prop` in `skills/dayz-p3d-audit/scripts/audit_p3d.py`).
 2. A `pos center` memory point at `(0,0,0)` in the Memory LOD (`p3d-killers.md` section 5, and `memory-points.md`).
 3. `autocenter = 0;` in the object's class in `config.cpp` (`skills/dayz-p3d-audit/references/config-rvmat-checks.md`, "Required Properties for Placed Objects"). dayz-object-builder sends this line to dayz-config-specialist.
 

@@ -9,6 +9,7 @@ model and effort that produced it.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -81,8 +82,13 @@ def main() -> int:
         workspace = Path(str(payload["workspace"])).resolve()
         if not workspace.is_dir():
             raise ValueError("workspace does not exist")
+        # On Windows an npm install of Claude Code is a claude.cmd shim, which
+        # CreateProcess does not find by its bare name, so resolve it first.
+        executable = shutil.which("claude")
+        if executable is None:
+            raise FileNotFoundError("claude is not on PATH")
         command = _claude_command(
-            "claude",
+            executable,
             model=model,
             effort=effort,
             prompt=str(payload["prompt"]),

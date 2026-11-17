@@ -25,8 +25,10 @@ Quick facts on five vanilla systems: recipes and crafting (`PluginRecipesManager
 - `compatiblePlugTypes` absent in config => the socket accepts all plugs (`P:\scripts\3_game\tools\component\componentenergymanager.c:994`).
 
 ### Action system (additions)
-- `AddAction(typename)` in `SetActions()` registers a **global singleton per input type** — there are no
-  per-instance actions nor dynamic runtime registration.
+- `AddAction(typename)` in `SetActions()` registers **one shared instance per action class**
+  (`ActionManagerBase.GetAction`), filed under its input type, so many actions share one input type
+  (`P:\scripts\4_world\entities\itembase.c:255-290`) — there are no per-instance actions nor dynamic
+  runtime registration.
 - `CCTCursor` measures from the hit-pos of the `ObjIntersectView` raycast (requires View Geometry LOD);
   `CCTObject` measures from target's `GetPosition()`. If an action does not appear and the model lacks
   ViewGeo, check the LOD first (the `dayz-physics-engine` skill, truth 2).

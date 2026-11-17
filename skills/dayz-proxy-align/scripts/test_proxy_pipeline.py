@@ -46,11 +46,13 @@ def _add_face(lod, indices):
     return face
 
 
-def _host(path):
-    """A visual LOD with one body triangle in `zbytek` and one 90/45/45 proxy, plus a Memory LOD."""
+def _host(path, proxy_face_order=(3, 4, 5)):
+    """A visual LOD with one body triangle in `zbytek` and one 90/45/45 proxy, plus a Memory LOD.
+
+    Point 3 is the proxy's right-angle corner, the anchor; `proxy_face_order` sets
+    which point is face vertex 0."""
     lod = py3d.LOD()
     lod.resolution = 0.0
-    # The proxy's first face vertex is its right-angle corner, the anchor.
     proxy_points = [ANCHOR, (ANCHOR[0], ANCHOR[1], ANCHOR[2] + LEG), (ANCHOR[0] + LEG, ANCHOR[1], ANCHOR[2])]
     for coords in BODY + proxy_points:
         point = py3d.Point()
@@ -58,7 +60,7 @@ def _host(path):
         lod.points.append(point)
     lod.facenormals.append((0.0, 0.0, 1.0))
     body_face = _add_face(lod, (0, 1, 2))
-    proxy_face = _add_face(lod, (3, 4, 5))
+    proxy_face = _add_face(lod, proxy_face_order)
     rest = lod.new_selection("zbytek")
     rest.points = {lod.points[i]: 1 for i in (0, 1, 2)}
     rest.faces = {body_face: 1}
@@ -122,6 +124,36 @@ def test_applied_proxy_is_unambiguous_identity_at_the_same_anchor(aligned):
     assert np.allclose(proxy["frame"], np.eye(3), atol=1e-3)  # coordinates are stored as float32
     assert np.allclose(proxy["origin"], ANCHOR, atol=1e-6)
     assert abs(proxy["angles_deg"][0] - 90) < 0.5 and abs(proxy["angles_deg"][2] - 26.57) < 0.5
+
+
+def test_origin_is_the_derived_anchor_when_face_vertex_0_is_not_the_right_angle(tmp_path, monkeypatch):
+    src = _host(tmp_path / "host.p3d", proxy_face_order=(4, 5, 3))
+    recipe = tmp_path / "recipe.json"
+    edits = tmp_path / "edits.json"
+    (proxy,) = proxy_extract.main(str(src), str(recipe))["proxies"]
+    assert proxy["point_indices"][0] != 3
+    assert np.allclose(proxy["origin"], ANCHOR, atol=1e-6)
+    monkeypatch.setattr(sys, "argv", ["proxy_canon.py", str(recipe), str(edits)])
+    proxy_canon.main()
+    (edit,) = json.loads(edits.read_text())["edits"]
+    assert np.allclose(edit["new_triangle"][0], ANCHOR, atol=1e-6)
+
+
+def test_worn_overlay_accepts_a_full_path_outside_dz(tmp_path, monkeypatch):
+    """A --map value that is a full .p3d path may sit on another drive than --dz."""
+    import worn_overlay
+
+    src = _host(tmp_path / "host.p3d")
+    recipe = tmp_path / "recipe.json"
+    out = tmp_path / "worn.json"
+    proxy_extract.main(str(src), str(recipe))
+    dz = str(Path(__file__).resolve().parent)  # on Windows usually another drive than tmp_path
+    monkeypatch.setattr(sys, "argv", ["worn_overlay.py", str(recipe), str(out), "--dz", dz,
+                                      "--no-defaults", "--map", "Vest=%s" % src])
+    worn_overlay.main()
+    (proxy,) = json.loads(out.read_text())["proxies"]
+    assert Path(dz, proxy["worn"]["source"]).resolve() == Path(src).resolve()
+    assert proxy["worn"]["faces"]
 
 
 def test_apply_changes_nothing_but_the_proxy_points(aligned):

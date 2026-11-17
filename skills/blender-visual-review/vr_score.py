@@ -35,8 +35,10 @@ Usage:
     python vr_score.py ask render.png --checklist checks.json --model gemma4:26b --json
     python vr_score.py ask --view assembled__iso iso.png --view zoom_muzzle__front_iso muzzle.png --checklist checks.json
     checks.json: [{"q": "Is the barrel cylindrical, not faceted?", "view": "zoom_muzzle__front_iso", "skip": "optional reason"}, ...]
-    A view token is <subject>__<view>, matching the render filenames the Blender pass
-    emits (<subject>__<view>__<subject>__<version>.png). Subject matters: 'profile' alone
+    A view token is <subject>__<view>, the first two segments of a framing named
+    <subject>__<view>__<subject>__<version>.png. The skill's vr_capture helper does not
+    write these (it writes <object>__<angle>__<tag>.png for front, right, top and iso);
+    render the framings a checklist names yourself. Subject matters: 'profile' alone
     does not tell assembled__profile_L from zoom_mag__profile.
     Legacy checks.json: ["Is the barrel cylindrical, not faceted?", ...] — scored against the positional render
 """

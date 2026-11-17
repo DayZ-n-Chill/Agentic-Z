@@ -11,7 +11,7 @@ argument-hint: "<file.rvmat ...> [--pdrive-root <folder>] | <super|damage|emissi
 
 Design, write, check and hand over DayZ texture and material work: the maps, the `.rvmat`, the config wiring, damage materials, emissive and glass variants, penetration materials and Multi masks. Three small scripts do the mechanical checks; the references hold the depth.
 
-Follow `skills/_shared/dayz-conventions.md`. The three scripts only read the files they are given and print a report or a template, so they do not run `/dayz-preflight`. This skill does not convert images: `/dayz-pack-texture` does, and it is the only step here that needs DayZ Tools.
+Follow `skills/_shared/dayz-conventions.md`. The three scripts only read the files they are given and print a report or a template, so they do not run `/dayz-preflight`. This skill does not convert images: `/dayz-pack-texture` does. DayZ Tools is needed only for that step and for decoding a `.paa` to PNG with ImageToPAA before `normal_convention.py` reads it.
 
 ## How to run
 
@@ -28,7 +28,7 @@ python "<skill-dir>\scripts\rvmat_lint.py" <file.rvmat> [<more.rvmat> ...] [--pd
 | `--warnings-as-errors` | Exit 1 on warnings too. |
 | `--json` | Print the findings as a JSON list. |
 
-Each finding is one line, `file:line: ERROR|WARN CODE: message`. Exit code 0 means no error (warnings allowed), 1 means at least one error or a missing file, 2 means bad arguments or a missing `--pdrive-root` folder. Errors are things no vanilla file does (a source `.png` path, a local disk path, a Multi mask not on `tex1`, mismatched shader IDs). Differences that depend on the kind of asset are warnings.
+Each finding is one line, `file:line: ERROR|WARN CODE: message`. Exit code 0 means no error (warnings allowed), 1 means at least one error or a missing file, 2 means bad arguments or a missing `--pdrive-root` folder. Errors are mistakes a mod material should not ship with (a source `.png` path, a local disk path, a missing or mismatched shader ID, a Multi material without Stage0 to Stage4). A few vanilla files under `P:\DZ` still trip them (absolute paths in 18 places, a missing `PixelShaderID` in 35 and a missing `VertexShaderID` in 37, a missing Multi base stage in 5), so a run over vanilla is not clean. Differences that depend on the kind of asset are warnings, among them a Multi mask that does not read `tex1`: vanilla reads it from `tex1` in 1,373 Multi materials and from `tex` in 587.
 
 **Write a starter `.rvmat`** (standard library only):
 
@@ -46,9 +46,9 @@ python -m pip install -r "<skill-dir>\requirements.txt"
 python "<skill-dir>\scripts\normal_convention.py" --normal <normal.png> --albedo <albedo.png> [--json]
 ```
 
-Both images are PNG files of the same size and the same UV layout. Decode a `.paa` with ImageToPAA first.
+Both images are PNG files of the same size and the same UV layout. Decode a `.paa` with DayZ Tools ImageToPAA first.
 
-Exit code 0 prints a candidate, `DirectX` or `OpenGL`. Exit code 2 is `INCONCLUSIVE`. Exit code 1 is bad input, including numpy or Pillow not being installed. A candidate is not proof; rule 3 below says how to confirm it.
+Exit code 0 prints a candidate, `DirectX` or `OpenGL`. Exit code 2 is `INCONCLUSIVE` or bad arguments (for example no `--albedo`); the printed line tells them apart. Exit code 1 is bad input, including numpy or Pillow not being installed. A candidate is not proof; rule 3 below says how to confirm it.
 
 Each script also takes `--help`, and the two `.rvmat` scripts take `--self-test`.
 

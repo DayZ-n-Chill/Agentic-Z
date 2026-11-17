@@ -11,12 +11,12 @@ behaviour (AddonBuilder, binarize, the game's loader) and findings from mod proj
 
 | Check below | Run by | Notes |
 |---|---|---|
-| 1 Folder structure | `/dayz-lint` (inside `/dayz-build-pbo`) | `config.cpp`, `$PBOPREFIX$`, the `P:\` link, missing files and bad suffixes. Stale files are kept out by `exclude.lst`. Spaces, upper-case extensions and large files are manual. |
+| 1 Folder structure | `/dayz-lint` (inside `/dayz-build-pbo`) | `config.cpp`, `$PBOPREFIX$`, the `P:\` link, missing files and bad suffixes. Of the stale files, `.bak` and `.psd` are dropped by `exclude.lst`; `.blend`, `.xcf`, `.tmp` and `.swp` stay out because `include.lst` has no pattern for them. Spaces, upper-case extensions and large files are manual. |
 | 2 `config.cpp` | `/dayz-lint` | Syntax, `CfgPatches`, `requiredAddons`, script modules. Duplicate members (1.30) stop binarize; `build.py` then prints the binarize error from AddonBuilder's log. |
 | 3 `model.cfg`, 5 `.p3d` LODs, 8 wheel slots | `/dayz-p3d-audit` | Run it by hand before a build; `/dayz-build-pbo` does not call it. |
-| 4 Texture and material paths | `/dayz-lint` (missing files) and `/dayz-p3d-audit` | Capitalisation and `.png`/`.dds` checks are manual. |
+| 4 Texture and material paths | `/dayz-lint` (missing files) and `/dayz-p3d-audit` | A reference starts with the PBO prefix and resolves from the `P:\` root, not from the addon folder. Capitalisation and `.png`/`.dds` checks are manual. |
 | 6 Stringtable | none | Manual, or the validator shape in `validation-scripts.md`. |
-| 7 Scripts | `/dayz-lint` (modules, modded classes) | The script validator in `scripts/tools/dayz-script-validator/` checks the code itself; see `script-linter-and-compile-gate.md`. |
+| 7 Scripts | `/dayz-lint` (modules, modded classes, then the code rules of the script validator in `scripts/tools/dayz-script-validator/`) | A code error already stops the build. Run the validator separately only to pass `--external-scripts` or to compare before and after a change; see `script-linter-and-compile-gate.md`. |
 
 Version note. Until 1.29: the folder structure, `stringtable.csv`, include list and duplicate class name check
 below are the 1.29 contract. Since 1.30: binarize also **stops** when a member is defined more than once in one
@@ -85,7 +85,7 @@ This check is critical—most DayZ mod failures start here.
 - **Semicolons:** Every class property and array must end with `;`
 - **Required CfgPatches class:**
   - Must exist with at least one patch subclass
-  - Each patch should have `units[]`, `weapons[]`, `requiredVersion` and `requiredAddons[]`, as vanilla `CfgPatches` at `P:\DZ\gear\tools\config.cpp:1` does. The engine tolerates a patch without them: vanilla `DZ_data_aiconfigs` at `P:\DZ\data\aiconfigs\config.cpp:3` has an empty body, so `/dayz-lint` reports a missing field as a warning, not an error.
+  - Each patch should have `units[]`, `weapons[]`, `requiredVersion` and `requiredAddons[]`, as vanilla `CfgPatches` at `P:\DZ\gear\tools\config.cpp:1` does. The engine tolerates a patch without them: vanilla `DZ_data_aiconfigs` at `P:\DZ\data\aiconfigs\config.cpp:3` has an empty body. `/dayz-lint` warns on a missing `units[]` or `weapons[]`, fails on a missing `requiredAddons[]` (without it the load order after the vanilla classes the mod changes is not guaranteed), and does not check `requiredVersion`.
 - **Class inheritance verification:**
   - Validate parent classes exist (e.g., Inventory_Base, Container_Base, Land_Stone_*)
   - Warn if parent class is not a known DayZ base (may not exist in vanilla)
@@ -151,8 +151,10 @@ Scans all texture references and verifies files exist.
   - .rvmat files: extract referenced texture paths
   - .p3d face textures (if py3d available)
 - **Path existence:**
-  - Every referenced `.paa` file MUST exist relative to addon root
-  - Every referenced `.rvmat` file MUST exist
+  - Every referenced `.paa` and `.rvmat` file MUST exist. A reference is a root path that starts with a PBO
+    prefix, not a path relative to the addon: vanilla writes `"dz\gear\tools\data\alarmclock_blue_co.paa"`
+    (`P:\DZ\gear\tools\config.cpp:85`), and a mod with prefix `mymod\myaddon` writes
+    `"mymod\myaddon\data\body_co.paa"`. Resolve it from the `P:\` root, where the addon sits at `P:\<prefix>`
   - Paths are case-sensitive on Linux/server (always check capitalization)
 - **File format checks:**
   - WARN if `.png` file referenced (should be `.paa` for DayZ)
@@ -163,7 +165,7 @@ Scans all texture references and verifies files exist.
 
 **Example output:**
 ```
-[FAIL] Texture not found: data\textures\body_co.paa (referenced in config.cpp line 45, class Item_Shirt)
+[FAIL] Texture not found: mymod\myaddon\data\textures\body_co.paa (referenced in config.cpp line 45, class Item_Shirt)
 [WARN] PNG file detected: data\textures\logo.png (convert to PAA for better compression)
 [PASS] All 12 texture references validated and found
 [WARN] Texture path capitalization: referenced as "Textures\Cloth_Co.paa" but file is "textures\cloth_co.paa"
@@ -187,12 +189,12 @@ Only checked if py3d is available and .p3d files exist.
   - Warn if geometry LOD vertices > 3000 for small items (performance impact)
 - **Memory LOD:**
   - Should have the `ce_center` memory point (the object's centre for actions and the vicinity list, read by `GetCenter` at `P:\scripts\3_game\entities\object.c:1363`; it is not the centre of mass)
-  - Warn if missing `ce_geom` or `ca_` collision points
+  - No collision check here: collision comes from the Geometry LOD above, not from memory points (a byte scan of all 8,256 vanilla models under `P:\DZ` finds no `ce_geom` point)
 - **Named selections:**
   - Consistent across LODs (if named_sel exists in LOD0, should exist in LOD2)
   - Warn if asymmetric (e.g., "Left_Arm" exists but no "Right_Arm")
 - **Vertex count budgeting:**
-  - LOD0: up to 5000 vertices (warn if higher for small objects)
+  - LOD0: up to 3000 vertices for small items (warn if higher)
   - LOD1: 40-60% of LOD0
   - LOD2 (far): 10-20% of LOD0
 
@@ -203,7 +205,6 @@ Only checked if py3d is available and .p3d files exist.
 [FAIL] Memory LOD missing ce_center point
 [WARN] LOD0 vertex count: 4200 (high for small item, consider optimization)
 [PASS] Named selections consistent across LODs (8 selections)
-[WARN] No collision points (ce_geom) in Memory LOD—object may not collide properly
 ```
 
 ---
@@ -264,9 +265,9 @@ four named above among them (`P:\languagecore\stringtable.csv:1`).
 
 ### 7. Script Validation (Basic)
 
-Run the script validator first; how to run it and how to read its result is in
-`script-linter-and-compile-gate.md`. The heuristics below are the fallback when the validator is not
-available, and a useful second pass when it is.
+`/dayz-build-pbo` already runs the script validator's code rules through `/dayz-lint`; how to run it on its own
+and how to read its result is in `script-linter-and-compile-gate.md`. The heuristics below are the fallback when
+the validator is not available, and a useful second pass when it is.
 
 Checked if scripts exist in `scripts/` folder.
 
@@ -363,7 +364,7 @@ Date: 2026-03-28
 [WARN] model.cfg: animation "lever_rotate" references axis "lever_axis"
   └─ Verify this axis exists as memory point pair in Item_Watch.p3d
 
-[FAIL] Texture not found: data\textures\body_co.paa
+[FAIL] Texture not found: mymod\myaddon\data\textures\body_co.paa
   └─ Referenced in config.cpp line 45, class Item_Shirt
   └─ Expected at: P:\mymod\myaddon\data\textures\body_co.paa
 
@@ -386,7 +387,7 @@ Date: 2026-03-28
 ✗ 2 FAIL
 
 Status: BLOCKED - Fix 2 critical errors before packing
-  1. Add data\textures\body_co.paa
+  1. Add P:\mymod\myaddon\data\textures\body_co.paa
   2. Add STR_MYMOD_DEVICE_NAME to stringtable.csv (column 1, no leading #)
 
 Next: Run AddonBuilder after corrections are complete

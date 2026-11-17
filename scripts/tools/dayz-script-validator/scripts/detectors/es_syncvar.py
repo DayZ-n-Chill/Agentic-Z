@@ -444,15 +444,18 @@ def check_es_syncvar_contract(
                         # WRITE_NO_IFDEF quarantined 2026-08-18. The premise -
                         # "a SyncVar write must sit under #ifdef SERVER" - is not
                         # the contract vanilla implements. ItemBase.SetQuantity
-                        # writes m_VarQuantity at itembase.c:3377 with NO side
-                        # guard at all, and publishes with
-                        # SetVariableMask(VARIABLE_QUANTITY) at :3406, also
-                        # unguarded. Corrected 2026-08-19: the quarantine note
-                        # first read the `if (g_Game.IsServer() || ...)` at :3379
-                        # as guarding that write. It does not - it sits AFTER the
-                        # assignment and wraps an inventory-sound block. Re-reading
+                        # writes m_VarQuantity at itembase.c:3336, :3343 and :3352
+                        # with no #ifdef SERVER around any of them (the only side
+                        # check is the runtime IsServerCheck(allow_client) at
+                        # :3317), and publishes with
+                        # SetVariableMask(VARIABLE_QUANTITY) at :3382, also
+                        # outside any #ifdef. Corrected 2026-08-19: the quarantine
+                        # note first read the `if` at :3357 as guarding that
+                        # write. It does not - it sits AFTER the assignment and
+                        # wraps an inventory-sound block. Re-reading
                         # the file makes the premise MORE clearly false, not less.
-                        # Items register in InitItemVariables (:254-270), not the
+                        # Items register in InitItemVariables (itembase.c:158,
+                        # RegisterNetSyncVariable* calls at :186-212), not the
                         # constructor.
                         # Measured over the vanilla tree this fired 122 times, and
                         # once the class parser learned `extends` it rose to 317:

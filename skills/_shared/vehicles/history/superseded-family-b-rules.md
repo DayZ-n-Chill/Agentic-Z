@@ -1,10 +1,10 @@
-# Superseded rules from the family B lane (CHANGE-1)
+# Superseded rules from the family B lane (change 1)
 
 History only, no authority: the text of vehicle rules that were later corrected, kept so a reader can see what was replaced and why the current rule reads as it does.
 
 > Status: the measurements below were taken on mod test vehicles, named in each entry (SUB_BRZ, MercedesAMGLF, LFQuad, LFHeli OH-1); they are mod behaviour, not vanilla, and were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
 
-> No block in this file is current. Every active rule is in the other files of this pack; `skills/dayz-vehicles/SKILL.md` lists them. Each block between the `SUPERSEDED-EXACT` markers is a rule as it read before CHANGE-1 replaced it.
+> No block in this file is current. Every active rule is in the other files of this pack; `skills/dayz-vehicles/SKILL.md` lists them. Each block between the `SUPERSEDED-EXACT` markers is a rule as it read before change 1 replaced it. Change 1 is the family B cutover that took the full runbook off the critical path of `skills/rip-vehicle-import/SKILL.md` (it is kept in that skill's `references/history-family-b-runbook.md`) and rewrote the vehicle rules it carried.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -136,4 +136,4 @@ cycle by re-reading the base class the airframe actually inherits from.
 
 ## Routing and index removed, not archived as content
 
-The routing block and the quick triage table that CHANGE-1 removed are not kept here: their tables would be a second router and index beside `skills/dayz-vehicles/SKILL.md`.
+The routing block and the quick triage table that change 1 removed are not kept here: their tables would be a second router and index beside `skills/dayz-vehicles/SKILL.md`.

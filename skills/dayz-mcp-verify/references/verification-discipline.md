@@ -22,8 +22,8 @@ Before you attribute a compile result or any verdict to the mod under test, read
 The build can pack untracked scratch files, so assuming the PBO holds exactly the source tree misattributes a compile verdict read from the boot's log. Know what the build packed before a decisive boot.
 
 - The PBO index is plain text near the start of the binary. `grep -a "scripts\\\\" <mod>.pbo` finds the names, but it prints whole newline-delimited chunks of binary, not one name per line, so it is not a file list.
-- To read the index itself, use a reader over the header. In this repo `skills/dayz-build-pbo/pbo_entries.py` lists a PBO's entries; the `dayz-test-ingame` skill lists the PBO and compares the packed `.c` count with the source's.
-- Keep experiments out of the packed tree. A rebuild packs the scratch files still in it, and without `-clear` AddonBuilder's `-temp` sync can serve stale source, so after a rebuild read the deployed PBO's index again before the decisive boot. `/dayz-build-pbo --clean` passes `-clear`.
+- To read the index itself, use a reader over the header. In this repo the module `skills/dayz-build-pbo/pbo_entries.py` has no command line; call `read_pbo(path).entries` from Python to get a PBO's entries; the `dayz-test-ingame` skill lists the PBO and compares the packed `.c` count with the source's.
+- Keep experiments out of the packed tree. A rebuild packs the scratch files still in it, so after a rebuild read the deployed PBO's index again before the decisive boot. AddonBuilder's `-temp` sync is incremental and can serve stale source, but `/dayz-build-pbo` already empties its temp dir `P:\temp\<ModName>` on every build, so no flag is needed for that.
 
 Limit: the index audit establishes what is packed, never why a compile failed.
 

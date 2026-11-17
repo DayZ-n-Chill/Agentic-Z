@@ -11,12 +11,12 @@ from persistence_stream import (
 )
 
 
-BUILD_VERSION = 1290163451
+STORAGE_VERSION = 144
 ENERGY_FIELDS = (1, 2, 3, 4, 5, 6, 7, 8)
 
 
 def test_typed_stream_is_sequential_and_failed_reads_do_not_advance() -> None:
-    writer = StreamWriter(version=BUILD_VERSION)
+    writer = StreamWriter(version=STORAGE_VERSION)
     writer.write_int(17)
     writer.write_bool(True)
     writer.write_float(1.25)
@@ -29,7 +29,7 @@ def test_typed_stream_is_sequential_and_failed_reads_do_not_advance() -> None:
     assert wrong_type_ok is False
     assert wrong_type_value is None
     assert reader.position == before
-    assert reader.version == BUILD_VERSION
+    assert reader.version == STORAGE_VERSION
     assert reader.read_int() == (True, 17)
     assert reader.read_bool() == (True, True)
     float_ok, float_value = reader.read_float()
@@ -41,7 +41,7 @@ def test_typed_stream_is_sequential_and_failed_reads_do_not_advance() -> None:
 
 def test_fixed_super_width_misaligns_when_optional_component_is_absent() -> None:
     present_payload = save_entity(
-        version=BUILD_VERSION,
+        version=STORAGE_VERSION,
         energy_fields=ENERGY_FIELDS,
         child_value=73,
     )
@@ -58,7 +58,7 @@ def test_fixed_super_width_misaligns_when_optional_component_is_absent() -> None
     assert present_target.child_value == 73
 
     absent_payload = save_entity(
-        version=BUILD_VERSION,
+        version=STORAGE_VERSION,
         energy_fields=None,
         child_value=73,
     )
@@ -87,7 +87,7 @@ def test_sequential_load_tracks_the_runtime_super_width(
     energy_fields: tuple[int, ...] | None,
 ) -> None:
     payload = save_entity(
-        version=BUILD_VERSION,
+        version=STORAGE_VERSION,
         energy_fields=energy_fields,
         child_value=41,
     )
@@ -101,7 +101,7 @@ def test_sequential_load_tracks_the_runtime_super_width(
     )
 
     assert result.success is True
-    assert result.version == BUILD_VERSION
+    assert result.version == STORAGE_VERSION
     assert result.bytes_consumed == len(payload)
     assert target == EntityState(
         energy_fields=energy_fields,
@@ -111,7 +111,7 @@ def test_sequential_load_tracks_the_runtime_super_width(
 
 def test_failed_typed_read_discards_every_staged_field() -> None:
     payload = save_entity(
-        version=BUILD_VERSION,
+        version=STORAGE_VERSION,
         energy_fields=ENERGY_FIELDS,
         child_value=99,
     )

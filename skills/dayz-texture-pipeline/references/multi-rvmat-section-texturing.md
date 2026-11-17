@@ -44,7 +44,7 @@ Shared stages:
 
 | Stage | Holds |
 |---|---|
-| Stage4 | The mask (red, green, blue and black), on the second UV set |
+| Stage4 | The mask (red, green, blue and black), usually on the second UV set |
 | Stage9 | Macro |
 | Stage10 | Ambient shadow |
 
@@ -58,12 +58,12 @@ The vanilla rock follows this layout:
 
 ## UV sets
 
-Multi needs two UV sets:
+Multi needs two UV sets: one that tiles the material textures and one that lays the mask over the whole mesh once, with no overlaps. Vanilla uses both assignments:
 
-- UV set 0 (`tex`): tiling coordinates for the material textures.
-- UV set 1 (`tex1`): placement of the mask, with no overlaps.
+- The usual one, in 1,373 vanilla Multi materials: the tiling set is `tex` and the mask reads `tex1`, as in the rock above.
+- The swapped one, in 587: the mask reads `tex` and the tiling textures read `tex1`. `P:\DZ\rocks_bliss\data\r_rock_general1.rvmat` gives `TexGen4` `uvSource="tex"` (line 55) for the mask in `Stage4` (lines 117-120), while `TexGen1` to `TexGen3` read `tex1` and tile 13 times (lines 22-25).
 
-When the second set is missing, mirrored, overlapping or scaled like the tiling set, the mask lands in the wrong place.
+Pick one and keep the model's UV sets to match. When the mask's set is missing, mirrored, overlapping or scaled like the tiling set, the mask lands in the wrong place.
 
 ## Skeleton
 
@@ -113,22 +113,22 @@ The script's own skeleton writes `TexGen1` to `TexGen3` out in full instead of i
 
 - Paint pure black, red, green and blue for a hard assignment.
 - Use blends only after the result was looked at in the engine.
-- Keep the mask on UV set 1.
+- Paint the mask over the UV set its `TexGen` reads.
 - Ship the mask as a `.paa` in the packed path. The working file can be a PNG or a layered file, but the `.rvmat` names the `.paa`. The vanilla rock names its mask `rock_apart1_mask.paa`; `_mask` is a suffix `/dayz-pack-texture` accepts.
 
 ## Pitfalls
 
 - Multi on a small item that selections would handle more simply.
-- No second UV set, or the mask assigned to `tex` and not `tex1`.
+- No second UV set, or the mask reading the same UV set as the tiling textures.
 - Only color textures supplied, which gives up the per family specular and normal that are the point of Multi.
 - A source `.png` or `.tga` path left in the `.rvmat`.
 
 ## Checks before accepting a Multi material
 
 1. `PixelShaderID` and `VertexShaderID` are both `Multi`.
-2. Stage4 names the mask and reads UV set 1 (`tex1`), directly or through its `TexGen`.
+2. Stage4 names the mask and reads, directly or through its `TexGen`, the UV set that lays the mask over the mesh once: usually `tex1`, or `tex` when the tiling textures read `tex1`.
 3. Stage0 to Stage3, Stage5 to Stage8 and Stage11 to Stage14 are present, or left out on purpose with the reason written down.
 4. The mask colors line up with the intended families in the engine.
 5. The asset really gains from fewer sections or from tiled materials per family.
 
-`rvmat_lint.py` checks 1 to 3: a missing Stage0 to Stage4 or a mask not on `tex1` is an error, and a missing later stage is a warning.
+`rvmat_lint.py` checks 1 to 3: a missing Stage0 to Stage4 is an error, and a mask not on `tex1` or a missing later stage is a warning.

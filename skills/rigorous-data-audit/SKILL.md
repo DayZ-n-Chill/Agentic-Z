@@ -11,9 +11,9 @@ argument-hint: "<mod or change to audit>"
 
 Reference only: this skill has no script of its own; the agent runs the checks with its search tools.
 
-Procedure for auditing mods where a bug equals lost player progression. Built from a real failure: six parallel Opus reasoning agents reviewed LF_VStorage 1.4.6 from independent angles and signed off as "release-safe", an external implementer-grade audit then found 12 vulnerabilities (P0 to P3) the agents missed. This skill encodes the lessons.
+Procedure for auditing mods where a bug equals lost player progression. Built from a real failure: six parallel Opus reasoning agents reviewed LF_VStorage 1.4.6 from independent angles and signed off as "release-safe", an external implementer-grade audit then found 12 vulnerabilities (P0 to P2) the agents missed. This skill encodes the lessons.
 
-A second failure refined it further: a loose application of this skill's "parallel agents + consolidation" shape, pointed at fact-checking a corpus, produced an audit that was **~55% confabulated**, because there was no adversarial verification step between "agents reported it" and "acting on it". Step 3 below exists because of that. The case is in `references/fact-audit-postmortem.md`.
+A second failure refined it further: a loose application of this skill's "parallel agents + consolidation" shape, pointed at fact-checking a corpus, produced an audit that was **~45% confabulated**, because there was no adversarial verification step between "agents reported it" and "acting on it". Step 3 below exists because of that. The case is in `references/fact-audit-postmortem.md`.
 
 The full retrospective of the first case is in `references/why-this-skill-exists.md`.
 
@@ -89,7 +89,7 @@ Skipping early steps makes later ones less effective, do not skip. Each step bel
 > **Done when:** a written list of mechanical findings exists (zero items if
 > clean), each citing `path:line_start-line_end`, ready to paste into step 2.
 
-Run before spawning any agents. Each check is a grep + table walk; together they take ~10 minutes and catch the bookkeeping-style bugs reasoning misses.
+Run before spawning any agents. Each check is a grep + table walk; on a mod the size of LF_VStorage they take about two hours together (the time budget at the end of each reference file gives its share), and they catch the bookkeeping-style bugs reasoning misses.
 
 These reference files give the procedures. Read the ones that apply before running:
 
@@ -142,9 +142,9 @@ Full prompts are in `references/audit-prompts.md`. The implementer-grade prompt 
 > the real file (by the independent verifier or by you); the 20% self-sample
 > passed (<10% confabulation); each row is labelled defect vs improvement.
 
-This is the step that turns "agents reported it" into "it is real". It exists because skipping it once produced a ~55%-confabulated audit (`references/fact-audit-postmortem.md`). Three sub-steps, in order:
+This is the step that turns "agents reported it" into "it is real". It exists because skipping it once produced a ~45%-confabulated audit (`references/fact-audit-postmortem.md`). Three sub-steps, in order:
 
-**3a, Verify every cited snippet against the real file.** Open the file at the cited range and confirm it says what the agent's pasted snippet claims. Reasoning agents drift on line numbers, copy citations from sibling files, and occasionally invent plausible ranges wholesale. A finding whose snippet does not match the file is not a finding, re-derive it or drop it. Every cause in durable memory brings file+pattern+number of matches with n>0; without the trio it is a hypothesis, and adjudication between rival mechanisms requires a prediction that only the new mechanism compels.
+**3a, Verify every cited snippet against the real file.** Open the file at the cited range and confirm it says what the agent's pasted snippet claims. Reasoning agents drift on line numbers, copy citations from sibling files, and occasionally invent plausible ranges wholesale. A finding whose snippet does not match the file is not a finding, re-derive it or drop it. Before a cause is written into lasting notes or memory, record three things: the file, the search pattern, and the number of matches it returned, which must be more than zero. A cause without those three is a hypothesis. To choose between two competing explanations, find a prediction that only the new explanation makes and check it.
 
 **3b, Independent verifier pass.** When an independent pass is assigned, use a reviewer from another family with a **fresh context that has not seen the angle reports**. If it is unavailable, declare that limitation; do not silently claim independence. Hand it only the bare list of claims (claim + location, no reasoning, no severity). Its task: for each claim, open the cited file and return TWO separate verdicts, "does the file actually say this" (`snippet_matches_file`) and "does the conclusion follow from that code" (`inference_holds`, judged without seeing the auditor's reasoning), pasting the relevant lines. A claim the independent verifier cannot confirm on either verdict is NOT actionable until the orchestrator re-reads it, dropping it silently is how a real finding disappears. And a refutation rate of 0% is a reason to distrust the verifier, not to trust the batch: the run that produced this rule refuted 0 of 67 claims, and one claim arrived `CONFIRMED` on a false inheritance premise. This is adversarial on purpose, convergence between agents that *shared* context (the same spec, the same conventions doc) is contagion, not confirmation. The verifier must not share that context.
 
@@ -156,7 +156,7 @@ Then build the single deduped table:
 |---|---|---|---|---|---|---|---|
 
 - Severity is yours to assign, do not trust the agent's self-reported severity. P0 = data-loss possible. P1 = recovery required. P2 = degraded behavior. P3 = code smell.
-- **Defect vs improvement.** Defensive coding is not a bug. An `OR` branch that accepts two input formats, a tolerant parser, a redundant guard, those are robustness, not defects. Label them "improvement" at most; do not file them as findings or inflate their severity. The 55%-confabulated audit's single biggest error class was calling tolerance a bug.
+- **Defect vs improvement.** Defensive coding is not a bug. An `OR` branch that accepts two input formats, a tolerant parser, a redundant guard, those are robustness, not defects. Label them "improvement" at most; do not file them as findings or inflate their severity. The 45%-confabulated audit's single biggest error class was calling tolerance a bug.
 
 ### Step 4: Implementer-grade cross-actor pass
 
@@ -195,10 +195,10 @@ Standard editing flow, with five specifics:
 > **Assignment:** mechanical checks directly; targeted reasoning under the
 > same review budget and family-independence contract.
 > **Done when:** mechanical pre-checks plus the two most-changed angles run
-> clean. A new finding loops back to step 5 **once**; a second reappearance stops
+> clean (every applicable angle over the new code when a fix added new design, see below). A new finding loops back to step 5 **once**; a second reappearance stops
 > the loop (hand the backlog back to the orchestrator).
 
-Re-run mechanical pre-checks (cheap) plus the two angles whose code changed most. If a new finding appears, loop back to step 5 once. If a finding of the same family reappears, the defect is design, not patching: stop, file the remainder as numbered backlog and escalate. Stop rule: the product gate closes the loop, a finding blocks only with an executable repro, and the budget is two rounds (this replaced "until zero critical or major"). For each value crossing N layers, a test executes the two layers of each joint WITHOUT test doubles; the mutation to test deletes the COUPLING, and the fix is only accepted when the RECEIVER repeats the exact mutation and sees the control die.
+Re-run mechanical pre-checks (cheap) plus the two angles whose code changed most. That is the rule for fixes that patch existing code. When a fix adds new design (a new flow, a new state, a new recovery or cleanup path), run every applicable angle over that new code as well, because its defects are in the design and a check of the changed lines cannot see them (`references/fix-and-reaudit-traps.md`, last section). Either way the round counts toward the two-round budget below. If a new finding appears, loop back to step 5 once. If a finding of the same family reappears, the defect is design, not patching: stop, file the remainder as numbered backlog and escalate. Stop rule: the product gate closes the loop, a finding blocks only with an executable repro, and the budget is two rounds (this replaced "until zero critical or major"). When a value passes through several layers, write a test for each pair of adjacent layers that runs both real layers, with no fakes or stubs in between. Check the test by deleting the code that connects the two layers: the test must then fail. Accept the fix only when the person or agent who receives it repeats that same deletion and sees the test fail too.
 
 ## Phase B: in-game validation (step 7)
 
@@ -224,11 +224,11 @@ Watching for these saves rounds:
 - **Declaring "release-safe" after step 2.** Steps 3 to 7 are not optional. Phase A alone is never "release-safe", Phase B is the gate.
 - **Using eight identical agents instead of eight different angles.** Eight reasoning agents prompted "audit this code" produce eight redundant reports. The angles must differ.
 - **Skipping step 1 because "the agents will catch it".** They demonstrably do not.
-- **Treating defensive coding as a bug.** A tolerant `OR` branch, a redundant guard, a parser that accepts two formats, robustness, not defects. Calling tolerance a bug was the 55%-confabulated audit's biggest error class.
+- **Treating defensive coding as a bug.** A tolerant `OR` branch, a redundant guard, a parser that accepts two formats, robustness, not defects. Calling tolerance a bug was the 45%-confabulated audit's biggest error class.
 - **Trusting consolidated metrics without drill-down.** "34 VERIFIED, 9 CONFABULATED" is smoke if it is a summed number with no per-finding click-through. Metrics without traceable findings are sums of guesses.
 - **Acting on an audit that has not passed step 3.** The agents' report is a set of hypotheses. Adversarial verification (independent verifier + 20% self-sample) is what makes it a set of facts. No verification = do not act.
 - **Trusting "convergence" between agents that shared context.** Four agents citing the same bug because they all read the same conventions doc is contagion, not confirmation. The step 3 verifier must have fresh context.
-- **Re-running the same audit after fixes.** Step 6 changes the cheap checks plus the two layers most edited, full 8-angle re-runs waste budget.
+- **Re-running the same audit after fixes.** Step 6 re-runs the cheap checks plus the two angles whose code changed most; re-running all eight angles over code the fixes did not touch wastes budget. Only new design added by a fix gets every applicable angle, and only over that new code.
 - **Serializing independent work after parallel delegation was authorized.** If multiple lanes are assigned, dispatch them together so they run concurrently.
 - **Shipping a `.skill` / release / patch file from un-reverified findings.** Cheap to apply, expensive to walk back.
 - **Reading a short-circuit finding as green.** A gate skipped on PRECONDITION (dirty tree, unreadable config) wears the same face as a pass: verify the gate evaluated what changed, and count exit codes, not findings. Verification on a dirty tree is not verification.
@@ -237,4 +237,4 @@ Watching for these saves rounds:
 
 Everything above is the Windows workflow and stays valid there. On Linux, the Proton setup, the measured tool matrix and the pitfalls are in the shared Linux and Proton notes (`skills/_shared/linux-proton.md`); this section only says what changes for this skill.
 
-- The PowerShell snippets in `references/` are search-and-tabulate recipes; the audit method does not depend on them. Use `rg`/`grep -rn` for `Select-String`, `find` for `Get-ChildItem -Recurse`, and Python for the tables. Paths: forward slashes, case-sensitive file system (see the guide).
+- The search lines in the code blocks of `references/` (`Grep "<pattern>" --type c --output_mode content -n true`) are recipes for the agent's own search tool, not shell commands, so they work the same on Linux. Outside the agent, `rg -n --type c "<pattern>"` runs the same search; build the tables by hand or with Python. Paths: forward slashes, case-sensitive file system (see the guide).

@@ -145,9 +145,9 @@ authoring target.
   namespace — the namespace is shared across the generation.
 - **`gamedbRC.slt` is whole-file encrypted** (entropy ~7.95 bits/byte, no SQLite/zlib/zstd magic; source-game
   pattern = Arxan TransformIT + CRC-32). Two community tools exist; neither is a clean fit for a dev/RC rip:
-  - `the local community GameDB crypto CLI (FH5-era)` — CLI, fully **local**, but supports only up to **FH5 v1.614.70.0**.
+  - A local community GameDB crypto CLI from the FH5 era — fully **local**, but supports only up to **FH5 v1.614.70.0**.
     Does NOT cover FH6/FM2023.
-  - `the server-side GameDB crypto client (2026-title)` — targets **FH6** and does GameDB→editable-SQLite, but the GameDB decrypt is
+  - A server-side GameDB crypto client for the 2026 title — targets **FH6** and does GameDB→editable-SQLite, but the GameDB decrypt is
     **server-side**: closed-source .NET client that ships **no keys**, needs a reachable backend + a gated
     **application key**, and **uploads the file to the tool's backend** to decrypt (all
     decrypt/encrypt runs server-side and the app ships no keys).
@@ -276,11 +276,10 @@ SUB_BRZ result: **`DayZ = (−Fx, Fy + Y0, −Fz)`**, `Y0 = (wheel_radius − ri
 (`(0.3587 − 0.19464) + 0.18 = 0.34406`). The `(−x, −z)` is a **180° rotation about vertical (det +1, proper,
 NOT a mirror)** — it is legitimate, see below.
 
-**DayZ vehicle axis convention (from CivilianSedan, the CONTROL — VERIFIED):** **front = −z** (headlights
-z≈−2.4, engine/drown_engine z≈−1.7), **rear = +z** (reverse light +2.56, exhaust/refill +2.2), **driver =
-+x** (`seat_driver` +0.436). source-game is front=+z, so a correct rip→DayZ import flips z. **Do NOT "fix" a
-180°-rotated-looking car** — confirm against CivilianSedan first; a static render cannot reveal a front/back
-swap, only the marker/centroid check can. (SUB_BRZ nearly triggered a false refactor here.)
+**DayZ vehicle axis convention:** a DayZ car faces −z with the driver on +x; the measured markers and the
+"do not fix a 180°-rotated-looking car" rule live in `vehicle-structural-parity.md` §"DayZ vehicle axis
+convention: front = −z, driver = +x". The source game faces +z, so a correct rip→DayZ import flips z.
+(SUB_BRZ nearly triggered a false refactor here.)
 
 ### 3.1 Wheel naming convention `wheel_<side>_<axle>` (pinned from CivilianSedan)
 
@@ -291,13 +290,9 @@ config `Axles`/`model.cfg` steering must agree with.
 
 ### 3.2 Proxy path format — vanilla and shipped mods use NO `.p3d` suffix (latent-bug class)
 
-MLOD proxy selections are `proxy:<path>.<NNN>` where `<path>` has **NO `.p3d` extension** — verified against
-BOTH vanilla CivilianSedan (`proxy:\dz\vehicles\wheeled\civiliansedan\proxy\sedanwheel.001`) and a shipped
-third-party car mod (`proxy:<mod>\proxy\..._wheel.001`). The engine appends `.p3d` at resolve time.
-A `.p3d`-suffixed path (`...sedanwheel.p3d.001`) resolves to `...sedanwheel.p3d.p3d` → **proxy not found →
-that geometry is missing in-game** (silent: spawns fine in editor checks). SUB_BRZ Phase 2 had this bug on
-its chunk proxies; Phase 3 normalized all of them. ALWAYS write proxy paths without the extension. (`verify_*`
-was hardened to accept both forms so it doesn't mask the bug.)
+The rule and its failure mode live in `vehicle-structural-parity.md` §"MLOD proxy selections carry NO `.p3d`
+extension". For the rip pipeline: SUB_BRZ Phase 2 had this bug on its chunk proxies; Phase 3 normalized all
+of them. (`verify_*` was hardened to accept both forms so it doesn't mask the bug.)
 
 ### 3.3 The structural LOD recipe (py3d 1.2.0 DayZ fork)
 
@@ -335,16 +330,9 @@ Geometry LOD has mass (`new Point()` defaults to `mass=None`; `add_proxy` points
 
 ### 3.5 `validate()` findings that are EXPECTED for a vehicle (don't chase)
 
-- **`ERR_COMPONENT_NAMING` (lowercase `component01`)** is a **false-positive for vehicles** from py3d up
-  to 1.8.0 (pinned until 2026-10-02) — vanilla CivilianSedan itself triggers it (it uses
-  lowercase); py3d 1.9.0
-  does not check the case. Match vanilla: lowercase. (`component01` collided
-  like `Component01` on an `Inventory_Base` item too: dayz-p3d-audit killer #2, measured in game 2026-10-02. The same code
-  for a collision LOD with faces and no component at all is not expected: on an item and a building that
-  collision was gone; vehicles not measured. From 1.9.0 it also checks the View and Fire LODs, and a
-  Geometry LOD without faces, such as the one in a debinarized vanilla `sedanwheel_destroyed`, no
-  longer raises it.)
-  *(Corrected 2026-10-02: the parenthesis read "Uppercase `Component01` is the Inventory_Base rule.")*
+- **`ERR_COMPONENT_NAMING` (lowercase `component01`)** is expected for vehicles: match vanilla (lowercase).
+  When it is a false positive and when it is not is covered in `vehicle-structural-parity.md`
+  §"`validate()` ERR_COMPONENT_NAMING is a false-positive for vehicles".
 - **`ERR_AXIS_SELECTION_MISSING`** fires for every Memory `*_axis` whose homonymous selection is absent from
   the **visual** LOD. For wheels this is REAL — assign each wheel proxy face ALSO to visual `wheel_X_Y`
   (rotation), `wheel_X_Y_damper` (suspension translation) and front `wheel_X_1_steering` selections so
@@ -409,10 +397,8 @@ shell, NOT full replacements -- INCLUDE `body_a` (it is the central roof/cabin s
 the roof). "Same LOD count" is not proof of replacement. (SUB_BRZ G1 excluded body_a by mistake; the visible
 "hole" was the missing roof.)
 
-Proxy path form (Phase 3 finding 2026-06-24): NO `.p3d` suffix. Vanilla and shipped-mod proxy selections are
-`proxy:\path\name.NNN` (no extension); py3d `add_proxy` that writes `...name.p3d.NNN` is a latent bug
-(likely won't resolve in-engine) -- write the proxy ref WITHOUT `.p3d`, matching vanilla. The
-`verify_<mod>.py` `_proxy_file` helper must accept both forms.
+Proxy path form: write the proxy ref WITHOUT `.p3d` (see §3.2). The `verify_<mod>.py` `_proxy_file` helper
+must accept both forms.
 
 Builder: `rip_p2_shellproxy.py` (real shell LOD + per-chunk proxy build + add_proxy); structural LODs by
 `rip_p3_structural.py`. The earlier `rip_p2_proxybuild.py` (all-proxy, no base) and `rip_p2_assemble.py`
@@ -530,30 +516,11 @@ the server RPT has ZERO `PHYSICS (E/W)` lines — the s2/s8 `crewdriver`/`crewco
 (vehicle-structural-parity.md "ATTACHMENT proxy ... BONE-NAME selection") resolve the engine binding. This fixes
 get-in's **gate-1** (`CrewPositionIndex(componentIndex) >= 0`). It is necessary but NOT sufficient (see below).
 
-**ROOT CAUSE #2 (the real get-in blocker, geometry-independent):** `ActionGetInTransport.ActionCondition`
-(`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:45-55`) has TWO gates that BOTH must pass: (1) `CrewPositionIndex >= 0`
-(crew proxy bone = fix d), AND (2) `CrewCanGetThrough(crewIndex)` (:54). **`CrewCanGetThrough` is NOT overridden by
-`CarScript` or `Car`** — only by the concrete car classes (CivilianSedan etc.). A ripped racing-game car whose config is
-`class <MOD>: CarScript` with NO Enforce Script class runs as **bare `CarScript`** (verified in-game: telemetry
-`class_name:"CarScript"`), so `CrewCanGetThrough` falls to the base stub `Transport.CrewCanGetThrough`
-(`P:\scripts\3_game\vehicles\transport.c:724-731`) which returns `false` in the normal build (`#ifndef CFGMODS_DEFINE_TEST`).
-→ gate-2 false → **get-in action NEVER appears**, no matter how perfect the crew bone is. Same trap for
-`GetSeatAnimationType` (transport.c:682-687 → `Error("not implemented")`) and `GetAnimInstance` (transport.c:662, used in Start()).
-
-**THE FIX = ship a thin `<MOD>_Base.c` script class (PIPELINE requirement — add to Phase 4).** A shipped
-third-party car mod does exactly this (third-party mod behaviour, not vanilla): its base class
-`extends CarScript` and overrides `CrewCanGetThrough`, `GetSeatAnimationType`,
-`GetAnimInstance`, `GetCarDoorsState`, `GetDoorSelectionNameFromSeatPos`,
-`GetDoorInvSlotNameFromSeatPos`, `GetDoorConditionPointFromSelection`,
-`CanReachSeatFromSeat`/`CanReachDoorsFromSeat`. Its cars extend `CarScript` DIRECTLY in config — they do NOT re-parent to a
-vanilla car. The mod needs a `CfgMods` script module (worldScriptModule files[]) to compile the `.c`.
-
-**Doors are NOT required for get-in.** `GetCarDoorsState` returns `DOORS_MISSING` when no CarDoor attachment exists
-(civiliansedan.c:185-192), and `DOORS_MISSING != DOORS_CLOSED` → `CrewCanGetThrough`
-returns true → passable. So a script class with NO door attachments gives WORKING get-in (baked doors stay static).
-Openable doors = a separate FEATURE (CarDoor classes + door proxies + door `.p3d` + AnimationSources DoorsX +
-model.cfg door bones), as that third-party mod ships them (a `CarDoor` subclass per door and
-`AnimationSources class DoorsDriver`).
+**ROOT CAUSE #2 (the real get-in blocker, geometry-independent):** SUB_BRZ's config was
+`class <MOD>: CarScript` with no Enforce Script class, so it ran as bare `CarScript` (verified in-game:
+telemetry `class_name:"CarScript"`) and get-in's second gate, `CrewCanGetThrough`, stayed false. The cause, the
+thin `<MOD>_Base.c` fix and the fact that doors are not required for get-in are in
+`vehicle-structural-parity.md` §"GET-IN ROOT CAUSE #2". For the rip pipeline, add that script class to Phase 4.
 
 **See-through chunks = s7's GLOBAL winding flip inverted the chunks that were correct-before.** The car shows
 see-through "gaps" at the engine bay + above each rear fender (symmetric). RPT clean of proxy-not-found (all 9
@@ -709,7 +676,7 @@ proxies is necessary but needs (1) the right FRAME and (2) COMPANION selections.
    on `civiliansedan_mlod` VISUAL LODs: anchor **x<0** → `((-1,0,0),(0,0,1),(0,1,0))`, **x>0** →
    `((1,0,0),(0,0,-1),(0,1,0))`. SUB_BRZ reuses the vanilla `sedanwheel` geometry, so copy the **VANILLA** frame
    (NOT another mod's — a different wheel geometry needs a different mirror). Reframe in place by anchor-x sign:
-   `canonical_proxy_triangle(p0=current_anchor, rotation=frame_by_side, scale=0.1)` overwriting the 3 triangle pts.
+   `canonical_proxy_triangle(anchor=current_anchor, rotation=frame_by_side, scale=0.1)` overwriting the 3 triangle pts.
 2. **Companions.** Vanilla and the third-party control carry `wheel_X_Y` companion selections in the VISUAL LOD too (not only View/Fire);
    the import had ZERO there → the attached wheel has no bone binding (and no spin anim target). Add them with the
    `fix_wheel_binding.py` pattern (`lod.new_selection(wn); ns.points=dict(proxy.points); ns.faces=dict(proxy.faces)`),
@@ -772,7 +739,7 @@ LOD0). The pilot LOD needs the car's own interior geometry. Separately, the LOD0
 fixed (it sees-through like the exterior).
 
 ### Paint finish — metallic/pearl is an APPROXIMATION; high specular AMPLIFIES normal-map artifacts
-source pearl paint (flake + clearcoat) is not reproducible in DayZ's Super shader — aim for an approximation:
+The source game's pearl paint (flake + clearcoat) is not reproducible in DayZ's Super shader — aim for an approximation:
 a solid `_co` of the source color + the Super stages (specular / fresnel / env reflection). Two s12 findings:
 - Raising specularPower (180→300) + brighter SMDI made the reflection clearly better.
 - BUT high specular AMPLIFIES any per-part `_nohq` normal-map artifact (green-flip / DXT1 banding) into visible
@@ -899,7 +866,7 @@ invariants, each verified in-game (the in-game render is the gate):
    set back to +cross); shell-vs-chunks agreement only proves internal consistency, not correctness
    (reimport in-game gate pending).
 
-4. **source interior materials are near-BLACK** (brz_black diffuse 0.015, brz_interior 0.13, brz_trim 0.095) →
+4. **The source game's interior materials are near-BLACK** (brz_black diffuse 0.015, brz_interior 0.13, brz_trim 0.095) →
    the cabin reads as an invisible void in DayZ lighting even when solid (geometry double-sided). Raise them
    (s15: 0.015→0.04 / 0.13→0.20 / 0.095→0.16). Note brz_black is shared interior+exterior trim, so
    brightening also greys the exterior black trim a little.
@@ -926,8 +893,9 @@ invariants, each verified in-game (the in-game render is the gate):
    in-game-confirmed fix is single-sided RAW winding as a prox_int-style dedicated proxy. Double-siding
    remains a fallback only (~2x resolved verts toward the 65535 cap).
 
-**Glass:** car-window glass is single-sided + transparent (ambient/diffuse alpha ~0.22-0.32, `noZwrite`,
-Super shader — NOT the "Glass" PixelShaderID, which is building glass). Double-siding glass double-blends the
+**Glass:** car-window glass is single-sided + transparent (`noZwrite`, Super shader; the SUB_BRZ glass used
+ambient/diffuse alpha ~0.22-0.32, a value tuned for this mod, not a property of car glass: vanilla
+`civiliansedan\data\glass.rvmat` uses 0.75; the shader is Super, as on vanilla building glass such as `P:\DZ\structures\data\alpha\glass_int_new.rvmat`; the "Glass" PixelShaderID appears only in `P:\DZ\data\data\glass_enviro.rvmat` and `chrome_enviro.rvmat`, which no vanilla `.rvmat` or `config.cpp` references). Double-siding glass double-blends the
 alpha → too opaque (s15 mistake, reverted). Keep glass single-sided; if it is invisible from outside that is a
 winding/orientation issue, not alpha. **Per-piece material correctness (wipers→plastic, bumper→metal) must
 come from the SOURCE part map, not spatial bounding boxes** — bboxes catch neighbour pieces (fender/hood).
@@ -936,7 +904,7 @@ come from the SOURCE part map, not spatial bounding boxes** — bboxes catch nei
 
 ## DOORS / movable parts — the rip ships them PRE-CUT with hinge locators (SUB_BRZ s36, 2026-07-17)
 
-source-game versions every movable part as its OWN model (the source game animates them: `MojoConfig.xml`
+The source game ships every movable part as its OWN model (it animates them: `MojoConfig.xml`
 `doorLF`/`doorRF` autovista events). BRZ Manifest: `scene\exterior\doors\doorlf_a.modelbin` (door
 sheet, authored-LOD bitmask) + `doorhandlelf_a` + `doorjamblf_a` + `scene\interior\doors\
 doorcardlf_a.modelbin` (interior card). Left side only (right = mirror, standard RF pattern).

@@ -11,7 +11,7 @@ machine is Linux. The helper scripts it names are in `skills/_shared/scripts/` (
 Not yet checked on `P:\`: nothing here is a fact about vanilla game data. It is measured tool, Proton and
 server behaviour on the builds named below, and the measurements have not been repeated.
 
-Measured on 2026-11-03 (server pitfalls in section 5 on 2026-11-04): Debian testing, Steam native, Proton Hotfix and GE-Proton11-1, DayZ and
+Measured on 2026-11-03 (server pitfalls in section 5 on 2026-11-04 to 2026-11-06): Debian testing, Steam native, Proton Hotfix and GE-Proton11-1, DayZ and
 DayZ Server 1.30.164289, DayZ Tools build 26405911 (binarize 1.30.164289.70). Everything below marked
 **not verified** was not run.
 
@@ -204,7 +204,7 @@ repeated with the `v1.0.0` binary. This is a record of the comparison, not a new
   loads no PBO from it and prints no error; the server starts and the mod is simply absent. Give mod paths relative
   to the server tree (symlinks or `../` work). This is the reverse of the Windows rule in
   `skills/dayz-test-ingame/references/windows-launch-cycle.md` ("MOD PATHS MUST BE ABSOLUTE"); evidence: `skills/dayz-test-ingame/references/linux-native-server.md`, section 3.
-  `-config` and `-profiles` take absolute paths; `DayZDiag` under Proton loads an absolute `-mod=Z:\…` (same file).
+  `-config` and `-profiles` take absolute paths; `DayZDiag` under Proton loads an absolute `-mod=Z:\…` (`skills/_shared/knowledge/linux-proton-findings.md`, section 8).
 - **Which PID is Steam**: `~/.steam/steam.pid`, the file `steam.sh` itself checks. `SteamPID` in
   `~/.steam/registry.vdf` can name a start-up process that is already gone (measured 2026-11-06: `SteamPID`
   20624, no such process, `steam.pid` 20622, the live `ubuntu12_32/steam`).

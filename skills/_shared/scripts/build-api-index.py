@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Build the compressed DayZ script API index from the vanilla script sources.
 
-usage: build-api-index.py <dayz-sources>/scripts api [--build "1.30 build 25963285"]
-       build-api-index.py <mod-extract-dir> api --mod expansion --build "DayZ-Expansion-Bundle 1.9.80"
+usage: python3 build-api-index.py <dayz-sources>/scripts api [--build "1.30 build 25963285"]
+       python3 build-api-index.py <mod-extract-dir> api --mod expansion --build "DayZ-Expansion-Bundle 1.9.80"
 
-Writes <out-dir>/dayz-api.txt.xz (read it with scripts/dayz-api.py): one block per class (modded parts merged), member
+Writes <out-dir>/dayz-api.txt.xz (read it with skills/_shared/scripts/dayz-api.py): one block per class (modded parts merged), member
 signatures without bodies, first line of //! doc comments. Format is described in
 the header of the generated file.
 
@@ -379,7 +379,7 @@ def main():
         '# ' + ('Each script module (PBO) is listed in a "#M id prefix pbo" line; the pbo is relative to the mod directory. A file @L:id|path is inner path = layer dir + path inside that pbo.' if a.mod else
               'All scripts are in dta/scripts.pbo; inner path = layer dir + path, e.g. 4:Entities/X.c -> 4_World\\Entities\\X.c (see dayz-api.py src).'),
         '# Bodies stripped. "#text" = first line of the //! doc comment. Layers: 1=1_Core 2=2_GameLib 3=3_Game 4=4_World 5=5_Mission.',
-        '# CLASS Name<T> : Base @L:path ... (files that declare it, first = main declaration, L = layer 1..5; modded parts merged; a trailing [modded] means every declaration is `modded class`, the class itself lives in vanilla or another mod). Members: [static|override|private|protected|native] ret Name(params) | type field. Overridden methods are listed by name only on an "override:" line (signature is in the base class); use `dayz-api.py class X --inherited` to walk bases.',
+        '# CLASS Name<T> : Base @L:path ... (files that declare it, first = main declaration, L = layer 1..5; modded parts merged; a trailing [modded] means every declaration is `modded class`, the class itself lives in vanilla or another mod). Members: [static|override|protected|native] ret Name(params) | type field; private members are left out (a mod cannot reach them). Overridden methods are listed by name only on an "override:" line (signature is in the base class); use `dayz-api.py class X --inherited` to walk bases.',
         '# "native" = implemented in the engine (proto native). ENUM Name: value list. TYPEDEF/FN/VAR sections at the end hold top-level declarations.' + (' DEFINES lists the #ifdef defines per PBO prefix (from config.cpp defines[] and #define lines).' if a.mod else '')]
     if a.mod:
         for m in sorted(ids, key=lambda m: ids[m]):

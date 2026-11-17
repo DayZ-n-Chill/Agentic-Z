@@ -17,7 +17,7 @@ An entry is `{"q": "<question>", "view": "<framing>"}` and may declare `"skip": 
 
 ## The view token
 
-The `view` token is subject plus view (`assembled__iso`, `zoom_muzzle__front_iso`): the first two segments of the file name `<subject>__<view>__<subject>__<version>.png`. It is not the view alone (`iso`, `profile`). The reason: `profile` exists as a view of `zoom_mag` (`zoom_mag__profile__zoom_mag__v1.png`), and the side views of the assembly are `profile_L` and `profile_R`. A bare `profile` or `iso` token cannot tell `assembled__profile_L` from `zoom_mag__profile` (or `assembled__iso` from `body__iso` or `hg__iso`) and brings back the original bug: the question would be evaluated against the wrong framing.
+The `view` token is subject plus view (`assembled__iso`, `zoom_muzzle__front_iso`): the first two segments of the file name `<subject>__<view>__<subject>__<version>.png`. These framings come from a capture set of their own, not from the skill's `vr_capture` helper, which writes `<object>__<angle>__<tag>.png` for front, right, top and iso only. To run a checklist with `--view`, render the framings it names (an assembly view, side profiles, close-ups of a part) yourself and pass each one under its token. It is not the view alone (`iso`, `profile`). The reason: `profile` exists as a view of `zoom_mag` (`zoom_mag__profile__zoom_mag__v1.png`), and the side views of the assembly are `profile_L` and `profile_R`. A bare `profile` or `iso` token cannot tell `assembled__profile_L` from `zoom_mag__profile` (or `assembled__iso` from `body__iso` or `hg__iso`) and brings back the original bug: the question would be evaluated against the wrong framing.
 
 The tokens in `checks_hardsurface.json` are all taken from a real render inventory, none invented. The table lists four; `assembled__profile_R`, used by a skipped entry, follows the same pattern:
 
@@ -41,7 +41,7 @@ python "<skill-dir>\vr_score.py" ask --view assembled__iso assembled__iso__assem
 How views resolve:
 
 - **Without any `--view`** (the `vr_calibrate.py run` sweep works this way): all active questions go to the positional PNG in one call. The `view` field is recorded in the answer but does not route. So a checklist that has already been migrated does not break `ask foo.png` or multiply the calibrator's GPU cost.
-- **With `--view`**: the name is required. A missing `zoom_muzzle__front_iso` is an error, not a silent fallback. The token `render` is an alias of the positional PNG, for mixed checklists.
+- **With `--view`**: the name of every view an active question routes to is required. A missing `assembled__profile_L` or `zoom_receiver__right_iso` is an error, not a silent fallback. Views named only by skipped entries (`assembled__profile_R`, `zoom_muzzle__front_iso`) are not needed, because skipped entries are removed before routing. The token `render` is an alias of the positional PNG, for mixed checklists.
 - Each framing is one Ollama call with one image. The views are never sent together in the same message.
 
 `--reference` is unchanged: it stays the comparison photo or render, and is not one more framing. Its guard did change: it no longer checks the model name but the pixel dimensions of both images. Two images of the same pixel size collapse into one on `qwen3.x`, and which one survives is unpredictable (it follows the prompt cache), so the call is refused; a difference of a single pixel is enough to avoid it. The old guard by model name blocked `qwen3.5`, which works when the sizes differ, and let `qwen3.8` through, which has the same collision.
@@ -52,7 +52,7 @@ The simplest option was not touching the command line: a single PNG (the usual t
 
 That does not cover the measured case. In the measured runs, questions 1 and 3 have different answers depending on the panel of the same sheet, and that is exactly where the three models disagree. The diagnosis is that the unit of work is (question, image), not (question, instruction about a region). A hint in the prompt still sends all three panels together.
 
-The other simple option does change the unit of work: `ask img0.png img1.png img2.png` with `"view": 2`. It covers a three-file capture in a fixed order and breaks when a file is left out or reordered: index 2 stops being the muzzle zoom and the bevel question is evaluated against another view. It is the same failure (a question against the wrong framing), moved into the argument list. `--view zoom_muzzle__front_iso zoom_muzzle__front_iso__zoom_muzzle__v1.png` fails loudly if that PNG is missing.
+The other simple option does change the unit of work: `ask img0.png img1.png img2.png` with `"view": 2`. It covers a three-file capture in a fixed order and breaks when a file is left out or reordered: index 2 stops being the receiver close-up and the bevel question is evaluated against another view. It is the same failure (a question against the wrong framing), moved into the argument list. With `--view zoom_receiver__right_iso zoom_receiver__right_iso__zoom_receiver__v1.png` the framing is named, and leaving that `--view` out fails loudly because the active bevel question routes to it.
 
 ## Backward compatibility and migration
 
@@ -67,7 +67,7 @@ The calibrator does not index by question text. It indexes by:
 1. `Path(record["render"]).name`, to join with `verdicts.json`
 2. the position within the active list: `verdicts[name]["answers"][i]` against `record["answers"][i]["answer"]`
 
-`vr_score.py` respects that: `answers` stays an array in the order of the active checklist entries, and entries with `skip` take no position. Each element still has `q` (a string) and `answer`. `view` and `image` (the PNG actually sent) are added, and the calibrator ignores them. The record's `render` stays the positional argument when there is one, otherwise the first PNG given with `--view`.
+`vr_score.py` respects that: `answers` stays an array in the order of the active checklist entries, and entries with `skip` take no position. Each element still has `q` (a string) and `answer`. `view` and `image` (the PNG actually sent) are added, and the calibrator ignores them. The record's `render` stays the positional argument when there is one, otherwise the image of the first active question (the PNG passed for that question's `view`), whatever the order of the `--view` arguments. The default shadow log is a different thing: without `--shadow` and without a positional PNG it is written next to the first PNG given with `--view`.
 
 `vr_calibrate.py report` used to slice `questions[qi][:60]`, assuming strings; with objects that raises. `checklist_labels` now reuses the same normalization and exclusion as `ask`, so its counters only hold the five active positions. `run` still launches `ask <a.png>` without `--view` (the legacy routing, one image). A sweep over several views would need another folder convention and is not part of this change.
 
@@ -90,7 +90,7 @@ Three traps cost a whole run and must be avoided when calibrating again:
 
 ## The faceting question (Q3) is broken, not misrouted
 
-"Are cylinders smooth and round?" is at chance across the eight framings (50% at most), because its phrasing allows the polygonal handguard, which is flat by design, to be read as a faceted cylinder.
+"Are cylinders smooth and round?" does not hold up across the eight framings: its result depends on the framing and the grouping, not on the phrasing, and it fails because its phrasing allows the polygonal handguard, which is flat by design, to be read as a faceted cylinder.
 
 This section once closed with "it is fixed by rewriting it, not by moving it". That was retracted on 2026-08-22, after it was tested and came out the opposite (192 cells on the same rifle model plus a synthetic probe whose truth is set by construction, 2026-08-17):
 

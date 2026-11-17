@@ -2,7 +2,7 @@
 
 Tier 3 reference: cross-cutting DayZ notes that fit no single topic pack. Each file is one topic: a source map of a vanilla system, a set of measured results, a field note from mod projects, or an index of public reference material. Any DayZ worker may load one file of it when a task needs it. Tier 1 and Tier 2 still apply on top, and where a note here and a Tier 2 file state the same rule, Tier 2 wins.
 
-How far to trust a file is in its `Status:` line, directly under the title:
+How far to trust a file is stated near its top: in a `Status:` line under the title, or in the paragraph that says which lines were opened on `P:\` and which are measured. The last column of the table below sums it up:
 
 - **Checked on `P:\`** means every cited vanilla line was opened and holds what the note says.
 - **Not yet checked on `P:\`** means measured results, tool behaviour or third-party mod behaviour, which the vanilla files on `P:\` cannot confirm. Treat those facts as leads, not answers. Each such file still lists the few lines that were checked.
@@ -23,7 +23,7 @@ How far to trust a file is in its `Status:` line, directly under the title:
 | Which Enforce Script entry points, modules, plugins and events extend Workbench itself | `workbench-scripting-api.md` | No (`P:\` holds an older API; see its last section) |
 | What the DayZ-MCP bridge exposes, the design rules that keep it safe, and the engine facts it depends on (seat versus ownership, `SetThrottle`, freecam) | `mcp-bridge-protocol.md` | Engine facts yes; the tool no |
 | Running DayZ Tools, the server, the client and DayZ-MCP on Linux under Proton and podman: what was measured, what failed, what was corrected | `linux-proton-findings.md` | Measured, not yet checked |
-| Work drive and mod layout, diag binaries, `allowFilePatching`, AddonBuilder and CfgConvert gotchas, launch commands, mission files, BattlEye kick codes, which log holds what | `environment-and-infra.md` | Field notes; cited lines checked |
+| Work drive and mod layout, diag binaries, `allowFilePatching`, AddonBuilder and CfgConvert gotchas, launch commands, mission files, engine connect-error codes (`0x0002xxxx`), which log holds what | `environment-and-infra.md` | Field notes; cited lines checked |
 | py3d fields, LOD resolutions, winding when porting from Blender, debris offsets, double-sided faces, `ThrowPhysically`, `ServerSetAmmoCount`, JSON schema migration, LBmaster presets, a loot cascade | `technical-notes.md` | Cited lines checked; measurements not yet checked |
 | Has this been tried and ruled out already: screen capture from a mod, `CallExtension`, runtime textures, debris physics, the two animation systems, and a list of config and script gotchas | `verified-capabilities.md` | Field notes; its last section lists what was checked |
 | The seven invariants every vehicle hits (get-in, script binding, `class=vehicle`, `componentNN`, proxies, wheel axis, vital plug) | `vehicles-crossproject.md` | Rows 1 and 7 yes; the rest measured |

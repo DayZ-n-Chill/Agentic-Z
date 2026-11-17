@@ -2,7 +2,7 @@
 
 Helper scripts that more than one skill uses. The shell scripts are the Linux route (POSIX `sh` or `bash`, `/proc`, Proton) and do nothing useful on Windows; the two Python scripts run on both. The full guide, with what was measured and what was not, is `skills/_shared/linux-proton.md` (section 7 has the same table with more detail).
 
-None of these scripts calls `/dayz-preflight`: the shell scripts replace the Windows tools preflight checks for, and the two Python scripts only read the folders named on their command line.
+None of these scripts calls `/dayz-preflight`: the shell scripts replace the Windows tools preflight checks for, and the two Python scripts only touch their own folders: `build-api-index.py` reads the source folder and writes the output folder named on its command line, and `dayz-api.py` reads the indexes in `$DAYZ_API_DIR` (default `~/.cache/dayz-api`).
 
 ## Which script answers which question
 

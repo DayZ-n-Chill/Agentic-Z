@@ -2841,7 +2841,7 @@ class TestUndefinedClassRef(unittest.TestCase):
                 "FX_MissingTemplateArg",
                 "FX_MissingStatic",
                 # a space before the call's parenthesis, as in vanilla's
-                # `Math.Sqrt (` (5_mission/dayzintroscenepc.c:31)
+                # `Math.Sqrt (` (5_mission/dayzintroscenepc.c:32)
                 "FX_MissingSpacedCall",
                 # judged: DIAG_DEVELOPER is a build flag vanilla tests, so both
                 # of its branches compile in some build; FX_FORMS_ON is in the

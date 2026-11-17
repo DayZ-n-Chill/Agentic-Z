@@ -16,7 +16,7 @@ The function names, suffixes and `file:line` values in the tables are from the L
 
 Search for every site that writes a recognized sidecar or marker extension:
 
-```powershell
+```text
 Grep "FileWrite|FileSave|JsonFileLoader\.SaveFile|JsonSaveFile|MakeDirectory" --type c --output_mode content -n true
 Grep "\.virtualizing|\.restoring|\.manifest\.json|\.quarantine\.json|\.partial|\.locked" --type c --output_mode content -n true
 ```
@@ -42,7 +42,7 @@ For each sidecar, three obligations exist downstream:
 
 For each row in the writer table, walk these three:
 
-```powershell
+```text
 Grep "DeleteFile|RemoveFile" --type c --output_mode content -n true
 ```
 

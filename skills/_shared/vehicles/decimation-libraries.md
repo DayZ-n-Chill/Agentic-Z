@@ -98,8 +98,8 @@ def decimate_meshlab(V, UV, F, target_face_count, preserve_boundary=True):
 
     Inputs:
       V: (Nv, 3) vertex positions — may have duplicates if you deduped by (vi, ti)
-      UV: (Nuv, 2) UV coords — one per original OBJ vt index
-      F: (Nf, 3) int32 — face indices into V; third column is the UV-paired vertex
+      UV: (Nv, 2) UV coords — row i is the UV of V row i
+      F: (Nf, 3) int32 — face indices; every index addresses both V and UV
 
     Returns:
       V_out: (Nv', 3) decimated positions

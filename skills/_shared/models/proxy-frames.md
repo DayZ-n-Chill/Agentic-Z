@@ -83,7 +83,7 @@ A proxy can hold plain geometry: a part of the body split off into its own model
 
 Other points from the same tests:
 
-- The proxy path has no `.p3d` extension. The engine adds it, and a path that ends in `.p3d` asks for `.p3d.p3d`: the proxy is silently absent in game.
+- The proxy path has no `.p3d` extension; `proxies.md`, "In the model", says what goes wrong with one.
 - Attachment proxies such as wheels, crew and doors are not a guide for placing a body part. Physics and config place those (`proxyPos`, the axles), and their own positions mislead.
 - The vertex limit is not the 65535 the format suggests. One model loaded with 46,133 resolved vertices and failed with 46,134 (`dayz-p3d-audit/references/winding-diagnostics.md`), so run Binarize to find the limit for the model in hand.
 

@@ -334,15 +334,16 @@ def composite_texture(width, height, seed=42):
         canvas[:, :, c] = blend_lerp(canvas[:, :, c], grain_layer, 0.15)
 
     # Layer 4: edge wear (lighter at edges)
-    edge_mask = np.ones((height, width), dtype=np.float32)
+    edge_mask = np.zeros((height, width), dtype=np.float32)
     for y in range(height):
         for x in range(width):
             dist_from_edge = min(x, y, width - x, height - y) / min(width, height)
-            edge_mask[y, x] = dist_from_edge
+            edge_mask[y, x] = 1.0 - 2.0 * dist_from_edge  # 1 at the border, 0 at the centre
 
+    edge_color = 0.45  # light gray
     wear_amount = 0.05
     for c in range(3):
-        canvas[:, :, c] = blend_lerp(canvas[:, :, c], edge_mask, wear_amount)
+        canvas[:, :, c] = blend_lerp(canvas[:, :, c], edge_color, edge_mask * wear_amount)
 
     # Clamp to [0, 1]
     canvas = np.clip(canvas, 0.0, 1.0)

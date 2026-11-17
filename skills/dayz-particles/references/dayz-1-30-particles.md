@@ -20,7 +20,7 @@ What DayZ 1.30 changed for particles: the client check, effects spawned by the s
 
 ## Client check: IsHeadlessOrDedicatedServer
 
-Until 1.29, vanilla wrecks and `FireplaceBase` tested `!g_Game.IsDedicatedServer()` (1.29, not yet checked on `P:\`). Since 1.30, vanilla particle code skips headless clients as well as dedicated servers.
+Until 1.29, vanilla wrecks and `FireplaceBase` tested `!g_Game.IsDedicatedServer()` (1.29, not yet checked on `P:\`). Since 1.30, most vanilla particle code skips headless clients as well as dedicated servers. The Chinook and Mi-24 wrecks still use the dedicated server check alone (`P:\scripts\4_world\entities\building\wrecks\wreck_chinook.c:6` and `P:\scripts\4_world\entities\building\wrecks\wreck_mi24_tk.c:5`).
 
 - `IsHeadlessOrDedicatedServer` is a native method on the game (`P:\scripts\3_game\global\game.c:1136`).
 - Its comment says it combines `IsDedicatedServer` and `IsHeadless`, and that it is also true for a server with a head (`-headlessMode=0`) (`P:\scripts\3_game\global\game.c:1133`).
@@ -43,7 +43,7 @@ class Wreck_Mi8_Crashed extends CrashBase
 }
 ```
 
-Design note: a mod that still checks only for a dedicated server plays particles on headless clients, which draw nothing and still take objects from the particle pool. Use `IsHeadlessOrDedicatedServer()` for every particle effect.
+Design note: a mod that still checks only for a dedicated server runs its particle code on headless clients. There `ParticleManager.GetInstance()` returns null, because it creates the global pool only when `IsHeadlessOrDedicatedServer()` is false (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:65`), so a call such as `ParticleManager.GetInstance().PlayOnObject(...)` fails on a null reference. Use `IsHeadlessOrDedicatedServer()` for every particle effect. This narrows the general client-only rule in `skills/_shared/conventions/scripts.md`, which names `!GetGame().IsDedicatedServer()`: `IsHeadlessOrDedicatedServer()` includes that check and adds headless clients.
 
 ## Server spawned effects: CreateParticleServer
 

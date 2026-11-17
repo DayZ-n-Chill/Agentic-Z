@@ -5,7 +5,7 @@ What it touches (TEMPLATE_PATHS):
     .claude-plugin/, .mcp.json, hooks/, mods/, evals/
     docs/, scripts/
     .claude/CLAUDE.md, AGENTS.md, GEMINI.md, README.md, CONTRIBUTING.md, LICENSE
-    THIRD_PARTY_NOTICES.md, .gitattributes
+    .gitattributes
     .gitignore, pytest.ini, .env.example, package.json, package-lock.json, .github/
     .markdownlint.json, .markdownlint-cli2.jsonc, .markdownlintignore
 
@@ -64,7 +64,6 @@ TEMPLATE_PATHS = [
     ".github",
     "CONTRIBUTING.md",
     "LICENSE",
-    "THIRD_PARTY_NOTICES.md",
     ".gitattributes",
     ".markdownlint.json",
     ".markdownlint-cli2.jsonc",
@@ -971,7 +970,7 @@ def main() -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Preview drift only: fetches upstream (adding the upstream remote if it is missing) and writes no files. Exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date (always 0 with --quiet).",
+        help="Preview drift only: fetches upstream (adding the upstream remote if it is missing) and writes no files. Exits 1 if upstream changes are pending, no baseline exists yet, or a newer prebuilt search index is available, 0 otherwise (always 0 with --quiet).",
     )
     parser.add_argument(
         "--quiet",
@@ -1077,9 +1076,11 @@ def main() -> int:
     # First run: record the commit the clone was made from (its merge base with
     # upstream main) as the baseline, so upstream changes made since the clone
     # are offered. A copy with no shared history ("Use this template") records
-    # upstream HEAD instead, so nothing is overwritten or added on this run: a
-    # template file missing locally is in the baseline, so it classifies as
-    # locally-deleted and stays deleted unless restored with --per-file.
+    # upstream HEAD instead, so no local file is overwritten on this run. A
+    # template file missing locally is in the baseline: if the clone once
+    # committed it, it classifies as locally-deleted and stays deleted unless
+    # restored with --per-file; if the clone never had it, compute_drift
+    # reclassifies it as new and it is added.
     # --dry-run previews against that same baseline but does not write it, so
     # its preview matches what the real first run would offer.
     if baseline_sha is None and args.dry_run:

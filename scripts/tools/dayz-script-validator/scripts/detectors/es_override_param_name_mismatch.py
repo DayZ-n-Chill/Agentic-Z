@@ -10,7 +10,7 @@ from shared.vanilla_reference import override_param_names
 ES_OVERRIDE_PARAM_NAME_MISMATCH_RULE_ID = "ES-OVERRIDE-PARAM-NAME-MISMATCH"
 
 
-# animatedactionbase.c:175. Enforce requires an
+# animatedactionbase.c:179. Enforce requires an
 # override's parameter NAMES to match the base signature exactly (unlike
 # C++/C#/Java). A mismatch -> 'Can't find variable X' when the param is used.
 _OVERRIDE_RE = re.compile(r"\boverride\b")

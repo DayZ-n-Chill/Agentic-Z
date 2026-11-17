@@ -12,12 +12,12 @@ Each machine has its own physics world. A body created by script on the server e
 
 | Entity | What clients receive | Source |
 |---|---|---|
-| A vehicle (`Transport`) | A continuous stream: world transform, linear velocity and angular velocity | `Transport extends Pawn`, `P:\scripts\3_game\vehicles\transport.c:66`; the `TransportOwnerState` fields at `:11-30` |
+| A vehicle (`Transport`) | A continuous movement stream to every client (engine behavior; not checkable on `P:\`, confirm in game). The owner also gets an occasional full state when its moves desync: world transform, linear and angular velocity | `TransportOwnerState`, `P:\scripts\3_game\vehicles\transport.c:11-23`; "infrequently sent to the owner when there is a desync", `P:\scripts\3_game\entities\pawn.c:20-23`. `Transport extends Pawn` only under `#ifdef FEATURE_NETWORK_RECONCILIATION` (`transport.c:9`, `:66`); otherwise it extends `EntityAI` (`:68`) |
 | A thrown or dropped item | Simulated on the server and on the owner's client; other clients get the result | `HandActionThrow`, `P:\scripts\3_game\systems\inventory\hand_actions.c:77-81` |
 | Any `EntityAI` | Sync variables you register, sent when they change; position is not one of them | `RegisterNetSyncVariableBool`, `P:\scripts\3_game\entities\entityai.c:2832`; `SetSynchDirty`, `:3064` |
 
 - `Pawn` is the engine's type for an entity with continuous network movement; its owner state exists to correct a desync by replaying moves (`PawnOwnerState`, `P:\scripts\3_game\entities\pawn.c:20-25`). `Transport` supplies its own state and move types (`GetOwnerStateType`, `P:\scripts\3_game\vehicles\transport.c:160`) and uses `NetworkMoveStrategy.NONE` (the comment at `:65`).
-- `ItemBase` is not a `Pawn`. A dynamic body put on an item by script is simulated on the server; clients get occasional position updates and never a velocity. It can look synced in a local test at low latency and still stutter or lag on a real server.
+- `ItemBase` is not a `Pawn`. A dynamic body put on an item by script is simulated on the server; clients get occasional position updates and never a velocity (engine behavior; not checkable on `P:\`, confirm in game). It can look synced in a local test at low latency and still stutter or lag on a real server.
 - `Synchronize()` exists on `Transport` only: "Synchronizes car's state in case the simulation is not running" (`P:\scripts\3_game\vehicles\transport.c:171-172`). Call it when a script moves a vehicle that is asleep.
 - Vehicle contact handling does its work on the server (`Transport.OnContact` checks `IsServer()`, `P:\scripts\3_game\vehicles\transport.c:315-317`).
 

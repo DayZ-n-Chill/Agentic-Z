@@ -77,7 +77,7 @@ Unverified: `foreach` over a getter call is reported to call the getter again on
 ```
 class MyClass
 {
-    autoptr TStringArray m_Test = {"A", "B"};
+    ref TStringArray m_Test = {"A", "B"};
 
     TStringArray GetTest()
     {

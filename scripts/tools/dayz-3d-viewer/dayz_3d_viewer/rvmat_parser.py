@@ -12,6 +12,8 @@ import re
 import sys
 from pathlib import Path
 
+from .errors import ViewerError
+
 
 def parse_rvmat(filepath: str) -> dict:
     """Parse an .rvmat file and extract material properties.
@@ -26,8 +28,11 @@ def parse_rvmat(filepath: str) -> dict:
     the path as given by the caller (use a relative path if the result
     must not contain a machine root).
     """
-    with open(filepath, "r", encoding="utf-8", errors="replace", newline="") as handle:
-        content = handle.read()
+    try:
+        with open(filepath, "r", encoding="utf-8", errors="replace", newline="") as handle:
+            content = handle.read()
+    except OSError as exc:
+        raise ViewerError("Cannot open %s: %s" % (filepath, exc.strerror or exc)) from exc
 
     result = {
         "file": filepath.replace("\\", "/"),
@@ -101,7 +106,9 @@ def parse_rvmat(filepath: str) -> dict:
         else:
             result["textures"]["stage%s" % stage["index"]] = tex
 
-    emissive = result["colors"].get("emissive", result["colors"].get("forceddiffuse", []))
+    # DayZ materials spell the key `emmisive`; `emissive` is the fallback.
+    # forcedDiffuse is not emission and is not read here.
+    emissive = result["colors"].get("emmisive", result["colors"].get("emissive", []))
     result["is_emissive"] = bool(emissive and any(value > 0.01 for value in emissive[:3]))
     return result
 

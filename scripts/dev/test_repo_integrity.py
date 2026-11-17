@@ -1104,6 +1104,11 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
         r"P:\scripts\3_game\constants.c:821",
         r"P:\scripts\4_world\entities\itembase\clothing\gp5gasmask.c:13",
     },
+    # gameplay.c:276-314 holds PreviewWidget, ItemPreviewWidget and PlayerPreviewWidget;
+    # the citing line says they declare no `Particle` method, so the symbol is absent on purpose.
+    "dayz-ui-development/references/widget-api.md": {
+        r"P:\scripts\3_game\gameplay.c:276-314",
+    },
 }
 
 

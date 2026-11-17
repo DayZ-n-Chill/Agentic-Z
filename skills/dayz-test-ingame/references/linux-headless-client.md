@@ -20,7 +20,7 @@ joins a `DayZDiag` server (`0x00020017`); that pairing, and the managed dayz-mcp
 
 - A running, logged-in Steam that owns DayZ (the game talks to it), the client installed, a Proton tool,
   `sway` and `grim`.
-- A server tree (`linux-native-server.md`) with the mods and their `.bikey`s; removing CF since it last ran is an observed storage breakage, while adding CF needing a wipe is an unisolated hypothesis — isolate first before rotating its `storage_1` (see `linux-native-server.md`, "Storage and CF").
+- A server tree (`linux-native-server.md`) with the mods and their `.bikey`s; removing CF since it last ran is an observed storage breakage, and adding CF to storage written without it crashed the server on Windows (`build-and-storage-traps.md`), so rotate its `storage_1` when the mod set changed; a `CF_Trace` compile error after adding CF is a separate, unisolated failure (see `linux-native-server.md`, "Storage and CF").
 - **One game at a time.** A Steam account runs one game, and a second client would fight the first over GPU,
   Wine prefix and Steam connection, including the user's own game: if they are playing, wait or ask. Servers
   can run side by side.
@@ -77,7 +77,9 @@ ln -sfn "$PWD/build/@MyMod" "<library>/steamapps/common/DayZ/@MyMod"
 ## 3. Tests that run on both sides and report back
 
 Seeing the client connect proves little. `../assets/autotest-mod/` runs code on the server and on the client in
-a known order and prints results an outside script can grep; it ran green on both builds above.
+a known order and prints results an outside script can grep. An earlier two-test version ran green on the
+1.30.164014.27 pre-release, and the four-test version ran green on 1.30 stable only; the current runner's
+sender-binding and godmode-restore change has been checked offline only (see **Godmode** below).
 
 ```
  server (drives)                               client (executes)
@@ -109,7 +111,7 @@ mod name is also a script define (`#ifdef AutoTest`, visible in the `Module: ...
 finishes, times out or is aborted; a test that overrides `NeedsDamage()` to `true` gets damage for itself
 only. Results (`AUTOTEST_RPC_RESULT`) are accepted only from the identity of the player the run was
 scheduled for; other senders are ignored with a `Print`. A server-side melee hit left health `100 -> 100`
-and the same hit with damage allowed gave `100 -> 95` (both builds, measured before this
+and the same hit with damage allowed gave `100 -> 95` (1.30 stable, measured before this
 change). Only the harness's own `ProcessDirectDamage` with `MeleeZombie` was tried, not real zombies,
 animals, falls, hunger, thirst or cold. The sender-binding and restore change in the bundled `AutoTestRunner.c`
 was checked by the offline script validator only (`scripts/tools/dayz-script-validator`), not run in game.
@@ -157,8 +159,9 @@ install it on a real server.
 log folder (`AppData/Local/DayZ Exp/`), and its script log lines carry a timestamp prefix. It has **no Workshop of
 its own**: subscribe through stable, link the items from `workshop/content/221100` into `steamapps/common/DayZ Exp`,
 build the server tree from `find-dayzserver.sh -e`, and pass `-e` to the client scripts. Without `-e` they start
-the stable client against the experimental server, which `forceSameBuild = 1` should reject (not run). The same
-AutoTest PBO passed unchanged on 1.30.164014.27 with the stable Workshop's CF (`DONE passed=2 failed=0`).
+the stable client against the experimental server, which `forceSameBuild = 1` should reject (not run). An earlier
+two-test version of the AutoTest PBO passed unchanged on 1.30.164014.27 with the stable Workshop's CF
+(`DONE passed=2 failed=0`); the current four-test version has not been run on experimental.
 
 ## Expansion bundle: skip the spawn selector first
 

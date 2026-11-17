@@ -89,6 +89,47 @@ def test_cli_paa_and_rvmat(tmp_path):
     assert main(["parse-rvmat", str(rvmat)]) == 0
 
 
+def test_non_mlod_input_is_a_one_line_error(tmp_path, capsys):
+    odol = tmp_path / "binarized.p3d"
+    odol.write_bytes(b"ODOL" + b"\x00" * 64)
+    assert main(["p3d-to-glb", str(odol), "--info"]) == 1
+    err = capsys.readouterr().err
+    assert "not an MLOD .p3d" in err
+    assert "Traceback" not in err
+
+    missing = tmp_path / "missing.p3d"
+    assert main(["p3d-to-glb", str(missing)]) == 1
+    assert "Cannot open" in capsys.readouterr().err
+
+    assert main(["paa-to-png", str(tmp_path / "missing.paa")]) == 1
+    assert "Cannot open" in capsys.readouterr().err
+    assert main(["parse-rvmat", str(tmp_path / "missing.rvmat")]) == 1
+    assert "Cannot open" in capsys.readouterr().err
+
+    assert main(["build-viewer", str(odol), "--output", str(tmp_path / "out")]) == 1
+    results = json.loads(capsys.readouterr().out)
+    assert len(results["errors"]) == 1
+    assert "not an MLOD .p3d" in results["errors"][0]
+
+
+def test_rvmat_texture_that_fails_to_convert_is_listed_in_errors(tmp_path):
+    from dayz_3d_viewer.pipeline import run_pipeline
+
+    model = save_model(
+        tmp_path / "tri.p3d", [make_triangle_lod(material="mod\\data\\mat.rvmat")]
+    )
+    (tmp_path / "mat.rvmat").write_text(
+        'class Stage1\n{\n    texture = "mod\\\\data\\\\broken_co.paa";\n};\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    (tmp_path / "broken_co.paa").write_bytes(b"\x00\x00")
+    results = run_pipeline(
+        str(model), output_dir=str(tmp_path / "out"), generate_viewer=False
+    )
+    assert any("broken_co.paa" in error for error in results["errors"]), results["errors"]
+
+
 def test_missing_pillow_message_has_no_import_error_type():
     try:
         require_pillow()
