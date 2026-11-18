@@ -15,7 +15,7 @@ In 1.30 `House` is a `BuildingBase`, which takes `CombinationLock` and `DigitalC
 
 Every `Slot_Att_CodeLock*` slot has the `displayName` `"#STR_CfgVehicles_codelock0"` (`P:\scripts\config.cpp:2771`).
 
-The vanilla fence, a player built gate, lists both slots at entity level, not inside `class Doors`: its whole `attachments[]` is `Wall_Barbedwire_1`, `Wall_Barbedwire_2`, `Wall_Camonet`, `Att_CombinationLock`, `Att_CodeLock`, `Material_Nails`, `Material_WoodenPlanks`, `Material_MetalSheets`, `Material_WoodenLogs` and `Material_MetalWire` (`P:\DZ\gear\camping\config.cpp:4362` to `:4368`).
+The vanilla fence, a player built gate, lists both slots at entity level, not inside `class Doors`: its whole `attachments[]` is `Wall_Barbedwire_1`, `Wall_Barbedwire_2`, `Wall_Camonet`, `Att_CombinationLock`, `Att_CodeLock`, `Material_Nails`, `Material_WoodenPlanks`, `Material_MetalSheets`, `Material_WoodenLogs` and `Material_MetalWire` (`P:\DZ\gear\camping\config.cpp:4362` to `:4374`).
 
 ## Door keys the lock code reads
 
@@ -63,7 +63,7 @@ The door's own Memory LOD (axes, `soundPos`, interaction point) is the same as b
 | Lock proxy | The `selection` of the `CfgSlots` class | `att_combinationlock`, `att_codelock` and the numbered wood and metal variants | `P:\scripts\config.cpp:2316` to `:2321`; `:2768` to `:2773` |
 | One sided open and close | `interactPositionPoint` and `interactDirPoint` on the Doors child | Whatever you write there; empty or missing passes, because `MemPointDirectionalCheck` returns true when a point is missing | `P:\scripts\3_game\entities\additionaldoorsinfo.c:34` to `:38`; `P:\scripts\4_world\static\miscgameplayfunctions.c:942` to `:967` |
 | Bunker inside against outside | `Bunker.CanDoorBeOpened` builds `"%1_action"` and `"%1_inside"` from `m_DoorType` | For a Doors child `Door1`: `Door1_action`, `Door1_inside` | `P:\scripts\4_world\entities\building\bunker.c:47` to `:54` |
-| Code lock facing | `MEMPOINT_CENTER` and `MEMPOINT_INSIDE` on the lock item's own model | `ce_center`, `inside` | `P:\scripts\4_world\entities\itembase\codelock.c:3` to `:4`, used at `:221` |
+| Code lock facing | `MEMPOINT_CENTER` and `MEMPOINT_INSIDE` on the lock item's own model | `ce_center`, `inside` | `P:\scripts\4_world\entities\itembase\codelock.c:3` to `:4`, used at `:242` and `:436` to `:439` |
 | Combination lock faces | Selections on the lock item | `lock_attached_outside`, `lock_attached_inside` | `P:\scripts\4_world\entities\itembase\combinationlock.c:27` to `:28` |
 | Bunker crate spawn | `BroadcastedBunker` | `storagecratepos`, `storagecratedir` | `P:\scripts\4_world\entities\building\bunker.c:175`, `:316` |
 
@@ -99,7 +99,7 @@ The main door closes itself after `DOOR_AUTOCLOSE_TIME`, 12 s (`bunker.c:3`, tim
 
 ## Moving a 1.29 door mod to 1.30
 
-Vanilla Open no longer calls `CanDoorBeOpened(int, bool)`; that form only wraps the params form (`P:\scripts\3_game\entities\building.c:160` to `:167`). Every vanilla override uses the `DoorManipulationParams` form and calls `super` first, `Land_WarheadStorage_Main` and `Land_WarheadStorage_Bunker_Facility` included (`P:\scripts\4_world\entities\building\underground\land_warheadstorage_main.c:352` to `:355`; `P:\scripts\4_world\entities\building\underground\land_warheadstorage_bunker_facility.c:20` to `:23`).
+Vanilla Open no longer calls `CanDoorBeOpened(int, bool)`; that form only wraps the params form (`P:\scripts\3_game\entities\building.c:160` to `:167`). Every vanilla override uses the `DoorManipulationParams` form and calls `super`. `Bunker` runs `MemPointDirectionalCheck` before `super` (`P:\scripts\4_world\entities\building\bunker.c:55`); `Land_WarheadStorage_Main` and `Land_WarheadStorage_Bunker_Facility` call it first (`P:\scripts\4_world\entities\building\underground\land_warheadstorage_main.c:352` to `:355`; `P:\scripts\4_world\entities\building\underground\land_warheadstorage_bunker_facility.c:20` to `:23`).
 
 | What breaks | Severity | Fix |
 |---|---|---|

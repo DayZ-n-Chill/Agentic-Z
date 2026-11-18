@@ -64,12 +64,32 @@ def test_copy_in_home_claude_skills_is_unknown(tmp_path):
     assert check.main(["root", str(skill)]) == 2
 
 
-def test_plugin_cache_path_is_plugin(tmp_path):
+def test_plugin_cache_path_is_plugin(tmp_path, monkeypatch):
     skill = tmp_path / ".claude" / "plugins" / "cache" / "agentic-z" / "skills" / "dayz-record-correction"
     skill.mkdir(parents=True)
+    project = tmp_path / "SomeOtherProject"
+    project.mkdir()
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(project))
     info = check.resolve_root(str(skill))
     assert info["kind"] == "plugin" and info["root"] is None
     assert check.main(["root", str(skill)]) == 0
+
+
+def test_plugin_loaded_inside_a_clone_reports_the_clone(tmp_path, monkeypatch):
+    # A clone's .claude/settings.json enables the plugin, so the skill loads from the cache.
+    skill = tmp_path / ".claude" / "plugins" / "cache" / "agentic-z" / "skills" / "dayz-record-correction"
+    skill.mkdir(parents=True)
+    root, _ = _clone(tmp_path)
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(root))
+    info = check.resolve_root(str(skill))
+    assert info["kind"] == "clone" and Path(info["root"]) == root.resolve() and info["missing"] == []
+    # Without CLAUDE_PROJECT_DIR the working directory is the project.
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR")
+    monkeypatch.chdir(root)
+    assert check.resolve_root(str(skill))["kind"] == "clone"
+    # A clone missing a required file is not taken as the project.
+    (root / ".claude" / "CLAUDE.md").unlink()
+    assert check.resolve_root(str(skill))["kind"] == "plugin"
 
 
 def test_unrelated_folder_is_unknown(tmp_path):

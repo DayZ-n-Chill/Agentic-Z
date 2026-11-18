@@ -1,19 +1,21 @@
 # Expansion view classes
 
-How DayZ Expansion builds its menus: its own view and controller classes, the show and hide lifecycle, the update tick, the menu manager, subviews, dialogs, the settings panel and HUD panels. Read it before you change a menu that extends Expansion or copy one of its patterns; a full worked example is `expansion-market-menu.md`.
+How DayZ Expansion builds its menus: its view and controller classes, built on Dabs Framework, the show and hide lifecycle, the update tick, the menu manager, subviews, dialogs, the settings panel and HUD panels. Read it before you change a menu that extends Expansion or copy one of its patterns; a full worked example is `expansion-market-menu.md`.
 
-DayZ Expansion is a third party mod. Every path below is inside the DayZ Expansion scripts (the `release` branch of its source), not vanilla, and none of it is on `P:\`. Line numbers move between releases, so search for the symbol.
+DayZ Expansion is a third party mod. Every path below that does not start with `P:\` is inside the DayZ Expansion scripts (the `release` branch of its source), not vanilla. Line numbers move between releases, so search for the symbol.
 
 ## Classes
 
 | Class | Base | Adds |
 |---|---|---|
-| `ExpansionScriptView` | `Managed` | Layout, controller and the update timer |
-| `ExpansionScriptViewMenu` | `ExpansionScriptView` | Input lock, blur and the menu lifecycle; menus such as `ExpansionMarketMenu` and `ExpansionQuestMenu` extend it |
-| `ExpansionViewController` | | The binding hub: collections and `PropertyChanged` |
-| `ObservableCollection<ref T>` | | Tells the controller about `Insert`, `InsertAt`, `Remove` and `Clear` |
+| `ExpansionScriptViewBase` | Dabs `ScriptView` | Expansion's base view (`3_Game/DayZExpansion_Core/MVC/ScriptViews/Bases/ExpansionScriptView.c:22`) |
+| `ExpansionScriptView` | `ExpansionScriptViewBase` | Layout, controller and the update timer (`5_Mission/.../Bases/ExpansionScriptView.c:14`) |
+| `ExpansionScriptViewMenuBase` | `ExpansionScriptViewBase` | Base for menus (`3_Game/.../Bases/ExpansionScriptViewMenuBase.c:14`) |
+| `ExpansionScriptViewMenu` | `ExpansionScriptViewMenuBase` | Input lock, blur and the menu lifecycle; menus such as `ExpansionMarketMenu` and `ExpansionQuestMenu` extend it (`5_Mission/.../Bases/ExpansionScriptViewMenu.c:14`) |
+| `ExpansionViewController` | Dabs `ViewController` | The binding hub: collections and `PropertyChanged` (`3_Game/.../Bases/ExpansionScriptView.c:14`) |
+| `ObservableCollection<ref T>` | Dabs Framework's own class | Tells the controller about `Insert`, `InsertAt`, `Remove` and `Clear` |
 
-Expansion's MVC lives in `DayZExpansion/Core/`. It looks like Dabs Framework's but is a separate implementation; never mix a Dabs `ScriptView` and an `ExpansionScriptView` in one menu.
+Expansion's MVC lives in `DayZExpansion/Core/` and is built on Dabs Framework: Core's `CfgPatches` lists Dabs's `DF_Scripts` in `requiredAddons`, so Dabs must load before Expansion. Patterns and bindings from Dabs's `ScriptView` and `ViewController` apply to Expansion views too.
 
 ## Show and hide
 
@@ -153,6 +155,4 @@ A path such as `"Foo.Bar"` walks the object graph with `EnScript.GetClassVar`. `
 
 ## HUD panels driven by synced state
 
-Expansion's vehicles module registers extra HUD panels from a `modded class IngameHud`, keyed by a vehicle type enum (`DayZExpansion/Vehicles/Scripts/5_Mission/DayZExpansion_Vehicles/GUI/IngameHud.c:13`). Each panel is its own `ExpansionScriptView` that reads synced net variables (`m_IsSync`, `m_HaltPhysics`, `m_IsInvulnerable`) and sets widget visibility in `Expansion_Update()` (`expansionboathud.c:39` and `:169`; layout `DayZExpansion/Vehicles/GUI/layouts/hud/hud_boats.layout:170`). The same shape suits any overlay driven by server state.
-
-An older and a newer HUD path sit side by side behind the `EXPANSION_VEHICLES_HUD_OLD` compile flag; check which one the build uses before you change the registration.
+Expansion's vehicles module registers extra HUD panels from a `modded class IngameHud` (`DayZExpansion/Vehicles/Scripts/5_Mission/DayZExpansion_Vehicles/GUI/IngameHud.c:13` to `:24`): its `Init` inserts an `ExpansionHelicopterHud` and an `ExpansionBoatHud` into vanilla's `m_VehicleHudMap`, which is keyed by vehicle type name strings such as `"ExpansionVehicleTypeBoat"` (`P:\scripts\5_mission\gui\ingamehud.c:33` and `:177` to `:183`), then calls `super.Init`. Each panel extends vanilla `VehicleHudBase` (`P:\scripts\5_mission\gui\vehicles\vehiclehudbase.c:2`; `ExpansionBoatHud.c:13`), and reads synced state (`m_State.m_IsSync`, `m_HaltPhysics`, `m_IsInvulnerable`) in `RefreshVehicleHud(float timeslice)` to set widget visibility (`ExpansionBoatHud.c:96`, `:108` and `:170` to `:188`; layout `DayZExpansion/Vehicles/GUI/layouts/hud/hud_boats.layout:170`). The same shape suits any overlay driven by server state.

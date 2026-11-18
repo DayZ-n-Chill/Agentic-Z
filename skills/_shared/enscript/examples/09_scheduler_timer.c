@@ -10,7 +10,7 @@
 //   4. Frame-skip pattern in EOnFrame for expensive per-entity work
 //   5. GetGame().GetTime() – mission time in MILLISECONDS (int)
 //      GetGame().GetTickTime() – time since game start in SECONDS (float), not a frame delta
-//      // P:\scripts\3_game\global\game.c:1534 (GetTime), :914 (GetTickTime)
+//      // P:\scripts\3_game\global\game.c:1535 (GetTime), :914 (GetTickTime)
 //
 // GetGame() returns g_Game (DayZGame)
 // // P:\scripts\3_game\gameplay.c:636
@@ -142,7 +142,7 @@ class MyMod_TimerExample : Managed
 // // P:\scripts\3_game\entities\entityai.c:3893-3904
 // Unverified on P: (engine side): how often CE iterates, and whether items held in
 // a player's inventory are included. elapsedTime is treated as seconds, matching
-// its use in ItemBase.ProcessVariables // P:\scripts\4_world\entities\itembase.c:4659
+// its use in ItemBase.ProcessVariables // P:\scripts\4_world\entities\itembase.c:4663
 
 // Its own class name: MyMod_CustomCanteen is already declared in 01_custom_item.c.
 // Unverified on P: (compiler behaviour): that two plain class declarations with
@@ -173,8 +173,8 @@ class MyMod_EvaporatingCanteen extends Bottle_Base // P:\scripts\4_world\entitie
     private void MyMod_PeriodicDecay()
     {
         // Slowly reduce water quantity over time (simulates evaporation)
-        // GetQuantity() // P:\scripts\4_world\entities\itembase.c:3486
-        // SetQuantity(float value, ...) – server only // P:\scripts\4_world\entities\itembase.c:3315
+        // GetQuantity() // P:\scripts\4_world\entities\itembase.c:3490
+        // SetQuantity(float value, ...) – server only // P:\scripts\4_world\entities\itembase.c:3319
         // Math.Max(float x, float y) // P:\scripts\1_core\proto\enmath.c:566
         float qty = GetQuantity();
         if (qty > 0)
@@ -228,7 +228,7 @@ modded class PlayerBase
 // 5. GetGame().GetTime() – mission-time reference point
 // =============================================================================
 // proto int GetTime() – "returns mission time in milliseconds"
-// // P:\scripts\3_game\global\game.c:1533-1534
+// // P:\scripts\3_game\global\game.c:1534-1535
 // Convert to seconds with * 0.001 (vanilla does the same: playerbase.c:3122-3123)
 
 float MyMod_GetElapsedSinceStart()

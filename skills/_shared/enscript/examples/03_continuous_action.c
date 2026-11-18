@@ -62,9 +62,11 @@ class ActionMyMod_RepairCanteen : ActionContinuousBase
         if (!Class.CastTo(canteen, item))           // item = player.GetItemInHands()
             return false;
 
-        // Only allow if not already (nearly) full health
-        // GetHealth01(zone, type): P:\scripts\3_game\entities\object.c:1001
-        return canteen.GetHealth01("", "") < 0.99;
+        // Only allow below pristine. This runs on the client, where GetHealth01 throws and
+        // returns 0, so use the synced health level as vanilla repair actions do
+        // (actionrepaircarpart.c:71). GetHealthLevel: P:\scripts\3_game\entities\object.c:1171,
+        // STATE_PRISTINE = 0: P:\scripts\3_game\constants.c:913
+        return canteen.GetHealthLevel() > GameConstants.STATE_PRISTINE;
     }
 
     // ---- Animation loop hooks (optional, actioncontinuousbase.c:208 and :228)

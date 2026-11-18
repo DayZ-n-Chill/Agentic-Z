@@ -8,7 +8,7 @@ What a static HTML preview of a `.layout` can and can't show, how to run the rep
 python scripts/tools/dayz-layout-viewer/build_viewer.py <input.layout> [-o output.preview.html] [--layout-root DIR]
 ```
 
-Open the `.html` in a browser. It switches between 1080p, 1440p, 21:9 and 720p. `plan-to-implementation.md` lists what the viewer adds over a plain static preview.
+Open the `.html` in a browser. It switches between 1080p, 1440p, 21:9 and 720p. `verification.md`, section "What the HTML viewer can and cannot show", lists what the viewer adds over a plain static preview.
 
 ## What a static preview can show
 
@@ -19,13 +19,13 @@ Open the `.html` in a browser. It switches between 1080p, 1440p, 21:9 and 720p. 
 | `color` | Yes | As a background or text color |
 | Generated color images `#(argb,...)color(...)` | Yes | As a flat color |
 | `.paa` textures | No | Needs a texture decoder, such as the one in `scripts/tools/dayz-3d-viewer/` |
-| `text "..."` | Yes | A `#STR_KEY` key shows as the placeholder `[loc:#STR_KEY]` |
+| `text "..."` | Yes | A `#STR_KEY` key shows as the placeholder `[#STR_KEY]` |
 | Dabs `scriptclass "ViewBinding"` | Yes | Not drawn; the binding name shows as a placeholder when the widget has no text |
 | `ScriptParamsClass` | Yes | Not drawn |
-| `Relay_Command` | Yes | As a badge on the widget |
+| `Relay_Command` | Yes | Only in the hover info, as `relay -> <command>` |
 | `Metron` against `MetronBook` | Yes | As a heavier and a lighter weight |
 | `text halign`, `text valign` | Yes | |
-| `clipchildren`, `ignorepointer`, `visible 0` | Yes | As CSS `overflow: hidden`, `pointer-events: none` and `display: none` |
+| `clipchildren`, `ignorepointer`, `visible 0` | Yes | `clipchildren` and `visible 0` as CSS `overflow: hidden` and `display: none`; `ignorepointer` only in the hover info |
 | Animations | No | A static picture |
 | Live binding data | No | Placeholders only |
 | Item preview, map and player preview widgets | No | They need game state |
@@ -33,7 +33,7 @@ Open the `.html` in a browser. It switches between 1080p, 1440p, 21:9 and 720p. 
 
 A static preview has drawn a large sorter menu layout (196 widgets) with its row and tag layouts, and third party layouts such as `BaseBuildingPlus/Book.layout`, `CodeLock/enterComboCode.layout` and `A6_Gunplay/ItemStatsDisplay`.
 
-Its output can apply default colors when a layout sets none (mods usually color widgets from script with `SetColor`), outline each widget by type, show binding names and relay commands as badges, and show a widget's type, name, position and size on hover.
+Its output can apply default colors when a layout sets none (mods usually color widgets from script with `SetColor`), outline each widget by type, show binding names as badges, and show a widget's type, name, position, size, `ignorepointer` and relay command on hover.
 
 ## Its limits
 
