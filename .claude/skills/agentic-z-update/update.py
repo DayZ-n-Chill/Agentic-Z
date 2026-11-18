@@ -4,7 +4,8 @@ What it touches (TEMPLATE_PATHS):
     agents/, skills/, .claude/agents/, .claude/skills/, .claude/mcp/, .claude/settings.json
     .claude-plugin/, .mcp.json, hooks/, mods/, evals/
     docs/, scripts/
-    .claude/CLAUDE.md, AGENTS.md, GEMINI.md, README.md, CONTRIBUTING.md, LICENSE
+    .claude/CLAUDE.md, AGENTS.md, GEMINI.md, README.md, CONTRIBUTING.md, LICENSE,
+    THIRD_PARTY_NOTICES.md
     .gitattributes
     .gitignore, pytest.ini, .env.example, package.json, package-lock.json, .github/
     .markdownlint.json, .markdownlint-cli2.jsonc, .markdownlintignore
@@ -64,6 +65,7 @@ TEMPLATE_PATHS = [
     ".github",
     "CONTRIBUTING.md",
     "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
     ".gitattributes",
     ".markdownlint.json",
     ".markdownlint-cli2.jsonc",
