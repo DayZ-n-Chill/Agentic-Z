@@ -11,10 +11,16 @@ import pytest
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import importlib.util  # noqa: E402
+
 import allowlist  # noqa: E402
 import bridge  # noqa: E402
-import server  # noqa: E402
 import session  # noqa: E402
+
+# Loaded under its own name: dayz-rag's tests import their own server.py as `server`.
+_spec = importlib.util.spec_from_file_location("dayz_testbridge_server_under_test", HERE / "server.py")
+server = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(server)
 from fakepeer import FakePeer  # noqa: E402
 
 TOKEN = "0123456789abcdef0123456789abcdef"

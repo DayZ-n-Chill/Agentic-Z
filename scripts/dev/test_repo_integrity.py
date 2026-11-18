@@ -106,12 +106,11 @@ def test_testbridge_tools_work_in_clones_and_plugin_installs(path):
 def test_ingame_tester_drives_the_game_through_the_test_bridge():
     # Plan task 14: the fallback in-game gate runs custom in-game checks through the
     # dayz-testbridge tools and always stops the session it started.
-    sys.path.insert(0, str(REPO / ".claude" / "mcp" / "dayz-testbridge"))
-    server = importlib.import_module("server")
+    server_py = REPO / ".claude" / "mcp" / "dayz-testbridge" / "server.py"
     tools = set(_tools(AGENTS_DIR / "dayz-ingame-tester.md"))
     names = {"list_commands", "session_start", "session_status", "session_stop", "command", "mark", "logs_since", "screenshot"}
     assert {f"mcp__plugin_agentic-z_dayz-testbridge__{n}" for n in names} <= tools
-    assert "def build_app" in Path(server.__file__).read_text(encoding="utf-8")
+    assert "def build_app" in server_py.read_text(encoding="utf-8")
     text = (AGENTS_DIR / "dayz-ingame-tester.md").read_text(encoding="utf-8")
     assert "`session_stop` always" in text and "in-game-check-validity.md" in text and "test-bridge.md" in text
 
