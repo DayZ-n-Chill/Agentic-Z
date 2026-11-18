@@ -68,13 +68,13 @@ the 1.30.164014 Exp data, listed in
 `scripts/tools/dayz-script-validator/scripts/shared/vanilla_patches.py`. A
 `DZ_` prefix is not enough: four mod patches under `P:\` use it too.
 
-Measured on 2026-09-19 with the first version of the rule: 33 003 references
+Measured with the first version of the rule: 33 003 references
 judged on the vanilla tree with no finding; over 161 addon roots under `P:\`
 it left 12 FAILs in 3 roots (one probable real bug, two source trees
 that use a sibling mod they do not declare) and 32 SKIPs whose unresolved
 names all belong to mods. Reading the vanilla tree adds about 0.9 s per
-invocation (2.6 s against 1.7 s on a 23-file addon, four runs each). On
-2026-10-03, after the fixes from two rounds of review, the
+invocation (2.6 s against 1.7 s on a 23-file addon, four runs each). After
+the fixes from two rounds of review, the
 vanilla tree gave the same 33 003 references and no finding; the 161 roots
 were not measured again.
 
@@ -93,7 +93,7 @@ were not measured again.
   like a 5_Mission class). A file outside any `N_Module` folder may compile
   in any module, so it is judged only against the types of 1_Core and those
   of its own file; in a mod laid out without its module folders the rule
-  had reported a member against a 5_Mission class (mods pass of 2026-10-17).
+  had reported a member against a 5_Mission class (measured on mods).
   Positions are those of `ES-RESERVED-WORD-IDENTIFIER`;
   code that never compiles is not judged, and a type the addon or an external
   root declares only there is no type. Nor is a name judged against a type its
@@ -228,7 +228,7 @@ were not measured again.
   the rule is a SKIP line. A verdict holds for the build the vanilla tree
   comes from: see `--game-root` below.
 
-  Measured on 2026-11-03 against the 1.30.164200 scripts: on the tree of
+  Measured against the 1.30.164200 scripts: on the tree of
   the mod that failed, before its fix, the rule reports lines 1957 and 1959
   of one file and nothing else (390 calls judged), and nothing on the fixed
   tree (388 judged). Nothing on the vanilla tree itself (8 870 calls judged),
@@ -241,7 +241,7 @@ were not measured again.
   copy of that mod uses `IndexOf` instead. Before two fixes the same pass
   gave 19 false positives: 18 where the lookup read `map<string, int> m` as
   an array, its `<...>` running from an earlier parameter's `<`, and one on
-  `map.ClearFlags(` with a `Widget map` local. A review on 2026-11-03
+  `map.ClearFlags(` with a `Widget map` local. A later review
   built a third on a synthetic tree: a `(` that only one
   branch of an `#ifdef` opens hid every later member of `vector`, hence the
   names written before a `(`. It also listed the unjudged receivers above as
@@ -277,8 +277,8 @@ tree gives a SKIP line, never a match. Without `--game-root` nothing is
 compared. WARN exits 2, which a gate that accepts WARN lets through: a gate
 that must stop on a stale tree has to fail on this rule itself.
 
-Measured on 2026-11-03: the 1.30.164014 Exp extract against a 1.30.164200
-game gives 111 `.c` files that differ and 14 that the tree lacks
+Measured with the 1.30.164014 Exp extract against a 1.30.164200
+game: it gives 111 `.c` files that differ and 14 that the tree lacks
 (`1_Core/proto/EnConvert.c` first); `P:\scripts` and an extract of the same
 `scripts.pbo` both match (3 056 files). The comparison takes about 1.7 s.
 
@@ -373,8 +373,8 @@ are counted outside every block and along one branch of nested blocks at
 a time: two branches of one block, or two blocks side by side, are never
 counted together.
 
-Measured on 2026-10-03: nothing on vanilla 1.29.0.163451 (69 `%` judged) or
+Measured: nothing on vanilla 1.29.0.163451 (69 `%` judged) or
 on vanilla 1.30.164014 Exp (94 `%`), and on the source that failed in game,
 `vector local;`, the reserved-word rule fires on that line. Vanilla
-compiles a statement with 14 `+`. On 2026-11-10 the vanilla control found
+compiles a statement with 14 `+`. A later vanilla control found
 no `ES-FORMULA-TOO-COMPLEX` on vanilla 1.30.164289 (3057 files).

@@ -56,10 +56,12 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 | A build check that every `.rvmat` named in `config.cpp` is an entry of the PBO. | Scripting review | 2026-11-17 |
 | Compare the entries of two PBOs from `/dayz-build-pbo` with `scripts/tools/dayz-pbo-diff`. | Scripting review | 2026-11-17 |
 | `/dayz-setup-objectbuilder`: offer to set the external viewer to the game's `-buldozer` command line. | Scripting review | 2026-11-17 |
+| A guard in `/dayz-gate` and `dayz-ingame-tester` that never stops a running DayZ test session it did not start, for example one driven by Agentic-Z's own planned in-game test tool, unless the user confirms (`--yes`). | Scripting review | 2026-11-17 |
 | `/dayz-stop-test`: list each DayZ process command line before killing, and cover `DayZServer_x64.exe`. | Scripting review | 2026-11-17 |
 | A `--game-root` option on `/dayz-lint` for the `VANILLA-ROOT-BUILD-MISMATCH` rule. | Tools review | 2026-11-17 |
 | Let `/dayz-gate build` and `/dayz-build-pbo` find dependency folders from `requiredAddons[]` and pass them to the lint code stage. | Tools review | 2026-11-17 |
 | A thin skill for `scripts/tools/dayz-layout-viewer`, next to `/dayz-layout-preview`. | Tools review | 2026-11-17 |
+| Short `.cursorrules` and `.github/copilot-instructions.md` entry files that point at `AGENTS.md`. | Knowledge review | 2026-11-17 |
 | An eval question for `dayz-ui-specialist` on Dabs MVC. | Knowledge review | 2026-11-17 |
 | Panel (liked): a log errors card with the newest 5 `script.log`/RPT errors from `logwatch.py --json`, crash logs in red, each with an "Ask the debugger" button that fills the prompt box. | Mod panel review | 2026-11-18 |
 | Panel (liked): a test-server picker (instances under `.server\`, passed as `--server` to Launch and Check in game) and a mod picker (folders under `workspace\`, written through `skills/dayz-init/state.py`) so switching mods costs no tokens. | Mod panel review | 2026-11-18 |

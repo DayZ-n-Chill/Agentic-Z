@@ -8,7 +8,7 @@ ES_MULTILINE_CONDITION_OPERATOR_RULE_ID = "ES-MULTILINE-CONDITION-OPERATOR"
 
 # FAIL on one measurement: the rule was WARN until the vanilla control ran
 # with it and found nothing, on DayZ 1.29.0.163451 and
-# on 1.30.164078 stable, where the control was measured on 2026-10-17.
+# on 1.30.164078 stable.
 # On a DayZ 1.30.164014 server the condition
 #
 #   if ((t >= A && t < B) ||
