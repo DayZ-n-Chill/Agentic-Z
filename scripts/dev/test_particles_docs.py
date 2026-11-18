@@ -148,5 +148,8 @@ def test_integration_overrides_are_vanilla_methods() -> None:
     code = "\n".join(_code_lines(INTEGRATION.read_text(encoding="utf-8")))
     overrides = set(re.findall(r"\boverride\s+\w+\s+(\w+)\s*\(", code))
     assert overrides
-    missing = [n for n in sorted(overrides) if not re.search(rf"\bvoid\s+{n}\s*\(", vanilla)]
+    # A MyMod_ hook is defined in the file itself (integration-patterns.md allows overriding it),
+    # and a vanilla method may return any type, not only void.
+    missing = [n for n in sorted(n for n in overrides if not n.startswith("MyMod_"))
+               if not re.search(rf"\b\w+\s+{n}\s*\(", vanilla)]
     assert not missing, f"overrides with no vanilla method: {missing}"

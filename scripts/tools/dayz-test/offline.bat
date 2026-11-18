@@ -1,6 +1,7 @@
 @echo off
 REM Build the mod, then launch one DayZ Diag in offline mode (-mission, no server) with file patching.
-REM Not measured on 1.30: use it to look around, not to judge a mod; /dayz-gate ingame needs the server and client.
+REM Measured once on 1.30: the world loads, but whether a player spawns is not known. Use it to look around,
+REM not to judge a mod; /dayz-gate ingame needs the server and client.
 REM Usage: offline.bat <ModName> [more dayz_test.py options]
 setlocal
 if "%~1"=="" (

@@ -1041,7 +1041,7 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
     "evals/questions/dayz-audio-fx-specialist.json": {
         "P:/scripts/3_game/entities/object.c:1251-1255",
     },
-    # basebuildingbase.c:420 opens OnStoreSave, which writes m_SyncParts01 at :425;
+    # basebuildingbase.c:420 opens OnStoreSave, which writes m_SyncParts01 at :424;
     # entityai.c:1393 is GetEntityByPersitentID inside EEOnAfterLoad (:1381) and
     # :3041 its "cannot be called here" comment inside OnStoreLoad.
     # plugindiagmenumodding.c:21 is "modded class PluginDiagMenu"; its note is an aside about another file.

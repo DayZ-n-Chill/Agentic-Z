@@ -306,7 +306,7 @@ instead, which this finding used to recommend, trades it for
 ## Status and known issues
 
 The library is used in a real modding pipeline. On a plain run of
-`python -m pytest -q scripts/tools/py3d` from the repository root 399 tests
+`python -m pytest -q scripts/tools/py3d` from the repository root 352 tests
 pass and 11 skip: the 7 CANON tests, which need a checkout of the bare codec
 (see [Tests](#tests)), and 4 that need the companion scripts. It has also been
 through a deliberately adversarial audit, and **not every problem it found is

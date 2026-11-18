@@ -48,7 +48,7 @@ def test_wrapper_sets_utf8_output_without_leaking(name, tmp_path):
 @pytest.mark.skipif(not Path("P:/scripts/4_world/classes/bunkerbroadcastscheduler.c").is_file(),
                     reason="needs the vanilla scripts unpacked on P:")
 def test_ask_bat_redirected_output_keeps_non_cp1252_line(tmp_path):
-    # bunkerbroadcastscheduler.c:322 holds "→" (U+2192), which cp1252 cannot encode.
+    # bunkerbroadcastscheduler.c:321 holds "→" (U+2192), which cp1252 cannot encode.
     out = tmp_path / "answer.txt"
     cmd = (f'"{DAYZ / "ask.bat"}" "minuteDiff wrap-around rollover" --grep --folder scripts --top-k 1'
            f' > "{out}" 2>&1')

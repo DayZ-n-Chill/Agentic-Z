@@ -124,8 +124,8 @@ All three are test fixtures. They contain no backend source.
 ## Test
 
 Tests that do not need the external backend always run with only pytest
-installed. Real fixture integration is enabled only when
-`DAYZ_ODOL_BACKEND_ROOT` points to the exact pinned set of backend files. The
+installed. Real fixture integration runs whenever `DAYZ_ODOL_BACKEND_ROOT` is
+set; the folder must hold the exact pinned backend files or those tests fail. The
 schema checks also need the optional `jsonschema` package and skip without it.
 
 ```powershell
