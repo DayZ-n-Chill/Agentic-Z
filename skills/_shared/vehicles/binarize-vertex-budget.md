@@ -31,7 +31,7 @@ The `Material not loaded` lines (see "Log lines that mean nothing") do not affec
 
 Without the third state you decimate a mesh because the bench was set up wrong.
 
-The capacity line names the MLOD, not the LOD. On a building it came from collision LODs that had grown while the visual LOD was as before (`_shared/models/lods-authoring.md`). Before you blame the latest change, compare every LOD with the last build that passed.
+The capacity line names the MLOD, not the LOD. On a building it came from collision LODs that had grown while the visual LOD was as before (`_shared/models/building-collision-limits.md`, section "Binarize reports `Too many vertices` from the collision LODs"). Before you blame the latest change, compare every LOD with the last build that passed.
 
 One cause prints nothing of its own (measured on a building, not a vehicle): with too many pieces in its collision LODs, `binarize.exe` wrote no ODOL and no capacity line, and the bench read `OTHER_FAIL` although it was set up correctly. Rule it in only when the MLOD reads through to `#EndOfFile#` in every LOD (a truncated MLOD gives the same verdict) and the same model passes without its collision LODs. Those two checks place the fault in the collision LODs; they do not measure the limit. The fix moves pieces into another model with the same transform and leaves every piece as it is, none merged or decimated, and each resulting model must still pass. The limits and figures are in `_shared/models/building-collision-limits.md`.
 

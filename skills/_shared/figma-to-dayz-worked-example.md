@@ -23,7 +23,7 @@ Frame "StatusCard"  auto-layout vertical
 
 ```json
 {
-  "name": "StatusCard",
+  "name": "status_card",
   "type": "panel",
   "layout": "vertical",
   "spacing": 4,
@@ -84,7 +84,7 @@ FrameWidgetClass StatusHud {
  hexactsize 0
  vexactsize 0
  {
-  PanelWidgetClass StatusCard {
+  PanelWidgetClass status_card {
    color 0.0863 0.0863 0.0863 0.8
    position 24 24
    size 320 120

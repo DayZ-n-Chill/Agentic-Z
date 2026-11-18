@@ -186,10 +186,7 @@ def run_checks(call: Callable[..., dict], vehicle: str, at=BENCH, wheels: int = 
     state = call("vehicle_state", {"net_id": net_id}, "client")
     engine_on = bool((state.get("data") or {}).get("engine_on"))
     moved = bool(drive.get("ok")) and (dd.get("distance") or 0) > 1.0 and (dd.get("top_speed") or 0) > 0
-    if not engine_on and not moved:
-        fix = "engine_off"
-    else:
-        fix = "no_distance"
+    fix = "no_distance" if engine_on else "engine_off"  # moved with the engine off (rolled) is still not a drive
     drives = result("5 drives", moved and engine_on, fix, distance=dd.get("distance"), top_speed=dd.get("top_speed"),
                     engine_on=engine_on, gears=sorted({s.get("gear") for s in dd.get("samples") or []}), error=drive.get("error"))
     if not drives and engine_on:

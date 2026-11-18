@@ -95,6 +95,9 @@ def test_logs_since_checks_its_arguments(running):
         server.logs_since_impl("", None, ["crash"], None, False)
     with pytest.raises(ValueError, match="peers"):
         server.logs_since_impl("", ["observer"], None, None, False)
+    for limit in (0, -3):
+        with pytest.raises(ValueError, match="limit"):
+            server.logs_since_impl("", None, None, None, False, limit)
     assert server.logs_since_impl("", None, None, None, False)["total"] == 0
 
 

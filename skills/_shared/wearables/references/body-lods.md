@@ -2,7 +2,7 @@
 
 Covers which LODs a new humanoid body (a custom infected, survivor or NPC) needs, how to model a hole one can see through, such as a torso cavity, and why size cannot come from a scale call.
 
-The rig, weights and export of the visual LOD are in `body-rigging.md` and `body-export.md`. The class, the inherited AI and the damage zones the model must keep are in `_shared/ai/custom-infected.md`. LOD types and resolution values in general are in `_shared/models/lods.md` and the table in `_shared/conventions/assets.md` (View Geometry `6.0e+15`, Fire Geometry `7.0e+15`); use those DayZ values, not the Arma 3 ones. The "Working example" column was built on a test infected about 1.2 times vanilla size with a see-through torso, and checked in Blender and in game, not on `P:\`.
+The rig, weights and export of the visual LOD are in `body-rigging.md` and `body-export.md`. The class, the inherited AI and the damage zones the model must keep are in `_shared/ai/custom-infected.md`. LOD types and resolution values in general are in `_shared/models/lods.md` and the table in `_shared/conventions/assets.md` (View Geometry `6.0e+15`, Fire Geometry `7.0e+15`); use those DayZ values, not the Arma 3 ones. The "Working example" column was built on a test infected with a see-through torso, first modelled at 2.277 m (about 1.27 times vanilla size) and scaled back to about 1.8 m after it deformed badly (`canonical-bind.md`, "Scale"), and checked in Blender and in game, not on `P:\`.
 
 ## The LODs
 

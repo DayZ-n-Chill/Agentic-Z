@@ -19,7 +19,7 @@ A line is an error when one of the category patterns in `triage.py` (`ERROR_CATE
 | `crash` | `Unhandled exception`, `Access violation` |
 | `compile` | `Can't compile "<Module>" script module`, `SCRIPT (E): @"file,line": ...`, `file.c(line): ...` |
 | `null_pointer`, `cant_find` | `NULL pointer to instance`, `Can't find ...`. The in-game gate fails these only when they name the mod. |
-| `connection` | A refused join: `0x00020005` (filePatching), `0x00020017` (a diag client on a server that is not diag), `0x00020013` (different game builds), `0x00010002` (signatures) |
+| `connection` | A refused join: `0x00020005` (filePatching), `0x00020017` (a diag client on a server that is not diag), `0x00020013` (different game builds), `0x00010002` (decoding unsettled; the one measured case was a signature mismatch) |
 | `storage` | Persistence the server cannot read: `!!! Serious stream damage detected during load`, `Failed to read modstorage for entity`, `Scripted variables corrupted` |
 | `server_exit` | A server that shuts itself down: `[Server] :: termination in: N`, `BattlEye initialization failed` |
 | `mission`, `missing_config`, `missing_texture`, `missing_model` | `Mission script has no main function`, `No entry '...'`, `Cannot load texture`, `Cannot open object` |

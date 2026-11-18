@@ -22,7 +22,7 @@ hiddenSelectionsTextures[] = {"tex1.paa", "tex2.paa"};
 hiddenSelectionsMaterials[] = {"mat1.rvmat", "mat2.rvmat"};
 ```
 
-The engine accepts a shorter array (`pre-build-checks.md` explains why this is a warning).
+The engine accepts a shorter array (`config-and-model-checks.md` explains why this is a warning).
 
 ## A custom weapon stuck in one fire mode
 
@@ -36,7 +36,7 @@ Move `class Mode_SemiAuto;` and `class Mode_FullAuto;` to the root, above `class
 
 `#STR_MYKEY` is used in code, config or a `.layout` but has no row in the stringtable. The engine says nothing: the key prints its own name on screen and the client RPT holds no line about it (measured in game).
 
-Add a row to `stringtable.csv` at the addon root. DayZ reads CSV, not the `stringtable.xml` of Arma 3. The key goes in column 1 without the leading `#`, and the header carries the seven columns `pre-build-checks.md` asks for; with a four-column header every key stays unresolved.
+Add a row to `stringtable.csv` at the addon root. DayZ reads CSV, not the `stringtable.xml` of Arma 3. The key goes in column 1 without the leading `#`, and the header carries the seven columns `stringtable-and-script-checks.md` asks for; with a four-column header every key stays unresolved.
 
 ```csv
 "Language","original","english","spanish","german","russian","chinesesimp"

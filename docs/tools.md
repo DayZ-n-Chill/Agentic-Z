@@ -357,7 +357,7 @@ python scripts\tools\dayz-vehicle-checks\vehicle_checks.py --vehicle MyCar --sta
 ```
 
 - Without `--start` it uses the session the `dayz-testbridge` recorded; with it, it starts one and always stops it.
-- Each failure maps to a row of the reference's fix table. `objective_PASS` covers the scriptable checks only; acceptance also needs captures from several angles and the turn sign compared with a vanilla car.
+- Each car failure maps to a row of the reference's fix table; the site failure and the engine-off drive failure are the tool's own and have no row there. `objective_PASS` covers the scriptable checks only; acceptance also needs captures from several angles and the turn sign compared with a vanilla car.
 - Writes `output/<CarClass>-vehicle-checks/<time>/verdict.json`. Exit 0 passed, 1 a check failed, 2 the run could not happen. A vanilla `Hatchback_02` passed every objective check (9 of 12 rays).
 - Tests: `test_vehicle_checks.py` beside it.
 ## `scripts/tools/dayz-object-checks`

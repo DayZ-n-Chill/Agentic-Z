@@ -127,6 +127,8 @@ def logs_since_impl(mark: str, peers: Optional[list[str]], kinds: Optional[list[
         raise ValueError(f"kinds must be script and/or rpt, got {sorted(bad)}")
     if peers and set(peers) - {"server", "client"}:
         raise ValueError("peers must be server and/or client")
+    if limit < 1:
+        raise ValueError("limit must be 1 or more")
     if regex:
         re.compile(regex)
     out = session.logs_since(_project(), mark, peers, kinds_t, regex, triage)
@@ -239,7 +241,7 @@ def build_app():
                          regex: Optional[str] = None, triage: bool = False, limit: int = 500) -> dict:
         """Script log (`script`) and RPT (`rpt`) lines of the server and client written since `mark`
         (empty: since the session started), each with peer, file and line number; the last `limit`
-        lines are returned with the total. Lists [AZ-BRIDGE] ERROR lines apart. triage=true tags
+        lines (1 or more) are returned with the total. Lists [AZ-BRIDGE] ERROR lines apart. triage=true tags
         each line with its /dayz-gate category."""
         return await anyio.to_thread.run_sync(logs_since_impl, mark, peers, kinds, regex, triage, limit)
 

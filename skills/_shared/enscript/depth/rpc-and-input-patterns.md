@@ -19,9 +19,9 @@ override void OnRPC(PlayerIdentity sender, int rpc_type, ParamsReadContext ctx)
     }
     if (rpc_type == MyMod_RPCclient.RPC_SYNC_FX && !GetGame().IsServer())
     {
-        Param3<Object, ImpactEffectsData, vector> fx;
+        Param1<int> fx;   // the same Param type the sender writes (Param1<int>(m_State), below)
         if (ctx.Read(fx))
-            PlayClientEffect(fx);
+            PlayClientEffect(fx.param1);
     }
 }
 ```
@@ -99,4 +99,4 @@ protected void InitClientEffects()
 }
 ```
 
-In single player `IsClient()` is true, so nothing is skipped; on a multiplayer server the check returns early. Call the guard lazily, on the first tick or event, never from a constructor or load time init: during load `IsClient()` is not reliable on the client (`hard-rules.md`, section "Networking and sides"). `IsMultiplayer()` and `IsClient()` are declared on `CGame` (`P:\scripts\3_game\global\game.c:1118` and `:1119`).
+In single player `IsClient()` is false (vanilla's own "client or offline" test is `IsClient() || !IsMultiplayer()`, as at `P:\scripts\3_game\dayzgame.c` and `P:\scripts\3_game\vehicles\transport.c`), so the guard relies on `IsMultiplayer()` being false there and nothing is skipped; on a multiplayer server the check returns early. Call the guard lazily, on the first tick or event, never from a constructor or load time init: during load `IsClient()` is not reliable on the client (`hard-rules.md`, section "Networking and sides"). `IsMultiplayer()` and `IsClient()` are declared on `CGame` (`P:\scripts\3_game\global\game.c:1118` and `:1119`).

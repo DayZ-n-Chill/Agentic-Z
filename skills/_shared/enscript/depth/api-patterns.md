@@ -18,7 +18,7 @@ typename wt = ItemBase.StaticType();   // class without an instance
 
 ### `IsKindOf` follows the config chain
 
-`GetGame().IsKindOf(string cfg_class_name, string cfg_parent_name)` looks the class up in `CfgVehicles`, then `CfgAmmo`, `CfgMagazines`, `cfgWeapons` and `CfgNonAIVehicles`, and walks the parents of the first match (`P:\scripts\3_game\global\game.c:1437` to `:1460`). `Object.IsKindOf(string type)` asks the engine the same question for one object (`P:\scripts\3_game\entities\object.c:511` to `:513`). A class declared in script as `class X : Y` can have a different parent in `CfgVehicles` (`class X : Z`), and the check uses the config parent.
+`GetGame().IsKindOf(string cfg_class_name, string cfg_parent_name)` looks the class up in `CfgVehicles`, then `CfgAmmo`, `CfgMagazines`, `cfgWeapons` and `CfgNonAIVehicles`, and walks the parents of the first match (`P:\scripts\3_game\global\game.c:1437` to `:1476`). `Object.IsKindOf(string type)` asks the engine the same question for one object (`P:\scripts\3_game\entities\object.c:511` to `:513`). A class declared in script as `class X : Y` can have a different parent in `CfgVehicles` (`class X : Z`), and the check uses the config parent.
 
 This breaks compatibility layers that register "known base" class names, as Expansion and similar frameworks do. Register the script parent when the config parent differs, and no descendant matches: the layer stays in its safe no-op state, and with the log level at `ERROR` its warnings never show. A storage mod met this with `MyMod_Openable_Placeable_Base`, declared `: MyMod_Openable_Base` in script but `: MyMod_Storage_Base` in `CfgVehicles`, so its crates were never matched. Register every direct config base of the concrete classes, not only the script base.
 
@@ -64,7 +64,7 @@ if (!entity)
 
 ### AI creatures
 
-Spawn with `GetGame().CreateObjectEx(type, pos, ECE_PLACE_ON_SURFACE|ECE_INITAI|ECE_EQUIP_ATTACHMENTS)`, adding `ECE_NOPERSISTENCY_WORLD` when a restart should clean it up. `ECE_INITAI` (`2048`, `P:\scripts\3_game\ce\centraleconomy.c:18`) starts the AI; without it the creature stands still like a statue. `ECE_NOPERSISTENCY_WORLD` is `8388608` (`:31`), `ECE_CREATEPHYSICS` is `1024` (`:17`) and `ECE_PLACE_ON_SURFACE` is `1060`, which already contains `ECE_CREATEPHYSICS` (`:38`); the whole flag list runs from `:9` to `:39`. Vanilla examples: `SpawnAI` (`P:\scripts\4_world\entities\manbase\playerbase.c:6807`) and `P:\scripts\4_world\plugins\pluginbase\plugindayzinfecteddebug.c:367`.
+Spawn with `GetGame().CreateObjectEx(type, pos, ECE_PLACE_ON_SURFACE|ECE_INITAI|ECE_EQUIP_ATTACHMENTS)`, adding `ECE_NOPERSISTENCY_WORLD` when a restart should clean it up. `ECE_INITAI` (`2048`, `P:\scripts\3_game\ce\centraleconomy.c:18`) starts the AI; without it the creature stands still like a statue. `ECE_NOPERSISTENCY_WORLD` is `8388608` (`:31`), `ECE_CREATEPHYSICS` is `1024` (`:17`) and `ECE_PLACE_ON_SURFACE` is `1060`, which already contains `ECE_CREATEPHYSICS` (`:38`); the whole flag list runs from `:7` to `:41`. Vanilla examples: `SpawnAI` (`P:\scripts\4_world\entities\manbase\playerbase.c:6807`) and `P:\scripts\4_world\plugins\pluginbase\plugindayzinfecteddebug.c:367`.
 
 With `ECE_PLACE_ON_SURFACE|ECE_INITAI|ECE_CREATEPHYSICS` (`3108`) an infected walks and attacks (measured in game; delete it as soon as the test ends). Surface placement of AI is deferred: `GetPosition()` right after creation returns the requested height, not the ground. Resolve `SurfaceY` before creating when you need the real coordinate.
 

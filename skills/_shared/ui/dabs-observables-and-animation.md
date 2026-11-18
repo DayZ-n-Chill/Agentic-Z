@@ -10,7 +10,7 @@ Dabs Framework is a third party mod. These facts are checked against its own scr
 ref ObservableCollection<MyMod_RowView> m_Items = new ObservableCollection<MyMod_RowView>(this);
 ```
 
-Pass the `ViewController`. The element type must be a class. Storage is `ref array<ref TValue>` (`MVC\Observables\ObservableCollection.c:41`).
+Pass the `ViewController`. The element type can be a class or a plain type such as `string` (Dabs's own sample declares `ObservableCollection<string>`, `GUI\MVC\SampleMVC.c:24`). Storage is `ref array<ref TValue>` (`MVC\Observables\ObservableCollection.c:41`).
 
 Every one of these updates the UI: `Insert`, `InsertAt`, `InsertAll`, `Remove(int index)`, `Remove(TValue value)`, `RemoveOrdered`, `RemoveRange(start, end)`, `Set(index, value)`, `MoveIndex(index, moveIndex)`, `SwapItems(a, b)` and `Clear`. `Get`, `Count`, `Find` and `GetArray` read.
 

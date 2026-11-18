@@ -139,6 +139,11 @@ def test_no_drive_with_the_engine_off_is_not_a_drivetrain_verdict():
     assert "engine never ran" in R["checks"]["5 drives"]["fix"] and "verdict" not in R["checks"]["5 drives"]
 
 
+def test_a_car_that_rolled_with_the_engine_off_gets_the_engine_off_fix():
+    R = vc.verdict(vc.run_checks(FakeGame(distance=13.0, engine_on=False), "MyCar"))
+    assert "engine never ran" in R["checks"]["5 drives"]["fix"] and "verdict" not in R["checks"]["5 drives"]
+
+
 def test_rays_that_miss_fail_solid_but_do_not_end_the_pass():
     R = vc.verdict(vc.run_checks(FakeGame(solid=False), "MyCar"))
     assert R["checks"]["3 solid"]["PASS"] is False and R["checks"]["5 drives"]["PASS"] is True and R["stop"] is None

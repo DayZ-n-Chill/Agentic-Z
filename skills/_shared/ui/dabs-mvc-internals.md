@@ -86,7 +86,7 @@ A `ViewBinding` reads these from the layout's `ScriptParamsClass` (`MVC\ViewBind
 
 ## Commands
 
-A `Relay_Command` can name three things. `LoadRelayCommand` tries them in this order (`MVC\ViewController.c:300` to `:310`): a controller property with that name, then a type with that name that inherits `RelayCommand`, then a plain function call at click time.
+A `Relay_Command` can name three things. `LoadRelayCommand` tries them in this order (`MVC\ViewController.c:273` to `:313`): a controller property with that name, then a type with that name that inherits `RelayCommand`, then a plain function call at click time.
 
 ```c
 // Layout: Relay_Command "OnSaveExecute". The simplest form: a function on the controller.
@@ -126,8 +126,8 @@ What follows for your handlers:
 1. `ScriptedViewBase` derives from `Managed`, not from `ScriptedWidgetEventHandler` (`MVC\ScriptedViewBase.c:4`). The bridge is `ScriptedViewBaseHandler`, a `ScriptedWidgetEventHandler` that forwards `OnClick(Widget w, int x, int y, int button)` to its `ScriptedViewBase` (`MVC\ScriptedViewBaseHandler.c:2` to `:14`).
 2. The `ViewController` owns that bridge and installs it with `m_LayoutRoot.SetHandler(m_ScriptedViewBaseHandler)` (`MVC\ViewController.c:56` to `:63`), the same vanilla `SetHandler` a plain handler uses (`P:\scripts\1_core\proto\enwidgets.c:172`). That is why a Dabs view never calls `SetHandler(this)` itself.
 3. `ScriptView` separately writes the view into the root's user data (`MVC\ScriptView.c:86` and `:87`, `:149` and `:150`). `SetHandler` does not make `GetScript()` return the handler.
-4. Every `On*` event then bubbles from the `ViewController` up to the `ScriptView` through `m_ParentScriptedViewBase` (the source comment: "Events are invoked up heirarchy, starting at ViewController, and up to ScriptView").
+4. Every `On*` event except `OnResize` then bubbles from the `ViewController` up to the `ScriptView` through `m_ParentScriptedViewBase` (the source comment: "Events are invoked up heirarchy, starting at ViewController, and up to ScriptView").
 
 A generic search that walks up the parents and casts `GetScript()` or `GetUserData()` to `ScriptedWidgetEventHandler` misses a valid Dabs view, because the root's user data is the `ScriptView` and the bridge sits on the controller. Always pass the widget that was clicked: a view that dispatches on `w.GetUserID()` silently misses when automation passes the root instead. An outside test harness still needs a way to find the root and the real widget; see `automated-ui-checks.md`, "Dabs views are not menus".
 
-The Workshop copy forwards `OnResize` like the other events (`MVC\ScriptedViewBaseHandler.c:121` to `:124`); test it before relying on it. The framework's wiki says nothing about the view layer, so its problems are found by reading the source.
+`OnResize` stops at the `ViewController`: the bridge passes it to the controller (`MVC\ScriptedViewBaseHandler.c:121` to `:124`), but `ScriptedViewBase.OnResize` returns true before its forwarding line (`MVC\ScriptedViewBase.c:261` and `:262`), so an `OnResize` override on a `ScriptView` never runs. Override it on the `ViewController` instead. The framework's wiki says nothing about the view layer, so its problems are found by reading the source.

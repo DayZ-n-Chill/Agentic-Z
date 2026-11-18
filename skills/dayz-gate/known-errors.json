@@ -268,8 +268,8 @@
   {
     "id": "connection-signature-mismatch",
     "pattern": "0x00010002",
-    "meaning": "The server checked mod signatures and the client's PBOs did not match its keys.",
-    "fix": "Build the mod again with /dayz-gate build <ModName> so both sides load the same PBO, and check that .server/<instance>/serverDZ.cfg still has verifySignatures = 0; as /dayz-add-server writes it for local tests.",
+    "meaning": "The join was refused. The one measured case came with mod signatures that did not match the server's keys, but what the code itself means is not settled: it may also decode as the client still busy with an earlier join.",
+    "fix": "Check the signatures first: build the mod again with /dayz-gate build <ModName> so both sides load the same PBO, and check that .server/<instance>/serverDZ.cfg still has verifySignatures = 0; as /dayz-add-server writes it for local tests. If the code comes back, stop the session with /dayz-stop-test and retry with no earlier join still running.",
     "owner_agent": "dayz-orchestrator",
     "source": "dayz-launch-test references/troubleshooting.md (kick codes); skills/_shared/enscript/references/api_game.md (connect error codes)"
   },

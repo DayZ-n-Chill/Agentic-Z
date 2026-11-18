@@ -767,7 +767,7 @@ def watch_session(
             on_poll(None if ready_at is None else now - ready_at)
         if ready_at is not None and now - ready_at >= settle:
             return lines, ready, None
-        if now >= deadline:
+        if ready_at is None and now >= deadline:  # the join deadline ends at the join; `settle` times the rest
             return lines, ready, _finding(
                 "no_ready",
                 f"client never reached the mission within {int(timeout)} s (no line matching {ready_re.pattern!r} in the client script log)",

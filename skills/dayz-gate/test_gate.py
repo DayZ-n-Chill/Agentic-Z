@@ -680,6 +680,16 @@ def test_ingame_timeout_without_ready_fails_and_still_stops(project, capsys):
     assert fake.stops() == 1 and fake.running == []
 
 
+def test_ingame_join_deadline_stops_counting_once_the_client_joins(project, capsys):
+    """A client that joins 2 s before --timeout still gets the full --settle after the join."""
+    fake = FakeRuntime({"launch.py": launch_ok()})
+    session(fake, project, ready_at=18)
+    rc, first, data = ingame(fake, capsys, "--timeout", "20")
+    assert (rc, first) == (0, "PASS"), data["failures"]
+    assert data["ready"]["text"] == READY
+    assert fake.now >= 18 + 6
+
+
 def test_ingame_process_exit_is_a_crash_and_stops_early(project, capsys):
     fake = FakeRuntime({"launch.py": launch_ok()})
     session(fake, project, ready_at=None)

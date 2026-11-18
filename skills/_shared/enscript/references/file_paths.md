@@ -124,7 +124,7 @@ CopyFile("$mission:mymod_defaults.json", "$profile:\\MyMod\\config.json");
 | Economy | `<ServerDir>\mpmissions\<mission>\db\*.xml` |
 | Mod PBO output | `P:\Mods\@MyMod\Addons\MyMod.pbo` (built by `/dayz-build-pbo`) |
 | Workbench project | `<DayZDir>\Projects\MyMod\` |
-| Profile root | `<ServerDir>\profiles\<profileName>\` |
+| Profile root (`$profile:`) | The `-profiles=` folder itself, e.g. `<ServerDir>\<-profiles folder>\` |
 
 The same asset path is written two ways. In `config.cpp` a backslash is single: `"dz\gear\camping\data\tent_pristine_co.paa"` (`P:\DZ\gear\camping\config.cpp:61`). In an Enforce Script string the backslash escapes, so it is doubled: `"dz\\gear\\cultivation\\data\\soil_digged_wet_lime_CO.paa"` (`P:\scripts\4_world\entities\gardenbase.c:4`).
 
