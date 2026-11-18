@@ -21,7 +21,8 @@ NET = "23207,0"
 class FakeGame:
     """Answers like the bridge: every call is checked against the allowlist first."""
 
-    def __init__(self, spawn_ok=True, wheels=4, fuel=1.0, seat_reason="", distance=13.0, engine_on=True, solid=True):
+    def __init__(self, spawn_ok=True, wheels=4, fuel=1.0, seat_reason="", distance=13.0, engine_on=True, solid=True, blocked=False):
+        self.blocked = blocked
         self.spawn_ok, self.wheels, self.fuel = spawn_ok, wheels, fuel
         self.seat_reason, self.distance, self.engine_on, self.solid = seat_reason, distance, engine_on, solid
         self.in_car = False
@@ -39,6 +40,12 @@ class FakeGame:
 
     def fail(self, error, **data):
         return {"ok": False, "error": error, "data": data}
+
+    def find_objects(self, a):
+        if a.get("cls") == "Transport":
+            return self.ok(objects=[{"type": "OffroadHatchback", "class_name": "OffroadHatchback", "pos": a["pos"]}]
+                           if self.blocked else [])
+        return self.ok(objects=[{"type": "SurvivorM_Mirek", "class_name": "SurvivorBase", "pos": a["pos"]}])
 
     def teleport(self, a):
         return self.ok(pos=a["pos"])
@@ -92,7 +99,7 @@ def test_all_objective_checks_pass_and_acceptance_stays_open():
     game = FakeGame()
     R = vc.verdict(vc.run_checks(game, "Hatchback_02"))
     assert R["objective_PASS"] is True and R["acceptance_PASS"] is None and R["fixes"] == []
-    assert [c["PASS"] for c in R["checks"].values()] == [True, True, True, True, True, None]
+    assert [c["PASS"] for c in R["checks"].values()] == [True, True, True, True, True, True, None]
     assert R["checks"]["6 turns"]["signed_turn"] == 30.0 and R["checks"]["6 turns"]["calibrated"] is False
     assert game.calls[-3:] == ["player_state", "get_out", "delete"] and R["cleanup"] == "car deleted"
 
@@ -101,7 +108,7 @@ def test_a_class_that_does_not_spawn_ends_the_pass():
     game = FakeGame(spawn_ok=False)
     R = vc.verdict(vc.run_checks(game, "NoSuchCar"))
     assert R["stop"] == "1 spawns" and R["objective_PASS"] is False and "does not resolve" in R["fixes"][0]["fix"]
-    assert game.calls == ["teleport", "spawn"]
+    assert game.calls[0] == "teleport" and game.calls[-1] == "spawn" and set(game.calls[1:-1]) == {"find_objects"}
 
 
 def test_short_wheels_end_the_pass_and_the_car_is_removed():
@@ -141,3 +148,9 @@ def test_no_outside_tool_is_named():
     text = (HERE / "vehicle_checks.py").read_text(encoding="utf-8").lower()
     for word in ("dayz-mcp", "dayz_mcp", "/enqueue", "lease", "keyfile"):
         assert word not in text, word
+
+
+def test_a_site_with_another_vehicle_ends_the_pass_before_anything_spawns():
+    game = FakeGame(blocked=True)
+    R = vc.verdict(vc.run_checks(game, "MyCar"))
+    assert R["stop"] == "0 site" and "spawn" not in game.calls and "not clear" in R["fixes"][0]["fix"]

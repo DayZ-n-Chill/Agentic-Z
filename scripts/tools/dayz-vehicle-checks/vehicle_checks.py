@@ -7,6 +7,7 @@
 The checks follow skills/dayz-launch-test/references/vehicle-acceptance-checks.md; conditioning runs before
 the solid rays, so they meet the car with its doors, trunk and wheels on:
 
+  0 site         no other vehicle within 30 m and nothing in the 16 m lane ahead             (ends the pass)
   1 spawns       the class spawns 12 m north of the player and reads back as itself     (ends the pass)
   2 conditioned  server-side OnDebugSpawn: the expected wheels present and fuel above 0   (ends the pass)
   3 solid        12 level view rays from 3.5 m out at 0.4, 0.8 and 1.2 m above the ground: at least 6 hit
@@ -46,9 +47,15 @@ SPAWN_AHEAD_M = 12.0
 RAY_OUT_M = 3.5
 RAY_HEIGHTS = (0.4, 0.8, 1.2)
 SOLID_MIN = 6
+SITE_VEHICLE_M = 30.0    # no other vehicle this close (vehicle-in-game-facts.md)
+LANE_LENGTH_M = 16       # the lane ahead: a 5 s full-throttle drive covered 13 to 14 m on the bench
+LANE_STEP_M = 4          # with a 2 m search radius, no gap along the lane
+LANE_HALF_WIDTH_M = 2.0  # half a car's width plus a margin
 
 # The rows of the reference's "Failure to fix table" each failure points to.
 FIX = {
+    "site": "The driving site is not clear: another vehicle within 30 m or an object in the lane ahead. Not a car fault; "
+            "pick clear ground with --at (vehicle-in-game-facts.md, \"A driving bench\").",
     "no_class": "The class does not resolve: the mod is not mounted (windows-build-and-mount.md, absolute mod paths) "
                 "or CfgPatches does not register it. Not a model fault.",
     "invisible": "Spawns but rays pass through: the componentNN double tag (vehicle-structural-parity.md, rip-import.md), "
@@ -110,9 +117,22 @@ def run_checks(call: Callable[..., dict], vehicle: str, at=BENCH, wheels: int = 
               flush=True)
         return bool(passed)
 
-    # 1 spawns
+    # 0 site: no other vehicle within 30 m, and nothing in the lane the car drives up
+    # (vehicle-in-game-facts.md, "A driving bench"), so a blocked car is never read as a broken drivetrain.
     player = call("teleport", {"pos": [at[0], 0.0, at[1]]})
     spot = [at[0], 0.0, at[1] + SPAWN_AHEAD_M]
+    cars = [o for o in (call("find_objects", {"pos": spot, "radius": SITE_VEHICLE_M, "cls": "Transport"}).get("data") or {})
+            .get("objects") or []]
+    lane = []
+    for ahead in range(LANE_STEP_M, LANE_LENGTH_M + 1, LANE_STEP_M):
+        found = (call("find_objects", {"pos": [spot[0], 0.0, spot[2] + ahead], "radius": LANE_HALF_WIDTH_M}).get("data") or {})
+        lane += [o for o in found.get("objects") or [] if o.get("class_name") not in ("SurvivorBase", "PlayerBase")]
+    if not result("0 site", not cars and not lane, "site", vehicles=[o.get("type") for o in cars],
+                  in_lane=[(o.get("type") or o.get("class_name"), o.get("pos")) for o in lane][:10]):
+        R["stop"] = "0 site"
+        return R
+
+    # 1 spawns
     spawn = call("spawn", {"cls": vehicle, "pos": spot})
     data = spawn.get("data") or {}
     if not result("1 spawns", bool(spawn.get("ok")) and data.get("type") == vehicle, "no_class",
