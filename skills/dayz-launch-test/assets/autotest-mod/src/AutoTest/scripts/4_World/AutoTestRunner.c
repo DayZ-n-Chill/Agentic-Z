@@ -92,7 +92,7 @@ class AutoTestRunner
 		}
 		if (!m_Player)
 		{
-			Finish(false, name, "player gone");
+			Next();   // counts the missing player once and finalizes the run
 			return;
 		}
 		array<ref AutoTestCase> all = AutoTestRegistry.All();

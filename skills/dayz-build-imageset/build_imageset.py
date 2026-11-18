@@ -234,6 +234,8 @@ def remove_stale_outputs(out_dir: Path, set_name: str, part_count: int,
                          other_sets: frozenset = frozenset(), dry_run: bool = False) -> list:
     """Delete <set>.{paa,imageset} / <set>_N.{paa,imageset} this run won't rewrite.
 
+    Only outputs this skill wrote are deleted: a stem whose .imageset looks
+    generated (looks_generated()). A hand-made .imageset or .paa is left alone.
     part_count == 1 keeps <set>.*; part_count > 1 keeps <set>_1 .. <set>_<part_count>;
     part_count == 0 (the set's folder is empty) keeps nothing.
     Stems that are the name of another source set are never touched.
@@ -250,14 +252,22 @@ def remove_stale_outputs(out_dir: Path, set_name: str, part_count: int,
     # names are: after renaming the folder Icons to icons, Icons_2.paa is stale.
     spared = {s.casefold() for s in keep} | {o.casefold() for o in other_sets}
     part_re = re.compile(re.escape(set_name) + r"_\d+", re.IGNORECASE)
+    candidates = [
+        f for f in sorted(out_dir.iterdir())
+        if f.is_file() and f.suffix.lower() in OUTPUT_SUFFIXES
+        and f.stem.casefold() not in spared
+        and (f.stem.casefold() == set_name.casefold() or part_re.fullmatch(f.stem))
+    ]
+    # Only files this skill wrote: an .imageset that looks generated, and a .paa
+    # whose .imageset looks generated (the rule find_orphan_outputs uses). Decided
+    # before anything is deleted, since the .imageset sorts before its .paa.
+    generated = {
+        f.stem.casefold() for f in candidates
+        if f.suffix.lower() == ".imageset" and looks_generated(f)
+    }
     removed = []
-    for f in sorted(out_dir.iterdir()):
-        if not f.is_file() or f.suffix.lower() not in OUTPUT_SUFFIXES:
-            continue
-        stem = f.stem
-        if stem.casefold() in spared:
-            continue
-        if stem.casefold() == set_name.casefold() or part_re.fullmatch(stem):
+    for f in candidates:
+        if f.stem.casefold() in generated:
             if dry_run:
                 print(f"{INFO} Would remove stale {f.name}")
             else:

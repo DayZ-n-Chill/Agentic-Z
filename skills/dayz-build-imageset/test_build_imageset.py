@@ -113,10 +113,25 @@ def test_missing_pillow_exits_nonzero_with_hint(monkeypatch, tmp_path):
 
 
 def _touch_outputs(out_dir, *stems):
+    """Write a .paa and a generated-format .imageset (as an earlier run would) per stem."""
     out_dir.mkdir(parents=True, exist_ok=True)
     for stem in stems:
-        for ext in (".paa", ".imageset"):
-            (out_dir / f"{stem}{ext}").write_text("x", encoding="utf-8")
+        (out_dir / f"{stem}.paa").write_text("x", encoding="utf-8")
+        bi.write_imageset_file(out_dir / f"{stem}.imageset", stem, 64, 64,
+                               f"MyMod\\gui\\imagesets\\{stem}.paa", [])
+
+
+def test_remove_stale_outputs_keeps_hand_made_files(tmp_path):
+    """A hand-made icons_2.imageset and its .paa are not this skill's output: never deleted."""
+    _touch_outputs(tmp_path, "icons", "icons_3")
+    (tmp_path / "icons_2.imageset").write_text("hand made", encoding="utf-8")
+    (tmp_path / "icons_2.paa").write_text("x", encoding="utf-8")
+    (tmp_path / "icons_4.paa").write_text("x", encoding="utf-8")  # no .imageset at all
+    removed = bi.remove_stale_outputs(tmp_path, "icons", 1)
+    assert sorted(p.name for p in removed) == ["icons_3.imageset", "icons_3.paa"]
+    assert {p.name for p in tmp_path.iterdir()} == {
+        "icons.paa", "icons.imageset", "icons_2.imageset", "icons_2.paa", "icons_4.paa",
+    }
 
 
 def test_remove_stale_outputs_single_atlas_drops_old_parts(tmp_path):
@@ -311,11 +326,18 @@ class _FakePillow(_FakeImage):
         return _Sprite()
 
 
+def _old_imageset(stem):
+    """The .imageset an earlier run of this skill wrote for `stem` (generated format)."""
+    return (f'ImageSetClass {{\n Name "{stem}"\n RefSize 64 64\n Textures {{\n'
+            f'  ImageSetTextureClass {{\n   mpix 0\n'
+            f'   path "MyMod\\gui\\imagesets\\{stem}.paa"\n  }}\n }}\n}}\n').encode("utf-8")
+
+
 def _real_build(monkeypatch, tmp_path, fake_run, parts=1, old_stems=("icons",), set_name="icons"):
     """build_one with the real write_one_atlas and staging, ImageToPAA faked by `fake_run`.
 
     `parts` > 1 makes pack_split return that many atlases. Every stem in
-    `old_stems` gets a .paa and .imageset holding b"old" from an earlier run.
+    `old_stems` gets a .paa holding b"old" and a generated .imageset from an earlier run.
     """
     set_dir = tmp_path / ".gui-sources" / set_name
     set_dir.mkdir(parents=True)
@@ -323,8 +345,8 @@ def _real_build(monkeypatch, tmp_path, fake_run, parts=1, old_stems=("icons",), 
     out_dir = tmp_path / "gui" / "imagesets"
     out_dir.mkdir(parents=True)
     for stem in old_stems:
-        for ext in (".paa", ".imageset"):
-            (out_dir / f"{stem}{ext}").write_bytes(b"old")
+        (out_dir / f"{stem}.paa").write_bytes(b"old")
+        (out_dir / f"{stem}.imageset").write_bytes(_old_imageset(stem))
     monkeypatch.setattr(bi, "Image", _FakePillow)
     if parts > 1:
         monkeypatch.setattr(bi, "pack_split", lambda metas: [((256, 256), [])] * parts)
@@ -366,7 +388,7 @@ def test_partial_write_then_failure_keeps_previous_single_output(monkeypatch, tm
     ok, out_dir, _ = _real_build(monkeypatch, tmp_path, _partial_then_fail)
     assert ok is False
     assert (out_dir / "icons.paa").read_bytes() == b"old"
-    assert (out_dir / "icons.imageset").read_bytes() == b"old"
+    assert (out_dir / "icons.imageset").read_bytes() == _old_imageset("icons")
     assert "ImageToPAA exited 1 on icons" in capsys.readouterr().err
     _assert_no_staging_left(out_dir)
 
@@ -378,7 +400,7 @@ def test_exit_zero_without_output_keeps_previous_output(monkeypatch, tmp_path, c
     assert ok is False
     assert "wrote no icons.paa" in capsys.readouterr().err
     assert (out_dir / "icons.paa").read_bytes() == b"old"
-    assert (out_dir / "icons.imageset").read_bytes() == b"old"
+    assert (out_dir / "icons.imageset").read_bytes() == _old_imageset("icons")
 
 
 def test_split_part_failure_replaces_no_part(monkeypatch, tmp_path):
@@ -391,7 +413,7 @@ def test_split_part_failure_replaces_no_part(monkeypatch, tmp_path):
     assert ok is False
     for stem in ("icons_1", "icons_2"):
         assert (out_dir / f"{stem}.paa").read_bytes() == b"old"
-        assert (out_dir / f"{stem}.imageset").read_bytes() == b"old"
+        assert (out_dir / f"{stem}.imageset").read_bytes() == _old_imageset(stem)
     _assert_no_staging_left(out_dir)
 
 

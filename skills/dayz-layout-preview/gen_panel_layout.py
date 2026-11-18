@@ -431,6 +431,8 @@ def main(argv=None):
         parser.error("kind is required unless --self-test")
     if args.rows is None:
         parser.error("--rows is required")
+    if args.rows < 1:
+        parser.error("--rows must be 1 or more")
     if not args.out:
         parser.error("--out is required")
     text = generate_layout(

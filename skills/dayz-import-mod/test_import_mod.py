@@ -135,6 +135,14 @@ def test_existing_workspace_entry_refused(workspace):
 ALL_MISSING = list(imp.SCAFFOLD_CHECKS)
 
 
+@pytest.fixture(autouse=True)
+def cached_authors(monkeypatch):
+    """Record remember_author calls instead of writing the real author cache."""
+    cached: list[str] = []
+    monkeypatch.setattr(imp._nm, "remember_author", cached.append)
+    return cached
+
+
 def test_scaffold_writes_in_process_without_rerunning_preflight(tmp_path, monkeypatch):
     monkeypatch.setattr(imp.h, "gate_on_preflight", lambda: pytest.fail("preflight must not re-run"))
     monkeypatch.setattr(imp._scaffold._nm, "find_dayz_tools", lambda: None)
@@ -199,6 +207,30 @@ def test_author_flag_reaches_resolve_author(tmp_path, monkeypatch):
     assert rc == 0
     assert seen == ["Handle"]
     assert 'author = "Handle"' in (tmp_path / "config.cpp").read_text(encoding="utf-8")
+
+
+def test_author_is_cached_after_config_is_written(tmp_path, monkeypatch, cached_authors):
+    monkeypatch.setattr(imp._scaffold._nm, "resolve_author", lambda cli: cli)
+    rc = imp.add_missing_pieces(tmp_path, "MyMod", ALL_MISSING[:1], scaffold=True, no_scaffold=False, author="Handle")
+    assert rc == 0
+    assert cached_authors == ["Handle"]
+
+
+def test_author_not_cached_when_no_piece_needs_it(tmp_path, monkeypatch, cached_authors):
+    monkeypatch.setattr(imp._scaffold._nm, "resolve_author", lambda cli: pytest.fail("not needed"))
+    prefix = [c for c in ALL_MISSING if c[0] == "prefix"]
+    assert imp.add_missing_pieces(tmp_path, "MyMod", prefix, scaffold=True, no_scaffold=False) == 0
+    assert cached_authors == []
+
+
+def test_wrong_piece_fails_the_import(tmp_path, monkeypatch, capsys):
+    """A piece the writer leaves unchanged as WRONG was not written, so the import exits 1."""
+    monkeypatch.setattr(imp._scaffold, "add_piece", lambda *a: imp._scaffold.WRONG)
+    workbench = [c for c in ALL_MISSING if c[0] == "workbench"]
+    rc = imp.add_missing_pieces(tmp_path, "MyMod", workbench, scaffold=True, no_scaffold=False)
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "Retry: /dayz-add-scaffold MyMod --piece workbench" in out
 
 
 # --- GitHub links and Workshop links ------------------------------------------------
