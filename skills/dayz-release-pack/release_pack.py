@@ -333,8 +333,8 @@ def mod_facts(mod: str, mod_dir: Path, deps: Optional[list[str]] = None, p_mods:
 # --- the in-game test bridge never ships ---------------------------------------
 
 # AZ_TestBridge is the Diag-only test mod /dayz-launch-test loads for a test
-# session, and AZB_ prefixes its classes (output/in-game-test-tool/PLAN.md,
-# sections 4 and 11). A release that requires, loads or packs any of it is refused.
+# session, and AZB_ prefixes its classes (skills/dayz-launch-test/references/
+# test-bridge.md). A release that requires, loads or packs any of it is refused.
 BRIDGE_MOD = "AZ_TestBridge"
 BRIDGE_RE = re.compile(rb"(?i)\b(?:AZ_TestBridge|AZB_\w+)")
 # The files a PBO carries that can name an addon or a class: configs, scripts,

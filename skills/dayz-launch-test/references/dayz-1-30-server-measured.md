@@ -10,7 +10,7 @@ Measured behaviour cannot be read from a file and is not checked on `P:\`. Every
 
 - The engine defines only the current version. Vanilla documents the define as "filled in with the current Major and Minor version" (`DAYZ_X_XX`, `P:\scripts\1_core\defines.c:12` to `:14`). The `defines:` of a 1.30 server's `Module:` lines hold `DAYZ_1_30`; 1.30 does not define `DAYZ_1_29`, as 1.29 did not define `DAYZ_1_28`.
 - So write plain current code with no version `#ifdef`: `#ifdef DAYZ_1_30` would drop the code again on the next release. Only when the user asks for a mod that must still load on an older server, put the old code under that version's define and the current code in `#else`, so the current code stays the default.
-- `string v; g_Game.GetVersion(v);` gives the full build, a dotted string of four numbers that starts with `1.30.` on 1.30 (`GetVersion`, `P:\scripts\3_game\global\game.c:941`). Use it for logging; it cannot select code that would not compile, only a define can.
+- `string v; g_Game.GetVersion(v);` gives the full build, a dotted string of four numbers that starts with `1.30.` on 1.30 (`GetVersion`, `P:\scripts\3_game\global\game.c:942`). Use it for logging; it cannot select code that would not compile, only a define can.
 - A mod's own `defines[] = {"MYMOD"};` in `CfgMods` works with `#ifdef MYMOD`. A loaded mod's name is a define too (`#ifdef AutoTest`; `linux-headless-client.md`).
 - `BUILD_EXPERIMENTAL` and `DIAG_DEVELOPER` exist only on diag and Experimental builds; never use them to mean "1.30".
 

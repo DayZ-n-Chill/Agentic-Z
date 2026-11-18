@@ -1,6 +1,6 @@
 """dayz-ask: gather checked evidence from vanilla DayZ for a plain English question.
 
-  ask.py "<question>" [--top-k N] [--file-type T] [--folder F ...] [--grep] [--json]
+  ask.py "<question>" [--top-k N] [--excerpt-lines N] [--file-type T] [--folder F ...] [--grep] [--json]
 
 The script does the searching and the checking; the AI only reads the
 evidence and writes the answer.
@@ -266,8 +266,8 @@ def _term_windows(line_scores: list[tuple], n_lines: int, lo: int = 1,
 def narrow_hit(cite: dict, terms: list[str]) -> Optional[list[dict]]:
     """Re-cite a checked RAG hit longer than EXCERPT_LINES at its best term lines.
 
-    The index can return a whole config class (the CfgVehicles chunk of
-    P:\\dz\\gear\\food\\config.cpp spans some 14,000 lines) while the excerpt shows
+    The index can return a long chunk of a config class (the CfgVehicles hit in
+    P:\\dz\\gear\\food\\config.cpp at lines 240 to 533) while the excerpt shows
     only the first EXCERPT_LINES of it. Lines inside the span are scored as the
     Grep fallback scores a file's lines (a term on fewer lines weighs more;
     quoted asset paths do not count), and each window becomes its own citation,

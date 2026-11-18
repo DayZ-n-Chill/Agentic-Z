@@ -89,7 +89,7 @@ Path:  P:\mymod\myaddon
 [PASS] LODs: Item_Watch.p3d has LOD0 (2104 vertices), LOD1 (800), Geometry and Memory with ce_center
 [PASS] Scripts: 3 files, no Enforce Script faults
 
-Summary: 5 pass, 1 warn, 2 fail
+Summary: 4 pass, 1 warn, 2 fail
 Blocked. Fix before packing:
   1. Add P:\mymod\myaddon\data\textures\body_co.paa
   2. Add STR_MYMOD_DEVICE_NAME to stringtable.csv (column 1, no leading #)

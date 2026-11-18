@@ -18,7 +18,7 @@ Follow `skills/_shared/dayz-conventions.md`. This skill is the abort-only except
 "<skill-dir>\stop_test.bat"
 ```
 
-No arguments. Runs `taskkill /IM DayZDiag_x64.exe /F`. A thin `.bat` is enough because the whole job is one `taskkill` call.
+No arguments (`--help` or `-h` prints usage). Runs `taskkill /IM DayZDiag_x64.exe /F`. A thin `.bat` is enough because the whole job is one `taskkill` call.
 
 ## Exit codes
 
@@ -27,6 +27,8 @@ No arguments. Runs `taskkill /IM DayZDiag_x64.exe /F`. A thin `.bat` is enough b
 | Processes killed | One `SUCCESS:` line per process | 0 |
 | No process running (errorlevel 128) | `[OK]   No DayZDiag_x64.exe processes running.` only | 0 |
 | Any other failure (e.g. access denied) | taskkill's error, then `[FAIL] taskkill failed with errorlevel N.` | N |
+| `--help` or `-h` (taskkill not run) | The usage text | 0 |
+| Any other argument (taskkill not run) | `[FAIL] Unknown argument: <arg> (stop-test takes no arguments; see --help).` | 2 |
 
 taskkill's error output is captured and dropped only for errorlevel 128 (its "process not found" line); for every other result it is re-printed on stderr, so real failures stay visible.
 

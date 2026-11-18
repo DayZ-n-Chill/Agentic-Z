@@ -6,10 +6,12 @@ Usage:
                    [--done-check TEXT]...] [--server MAP] [--build] [--launch [--deps MOD ...]]
                    [--execute]
 
+Both modes first refuse (exit 2) while the environment check reports a hard
+stop or P:\\ is not mounted, or when --launch has unmet requiredAddons and no
+--deps. Otherwise:
 Without --execute: prints the plan and exits 0.
 With --execute: runs each step in order and stops at the first failure,
-exiting with that step's exit code. Refuses (exit 2) while the environment
-check reports a hard stop or P:\\ is not mounted.
+exiting with that step's exit code.
 
 Steps, in order (each skipped when not needed):
   1. new-mod / import-mod   skipped when workspace/<mod> already exists;

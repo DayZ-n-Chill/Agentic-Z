@@ -26,7 +26,7 @@ The downloaded index is built against vanilla DayZ at the release-tagged version
 
 `~/.claude/dayz-search-index/`, the same path `/dayz-search-index` writes to. Per-user, outside the repo, survives clones.
 
-Releases have published the index under two asset names, `dayz-rag-index-v0.1.0.tar.gz` (most releases) and `dayz-search-index-<version>.tar.gz` (1.2.0 and 1.2.1). The skill accepts either, and either top-level folder name inside the archive (`dayz-rag-index/` or `dayz-search-index/`), and always installs to `~/.claude/dayz-search-index/`. Release 1.2.2 shipped with neither asset. Without `--tag`, a latest release like that is skipped: the skill prints a `[WARN]` line naming the latest tag and installs from the newest published (non-draft, non-prerelease) release that has an index asset. With `--tag` naming such a release it exits non-zero with a `[FAIL]` line.
+Releases have published the index under two asset names, `dayz-rag-index-v0.1.0.tar.gz` (most releases) and `dayz-search-index-<version>.tar.gz` (1.2.0 and 1.2.1). The skill accepts either, and either top-level folder name inside the archive (`dayz-rag-index/` or `dayz-search-index/`), and always installs to `~/.claude/dayz-search-index/`. Release 1.2.2 and every release from v2.0.0 on shipped with neither asset. Without `--tag`, a latest release like that is skipped: the skill prints a `[WARN]` line naming the latest tag and installs from the newest published (non-draft, non-prerelease) release that has an index asset. With `--tag` naming such a release it exits non-zero with a `[FAIL]` line.
 
 After download the folder holds what `/dayz-search-index` writes (`lancedb/`, `manifest.json`, `config.json`), plus `release-tag.txt`, the release tag that was installed (written by this skill). If the old folder held `usage.log` (the token ledger `/dayz-search-index` uses for its free-tier check) or `embed-checkpoint.bin` (vectors from an unfinished local build), they are copied into the new index, so tokens you already spent still count. The release index was built before oversize class blocks were split into windows, so very long classes are only partly searchable; run `/dayz-search-index --full` if you need full coverage.
 
@@ -61,6 +61,7 @@ DayZ RAG index downloader
 
 [INFO]	Repo: DayZ-n-Chill/Agentic-Z
 [INFO]	Resolving latest release...
+[WARN]	Latest release <latest> has no index asset; using <tag>, the newest release that has one.
 [OK]	Release: <tag>
 [INFO]	Asset: dayz-rag-index-v0.1.0.tar.gz (<size> MB)
 [INFO]	Target: C:\Users\you\.claude\dayz-search-index

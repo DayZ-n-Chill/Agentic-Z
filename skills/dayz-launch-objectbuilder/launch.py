@@ -25,7 +25,8 @@ import skill_helpers as h  # noqa: E402
 # PROJECT_DIR = user's project, used to resolve a relative --file path. Found the
 # way the other DayZ skills find it (dayz-init's find_project_dir: CLAUDE_PROJECT_DIR,
 # else the nearest folder at or above the current one holding the /dayz-init cache,
-# else the current folder), so a run from workspace\<mod>\ resolves the same way.
+# else the clone that holds the skill scripts when it has the cache, else the
+# current folder), so a run from workspace\<mod>\ resolves the same way.
 PROJECT_DIR = h.load_module("dayz_launch_ob_state", h.DAYZ_INIT_STATE).find_project_dir()
 P_DRIVE = Path("P:\\")
 

@@ -193,7 +193,7 @@ What the vanilla vehicle effects do with it:
 | Symptom | Severity | Change |
 |---|---|---|
 | Particles play on a headless client | Medium | Replace `!IsDedicatedServer()` with `!IsHeadlessOrDedicatedServer()` around particle code. |
-| Wheel or step particles ignore custom surfaces | Medium | Stop calling `Surface.GetStepsParticleID` and `Surface.GetWheelParticleID`; read `SurfaceInfo`. |
+| A call to `Surface.GetStepsParticleID` or `Surface.GetWheelParticleID` warns as obsolete | Low | Stop calling `Surface.GetStepsParticleID` and `Surface.GetWheelParticleID`; read `SurfaceInfo`. |
 | A call to `EffWheelSmoke.SetSurface(string)` warns as obsolete | Low | Call `SelectFromSurface(SurfaceInfo)`. |
 | A custom `EffectArea` that overrides `OnCEUpdate` may not tick, or its particles float above bridges | Medium | Override `OnCEIterate` and snap with `SurfaceRoadY` (`dayz-1-30-world-particles.md`). |
 

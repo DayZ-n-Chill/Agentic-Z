@@ -93,8 +93,8 @@ compare the wrong things.
    winding-derived normals. The reference must be an MLOD py3d can read: vanilla models
    on `P:\` are binarized ODOL (`P:\DZ\gear\camping\wooden_case.p3d` starts with the
    bytes `ODOL`), which py3d cannot read and the audit rejects. A debinarized vanilla
-   model keeps the ODOL winding sign, so invert the comparison's sign for it ("MLOD to
-   ODOL is a winding-sign boundary" in `winding-absolute-check.md`). Only applicable
+   model keeps the ODOL winding sign, so invert the comparison's sign for it ("The sign
+   flips between MLOD and ODOL" in `winding-absolute-check.md`). Only applicable
    when such a reference exists.
 
 4. **Direct in-game test.** Rebuild the PBO → test server → inspect visual +
@@ -110,9 +110,11 @@ compare the wrong things.
   with this skill: the operation is `face.vertices.reverse()` on every face via py3d.
   (This note once said to swap `vertices[1]`/`vertices[2]`. That is the same for a
   triangle but turns a quad `[0,1,2,3]` into `[0,2,1,3]`, a crossed face.)
-- **Negating the `lod.facenormals` pool** ("renegate normals" style scripts) is
-  based on a misunderstanding of the format: do not do it. If it was applied, the
-  pool normals are wrongly negated; revert by negating them again.
+- **Negating the `lod.facenormals` pool** is the fix only for a part that reads the
+  third row of the Check A table in `winding-diagnostics.md` (winding right, normals
+  wrong; see rule 5 in `winding-absolute-check.md`). Never run it as a blanket
+  "renegate normals" script over a whole model: on a part whose normals were right,
+  the pool ends up wrongly negated; revert by negating them again.
 - **One field-verified crate model has mixed winding in its Visual LOD** (~38.6% bad
   edges under Check B) yet **DayZ tolerates it in rendering** (verified in-game:
   visual, ballistics, cursor, and collision all OK). Its collision LODs

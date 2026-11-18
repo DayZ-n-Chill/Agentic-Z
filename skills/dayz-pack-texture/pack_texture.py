@@ -113,8 +113,10 @@ def nearest_vanilla_size(n: int) -> int:
 
 def suggest_name(path: Path) -> tuple[str, str]:
     """A renamed filename for an input with no role suffix, and the suffix it uses,
-    picked from the stem: 'normal' or 'nrm' gives _nohq, 'spec' gives _smdi,
-    'alpha' gives _ca, and anything else gives _co (color, the most common role)."""
+    picked from the stem: a trailing role word replaces its suffix ('normal' or 'nrm'
+    gives _nohq, 'spec' gives _smdi, 'alpha' gives _ca), a role word elsewhere in the
+    stem (vestnormalmap) gets its suffix appended, and anything else gives _co
+    (color, the most common role)."""
     stem = path.stem
     head, sep, last = stem.rpartition("_")
     if sep and head:

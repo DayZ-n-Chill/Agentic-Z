@@ -4,7 +4,7 @@ Embedding goes through Voyage AI's hosted API, so a rebuild consumes tokens on y
 
 ## How big a rebuild is
 
-A full vanilla build, with class blocks, XML, JSON and CSV windowed, comes to 61,757 chunks (counted without embedding). The indexer's local estimate for it is about 96M tokens, but that estimate runs high: the last embedded build (before windowing) was 52,048 chunks and Voyage reported about 66M tokens. Most of the tokens come from unique `.rvmat` files and XML. `--status` shows the real chunk and token totals after your build. A search query costs a few hundred tokens.
+A full vanilla build, with class blocks, XML, JSON and CSV windowed, comes to 77,613 chunks (counted without embedding on 1.30 data). The indexer's local estimate for it is about 125M tokens, but that estimate runs high: the last embedded build (before windowing) was 52,048 chunks and Voyage reported about 66M tokens. Most of the tokens come from unique `.rvmat` files and XML. `--status` shows the real chunk and token totals after your build. A search query costs a few hundred tokens.
 
 ## What the indexer reports
 

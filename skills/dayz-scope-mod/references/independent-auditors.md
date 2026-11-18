@@ -1,6 +1,6 @@
 # Independent auditors
 
-How to keep parallel auditor agents on a DayZ mod from agreeing on the same mistake, and when a finding counts as verified. How to name what a fault does and which missing engine minimums crash is in `skills/dayz-launch-test/references/debug-protocol.md`, "Name what the fault actually does" and "Engine minimums to check early". To run a data critical audit use `_shared/persistence/deep-audit.md` and `_shared/persistence/data-audit.md`.
+How to keep parallel auditor agents on a DayZ mod from agreeing on the same mistake, and when a finding counts as verified. How to name what a fault does and which missing engine minimums crash is in `skills/dayz-launch-test/references/debug-protocol.md`, "Name what the fault actually does" and "Engine minimums to check early". To run a data critical audit use `skills/_shared/persistence/deep-audit.md` and `skills/_shared/persistence/data-audit.md`.
 
 ## Keep parallel auditors independent
 

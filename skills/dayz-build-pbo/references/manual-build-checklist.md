@@ -37,7 +37,7 @@ What to tick by hand before and after a build when the automated checks are not 
 
 ## LODs
 
-- [ ] At least one resolution LOD (LOD 0.0), a Geometry LOD and a Memory LOD. A `ce_center` point there is optional; without it script uses the object's origin (`asset-checks.md`, "LODs").
+- [ ] At least one resolution LOD (LOD 0.0), a Geometry LOD and a Memory LOD. A `ce_center` point there is optional; without it script uses the object's position raised by 0.2 m (`asset-checks.md`, "LODs").
 - [ ] Every Geometry component has a mass above 0.
 - [ ] Named selections match across LODs.
 - [ ] LOD0 stays under about 3,000 vertices for a small item.

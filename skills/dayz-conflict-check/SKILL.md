@@ -9,7 +9,7 @@ argument-hint: "<ModName> [--against MOD ... | --all] [--ingame [--server <insta
 
 # /dayz-conflict-check
 
-A script reads your mod and the other mods and lists every name and path you share with them: `$PBOPREFIX$` and path collisions, shared `CfgPatches` and config class names, script classes declared twice, and modded classes both mods override (see Rules). It reads only unpacked configs and scripts and PBO headers, and never extracts or copies another mod. `--ingame` then runs `/dayz-gate ingame` with those mods loaded. It starts no process unless you add `--ingame`. A default run takes about a second and `--all` against a full mods folder about 15 seconds. When your mod and an unpacked mod define the same config class, it also reads the vanilla class names from `P:\DZ\` once, which adds about 4 seconds, and prints `reading vanilla config classes from P:\DZ ...` to stderr first. The AI only reads the findings and hands each one to its owner.
+A script reads your mod and the other mods and lists every name and path you share with them: `$PBOPREFIX$` and path collisions, shared `CfgPatches` and config class names, script classes declared twice, and modded classes both mods override (see Rules). It reads only unpacked configs and scripts and PBO headers, and never extracts or copies another mod. `--ingame` then runs `/dayz-gate ingame` with those mods loaded. It starts no process unless you add `--ingame`. A default run takes about a second and `--all` against a full mods folder about 15 seconds. When your mod and an unpacked mod define the same config class, it also reads the vanilla class names from `P:\DZ\` once, which adds about 4 seconds, and prints `reading vanilla config classes from P:\DZ ...` to stderr first. When both declare the same script class or enum, it also reads every `.c` file under `P:\scripts` once to see whether vanilla declares that name. The AI only reads the findings and hands each one to its owner.
 
 Follow `skills/_shared/dayz-conventions.md`.
 
@@ -54,7 +54,7 @@ Errors fail the check. Warnings are listed and do not.
 | `class-collision` | error | A class one level inside a `Cfg` section (such as `CfgVehicles`) that they define too, when you do not require them. |
 | `class-override` | warning | The same, but one of their `CfgPatches` classes is in your `requiredAddons[]`, so you change their class on purpose. |
 | `vanilla-class-overlap` | warning | Both mods change a vanilla class: vanilla defines that name in the same `Cfg` section, read from `P:\DZ\`. The mod loaded last wins each property it sets. The same name in another section (a `CfgAmmo` class named after a vanilla `CfgWeapons` class) is a `class-collision`. |
-| `script-class-collision` | error | A script `class` or `enum` they declare too. The scripts would not compile together. |
+| `script-class-collision` | error | A script `class` or `enum` they declare too. The scripts would not compile together. A name vanilla declares under `P:\scripts` is not reported. |
 | `modded-class-overlap` | warning | A `modded class` both mods override. Each override must call `super` or the other mod loses its code. |
 | `script-name-match` | warning | Their PBO header lists a `.c` file named after one of your classes, so they may declare or mod it too. |
 

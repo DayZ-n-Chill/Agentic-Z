@@ -46,7 +46,7 @@ Sample report lines:
 ```text
 [PASS] Resolution, Geometry and Memory LODs present
 [PASS] Geometry LOD mass valid (all components above 0)
-[WARN] Memory LOD has no ce_center point (GetCenter falls back to the origin)
+[WARN] Memory LOD has no ce_center point (GetCenter falls back to the object's position raised by 0.2 m)
 [WARN] LOD0 has 4200 vertices (high for a small item)
 ```
 
