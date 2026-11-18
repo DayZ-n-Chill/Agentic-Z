@@ -91,6 +91,8 @@ SAMPLES = [
     ("[FAIL] P:\\ is NOT mounted", "p-drive-not-mounted"),
     ("[FAIL] DayZ Tools not found.", "dayz-tools-missing"),
     ("[FAIL] P:\\Mods\\ does not exist and creating the junction failed: denied", "p-mods-junction"),
+    ("[FAIL] P:\\Mods\\ exists as a regular folder, not a junction.", "p-mods-junction"),  # preflight.py:478
+    ("[FAIL] P:\\Mods\\ junction is dangling (target D:\\x is missing).", "p-mods-junction"),
     ("[FAIL] P:\\Mods\\@MyMod\\ exists but has no Agentic-Z ownership marker", "deploy-dir-not-owned"),
     ("[FAIL] P:\\MyMod junction is missing.", "mod-junction-missing"),
     ("[FAIL] P:\\MyMod exists as a real folder, not a link.", "mod-junction-missing"),

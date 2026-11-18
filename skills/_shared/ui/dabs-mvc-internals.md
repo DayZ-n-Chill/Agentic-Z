@@ -118,7 +118,7 @@ class MyMod_SaveCommand : RelayCommand
 What follows for your handlers:
 
 - Only two widget types fire a command: `ViewController.OnClick` makes `ButtonCommandArgs` for a `ButtonWidget` (`MVC\ViewController.c:316` to `:335`), and `OnChange` makes `CheckBoxCommandArgs` for a `CheckBoxWidget` (`:337` to `:357`).
-- Return true when the handler handled the click. `OnClick` then returns true at once and skips `super.OnClick`. A handler that returns false or is `void` leaves "handled" false, so the same function name is called on the view and each ancestor in turn: the click runs twice or more.
+- Return true when the handler handled the click. `OnClick` then returns true at once and skips `super.OnClick`. A handler that returns false or is `void` leaves "handled" false, so the same function name is called on the view and each ancestor in turn (`MVC\ViewBinding.c:217` to `:224`): the click runs again on every ancestor that also defines a function with that name.
 - Tinting a button does not disable it. Put the permission or state check in the handler and return before any RPC or state change.
 
 ## How a click reaches the handler

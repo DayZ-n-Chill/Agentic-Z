@@ -104,7 +104,7 @@ The traps:
 - `EASE_IN_BOUNCE` and `EASE_OUT_BOUNCE` are swapped in the implementation (`!Core\WidgetAnimationTimer.c:134` and `:135`).
 - `AnimateColor` does nothing when the current color already equals the end color, loop included (`!Core\WidgetAnimator.c:103`).
 - `AnimateColorHSV` doesn't cancel earlier animations, unlike every other entry point, and starts three timers, one each for H, S and V.
-- Finished timers stay in the static `m_RunningTimers` array; only `CancelAnimate` removes them (`:150` to `:157`), so a long session leaks slots.
+- A finished timer runs `delete this` (`!Core\WidgetAnimationTimer.c:153`, `:48` for color timers), which leaves a null slot in the static `m_RunningTimers` array. Nothing removes those slots: `CancelAnimate` skips null entries and removes only running timers (`!Core\WidgetAnimator.c:150` to `:157`), so a long session leaks slots.
 
 ## LinearColor
 

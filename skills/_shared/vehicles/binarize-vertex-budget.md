@@ -59,7 +59,7 @@ Before you "fix" a winding by inverting things, keep this in mind: `dot(-cross, 
 
 When you walk a limit, each step must survive the engine's quantisation. Nudging one component of a normal by 1e-4 (about 0.006 degrees) does not survive DayZ's normal compression: the estimator counted 120 new triples, the engine saw none, 42 samples "passed", and the ceiling would have been reported 7 too high. Use a step clearly above the quantum (3 degrees or more for normals), and include one sample past the known failing value as a self check.
 
-A resolved triple counter (py3d, one count per LOD) is a guide; only a binarize run gives the three state verdict. No bench script for it ships in this repo: write one from the three states above.
+A resolved triple counter is a guide (the one that ships, `check_lod0_vertex_budget` in `skills/dayz-p3d-audit/scripts/audit_p3d.py`, counts only the most detailed Visual LOD; for other LODs write your own count over py3d's faces); only a binarize run gives the three state verdict. No bench script for it ships in this repo: write one from the three states above.
 
 ## Check a warning against the deployed model first
 
@@ -71,7 +71,7 @@ A tolerance sweep proves only the points it sampled. Steps of ten can jump over 
 
 A bench's binarize run and a Python import error can both exit `1`. Have the bench write a verdict file per run, for example `_verdicts.json`, and read the state from a freshly written one; a missing file or row is `OTHER_FAIL`, never a pass or a capacity failure. The child process needs its module on `PYTHONPATH`, since a `sys.path` change inside the parent is not inherited. Allow for start up (about 68 s even for a four point test model); give a batch a longer timeout, and put a tiny known good model in the same run. If that control does not pass, no failure in the run can be blamed on capacity.
 
-Keep three counts apart: a modelling tool's estimate may split one source point by rounded corner normal and UV; py3d `resolved` counts `(point_index, normal value, uv)` on the assembled MLOD; the engine limits vertices after splitting. Budget in assembled py3d counts and decide with the binarize verdict. Count with the host's proxies in place: each proxy adds three points, one face normal, one face and three resolved entries.
+Keep three counts apart: a modelling tool's estimate may split one source point by rounded corner normal and UV; the resolved count (`audit_p3d.py`, read through py3d) counts distinct `(point_index, normal_index, uv)` on the assembled MLOD, so two corners whose normals are equal but stored at different indexes count twice; the engine limits vertices after splitting. Budget in assembled py3d counts and decide with the binarize verdict. Count with the host's proxies in place: each proxy adds three points, one face normal, one face and three resolved entries.
 
 ## A source count plans, it does not approve
 

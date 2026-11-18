@@ -343,7 +343,7 @@
     "meaning": "The script calls a method that does not exist on that class (a typo, or a vanilla API that changed).",
     "fix": "Grep P:\\scripts\\ for the class named on the line and call a method it really has.",
     "owner_agent": "dayz-script-specialist",
-    "source": "dayz-lead example (a method that doesn't exist on ItemBase); Tier 2 Vanilla source search"
+    "source": "skills/_shared/enscript/references/game_builds.md (Undefined function 'vector.Cross'); dayz-launch-test references/error-catalog.md E08; Tier 2 Vanilla source search"
   },
   {
     "id": "script-multiple-declaration",
@@ -438,7 +438,7 @@
   },
   {
     "id": "p-mods-junction",
-    "pattern": "P:\\\\Mods\\\\? (?:does not exist|is a regular folder|junction is dangling)",
+    "pattern": "P:\\\\Mods\\\\? (?:does not exist|exists as a regular folder|junction is dangling)",
     "meaning": "P:\\Mods\\ is not a junction to the DayZ !Workshop folder, so built PBOs would not land where the engine loads them.",
     "fix": "Recreate the junction: cmd /c mklink /J P:\\Mods \"<DayZ install>\\!Workshop\" (remove a regular P:\\Mods folder first).",
     "owner_agent": "user",

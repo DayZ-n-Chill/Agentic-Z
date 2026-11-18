@@ -44,7 +44,7 @@ void MyMod_RecalculateLayout()
 }
 ```
 
-Call it when the UI opens and closes, after every `Show(bool)`, after items are added or removed, and once after the layout is first created. In a Dabs `ScriptView` that means in your constructor after `super` has built the layout; Dabs has no `OnShow` and no binding hook (`dabs-menus-and-prefabs.md`, "What it leaves to you").
+Call it when the UI opens and closes, after every `Show(bool)`, after items are added or removed, and once after the layout is first created. In a Dabs `ScriptView` that means in your constructor after `super` has built the layout; Dabs has no `OnShow` (`dabs-menus-and-prefabs.md`, "What it leaves to you"). After a bound list or property changes, restack from an override of `ViewController.PropertyChanged(string)` or `CollectionChanged`, which Dabs calls after each change (`MVC\ViewController.c:155` to `:165` in the Dabs Framework Scripts.pbo).
 
 For many small rows, let a spacer do it. A `WrapSpacerWidgetClass` with an exact width and a proportional height grows with its children and flows them down:
 
