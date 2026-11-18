@@ -437,7 +437,7 @@ def stop(project_dir: Path, rt: Optional[Runtime] = None, state: Optional[dict] 
 
 
 def remember(project_dir: Path, state: dict, b: bridge.Bridge) -> None:
-    """Save the spawn count so a restarted server keeps it; re-read the record first so a mark saved meanwhile stays."""
+    """Save the spawn count so the next call keeps counting from it (session_restart resets it); re-read the record first so a mark saved meanwhile stays."""
     fresh = load_state(project_dir) or state
     fresh["spawns"] = b.spawns
     save_state(project_dir, fresh)

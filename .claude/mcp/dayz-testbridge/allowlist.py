@@ -25,14 +25,14 @@ SERVER, CLIENT, BOTH = "server", "client", "both"
 ECE_NOPERSISTENCY_WORLD = 8388608
 ECE_PLACE_ON_SURFACE = 1060
 DEFAULT_SPAWN_FLAGS = ECE_NOPERSISTENCY_WORLD | ECE_PLACE_ON_SURFACE  # 8389668
-DEFAULT_PLACEMENT = 512  # ECE_ROTATIONFLAGS, centraleconomy.c:15
+DEFAULT_PLACEMENT = 512  # ECE_ROTATIONFLAGS, centraleconomy.c:16
 
 WORLD_MAX_XZ = 20480.0   # larger than every vanilla map (Chernarus 15360); a test position past it is a mistake
 MAX_Y = 2000.0           # a y above this is almost always a swapped [x, z, y] triplet (spawning-and-placement.md)
 MIN_Y = -100.0
 MAX_RADIUS = 200.0
 MAX_DRIVE_S = 60.0
-MAX_SPAWNS = 50          # per session; counted by bridge.Bridge
+MAX_SPAWNS = 50          # per server start; counted by bridge.Bridge, reset by session_restart
 
 CLASS_RE = re.compile(r"^[A-Za-z_]\w{0,127}$")
 LABEL_RE = re.compile(r"^[\w.-]{1,64}$")
@@ -136,7 +136,7 @@ COMMANDS: dict[str, Command] = {
     "camera_reset": Command(CLIENT, {}, ("player_view",)),
     "hud": Command(CLIENT, {"show": Arg("bool", default=True)}, ("hud",)),
     "resume": Command(CLIENT, {}, ("paused",), doc="Close the pause menu the client opens when its window is not active."),
-    # --- added after v1 (feature-gaps.md, item 24) ---------------------------------------
+    # --- added after v1 (skills/dayz-launch-test/references/test-bridge.md, "Commands added after v1") ---
     "shutdown": Command(SERVER, {}, (), doc="Orderly server exit (RequestExit): the world is saved. session_restart uses it."),
     "clear_spawns": Command(SERVER, {}, ("count", "kept"), doc="Delete every object `spawn` made this boot; a car with crew is kept."),
     "animate": Command(SERVER, {

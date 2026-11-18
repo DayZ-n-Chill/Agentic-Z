@@ -5,6 +5,8 @@ Tools (all blocking work runs in worker threads, as in dayz-rag):
   list_commands      the allowlist: every bridge command, its peer, arguments, bounds and outputs
   session_start      storage-free instance copy, bridge mod packed, server and client launched, both peers ready
   session_status     processes alive, hellos, last sequence numbers, new crash logs
+  session_restart    orderly server shutdown (world saved), then server and client again with the same token
+  session_restart_client  end only the client and start it again into the running server
   session_stop       always safe to call: eject, kill only this session's processes, remove the mod
   command            send one allowlisted command to its peer and return the result
   mark               save log offsets under a label and print MARK <label> on both peers
@@ -222,7 +224,7 @@ def build_app():
     async def command(cmd: str, args: Optional[dict] = None, peer: Optional[str] = None) -> dict:
         """Send one allowlisted command (see list_commands) and return {seq, ok, error, peer,
         game_time_ms, data}. `peer` is needed only for commands that run on both (ping, mark,
-        vehicle_state). Positions are [x, y_up, z]. ok=false with an error code is the game's
+        vehicle_state, exec). Positions are [x, y_up, z]. ok=false with an error code is the game's
         answer (for example not_driver, vehicle_has_crew, spawn_failed); a raised error is the tool."""
         return await anyio.to_thread.run_sync(command_impl, cmd, args, peer)
 

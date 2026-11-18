@@ -133,7 +133,7 @@ class Bridge:
         if spec.opt_in:
             self.log_exec(peer, checked["code"])
         if cmd == "spawn" and self.spawns >= allowlist.MAX_SPAWNS:
-            raise allowlist.AllowlistError(f"at most {allowlist.MAX_SPAWNS} spawns in a session")
+            raise allowlist.AllowlistError(f"at most {allowlist.MAX_SPAWNS} spawns per server start (session_restart resets the count)")
         payload = {"cmd": cmd, "args": allowlist.wire_args(cmd, args)}
         if cmd == "spawn":
             self.spawns += 1  # counted when sent: a spawn that timed out may still have happened

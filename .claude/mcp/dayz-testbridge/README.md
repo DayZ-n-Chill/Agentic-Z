@@ -21,7 +21,7 @@ Installed as a plugin, the tools appear as `mcp__plugin_agentic-z_dayz-testbridg
 | `session_restart(keep_storage)` | Orderly server shutdown (the world is saved), then both peers again with the same token; `keep_storage` keeps what this session saved, so a mod's saved data can be checked after a restart. |
 | `session_restart_client` | Ends only the client and starts it again into the running server. |
 | `session_stop` | Gets the player out of a car, ends only this session's two processes, removes `@AZ_TestBridge`, renames the token folders to `<token>.done`. Safe after a failure. |
-| `command(cmd, args, peer)` | Sends one allowlisted command and returns `{seq, ok, error, peer, game_time_ms, data}`. `peer` only for `ping`, `mark` and `vehicle_state`. `get_in` and `get_out` also wait for the server to agree (`server.agrees`). |
+| `command(cmd, args, peer)` | Sends one allowlisted command and returns `{seq, ok, error, peer, game_time_ms, data}`. `peer` only for `ping`, `mark`, `vehicle_state` and `exec`. `get_in` and `get_out` also wait for the server to agree (`server.agrees`). |
 | `mark(label)` | Saves the end of every log under `label` and prints `[AZ-BRIDGE] MARK <label>` on both peers. |
 | `logs_since(mark, peers, kinds, regex, triage, limit)` | Script log and RPT lines since a mark, with `[AZ-BRIDGE] ERROR` lines listed apart; `triage` tags each line with its `/dayz-gate` category. Read-only. |
 | `screenshot(name, crop)` | Captures the client window with `PrintWindow` to `output/testbridge/<token>/<name>.png`. Never moves the mouse or brings the window to the front. A black frame is `ok: false`, not a mod failure. |
@@ -33,7 +33,7 @@ Installed as a plugin, the tools appear as `mcp__plugin_agentic-z_dayz-testbridg
 - Diag only, and off unless the session passes its token.
 - Only a session it started: `session_start` refuses while any `DayZDiag_x64.exe` it did not start runs, and `session_stop` ends only the process ids it recorded.
 - Two allowlists that must agree: `allowlist.py` here and the mod's fixed `switch` (`test_mod_matches_allowlist.py` checks it). `exec` is the only command that runs code: off unless `session_start` had `allow_exec` (the launch then passes `-azBridgeExec=1`), and every code string goes to `.server/!TestBridge/exec-<token>.log`. On DayZ Diag 1.30 the engine refuses `ExecuteEnforceScript` as a release build ("not allowed in release version"); the command is kept because other Diag builds, or a later release, may allow it (`skills/dayz-launch-test/references/test-bridge.md`). No command reads or writes arbitrary files or calls a method by name; `action_use` takes only classes that inherit `ActionBase`.
-- Bounds: positions inside the world and `y` at most 2000, a search radius of at most 200 m, at most 60 s of driving, at most 50 spawns a session, and spawn flags that always include `ECE_NOPERSISTENCY_WORLD`.
+- Bounds: positions inside the world and `y` at most 2000, a search radius of at most 200 m, at most 60 s of driving, at most 50 spawns per server start (`session_restart` resets the count), and spawn flags that always include `ECE_NOPERSISTENCY_WORLD`.
 - Test runs never touch your world: sessions run on the storage-free `<server>-bridge` copy.
 - `/dayz-release-pack` refuses any release that names `AZ_TestBridge` or an `AZB_` class.
 
