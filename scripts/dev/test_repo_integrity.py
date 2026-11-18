@@ -1041,7 +1041,6 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
     "evals/questions/dayz-audio-fx-specialist.json": {
         "P:/scripts/3_game/entities/object.c:1251-1255",
     },
-    # basebuildingbase.c:420 opens OnStoreSave, which writes m_SyncParts01 at :424;
     # entityai.c:1393 is GetEntityByPersitentID inside EEOnAfterLoad (:1381) and
     # :3041 its "cannot be called here" comment inside OnStoreLoad.
     # plugindiagmenumodding.c:21 is "modded class PluginDiagMenu"; its note is an aside about another file.
@@ -1049,7 +1048,6 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
         "P:/scripts/4_world/plugins/pluginbase/plugindiagmenu/plugindiagmenumodding.c:21",
     },
     "evals/questions/dayz-persistence-specialist.json": {
-        "P:/scripts/4_world/entities/itembase/basebuildingbase.c:420",
         "P:/scripts/3_game/entities/entityai.c:1393",
         "P:/scripts/3_game/entities/entityai.c:3041",
     },
@@ -1061,9 +1059,6 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
     },
     "_shared/audio-fx/sound-script.md": {
         r"P:\scripts\3_game\effect.c:336",
-    },
-    "_shared/container-base.md": {
-        r"P:\DZ\gear\camping\config.cpp:10261-10266",
     },
     "_shared/enscript/references/api_game.md": {
         r"P:\scripts\3_game\global\game.c:5",

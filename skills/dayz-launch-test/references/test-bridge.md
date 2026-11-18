@@ -2,7 +2,7 @@
 
 How agents drive a running DayZ Diag session with nobody at the keyboard: spawn objects and items, teleport the player, get into a car and drive it while reading speed and state, cast rays and read surfaces, set the camera and take screenshots, set the time and weather, and read the logs since a mark. What each command rests on, what was measured, and what the bridge cannot do.
 
-Vanilla facts cite the file on `P:\`; every engine call the mod makes is pinned to its `P:\scripts` line in `.claude/mcp/dayz-testbridge/test_vanilla_calls.py`. The "Measured" section was measured on DayZ 1.30.164289 Diag on Windows, vanilla Chernarus, on 2026-11-18.
+Vanilla facts cite the file on `P:\`; every engine call the mod makes is pinned to its `P:\scripts` line in `.claude/mcp/dayz-testbridge/test_vanilla_calls.py`. The "Measured" section was measured on DayZ 1.30.164289 Diag on Windows, vanilla Chernarus.
 
 ## The two halves
 
@@ -87,9 +87,9 @@ The owner's second round (items 22 and 24 of the queue; `list_commands` gives ev
 | `exec` | both | Any Enforce Script through `ExecuteEnforceScript` (`game.c:777`), wrapped as the Diag console wraps it (`playerbase.c:5982`). Off unless `session_start` had `allow_exec` (the host refuses) and the launch passed `-azBridgeExec=1` (the mod refuses with `exec_disabled`). The host writes every code string to `.server/!TestBridge/exec-<token>.log` before sending it. |
 | `screenshot` | host | Now flags a capture that is byte for byte the previous one (`same_as_previous`, `ok: false`). |
 | `scripts/tools/dayz-object-checks/` | tool | Ready-made checks for a static object or an item: spawn, placement, four pictures, the nine-ray collision set with a positive and a negative control, walking into it and standing on it. |
-| `scripts/tools/dayz-vehicle-checks/` | tool | Now starts with check 0, the driving site: no other vehicle within 30 m and nothing in the 60 m lane ahead. |
+| `scripts/tools/dayz-vehicle-checks/` | tool | Now starts with check 0, the driving site: no other vehicle within 30 m and nothing in the 16 m lane ahead. |
 
-Measured on DayZ 1.30.164289 Diag, 2026-11-18:
+Measured on DayZ 1.30.164289 Diag:
 
 - `exec` reaches `ExecuteEnforceScript`, and the engine refuses it: "CGame::ExecuteEnforceScript not allowed in release version". DayZ Diag counts as a release build here; the Diag console's own run is compiled only under `#ifdef DEVELOPER` (`scriptconsoleenfscripttab.c:130`), which Diag does not define. So `exec` is built and gated but cannot run code on this install; it answers `exec_failed` with that reason. It is kept on purpose: other DayZ Diag builds may allow it, and Bohemia may turn it on in a later release, so test it again on each new Diag before relying on it or removing it.
 - An item spawned at y 0 with surface placement stayed buried (a pear at y 0.54 under 338 m of terrain) and the client never saw it. `spawn` now starts at `SurfaceY` unless `ground` is false.

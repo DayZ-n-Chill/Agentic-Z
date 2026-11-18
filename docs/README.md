@@ -258,7 +258,7 @@ These skills run offline scripts on the files they are given. The knowledge behi
 - **DayZ Tools** (Steam) — for AddonBuilder, WorkDrive, ImageToPAA
 - **DayZ game** (Steam) — for the diag client used in `/dayz-launch-test`
 - **DayZ Server** (Steam appid 223350) — only for the initial mission bootstrap; can be uninstalled after
-- **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-search-index` and query-time embedding via `voyage-code-3`. The last full source build embedded about 66M tokens (52,048 chunks, before windowing); the current indexer produces about 62K chunks, and its local estimate of about 96M tokens runs high. Check Voyage's pricing first. Or run `/dayz-search-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
+- **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-search-index` and query-time embedding via `voyage-code-3`. The last full source build embedded about 66M tokens (52,048 chunks, before windowing); the current indexer produces about 77,600 chunks, and its local estimate of about 125M tokens runs high. Check Voyage's pricing first. Or run `/dayz-search-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
 
 L2 conventions: [`skills/_shared/dayz-conventions.md`](../skills/_shared/dayz-conventions.md) (core) and the topic files in [`skills/_shared/conventions/`](../skills/_shared/conventions/).
 
