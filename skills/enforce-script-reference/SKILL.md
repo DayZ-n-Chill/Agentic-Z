@@ -59,7 +59,7 @@ Offline checks prove form, not compilation. A script module is known to compile 
 | Fire modes on a derived weapon (single, burst, full auto) and the `Mode_*` forward declaration trap | `references/weapon-firemodes.md` |
 | Dabs MVC traps: `ObservableCollection`, auto binding, `Relay_Command`, floating windows, hover, scaling | `references/dabs-mvc-advanced.md` |
 | UI state, hover caching, view binding, animation and event handler patterns from shipped mods | `references/production-patterns.md` |
-| Mod structure patterns: `CfgMods`, custom inputs, `CfgSoundSets` parameters, building doors, RPC enums, server-authoritative input, parent and child mods | `references/llama-extraction-patterns.md` |
+| Mod structure patterns: `CfgMods`, custom inputs, `CfgSoundSets` parameters, building doors, RPC enums, server-authoritative input, parent and child mods | `references/mod-structure-patterns.md` |
 
 Full UI, layout, widget and Dabs work is in the `dayz-ui-development` skill; this skill keeps only the layout path and menu guard rules and the `CfgMods` `inputs` entry.
 

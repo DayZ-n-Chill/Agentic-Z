@@ -141,7 +141,7 @@ shader = Super;
 The hologram creates a real entity of the `ProjectionBasedOnParent()` class
 for the placement preview: `CreateObjectEx(ProjectionBasedOnParent(), pos, ...)`
 on the server and as a local object on the client
-(`P:\scripts\4_world\classes\hologram.c:114`, `:121`; vanilla `PlaceEntity` is at `:1044`).
+(`CreateObjectEx` at `P:\scripts\4_world\classes\hologram.c:113` and `:120`; vanilla `PlaceEntity` is at `:1044`).
 That ghost entities accumulate without a `PlaceEntity()` override is
 reported and was not checked on `P:\`.
 
@@ -464,7 +464,7 @@ Each entry either cites the vanilla line it was checked against on `P:\`, names 
   *(Vanilla call; the performance claim is not measured.)*
 
 - **`SurfaceIsPond` / `SurfaceIsSea` / `SurfaceRoadY` are slow**: `proto native` at `P:\scripts\3_game\global\game.c:1197`,
-  `:1196`, `:1177`. For "is this point in water?" prefer:
+  `:1196`, `:1177` (the performance claim is not measured). For "is this point in water?" prefer:
 
   ```c
   if (g_Game.GetWaterDepth(pos) > 0)  // pos is vector
@@ -562,7 +562,7 @@ auto trace = EXTrace.Start(EXTrace.GENERAL, this, "MethodName");
 ```
 
 If your mod targets vanilla-only servers, fall back to `Print()` or your own
-conditional logger.
+conditional logger. *(Only the absence from vanilla was checked on `P:\`; the Expansion and Community Framework API is not on `P:\` and was not checked.)*
 
 ### `defines[]` array in CfgMods (DayZ 1.26+)
 
@@ -647,7 +647,7 @@ foreach (string t : m_Test) { Print(t); }
 
 ### `modded class` must live in the base class's script module; compile both peers
 
-A `modded class X` declaration must be compiled in the same script module that defines `X`. This is stricter than merely referring to the type from a method in a higher module. `PPERequesterBank` is defined in `3_Game` (`P:\scripts\3_game\ppemanager\pperequesterbank.c:4`): referring to it from `4_World` can compile, but declaring `modded class PPERequesterBank` under `Scripts/4_World/` fails with `Unknown type 'PPERequesterBank'` and kills the entire World module. Put that declaration under `Scripts/3_Game/<Mod>/`.
+A `modded class X` declaration must be compiled in the same script module that defines `X`. This is stricter than merely referring to the type from a method in a higher module. `PPERequesterBank` is defined in `3_Game` (`P:\scripts\3_game\ppemanager\pperequesterbank.c:4`): referring to it from `4_World` can compile, but declaring `modded class PPERequesterBank` under `Scripts/4_World/` fails with `Unknown type 'PPERequesterBank'` and kills the entire World module. Put that declaration under `Scripts/3_Game/<Mod>/`. *(The class's module was checked on `P:\`; the `Unknown type` failure is reported and was not measured here.)*
 
 Do not hide the declaration with `#ifndef SERVER`. That can make the dedicated-server compile pass only by excluding the failing code, while the client still compiles it and fails. The release gate must compile both the dedicated-server and client views. A server-only gate cannot cover UI, camera, or post-process code excluded by `#ifndef SERVER`; a client-only gate cannot cover `#ifdef SERVER` code. Keep rebuilding both views until neither reports a script-module failure.
 

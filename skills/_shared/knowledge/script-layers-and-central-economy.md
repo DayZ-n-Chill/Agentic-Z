@@ -4,7 +4,7 @@ Covers sixteen facts in four groups: the five script modules and their load orde
 
 Status: not yet checked on `P:\`, except the lines listed under "Checked on `P:\`" at the end. The Central Economy facts describe mission XML files, which the script tree on `P:\` cannot confirm; check them against the mission files of the server you work on. Treat every unchecked fact as a lead and confirm it on `P:\scripts` or the mission folder before relying on it.
 
-Related notes: `wiki-systems-reference.md` (gameplay and server configuration) and `public-wiki-harvest.md` (where to look a topic up).
+Related notes: `wiki-systems-reference.md` (gameplay and server configuration) and `public-reference-index.md` (where to look a topic up).
 
 ## 1. Enforce Script: five modules and load order
 

@@ -28,7 +28,7 @@ ADAPTER = EVALS / "live" / "runners" / "claude-code.py"
 CASE_QUESTIONS = {
     "api-enforce": ("dayz-script-specialist", ["api-enforce"]),
     "api-index-liveness": ("dayz-script-specialist", ["api-index-liveness"]),
-    "stardz-negatives": ("dayz-script-specialist", [
+    "enforce-negatives": ("dayz-script-specialist", [
         "enforce-negatives-autoptr", "enforce-negatives-overload", "enforce-negatives-managed",
         "enforce-negatives-jsonloadfile", "enforce-negatives-ondrop", "enforce-negatives-dabs"]),
     "persistence": ("dayz-persistence-specialist", ["persistence"]),

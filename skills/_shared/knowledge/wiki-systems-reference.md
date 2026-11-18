@@ -4,7 +4,7 @@ Covers the configuration systems of a DayZ server and mission: contaminated area
 
 Status: not yet checked on `P:\`, except the lines listed under "Checked on `P:\`" at the end. These are mission-file and server-config facts; the script tree on `P:\` cannot confirm most of them. Treat each data point as a lead until it is confirmed against the vanilla mission files (`cfggameplay.json`, the XML files) or the server you run.
 
-**Guardrail**: before stating an Enforce Script or config identifier from this note as fact, confirm it on `P:\` or in Bohemia's official documentation. Third-party mirrors and fan wikis are leads only; `public-wiki-harvest.md` says how far each kind of page can be trusted.
+**Guardrail**: before stating an Enforce Script or config identifier from this note as fact, confirm it on `P:\` or in Bohemia's official documentation. Third-party mirrors and fan wikis are leads only; `public-reference-index.md` says how far each kind of page can be trusted.
 
 ## Standing errata (corrected or downgraded): do not reintroduce
 
@@ -116,7 +116,7 @@ assets. Read Bohemia's current EULA and monetization rules before publishing.
 ## Cross-ref
 - `skills/_shared/models/building-selections.md` — doors, ladders and LODs (the modelling side, checked against vanilla).
 - `environment-and-infra.md` — operational server infra (launch, ports, BattlEye, allowFilePatching).
-- `stardz-dzconfig-distill.md` — Central Economy files and `types.xml` semantics.
+- `script-layers-and-central-economy.md` — Central Economy files and `types.xml` semantics.
 - Skills: `enforce-script-reference` (config.cpp, vanilla stamina APIs), `dayz-particles`,
   `dayz-texture-pipeline`, `dayz-physics-engine`.
 

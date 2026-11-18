@@ -55,7 +55,7 @@ These were each paid for with in-game cycles. All citations are vanilla DayZ scr
 
 **`SetThrottle` and `SetSteering` set *future* input, and `super` overwrites them.** The vanilla headers say so literally — "Sets the future throttle value" (`P:\scripts\3_game\vehicles\car.c:190-191`), same for steering at `:184-185`. Calling them from a mission-side tick does nothing visible, because `CarScript.OnInput` (`P:\scripts\4_world\entities\vehicles\carscript.c:1041`) runs afterwards and re-reads the local driver's input, which is zero. The working shape is to apply the values **after** `super` inside a `modded class CarScript.OnInput`, mirroring how the vanilla debug autopilot does it.
 
-**Generated code must use only the macros DayZDiag defines.** Which ones it defines is in `engine-findings-from-pack-history.md` ("Which macros DayZDiag defines"). Emitting code under a macro it does not define compiles to nothing, and worse, a broken assumption about which defines exist can fail the whole PBO compile — which takes every tool down with it, not just the new verb.
+**Generated code must use only the macros DayZDiag defines.** Which ones it defines is in `engine-and-script-tree-findings.md` ("Which macros DayZDiag defines"). Emitting code under a macro it does not define compiles to nothing, and worse, a broken assumption about which defines exist can fail the whole PBO compile — which takes every tool down with it, not just the new verb.
 
 **Freecam kills the simulation.** Setting the camera to free mode stops the sim; a look-at camera does not. Any acceptance ladder that screenshots from freecam between two driving rungs is measuring a frozen world.
 

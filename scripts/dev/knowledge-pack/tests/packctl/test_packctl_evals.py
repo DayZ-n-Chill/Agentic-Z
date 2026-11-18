@@ -135,13 +135,13 @@ def test_versioned_cases_and_the_negatives_case_are_mechanical() -> None:
         "persistence-deprecated-api",
         "persistence-migration-rollback",
         "persistence-mod-version",
-        "stardz-negatives",
+        "enforce-negatives",
         "ui-layout",
     }
     for path in cases:
         assert validate_eval_case(path) == []
     negatives = json.loads(
-        (root / "evals/cases/stardz-negatives.json").read_text(encoding="utf-8")
+        (root / "evals/cases/enforce-negatives.json").read_text(encoding="utf-8")
     )
     assert {variant["variant_id"] for variant in negatives["variants"]} == {
         "autoptr",

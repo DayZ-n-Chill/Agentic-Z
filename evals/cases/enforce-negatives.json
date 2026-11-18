@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "case_id": "stardz-negatives",
+  "case_id": "enforce-negatives",
   "family": "api",
   "prompt": "Reject every unsupported Enforce claim named by the fixture.",
   "fixtures": {

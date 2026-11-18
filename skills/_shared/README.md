@@ -329,11 +329,11 @@ Front index: `_shared/knowledge/README.md`, which also says how far to trust eac
 | `_shared/knowledge/verified-capabilities.md` | Not yet checked on `P:\` line by line: feasibility verdicts and gotchas from mod projects; its last section lists what was checked. |
 | `_shared/knowledge/vehicles-crossproject.md` | Part checked: the seven invariants every vehicle runs into and which vehicle project showed each. The vanilla citations in rows 1 and 7 are checked on `P:`. |
 | `_shared/knowledge/wiki-systems-reference.md` | Not yet checked on `P:\`, except the lines its last section lists: gameplay, environment and server configuration systems. |
-| `_shared/knowledge/stardz-dzconfig-distill.md` | Not yet checked on `P:\`, except the lines its last section lists: sixteen facts on script layers, load order, Central Economy files, loot and events. |
-| `_shared/knowledge/public-wiki-harvest.md` | Not yet checked on `P:\` (an index of pointers, almost no game facts): where to look up a DayZ topic outside the repo and how far each kind of page can be trusted. |
+| `_shared/knowledge/script-layers-and-central-economy.md` | Not yet checked on `P:\`, except the lines its last section lists: sixteen facts on script layers, load order, Central Economy files, loot and events. |
+| `_shared/knowledge/public-reference-index.md` | Not yet checked on `P:\` (an index of pointers, almost no game facts): where to look up a DayZ topic outside the repo and how far each kind of page can be trusted. |
 | `_shared/knowledge/dayz-1-30-build-history.md` | Part checked: which DayZ build a fact or line number belongs to, and what moved between the 1.30 builds. The 1.30.164200 and 1.30.164289 rows are not yet checked on `P:\`, which holds an older 1.30 build. |
 | `_shared/knowledge/retracted-claims-ledger.md` | Part checked: DayZ modding beliefs that were written down as fact and later corrected. Cited lines checked on `P:`; the measured corrections are not. |
-| `_shared/knowledge/engine-findings-from-pack-history.md` | Part checked: DayZ engine and script-tree facts that no other pack file carries, for writing a tool that reads the vanilla script tree. Cited lines checked on `P:`; counts and measurements are not. |
+| `_shared/knowledge/engine-and-script-tree-findings.md` | Part checked: DayZ engine and script-tree facts that no other pack file carries, for writing a tool that reads the vanilla script tree. Cited lines checked on `P:`; counts and measurements are not. |
 | `_shared/knowledge/working-rules.md` | Process rules for planning how to verify, test and record DayZ work. Process, not game facts; the vanilla lines it cites as examples were opened. |
 | `_shared/knowledge/mod-cycle.md` | A map of one pass through making a mod (understand, write, lint, pack, deploy, test, debug) and a route table from "I want X" to the skill or tool. Tool behaviour not yet checked. |
 
@@ -471,7 +471,7 @@ A skill's own pack. The front index of each folder is the table in that skill's 
 | `enforce-script-reference/references/config-cpp.md` | `config.cpp` patterns for mods: the structure every mod's config needs. |
 | `enforce-script-reference/references/production-patterns.md` | Not yet checked on `P:\`: UI state, view binding, animation, memory and event patterns from production mods; they use the Dabs Framework classes. |
 | `enforce-script-reference/references/dabs-mvc-advanced.md` | Not yet checked on `P:\` or against the Dabs source: patterns and traps for the third-party Dabs Framework's MVC classes. |
-| `enforce-script-reference/references/llama-extraction-patterns.md` | Third-party mod behaviour, not vanilla: Enforce Script and config patterns of one aircraft mod. |
+| `enforce-script-reference/references/mod-structure-patterns.md` | Third-party mod behaviour, not vanilla: Enforce Script and config patterns of one aircraft mod. |
 | `enforce-script-reference/references/review-and-troubleshooting.md` | What to scan for before handing over script code, then a symptom table of error, cause and fix. |
 | `enforce-script-reference/references/dayz-1-30-enforce-script.md` | The DayZ 1.30 Enforce Script contract: what replaced the 1.29 hooks. Its line numbers are those of a later 1.30 build than the one on `P:\`. |
 | `dayz-ui-development/references` | UI development pack. Front index: `dayz-ui-development/SKILL.md`. Part checked throughout: a `P:\` path with a line was checked on `P:\`; in-game measurements and third-party mod facts were not re-run. |
