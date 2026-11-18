@@ -110,8 +110,8 @@ class MyMod_PlaneOwnerState extends CarScriptOwnerState
     float m_fRollSmooth;
     float m_fRudderSmooth;
     float m_fStallFactor;
-    protected override event void Write(PawnStateWriter ctx) {}
-    protected override event void Read(PawnStateReader ctx) {}
+    protected override event void Write(PawnStateWriter ctx) { super.Write(ctx); }
+    protected override event void Read(PawnStateReader ctx) { super.Read(ctx); }
 };
 
 class MyMod_PlaneMove extends CarScriptMove
@@ -121,8 +121,8 @@ class MyMod_PlaneMove extends CarScriptMove
     float m_fRudder;
     float m_fThrottle;
     int m_iToggleFlightMode;
-    protected override event void Write(PawnMoveWriter ctx, PawnMove prev) {}
-    protected override event void Read(PawnMoveReader ctx, PawnMove prev) {}
+    protected override event void Write(PawnMoveWriter ctx, PawnMove prev) { super.Write(ctx, prev); }
+    protected override event void Read(PawnMoveReader ctx, PawnMove prev) { super.Read(ctx, prev); }
 };
 ```
 

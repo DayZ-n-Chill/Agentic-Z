@@ -59,8 +59,7 @@ The proxy that draws the part while fitted (`attachment-proxies.md` has the nami
 ```cpp
 class CfgNonAIVehicles
 {
-    class ProxyAttachment;
-    class ProxyVehiclePart: ProxyAttachment { scope=2; simulation="ProxyInventory"; autocenter=0; animated=0; shadow=1; reversed=0; };
+    class ProxyVehiclePart;
     class ProxyMyMod_Wheel: ProxyVehiclePart { model="\MyMod\proxy\MyMod_Wheel.p3d"; inventorySlot[]={"MyMod_Wheel_1_1","MyMod_Wheel_2_1"}; };
 };
 ```

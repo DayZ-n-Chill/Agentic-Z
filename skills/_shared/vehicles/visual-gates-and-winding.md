@@ -53,7 +53,7 @@ Bright or dark triangles scattered over paint, catching sky light, are shading s
 A clean `py3d.validate()` (py3d 1.10.1 in `scripts/tools/py3d/`) shows that winding, stored normals and LODs agree with each other, not that the game draws the side you meant.
 
 - `_check_winding_absolute`, on visual, Geometry, View and Fire Geometry LODs, compares each face's `cross(e1,e2)` with its stored normal (`ERR_WINDING_VS_NORMALS`, `WARN_WINDING_NORMAL_MISMATCH`) and checks shared edges run opposite ways (`WARN_WINDING_EDGE_INCOHERENT`). A LOD whose faces and normals were turned together agrees and passes.
-- `_check_winding_vs_visual` compares each collision LOD with the coarsest visual LOD by the share of faces wound outward from the centre (`ERR_WINDING_INVERTED`). It assumes convex shapes and cannot see a global inversion; when the visual LOD is the inverted one, it flags the healthy collision LODs.
+- `_check_winding_vs_visual` compares each collision LOD with the finest visual LOD (lowest resolution) by the share of faces wound outward from the centre (`ERR_WINDING_INVERTED`). It assumes convex shapes and cannot see a global inversion; when the visual LOD is the inverted one, it flags the healthy collision LODs.
 
 So a model inverted as a whole, as a Blender Z-up to Y-up turn of both winding and normals leaves it, gives no winding finding. The findings expected on a vehicle (`rip-structural-lods.md`) are false positives, and their absence proves nothing either. `save(verify=True)` and `python -m py3d diff` compare counts, selection names and membership, properties, UV sets and mass, never point positions (except memory points): two models with one point at `(0,0,0)` and `(99,99,99)` verify clean and diff to 0.
 

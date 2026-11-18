@@ -2,7 +2,7 @@
 
 Which memory points, skeleton bones and selections a scripted plane's `.p3d` and `model.cfg` need, and how the dashboard switches its lit material.
 
-The names come from LM_Planes (Workshop `3730564764`), read from its models and configs; they are that mod's conventions, not vanilla, and the script that reads them is in `aviation-fixed-wing.md`. The one vanilla anchor is the memory point check the script relies on: `MemoryPointExists` (`P:\scripts\3_game\entities\object.c:454`).
+The names come from LM_Planes (Workshop `3730564764`), read from its models and configs; they are that mod's conventions, not vanilla. The mod's script reads them with `GetMemoryPointSafe`, the mod's own helper built on the vanilla `GetMemoryPointPos` (`P:\scripts\3_game\entities\object.c:452`) and `MemoryPointExists` (`object.c:454`).
 
 ## Memory points
 

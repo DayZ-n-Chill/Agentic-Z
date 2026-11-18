@@ -52,8 +52,7 @@ Assert after assembly that only Geometry carries mass; a stray `#Mass#` elsewher
 
 `validate()` findings that are expected on a vehicle:
 
-- `ERR_COMPONENT_NAMING` for lower case `component01` (`vehicle-proxies.md`).
-- `ERR_AXIS_SELECTION_MISSING` for every Memory `*_axis` with no selection of the same name in the visual LOD. For wheels it is real: add each wheel proxy face to visual `wheel_X_Y` (spin), `wheel_X_Y_damper` (suspension) and, at the front, `wheel_X_1_steering`, or `model.cfg` animates nothing. For dials not built yet it is expected.
+- `ERR_AXIS_SELECTION_MISSING` for every Memory `*_axis` with no visual selection named like the axis without its `_axis` suffix. For wheels it is real: add each wheel proxy face to visual `wheel_X_Y` (spin), `wheel_X_Y_damper` (suspension) and, at the front, `wheel_X_1_steering`, or `model.cfg` animates nothing. For dials not built yet it is expected.
 - `WARN_NOT_WATERTIGHT` (proxy triangles are open), `WARN_WINDING_MIXED` on multi-box collision (each box is consistent about its own centre while the warning uses the global centre; `_shared/models/generated-model-rules.md`, "The per component winding check"), `WARN_LOD_KIND_UNKNOWN` for 1100.
 
 A parent `model.cfg` animates only its own selections; a proxy only moves with its anchor face. So the steering wheel (`drivewheel`) and gauge needles (`mph`, `rpm`, `fuel_1`) must live in the shell, not in a proxy chunk. If they were grouped into a chunk, move them into the shell first. A rip's gauge cluster is usually one mesh with no separate needles, so needles need face segmentation or new geometry (`gauge-needles.md`); place the dial memory points regardless.

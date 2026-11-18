@@ -98,7 +98,7 @@ The `EffectSeaplaneWater*` classes are the mod's own and are described in `aviat
 
 ## Clean up effects on every path
 
-An entity that holds `ScriptedEffect` references leaks them unless every way it can go away destroys them. Call the cleanup from all three places:
+An entity that holds `Effect` references (the vanilla effect base, `P:\scripts\3_game\effect.c:16`) leaks them unless every way it can go away destroys them. Call the cleanup from all three places:
 
 ```c
 override void EEDelete(EntityAI parent)

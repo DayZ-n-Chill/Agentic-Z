@@ -16,7 +16,7 @@ The building door API is for buildings: `IsDoorOpen` is declared on `Building` (
 
 ## The attachment route
 
-The action never appears, with no error, when the points of the door item's View Geometry carry flags `0x0` instead of the flags of a working door. Config, script overrides, slots, bones and animation sources can all be right and the action is still filtered out. Compare the item's View Geometry point flags against a door that works before touching config. Two values have been written down for this, `0x02000000` and `0x0000003F` (`invariants-get-in-and-seats.md`), so take the value from your working door, not from either number (**model knowledge**).
+The action never appears, with no error, when the points of the door item's View Geometry carry flags `0x0` instead of the flags of a working door. Config, script overrides, slots, bones and animation sources can all be right and the action is still filtered out. Compare the item's View Geometry point flags against a door that works before touching config. Two values have been written down for this, `0x02000000` and `0x0000003F` (`crew-get-in-geometry.md`), so take the value from your working door, not from either number (**model knowledge**).
 
 Measured in game on a test car: with the flags matched, the attached door draws in place and its action appears.
 

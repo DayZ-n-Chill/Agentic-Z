@@ -5,7 +5,7 @@ Where vanilla keeps `autocenter=0` on placed items and on vehicles, which rule t
 ## Where vanilla keeps it
 
 - Vehicles: the part proxy class `ProxyVehiclePart` sets `autocenter=0` (`P:\DZ\vehicles\wheeled\config.cpp:23901` to `:23905`), and that is the only `autocenter` line in the file. `CivilianSedan` (`config.cpp:5113`) has none, so a vanilla car carries the property in its model and on its part proxy classes, not on the car's config class.
-- Placed gear: in `P:\DZ\gear\camping\config.cpp` the only two `autocenter` lines sit in proxy classes under `CfgNonAIVehicles`, `ProxyPart` (`:13387`) and `Proxycable_reel` (`:13548`). No item class under `CfgVehicles` there sets it.
+- Placed gear: in `P:\DZ\gear\camping\config.cpp` the only two `autocenter` lines sit in proxy classes under `CfgNonAIVehicles`, `ProxyPart` (`:13397`, its `autocenter` at `:13406`) and `Proxycable_reel` (`:13558`, `:13567`). No item class under `CfgVehicles` there sets it.
 - A byte scan of the 82 binarized models in `P:\DZ\gear\camping\` finds the name `autocenter` in 78 of them (for example `P:\DZ\gear\camping\wooden_case.p3d`), and also in `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` and `P:\DZ\vehicles\wheeled\civiliansedan\proxy\sedanwheel.p3d`. The scan shows vanilla keeps the property in the model; it cannot show which LOD holds it or its value.
 
 ## Which rule to follow

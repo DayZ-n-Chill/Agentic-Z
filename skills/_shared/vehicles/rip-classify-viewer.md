@@ -18,7 +18,7 @@ Use the UMD files, not the ES module ones. `index.html` loads them with `<script
    blender --background --python-exit-code 1 --python "skills\dayz-model-tools\scripts\export_car_glb.py" -- --blend <car.blend> --out <dir>\car.glb
    ```
 
-   The script prints `GLB_DONE mode=<full|minimal> bytes=<n>` when done. `minimal` means this Blender version refused the full option set and the export fell back to a GLB with extras only.
+   The script prints `GLB_DONE mode=full bytes=<n>` when done. If this Blender version refuses the full option set, the line reads `GLB_DONE mode=minimal (<error>) bytes=<n>` and the export fell back to the exporter's default options with extras on, so materials are included.
 2. Copy `index.html` and `lib\` next to `car.glb`, or write the GLB into the viewer folder.
 3. Serve the folder over http; the page cannot fetch the GLB from `file://`. Any static server works, such as `py -m http.server <port> --directory <dir>`.
 4. The user clicks a part and sets it to INCLUDE, MOVABLE or EXCLUDE; EXCLUDE asks for a reason. The changes live in `window.DZ_DELTAS` as `{stem: {from, to, reason}}`. Read them with a browser script tool, or the user presses "Copy changes (JSON)".
@@ -38,6 +38,6 @@ The page reads these node extras from `userData`:
 | `dz_review` | Marks a part for review; the list shows a star | A custom property already on the object |
 | `dz_movable_group` | The part's movable group, shown in brackets | A custom property already on the object |
 
-Parts with no mesh appear as "(no geometry)". The export unhides every collection and writes no materials; the page gives each part its own material so it can tint it by class.
+Parts with no mesh appear as "(no geometry)". The export unhides every collection, and the full export writes no materials; the page gives each part its own material so it can tint it by class.
 
 Tested on one car: 128 parts in a 24.7 MB GLB, with the changes read back intact and no console errors.

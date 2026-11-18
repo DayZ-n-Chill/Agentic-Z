@@ -10,7 +10,7 @@ How the motorbike rider is animated: the human vehicle command, the `vehicles.ag
 
 ## Third-person camera
 
-The bike has its own camera, `DAYZCAMERA_3RD_VEHICLE_MOTORBIKE = 32`, registered to `DayZPlayerCamera3rdPersonVehicleMotorbike` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameras.c:20` and `:63`). The class is in `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:239` to `:470`.
+The bike has its own camera, `DAYZCAMERA_3RD_VEHICLE_MOTORBIKE = 32`, registered to `DayZPlayerCamera3rdPersonVehicleMotorbike` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameras.c:20` and `:63`). The class is in `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:239` to `:473`.
 
 Like the car camera, which smooths every axis with a fixed time of `0.3` (`dayzplayercameravehicles.c:142` to `:148`), it uses `Math.SmoothCD` and `Math.SmoothCDPI2PI` (`:369` to `:375`), but with its own constants per axis (`:256` to `:265`):
 
