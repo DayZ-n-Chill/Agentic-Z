@@ -1,6 +1,6 @@
 # Procedural material recipes
 
-Ready recipes for the surfaces of electrical and industrial props: painted metal, brushed steel, rubber, a rust overlay, baked AO multiplied into the color, and a full script that writes all three maps for an electrical box.
+Covers ready recipes for the surfaces of electrical and industrial props: painted metal, brushed steel, rubber, a rust overlay, baked AO multiplied into the color, and a full script that writes all three maps for an electrical box.
 
 This is **tool knowledge**, not vanilla data. It uses `fbm` and the blend functions from `procedural-textures.md`, and `height_to_normal` and `generate_smdi_map` from `procedural-normal-and-smdi.md`. The `_smdi` values given per recipe are generic starting points; set them against a vanilla asset of the same kind (`smdi-and-levels.md`).
 

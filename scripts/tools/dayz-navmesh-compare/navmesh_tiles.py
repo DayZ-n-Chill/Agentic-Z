@@ -11,9 +11,9 @@ float32 LE); 8 bytes not read. Then the offset table, one uint32 per tile,
 relative to the end of the table. Each tile: a 16-byte prefix whose uint32 at
 byte 8 is the size of the tile after the prefix and is checked (measured on
 two 12.5 m .nm files of 966 289 tiles each and two 50 m .nm files of 60 025
-tiles each, all of one custom 12 km terrain, and on the three vanilla
-navmesh.nm files of Chernarus+, Livonia and Sakhal, 94 249, 65 536 and 94 249
-tiles: 2 306 662 tiles; in all of them that field equals the bytes from the
+tiles each, all of one custom 12 km terrain, and on the four vanilla DayZ 1.30
+navmesh.nm files of Chernarus+, Livonia, Sakhal and Nasdara, 94 249, 65 536,
+94 249 and 106 929 tiles: 2 413 591 tiles; in all of them that field equals the bytes from the
 end of the prefix to the next tile or the end of the file). The uint64 at byte
 0 and the uint32 at byte 12 are not interpreted. Then a header laid out as
 Detour's dtMeshHeader (magic b"VAND", version 11, the tile's grid x and y,
@@ -21,9 +21,9 @@ which are x and z here, layer, user id, polygon count, vertex count, seven
 more int fields; walkable height, radius and climb, bmin x y z, bmax x y z, bv
 quantisation factor), then the tile data. Stock Detour writes version 7 in
 that field (DT_NAVMESH_VERSION); the custom-terrain files measured carry 11.
-The vanilla files unpacked on P:\\DZ\\worlds carry file version 7 and tile version 12, so
+The vanilla files unpacked on P:\\DZ\\worlds carry file version 9 and tile version 12, so
 read_navmesh refuses them: the size field was measured on them with the two
-version checks set to 7 and 12.
+version checks set to 9 and 12.
 
 A tile's hash covers its header and data, not the prefix. The layout is read
 from the header and checked: count = tiles x * tiles z, origin (0, 0, 0), square

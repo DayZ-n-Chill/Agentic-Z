@@ -67,7 +67,7 @@ Parsing a `.p3d` of 10 MB or more with py3d took about 30 seconds, enough to hit
 3. Build the painter on that data. The first takes about a day; later ones are copies.
 4. The user opens it, corrects the seeded brushes and exports JSON.
 5. Run the refiner with caps and filters for this model.
-6. Write the result into the `.p3d` with the model tools' `.p3d` inspector or a project script that follows `../py3d-mlod-notes.md`, "Writing a `.p3d` from a script".
+6. Write the result into the `.p3d` with the model tools' `.p3d` inspector or a project script that follows `_shared/py3d-mlod-notes.md`, "Writing a `.p3d` from a script".
 7. Look at the selection in Object Builder or reopen the viewer.
 8. Test in game: start the action from every angle a player would, and adjust caps and filters if coverage is wrong.
 

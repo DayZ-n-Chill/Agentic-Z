@@ -1,6 +1,6 @@
 # Checking the look
 
-The checks to run before handing texture and material work over, then what to ask the user to look at once the files are written. The asset specialist cannot see the screen, so it hands the user the Object Builder and in-game lists in its report and asks what they saw. It never launches Object Builder or DayZ itself.
+What to check before handing texture and material work over, then what to ask the user to look at once the files are written. The asset specialist cannot see the screen, so it hands the user the Object Builder and in-game lists in its report and asks what they saw. It never launches Object Builder or DayZ itself.
 
 ## Before handing over
 

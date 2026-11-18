@@ -1,6 +1,6 @@
 # Multi materials
 
-When the Multi shader is worth it, which mask color picks which material, a starting block to adapt, how to paint the mask, and what to check before you accept a Multi material.
+Covers when the Multi shader is worth it, which mask color picks which material, a starting block to adapt, how to paint the mask, and what to check before you accept a Multi material.
 
 The stage roles, the `TexGen` classes, the two UV sets, how many vanilla files follow each, and what the model has to carry are in `_shared/models/multi-rvmat-texturing.md`; this file does not repeat them. Blocks with `MyMod` paths are shapes to adapt.
 

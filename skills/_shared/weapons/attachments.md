@@ -29,8 +29,8 @@ A slot can sit inside a slot. On a custom SMG (confirmed in game; not vanilla, s
 
 ### Bayonets
 
-- `P1907_Bayonet` (`P:\scripts\4_world\entities\itembase\inventory_base\p1907_bayonet.c:1`) is an attachment and a melee tool at once. Its `CanPutAsAttachment` refuses the parent when the `suppressorImpro` or `weaponMuzzle` slot is reserved or occupied (`P:\scripts\4_world\entities\itembase\inventory_base\p1907_bayonet.c:13-26`), so a bayonet and a muzzle device cannot be fitted together.
-- `OnWasAttached` and `OnWasDetached` tell the weapon with `SetBayonetAttached` when the parent `IsWeapon()` (`P:\scripts\4_world\entities\itembase\inventory_base\p1907_bayonet.c:28-46`); `Weapon_Base` stores it and answers `HasBayonetAttached()` (`P:\scripts\4_world\entities\firearms\weapon_base.c:2089`, `:2095`).
+- `P1907_Bayonet` (`P:\scripts\4_world\entities\itembase\inventory_base\p1907_bayonet.c:1`) is an attachment and a melee tool at once. Its `CanPutAsAttachment` refuses the parent when the `suppressorImpro` or `weaponMuzzle` slot is reserved or occupied (`P:\scripts\4_world\entities\itembase\inventory_base\p1907_bayonet.c:13` to `:26`), so a bayonet and a muzzle device cannot be fitted together.
+- `OnWasAttached` and `OnWasDetached` tell the weapon with `SetBayonetAttached` when the parent `IsWeapon()` (`P:\scripts\4_world\entities\itembase\inventory_base\p1907_bayonet.c:28` to `:46`); `Weapon_Base` stores it and answers `HasBayonetAttached()` (`P:\scripts\4_world\entities\firearms\weapon_base.c:2089`, `:2095`).
 - Its slot is `weaponBayonetLeeEnfield` (`P:\scripts\config.cpp:243`). The only weapon that offers it is the Lee-Enfield (`P:\DZ\weapons_takistan\firearms\leeenfield\config.cpp:181`), and the bayonet's config class, `P1907_Bayonet`, lists it next to `Knife` in `inventorySlot[]` (`P:\DZ\weapons_takistan\attachments\muzzle\config.cpp:21`, `:38` to `:42`). Both live under `P:\DZ\weapons_takistan\`, so a mod that inherits them requires their addons (`dayz-1-30-migration.md`).
 
 How the proxy triangle on the weapon model places each attachment is in `skills/_shared/models/proxy-frames.md` ("Weapon attachment proxies").

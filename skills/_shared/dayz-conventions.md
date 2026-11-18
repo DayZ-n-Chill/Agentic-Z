@@ -37,7 +37,7 @@ All Enforce Script (`.c`) work follows `skills/_shared/enscript-style.md` (namin
 - DayZ Tools is installed via Steam (Tools section).
 - Vanilla DayZ data is unpacked under `P:\` so configs can inherit from base classes.
 - Workshop deploy folder for in-development mods: `P:\Mods\@<ModName>\Addons\`, never `output/`.
-- `P:\Mods\` MUST be a directory junction to `<DayZ install>\!Workshop\`, not a regular folder. The engine and Launcher load mods from `!Workshop`; the junction lets builds deploy to the canonical `P:\Mods\@<ModName>\Addons\<ModName>.pbo` path while landing in the real workshop folder. Skills verify it with `validate_p_mods()` in `dayz-preflight/preflight.py`. Preflight creates the junction when `P:\Mods\` is absent and the game's `!Workshop\` folder is found (`mklink /J` is non-destructive and needs no admin). It fails, and changes nothing, when the existing path is the wrong shape: a real folder, a dangling junction, or a junction pointing elsewhere.
+- `P:\Mods\` MUST be a directory junction to `<DayZ install>\!Workshop\`, not a regular folder. The engine and Launcher load mods from `!Workshop`; the junction lets builds deploy to the canonical `P:\Mods\@<ModName>\Addons\<ModName>.pbo` path while landing in the real workshop folder. Skills verify it with `validate_p_mods()` in `dayz-preflight/preflight.py`. Preflight creates the junction when `P:\Mods\` is absent and the game's `!Workshop\` folder is found (`mklink /J` is non-destructive and needs no admin). Preflight warns and changes nothing when the existing path is the wrong shape: a real folder, a dangling junction, or a junction pointing elsewhere; `/dayz-build-pbo` and `/dayz-deploy-pbo` refuse to run.
 
 ### Optional environment variables
 

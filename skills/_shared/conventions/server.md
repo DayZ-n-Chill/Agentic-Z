@@ -18,7 +18,7 @@ Part of Tier 2. Server economy files, the `.server/<instance>/` test-server layo
 ## Test server instances (`.server/`)
 
 - Server runtime lives at `.server/<instance>/` at the project root (not under `workspace/`). Each instance is self-contained:
-  - `.server/<instance>/mission/`: editable copy of the mission folder, created by `/dayz-add-server` from DayZ Server's `mpmissions/<template>/` and edited by the user after that (the server runs with `-filePatching`, so edits are live). Never edit the original DayZ Server install. The folder is named `mission/` whatever the template; the launcher passes `-mission=<abspath>`.
+  - `.server/<instance>/mission/`: editable copy of the mission folder, created by `/dayz-add-server` from DayZ Server's `mpmissions/<template>/` and edited by the user after that (the server runs with `-filePatching`, so edits are live). Never edit the original DayZ Server install. The folder is named `mission/` whatever the template; the launcher reaches it through the `<template>/` junction that `/dayz-add-server` creates next to it.
   - `.server/<instance>/serverDZ.cfg`: per-instance server config. Its `template = "..."` line links the instance to its mission base, so instances can differ in player count, persistence or time of day.
   - `.server/<instance>/Profiles/`: server `-profiles=` dir (RPT, script.log, BattlEye state).
   - `.server/!ClientDiagLogs/`: client `-profiles=` dir, shared by all instances.
@@ -29,5 +29,5 @@ Part of Tier 2. Server economy files, the `.server/<instance>/` test-server layo
 
 ## Mission and DayZ Server install notes
 
-- The launch skill passes `-mission=<absolute path to .server/<instance>/mission>` to pin the mission folder (otherwise the engine looks in the diag binary's local `mpmissions/`, which does not exist in the game install).
+- The launch skill passes `-mission=<absolute path to .server/<instance>/<template>>`, the junction `/dayz-add-server` creates to `mission/`, to pin the mission folder (the client never spawns without the template name) (otherwise the engine looks in the diag binary's local `mpmissions/`, which does not exist in the game install).
 - DayZ Server (Steam appid 223350) is only needed for the initial mission copy. After that it can be uninstalled; the `.server/<instance>/mission/` copy is the source of truth.

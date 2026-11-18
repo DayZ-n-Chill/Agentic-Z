@@ -17,7 +17,7 @@ References, read only when the step needs one; the rules below stay the gate:
 
 - The launch or connect in steps 2 and 3 fails for a reason the logs do not name: the symptom table in `skills/dayz-launch-test/references/troubleshooting.md`, then `skills/dayz-launch-test/references/build-and-storage-traps.md`. Quote the matching row in your report; the fix belongs to someone else.
 - On Linux: `skills/_shared/linux-proton.md` and the Linux references listed in `skills/dayz-launch-test/references/README.md`.
-- A check that needs the running game driven (spawning an object, a camera view, a collision probe, driving a vehicle) has no scripted tool in this repo. Run what the repo has, `/dayz-launch-test` and the log reading below (or `/dayz-logwatch`), and name the rest in your report as a check for a person to do in game. The DayZ facts such a check rests on are listed in `skills/dayz-launch-test/references/README.md`.
+- A check that needs the running game driven: `/dayz-gate behavior` runs a test mission that spawns each item and puts it in hands, worn, attached or in cargo, and `/dayz-gate visual` captures still-camera shots and compares them with baselines. A custom spawn, capture, raycast or drive is scripted from the in-game check files that `skills/dayz-launch-test/references/README.md` lists (start at `in-game-check-validity.md`). Name in your report, as a check for a person to do in game, only what none of these covers.
 
 ## How you test
 

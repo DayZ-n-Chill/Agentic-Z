@@ -88,7 +88,7 @@ Project experience, not vanilla facts.
 - For joints the game solves with IK at run time, dump the bones' model space positions from the client and rebuild the offline pose from positions. Do not guess the elbow's swivel or trust raw rotations whose convention is not checked.
 - Read a large file back after writing it and check its last line is the one intended; an editor tool has cut new text at about 5 to 8 KB without warning when the file sat in a synced cloud folder or a plugin mount.
 - Reuse a viewer's baked geometry instead of parsing a large `.p3d` again, and draw overlays unlit and 5 mm off the surface (`selections-for-actions.md`).
-- A written file is not a checked file. After any script writes a `.p3d`, reopen it and check the selections are not empty, the memory points are where they should be and the material count is unchanged (`../py3d-mlod-notes.md`, "Check the output before calling it done").
+- A written file is not a checked file. After any script writes a `.p3d`, reopen it and check the selections are not empty, the memory points are where they should be and the material count is unchanged (`_shared/py3d-mlod-notes.md`, "Check the output before calling it done").
 
 ## Workbench in 1.30
 

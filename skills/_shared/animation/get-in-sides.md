@@ -187,7 +187,7 @@ The action only starts when the player can aim at the seat's action selection (`
 
 ### The crew points must be the ones you wrote
 
-The seat test reads `crewdriver` and `crewcodriver`. If the model was extended from a vanilla one and those points were appended instead of overwritten, the action reads the old positions and the left and right choice degrades (`../py3d-mlod-notes.md`, "Writing a `.p3d` from a script", the trap about appended points).
+The seat test reads `crewdriver` and `crewcodriver`. If the model was extended from a vanilla one and those points were appended instead of overwritten, the action reads the old positions and the left and right choice degrades (`_shared/py3d-mlod-notes.md`, "Writing a `.p3d` from a script", the trap about appended points).
 
 ### Testing in game
 

@@ -16,7 +16,6 @@ Vanilla models under `P:\DZ\` are binarized ODOL, which Object Builder and `/day
 | How are UVs stored in a `.p3d`, which UV set does each material stage read, and how is an in-game texture fault traced back to the UVs? | `uv-mapping.md` |
 | How does vanilla texture one mesh with up to four tiling surfaces through a `Multi` material, and what must the model carry for it? | `multi-rvmat-texturing.md` |
 | What does a door need in the model, and who writes the rest? | `_shared/animation/doors.md` (the door subject lives in the animation pack) |
-
 | How are model axes mapped from Blender to DayZ, and how must visual and collision LODs be wound? | `axes-and-winding.md` |
 | How do I build a model in Blender over MCP without exploded parts, wrong sizes, broken booleans or bare boxes (the helper library, joint and detail planning, the geometry rules, the normal bake)? | `blender-assembly.md` |
 | What do I check after each part of a Blender build, how do I finish the scene, and why does a render over MCP show the old mesh? | `blender-assembly-checks.md` |

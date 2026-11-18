@@ -35,7 +35,7 @@ Vanilla ships `model.cfg` only inside the packed `.p3d` files, so there is no va
 | Player bones by zone, hand and IK helpers, twist bones, the frame an IK pose is keyed in | `player-skeleton.md` (measured parent table: `player-skeleton-parents.txt`) |
 | A custom animal, infected or other creature from a Blender rig to the game | `creature-rig-to-game.md`; the commands and variables are in `anim-graphs.md`; the config wiring and the two engine bones are in `_shared/ai/creature-animation.md` |
 | What 1.30 changed for animation and the migration checklist | `dayz-1-30-changes.md` |
-| The old py3d 1.0.0 write quirks and the frame check for a rebake script | `../py3d-mlod-notes.md`, "Writing a `.p3d` from a script" |
+| The old py3d 1.0.0 write quirks and the frame check for a rebake script | `_shared/py3d-mlod-notes.md`, "Writing a `.p3d` from a script" |
 
 ## Items, weapons and riders
 

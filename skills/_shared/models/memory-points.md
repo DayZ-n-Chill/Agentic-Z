@@ -29,7 +29,7 @@ An animated part that swings outside the object's bounding sphere can make the a
 
 | Point | Used for | Where vanilla reads it |
 |---|---|---|
-| `ce_center` | The object's center for actions, vicinity and the code lock | `P:\scripts\3_game\entities\object.c:1363` (`GetCenter`), `P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:854`, `P:\scripts\5_mission\gui\inventorynew\vicinityitemmanager.c:11`, `P:\scripts\4_world\entities\itembase\codelock.c:4` |
+| `ce_center` | The object's center for actions, vicinity and the code lock | `P:\scripts\3_game\entities\object.c:1363` (`GetCenter`), `P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:857`, `P:\scripts\5_mission\gui\inventorynew\vicinityitemmanager.c:11`, `P:\scripts\4_world\entities\itembase\codelock.c:4` |
 | `boundingbox_min`, `boundingbox_max`, `invView` | The item's inventory preview box and camera. `boundingbox_min2`, `boundingbox_max2`, `invView2` and so on add more views | `P:\scripts\3_game\gameplay.c:293` to `:295`; `invView2` at `P:\scripts\3_game\entities\entityai.c:3771` |
 | `box_placing_min`, `box_placing_max` | Fallback hologram box when the Geometry LOD box fails | `p3d-killers.md` section 7 |
 | `<bone>_axis` | Hinge or slide line of a moving part | `houseblock_3f_corner1.p3d` (`doors1_axis` to `doors9_axis`), `wooden_case.p3d` (`lid_axis`) |

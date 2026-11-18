@@ -25,7 +25,7 @@ checks and is unverified: the report says which
 (`layout.inside_verified_envelope`, and a line in `limits`).
 
 Any other format version is refused. The vanilla `navmesh.nm` files unpacked on
-`P:\DZ\worlds\` (Chernarus+, Livonia and Sakhal) carry TESM version 7
+`P:\DZ\worlds\` (Chernarus+, Livonia, Sakhal and Nasdara) carry TESM version 9
 and DNAV version 12, so this tool refuses them at the file header.
 
 ## Run
@@ -98,9 +98,9 @@ the tile after the prefix and is checked against the bytes to the next tile or
 the end of the file; the uint64 at byte 0 and the uint32 at byte 12 are not
 interpreted. That size field matched on two 12.5 m `.nm` files of 966 289 tiles
 each and two 50 m `.nm` files of 60 025 tiles each, all of one custom 12 km
-terrain, and on the three vanilla `navmesh.nm` files of Chernarus+, Livonia and
-Sakhal (94 249, 65 536 and 94 249 tiles, read with the two version checks set
-to their 7 and 12): 2 306 662 tiles. It
+terrain, and on the four vanilla DayZ 1.30 `navmesh.nm` files of Chernarus+,
+Livonia, Sakhal and Nasdara (94 249, 65 536, 94 249 and 106 929 tiles, read with
+the two version checks set to their 9 and 12): 2 413 591 tiles. It
 refuses, naming the file and the check: a wrong magic or version in the file or
 in any tile; a tile count other than tiles x times tiles z; an origin other than
 (0, 0, 0); tiles that are not one finite, positive square; an offset table that

@@ -38,12 +38,11 @@ For authoring, prefer Blender or `FBXToRTMGui.exe` over writing matrices by hand
 
 ### The pipeline (the user's tools)
 
-```
-Blender (keyframes against the target skeleton)
-  -> .rtm directly        Arma 3 Object Builder export        or
-  -> FBX -> .rtm          FBXToRTMGui.exe, in DayZ Tools
-       -> referenced from config -> pack -> sign -> test in game
-```
+1. Keyframe the animation in Blender against the target skeleton.
+2. Export it to `.rtm`, either straight from Blender with the Arma 3 Object Builder addon, or to FBX first and then to `.rtm` with `FBXToRTMGui.exe` from DayZ Tools.
+3. Reference the `.rtm` from config.
+4. Pack and sign the mod.
+5. Test it in game.
 
 - **Arma 3 Object Builder** (a Blender 4.2+ addon) exports `.rtm` from a timeline range. The phase runs from 0.0 to 1.0 across the render range, so a wrong range squashes or clips the animation. The only frame property known is `StepSound`. It carries Arma's name, but the format is the same one.
 - **`FBXToRTMGui.exe`** (DayZ Tools): set the bind pose FBX and the `modelbox.xml`, pick the skeleton (`ManSkeleton`), the root bone (`Hips`), and a frame rate equal to the source's. Not tried on the current DayZ Tools.

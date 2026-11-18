@@ -34,7 +34,7 @@ Read only the file that matches, quote what it says in your report, and still do
 - Load order with Community Framework or Expansion (step 4a): section 8 of `skills/dayz-launch-test/references/dayz-1-30-server-measured.md`. A `gui` prefix PBO with layout variants: `skills/_shared/ui/layout-variants.md`.
 - On Linux: `skills/_shared/linux-proton.md` before step 2.
 - The brief asks to study somebody else's PBO: run only the read-only inventory of `/dayz-import-mod` (`skills/dayz-import-mod/pbo_inventory.py`) and report it; extraction and the pattern sweep in `skills/dayz-import-mod/references/study-a-packed-mod.md` write files, so name them for the main session.
-- The brief asks for a check in the running game (spawn, capture, collision probe, driving a vehicle): the repo's in-game check is `/dayz-gate ingame`, which launches the mod with `/dayz-launch-test` and reads `script.log` and the RPT. Anything beyond the logs has no scripted tool here, so report it as a check for a person to do in game.
+- The brief asks for a check in the running game (spawn, capture, collision probe, driving a vehicle): name the scripted checks to your caller: `/dayz-gate ingame` (boots the mod and reads `script.log` and the RPT), `/dayz-gate behavior` (a test mission that spawns each item and puts it in hands, worn, attached or in cargo) and `/dayz-gate visual` (still-camera screenshots compared with baselines). For a custom spawn, capture, raycast or drive, the in-game check files in `skills/dayz-launch-test/references/` (start at `in-game-check-validity.md`; its `README.md` lists the rest) say how to script it. Report only what none of these covers as a check for a person to do in game.
 
 ## Report
 

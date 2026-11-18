@@ -26,17 +26,14 @@ import struct
 import numpy as np
 from PIL import Image
 
-
 def _rgb_to_565(r, g, b):
     return ((int(r) >> 3) << 11) | ((int(g) >> 2) << 5) | (int(b) >> 3)
-
 
 def _rgb565_to_rgb(c):
     r = (c >> 11) & 0x1F
     g = (c >> 5) & 0x3F
     b = c & 0x1F
     return ((r << 3) | (r >> 2), (g << 2) | (g >> 4), (b << 3) | (b >> 2))
-
 
 def _dxt1_block(block_rgb):
     """block_rgb: (4, 4, 3) uint8. Returns the 8 bytes of one DXT1 block."""
@@ -75,7 +72,6 @@ def _dxt1_block(block_rgb):
 
     return c0_565.to_bytes(2, "little") + c1_565.to_bytes(2, "little") + packed.to_bytes(4, "little")
 
-
 def _dxt1_encode_image(rgb_arr):
     """rgb_arr: (H, W, 3) uint8. Pads H and W to multiples of 4."""
     h, w, _ = rgb_arr.shape
@@ -90,7 +86,6 @@ def _dxt1_encode_image(rgb_arr):
         for x in range(0, w, 4):
             out += _dxt1_block(rgb_arr[y:y + 4, x:x + 4, :])
     return bytes(out)
-
 
 def _build_mipchain(pil_image, min_size=4):
     """Returns [(w, h, dxt1_bytes), ...], largest first, down to min_size."""
@@ -110,7 +105,6 @@ def _build_mipchain(pil_image, min_size=4):
             break
         img = img.resize((max(min_size, w // 2), max(min_size, h // 2)), Image.LANCZOS)
     return mips
-
 
 def write_paa_dxt1(src_png_path, out_paa_path, max_size=1024):
     """Encodes a PNG as a DXT1 .paa. max_size caps the top mip's longer side."""

@@ -4,7 +4,7 @@ What each tool under `scripts/tools/` does, how to run it and what it refuses to
 
 Thirteen Python tools live under `scripts/tools/`. They are offline and deterministic, except the experimental [`dayz-terrain-builder-runner`](#scriptstoolsdayz-terrain-builder-runner), which drives a Terrain Builder it launched; none of them phone home, and none of them guess. Most are stdlib-only; [`dayz-vehicle-proxy-contract`](#scriptstoolsdayz-vehicle-proxy-contract) also needs numpy, scipy, matplotlib and this repo's py3d, and [`dayz-navmesh-compare`](#scriptstoolsdayz-navmesh-compare) needs numpy for its terrain inputs only.
 
-**Install before invoking.** The `python -m <tool>` forms below resolve only once that tool is installed — `python -m pip install -e scripts/tools/<name>` from the repository root. On a fresh clone they fail with `No module named`, which reads like a broken tool and is a missing install. `dayz-script-validator`, `dayz-vehicle-proxy-contract` and `dayz-layout-viewer` also ship a script path and run from the tree without installing; each tool's section gives the command. `dayz-ui-lab`, `dayz-pbo-diff`, `dayz-navmesh-compare` and `dayz-terrain-builder-runner` have no package: they are scripts only, run from the tree.
+**Install before invoking.** The `python -m <tool>` forms below resolve only once that tool is installed — `python -m pip install -e scripts/tools/<name>` from the repository root. On a fresh clone they fail with `No module named`, which reads like a broken tool and is a missing install. `dayz-script-validator`, `dayz-vehicle-proxy-contract` and `dayz-layout-viewer` also ship a script path and run from the tree without installing; each tool's section gives the command. `dayz-ui-lab`, `dayz-pbo-diff`, `dayz-navmesh-compare`, `dayz-terrain-builder-runner` and `dayz-persistence-contracts` have no package: they are scripts only, run from the tree.
 
 They exist because the DayZ asset pipeline fails *silently*: a `.p3d` written with a stale selection loads white, a mistyped RTM signature produces an animation that never plays, a `.layout` typo yields an empty screen with no error. Each tool turns one of those silent failures into an early, actionable one.
 
@@ -22,6 +22,7 @@ They exist because the DayZ asset pipeline fails *silently*: a `.p3d` written wi
 | [`dayz-pbo-diff`](#scriptstoolsdayz-pbo-diff) | Compare the entries of two PBOs by SHA-256, and their header properties | Reports only — one new JSON |
 | [`dayz-navmesh-compare`](#scriptstoolsdayz-navmesh-compare) | Compare two `.nm` navmeshes tile by tile, by structure, against terrain edits and routes | Reports only — one new JSON |
 | [`dayz-terrain-builder-runner`](#scriptstoolsdayz-terrain-builder-runner) | EXPERIMENTAL, Windows only: drive a Terrain Builder it launched by Win32 messages | **Yes** — its state file and `menu.json`; Terrain Builder rewrites its own settings on exit |
+| [`dayz-persistence-contracts`](#scriptstoolsdayz-persistence-contracts) | Model the three DayZ save contracts (entity stream, Community Framework ModStorage, sidecar file) and test a persistence design against them | No — models and tests only |
 
 ---
 
@@ -120,7 +121,7 @@ Rules are one module per defect under `scripts/detectors/`, over a source stripp
 
 `ui_reconcile.py` is the companion cross-check: `FindAnyWidget`/`FindWidget` literals against the widgets a `.layout` actually declares, and `#STR_` keys against the stringtable. Both classes of bug compile fine and only appear when the menu opens.
 
-**Known coverage limit, stated up front.** Four detectors read curated tables in `scripts/shared/vanilla_reference.py` that are deliberately small, because the linter does not parse the vanilla script tree at runtime. That trades false negatives for a guarantee of no false positives from that path. **A green run is not proof of absence**, and it predicts that the module compiles and the asset loads — never that the engine behaves. Behaviour is the online layer's job.
+**Known coverage limit, stated up front.** Five detectors read curated tables in `scripts/shared/vanilla_reference.py` that are deliberately small, because the linter does not parse the vanilla script tree at runtime. That trades false negatives for a guarantee of no false positives from that path. **A green run is not proof of absence**, and it predicts that the module compiles and the asset loads — never that the engine behaves. Behaviour is the online layer's job.
 
 **Vanilla control — linter authors only, not a mod-cycle step.** Before committing a change under `scripts/tools/dayz-script-validator/` (a new rule, a touched detector, a touched parser), compare the linter's findings on Bohemia's vanilla tree against the pinned baseline:
 
@@ -128,7 +129,7 @@ Rules are one module per defect under `scripts/detectors/`, over a source stripp
 python scripts/tools/dayz-script-validator/scripts/vanilla_control.py
 ```
 
-A full run on DayZ 1.30 takes two to four minutes (`scripts/tools/dayz-script-validator/README.md`; not re-timed here). Without a local vanilla tree the control SKIPs with exit 2. A green control only proves the linter is silent on that tree; it does not prove the new rule catches anything. Optional flags from `--help`: `--vanilla-root`, `--baseline`, `--update`, `--json`.
+A full run on DayZ 1.30 takes about six minutes (341 seconds on 1.30.164289, `scripts/tools/dayz-script-validator/README.md`; not re-timed here). Without a local vanilla tree the control SKIPs with exit 2. A green control only proves the linter is silent on that tree; it does not prove the new rule catches anything. Optional flags from `--help`: `--vanilla-root`, `--baseline`, `--update`, `--json`.
 
 ## `scripts/tools/dayz-vehicle-proxy-contract`
 
@@ -155,7 +156,7 @@ Needs this repo's py3d, numpy, scipy and matplotlib. `CfgConvert` is an external
 
 ## `scripts/tools/dayz-odol-strict`
 
-Fail-closed, read-only anatomy inspection and deterministic diff for **ODOL v53–v55** — the binarized model format the engine actually ships.
+Fail-closed, read-only anatomy inspection and deterministic diff for **ODOL v53–v55**, the binarized model format. DayZ 1.30 vanilla models and current DayZ Tools builds write ODOL v56, which this tool refuses with `ODOL_VERSION_UNSUPPORTED`.
 
 ```bash
 python -m dayz_odol_strict inspect input.p3d \
@@ -249,6 +250,24 @@ python scripts/tools/dayz-terrain-builder-runner/tbrunner.py command <menu id>
 
 Verified for menu commands and the standard file dialogs; **not** for Generate Layers, a real import or a WRP export. Use a disposable instance (`probe` posts every enabled entry under a prefix), back up `TerrainBuilder.opt`, `GUILayout.opt` and `Proj.vdat` (rewritten on exit), and press Terrain Builder's own dialog buttons by label: their ids are swapped (Ok 2, Cancel 1). Its README holds the gotchas.
 
+## `scripts/tools/dayz-persistence-contracts`
+
+Offline Python models of the three DayZ save contracts, with their tests. They model behaviour; they do not read a mod or a save file. Use them to check a persistence design against the rules in `skills/_shared/persistence/` before writing Enforce Script, and as a test bed when a rule in that pack changes.
+
+| Module | What it models | Pack file it follows |
+|---|---|---|
+| `persistence_router.py` | The four questions that pick exactly one contract: entity stream, Community Framework ModStorage or a file | `where-to-save.md` |
+| `persistence_stream.py` | An entity stream with `super` first, the variable width base data and a load that fails closed | `save-load-contract.md` |
+| `persistence_cf.py` | Community Framework framing: framework version, mod count, one framed block per mod, an unloaded mod's block kept | `cf-modstorage.md` |
+| `persistence_sidecar.py` | A file with its own header, the temp, verify, backup and replace sequence, injected I/O failures, and the reader that classifies the seven migration inputs | `sidecar-files.md`, `migration-matrix.md` |
+| `persistence_checklist.py` | The checklist a format change proposal must pass (old saves, the old reader, the no-change alternative first) | `where-to-save.md`, "Hard stops" |
+
+```bash
+python -m pytest -q scripts/tools/dayz-persistence-contracts
+```
+
+Stdlib only for the models; the tests need pytest. There is no package and no `P:\` dependency: each test imports its model by module name from that folder.
+
 ---
 
 ## Two helpers that are not tools of their own
@@ -282,7 +301,7 @@ The skills say how to build something; the tools say whether it survived. An age
 | Need text, color or image from a `.layout` | `python scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py <layout>` | Full-key format parse, not geometry |
 | About to change a linter rule | `python scripts/tools/dayz-script-validator/scripts/vanilla_control.py` | Whether the new rule is silent on Bohemia's tree |
 | Need a 3D preview of an MLOD `.p3d` without launching DayZ | `python -m dayz_3d_viewer build-viewer <p3d>` | Whether the visual LOD, textures and materials survived the export |
-| Two builds differ and nobody knows where | `python -m dayz_odol_strict diff <ref.json> <cand.json>` | The field that changed, not a visual impression |
+| Two builds differ and nobody knows where | `python -m dayz_odol_strict diff <ref.json> <cand.json>` | The field that changed, not a visual impression; reads ODOL v53 to v55 only, so 1.30 shipped assets and fresh binarize output (v56) are refused |
 | A rebuilt PBO should differ only where you changed it | `python scripts/tools/dayz-pbo-diff/pbo_diff.py --old <old.pbo> --new <new.pbo> --out <diff.json>` | Which entries' bytes changed or appeared, and whether the header properties did |
 | A regenerated navmesh "changed everywhere" | `python scripts/tools/dayz-navmesh-compare/compare_navmesh.py --old-nm <old.nm> --new-nm <new.nm> --out <report.json>` | Which tiles changed structure rather than bytes, how far from the terrain edit and under which routes |
 | A change looks right in Blender but wrong in game | `/dayz-launch-test`, then `script.log` and the RPT (`/dayz-logwatch`) | The engine's opinion, which is the only one that counts |
@@ -293,7 +312,7 @@ The skills say how to build something; the tools say whether it survived. An age
 | Task | Tools | Note |
 |---|---|---|
 | Importing or authoring a model | `py3d`, then `dayz-model-preflight` | Preflight is a gate, not a repair: it never guesses a mapping and never edits the model |
-| Comparing against a shipped asset | `dayz-odol-strict` | Read-only, and its backend is not in this repo: external and hash-pinned, installed separately |
+| Comparing against a shipped asset | `dayz-odol-strict` | Read-only, and its backend is not in this repo: external and hash-pinned, installed separately. Reads ODOL v53 to v55 only, so 1.30 shipped assets and fresh binarize output (v56) are refused |
 | Animation, RTM or SEAnim work | `dayz-animation-formats` | BMTR and `.anm` conversion are deliberately out of scope |
 | UI and `.layout` work | `dayz-ui-lab` | The offline render is a semantic model, not the engine; DayZDiag stays the golden reference |
 | Need a widget rectangle or click centre | `layout_ast.py` + `ui_rects.py` (not in this repo) | Contract in [Two `.layout` parsers](#two-layout-parsers) |
@@ -311,4 +330,4 @@ Two habits make the difference. Propose the tool **before** the expensive step, 
 
 ## Running the tool tests
 
-Each tool keeps its suite in its own `tests/` folder (`test_sync_generated.py` sits beside `sync_generated.py`). `python -m pytest -q scripts/tools` from the repository root runs them all in one process, and CI runs them as part of the repo's test command (`.github/workflows/tests.yml`). That works only while every test module has a unique file name: two test files with the same basename in different folders abort the whole collection with "import file mismatch" before a single test runs. Name a new test module after its tool.
+Each tool keeps its suite in its own `tests/` folder or beside its scripts (`dayz-persistence-contracts` and `dayz-linux` keep their `test_*.py` files next to the scripts, and `test_sync_generated.py` sits beside `sync_generated.py`). `python -m pytest -q scripts/tools` from the repository root runs them all in one process, and CI runs them as part of the repo's test command (`.github/workflows/tests.yml`). That works only while every test module has a unique file name: two test files with the same basename in different folders abort the whole collection with "import file mismatch" before a single test runs. Name a new test module after its tool.

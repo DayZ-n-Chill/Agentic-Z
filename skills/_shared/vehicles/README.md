@@ -82,11 +82,12 @@ Before the first boot of an aircraft, check these faults, which compile clean an
 | The `MotorbikeScript` config class and the key values of both vanilla bikes side by side | `motorbike-config-contract.md` |
 | The vanilla `SimulationModule` and `AnimationSources` of `Motorbike_01` | `motorbike-simulation-config.md` |
 | The vanilla damage zones, damage materials and wheel classes of `Motorbike_01` | `motorbike-damage-and-wheel-config.md` |
-| The full specification for a new motorbike | `motorbike-forward-contract.md` |
+| The full specification for a new motorbike: config | `motorbike-forward-contract.md` |
+| The full specification for a new motorbike: script class, what to measure in the model | `motorbike-forward-contract-script.md` |
 | Rider animation: vehicle command, `vehicles.agf`, clips, camera | `motorbike-rider-animation.md` |
 | Native `Motorbike` interface, callbacks, `MotorbikeScript` lifecycle, net sync | `motorbike-script-api.md` |
 | What the binarized vanilla bike models hold, at a glance, and how to read the tables | `motorbike-vanilla-p3d-anatomy.md` |
-| Full model tables of each vanilla bike: LODs, bones, animations, memory points, proxies, selections | `motorbike-01-model-anatomy.md`, `motorbike-02-model-anatomy.md` |
+| Full model tables of each vanilla bike: LODs, bones, animations, memory points, proxies, selections | `motorbike-01-model-anatomy.md`, `motorbike-02-model-anatomy.md`, `motorbike-02-model-selections.md` |
 | Every vanilla file the motorbike files cite, with line counts | `motorbike-vanilla-sources.md` |
 
 ## Symptoms of a ripped car
@@ -103,7 +104,8 @@ Before the first boot of an aircraft, check these faults, which compile clean an
 
 | Question | File |
 |---|---|
-| A car's `config.cpp` block by block: what each file owns, the class tree, `SimulationModule`, crew, lights, sounds, `AnimationSources`, how config, `model.cfg` and the model wire together, keys that do nothing | `vehicle-config-and-modelcfg.md` |
+| A car's `config.cpp` block by block: what each file owns, the class tree, `SimulationModule` | `vehicle-config-and-modelcfg.md` |
+| A car's `Crew`, lights, sounds, `AnimationSources`, how config, `model.cfg` and the model wire together, keys that do nothing | `vehicle-config-crew-lights-sounds.md` |
 | Attachments, cargo and fuel; wheel and door items with their slots and proxies; an engine that will not start; `OnDebugSpawn` | `vehicle-parts-and-start.md` |
 | A car's `model.cfg`: skeleton, animation classes, what the engine feeds the dashboard needles, reusing a vanilla rig, the crew proxy frame, limits of the seat probe | `vehicle-modelcfg-animations.md` |
 | `DamageSystem` zones in config, window glass, `RefTexsMats[]` and `"hidden"`, a windscreen that never hid | `vehicle-damage-and-glass.md` |

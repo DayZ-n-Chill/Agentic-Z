@@ -61,7 +61,7 @@ Write module paths with forward slashes, and compare the script log's `Module: W
 
 ## Offroad_02 in 1.30
 
-- Its roof part splits the outer and inner panels: `hiddenSelections[] = {"texture_roof_ext","texture_roof_int"}`, with a material for each (`P:\DZ\vehicles\wheeled\config.cpp:20587` to `:20601`).
+- Its front-left door part `Offroad_02_Door_1_1` carries the roof panels as two hidden selections, `texture_roof_ext` and `texture_roof_int`, each with its own material (`P:\DZ\vehicles\wheeled\config.cpp:20576` to `:20601`).
 - The `Front` damage zone of `Offroad_02` (`config.cpp:20899` on) has no `dmgZone_bumper_1`. That 1.29 had one is reported, not checked on `P:\`.
 - Beige variants are new: `Offroad_02_Beige` (`:22394`) and `_BeigeRust` parts such as `Offroad_02_Door_1_1_BeigeRust` (`:23441`).
 

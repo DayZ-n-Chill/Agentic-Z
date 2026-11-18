@@ -1,8 +1,6 @@
 # Material routes and `.rvmat` patterns
 
-Which material route fits a goal, a seven stage Super starting point and where its values come from, and the patterns for damage, emissive, glass, alpha decals, the environment map and penetration materials. Whenever a working vanilla `.rvmat` is close, copy it first.
-
-What each key and stage does is in `rvmat-stages.md`, and which vanilla file to copy for cloth, metal, glass and skin is in `surface-recipes.md`. A value called a starting point is one to adapt.
+Which material route fits a goal, a seven stage Super starting point and where its values come from, and the patterns for damage, emissive, glass, alpha decals, the environment map and penetration materials. Whenever a working vanilla `.rvmat` is close, copy it first. What each key and stage does is in `rvmat-stages.md`, and which vanilla file to copy for cloth, metal, glass and skin is in `surface-recipes.md`. A value called a starting point is one to adapt.
 
 ## Contents
 
@@ -99,8 +97,6 @@ Where the values come from:
 
 ## Moving existing materials to Super
 
-Starting points for moving a mod's existing materials onto a baked atlas:
-
 - Keep the old `ambient[]` and `diffuse[]` while the model has no `_co` yet. Vanilla Super materials write `{1,1,1,1}` because the color comes from the texture; copying that onto a part with no texture turns it white.
 - Keep `specular[]` and `specularPower` in the first pass. The `_smdi` already changes them per texel, and changing the map and the constants together makes any difference in game impossible to pin on either.
 
@@ -125,11 +121,7 @@ Use an on and off pair when config or script switches the state; the vanilla pai
 
 ## Glass and chrome
 
-Start from a vanilla glass or chrome material close to the target (`surface-recipes.md` lists one per kind of glass). The usual traits are a high `specularPower`, a fresnel stage, an environment map and sometimes render flags. The van's window:
-
-- `specularPower=500` (`P:\DZ\vehicles\wheeled\van_01\data\van_01_glass.rvmat:6`)
-- `fresnel(0.78,0.15)` in `Stage6` (`:71`)
-- `env_land_co.paa` in `Stage7` (`:83`)
+Start from a vanilla glass or chrome material close to the target (`surface-recipes.md` lists one per kind of glass). The usual traits are a high `specularPower`, a fresnel stage, an environment map and sometimes render flags. The van's window has `specularPower=500` (`P:\DZ\vehicles\wheeled\van_01\data\van_01_glass.rvmat:6`), `fresnel(0.78,0.15)` in `Stage6` (`:71`) and `env_land_co.paa` in `Stage7` (`:83`).
 
 ## Alpha decal on a vehicle
 

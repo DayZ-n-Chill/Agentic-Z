@@ -57,7 +57,7 @@ The weapon's moving parts are remapped to player skeleton bones by `boneRemap[]`
 - Several vanilla guns replace the base list with their own, one `AddItemBoneRemap` call each (`:1597` to `:1640`): IZH-18, B95, SKS, Derringer, Magnum, flare gun, Longhorn, the IZH shotguns, Remington 12, M79 and crossbow. Read the one for the gun you inherit before naming selections.
 - Since 1.30 two more weapon bases have their own script remap: `LeeEnfield_Base` with `bolthandle`, `boltbody`, `trigger`, `bullet`, `bullet1` and `magazine` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1605`), and `Luger_Base` with `bolt`, `magazine`, `bullet`, `trigger`, `slide`, `toggle1` and `toggle2` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1621`). `SCARL_Base` and `MP18_Base` have none and use the `Rifle_Base` list.
 
-The script remap is an array of pairs, the model's selection first and the player bone second, passed to `AddItemBoneRemap` (`P:\scripts\3_game\dayzplayer.c:245-252`). `bolt` goes to `Weapon_Bolt`, `magazine` to `Weapon_Magazine`, `trigger` to `Weapon_Trigger`. A part can instead be animated by the model's own `model.cfg`; drive each part one way only.
+The script remap is an array of pairs, the model's selection first and the player bone second, passed to `AddItemBoneRemap` (`P:\scripts\3_game\dayzplayer.c:245` to `:252`). `bolt` goes to `Weapon_Bolt`, `magazine` to `Weapon_Magazine`, `trigger` to `Weapon_Trigger`. A part can instead be animated by the model's own `model.cfg`; drive each part one way only.
 
 The names are the wiring: config, `model.cfg` and the remap find each part by its selection name, so a renamed selection breaks the remap and the animation source with no error.
 

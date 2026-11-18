@@ -10,7 +10,7 @@ Every pack is listed below, and no other index of packs exists. Paths are relati
 - **File naming.** Lowercase, words joined with `-` or `_` to match the neighbouring files, ending in `.md`. Name the file after its subject (`ptc-format-reference.md`, `singleton.md`), not after a ticket or a date.
 - **Front index.** Every pack folder has one front index that says which file to open for which question. For a `_shared/` folder it is the folder's `README.md`; for a skill's `references/` folder it is the table in that skill's `SKILL.md`. Each pack file opens with a title and one line saying what it covers.
 - **Loaded only when needed.** Agents and skills name the pack file they need at the step that needs it. They never tell a worker to read a whole pack up front.
-- **Checked against vanilla.** Facts about the game cite the vanilla file on `P:\` they came from, so a reviewer can check them. The integrity test fails when a pack file under `_shared/` has no vanilla citation (a `P:\` path, or a file:line such as `itembase.c:261`), except the files it lists as exempt: the style guide's section files, the py3d notes, the Tier 2 core, `textures/checking-the-look.md`, the Blender, tool and working-method files of the animation, model, texture and vehicle packs that hold no game fact, and the folder indexes. It checks that each file cites vanilla at least once; skill `references/` packs are not part of this check, and the line by line check is done by the reviewer. A file still marked "not yet checked on `P:\`" below has not been checked line by line; treat its facts as leads, not answers. A row marked "part checked" has its cited `P:\` lines checked, while its measured results, tool behaviour and facts about other mods are not checked; the file's own opening lines say which is which.
+- **Checked against vanilla.** Facts about the game cite the vanilla file on `P:\` they came from, so a reviewer can check them. The integrity test fails when a pack file under `_shared/` has no vanilla citation (a `P:\` path, or a file:line such as `itembase.c:261`), except the files it lists as exempt: the style guide's section files, the py3d notes, the Tier 2 core, `textures/checking-the-look.md`, the Blender, tool and working-method files of the animation, model, texture, vehicle and persistence packs that hold no game fact, the third-party device specifications `models/device-recipes-power.md` and `models/device-recipes-distribution.md`, and the folder indexes. It checks that each file cites vanilla at least once; skill `references/` packs are not part of this check, and the line by line check is done by the reviewer. A file still marked "not yet checked on `P:\`" below has not been checked line by line; treat its facts as leads, not answers. A row marked "part checked" has its cited `P:\` lines checked, while its measured results, tool behaviour and facts about other mods are not checked; the file's own opening lines say which is which.
 - **Which build a citation is from.** A vanilla line number is right for one game build. Some files cite the lines of the build they were checked on, up to the second 1.30 patch, which can be newer than the extraction on `P:\`; a measurement keeps the build it was made on. When a cited line does not match on `P:\`, find the symbol by name before deciding the fact is wrong. The build timeline and the rules for reading a citation are in `_shared/enscript/references/game_builds.md` ("Which line a citation gives"); what each build changed is in the topic packs.
 - **Registered here.** A new pack gets a row in this index in the same change.
 
@@ -34,6 +34,7 @@ The Linux and Proton shell helpers, the script API index builder and its lookup 
 
 | Folder or file | Purpose |
 |---|---|
+| `_shared/skill_helpers.py` | The helpers every pipeline skill (build, deploy, clean, scaffold, launch) imports: the preflight gate, the project cache and the ownership marker. |
 | `_shared/viewer_core.py` | Emits the shared Three.js viewer scaffold that the skills' viewer generators splice into their pages. A string emitter; it does not render and does not vendor three.js. |
 
 ### Enforce Script style guide (`_shared/enscript-style`)
@@ -370,7 +371,8 @@ Front index: `_shared/vehicles/README.md`. Loaded by dayz-vehicle-specialist and
 | `_shared/vehicles/motorbike-script-api.md` | The native interface of the motorbike class, the simulation callbacks, the script lifecycle, net sync variables, and what a motorbike lacks against a car. |
 | `_shared/vehicles/motorbike-actions-hud-lights-sounds.md` | The motorbike user actions, the HUD structure, the lights, horn and effect components, and the sound classes. |
 | `_shared/vehicles/motorbike-rider-animation.md` | How the rider is animated: the human vehicle command, the vehicle graph, the vanilla clips, the camera, and how far a mod can change the pose. |
-| `_shared/vehicles/motorbike-forward-contract.md` | The full specification for a new 1.30 motorbike, each element marked exact, design or unverified. |
+| `_shared/vehicles/motorbike-forward-contract.md` | The config a new 1.30 motorbike needs, with the vanilla source of each piece and what reads it. |
+| `_shared/vehicles/motorbike-forward-contract-script.md` | The script class a new 1.30 motorbike needs and what to measure in its model, with the vanilla source of each piece. |
 | `_shared/vehicles/motorbike-vanilla-p3d-anatomy.md` | What the binarized models of the two vanilla motorbikes hold, at a glance, and how to read the full tables in `motorbike-01-model-anatomy.md` and `motorbike-02-model-anatomy.md`. |
 | `_shared/vehicles/motorbike-vanilla-sources.md` | Every vanilla file the motorbike files cite, with its path on `P:\`, its line count and the symbols read in it. |
 
@@ -408,7 +410,8 @@ The files below are field notes from vehicle projects. Each opens with a `Status
 | Folder or file | Purpose |
 |---|---|
 | `_shared/vehicles/new-car-day-one.md` | Part checked: what to measure offline before a new or ported vehicle first goes in game, what each of the three files owns, and the gaps no config review reveals. |
-| `_shared/vehicles/vehicle-config-and-modelcfg.md` | Part checked: the `config.cpp` class of a drivable car, block by block: what each of the three files owns, the class tree, `SimulationModule`, crew, lights, attachments, wheel and door items, sounds, animation sources, and how config, `model.cfg` and the model wire together. |
+| `_shared/vehicles/vehicle-config-and-modelcfg.md` | Part checked: the `config.cpp` class of a drivable car, block by block: what each of the three files owns, the class tree and `SimulationModule`. |
+| `_shared/vehicles/vehicle-config-crew-lights-sounds.md` | Part checked: the second half of a drivable car's `config.cpp` class: crew, lights, sounds, animation sources, how config, `model.cfg` and the model wire together, and keys that do nothing. |
 | `_shared/vehicles/vehicle-structural-parity.md` | Part checked: how to compare a new or imported car with a working vanilla car before the first in-game test, and what each LOD, selection, memory point and proxy of a drivable car holds. |
 | `_shared/vehicles/invariants-engine-fluids-and-handling.md` | Part checked: why an engine will not start or stay on, what a test kit must fill and attach, and measured rules for rolling, steering, mass, grip and drivetrain ratios. |
 | `_shared/vehicles/invariants-get-in-and-seats.md` | Part checked: why a get-in, seat or door action does not appear on a new or imported car, and the model, config and script contract that makes it appear. |
@@ -465,7 +468,8 @@ The files below are field notes from vehicle projects. Each opens with a `Status
 | `_shared/vehicles/gauge-fuel-panel.md` | How to add a fuel gauge panel to a model: padding the art, choosing a UV window that matches the face, where the pivot falls, sizing the needle, and which angles carry over from one model to another. |
 | `_shared/vehicles/gauge-needle-part.md` | How to build a gauge needle mesh that can be reused across vehicles, how to cut a real needle out of an imported cluster object, how to measure its rest angle and depth, and the two signs every new cluster face must copy from its neighbours. |
 | `_shared/vehicles/motorbike-01-model-anatomy.md` | What the binarized model of the vanilla `Motorbike_01` holds: model info, LODs, skeleton, every animation with its source, memory points, proxies and selections. |
-| `_shared/vehicles/motorbike-02-model-anatomy.md` | What the binarized model of the vanilla `Motorbike_02` holds: model info, LODs, skeleton, every animation with its source, memory points, proxies and selections. |
+| `_shared/vehicles/motorbike-02-model-anatomy.md` | What the binarized model of the vanilla `Motorbike_02` holds: model info, LODs, skeleton and every animation with its source. |
+| `_shared/vehicles/motorbike-02-model-selections.md` | The memory points, proxies, selections per LOD, and textures and materials of the binarized vanilla `Motorbike_02` model. |
 | `_shared/vehicles/motorbike-damage-and-wheel-config.md` | How the vanilla `Motorbike_01_ColorBase` lays out its `DamageSystem`, which materials each zone swaps as it takes damage, and what its wheel classes and ruined wheels set. |
 | `_shared/vehicles/motorbike-simulation-config.md` | What the vanilla `SimulationModule` and `AnimationSources` of `Motorbike_01_ColorBase` hold, as a starting point for a new bike's handling. |
 | `_shared/vehicles/obj-import-assembly.md` | How to finish an OBJ import once it is parsed and in DayZ coordinates: decimate each material group, build smooth normals, assemble the `.p3d`, encode the PAA, wire config and scripts into the mod, and check the result. |
@@ -538,7 +542,7 @@ Front index: `_shared/textures/README.md`, which also has a symptom to cause tab
 
 ### UI pack (`_shared/ui`)
 
-Written for `dayz-ui-specialist`. The folder has no front index of its own yet; pick the file from this table. Part checked throughout: a `P:\` path with a line was checked; in-game measurements and third-party mod facts were not re-run. The Figma pipeline rules are in `_shared/figma-to-dayz-rules.md`.
+Written for `dayz-ui-specialist`. Front index: `_shared/ui/README.md`. Part checked throughout: a `P:\` path with a line was checked; in-game measurements and third-party mod facts were not re-run. The Figma pipeline rules are in `_shared/figma-to-dayz-rules.md`.
 
 | Folder or file | Purpose |
 |---|---|

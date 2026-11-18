@@ -36,7 +36,7 @@ A hide source that should start hidden uses `initPhase = 1`: the flag declares `
 
 ## Vehicles: which sources are declared and which the engine supplies
 
-A car declares its doors, seats and suspension as `user` sources. `CarScript` also declares the `user` sources `HideDestroyed_1_1` to `HideDestroyed_2_2`, and damage sources with `source="Hit"` plus a `hitpoint` key: `AnimHitWheel_1_1` to `AnimHitWheel_2_2` and `HitDoorsHood`, `HitDoorsTrunk`, `HitDoorsDrivers`, `HitDoorsCoDrivers`, `HitDoorsCargo` (`P:\DZ\vehicles\wheeled\config.cpp:368` to `:429`). The motorbike's `AnimHitWheel_1` adds `raw=1` to its `Hit` source (`P:\DZ\vehicles\singletrack\config.cpp:137` to `:142`), the only vanilla use of that key; what it changes is not visible on `P:\`. A `Hit` source follows the named hit point's damage, not script:
+A car declares its doors, seats and suspension as `user` sources. `CarScript` also declares the `user` sources `HideDestroyed_1_1` to `HideDestroyed_2_2`, and damage sources with `source="Hit"` plus a `hitpoint` key: `AnimHitWheel_1_1` to `AnimHitWheel_2_2` and `HitDoorsHood`, `HitDoorsTrunk`, `HitDoorsDrivers`, `HitDoorsCoDrivers`, `HitDoorsCargo` (`P:\DZ\vehicles\wheeled\config.cpp:368` to `:429`). `AnimHitWheel_1_1` sets `raw=1` (`P:\DZ\vehicles\wheeled\config.cpp:396`) and the other car wheel sources inherit it; the motorbike's `AnimHitWheel_1` also sets `raw=1` on its `Hit` source (`P:\DZ\vehicles\singletrack\config.cpp:137` to `:142`). What the key changes is not visible on `P:\`. A `Hit` source follows the named hit point's damage, not script:
 
 | Declared in `AnimationSources` | Where | Driven by |
 |---|---|---|

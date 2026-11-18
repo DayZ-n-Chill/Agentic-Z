@@ -13,9 +13,9 @@ Open only the file the current step needs.
 | Native `Motorbike` API, callbacks, `MotorbikeScript` lifecycle | `motorbike-script-api.md` |
 | Start, stop, pick-up and repair actions, HUD, lights, horn, particles, sound classes | `motorbike-actions-hud-lights-sounds.md` |
 | Rider pose, animation graph, third-person camera, custom poses | `motorbike-rider-animation.md` |
-| Full checklist for a new motorbike, what to measure in the model | `motorbike-forward-contract.md` |
+| Full checklist for a new motorbike, what to measure in the model | `motorbike-forward-contract.md`, `motorbike-forward-contract-script.md` |
 | What the vanilla models contain, at a glance and how to read the tables | `motorbike-vanilla-p3d-anatomy.md` |
-| Full model tables of each vanilla bike (LODs, bones, animations, memory points, proxies) | `motorbike-01-model-anatomy.md`, `motorbike-02-model-anatomy.md` |
+| Full model tables of each vanilla bike (LODs, bones, animations, memory points, proxies) | `motorbike-01-model-anatomy.md`, `motorbike-02-model-anatomy.md`, `motorbike-02-model-selections.md` |
 | Every vanilla file the motorbike files cite, with line counts | `motorbike-vanilla-sources.md` |
 | Porting a 1.29 car mod to the 1.30 vehicle scripts | `dayz-1-30-vehicles.md` |
 

@@ -31,7 +31,7 @@ from pathlib import Path
 SKILL_NAME = "dayz-record-correction"
 REQUIRED = (Path("skills/_shared/dayz-conventions.md"), Path(".claude/CLAUDE.md"))
 PYTEST_CMD = [sys.executable, "-m", "pytest", "-q", "-rfE", "-p", "no:cacheprovider",
-              ".claude", "skills", "scripts/dev", "hooks"]
+              ".claude", "skills", "scripts/dev", "hooks", "scripts/tools"]
 DOCS_CMD = [sys.executable, ".claude/skills/docs-sync/sync.py", "--check"]
 DEFAULT_BASELINE = Path(tempfile.gettempdir()) / "record-correction-baseline.json"
 DEFAULT_TIMEOUT = 1200  # seconds per check; the full pytest run takes about 5 minutes

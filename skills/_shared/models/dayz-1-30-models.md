@@ -28,7 +28,7 @@ Since 1.30, `-cacheP3D=0/1` writes `.p3dcache` files next to `.p3d` files so lat
 
 ## `disableSimulation` on houses
 
-Since 1.30, house based entities take a `disableSimulation` config parameter that stops needless ticking on client and server (the changelog states what it does). The Takistan houses and props set it on the `Land_` class, next to `model`: `Land_House_1M2: HouseNoDestruct` (`P:\DZ\structures_takistan\Residential\config.cpp:1297`) and the well `Land_WaterWell_Brick: HouseDestructible` (`P:\DZ\structures_takistan\Props\config.cpp:22`). No vanilla config outside `P:\DZ\structures_takistan\` sets it (37 classes there). The script side is on `Entity` (`P:\scripts\3_game\entities\entity.c:1` to `:6`):
+Since 1.30, house based entities take a `disableSimulation` config parameter that stops needless ticking on client and server (the changelog states what it does). The Takistan houses and props set it on the `Land_` class, next to `model`: `Land_House_1M2: HouseNoDestruct` (`P:\DZ\structures_takistan\Residential\config.cpp:1297`) and the well `Land_WaterWell_Brick: HouseDestructible` (`P:\DZ\structures_takistan\Props\config.cpp:22`). No vanilla config outside `P:\DZ\structures_takistan\` sets it (30 classes there). The script side is on `Entity` (`P:\scripts\3_game\entities\entity.c:1` to `:6`):
 
 ```c
 class Entity extends ObjectTyped

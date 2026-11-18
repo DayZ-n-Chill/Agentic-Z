@@ -43,8 +43,7 @@ When invoked on a task, an agent should:
 │   │   ├── dayz-conventions.md         # L2 core rules for the DayZ domain
 │   │   ├── conventions/                # L2 topic files (config, assets, scripts, ui, server)
 │   │   ├── README.md                   # index of every knowledge pack file
-│   │   ├── <topic>/                    # knowledge packs: vehicles, models, animation, ... (L3)
-│   │   └── scripts/                    # shared helper scripts (Linux and API index helpers)
+│   │   └── <topic>/                    # knowledge packs: vehicles, models, animation, ... (L3)
 │   └── <skill>/                        # one folder per skill (most are dayz-*)
 │       ├── SKILL.md
 │       └── *.py                        # helper scripts, when the skill has any
@@ -249,7 +248,7 @@ These skills run offline scripts on the files they are given. The knowledge behi
 |---|---|
 | [`/sync-skills`](../.claude/skills/sync-skills/SKILL.md) | Link `skills/` and `.claude/skills/` into each agent CLI's home dir. Required after clone |
 | [`/agentic-z-update`](../.claude/skills/agentic-z-update/SKILL.md) | Pull the latest template improvements into your clone without touching `workspace/` |
-| [`/docs-sync`](../.claude/skills/docs-sync/SKILL.md) | Detect drift between canonical sources and the React wiki; `--apply` writes mirrors |
+| [`/docs-sync`](../.claude/skills/docs-sync/SKILL.md) | Detect drift between canonical sources and the React wiki; `--apply` updates only those computed counts |
 | [`/clean-repo`](../.claude/skills/clean-repo/SKILL.md) | Orchestrator — run every domain's cleanup skill |
 
 **MCP server:** [`dayz-rag`](../.claude/mcp/dayz-rag/README.md) — exposes `search_dayz_source`, `get_dayz_file` and `list_indexed_sources` to the DayZ agents. Reads the LanceDB index under `~/.claude/dayz-search-index/`, built with `/dayz-search-index` or installed with `/dayz-search-download`.
