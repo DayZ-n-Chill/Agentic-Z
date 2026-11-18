@@ -1,6 +1,6 @@
 ---
 name: rip-vehicle-import
-description: "Guides the import of a ripped racing-game car (a Grub rip that is proxy-split and has moving doors, hood and trunk, called family B) into a drivable DayZ car: the six contract deltas, the single asset-contract ledger entry, the B1 to B7 check allowlist, the human visual signoff, the session A classification viewer and five symptom cookbooks. Use when the user imports a ripped racing-game vehicle (a Grub rip), or when such a car shows no get-in prompt, wheelPresent=0, a white body, an invisible attachment or no door radial. For a vanilla-style CarScript car use dayz-vehicles."
+description: "Guides the import of a ripped racing-game car (a Grub rip that is proxy-split and has moving doors, hood and trunk, called family B) into a drivable DayZ car: the six contract deltas, the single asset-contract ledger entry, the B1 to B7 check allowlist, the human visual signoff, the session A classification viewer, and the vehicle pack's symptom files for the five known failures. Use when the user imports a ripped racing-game vehicle (a Grub rip), or when such a car shows no get-in prompt, wheelPresent=0, a white body, an invisible attachment or no door radial. For a vanilla-style CarScript car use the vehicle pack and /dayz-p3d-audit."
 ---
 
 <!-- skill-dir-note -->
@@ -16,8 +16,8 @@ Follow `skills/_shared/dayz-conventions.md`.
 
 - **Ships:** this adapter, the classification viewer (`export_car_glb.py` and `classify-viewer\index.html`) and the reference files listed at the end.
 - **Expects:** the import project, written `<vehicle-import>` below. Its scripts, contracts, profiles and goldens are not in this repo. Every gate and primitive named here runs from that project. When a canonical path is missing, stop; never substitute a copy or another tool.
-- **Evidence status:** the facts about the import project, its gates and its measured cars (SUB_BRZ, sub_wrxsti_04, MercedesAMGLF, LFQuad, LFQuad3, LFHeli) are not yet checked on `P:\`. Facts about the vanilla game cite the file on `P:\`; those citations are in the cookbooks.
-- **Scope:** if the asset is already in flight, use its frozen runbook. If an entry that applies is missing, STOP. The previous runbook is in `references/history-family-b-runbook.md` and is not executable. A vanilla-style `CarScript` car that is not a rip belongs to `dayz-vehicles`.
+- **Evidence status:** the facts about the import project, its gates and its measured cars (SUB_BRZ, sub_wrxsti_04, MercedesAMGLF, LFQuad, LFQuad3, LFHeli) are not yet checked on `P:\`. Facts about the vanilla game cite the file on `P:\`; those citations are in the symptom files of the vehicle pack.
+- **Scope:** if the asset is already in flight, use its frozen runbook. If an entry that applies is missing, STOP. The previous runbook is in `references/history-family-b-runbook.md` and is not executable. A vanilla-style `CarScript` car that is not a rip belongs to the vehicle pack (`skills/_shared/vehicles/README.md`).
 
 ## Six mandatory deltas
 
@@ -110,27 +110,29 @@ Two traps the render hides, both paid for on the same day:
 - DayZ is left-handed and three.js is right-handed, so passing the coordinates through unchanged is a reflection. A mirrored car looks perfectly plausible until you read a badge; brand text is the calibrator.
 - Proxy placement is `vertices @ effective_frame.T + anchor` with `effective_frame = MLOD_PROXY_CONVENTION_FRAME @ raw_frame` (`rip_detachable_doors.py:55-61,171-176`). Deducing it by eye from the proxy triangle placed each door one meter from the car.
 
-## Symptom to cookbook index
+## Symptom index
 
-| Symptom | Cookbook |
+The five known failures of a family B car each have one file in the vehicle pack, `skills/_shared/vehicles/`:
+
+| Symptom | Open |
 |---|---|
-| No get-in prompt | `references/cookbook-get-in-missing.md` |
-| `wheelPresent=0` | `references/cookbook-wheelpresent-0.md` |
-| White car or missing texture | `references/cookbook-white-car.md` |
-| Attachment invisible while its simulation works | `references/cookbook-attachment-invisible.md` |
-| No door radial | `references/cookbook-door-radial-missing.md` |
+| No get-in prompt: the ordered guards of `ActionGetInTransport`, the instrument that names the guard, the right-hand-drive seat table | `skills/_shared/vehicles/symptom-get-in-missing.md` |
+| `wheelPresent=0`: `WheelCountPresent()` is 0 while `WheelCount()` is 4 | `skills/_shared/vehicles/symptom-wheels-not-present.md` |
+| White car or missing texture on a dedicated server | `skills/_shared/vehicles/symptom-white-vehicle.md` |
+| Attachment invisible while its simulation works: proxy frames, the `Proxy` class name rule | `skills/_shared/vehicles/symptom-attachment-invisible.md` |
+| No door radial: which of the three door mechanisms the vehicle uses | `skills/_shared/vehicles/symptom-door-action-missing.md` |
 
-This is the only index. Do not create an `INDEX.yaml`, a cookbook router or another symptom table.
+Do not create an `INDEX.yaml`, a symptom router or another symptom table.
 
 ## Day-0 sequence
 
-1. Arrive here from the family selector of `dayz-vehicles`: the asset is a new Grub rip, proxy-split, with moving parts.
+1. Arrive here from the route table of the vehicle pack (`skills/_shared/vehicles/README.md`): the asset is a new Grub rip, proxy-split, with moving parts.
 2. Open one ledger entry, `asset-contract.json`, created from the canonical template, and verify the source revision, `Y0`, the golden revision and the status.
 3. The human classifies in Blender. The primitive captures the hash and the inventory and imports the lists and transforms into that same ledger entry. The agent neither opens nor maintains the schema or the export as state documents.
 4. Check that B1 to B7 are present at their canonical paths, without executing snapshots. The allowlist is complete; any canonical absence is a STOP.
 5. Convert while keeping provenance and require `LINEAGE_CHECKPOINT=PASS`; the other two states block.
 6. Execute only the allowlist. The final live test stays separate from the preflight.
-7. If one of the five symptoms appears, open only its cookbook. For any other symptom: STOP and an explicit diagnosis.
+7. If one of the five symptoms appears, open only its symptom file. For any other symptom: STOP and an explicit diagnosis.
 
 ## Step 5 conversion rail
 
@@ -151,12 +153,7 @@ python scripts\asset_contract_checkpoint.py check --contract <ledger-entry>
 
 ## On Linux
 
-Everything above is the Windows workflow and stays valid there. On Linux, the Proton setup, the measured tool matrix and the pitfalls are in the shared Linux and Proton notes (`skills/_shared/linux-proton.md`); this section only says what changes for this skill.
-
-- Pack, sign and binarize with dayzmake 1.0.0 or later, the DayZ fork of armake2, pinned to a release tag; where to get it and how to install it are in `skills/dayz-build-pbo/references/dayzmake-linux.md`. Use `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. The original armake2 is no substitute: it is built for Arma, its V3 file hash leaves out `*.c` files (dayzmake v1.0.0 includes them) and it lacks the DayZ-only functions dayzmake keeps adding. The `skills/_shared/scripts/dayz-mod-pack.sh` wrapper wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`); its notes are in the same reference file. A 2026-11-03 comparison of a textured cube against Bohemia's binarize from a `P:` root matched byte for byte (fork commit `7dcb3cf`, then still named armake2; `v1.0.0` contains it). That is not an in-game ODOL check.
-- `P:\` is a plain directory mapped by `dayz-proton.sh init <dir>` (the script is `skills/_shared/scripts/dayz-proton.sh`); a `P:\<Mod>\...` path in this skill is `<dir>/<Mod>/...`.
-- Object Builder and TexView run under Proton: `dayz-proton.sh gui ObjectBuilder <p3d>` and `gui TexView <paa>`. Object Builder opened and displayed a model; editing in it was not exercised. The offline checks (the tools under `scripts/tools/py3d/`, `scripts/tools/dayz-model-preflight/` and `scripts/tools/dayz-3d-viewer/`) are Python and run natively.
-- In-game checks: the Linux notes of `dayz-test-ingame`.
+Everything above is the Windows workflow and stays valid there. What changes on Linux (dayzmake for packing, signing and binarizing, `P:\` as a plain directory, Object Builder and TexView under Proton, the Python checks that run natively) is in `skills/_shared/linux-proton.md`, section 1; in-game checks are in the Linux notes of `/dayz-launch-test` (`skills/dayz-launch-test/references/linux.md`).
 
 ## Building, testing and publishing the mod
 
@@ -170,11 +167,6 @@ Open only the file the current step needs. All are in `<skill-dir>\references\`.
 |---|---|
 | `references/classify-viewer.md` | Setting up or using the session A classification viewer: the Three.js files it needs, the steps per car, the GLB data contract. |
 | `references/profile-schema.md` | Reading or repairing a `profiles\<car>.json` of a car already in flight (legacy schema; not a template for the next family B car). |
-| `references/cookbook-get-in-missing.md` | The get-in prompt does not appear: the ordered guards of `ActionGetInTransport`, the instrument that names the guard, the right-hand-drive seat table. |
-| `references/cookbook-wheelpresent-0.md` | `WheelCountPresent()` is 0 while `WheelCount()` is 4: no traction, the body sinks, no RPT error. |
-| `references/cookbook-white-car.md` | The car is white or untextured on a dedicated server but fine with file patching. |
-| `references/cookbook-attachment-invisible.md` | A wheel, door or rack item is attached and simulates but does not render: proxy frames, the `Proxy` class name rule, `ProxyVehiclePart` against `ProxyAttachment`, rifles and tools on one rack. |
-| `references/cookbook-door-radial-missing.md` | A door shows no radial action: which of the three door mechanisms the vehicle uses and the trap of each. |
 | `references/history-retired-artifacts.md` | Someone asks for one of the seven document types change 0 retired (freeze specs, readiness reports, per-run manifests and so on). |
 | `references/history-canonical-path.md` | Working on a car started before change 0: the former day-1 checklist and the 12-step pipeline. |
 | `references/history-family-b-runbook.md` | Diagnosing a car in flight with the complete pre-change-1 runbook: legacy rules, smoke test notes, recurring defects, lift, doors, proxy frames, the headless render gate, glass winding, the winding lineage gate, the material override. History only, no authority. |

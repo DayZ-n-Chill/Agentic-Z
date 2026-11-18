@@ -7,9 +7,9 @@
 ## What you get
 
 - **A 30-agent mod team**: an orchestrator that plans and tracks a whole mod, a Haiku router that picks the handler for a request, team leads, specialists for scripts, configs, models, textures, UI, Figma, maps, server admin, Workbench plugins, saving data, AI, vehicles, weapons, wearables, animation, audio and effects, and physics, and gatekeepers that review, build and test every task in game before you see it.
-- **85 slash-command skills** (81 in the plugin, plus 4 clone-only template-maintenance skills). 40 of them drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc. The other 41 are reference skills and offline checks for vehicles, models, animation, characters and clothing, world systems, weapons, UI and Enforce Script.
+- **66 slash-command skills** (62 in the plugin, plus 4 clone-only template-maintenance skills). 40 of them drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc. The other 22 are reference skills and offline tools for models, textures, animation, characters and clothing, vehicle imports, base building and saved data, AI, UI and Enforce Script; the facts they rely on live in the knowledge packs under `skills/_shared/`.
 - **Knowledge packs** under `skills/_shared/`: per-topic reference files the specialists load only when a task needs them (vehicles, models, animation, wearables, weapons, persistence, physics, audio and effects, textures, AI, Enforce Script, and cross-cutting notes in `knowledge/`). Facts about the game cite the vanilla file on `P:\` by path and line.
-- **Offline tools** under `scripts/tools/`: an Enforce Script, `.layout`, `config.cpp`, `inputs.xml` and `.rvmat` validator that `/dayz-lint` runs as its second stage, py3d for reading and writing MLOD `.p3d` models, model, layout and animation-format checkers, and viewers. [`docs/knowledge-pack-tools.md`](docs/knowledge-pack-tools.md) says which tool to reach for.
+- **Offline tools** under `scripts/tools/`: an Enforce Script, `.layout`, `config.cpp`, `inputs.xml` and `.rvmat` validator that `/dayz-lint` runs as its second stage, py3d for reading and writing MLOD `.p3d` models, model, layout and animation-format checkers, and viewers. [`docs/tools.md`](docs/tools.md) says which tool to reach for.
 - **A semantic-search RAG** over the vanilla DayZ source (Enforce Script, configs, layouts, materials), exposed through the `dayz-rag` MCP server to the specialists, reviewer, debugger, architect and layout agents. Embeddings via Voyage AI (`voyage-code-3`) stored in LanceDB; needs `VOYAGE_API_KEY` in `.env`. Skip the build with `/dayz-search-download`, which pulls the prebuilt index from GitHub releases.
 - **Three-CLI support out of the box.** The same skills and rules files work in Claude Code, Codex CLI, and Gemini CLI. One `sync-skills` run wires the skills up in all three. The agents, hooks and RAG server are Claude Code only.
 
@@ -65,7 +65,7 @@ Full prerequisites, env-var overrides, and troubleshooting: **[`docs/dayz-moddin
 | **`P:\Mods\` junction → `<DayZ install>\!Workshop\`** | One-time `mklink /J` so built PBOs land where the engine actually loads mods. |
 | **Vanilla data on `P:\`** | DayZ Tools → "Extract Game Data". Your configs inherit from vanilla classes such as `Inventory_Base` and `Clothing`, and your scripts from `ItemBase`. |
 | **Python 3.10+** on `PATH` | The skills are Python scripts. |
-| **DayZ-MCP** *(optional, installed separately)* | An MCP server that drives a running DayZDiag server and client. Only `/dayz-mcp-verify` and the managed runs in `/dayz-test-ingame` use it. Not part of this repo; see [`docs/dayz-mcp.md`](docs/dayz-mcp.md). |
+| **DayZ-MCP** *(optional, installed separately)* | An MCP server that drives a running DayZDiag server and client. Only the in-game verification and the managed runs described in `/dayz-launch-test` use it. Not part of this repo; see [`skills/dayz-launch-test/references/mcp/README.md`](skills/dayz-launch-test/references/mcp/README.md). |
 
 Search (optional) embeds through Voyage AI's hosted API (`voyage-code-3`, code-tuned, 1024-dim) and stores the vectors in LanceDB under `~/.claude/dayz-search-index/`, where the `dayz-rag` MCP server reads them. Install its Python packages once from the repo root with `pip install -r .claude\mcp\dayz-rag\requirements.txt -r skills\dayz-search-index\requirements.txt`. Add `VOYAGE_API_KEY=pa-…` to `.env` at the repo root; queries need it either way. The last full local build with `/dayz-search-index` (August 2026, before windowing) embedded about 52,000 chunks and about 66M tokens; the current indexer makes about 62,000 chunks, and its local estimate of about 96M tokens runs high, so check Voyage's pricing first. To skip the build, `/dayz-search-download` installs the prebuilt index from GitHub releases with no embedding cost.
 
@@ -88,11 +88,10 @@ L3 files reference L2 in one line. The more specific tier wins ties. Corrections
 ```
 <repo>/
 ├── agents/                 # 30 agents: mod team, router, specialists, agent-creator (L3)
-├── skills/                 # 81 plugin slash-command skills (L3) + L2 shared conventions
+├── skills/                 # 62 plugin slash-command skills (L3) + L2 shared conventions
 │   ├── _shared/dayz-conventions.md   # L2 core
 │   ├── _shared/conventions/          # L2 topic files (config, assets, scripts, ui, server)
 │   ├── _shared/<topic>/    # knowledge packs (vehicles, models, animation, ...), indexed in _shared/README.md
-│   ├── _shared/knowledge/  # cross-cutting DayZ notes pack
 │   └── <skill>/            # one folder per skill (most are dayz-*)
 ├── .claude/
 │   ├── skills/             # 4 repo-only skills: agentic-z-update, clean-repo, docs-sync, sync-skills
@@ -102,11 +101,10 @@ L3 files reference L2 in one line. The more specific tier wins ties. Corrections
 │   └── settings.local.json # gitignored, per-clone Claude Code settings
 ├── AGENTS.md / GEMINI.md              # L1 rules for Codex and Gemini (same text as .claude/CLAUDE.md)
 ├── docs/                   # deep docs (DayZ workflow, model routing)
-├── evals/                  # answer tests per agent (questions/), plus the cases/ and live/ cases that packctl runs
+├── evals/                  # answer tests per agent (questions/) and the files they read (fixtures/)
 ├── scripts/
 │   ├── setup/ dayz/ dev/   # .bat wrappers around the skills, grouped by audience
-│   ├── tools/              # offline Python tools (see docs/knowledge-pack-tools.md)
-│   └── dev/knowledge-pack/ # packctl: validation, packaging and promotion tooling (see docs/knowledge-pack-maintenance.md)
+│   └── tools/              # offline Python tools (see docs/tools.md)
 ├── mods/agentic-z-panel/   # Claude Code panel plugin (one-click DayZ buttons)
 ├── workspace/              # in-progress mods (workspace/<ModName>/)
 ├── .server/                # local test-server instances (.server/<instance>/)
@@ -206,15 +204,12 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Exceptions, each
 
 ### Knowledge pack skills
 
-Most of these 41 skills are reference skills: the agent loads one when a task touches its topic, and reads the reference file the skill points at. Some also ship offline scripts. [`docs/compatibility-matrix.md`](docs/compatibility-matrix.md) says which DayZ build each one was checked on and how.
+Most of these 22 skills are reference skills: the agent loads one when a task touches its topic, and reads the reference file the skill points at. Some also ship offline scripts. The knowledge itself lives in the packs under `skills/_shared/`, indexed in [`skills/_shared/README.md`](skills/_shared/README.md).
 
 #### Vehicles
 
 | Command | Purpose |
 |---|---|
-| [`/dayz-vehicles`](skills/dayz-vehicles/SKILL.md) | Check a ground or water vehicle model offline (get-in memory points, seat selections, wheel axis, drawn sections and bone references in a binarized model) and find the right file of the vehicle pack. |
-| [`/dayz-motorbikes`](skills/dayz-motorbikes/SKILL.md) | Reference for motorbikes in DayZ 1.30: `MotorbikeScript`, the two-wheel simulation, kickstand, kickstart and pick-up actions and the motorbike HUD. |
-| [`/dayz-aviation`](skills/dayz-aviation/SKILL.md) | Reference for planes, seaplanes and helicopters on a `CarScript` base: flight physics in script, flight inputs, rotor and control surface animation, cockpit dials and buoyancy. |
 | [`/rip-vehicle-import`](skills/rip-vehicle-import/SKILL.md) | Guide for importing a ripped racing-game car with moving doors, hood and trunk into a drivable DayZ car: contract deltas, check allowlist, visual signoff and a classification viewer. |
 
 #### Models, textures and 3D
@@ -237,10 +232,6 @@ Most of these 41 skills are reference skills: the agent loads one when a task to
 | Command | Purpose |
 |---|---|
 | [`/dayz-animation-pipeline`](skills/dayz-animation-pipeline/SKILL.md) | Produce and change DayZ animations end to end: `model.cfg` skeletons, `AnimationSources`, RTM and SEAnim files, the animation graphs, rider poses and weapons in hands. |
-| [`/blender-animation`](skills/blender-animation/SKILL.md) | Author motion in a live Blender through the Blender MCP server: keyframes, poses, IK, cycles, physics bakes, preview renders and the `.txa` export for DayZ. |
-| [`/dayz-realistic-animation-director`](skills/dayz-realistic-animation-director/SKILL.md) | Direct realistic DayZ animation from creation to in-game verification, with measurable motion contracts and stated evidence levels. |
-| [`/mixamo-retarget`](skills/mixamo-retarget/SKILL.md) | Experimental: retarget Mixamo or any FBX or DAE animation onto a custom Blender rig, including the DayZ skeleton. |
-| [`/ardy-motion-generation`](skills/ardy-motion-generation/SKILL.md) | Install and run NVIDIA ARDY locally under WSL2 to generate full-body locomotion for the DayZ survivor. |
 | [`/dayz-characters`](skills/dayz-characters/SKILL.md) | Import and author humanoids on the vanilla character bases (infected, survivors, NPCs): rigging, weights, LODs, config and ragdoll, plus an offline winding gate. |
 | [`/dayz-clothing`](skills/dayz-clothing/SKILL.md) | Build, fix and diagnose worn clothing (the `_m` and `_f` models): the worn model and `model.cfg` contract, a staged build, an alignment viewer and an FBX handoff. |
 
@@ -251,12 +242,6 @@ Most of these 41 skills are reference skills: the agent loads one when a task to
 | [`/dayz-basebuilding`](skills/dayz-basebuilding/SKILL.md) | Reference for buildable structures on `BaseBuildingBase`: kits, the `Construction` config block, build and dismantle actions, the bit mask save and damage zones. |
 | [`/dayz-persistence`](skills/dayz-persistence/SKILL.md) | Reference for persistence: `OnStoreSave` and `OnStoreLoad` streams, Community Framework ModStorage, format changes and rollback, sidecar JSON files. |
 | [`/rigorous-data-audit`](skills/rigorous-data-audit/SKILL.md) | Audit procedure for mods where a bug loses player progression: mechanical checks, eight audit angles, and every finding verified against the real file. |
-| [`/dayz-doors`](skills/dayz-doors/SKILL.md) | Reference for doors on buildings and static props: `class Doors`, the `model.cfg` skeleton and rotations, doors opened by a button, and the 1.30 lock rules. |
-| [`/dayz-underground`](skills/dayz-underground/SKILL.md) | Reference for underground areas in DayZ 1.30: terrain holes, underground triggers and the player's underground state. |
-| [`/dayz-environment-hazards`](skills/dayz-environment-hazards/SKILL.md) | Reference for the DayZ 1.30 hazards: sandstorm, heat stroke, dust agents and protective gear. |
-| [`/dayz-physics-engine`](skills/dayz-physics-engine/SKILL.md) | Reference for engine physics in script: the `dBody` API, collision layers, raycasts, contact damage, thrown objects, ragdoll and fall damage. |
-| [`/dayz-sound-system`](skills/dayz-sound-system/SKILL.md) | Reference for mod audio: `CfgSoundShaders` and `CfgSoundSets`, playing sound sets from script, sounds the server starts and the `NoiseSystem`. |
-| [`/dayz-weapons`](skills/dayz-weapons/SKILL.md) | Reference for the entity side of a firearm: `.p3d` selections and memory points, the player bone remap, `CfgWeapons` inheritance, magazines and fire modes. |
 | [`/dayz-ai-patterns`](skills/dayz-ai-patterns/SKILL.md) | Reference for the AI behaviour patterns of the DayZ Expansion AI module: state machine, threat and targeting, pathfinding and groups, and the vanilla `NoiseSystem`. |
 
 #### Scripting, UI and workflow
@@ -267,12 +252,6 @@ Most of these 41 skills are reference skills: the agent loads one when a task to
 | [`/dayz-ui-development`](skills/dayz-ui-development/SKILL.md) | Reference for building UI: menus, HUD overlays, `.layout` files, widgets, `.styles`, imagesets, stringtables, Dabs Framework MVC and the 1.30 UI changes. |
 | [`/dayz-mod-dev`](skills/dayz-mod-dev/SKILL.md) | Reading guide and rule set for developing a mod as a whole on DayZ 1.30 or later (vanilla, Community Framework, Expansion), on Windows or Linux. |
 | [`/dayz-mod-workflow`](skills/dayz-mod-workflow/SKILL.md) | Protocol for implementing and debugging a mod: the client and server data map, API checks, a checklist per file type, the error catalog and the debug order. |
-| [`/dayz-feature-spec`](skills/dayz-feature-spec/SKILL.md) | Define and quality-gate a feature before it is implemented: success criteria, Given/When/Then scenarios and a forward contract for every name the next phase uses. |
-| [`/dayz-test-ingame`](skills/dayz-test-ingame/SKILL.md) | Reference for testing in the running game: the build, deploy and launch cycle with `-filePatching`, server and mission config, scripted test cells and the AutoTest mod. |
-| [`/dayz-mcp-verify`](skills/dayz-mcp-verify/SKILL.md) | Test a mod in the running game through the dayz-mcp MCP server: spawn, capture, raycast and read telemetry, then write a PASS or FAIL report. Needs DayZ-MCP, which is optional and installed separately ([`docs/dayz-mcp.md`](docs/dayz-mcp.md)). |
-| [`/dayz-pbo-reverse-engineering`](skills/dayz-pbo-reverse-engineering/SKILL.md) | Study a mod somebody else built: classify its PBOs from their headers, extract them with ExtractPbo, and sweep for patterns with a `path:line` ledger. |
-| [`/systematic-debugging`](skills/systematic-debugging/SKILL.md) | Find the root cause of a failure before any fix is proposed: observe, trace, test one hypothesis, make one change. |
-| [`/task-observer`](skills/task-observer/SKILL.md) | Watch a work session for ways to improve skills: log corrections and repeated workflows as observations, and review them into staged skill updates. |
 
 ### Search / RAG
 
@@ -379,10 +358,7 @@ The full text lives in `.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md`.
 - **[`docs/evals.md`](docs/evals.md)**: answer tests that score each agent's answers, so a change can only keep or raise the score.
 - **[`docs/prompt-conventions.md`](docs/prompt-conventions.md)** — why agent and skill files use caps the way they do (RFC 2119 directives, when to cap, when to stay lowercase).
 - **[`skills/_shared/README.md`](skills/_shared/README.md)**: the index of every knowledge pack file and what it covers.
-- **[`docs/knowledge-pack-tools.md`](docs/knowledge-pack-tools.md)**: what each tool under `scripts/tools/` does, with tables that pick a tool by symptom and by task.
-- **[`docs/compatibility-matrix.md`](docs/compatibility-matrix.md)**: which DayZ build each knowledge pack skill was checked on and how.
-- **[`docs/dayz-mcp.md`](docs/dayz-mcp.md)**: the optional DayZ-MCP server for in-game automation, and how to wire it up.
-- **[`docs/knowledge-pack-maintenance.md`](docs/knowledge-pack-maintenance.md)**, **[`docs/knowledge-pack-product-spec.md`](docs/knowledge-pack-product-spec.md)** and **[`docs/knowledge-pack-authoring-lessons.md`](docs/knowledge-pack-authoring-lessons.md)**: how the `packctl` tooling under `scripts/dev/knowledge-pack/` works, the acceptance criteria for it, the offline tools and the knowledge pack skills, and rules for writing skills, helper scripts and tests.
+- **[`docs/tools.md`](docs/tools.md)**: what each tool under `scripts/tools/` does, with tables that pick a tool by symptom and by task.
 - **The wiki** lives in its own private repo, `DayZ-n-Chill/Agentic-Z-Wiki` (React + MUI, Vite). `/docs-sync` checks it against this repo when it is cloned next to this one. The old Docusaurus wiki is archived in that repo too, under `archive/wiki-docusaurus/`.
 
 ---

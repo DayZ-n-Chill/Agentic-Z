@@ -2,14 +2,14 @@
 
 What a seated player actually sees: the res 1100 View Pilot LOD, the proxies it references, trimming it safely, and two traps of an offline first-person viewer.
 
-> Status: third-party mod behaviour, not vanilla. The measurements were taken on the mod vehicles named in each entry (SUB_BRZ, LFQuad3) and are not yet checked on `P:\`, because the View Pilot LOD of a vanilla car sits inside a binarized model. A citation written with its full `P:\` path was opened on the vanilla data.
+> Status: third-party mod behaviour, not vanilla. The measurements were taken on the mod vehicles named in each entry (TestCoupe, TestQuad3) and are not yet checked on `P:\`, because the View Pilot LOD of a vanilla car sits inside a binarized model. A citation written with its full `P:\` path was opened on the vanilla data.
 
 ## Vanilla anchors checked on `P:\`
 
 - For a flat colour in a config texture slot vanilla uses a procedural texture instead of a file, for example `#(argb,8,8,3)color(0.521569,0.427451,0.054902,1.0,co)` on a truck door (`P:\DZ\vehicles\wheeled\config.cpp:18183`).
 - The View Pilot LOD of a vanilla car sits inside its binarized model (`P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d`), which py3d cannot read, so no LOD content was measured on it.
 
-## Seated-view geometry lives in the View Pilot LOD (added 2026-08-19, SUB_BRZ v1.2)
+## Seated-view geometry lives in the View Pilot LOD (added 2026-08-19, TestCoupe v1.2)
 
 A car with a View Pilot LOD (resolution 1100) renders THAT copy of the geometry for seated
 occupants, not LOD0. Any geometry/UV/selection patch that must be visible from the driver seat
@@ -21,7 +21,7 @@ Two texture facts measured on the same car: a tiny 8×8 DXT PAA is invalid (mip 
 the engine renders the grey fallback); for flat-colour config slots use a procedural
 `#(argb,8,8,3)color(r,g,b,1,CO)` instead of a file.
 
-## An offline first-person viewer: two traps that make it lie (added 2026-08-15, SUB_BRZ)
+## An offline first-person viewer: two traps that make it lie (added 2026-08-15, TestCoupe)
 
 No automated gate caught either trap; both were found by eye on the rendered view.
 
@@ -38,7 +38,7 @@ No automated gate caught either trap; both were found by eye on the rendered vie
   centreline must project to the RIGHT of the driver's eye, `side > 0`, or the build aborts). An
   orientation you did not assert is an orientation you got wrong.
 
-## The View Pilot LOD (res 1100) is a curated view (added 2026-08-15, SUB_BRZ, root-caused)
+## The View Pilot LOD (res 1100) is a curated view (added 2026-08-15, TestCoupe, root-caused)
 
 One car shipped both halves of this hole at once, and both were found by eye: a roll-cage bar and a
 headliner crossing the road view in first person, and 73 faces of body sheet silently absent from
@@ -47,7 +47,7 @@ that proves it:
 
 - **What the engine draws in first person = the main model's res-1100 PLUS every proxy that 1100
   references**, each contributing its own res-1100 when it has one and its finest visual LOD
-  otherwise. "Does this chunk file have a 1100?" is the wrong question — SUB_BRZ's shell 1100 lists
+  otherwise. "Does this chunk file have a 1100?" is the wrong question — TestCoupe's shell 1100 lists
   11 proxies including all four body chunks, which ship only `res=0` and are therefore drawn whole.
   Corollary for hiding something from first person only: give that part its own res-1100 minus the
   geometry. A part with only a visual LOD is drawn entire the moment the parent's View Pilot
@@ -82,4 +82,4 @@ model's 1100 against its own LOD0. When a LOD is hand-edited outside the builder
 proxy-only in the structural builder and was cloned by hand) it has no owner and no gate, which is
 exactly where silent cuts live.
 
-**A decimated LOD can keep every texture and material path and still render wrong: collapsed UVs.** On LFQuad3 the far LODs lost the body texture and the quad looked different up close, while the texture/material path census was clean; only a per-texture UV-AREA census found it - LODs 2-4 carried body faces with UV area 0 across the board (LOD2: body1 1.827/1.827, body3 1.706/1.706, body2 2.618/2.650, metal 880/880) and LODs 5-6 cited only `metal_co` (measured in game, DayZ 1.30.164014 Exp). A View Pilot (res-1100) derived from a decimated LOD inherits the defect. Action: when a vehicle looks different from afar or seated, census UV area per texture on every visual LOD and on the 1100/1200 before touching textures or materials; fix by UV transfer from the intact LOD, then re-census.
+**A decimated LOD can keep every texture and material path and still render wrong: collapsed UVs.** On TestQuad3 the far LODs lost the body texture and the quad looked different up close, while the texture/material path census was clean; only a per-texture UV-AREA census found it - LODs 2-4 carried body faces with UV area 0 across the board (LOD2: body1 1.827/1.827, body3 1.706/1.706, body2 2.618/2.650, metal 880/880) and LODs 5-6 cited only `metal_co` (measured in game, DayZ 1.30.164014 Exp). A View Pilot (res-1100) derived from a decimated LOD inherits the defect. Action: when a vehicle looks different from afar or seated, census UV area per texture on every visual LOD and on the 1100/1200 before touching textures or materials; fix by UV transfer from the intact LOD, then re-census.

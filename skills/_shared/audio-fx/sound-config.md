@@ -109,7 +109,7 @@ class powerGeneratorLoop_SoundSet
 | `spatial` | `1` plays the sound in 3D at its source; `0` plays it flat. | Line 319407. |
 | `doppler` | `1` turns on pitch shift for moving sources. | Line 319408. |
 | `loop` | `1` loops the set. Script can loop a set whatever this says (see `sound-script.md`). | Line 319409. |
-| `sound3DProcessingType` | A `CfgSound3DProcessors` class. | Line 319411; the class is at line 3029. |
+| `sound3DProcessingType` | A `CfgSound3DProcessors` class. There is no root class named `CfgSound3DProcessingTypes`; the key points into `CfgSound3DProcessors`. | Line 319411; the class is at line 3029. |
 | `distanceFilter` | A `CfgDistanceFilters` class that cuts high frequencies with distance. | `baseCharacterLoud_SoundSet`, line 318393. |
 | `startDelay` | Seconds before the set starts. | Line 319412. |
 | `frequencyFactor`, `frequencyRandomizer`, `volumeRandomizer` | Pitch factor and random spread of pitch and volume on each play. | `P:\DZ\sounds_bliss\config.cpp:13038` to `13040`. |
@@ -137,6 +137,8 @@ A shader or set can inherit a vanilla one and change only what differs. Declare 
 
 - `base_closeShot_SoundShader` sets `volume=1`, `range=3000` and `rangeCurve="closeShotAttenuationCurve"` (line 17117).
 - `Rifle_Shot_Base_SoundSet` sets `volumeFactor`, `volumeCurve="RifleShotCurve"`, `sound3DProcessingType="WeaponMediumShot3DProcessingType"`, `distanceFilter`, `occlusionFactor`, `obstructionFactor`, `spatial=1`, `doppler=0`, `loop=0`, `soundShadersLimit=2` and `soundObjectsLimit=2` (line 323687).
+
+Check the parent's name on the build you target: DayZ 1.29 renamed the VSS and AmphibianS silenced sounds, `VSS_Vintorez_*` to `VSS_silencer_*` (`class VSS_silencerCloseShot_SoundShader` at `P:\DZ\sounds\hpp\config.cpp:79480`) and `AmphibianS_InteriorTail` to `AmphibianS_silencerInteriorTail` (`class AmphibianS_silencerInteriorTail_SoundSet` at `P:\DZ\sounds\hpp\config.cpp:326852`). A mod that inherits the old name breaks; a mod's own sets in its own PBO need no alias.
 
 The pattern, as a weapon mod writes it for a rifle (third-party mod config, not vanilla):
 

@@ -16,8 +16,8 @@ ES_PROTECTED_METHOD_CROSS_CLASS_RULE_ID = "ES-PROTECTED-METHOD-CROSS-CLASS"
 # WARN, not FAIL: the refusal is measured for fields only. Enforce
 # `protected` reaches only the declaring class and its descendants, and a
 # protected FIELD read from an unrelated class stops the module
-# (`Variable 'm_DeviceId' is protected`, enforce-script-reference SKILL.md,
-# "Moving a body between modules", and ES-PROTECTED-CROSS-MODULE). No
+# (`Variable 'm_DeviceId' is protected`, skills/_shared/enscript/depth/compiler-traps.md,
+# the `protected` entry, and ES-PROTECTED-CROSS-MODULE). No
 # compile log on record shows the same for a METHOD. The shape comes from
 # a mod: `protected void
 # FX_OnServerState(...)` declared in FX_RideCommand, and

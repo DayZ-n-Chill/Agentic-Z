@@ -2,7 +2,7 @@
 
 Two ways the inventory preview of a door, hood or other part renders empty: the wrong `rotationFlags` for its side, and an `invview` point at the bounding box centre.
 
-> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -26,14 +26,14 @@ while its opposite renders normally, with everything else identical: same LOD ta
 properties, same bounding box, same distance to origin, same selections, same winding. Symmetric
 config plus symmetric geometry plus one side blank means look at `rotationFlags` before the model.
 
-### 2. An inventory preview goes BLANK when `invview` sits at the bounding-box centre (added 2026-10-01, SUB_BRZ)
+### 2. An inventory preview goes BLANK when `invview` sits at the bounding-box centre (added 2026-10-01, TestCoupe)
 
 A part mounts, renders in the world and keeps its tooltip, and its inventory preview is still empty.
 `ItemPreviewWidget` view 0 is `boundingbox_min + boundingbox_max + invView`
 (`scripts/3_game/gameplay.c:293`, DayZ 1.30.164014 Exp), and the
 icon forces `SetModelOrientation("0 0 0")` + `SetView(GetViewIndex())`
 (`containeditems/Icon.c:1385-1386`): with `invview` at the box centre the eye-to-centre direction is
-null and the render comes out empty. Measured on the two SUB_BRZ doors (in game, DayZ
+null and the render comes out empty. Measured on the two TestCoupe doors (in game, DayZ
 1.30.164014 Exp): both had `invview` within 3e-8 m of the bbox centre (and of `ce_center` / `pos
 center`); vanilla puts it ~1.07 m from the centre, OUTSIDE the box, on the side to show, and reuses
 the same point on both mirrored doors (not checked on `P:\`: the vanilla door models there are binarized). Never write `invview = (min+max)/2`; offline gate:

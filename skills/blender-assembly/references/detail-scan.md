@@ -17,7 +17,7 @@ A detail list written from one glance misses the small marks that define the obj
 
 ## Texture-side detail kinds
 
-The technique column of the detail list covers geometry. These kinds are details too and belong in the same list, with their destination in the DayZ texture pipeline. The recipes are in the `dayz-texture-pipeline` skill and in `skills/_shared/textures/surface-recipes.md`.
+The technique column of the detail list covers geometry. These kinds are details too and belong in the same list, with their destination in the DayZ texture pipeline. The recipes are in the texture pack, `skills/_shared/textures/README.md`, starting with `skills/_shared/textures/surface-recipes.md`.
 
 | Kind | Reads as | DayZ destination |
 |---|---|---|

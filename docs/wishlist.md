@@ -4,7 +4,7 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 
 | Idea | Where it came up | Date |
 | --- | --- | --- |
-| Derive the seat roster in `skills/dayz-vehicles/scripts/audit_getin_wheels.py` from the car's `Crew` config, so it is right for four-seat cars and cars with no seat-back selections. | Vehicles review | 2026-11-17 |
+| Derive the seat roster in `skills/dayz-p3d-audit/scripts/audit_getin_wheels.py` from the car's `Crew` config, so it is right for four-seat cars and cars with no seat-back selections. | Vehicles review | 2026-11-17 |
 | A census script for the hidden-selection face ownership check and the light selection preflight the vehicle pack describes by hand. | Vehicles review | 2026-11-17 |
 | A PBO reader for the checks in section 5 of `skills/_shared/vehicles/build-packaging-and-debug.md` (completeness, build mode, baked wheel angle, stray drive letters); `scripts/tools/dayz-pbo-diff/` may cover part of it. | Vehicles review | 2026-11-17 |
 | An override resolver for the 1.30 migration checklist: flag an `override` of a method DayZ 1.30 deleted, which the script validator passes today. | Vehicles review | 2026-11-17 |
@@ -31,9 +31,9 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 | A pytest for `gen_model_cfg.py` (it has only `--self-test`), one that builds the animation viewer page against `viewer_core.py`, and tests for `ik_pose_to_seanim.py` and `weapon_grip_viewer.py --data`. | Animation review | 2026-11-17 |
 | Finish `ik_pose_to_seanim.py`: write the step that turns joint positions into bone rotations, and drop its free text notes. | Animation review | 2026-11-17 |
 | A guard in `weapon_grip_viewer.py` that refuses a py3d without `IS_DAYZ_FORK`. | Animation review | 2026-11-17 |
-| `skills/mixamo-retarget/scripts/retargeting.py`: reject an empty bone map, strip the `mixamorig:` prefix, register the three scene properties, fix the `KeyError` in `auto_map_bones`, and replace the emoji in its `print` calls with plain text. | Animation review | 2026-11-17 |
-| A filled-in `production` contract template for `dayz-realistic-animation-director`, with provenance blocks, to copy per task. | Animation review | 2026-11-17 |
-| Run `run_regression_tests.py` of the animation director once on a machine with Blender and record the result. | Animation review | 2026-11-17 |
+| `skills/dayz-animation-pipeline/scripts/retargeting.py`: reject an empty bone map, strip the `mixamorig:` prefix, register the three scene properties, fix the `KeyError` in `auto_map_bones`, and replace the emoji in its `print` calls with plain text. | Animation review | 2026-11-17 |
+| A filled-in `production` contract template for the motion checker (`skills/_shared/animation/motion-contract.md`), with provenance blocks, to copy per task. | Animation review | 2026-11-17 |
+| Run `skills/dayz-animation-pipeline/scripts/run_regression_tests.py` once on a machine with Blender and record the result. | Animation review | 2026-11-17 |
 | An in-game test of a `.txa` exported with the ring and pinky chains and their carpal bones, to settle an open disagreement. | Animation review | 2026-11-17 |
 | Run the two `get_fcurves` variants on a real Blender 4.3 and 4.4, to settle an open disagreement. | Animation review | 2026-11-17 |
 | Run the character winding gate as a step of `/dayz-gate build` or `/dayz-p3d-audit` for any mod with a skinned model. | Animation review | 2026-11-17 |
@@ -42,18 +42,16 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 | An offline check that every part `id` in a `Construction` block is unique and between 1 and 93, as part of `/dayz-lint`. | World review | 2026-11-17 |
 | A `types.xml` entry check against the public classes of `config.cpp`, as part of `/dayz-lint`. | World review | 2026-11-17 |
 | An offline script that builds the sidecar cleanup table (every file suffix written against every `DeleteFile` site) and the path helper table from a mod's scripts, for `/dayz-lint` or `rigorous-data-audit`. | World review | 2026-11-17 |
-| An eval question set for `dayz-physics-specialist` drawn from the engine truths in `dayz-physics-engine`. | World review | 2026-11-17 |
+| An eval question set for `dayz-physics-specialist` drawn from the physics pack, `skills/_shared/physics/`. | World review | 2026-11-17 |
 | `rvmat_lint.py`: warn when a Stage4 `_as` reads `uvSource="tex1"` in a material borrowed from vanilla, and when a `_nohq` source name lacks the suffix. | World review | 2026-11-17 |
 | A script that prints per channel statistics of an `_as` or `_smdi` `.paa`, and one under `scripts/dev/` that regenerates the procedural SMDI and `dir[]` counts after a game update. | World review | 2026-11-17 |
 | A `/dayz-p3d-audit` mode that compares the centre of each remapped weapon selection with the reference weapon. | World review | 2026-11-17 |
 | `scripts/dayz/` wrappers that build the API index from `P:\scripts` and query it, so Windows users get every inherited member of a class in one command. | Scripting review | 2026-11-17 |
 | Check each Expansion call shape in `expansion_style.md` against the Expansion PBOs and add file and line. | Scripting review | 2026-11-17 |
-| Move `skills/_shared/skill-resolution.md` to `docs/`, since it is repo process and not DayZ knowledge. | Scripting review | 2026-11-17 |
 | A script validator rule for `ChangeGameFocus(0)`. | Scripting review | 2026-11-17 |
 | A test that every file named in a `SKILL.md` reference table exists. | Scripting review | 2026-11-17 |
 | A script that prints, for one widget type, the vanilla styles whose `Normal` state has a non-empty `Center`. | Scripting review | 2026-11-17 |
 | A test that runs `scripts/tools/dayz-ui-lab` `parse.py --check` on the four UI layout templates. | Scripting review | 2026-11-17 |
-| A `SessionStart` hook under `hooks/` for the `task-observer` review reminder. | Scripting review | 2026-11-17 |
 | A CSV stringtable check (keys used against column 1, header columns). | Scripting review | 2026-11-17 |
 | A build check that every `.rvmat` named in `config.cpp` is an entry of the PBO. | Scripting review | 2026-11-17 |
 | Compare the entries of two PBOs from `/dayz-build-pbo` with `scripts/tools/dayz-pbo-diff`. | Scripting review | 2026-11-17 |
@@ -63,12 +61,8 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 | A `--game-root` option on `/dayz-lint` for the `VANILLA-ROOT-BUILD-MISMATCH` rule. | Tools review | 2026-11-17 |
 | Let `/dayz-gate build` and `/dayz-build-pbo` find dependency folders from `requiredAddons[]` and pass them to the lint code stage. | Tools review | 2026-11-17 |
 | A thin skill for `scripts/tools/dayz-layout-viewer`, next to `/dayz-layout-preview`. | Tools review | 2026-11-17 |
-| Move the unique lines of `skills/_shared/knowledge/technical-notes.md` into the checked packs it overlaps, and shrink it. | Knowledge review | 2026-11-17 |
-| After `P:\` is re-extracted from the current game build, replace each "not yet checked on `P:\`" cell of `skills/_shared/knowledge/dayz-1-30-build-history.md` with the cited line. | Knowledge review | 2026-11-17 |
-| A `.mcp.example.json` at the repo root for DayZ-MCP; the wiring is described in `docs/dayz-mcp.md` today. | Knowledge review | 2026-11-17 |
+| After `P:\` is re-extracted from the current game build, replace each "not checked on `P:\`" build line of `skills/_shared/enscript/references/game_builds.md` and the topic packs with the cited line. | Knowledge review | 2026-11-17 |
+| A `.mcp.example.json` at the repo root for DayZ-MCP. | Knowledge review | 2026-11-17 |
 | Short `.cursorrules` and `.github/copilot-instructions.md` entry files that point at `AGENTS.md`. | Knowledge review | 2026-11-17 |
-| Adopt the labels `[EXACT]` and `[DESIGN]` for examples in pack files, and the six verification levels of `skills/_shared/knowledge/working-rules.md`, as written conventions. | Knowledge review | 2026-11-17 |
-| A `Status:` line under the title of every file under `skills/_shared/knowledge/`, saying what was checked on `P:\` and when. | Knowledge review | 2026-11-17 |
-| A wrapper that runs the five live eval cases through `packctl` against Agentic-Z skills. | Knowledge review | 2026-11-17 |
+| Adopt the labels `[EXACT]` and `[DESIGN]` for examples in pack files, and six named verification levels, as written conventions. | Knowledge review | 2026-11-17 |
 | An eval question for `dayz-ui-specialist` on Dabs MVC. | Knowledge review | 2026-11-17 |
-| A thin `.bat` wrapper for `packctl validate`. | Knowledge review | 2026-11-17 |

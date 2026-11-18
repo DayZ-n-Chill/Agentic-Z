@@ -12,4 +12,4 @@ The table lists what the modding section of the DayZ 1.30 experimental changelog
 
 The Object Builder viewer check in `object-builder-viewer.md` is the same on 1.30. Pair it with `-cacheP3D` only once DayZ Tools 1.30 is the installed version.
 
-Where the rest lives: the launch flags and command lines belong to the in-game test skills (`/dayz-launch-test`, and `skills/dayz-test-ingame/references/dayz-1-30-test-ingame.md`), and the mesh cache and model side belong to the `dayz-model-pipeline` skill (`skills/dayz-model-pipeline/references/dayz-1-30-model-pipeline.md`).
+Where the rest lives: the launch flags and command lines belong to the in-game test skills (`/dayz-launch-test`, and `skills/dayz-launch-test/references/dayz-1-30.md`), and the mesh cache and model side belong to the `dayz-model-pipeline` skill (`skills/dayz-model-pipeline/references/dayz-1-30-model-pipeline.md`).

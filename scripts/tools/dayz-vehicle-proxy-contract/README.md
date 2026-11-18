@@ -14,7 +14,7 @@ reports `PBO-HASH-MISMATCH` and `audit` exits 1 even when the build is fresh
 and correct.
 
 This is an offline check. It does not launch DayZ. In-game verification
-belongs to DayZ-MCP (`skills/dayz-mcp-verify/`).
+belongs to DayZ-MCP (`skills/dayz-launch-test/references/mcp/`).
 
 Its fail-closed PBO reader, `scripts/vehicle_proxy/pbo.py`, is also the reader
 of [`scripts/tools/dayz-pbo-diff`](../dayz-pbo-diff/README.md), through `digest_pbo`.

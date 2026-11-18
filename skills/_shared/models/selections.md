@@ -58,6 +58,8 @@ A selection's name can survive a conversion while its points do not. The model t
   The same converter also skipped members whose weight byte was 0, which is suspect for skinned selections too, since a stored 0 can stand for full weight.
 - **The `/dayz-p3d-inspector` builder.** Rebuilding a model from its Recipe can wipe the Memory LOD's selections; see that skill's `references/round-trip-caveats.md`.
 
+- **An ODOL v55 reader.** The same kind of converter, on a v55 vehicle model, did not parse the animation section: the reading went out of step there (not in the animation class itself), so damper and animation offsets could not be recovered from that file. Rebuild those animations from the source, or read them from a model you binarized yourself.
+
 In a binarized model the selections of the visual LODs are stored as faces, so their points have to be read through the face corners. Memory and Geometry LOD selections list vertices directly. A check written for one kind reads nothing on the other.
 
 **Check membership, not names.** After any conversion or rebuild, read the model with py3d and confirm each selection that matters still has members, the `_axis` selections of the Memory LOD first:
@@ -68,3 +70,13 @@ for name, sel in lod.selections.items():
 ```
 
 `lod.selections` is a dictionary keyed by name, and `sel.points` and `sel.faces` are dictionaries keyed by the point or face object (`_shared/py3d-mlod-notes.md`).
+
+## Placing parts from a selection
+
+When a model breaks into separate part models (planks of a crate, debris), spawn each part at the centroid of the selection of that name in Visual LOD 0 of the whole model, not at the bounding box of the part's own `.p3d`. Object Builder recentres a part when it is exported on its own, so the two can differ by several centimetres and the part spawns sunk or floating (measured in a mod).
+
+```python
+visual = next(l for l in model.lods if l.resolution == 0.0)
+pts = [p.coords for p in visual.selections["plank_front"].points]
+offset = tuple(sum(c[i] for c in pts) / len(pts) for i in range(3))
+```

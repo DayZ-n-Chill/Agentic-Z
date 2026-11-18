@@ -116,6 +116,13 @@ Opened on this repo's `P:\`, which is a 1.30 build. The port blockers in detail,
 | `IsVitalCarBattery`, `IsVitalTruckBattery` | `:2812`, `:2818` | `Transport.NeedElectricitySourceDevice` (`P:\scripts\3_game\vehicles\transport.c:821`) |
 | `CarPartsHealthCheck` | `:2977` | `PartsHealthCheck` (`P:\scripts\3_game\vehicles\transport.c:437`; `CarScript` override at `P:\scripts\4_world\entities\vehicles\carscript.c:2121`) |
 | `ForceUpdateLightsStart`, `ForceUpdateLightsEnd` | `:2806`, `:2809` | Nothing; the attribute says "no replacement". |
+| `OnBeforeSwitchLights` | `:2797` | Nothing ("no replacement"); light control is immediate in the component. |
+| `IsScriptedLightsOn` | `:2824` | `Transport.LightIsOn` |
+| `BrakesRearLight`, `ReverseRearLight`, `BrakeAndReverseRearLight`, `NoRearLight`, the `...FrontLightShineOn/Off` helpers | `:2830` on | `VehicleLightsComponent` |
+| `CheckVitalItem` | `:2951` | `Transport::CheckVitalItemCallback` (`CarScript` already calls it at `:853-854`) |
+
+- The deprecated block starts at `//! DEPRECATED` (`P:\scripts\4_world\entities\vehicles\carscript.c:2760`) and also keeps the old smoke fields such as `m_exhaustFx` (`:2779`); exhaust, radiator and wheel dust now go through `VehicleVFXComponent`.
+- `SetCarHornState` is not deprecated: it is a live method that hands the state to `m_HornComponent.SetMode` (`P:\scripts\4_world\entities\vehicles\carscript.c:2481-2487`). Only the `ActionCarHorn*` classes are obsolete (see `dayz-1-30-vehicles.md`).
 
 - `ToggleHeadlights` is gone from `P:\scripts\4_world\entities\vehicles\carscript.c` with no `[Obsolete]` stub, so a mod class that still declares `override void ToggleHeadlights()` stops the `4_World` compile.
 - Contact data is `VehicleContactData` with `m_Impulse` (`P:\scripts\3_game\vehicles\transport.c:1144-1148`), read in `CheckContactCache` as `data[0].m_Impulse` (`P:\scripts\4_world\entities\vehicles\carscript.c:1291`).

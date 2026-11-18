@@ -35,7 +35,7 @@ Measured offline on 2026-10-03, on the MLODs of the Rule 12 in-game test, rebuil
 | The same export with every face reversed (winding outward) | 100% negative, `SOLID` | Inside out |
 | The helicopter's recipe: det = +1 map, faces reversed, normals outward | 100% negative, `SOLID` | A mirror |
 
-Normals stored outward render solid but are lit inverted (the `dayz-characters` skill, `references/character-rigging.md` section 6).
+Normals stored outward render solid but are lit inverted (`skills/_shared/wearables/references/body-rigging.md` section 6).
 
 Read a Rule 12 export with `/dayz-p3d-audit` instead:
 

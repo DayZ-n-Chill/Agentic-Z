@@ -2,7 +2,7 @@
 
 Where `autocenter=0` sits on a vanilla placed item and on a vanilla vehicle, one measured case where the property on two LODs of a placed item made it float at knee height, and a snippet that strips the property to test for that case.
 
-> Status: the knee-height case was measured in game on one placed mod item (a pressure pad on `Inventory_Base`), and the vehicle LOD properties on unbinarized copies of the vanilla CivilianSedan and of a quad bike mod; the mod results are third-party mod behaviour, not vanilla. A citation written with its full `P:\` path was opened on the vanilla data on `P:\`. Other skills are named by skill name, each a folder under `skills/` (dayz-p3d-inspector, enforce-script-reference).
+> Status: the knee-height case was measured in game on one placed mod item (a pressure pad on `Inventory_Base`), and the vehicle LOD properties on unbinarized copies of the vanilla CivilianSedan and of a quad bike mod; the mod results are third-party mod behaviour, not vanilla. A citation written with its full `P:\` path was opened on the vanilla data on `P:\`. Other skills are named by skill name, each a folder under `skills/` (dayz-p3d-inspector); the Enforce Script pack is `skills/_shared/enscript/`.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -79,5 +79,5 @@ Write the result to a copy (`out_path`), test it in game, and keep the original:
 
 - `/dayz-p3d-audit`: `skills/dayz-p3d-audit/scripts/audit_p3d.py` reports a Geometry LOD without the property when the config sets `autocenter = 0`.
 - The dayz-p3d-inspector skill: `p3d_inspector_build.py` writes the `properties` of the Recipe JSON, and adds `autocenter` = `0` to a Geometry LOD whose recipe has none.
-- The enforce-script-reference skill: `config.cpp` conventions for placeable items.
+- the Enforce Script pack (`skills/_shared/enscript/depth/`): `config.cpp` conventions for placeable items.
 - `vehicle-structural-parity.md` and `rip-geometry-and-winding.md` ("`autocenter=0`: corrected scope by LOD, host, and submodel"): the vehicle side of this rule.

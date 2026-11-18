@@ -2,7 +2,7 @@
 
 How proxies are placed on a working car, the four config and model layers a detachable door, hood or trunk needs, what a seated player's action must register, how to hide an attachment proxy from script, and what the first-person View Pilot LOD of a shell and proxy vehicle must carry.
 
-> Status: the measurements below were made on mod vehicles, not on vanilla ones: a working off-road car that ships unbinarized (the control), a helicopter built on `CarScript` with two airframes, two imported cars, three quad bikes, a gun rack mod, a storage mod and a motorbike import derived from `Motorbike_02_ColorBase`. They are third-party mod behaviour, not vanilla. The vanilla script line numbers were opened on the vanilla data on `P:\` (a 1.30 build); a bare `file.c:N` is the vanilla script of that name under `P:\scripts\`, and `entityai.c` means `P:\scripts\3_game\entities\entityai.c`. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number. Other skills are named by skill name, each a folder under `skills/` (dayz-model-pipeline, dayz-test-ingame, dayz-mcp-verify).
+> Status: the measurements below were made on mod vehicles, not on vanilla ones: a working off-road car that ships unbinarized (the control), a helicopter built on `CarScript` with two airframes, two imported cars, three quad bikes, a gun rack mod, a storage mod and a motorbike import derived from `Motorbike_02_ColorBase`. They are third-party mod behaviour, not vanilla. The vanilla script line numbers were opened on the vanilla data on `P:\` (a 1.30 build); a bare `file.c:N` is the vanilla script of that name under `P:\scripts\`, and `entityai.c` means `P:\scripts\3_game\entities\entityai.c`. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number. Other skills are named by skill name, each a folder under `skills/` (dayz-model-pipeline, dayz-launch-test).
 
 Related file in this pack: `get-in-actions-and-proxy-pose.md` (the get-in condition chain, action registration and which anchor places the occupant).
 
@@ -174,7 +174,7 @@ attaches per type from config with no per-vehicle code, which is useful when one
 several models. The vanilla cars do not call super; they list their parts explicitly.
 
 **2. `attachments[]` depends on the PBO boundary; `+=` is not an unconditional rule.**
-Within the same source config tree, `+=` can retain the parent's slots. When the parent class comes from another PBO that is already compiled, that list is not a safe basis: write the complete list of vital and own slots in the child class. The earlier form of this rule is in `history/superseded-family-b-rules.md`.
+Within the same source config tree, `+=` can retain the parent's slots. When the parent class comes from another PBO that is already compiled, that list is not a safe basis: write the complete list of vital and own slots in the child class.
 
 The gate does not look for a `+=` token: it inspects the effective list after a compile or config dump and verifies battery, ignition, radiator, wheels, and each declared door or part. A door change cannot silently remove a vital slot. Also keep the independent check that each declared part appears in the `OnDebugSpawn` path; they are separate contracts.
 
@@ -517,7 +517,7 @@ both in res-1100 LODs only, close-up outside shots were clean and, in first pers
 covered the large gaps.
 
 The vanilla bikes ship no ViewPilot (parsed from their ODOLs, not checked in game:
-`skills/dayz-motorbikes/references/vanilla-p3d-anatomy.md`), so the 1100 has to be added. Seat-only
+`motorbike-vanilla-p3d-anatomy.md`), so the 1100 has to be added. Seat-only
 geometry of a proxied part goes in that part's own 1100, since first person draws each referenced proxy's
 1100, or its finest visual LOD when it has none (the curated-view section of `view-pilot-and-first-person.md`); the import's engine proxy got
 a 1100 for its inverted twins.
@@ -584,7 +584,7 @@ them out of any pass that double-sides the 1100 (`visual-gates-and-winding.md` #
 changed with the character and between runs of one character, and within one run it moved with the
 pitch: in one run an eye went from 7.6 cm off-centre at pitch -50 to 4.7 cm on the other side
 at -65. With the head aside at yaw 0 it sat about 9 cm off-centre (8.7 cm at pitch -50, up to
-9.4 cm). Log the eye of every run (`skills/dayz-test-ingame/references/session-findings.md`). The final set had 23 eyes: two eyes
+9.4 cm). Log the eye of every run (`skills/dayz-launch-test/references/session-findings.md`). The final set had 23 eyes: two eyes
 logged in game, each also moved ±3 cm in height and fore-aft; three more, two logged in game and one
 recovered by PnP from a screenshot (`skills/dayz-p3d-audit/references/winding-absolute-check.md`);
 ±9 cm lateral copies of the highest and the lowest eye logged in game, and ±4.5 and ±9 cm of a

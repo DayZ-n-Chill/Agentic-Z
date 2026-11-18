@@ -362,5 +362,5 @@ The 1.30 changes (`ParticleParamsOverrideData` for vehicle dust, the `IsHeadless
 
 ## Related skills
 
-- The plane and seaplane context of `PLANES_EX`, `PLANES_IMPACT` and `PLANES_BOOM` belongs to the dayz-aviation skill.
-- `modded class` rules and the Enforce Script language are in `skills/_shared/enscript/patterns/modded_class.md` and the enforce-script-reference skill.
+- The plane and seaplane context of `PLANES_EX`, `PLANES_IMPACT` and `PLANES_BOOM` belongs to the aircraft files of the vehicle pack (`skills/_shared/vehicles/README.md`, "Aircraft in depth").
+- `modded class` rules and the Enforce Script language are in `skills/_shared/enscript/patterns/modded_class.md` and the Enforce Script pack (`skills/_shared/enscript/depth/`).

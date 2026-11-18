@@ -2,7 +2,7 @@
 
 The rip import path in detail: what a per-car rip folder holds, which parts to include, how to derive dimensions and the transform from the locators, the structural LOD recipe, the first in-game spawn results and their root causes, textures, materials, wheels, glass, interior and doors.
 
-> Status: one worked example, the SUB_BRZ build (2026-06 to 2026-10), with the MercedesAMGLF and LFQuad builds, a working Landrover build and two shipped third-party car mods as controls. The measurements and in-game results are not yet checked on `P:\`. Sections are dated and later ones correct earlier ones; a block marked SUPERSEDED, RETRACTED or RESOLVED says which. A label such as `s7` or `s20` numbers a dated pass of the worked example, in order, and is how one section refers to another. The vanilla script line numbers in this file were opened on `P:\` (a 1.30 build). Script names such as `rip_p3_structural.py` and paths such as `<vehicle-import>\...` are the tooling and work folders of the worked example, which this repo does not ship. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number. Other skills are named by skill name, each a folder under `skills/` (dayz-model-pipeline, dayz-test-ingame, dayz-texture-pipeline, dayz-mcp-verify, enforce-script-reference).
+> Status: one worked example, the TestCoupe build (2026-06 to 2026-10), with the TestMercedes and TestQuad builds, a working Landrover build and two shipped third-party car mods as controls. The measurements and in-game results are not yet checked on `P:\`. Sections are dated and later ones correct earlier ones; a block marked SUPERSEDED, RETRACTED or RESOLVED says which. A label such as `s7` or `s20` numbers a dated pass of the worked example, in order, and is how one section refers to another. The vanilla script line numbers in this file were opened on `P:\` (a 1.30 build). Script names such as `rip_p3_structural.py` and paths such as `<vehicle-import>\...` are the tooling and work folders of the worked example, which this repo does not ship. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number. Other skills are named by skill name, each a folder under `skills/` (dayz-model-pipeline, dayz-launch-test); the Enforce Script pack is `skills/_shared/enscript/`, the texture pack is `skills/_shared/textures/`.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -18,35 +18,35 @@ The rip import path in detail: what a per-car rip folder holds, which parts to i
 - `CivSedanWheel` (`P:\DZ\vehicles\wheeled\config.cpp:4762`) has `radius=0.34` in config. The 0.3587 and 0.359 quoted below as "vanilla sedanwheel radius" is the radius of the wheel mesh measured on a debinarized copy, a different quantity that is not yet checked on `P:\`.
 - `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` is a binarized ODOL, so the axis convention, proxy frames, LOD counts and face counts quoted for the vanilla sedan were read from a debinarized copy and are not yet checked on `P:\`.
 
-Read with `gta-rip-intake.md` (the other rip family), `rip-geometry-and-winding.md`, `vehicle-structural-parity.md`, and `skills/rip-vehicle-import/SKILL.md`, the skill that runs a new rip import step by step.
+Read with `gta-rip-intake.md` (the other rip family), `rip-geometry-and-winding.md` and `vehicle-structural-parity.md`.
 
 ## What this file covers
 
 How to turn a car ripped from a racing game (the Grub container:
 `.modelbin` meshes, `.swatchbin` textures, `.carbin` car definition) into a drivable DayZ `CarScript`
 vehicle. Companion to `vehicle-structural-parity.md` (parity-first method) and `external-obj-import.md`
-(generic OBJ import). The worked example is the SUB_BRZ build (Subaru BRZ FE '22 widebody, 2026-06-23);
-treat SUB_BRZ paths as that example.
+(generic OBJ import). The worked example is the TestCoupe build (Subaru BRZ FE '22 widebody, 2026-06-23);
+treat TestCoupe paths as that example.
 
-## RENDER-CRASH GOTCHAS — read FIRST (each cost a full session, SUB_BRZ s14 2026-06-29)
+## RENDER-CRASH GOTCHAS — read FIRST (each cost a full session, TestCoupe s14 2026-06-29)
 Two defects make the DayZ CLIENT crash ~9-22s **while rendering the car** (fault offset constant, e.g.
 `…D5F9`, "Unknown module" = GPU/shader; the module BASE changes per launch via ASLR, the OFFSET is the bug).
 Neither is caught by any offline gate, by G3, or by a Blender render — only the in-game render crashes.
 1. **Degenerate UVs = GPU crash.** If a visual LOD has `uniqUV=1` (every vertex UV identical, e.g. a
    transplant that set `uv=(0,0)` on all corners), UV derivatives are zero → mipmap `log2(0)` → NaN → the
-   GPU crashes when that surface is on screen. SUB_BRZ's OZ wheel (`rip_build_wheel.py`) did exactly this.
+   GPU crashes when that surface is on screen. TestCoupe's OZ wheel (`rip_build_wheel.py`) did exactly this.
    **Any geometry transplant MUST emit real, non-constant UVs** — and avoid seams with extreme derivative
    jumps (a cylindrical `atan2` UV with ×N tiling can still crash at the ±π seam). Check `uniqUV` per LOD vs
    a vanilla control (vanilla sedanwheel LOD0 = 1203, not 1).
 2. **Raw rip body weight tumbles the client.** A full rip body is ~400k+ visual faces; >~315k crashes
-   the render (the MercedesAMGLF build loads at 315k; SUB_BRZ at 417k did not). Symptom in game = "lag at
+   the render (the TestMercedes build loads at 315k; TestCoupe at 417k did not). Symptom in game = "lag at
    spawn" then crash. **Decimate before shipping** — see DECIMATION below.
 Diagnosis order when the client crashes ON the car (not the spawn-blocker): rule out weight, then geometry
 corruption (NaN/overflow/UV-NaN health check), then a degraded environment (wipe `storage_1` — a corrupt CE
 storage causes FALSE load-crashes), then bisect render inputs ONE at a time (glass alpha, per-mesh
 materials, the wheel — never two at once).
 
-## DECIMATION — rip bodies are too dense to render; planar-dissolve to ~200k (SUB_BRZ s14)
+## DECIMATION — rip bodies are too dense to render; planar-dissolve to ~200k (TestCoupe s14)
 (supersedes the "NO decimation" wording of the 2026-06-24 architecture section below)
 Pipeline `<vehicle-import>\scripts\decimate_{export,blender_batch,rebuild}.py` + `orchestrate_decimate.py`
 (py3d→Blender→py3d). Per chunk: export verts/faces/UV + slot=(material,texture,region-selection) → Blender
@@ -102,14 +102,14 @@ LHD ripped racing-game cars ship the **driver (left) side** geometry and **mirro
 - **Shipped both sides** (symmetric render parts): glass, head/tail lights, wing mirrors, brakes (calipers/rotors).
 
 The `.carbin_debug` references right-side parts by logical name, but those modelbins are NOT on disk — `[ -f ]`
-each right-side `.modelbin` to classify SHIPPED vs MIRROR-GAP per part. (SUB_BRZ: 14 shipped-both, 8 mirror-gaps.)
+each right-side `.modelbin` to classify SHIPPED vs MIRROR-GAP per part. (TestCoupe: 14 shipped-both, 8 mirror-gaps.)
 
 ## DIMENSIONS — data-driven from Locators.xml (NOT real-world, NOT GameDB)
 
 The wheel locators give verified geometry. `SceneTransform value._41/_42/_43` = translation x/y/z (x lateral,
 y up, z longitudinal):
 
-- **wheelbase** = `wheelLF.z − wheelLR.z`. SUB_BRZ: 1.286372 − (−1.288897) = **2.575 m**, which matches the real
+- **wheelbase** = `wheelLF.z − wheelLR.z`. TestCoupe: 1.286372 − (−1.288897) = **2.575 m**, which matches the real
   BRZ 2575 mm exactly → reading the transform correctly is **validated by the real-world cross-check**.
 - **track** = `wheelRF.x − wheelLF.x` (wheel-center; a widebody reads wide).
 - **tire-contact plane** = `wheel.y − vanilla_wheel_radius` (NOT bbox-min, which includes the splitter). Sets
@@ -172,7 +172,7 @@ authoring target.
 
 ## STEERING IK — read the geometry, NOT the value
 
-`IKAnchorBones.xml` carries `SteeringWheelMaxDegrees` (SUB_BRZ: 270) and `steering_ik_rot_left/right
+`IKAnchorBones.xml` carries `SteeringWheelMaxDegrees` (TestCoupe: 270) and `steering_ik_rot_left/right
 RotZ=±1.94`. These are source-game values — do NOT copy them. DayZ `maxSteeringAngle` is ~30–35°. Use the IK file
 for the steering-wheel pivot/axis geometry (the animated-wheel anchor), not the rotation amounts.
 
@@ -193,7 +193,7 @@ Each imported vehicle gets a `verify_<mod>.py` asserting structural parity again
   WARN not FAIL), interior-animation gate severity, crew seat count. Mark names not yet pinned to the CONTROL
   `[TBD]` and pin them by debinarizing the CONTROL.
 
-### Generalized harness + MANDATORY gates (2026-06-25) [VERIFIED: self-test PASS, positive-control OK on CivilianSedan, SUB_BRZ 24/24]
+### Generalized harness + MANDATORY gates (2026-06-25) [VERIFIED: self-test PASS, positive-control OK on CivilianSedan, TestCoupe 24/24]
 
 `verify_rip_car.py` (in `<vehicle-import>\tools\`) SUPERSEDES per-car `verify_brz.py`: ONE parametrized
 verifier, a POLICY dict per car (`brz`, `amglf`), checks tiered **U** (universal engine contract) vs
@@ -209,7 +209,7 @@ BLOCK), not optional steps — skippable verification is how the offline false-g
   assumption shared with `verify_amglf.py` (see vehicle-structural-parity.md Addendum 2026-06-25).
 - `verify_rip_car.py <target.p3d> --car <car>` — 0 all-hard-pass / 1 hard-fail / 4 missing-or-not-MLOD.
 - `roundtrip_writer.py [<p3d>]` — proves py3d `read→save→read` is structurally lossless (the
-  LFInfectedBig skinned-export corruption class). Default control = CivilianSedan.
+  TestInfectedBig skinned-export corruption class). Default control = CivilianSedan.
 - `roundtrip_structural.py` — **bisects the BUILDER, not just the verifier** (added 2026-06-25). Drives the
   REAL `rip_p3_structural.build_structural(profile)` with the CivilianSedan control (its visual shell +
   locators derived from its OWN memory points) and requires the regenerated structural LODs to pass the
@@ -245,7 +245,7 @@ Env: `python` 3.14.3 + py3d 1.2.0. A phase is CLOSED only with {positive-control
 structural-bisection PASS + visual-gate captures reviewed}, never on internal asserts alone. Wiring into
 `dayz-test.ps1` (`Invoke-G3-StructuralVerify` = verify + `roundtrip_structural`; `Invoke-G7-OfflineDiff`;
 exit≠0 blocks the PBO) is the build-time gate — **not done**: the `dayz-test.ps1` template of the
-dayz-test-ingame skill has neither function; the offline harnesses in `<vehicle-import>\tools\` are done and green.
+dayz-launch-test skill has neither function; the offline harnesses in `<vehicle-import>\tools\` are done and green.
 
 ## PIPELINE PHASES (reusable front-end)
 
@@ -253,11 +253,11 @@ dayz-test-ingame skill has neither function; the offline harnesses in `<vehicle-
 visual `.p3d` shell + LODs + winding-with-oracle · 3 structural (Geometry/Memory/View/Fire/Hitpoints, vanilla
 wheel reuse, mass) · 4 config.cpp + model.cfg · 5 textures. Phases 1–4 are the reusable rip→DayZ front-end.
 Per-car scripts to reuse: `_parse_manifest.py` (PartEnum inventory), `_classify_parts.py` (INCLUDE/EXCLUDE/
-SHADOW + RF `[ -f ]` probe) — in the SUB_BRZ workspace `<vehicle-import>\tools\`.
+SHADOW + RF `[ -f ]` probe) — in the TestCoupe workspace `<vehicle-import>\tools\`.
 
 ---
 
-## PHASE 3 — STRUCTURAL AUTHORING (the drivable skeleton) — verified on SUB_BRZ 2026-06-24
+## PHASE 3 — STRUCTURAL AUTHORING (the drivable skeleton) — verified on TestCoupe 2026-06-24
 
 Phase 2 leaves a visual `.p3d` (shell + proxy chunks, or monolithic). Phase 3 ADDS the structural LODs
 WITHOUT touching the visual body geometry. Builder reference: `<vehicle-import>\scripts\rip_p3_structural.py`
@@ -272,14 +272,14 @@ map by **matching centroids**, not by assuming axes:
 1. Pick identifiable parts (headlights, taillights) and compute their centroid in the DEPLOYED DayZ geometry.
 2. Compare to the matching source locator. Solve the per-axis sign/offset.
 
-SUB_BRZ result: **`DayZ = (−Fx, Fy + Y0, −Fz)`**, `Y0 = (wheel_radius − rip_wheel_center_y) + lift`
+TestCoupe result: **`DayZ = (−Fx, Fy + Y0, −Fz)`**, `Y0 = (wheel_radius − rip_wheel_center_y) + lift`
 (`(0.3587 − 0.19464) + 0.18 = 0.34406`). The `(−x, −z)` is a **180° rotation about vertical (det +1, proper,
 NOT a mirror)** — it is legitimate, see below.
 
 **DayZ vehicle axis convention:** a DayZ car faces −z with the driver on +x; the measured markers and the
 "do not fix a 180°-rotated-looking car" rule live in `vehicle-structural-parity.md` §"DayZ vehicle axis
 convention: front = −z, driver = +x". The source game faces +z, so a correct rip→DayZ import flips z.
-(SUB_BRZ nearly triggered a false refactor here.)
+(TestCoupe nearly triggered a false refactor here.)
 
 ### 3.1 Wheel naming convention `wheel_<side>_<axle>` (pinned from CivilianSedan)
 
@@ -291,7 +291,7 @@ config `Axles`/`model.cfg` steering must agree with.
 ### 3.2 Proxy path format — vanilla and shipped mods use NO `.p3d` suffix (latent-bug class)
 
 The rule and its failure mode live in `vehicle-structural-parity.md` §"MLOD proxy selections carry NO `.p3d`
-extension". For the rip pipeline: SUB_BRZ Phase 2 had this bug on its chunk proxies; Phase 3 normalized all
+extension". For the rip pipeline: TestCoupe Phase 2 had this bug on its chunk proxies; Phase 3 normalized all
 of them. (`verify_*` was hardened to accept both forms so it doesn't mask the bug.)
 
 ### 3.3 The structural LOD recipe (py3d 1.2.0 DayZ fork)
@@ -367,7 +367,7 @@ If chunks spawn displaced, this is that bug — resolve the proxy-placement conv
 
 The dense source-game body does NOT decimate to a clean game-budget shell — QEC (even per-part,
 boundary-preserving) CRUMPLES the dense custom/aero parts (front/rear fold, panel holes). Confirmed on
-SUB_BRZ 2026-06-24 (two decimation attempts rendered as a crumpled wreck). The body is NOT a monolithic
+TestCoupe 2026-06-24 (two decimation attempts rendered as a crumpled wreck). The body is NOT a monolithic
 decimated LOD0, and NOT an all-proxy LOD0 with no base either (all-proxy breaks hiddenSelections paint).
 Replicate the shipped vanilla/community pattern:
 
@@ -394,7 +394,7 @@ fenderswide, foglights, bumpers) -> full-detail proxies. Interior -> proxy.
 
 Correction to the stock-vs-widebody note above: the `*wide*` parts are flares BOLT-ON ON TOP of the stock
 shell, NOT full replacements -- INCLUDE `body_a` (it is the central roof/cabin shell; excluding it deletes
-the roof). "Same LOD count" is not proof of replacement. (SUB_BRZ G1 excluded body_a by mistake; the visible
+the roof). "Same LOD count" is not proof of replacement. (TestCoupe G1 excluded body_a by mistake; the visible
 "hole" was the missing roof.)
 
 Proxy path form: write the proxy ref WITHOUT `.p3d` (see §3.2). The `verify_<mod>.py` `_proxy_file` helper
@@ -412,11 +412,11 @@ the chunks); assert each proxy chunk < 65535. Run `--mod-root <projects-root>` W
 
 ## (added 2026-06-24, s2) FIRST IN-GAME SPAWN RESULT — structural gates pass, car does NOT spawn [VERIFIED in-game]
 
-> Closes the loop on §3.7's "watch at the first in-game spawn". SUB_BRZ reached its first in-game spawn
+> Closes the loop on §3.7's "watch at the first in-game spawn". TestCoupe reached its first in-game spawn
 > (DayZDiag server+client, VPP Object Spawner). It does NOT spawn drivable. Root cause **OPEN** at that date
 > (resolved in the s7 section below).
 
-**The failure (server RPT, at `Load entity type 'SUB_BRZ'`):**
+**The failure (server RPT, at `Load entity type 'TestCoupe'`):**
 ```
 PHYSICS (E): Action selection 'seat_driver'/'seat_codriver' was not found in view or fire geometry ... class Crew::Crew
 PHYSICS (E): Won't simulate, wheel wheel_1_1_damper_land has no proper selection in geometry
@@ -445,7 +445,7 @@ do NOT trust the offline verifier as proof of drivability.**
 PROXIES" pattern (a REAL low-poly shell in LOD0 + proxy chunks), **NOT all-proxy** — so "the proxy body
 breaks simulation" is unproven and probably wrong (the crew/wheel selections are direct geometry in the
 structural LODs, exactly like vanilla). Candidate deltas vs vanilla still UNTESTED as cause: vanilla hub =
-16 pt / 15 face shape vs SUB_BRZ 8 pt / 12 face box; SUB_BRZ has `seat_driver`/`seat_codriver` boxes in the
+16 pt / 15 face shape vs TestCoupe 8 pt / 12 face box; TestCoupe has `seat_driver`/`seat_codriver` boxes in the
 **Geometry** LOD (vanilla has seats only in ViewGeo). Next session must research a WORKING community
 custom-body car + the engine's exact requirement behind those two messages before editing
 geometry.
@@ -454,7 +454,7 @@ geometry.
 (`light_left`/`light_right`/`tail` ≈ 6594 faces each — should be small lenses) → likely the spawn lag and a
 lights-paint bug.
 
-> Measured on: SUB_BRZ Phase 4 in-game test 2026-06-24 (first VPP spawn). Cross-ref §3.7
+> Measured on: TestCoupe Phase 4 in-game test 2026-06-24 (first VPP spawn). Cross-ref §3.7
 > (proxy-placement P1, MERCEDES_AMGLF) and `vehicle-structural-parity.md` (Crew check + wheel "no proper
 > selection"). Sister project MERCEDES_AMGLF (same architecture) also has in-game smoke PENDING — neither
 > ripped racing-game car is confirmed drivable yet.
@@ -468,7 +468,7 @@ appear** (the action menu is empty on the car), (b) **drivability untested**, (c
 look missing** in game — the "untextured glass" explanation below is a HYPOTHESIS, not confirmed. So: spawn-blocker fixed,
 render fixed, the car is NOT yet a working vehicle.
 
-Three fixes took SUB_BRZ from "won't spawn at all" to "spawns + body renders aligned + solid", in this diagnostic
+Three fixes took TestCoupe from "won't spawn at all" to "spawns + body renders aligned + solid", in this diagnostic
 order:
 
 1. **SPAWN BLOCKER = componentNN dual-tag** (full detail: `vehicle-structural-parity.md` "componentNN DUAL-TAG").
@@ -479,8 +479,8 @@ order:
 
 2. **PROXY FRAME** (chunks rendered rotated ~90°/scattered → not a car): apply `R=((-1,0,0),(0,0,1),(0,1,0))` to
    the body-chunk `add_proxy` in `rip_p2_shellproxy.py` (it used the default `rotation=None` = py3d "identity" =
-   the wrong frame the engine rotates ~90°). Same convention as MercedesAMGLF s4
-   (`vehicle-structural-parity.md` "TRIANGLE FRAME"). SUB_BRZ paths were already without `.p3d`.
+   the wrong frame the engine rotates ~90°). Same convention as TestMercedes s4
+   (`vehicle-structural-parity.md` "TRIANGLE FRAME"). TestCoupe paths were already without `.p3d`.
 
 3. **WINDING** (normals inverted: checkerboard/texture on the INTERIOR face, exterior see-through): the
    `force_outward` in `rip_p2_shellproxy.py` (centroid-based "make outward") + the det=-1 transform render
@@ -500,7 +500,7 @@ order:
   placeholder. BUT parts still look missing in game — this is NOT confirmed all-glass; re-check per-part
   (or after texturing) before closing it.
 
-> Measured on: SUB_BRZ Phase 4 in-game 2026-06-24 s7 (VPP spawn). Builders fixed so car #2
+> Measured on: TestCoupe Phase 4 in-game 2026-06-24 s7 (VPP spawn). Builders fixed so car #2
 > inherits: `rip_p2_shellproxy.py` (proxy frame + winding), `rip_p3_structural.py` (componentNN dual-tag).
 > One-machine gotcha confirmed: two agent sessions, one per car, `-Kill` each other's DayZDiag — only
 > ONE session tests in-game at a time. Pending (non-blocking): textures (Phase 5), 417k-face lag, PBO `.bak`
@@ -516,7 +516,7 @@ the server RPT has ZERO `PHYSICS (E/W)` lines — the s2/s8 `crewdriver`/`crewco
 (vehicle-structural-parity.md "ATTACHMENT proxy ... BONE-NAME selection") resolve the engine binding. This fixes
 get-in's **gate-1** (`CrewPositionIndex(componentIndex) >= 0`). It is necessary but NOT sufficient (see below).
 
-**ROOT CAUSE #2 (the real get-in blocker, geometry-independent):** SUB_BRZ's config was
+**ROOT CAUSE #2 (the real get-in blocker, geometry-independent):** TestCoupe's config was
 `class <MOD>: CarScript` with no Enforce Script class, so it ran as bare `CarScript` (verified in-game:
 telemetry `class_name:"CarScript"`) and get-in's second gate, `CrewCanGetThrough`, stayed false. The cause, the
 thin `<MOD>_Base.c` fix and the fact that doors are not required for get-in are in
@@ -525,12 +525,12 @@ thin `<MOD>_Base.c` fix and the fact that doors are not required for get-in are 
 **See-through chunks = s7's GLOBAL winding flip inverted the chunks that were correct-before.** The car shows
 see-through "gaps" at the engine bay + above each rear fender (symmetric). RPT clean of proxy-not-found (all 9
 chunks load) → geometry IS present but inverted (DayZ backface-culls inward winding → looks like a missing proxy).
-The SUB_BRZ transform `(−Fx, Fy+Y0, −Fz)` is **det +1** (proper 180° rotation, PRESERVES winding), so the correct DayZ
+The TestCoupe transform `(−Fx, Fy+Y0, −Fz)` is **det +1** (proper 180° rotation, PRESERVES winding), so the correct DayZ
 winding = the glTF winding UNCHANGED. Fix = re-derive per-chunk winding from the glTF source (NO `force_outward`, NO
 global flip), or surgically flip back ONLY the chunks the global flip broke (identify by comparison vs glTF normals —
 non-tautological because s7 flipped blindly, not to match). Do NOT global-flip again; do NOT iterate in-game.
 
-> Measured on: SUB_BRZ s8 2026-06-25 (dayz-mcp broker repaired — kill `--require-version` daemons, run one without it;
+> Measured on: TestCoupe s8 2026-06-25 (dayz-mcp broker repaired — kill `--require-version` daemons, run one without it;
 > in-game RPT grep + telemetry + a full-resolution look at the render). Cross-ref
 > vehicle-structural-parity.md "componentNN DUAL-TAG" +
 > "ATTACHMENT proxy BONE-NAME selection" (now CONFIRMED in-game).
@@ -558,7 +558,7 @@ inverted); the offline metric is a hint, not acceptance (false-green twice — s
 rip-built chunks carry only **material selections** (`color`/`glass`/`interior`), NOT per-piece named selections.
 To flip ONE piece that shares a chunk with others you cannot select it by name. Use **connected-component analysis**:
 union-find over faces sharing a `point_index` → components; then select the target by a spatial criterion on each
-component's centroid/bbox. Worked example (SUB_BRZ engine-bay cavity): isolate front high-y components
+component's centroid/bbox. Worked example (TestCoupe engine-bay cavity): isolate front high-y components
 (centroid `z < −0.6` AND `y >= 0.85` → **7 comps / 1948 faces**) out of **88** front components — the other 81 were
 low-y engine internals to EXCLUDE. Flip the whole file ONLY when a chunk == exactly one piece. Mechanism of the flip
 = **reverse per-face vertex order; leave the normal pool untouched** (`tools\patch_winding.py` `rev()`; same as
@@ -586,12 +586,12 @@ raycast** hitting a closed hull corroborates solidity — but note it probes the
 (a Visual-LOD winding inversion can still render see-through while the Geometry raycast reads solid), so it is
 corroboration, not proof. The definitive gate remains the in-game render after texturing.
 
-> Measured on: SUB_BRZ s7/s8 see-through debug 2026-06-24/25 (builders `rip_p2_shellproxy.py`, `tools\patch_winding.py`;
+> Measured on: TestCoupe s7/s8 see-through debug 2026-06-24/25 (builders `rip_p2_shellproxy.py`, `tools\patch_winding.py`;
 > in-game render + RPT). Cross-ref §"s7" (global winding flip), §"s8 ... See-through chunks" (det +1 ⇒ glTF
 > winding unchanged), and `vehicle-structural-parity.md` proxy-frame GATE (offline false-green class).
 
 
-## PHASE 5 — TEXTURES (added 2026-06-28, SUB_BRZ Phase 5; core verified in-game)
+## PHASE 5 — TEXTURES (added 2026-06-28, TestCoupe Phase 5; core verified in-game)
 
 The reusable texturing pass for a ripped racing-game car. Core confirmed in-game (smoke green: painted body + glass +
 collision + stable spawn). Builders updated so car #2 is born textured. Pipeline scripts:
@@ -645,14 +645,14 @@ first, then repair only the ~0.5% source-inconsistent FACES by MAJORITY flood-fi
 The backface-cull render is a HINT (it shows the +cross side; the engine renders the ANTI-cross side).
 
 ### DEPLOY — transplant, never overwrite the structural shell
-The Phase-2 rebuild of `sub_brz.p3d` has ONLY the visual LOD; the DEPLOYED shell carries the verified
+The Phase-2 rebuild of `testcoupe.p3d` has ONLY the visual LOD; the DEPLOYED shell carries the verified
 structural LODs (Geometry/Memory/LandContact/ViewGeo/FireGeo with crew proxies / componentNN / wheel hubs =
 spawn + get-in). Deploying the rebuilt shell wholesale destroys spawn/get-in. `rip_p5_deploy.py`:
 deployable shell = **rebuilt visual LOD0 (textured, new winding, aligned with the new chunks) + the deployed
 shell's structural LODs[1:]** (same car-space; bbox Y matches). Chunks are visual-only → deploy the rebuilt
 textured ones. Verify: 8 LODs, 10 proxy refs, ≥50 structural key-selections, body faces > 1000. Backup first.
 
-**Trap (regression, SUB_BRZ 2026-06-28, in-game): the transplant DROPS the 4 visual-LOD wheel proxies.** The
+**Trap (regression, TestCoupe 2026-06-28, in-game): the transplant DROPS the 4 visual-LOD wheel proxies.** The
 rebuilt visual LOD0 carries the body `brz_chunk` proxies but NOT the vanilla `sedanwheel` proxies that render
 the attached wheels → in-game the wheels SIMULATE (Fire proxies intact) but render INVISIBLE, and the
 structural gate (24/24) does NOT catch it (it checks View/Fire wheel proxies + structural selections, never
@@ -662,11 +662,11 @@ there were no wheels to be invisible. `rip_p5_deploy.py` must copy the 4 `sedanw
 rebuilt visual LOD0 **frame-faithful** — the exact 3-point triangles from the pre-transplant visual LOD (NOT
 `add_proxy`, which re-canonicalizes the triangle → wrong frame). After ANY visual-LOD-only rebuild (texture
 pass / decimate / transplant) re-verify visual-LOD wheel-proxy count == 4. **CAVEAT (corrected 2026-06-28):
-restoring the proxies is NECESSARY (vanilla + the LFQuad control carry them in the visual LOD) but was NOT
-confirmed SUFFICIENT — SUB_BRZ wheels stayed INVISIBLE in-game even after the restore.** Wheel RENDER also
+restoring the proxies is NECESSARY (vanilla + the TestQuad control carry them in the visual LOD) but was NOT
+confirmed SUFFICIENT — TestCoupe wheels stayed INVISIBLE in-game even after the restore.** Wheel RENDER also
 needs (a) a wheel ITEM attached to each slot and (b) a correct proxy↔slot binding (index/position matching the
 config wheel slots). Diagnose invisible-wheels END-TO-END in-game (attached-but-not-rendering vs no-attachment;
-compare the proxy index/anchor against the LFQuad control that renders) — do NOT assume the proxy restore
+compare the proxy index/anchor against the TestQuad control that renders) — do NOT assume the proxy restore
 alone fixes it. The offline `vis.wheel_proxies` PASS does NOT prove in-game render.
 
 **RESOLVED (s12, 2026-06-28) — the two pieces the restore was missing:** restoring the visual-LOD wheel
@@ -674,7 +674,7 @@ proxies is necessary but needs (1) the right FRAME and (2) COMPANION selections.
 1. **Frame.** A restored proxy via `add_proxy`/`rotation=None` keeps py3d's IDENTITY frame `((1,0,0),(0,1,0),(0,0,1))`
    → the engine renders the wheel rotated ~90° (invisible). Vanilla uses a **mirrored-by-side** frame, measured
    on `civiliansedan_mlod` VISUAL LODs: anchor **x<0** → `((-1,0,0),(0,0,1),(0,1,0))`, **x>0** →
-   `((1,0,0),(0,0,-1),(0,1,0))`. SUB_BRZ reuses the vanilla `sedanwheel` geometry, so copy the **VANILLA** frame
+   `((1,0,0),(0,0,-1),(0,1,0))`. TestCoupe reuses the vanilla `sedanwheel` geometry, so copy the **VANILLA** frame
    (NOT another mod's — a different wheel geometry needs a different mirror). Reframe in place by anchor-x sign:
    `canonical_proxy_triangle(anchor=current_anchor, rotation=frame_by_side, scale=0.1)` overwriting the 3 triangle pts.
 2. **Companions.** Vanilla and the third-party control carry `wheel_X_Y` companion selections in the VISUAL LOD too (not only View/Fire);
@@ -693,9 +693,9 @@ bind-wait) is killed when that process/job ends — the server dies mid-CE with 
 but it refused to launch the client and killed the server). Fix: launch server + client via a `.bat` with
 `start ""` (true detachment, independent process group) — they then survive across agent tool calls. Poll
 `Get-NetUDPEndpoint -LocalPort 2302` yourself. The MCP bridge `legacy_blocked` ("poll did not include ver=")
-is just incomplete init — it goes `ok` once the mission fully loads. Cross-ref the dayz-test-ingame skill.
+is just incomplete init — it goes `ok` once the mission fully loads. Cross-ref the dayz-launch-test skill.
 
-## VISUAL OVERHAUL — cross-car lessons (added 2026-06-28, SUB_BRZ s12)
+## VISUAL OVERHAUL — cross-car lessons (added 2026-06-28, TestCoupe s12)
 
 Once a ripped racing-game car DRIVES, the rest is visual and it RECURS on every car. Do it from the source, not by eyeballing.
 
@@ -704,13 +704,13 @@ The exact factory paint lives in the rip's `ManufacturerColors.bin` (per car). L
 [selection-name strings: Body/Hood/Mirror/Wing/…] + **3×float32 sRGB tint** + the `_library` materialbin path.
 Entry **[0] = the default color**. Parse: for each `Game:\Media…materialbin` string, the 3 floats are the 12
 bytes ending 1 byte before the path's `Game`. Non-vacuity check: run the whole table — white≈(0.99,…), black≈(0.08,…).
-SUB_BRZ default = `wrblue_pearl_sub` → (0.0157,0.290,0.639) = **#044AA3** (a prior pass GUESSED #105BAD = wrong).
+TestCoupe default = `wrblue_pearl_sub` → (0.0157,0.290,0.639) = **#044AA3** (a prior pass GUESSED #105BAD = wrong).
 Reusable: `decode_color2.py`. Note: the renders that ship in the rip are CLAY (no color) and `_library` materials are
 PROCEDURAL — there is **no painted-car bitmap to copy**; the DayZ target is solid-color-per-piece + AO.
 
 ### Black panels + see-through = WINDING, not texture — DECODE the `_co` before touching it
 Before chasing an "atlas / UV-out-of-range" texture bug, decode the deployed `_co.paa` and measure dark%. On
-SUB_BRZ every `_co` was solid/blue with **dark%=0.0** → the "black panels" were inverted-winding faces
+TestCoupe every `_co` was solid/blue with **dark%=0.0** → the "black panels" were inverted-winding faces
 (backface-culled → the dark interior shows through), i.e. the SAME bug as see-through. Don't regenerate textures.
 The `_co` should be **solid color (UV-invariant)** regardless: imported chunk UVs are arbitrary, so a solid `_co`
 (`Image.new("RGB",(256,256),BLUE)`) reads right on any UV; per-part swatch `_co` must fill OFF-island with the
@@ -771,15 +771,15 @@ PLASTIC→matte black, INTERIOR→leather/fabric, RUBBER→matte black, LIGHT→
 `carpaint` on a **paintable selection** (Body/Hood/Mirror/Wing, listed in `ManufacturerColors.bin`) gets the
 body color (default = entry[0]). This removes the per-car eye-tuning and fixes, at the root: blue-on-metal,
 white-interior-seen-through-glass (interiorLOD1 / interior winding), and black-bits-on-glass (glass_edge /
-blackframe = opaque trim, not the see-through window). Measured on: SUB_BRZ s12b.
+blackframe = opaque trim, not the see-through window). Measured on: TestCoupe s12b.
 
-### Material map — IMPLEMENTED + corrected (SUB_BRZ s13; method offline-verified, in-game gate PENDING)
+### Material map — IMPLEMENTED + corrected (TestCoupe s13; method offline-verified, in-game gate PENDING)
 The s12b plan was built. Four corrections/invariants the next ripped racing-game car needs UP FRONT:
 - **Classify by the materialbin PATH FOLDER, not the instance name — the name LIES.** rollcage meshes named
   `leather_MGL`/`plastic_lgl` resolve to `…\Metal\Steel.materialbin` = METAL. The folder
   (`…\materials\_fmnext\<FOLDER>\`) is the canonical TYPE; `specialcase\` is keyed by FILE (blackframe/blackhole→
   BLACK, mirror_*→MIRROR, undercarriage→METAL). `extract_part_materials.py` (per-part string-scan) is only a HINT
-  (returns a SET; 50/84 SUB_BRZ parts are multi-material) → you NEED per-mesh. Standalone reader
+  (returns a SET; 50/84 TestCoupe parts are multi-material) → you NEED per-mesh. Standalone reader
   `rip_material_map.py` copies BinaryStream/Bundle/Blob/Model/Mesh from modelbin_importer (NO bpy): per part,
   visible meshes (LOD+render_pass filter) in order, path→TYPE.
 - **The import already splits meshes:** each Blender object is one mesh named `"<mesh.name> <material.name>"`
@@ -791,7 +791,7 @@ The s12b plan was built. Four corrections/invariants the next ripped racing-game
   100%, max NN 6 µm), reassign `face.material`/`face.texture` ONLY → `rip_p5_repaint.py` (`--apply`; dry by
   default). Structural LODs/proxies untouched, G3 stays 4/4.
 - **Repaint only METAL/CHROME/MIRROR/BLACK/CARBON — NEVER PLASTIC.** Widebody flares are PLASTIC in the source but
-  painted body color (PLASTIC = 54% of SUB_BRZ faces); remapping them to black wrecks the car. PAINT/GLASS/INTERIOR
+  painted body color (PLASTIC = 54% of TestCoupe faces); remapping them to black wrecks the car. PAINT/GLASS/INTERIOR
   keep their shared materials. TYPE→rvmat authored once in `rip_p5_typemats.py` (brz_metal/chrome/black/carbon).
 - **wing_b = PAINT** (the s12b "wing=METAL" was wrong — the path is `paint\paintedmetal`; the extractor/path is the fact).
 - Pack `-Build -PackOnly` (MLOD raw keeps face.material; binarize would drop it).
@@ -809,7 +809,7 @@ Order: `rip_material_map.py` → `rip_p2_group.py` (Blender) → `rip_p5_typemat
   `proxy:...sedanwheel.NNN` selections to `\<Mod>\<wheel>.NNN` — **NO `.p3d` suffix**. The doubled
   `\<Mod>\<wheel>.p3d.NNN` form makes the engine seek `<wheel>.p3d.p3d`, DROP the proxy, and spawn with
   `wheelPresent=0` → `PHYSICS (W): Proxy with name 'CivSedanWheel_X_Y' was not found in FireGeometry` =
-  the perceived spawn *freeze* + "revs in 1st, does not drive" (SUB_BRZ s26, RPT-verified 2026-07-08; the
+  the perceived spawn *freeze* + "revs in 1st, does not drive" (TestCoupe s26, RPT-verified 2026-07-08; the
   Visual0 kept the correct `sedanwheel` proxy so the wheel RENDERS but does not SIMULATE). The transplanted
   `<wheel>.p3d` must ALSO keep sedanwheel's 5 Memory collider points (ce_center/ce_radius/boundingbox_*/
   invview) or the collider degrades to cube-size (contact=0); if it does not, point the ViewGeo/FireGeo
@@ -838,7 +838,7 @@ Order: `rip_material_map.py` → `rip_p2_group.py` (Blender) → `rip_p5_typemat
   shader doesn't wash the blue out, and darken the raw ManufacturerColors value a touch if it reads light.
 
 
-## VISUAL CORRECTNESS — single-sided interiors, glass, normals, materials (SUB_BRZ s15, 2026-06-30)
+## VISUAL CORRECTNESS — single-sided interiors, glass, normals, materials (TestCoupe s15, 2026-06-30)
 
 The decimated rip body drives and the exterior renders, but the cabin/glass need a visual pass. Five
 invariants, each verified in-game (the in-game render is the gate):
@@ -871,19 +871,19 @@ invariants, each verified in-game (the in-game render is the gate):
    (s15: 0.015→0.04 / 0.13→0.20 / 0.095→0.16). Note brz_black is shared interior+exterior trim, so
    brightening also greys the exterior black trim a little.
 
-5. **First-person (ViewPilot LOD res=1100) — DOUBLE-SIDE it; orient-inward is WRONG (SUB_BRZ s17, CONFIRMED in-game).**
+5. **First-person (ViewPilot LOD res=1100) — DOUBLE-SIDE it; orient-inward is WRONG (TestCoupe s17, CONFIRMED in-game).**
    The 1PP camera sits at the seated player's HEAD (`dayzplayercameravehicles.c` extends `DayZPlayerCamera1stPerson`),
    and DayZ renders the vehicle's ViewPilot(1100) LOD there. A single-sided rip interior renders as **"few things
    drawn + you see the world through the car"** from the seat — DayZ's pilot-view winding culls it, and the
    `0x20000` (NoBackfaceCulling) flag does NOTHING (invariant #1). **Orientation is NOT the fix** (s15's orient-inward
-   FAILED in-game): measured SUB_BRZ 71-90% of faces toward the head vs vanilla civiliansedan 57-60%, yet vanilla
-   renders and SUB_BRZ didn't → *more-inward ≠ more-visible*; ~85% single-sided faces get culled leaving ~4k
+   FAILED in-game): measured TestCoupe 71-90% of faces toward the head vs vanilla civiliansedan 57-60%, yet vanilla
+   renders and TestCoupe didn't → *more-inward ≠ more-visible*; ~85% single-sided faces get culled leaving ~4k
    scattered = the "few things". **FIX = double-side the ViewPilot interior** (per face: a reversed-winding twin with
    the NEGATED per-vertex smooth normal, deduped in the pool) + set all ViewPilot face flags to 0 (cosmetic
    only: binarize discards the field — invariant #1).
-   Feasible once resolved-verts < ~32k (doubles to <65535); deployed SUB_BRZ was 24k→43k (s15's "82k can't double"
+   Feasible once resolved-verts < ~32k (doubles to <65535); deployed TestCoupe was 24k→43k (s15's "82k can't double"
    was a stale, larger ViewPilot). Diff vs vanilla that pinned it: vanilla ViewPilot has 13 proxies (incl.
-   `prox_int`) and SUB_BRZ had 0 — that half holds. The "vanilla flags=0" half does NOT: vanilla ships
+   `prox_int`) and TestCoupe had 0 — that half holds. The "vanilla flags=0" half does NOT: vanilla ships
    binarized, where per-face flags do not exist, so that number came from a debinarizer that hardcodes
    `face.flags = 0` (`odol_to_mlod.py:115`) — the instrument answering its own question. It justifies
    nothing either way, since binarize discards the field. In-game s17: the interior now draws.
@@ -893,16 +893,16 @@ invariants, each verified in-game (the in-game render is the gate):
    in-game-confirmed fix is single-sided RAW winding as a prox_int-style dedicated proxy. Double-siding
    remains a fallback only (~2x resolved verts toward the 65535 cap).
 
-**Glass:** car-window glass is single-sided + transparent (`noZwrite`, Super shader; the SUB_BRZ glass used
+**Glass:** car-window glass is single-sided + transparent (`noZwrite`, Super shader; the TestCoupe glass used
 ambient/diffuse alpha ~0.22-0.32, a value tuned for this mod, not a property of car glass: vanilla
 `civiliansedan\data\glass.rvmat` uses 0.75; the shader is Super, as on vanilla building glass such as `P:\DZ\structures\data\alpha\glass_int_new.rvmat`; the "Glass" PixelShaderID appears only in `P:\DZ\data\data\glass_enviro.rvmat` and `chrome_enviro.rvmat`, which no vanilla `.rvmat` or `config.cpp` references). Double-siding glass double-blends the
 alpha → too opaque (s15 mistake, reverted). Keep glass single-sided; if it is invisible from outside that is a
 winding/orientation issue, not alpha. **Per-piece material correctness (wipers→plastic, bumper→metal) must
 come from the SOURCE part map, not spatial bounding boxes** — bboxes catch neighbour pieces (fender/hood).
 
-6. **Duplicate-face z-fight (body speckle "all over") = a source ASSEMBLY defect, NOT winding.** Every body face is emitted twice (coincident, same-winding, different UV channel), PREDATING decimation -- the s7-s15 "winding" red herring. Detect NON-tautologically by counting coincident faces per `(frozenset point_indices, winding-parity)` + per identical vertex positions (clean ~0, duplicated 10-70%); fix = de-dup keeping 1 per (position-set, normal-direction), preserving opposite-winding double-sides, never a `proxy:` face. `dedup_faces.py`+`position_dedup.py`. SUB_BRZ s16: -20320 faces, confirmed in-game. Add a de-dup pass to the importer. Full entry: #10 (e) in `visual-gates-and-winding.md`, indexed from invariant 10 in `invariants-import-mesh-and-winding.md`.
+6. **Duplicate-face z-fight (body speckle "all over") = a source ASSEMBLY defect, NOT winding.** Every body face is emitted twice (coincident, same-winding, different UV channel), PREDATING decimation -- the s7-s15 "winding" red herring. Detect NON-tautologically by counting coincident faces per `(frozenset point_indices, winding-parity)` + per identical vertex positions (clean ~0, duplicated 10-70%); fix = de-dup keeping 1 per (position-set, normal-direction), preserving opposite-winding double-sides, never a `proxy:` face. `dedup_faces.py`+`position_dedup.py`. TestCoupe s16: -20320 faces, confirmed in-game. Add a de-dup pass to the importer. Full entry: #10 (e) in `visual-gates-and-winding.md`, indexed from invariant 10 in `invariants-import-mesh-and-winding.md`.
 
-## DOORS / movable parts — the rip ships them PRE-CUT with hinge locators (SUB_BRZ s36, 2026-07-17)
+## DOORS / movable parts — the rip ships them PRE-CUT with hinge locators (TestCoupe s36, 2026-07-17)
 
 The source game ships every movable part as its OWN model (it animates them: `MojoConfig.xml`
 `doorLF`/`doorRF` autovista events). BRZ Manifest: `scene\exterior\doors\doorlf_a.modelbin` (door
@@ -912,13 +912,13 @@ Hinge axes ship in `Locators.xml`: `carLocator_doorLF/RF` (BRZ: x ±0.884088, y 
 z 0.006927, source frame) + `carLocator_doorHandleLF/RF` + `carLocator_entryDoorLF` — exactly the
 axis `class Doors`/AnimationSources needs, same transform as the geometry.
 
-Root cause (why this section exists): SUB_BRZ assembled the body WITH the doors fused into the proxy
+Root cause (why this section exists): TestCoupe assembled the body WITH the doors fused into the proxy
 chunks, then s34/s35 planned door removal as "manual doorcard marking in Blender" because the
 cabin census was ambiguous (17k/30k faces captured by the footprint, no discriminator). Both were
 non-problems: (a) the pre-cut rip pieces + known transform (`dp=(x, z+Y0, y)`, Y0 per car) make
 fused-face identification a tri_signature/centroid MATCHING job against the rip piece (the exact
 pattern of `s34_chunk_03_census.py` for calipers); (b) a parallel lane (s33) had ALREADY built
-`sub_brz_doors_{driver,codriver}.p3d` from the authored LODs
+`testcoupe_doors_{driver,codriver}.p3d` from the authored LODs
 (9 LODs each, collision preserved, LOD0 floor set by the doorcard's authored
 bitmask 0x0003 — no sub-LOD exists, accept the overage) and the build notes never recorded it, so
 two later sessions budgeted work that was DONE. Lessons: read the Manifest for `doors\`/movable
@@ -940,14 +940,14 @@ selection membership) + `add_proxy` into vis2 with a leaf companion. Door proxie
 same control: UNIFORM frame `((-1,0,0),(0,0,1),(0,1,0))` on all four sedandoors_* proxies (no
 per-side mirroring — door models are mirrored per side instead).
 Native client crash on the ruined-wheel swap at 60+ km/h (minidump): the CfgNonAIVehicles
-class `ProxySUB_BRZ_Wheel_destroyed` did not match the proxy file basename `sub_brz_wheel_ruined`
+class `ProxyTestCoupe_Wheel_destroyed` did not match the proxy file basename `testcoupe_wheel_ruined`
 (vanilla ties them: `ProxySedanWheel_destroyed` <-> `sedanWheel_destroyed.p3d`) — 1-line class
 rename. Both fixes verified offline (double-measured); in-game gate = the next drive-test.
 Method lesson: the cheap discriminator was measuring the visual proxies' FRAMES against the
 control BEFORE touching the item's LODs — s36 spent its cycle on the item asset instead.
-Promoted (2026-07-18): invariant 21 in `invariants-get-in-and-seats.md` and the family B cookbook `cookbook-attachment-invisible.md` of the rip-vehicle-import skill.
+Promoted (2026-07-18): invariant 21 in `invariants-get-in-and-seats.md` and `symptom-attachment-invisible.md`.
 
-**Changing the TRACK means moving the WHOLE corner, and the limit is the hub, not the arch (added 2026-10-01, SUB_BRZ s97).** [EXACT] On that car the four wheel proxies carried the SAME frame in every LOD (no per-side rotation), unlike the vanilla controls above, whose wheel frames are mirrored per side (it is the door proxies that share one frame); so shifting the wheel mesh inside the wheel `.p3d` moved the left wheels inboard and the right ones outboard at the same time. Read the four frames first: it is one call. To change the track, move per side: the proxy triangle in every LOD that carries it, the `wheel_<side>_<axle>_*` memory points (axle, damper, damper_axis, damper_land, steering, steering_axis), the `..._damper_land` Geometry box, and the brake/hub chunk plus its merged copies in the far LODs - on SUB_BRZ s97 that was 748 shell points and 1,570 chunk points in total for 10 cm of track (5 cm per side). The travel limit is the brake/hub box reaching the rim's inner face, not the wheel arch; profile the rim sweep (local x, radius) against the brake points before spending a cycle.
+**Changing the TRACK means moving the WHOLE corner, and the limit is the hub, not the arch (added 2026-10-01, TestCoupe s97).** [EXACT] On that car the four wheel proxies carried the SAME frame in every LOD (no per-side rotation), unlike the vanilla controls above, whose wheel frames are mirrored per side (it is the door proxies that share one frame); so shifting the wheel mesh inside the wheel `.p3d` moved the left wheels inboard and the right ones outboard at the same time. Read the four frames first: it is one call. To change the track, move per side: the proxy triangle in every LOD that carries it, the `wheel_<side>_<axle>_*` memory points (axle, damper, damper_axis, damper_land, steering, steering_axis), the `..._damper_land` Geometry box, and the brake/hub chunk plus its merged copies in the far LODs - on TestCoupe s97 that was 748 shell points and 1,570 chunk points in total for 10 cm of track (5 cm per side). The travel limit is the brake/hub box reaching the rim's inner face, not the wheel arch; profile the rim sweep (local x, radius) against the brake points before spending a cycle.
 
 
 ## Wheel proxy frames are a `(frame, referenced model)` pair (added 2026-08-31)

@@ -2,7 +2,7 @@
 
 Rules for writing a model-import gate that can be trusted: a negative fixture per rule, three exit states, controls that are independent of the candidate, and why a config gate that passes says nothing about what is on screen.
 
-> Status: the cases below were measured on mod vehicles (a helicopter built on `CarScript`, a motorbike import derived from `Motorbike_02_ColorBase`, an imported sports car), not on vanilla ones; they are third-party mod behaviour, not vanilla. A citation written with its full `P:\` path was opened on the vanilla data on `P:\` (a 1.30 build). "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number. Other skills are named by skill name, each a folder under `skills/` (dayz-test-ingame, dayz-texture-pipeline, dayz-mcp-verify).
+> Status: the cases below were measured on mod vehicles (a helicopter built on `CarScript`, a motorbike import derived from `Motorbike_02_ColorBase`, an imported sports car), not on vanilla ones; they are third-party mod behaviour, not vanilla. A citation written with its full `P:\` path was opened on the vanilla data on `P:\` (a 1.30 build). "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number. Other skills are named by skill name, each a folder under `skills/` (dayz-launch-test); the texture pack is `skills/_shared/textures/`.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -108,8 +108,8 @@ the centre were 60/68/39/23 at 40/60/85/240 m with the duller silver and 58/68/4
    logged levels 2 and 4 and showed no swap (one on the control too; in the other the control was not
    recorded), with each level held 4 s as in that run. They also used other probe builds on other days,
    and `SetHealthMax` is itself a `SetHealth` call, so they do not show that `SetHealth01` cannot swap
-   (the dayz-mcp-verify skill); on clothing the engine did apply `healthLevels[]` on scripted health
-   steps (the dayz-texture-pipeline skill). Cross both with the same probe build and the same control before
+   (`skills/dayz-launch-test/references/mcp/`); on clothing the engine did apply `healthLevels[]` on scripted health
+   steps (`skills/_shared/textures/runtime-material-swaps.md`). Cross both with the same probe build and the same control before
    naming the method as a cause. On
    1.30.164200 the contact-damage call swapped the import's body panels in three of four
    textured runs; in the fourth, with the same kit as a later run that swapped, the client logged levels
@@ -140,7 +140,7 @@ the centre were 60/68/39/23 at 40/60/85/240 m with the duller silver and 58/68/4
    listed rvmat. The gate names its deliberate exemptions (the import keeps 378 faces of its instrument
    cluster, with 41 materials, in `Front` out on purpose) and ships with its negative fixture (first section above).
    (b) Read the packed PBO and its ODOLs: a gate over stage JSON or dumps can stay green on inputs other
-   than the ones packed (the dayz-test-ingame skill: the verdict of a build is the PBO file table; the `/dayz-build-pbo` skill:
+   than the ones packed (the dayz-launch-test skill: the verdict of a build is the PBO file table; the `/dayz-build-pbo` skill:
    rvmats referenced only from config.cpp stay out of the PBO).
    (c) Make the packer refuse diagnostic variants: the red-marker build was packable, and the second gate could
    pass it.

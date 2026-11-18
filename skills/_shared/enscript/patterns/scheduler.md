@@ -68,7 +68,7 @@ Third-party mod behaviour, measured in game and not checked on `P:\`, because th
 - **A `CallLater` that queues itself again from inside its own callback stopped after the first step on a 1.29 diag client**, with no error in the log; the same call made from outside the queue worked. A `Timer` with `loop` set, stopped with `Stop()` when the chain is done, ran every step. The same chain was not reproduced on a retail 1.30.164289 server, where both `CALL_CATEGORY_SYSTEM` and `CALL_CATEGORY_GAMEPLAY` chains ran all six steps. If a self re-queuing chain dies silently on a client, switch it to a `Timer`.
 - **One repeating `CallLater` per device does not scale.** A power grid mod saw heap fragmentation and an "Illegal write" crash after hours with about a hundred devices each holding its own repeating call. Run one `Timer` in a manager and loop over a registered array of devices instead; `server_tick_budget.md` shows how to cap and spread that loop.
 
-Detail: `skills/enforce-script-reference/references/runtime-traps.md` and, for server load, `skills/enforce-script-reference/references/server-performance.md`.
+Detail: `skills/_shared/enscript/depth/runtime-traps.md` and, for server load, `skills/_shared/enscript/depth/server-performance.md`.
 
 ---
 

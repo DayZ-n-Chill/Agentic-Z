@@ -16,7 +16,7 @@ Plain text format. Every key used by the 171 vanilla particle `.emat` files unde
 
 ## Two shader types
 
-These are the two material classes particles use. Vanilla `.emat` files outside particles use other classes (`MatWaterPool`, `MatOceanOld`, `MatPBRBasic`); those are covered in `dayz-texture-pipeline/references/matpbr-emat-pipeline.md`.
+These are the two material classes particles use. Vanilla `.emat` files outside particles use other classes (`MatWaterPool`, `MatOceanOld`, `MatPBRBasic`); those are covered in `skills/_shared/textures/matpbr-emat.md`.
 
 ### `Particle` — Most common (fire, sparks, water, smoke with blending)
 

@@ -10,7 +10,7 @@ folder next to the .p3d. This generator does not touch the .p3d, .rtm or .anm
 files; it only writes the config that binds named selections to animations.
 
 The property names it writes are the ones in
-references/config-driven-animation.md. It warns on an animation type outside
+skills/_shared/animation/model-cfg-animations.md. It warns on an animation type outside
 its checked set (for example translationModelX or direct): check such a type
 against a vanilla model.cfg first and add it by hand.
 

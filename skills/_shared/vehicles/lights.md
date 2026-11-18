@@ -2,7 +2,7 @@
 
 Why a car's lights do not switch: material paths, hidden selection ownership and order, bulbs, driver exit, and how to test the setter against a vanilla car.
 
-> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
 
 Related file in this pack: `emissive-leds-and-dynamic-lights.md` (an LED or indicator built from a hidden selection, one `.rvmat` per state and an optional scripted point light).
 
@@ -19,7 +19,7 @@ Related file in this pack: `emissive-leds-and-dynamic-lights.md` (an LED or indi
 - Vanilla material paths have no leading backslash: the `hiddenSelectionsMaterials[]` of `CivilianSedan` start at `dz\` (`P:\DZ\vehicles\wheeled\config.cpp:5180`).
 - The vehicle light key is `UAToggleVehicleLights` (`P:\scripts\4_world\classes\useractionscomponent\actioninput.c:855`); `UAToggleHeadlight` is the head torch (`P:\scripts\4_world\classes\useractionscomponent\actioninput.c:782`).
 
-## Five failures that look like a broken material and are not (added 2026-08-17; all measured in game on SUB_BRZ)
+## Five failures that look like a broken material and are not (added 2026-08-17; all measured in game on TestCoupe)
 
 - **Light-selection preflight.** Before reassigning a rear lamp, print every light hidden selection's face count and bbox. A lateral selection whose bbox crosses `x=0` owns centre geometry (e.g. `x=-0.12` to `0.65` = the tailgate bar); dozens of faces compressed into ~1 cm (here 44 faces in 0.01 m) are degenerate and draw nothing. Brake and tail must own disjoint faces; if they overlap the later `SetObjectMaterial` wins and the result is indeterminate.
 
@@ -45,8 +45,8 @@ log line: the readback simply still shows the old material. Proven with an A/B t
 the selection, the index and the target file fixed and changed only the leading character:
 
 ```
-asked \SUB_BRZ\data\brz_light_brake_on.rvmat  ->  got \sub_brz\data\brz_light_brake_off.rvmat   REJECTED
-asked  SUB_BRZ\data\brz_light_brake_on.rvmat  ->  got  SUB_BRZ\data\brz_light_brake_on.rvmat    APPLIED
+asked \TestCoupe\data\brz_light_brake_on.rvmat  ->  got \testcoupe\data\brz_light_brake_off.rvmat   REJECTED
+asked  TestCoupe\data\brz_light_brake_on.rvmat  ->  got  TestCoupe\data\brz_light_brake_on.rvmat    APPLIED
 ```
 
 Vanilla never writes the leading backslash on a material path — every entry of `CivilianSedan`'s
@@ -63,7 +63,7 @@ Grep before blaming anything else: `"\\MOD[^"]*\.rvmat"`.
 
 Rip-imported cars arrive with the lamp split in two: a large piece (`tail`, `light_left_static`,
 `light_right_static`, `light_dashboard_static`) that is absent from `hiddenSelections[]`, plus a
-small switchable insert that is in it. On SUB_BRZ that was **19,310 faces that nothing can ever
+small switchable insert that is in it. On TestCoupe that was **19,310 faces that nothing can ever
 switch** against inserts of 42 and 318 faces.
 
 The symptoms read as material bugs and are not:

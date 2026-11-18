@@ -161,7 +161,7 @@ def test_classify(line, category):
     assert triage.classify(line) == category
 
 
-# Lines every DayZDiag session prints with or without a mod (dayz-test-ingame references/troubleshooting.md
+# Lines every DayZDiag session prints with or without a mod (dayz-launch-test references/troubleshooting.md
 # and references/session-findings.md). They must stay out of the error categories and out of the catalog,
 # or every watch and every pasted log would report them.
 @pytest.mark.parametrize("line", [

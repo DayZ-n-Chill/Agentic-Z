@@ -47,38 +47,37 @@ Most skills gate on `/dayz-preflight` first per the L2 convention `skills/_share
 - `/dayz-health` and `/dayz-logwatch` (they only read gate results and logs).
 - `/dayz-route` (it only classifies the text of a request).
 - `/dayz-statusline` (it only edits a settings file).
-- `/dayz-vehicles`, `/dayz-p3d-inspector`, `/dayz-characters`, `/dayz-clothing`, `/dayz-animation-pipeline`, `/dayz-realistic-animation-director`, `/dayz-texture-pipeline`, `/dayz-ui-development` and `/dayz-pbo-reverse-engineering` (their scripts only read and write the model, image, JSON, `.layout` or `.pbo` files named on the command line; none needs DayZ Tools or the game).
+- `/dayz-p3d-inspector`, `/dayz-characters`, `/dayz-clothing`, `/dayz-animation-pipeline`, `/dayz-texture-pipeline` and `/dayz-ui-development` (their scripts only read and write the model, image, JSON, contract or `.layout` files named on the command line, or run inside Blender through the Blender MCP server; none needs DayZ Tools or the game).
 - `/dayz-persistence` (its scripts are offline models of the save contracts and read nothing on `P:\`).
-- `/dayz-mcp-verify` (its script only talks to the local dayz-mcp server over HTTP).
 - `/dayz-proxy-align` (`proxy_extract.py`, `proxy_canon.py`, `proxy_viewer.py` and `proxy_apply.py` only read and write the `.p3d`, JSON and HTML files named on the command line, and `install_py3d.py` only runs pip on the wheel inside the repo; its `worn_overlay.py` reads vanilla clothing and does gate on preflight when its `--dz` folder is on `P:\`).
 - `/rip-vehicle-import` (its script `export_car_glb.py` runs inside Blender, only opens a `.blend` file and exports a `.glb`; it needs no `P:\` drive and no DayZ Tools).
 
-Reference-only skills such as `/dayz-particles`, `/dayz-aviation` or `/dayz-weapons` run no scripts, so they have no gate.
+Reference-only skills such as `/dayz-particles` or `/dayz-basebuilding` run no scripts, so they have no gate. `/dayz-import-mod`, `/dayz-launch-test` and `/dayz-p3d-audit` gate through their main script; their offline helpers (`pbo_inventory.py`, `scripts/drive_ladder.py`, the three vehicle checks) read only the files or the local server they are given.
 
 ## Reference and tool skills
 
-Beside the workflow skills above, the repo carries reference and tool skills for single areas of modding. A specialist agent reads the ones for its area; you can also open any of them yourself, and `/dayz-route` sends a request for the reference or the tool to the skill and a request to build or fix something to the specialist. `/dayz-route` returns only the `dayz-*` skills in this table; it has no route to the others (`/enforce-script-reference`, `/systematic-debugging`, `/task-observer`, `/rip-vehicle-import`, `/ai-3d-to-dayz`, `/3d-generation-harness`, `/blender-assembly`, `/blender-visual-review`, `/uv-clean-atlas`, `/blender-animation`, `/mixamo-retarget`, `/ardy-motion-generation` and `/rigorous-data-audit`), so open those yourself or reach them through the specialist.
+Beside the workflow skills above, the repo carries reference and tool skills for single areas of modding, and knowledge packs under `skills/_shared/` that hold the facts. A specialist agent reads the ones for its area; you can also open any of them yourself, and `/dayz-route` sends a request for the reference or the tool to the skill and a request to build or fix something to the specialist. `/dayz-route` returns only the `dayz-*` skills in this table; it has no route to the others (`/enforce-script-reference`, `/rip-vehicle-import`, `/ai-3d-to-dayz`, `/3d-generation-harness`, `/blender-assembly`, `/blender-visual-review`, `/uv-clean-atlas` and `/rigorous-data-audit`) or to the packs, so open those yourself or reach them through the specialist.
 
-| Area | Skills | Specialist that reads them |
+| Area | Skills and packs | Specialist that reads them |
 |---|---|---|
-| Planning a feature | `/dayz-feature-spec` | `dayz-mod-architect` |
-| Whole mod, implementing and debugging | `/dayz-mod-dev`, `/dayz-mod-workflow`, `/systematic-debugging` | `dayz-script-specialist`, `dayz-mod-debugger` |
-| Improving the skills from a work session | `/task-observer` | none; you run it yourself |
-| Enforce Script | `/enforce-script-reference` | `dayz-script-specialist` |
-| UI | `/dayz-ui-development` | `dayz-ui-specialist` |
-| Vehicles | `/dayz-vehicles`, `/dayz-motorbikes`, `/dayz-aviation`, `/rip-vehicle-import` | `dayz-vehicle-specialist` |
-| Weapons | `/dayz-weapons` | `dayz-weapon-specialist` |
-| Clothing | `/dayz-clothing`, `/dayz-proxy-align` | `dayz-wearables-specialist`, `dayz-object-builder` |
-| Models | `/dayz-model-pipeline`, `/dayz-p3d-inspector`, `/dayz-3d-viewer`, `/ai-3d-to-dayz`, `/3d-generation-harness`, `/blender-assembly`, `/blender-visual-review`, `/uv-clean-atlas` | `dayz-object-builder`, `dayz-asset-specialist` |
-| Textures and materials | `/dayz-texture-pipeline` | `dayz-asset-specialist` |
-| Animation and characters | `/dayz-animation-pipeline`, `/dayz-realistic-animation-director`, `/dayz-characters`, `/blender-animation`, `/mixamo-retarget`, `/ardy-motion-generation` | `dayz-animation-specialist` |
-| Doors | `/dayz-doors` | `dayz-object-builder`, `dayz-animation-specialist` |
-| Base building and saved data | `/dayz-basebuilding`, `/dayz-persistence`, `/rigorous-data-audit` | `dayz-persistence-specialist` |
-| Underground and hazards | `/dayz-underground`, `/dayz-environment-hazards` | `dayz-map-specialist` |
-| Physics | `/dayz-physics-engine` | `dayz-physics-specialist` |
-| Sound | `/dayz-sound-system` | `dayz-audio-fx-specialist` |
-| AI | `/dayz-ai-patterns` | `dayz-ai-specialist` |
-| Build and test | `/dayz-test-ingame`, `/dayz-mcp-verify`, `/dayz-pbo-reverse-engineering` | `dayz-build-engineer`, `dayz-ingame-tester` |
+| Planning a feature | `/dayz-scope-mod` ("Scoping a feature") | `dayz-mod-architect` |
+| Whole mod, implementing and debugging | `/dayz-mod-dev`, `/dayz-mod-workflow` | `dayz-script-specialist`, `dayz-mod-debugger` |
+| Recording a correction from a work session | `/dayz-record-correction` | none; you run it yourself |
+| Enforce Script | `/enforce-script-reference`, pack `skills/_shared/enscript/` | `dayz-script-specialist` |
+| UI | `/dayz-ui-development`, pack `skills/_shared/ui/` | `dayz-ui-specialist` |
+| Vehicles | `/dayz-p3d-audit` (vehicle checks), `/rip-vehicle-import`, pack `skills/_shared/vehicles/` (cars, motorbikes, aircraft) | `dayz-vehicle-specialist` |
+| Weapons | pack `skills/_shared/weapons/` | `dayz-weapon-specialist` |
+| Clothing | `/dayz-clothing`, `/dayz-proxy-align`, pack `skills/_shared/wearables/` | `dayz-wearables-specialist`, `dayz-object-builder` |
+| Models | `/dayz-model-pipeline`, `/dayz-p3d-inspector`, `/dayz-3d-viewer`, `/ai-3d-to-dayz`, `/3d-generation-harness`, `/blender-assembly`, `/blender-visual-review`, `/uv-clean-atlas`, pack `skills/_shared/models/` | `dayz-object-builder`, `dayz-asset-specialist` |
+| Textures and materials | `/dayz-texture-pipeline`, pack `skills/_shared/textures/` | `dayz-asset-specialist` |
+| Animation and characters | `/dayz-animation-pipeline`, `/dayz-characters`, pack `skills/_shared/animation/` (also Blender, motion checks, Mixamo and ARDY) | `dayz-animation-specialist` |
+| Doors | `skills/_shared/animation/building-doors.md`, `skills/_shared/models/doors.md` | `dayz-object-builder`, `dayz-animation-specialist` |
+| Base building and saved data | `/dayz-basebuilding`, `/dayz-persistence`, `/rigorous-data-audit`, pack `skills/_shared/persistence/` | `dayz-persistence-specialist` |
+| Underground and hazards | pack `skills/_shared/world/` | `dayz-map-specialist` |
+| Physics | pack `skills/_shared/physics/` | `dayz-physics-specialist` |
+| Sound | pack `skills/_shared/audio-fx/` | `dayz-audio-fx-specialist` |
+| AI | `/dayz-ai-patterns`, pack `skills/_shared/ai/` | `dayz-ai-specialist` |
+| Build and test | `/dayz-launch-test` (its `references/`, with the dayz-mcp verification in `references/mcp/`), `/dayz-import-mod` ("Studying a packed mod") | `dayz-build-engineer`, `dayz-ingame-tester` |
 
 The deep material behind them is in the packs under `skills/_shared/` (index in `skills/_shared/README.md`) and each skill's own `references/` folder. Standalone tools the skills call live in `scripts/tools/`.
 
@@ -398,7 +397,7 @@ Override the author handle: `python skills\dayz-new-mod\new_mod.py MyMod --autho
 
 The core L2 rules live at `skills/_shared/dayz-conventions.md`; topic rules (config, assets, scripts, UI, server) live in `skills/_shared/conventions/`. The high-level rules:
 
-- **Every DayZ skill MUST gate on `/dayz-preflight`** at the start of execution and halt on non-zero exit, even offline scaffolding skills. The exceptions are the emergency stop (`/dayz-stop-test`), meta-skills that edit settings or rule files rather than DayZ content (`/dayz-scope-mod`, `/dayz-record-correction`), `/dayz-init` (runs preflight inside its own steps), `/dayz-workdrive` (mounts `P:\`), the gate itself (`/dayz-preflight`), `/dayz-search-download`, `/dayz-ask`, `/dayz-gate` (gates through the skills it runs), the read-only and report skills (`/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe`, `/dayz-layout-preview`, `/dayz-upgrade-guard`, `/dayz-release-pack`, `/dayz-server-kit`, `/dayz-health`, `/dayz-logwatch`), `/dayz-route`, `/dayz-statusline`, and the reference and tool skills whose scripts work offline on the files they are given (`/dayz-vehicles`, `/dayz-p3d-inspector`, `/dayz-characters`, `/dayz-clothing`, `/dayz-animation-pipeline`, `/dayz-realistic-animation-director`, `/dayz-texture-pipeline`, `/dayz-ui-development`, `/dayz-pbo-reverse-engineering`, `/dayz-persistence`, `/dayz-mcp-verify`, `/dayz-proxy-align`, whose `worn_overlay.py` still gates when it reads from `P:\`), and `/rip-vehicle-import` (its script runs inside Blender and needs no `P:\`). The reason for each is in `skills/_shared/dayz-conventions.md`. The discipline of "preflight first" keeps the workflow uniform and catches a dismounted drive at the first action of a session.
+- **Every DayZ skill MUST gate on `/dayz-preflight`** at the start of execution and halt on non-zero exit, even offline scaffolding skills. The exceptions are the emergency stop (`/dayz-stop-test`), meta-skills that edit settings or rule files rather than DayZ content (`/dayz-scope-mod`, `/dayz-record-correction`), `/dayz-init` (runs preflight inside its own steps), `/dayz-workdrive` (mounts `P:\`), the gate itself (`/dayz-preflight`), `/dayz-search-download`, `/dayz-ask`, `/dayz-gate` (gates through the skills it runs), the read-only and report skills (`/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe`, `/dayz-layout-preview`, `/dayz-upgrade-guard`, `/dayz-release-pack`, `/dayz-server-kit`, `/dayz-health`, `/dayz-logwatch`), `/dayz-route`, `/dayz-statusline`, and the reference and tool skills whose scripts work offline on the files they are given (`/dayz-p3d-inspector`, `/dayz-characters`, `/dayz-clothing`, `/dayz-animation-pipeline`, `/dayz-texture-pipeline`, `/dayz-ui-development`, `/dayz-persistence`, `/dayz-proxy-align`, whose `worn_overlay.py` still gates when it reads from `P:\`), and `/rip-vehicle-import` (its script runs inside Blender and needs no `P:\`). The reason for each is in `skills/_shared/dayz-conventions.md`. The discipline of "preflight first" keeps the workflow uniform and catches a dismounted drive at the first action of a session.
 - **`P:\` must be mounted** by DayZ Tools before any DayZ work. Preflight enforces.
 - **DayZ cannot be tested standalone.** A local server MUST be loaded with the same mod set as the client. `/dayz-launch-test` enforces; never launch the client alone for mod testing.
 - **Mod source under `workspace/<ModName>/`**. Built `.pbo` deploys to `P:\Mods\@<ModName>\Addons\`. Scaffold owns the `P:\<ModName>\` junction; build/test skills only verify it.

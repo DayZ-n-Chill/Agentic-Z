@@ -30,11 +30,11 @@ Publishing to the Steam Workshop is the user's step in DayZ Tools Publisher; `sk
 Read only the file that matches, quote what it says in your report, and still don't fix mod files:
 
 - Step 2 fails, or the build passes and the mod does nothing: the reference table in `skills/dayz-build-pbo/SKILL.md` (pre-build checks, common validation failures, post-build gates, the 1.30 build notes). When the question is what changed between two PBOs, name `scripts/tools/dayz-pbo-diff/README.md` to your caller.
-- Step 4 fails (locked PBO, stale staging, a mixed-mod launch, storage left from an older run): `skills/dayz-test-ingame/references/build-and-storage-traps.md`, `skills/dayz-test-ingame/references/windows-launch-cycle.md` and `skills/dayz-test-ingame/references/session-findings.md`.
+- Step 4 fails (locked PBO, stale staging, a mixed-mod launch, storage left from an older run): `skills/dayz-launch-test/references/build-and-storage-traps.md`, `skills/dayz-launch-test/references/windows-launch-cycle.md` and `skills/dayz-launch-test/references/session-findings.md`.
 - Load order with Community Framework or Expansion (step 4a): the `dayz-mod-dev` skill. A `gui` prefix PBO with layout variants: `skills/dayz-ui-development/references/layout-variants-130.md`.
 - On Linux: `skills/_shared/linux-proton.md` and `skills/dayz-preflight/references/linux.md` before step 2.
-- The brief asks to study somebody else's PBO: run only the read-only inventory of the `dayz-pbo-reverse-engineering` skill (`skills/dayz-pbo-reverse-engineering/inventory.py`) and report it; extraction and the pattern sweep write files, so name them for the main session.
-- The brief asks for a check in the running game (spawn, capture, collision probe, vehicle ladder): that is the `dayz-mcp-verify` skill, which needs the dayz-mcp server (`docs/dayz-mcp.md`). You have no MCP tools, so report that the main session must run it; a session it manages is never stopped with `/dayz-stop-test`.
+- The brief asks to study somebody else's PBO: run only the read-only inventory of `/dayz-import-mod` (`skills/dayz-import-mod/pbo_inventory.py`) and report it; extraction and the pattern sweep in `skills/dayz-import-mod/references/study-a-packed-mod.md` write files, so name them for the main session.
+- The brief asks for a check in the running game (spawn, capture, collision probe, vehicle ladder): that is the dayz-mcp verification in `skills/dayz-launch-test/references/mcp/README.md`, which needs the dayz-mcp server (setup in `skills/dayz-launch-test/references/mcp/bridge-setup.md`). You have no MCP tools, so report that the main session must run it; a session it manages is never stopped with `/dayz-stop-test`.
 
 ## Report
 

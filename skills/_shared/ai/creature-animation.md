@@ -1,6 +1,15 @@
-# Creature animation: graph, skeleton and the names AI drives
+# Creature animation: config wiring and the bones the engine drives
 
-How an animal or infected class is tied to its animation graph, which commands and variables the graph declares, and the two bones the engine moves and aims. Open this when a custom creature needs clips or a graph, or when AI script has to line up with an animation. Building a creature from a Blender rig is covered step by step in `skills/dayz-animation-pipeline/references/creature-animation.md`; the graph file format is in `skills/dayz-animation-pipeline/references/anim-graph.md`.
+How an animal or infected class is tied to its animation graph and AI template, where each vanilla creature's graph files are, and the two bones the engine moves and aims. Open this when AI script or a creature config has to line up with an animation.
+
+The rest of the creature animation subject lives in the animation pack, owned by dayz-animation-specialist (front index `skills/_shared/animation/README.md`):
+
+| Topic | File |
+|---|---|
+| The commands a creature graph declares (`CMD_Attack`, `CMD_AttackSuccess`, the infected `CMD_HIT_LIGHT` set), the variables (`speed`, `SlopeAngleX` and the rest), terrain alignment nodes, the 1.30 graph format | `skills/_shared/animation/anim-graphs.md` |
+| Building a custom creature from a Blender rig: export, `model.cfg`, the first graph, the order to build it in, AI wiring for an ambient animal | `skills/_shared/animation/creature-rig-to-game.md` |
+
+The script calls that raise the commands (`StartCommand_Attack` and the rest) are in `creatures.md`.
 
 ## From config class to graph
 
@@ -16,7 +25,7 @@ A creature's config names its graph in `class enfanimsys`:
 
 The AI side is a separate key on the same class: `aiAgentTemplate`, `Predators_Wolf` for the wolf (`P:\DZ\animals\canis_lupus\config.cpp:37`) and `AmbientLife_Gallus_Gallus_Domesticus` for the hen (`P:\DZ\animals\gallus_gallus_domesticus\config.cpp:27`). Templates are in `behaviour-config.md`.
 
-## Graph files
+## Graph files per creature
 
 Each graph is a master `.agr` (variables and commands), one or more `.agf` sub-graphs (states and blends), an `.ast` template (which animation names exist) and `.asi` instances (name to clip), all text:
 
@@ -28,36 +37,6 @@ Each graph is a master `.agr` (variables and commands), one or more `.agf` sub-g
 | Bear | `P:\DZ\animals_bliss\animations\!graph_files\bear\` |
 | Infected | `P:\DZ\anims\workspaces\infected\infected_main\` |
 
-## Commands the graph declares
-
-These are the names graph conditions test. The script calls that raise them (`StartCommand_Attack` and the rest) are in `creatures.md`.
-
-| Creature | Commands | Where |
-|---|---|---|
-| Animals | `CMD_Attack`, `CMD_AttackSuccess`, `CMD_Death`, `CMD_JumpType`, `CMD_LookAt`, `CMD_AnimCallBack`, `CMD_Hit`, `CMD_LookAtXChange` | `P:\DZ\animals\animations\!graph_files\wolf\wolf_graph.agr:63` to `:84` |
-| Infected | `CMD_HIT_LIGHT`, `CMD_HIT_HEAVY`, `CMD_DEATH`, `CMD_ATTACK`, `CMD_TURN`, `CMD_VAULT`, `CMD_CRAWL`, `CMD_NODEATH` | `P:\DZ\anims\workspaces\infected\infected_main\infected.agr:46` to `:67` |
-
-`CMD_AttackSuccess` is the attack connecting. There is no `CMD_Success`, and spellings with spaces or in lower case do not exist.
-
-## Variables
-
-Every animal graph declares the same set (`P:\DZ\animals\animations\!graph_files\wolf\wolf_graph.agr:6` to `:56`):
-
-| Variable | Range | Use |
-|---|---|---|
-| `speed` | 0 to 5 | Blends walk, trot and run. |
-| `turn` | −180 to 180 | Turning. |
-| `behaviorAction`, `alertLevel`, `behaviorSlotID` | integers | What the AI is doing. |
-| `lookXAngle`, `lookYAngle` | degrees | Where the head looks. |
-| `SlopeAngleX`, `SlopeAngleZ` | −90 to 90 | Ground slope, filled by the engine. |
-| `InjuryLevel`, `AnimalType` | integers | Limping, and the species within a shared graph. |
-
-There is no `swimming` variable on any animal.
-
-## Terrain alignment
-
-The body tilts with the ground through a procedural transform fed by the slope variable in radians: `Expression "SlopeAngleX  * 0.01745329251994329576923690768489"` on the wolf's `AlignToTerrain_Rot` node, which is also its start node (`P:\DZ\animals\animations\!graph_files\wolf\wolf_maingraph.agf:5` to `:8`). The herbivore graph has one such node per build, `TerrainRot_BoarAndPig`, `TerrainRot_CowAndBull`, `TerrainRot_Deers` and `TerrainRot_SheepAndGoat`, with the slope clamped to ±40 degrees (`P:\DZ\animals\animations\!graph_files\herbivores\herbivores_maingraph.agf:2407` to `:2410`, `:2449`, `:2505`, `:2547`). A new creature copies the node of the vanilla animal closest in build.
-
 ## Two bones the engine uses
 
 | Bone | Vanilla | Role |
@@ -66,10 +45,3 @@ The body tilts with the ground through a procedural transform fed by the slope v
 | `LookAt` | `P:\DZ\anims\cfg\skeletons.anim.xml:17` in the block the infected bind (`hermit_newbindpose.xob`), `:444` in `z_hermit.xob` | The look target. |
 
 Bone names for all vanilla skeletons are listed in `P:\DZ\anims\cfg\skeletons.anim.xml`, one `<skeleton name="....xob">` block each. The addon that ships it has nothing in its `config.cpp` but its `CfgPatches` class `DZ_Anims_Cfg` (`P:\DZ\anims\cfg\config.cpp:3`), so the engine finds the XML by its path, not by a config key.
-
-## For a custom creature
-
-- Start from the vanilla creature closest in build and behaviour: its skeleton, graph, template, instance and AI template. Change as little as possible.
-- Get one idle state with one clip playing in game before adding states.
-- A mod that ships its own graph for a new creature class collides with nothing. A mod that replaces a vanilla creature's graph collides with any other mod replacing the same one.
-- 1.30 rewrote every vanilla graph in a new text format (not checkable on `P:\`, which holds 1.30 only). A graph written for 1.29 has to be ported; whether 1.30 loads the old format is not tested.

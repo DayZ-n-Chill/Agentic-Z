@@ -104,7 +104,7 @@ The full list of 21 rules, with the measurements behind them, is `references/cri
 | Is there a worked object specification I can adapt (button, switch, generator, cable, junction box)? | `references/lfpg-recipes.md` |
 | Cookware, a cable segment, or a weapon held in the hands: what was measured? | `references/domain-recipes.md` |
 | Is this binarize or proxy fault a known open one that is not yet confirmed? | `references/community-findings.md` |
-| What changes on Linux? | `references/linux.md` |
+| What changes on Linux? | `skills/_shared/linux-proton.md` (Blender and the model tools are a row of section 1); in-game checks in `skills/dayz-launch-test/references/linux.md` |
 
 Facts about what vanilla models carry are in the model pack, checked on `P:\`: `skills/_shared/models/README.md` (LODs, memory points, named properties, proxies, selections, doors).
 

@@ -24,12 +24,15 @@ Vanilla gates its own fields on that number:
 | `if (version >= 114)` quick bar flag | `P:\scripts\4_world\entities\itembase.c:3103` |
 | `if (version < 105)` read a removed field | `P:\scripts\4_world\entities\itembase\combinationlock.c:160` |
 | `if (version >= 143)` read a new field | `P:\scripts\4_world\entities\itembase\combinationlock.c:169` |
+| `if (version >= 140)` stomach temperature, in `PlayerStomach.OnStoreLoad` (`:471`) | `P:\scripts\4_world\classes\playerstomach.c:492` |
+
+Some vanilla subsystems also declare a storage version of their own through `GetStorageVersion()` (`P:\scripts\4_world\classes\playerstomach.c:255`, `P:\scripts\4_world\classes\playermodifiers\modifiersmanager.c:178`; `ModifiersManager.OnStoreLoad` at `modifiersmanager.c:273`). These track engine compatibility; none of them versions a mod release.
 
 A mod must not change `GAME_STORAGE_VERSION`. It belongs to the game and moves with game updates, not with your releases, so it cannot tell you which version of your mod wrote a record. Write your own version.
 
 The number was 142 on DayZ 1.29 (the 1.29 scripts are not on `P:\`, so this is not checked here), so a record saved on 1.29 arrives with `version` 142 and skips the two `>= 143` gates above.
 
-Not every vanilla field is gated. `PlayerBase` writes a thermal value through `m_ThermalBiasHandler` after the arrow manager (`P:\scripts\4_world\entities\manbase\playerbase.c:7395`) and reads it back with no version check, failing the whole load when the read fails (`m_ThermalBiasHandler` at `P:\scripts\4_world\entities\manbase\playerbase.c:7520` to `:7524`). A player record from 1.29 has no such value (the 1.29 scripts are not on `P:\`, so this is not checked here). Two lessons for mod code: gate every field you add, and a `modded class PlayerBase` that copies the old save tail instead of calling `super` breaks on the next game update. The 1.30 changes are listed with the vanilla code in `references/dayz-1-30-persistence.md` of the `dayz-persistence` skill.
+Not every vanilla field is gated. `PlayerBase` writes a thermal value through `m_ThermalBiasHandler` after the arrow manager (`P:\scripts\4_world\entities\manbase\playerbase.c:7395`) and reads it back with no version check, failing the whole load when the read fails (`m_ThermalBiasHandler` at `P:\scripts\4_world\entities\manbase\playerbase.c:7520` to `:7524`; the value is the float `m_TemporaryResistanceTime`, `P:\scripts\4_world\classes\thermalbiashandler.c:72-77`). A player record from 1.29 has no such value (the 1.29 scripts are not on `P:\`, so this is not checked here). Two lessons for mod code: gate every field you add, and a `modded class PlayerBase` that copies the old save tail instead of calling `super` breaks on the next game update. The 1.30 changes are listed with the vanilla code in `dayz-1-30-persistence.md`.
 
 ## Your own version, written first
 
@@ -112,7 +115,7 @@ A reader meets more than "old" and "new". Before a format change ships, say what
 
 A rejecting reader never writes: no defaults saved over the record, no repair in place. Vanilla is not a model here. `Rebuilding` rejects a stored version lower than its own but accepts a higher one (`m_LastStorageVersion < REBUILDING_STORAGE_VERSION` at `P:\scripts\4_world\classes\rebuilding\rebuilding.c:520`), so a newer layout would be read as if it were the current one.
 
-When a design that leaves the format unchanged gives the same result, propose it first. The full table, the write rule and the mutation check that proves the tests can fail are in `references/migration-matrix.md` of the `dayz-persistence` skill.
+When a design that leaves the format unchanged gives the same result, propose it first. The full table, the write rule and the mutation check that proves the tests can fail are in `migration-matrix.md`.
 
 ### The class must still exist
 
@@ -133,7 +136,7 @@ So, in order of preference:
 2. If a vanilla class must carry new saved state, ship it only on a fresh server, and say so in the audit report.
 3. Or use a framework that gives each mod its own storage block. Community Framework does this; it is not part of vanilla, so its API is not checked here. See `_shared/enscript/integrations/community_framework.md`.
 
-What Community Framework's ModStorage gives (third-party mod behaviour, not yet checked on `P:\`): it writes a framework version, a mod count and one framed block per mod; it hands each mod the `storageVersion` set in its `CfgMods` entry, so the mod can version its own block; and when a mod that owns a block is not loaded, it writes that block back unchanged, so the data is there again after the mod is added back. It does not define the mod's upgrade paths, and it cannot keep values a `modded class` appended outside its framing. The CF line references are in `references/cf-modstorage.md` of the `dayz-persistence` skill.
+What Community Framework's ModStorage gives (third-party mod behaviour, not yet checked on `P:\`): it writes a framework version, a mod count and one framed block per mod; it hands each mod the `storageVersion` set in its `CfgMods` entry, so the mod can version its own block; and when a mod that owns a block is not loaded, it writes that block back unchanged, so the data is there again after the mod is added back. It does not define the mod's upgrade paths, and it cannot keep values a `modded class` appended outside its framing. The CF line references are in `cf-modstorage.md`.
 
 The same holds for `modded class PlayerBase`. The player's chain also writes its server sections only on a multiplayer server (`P:\scripts\4_world\entities\manbase\playerbase.c:7366`), so mirror any condition you put around a write with the same condition around the read.
 
@@ -167,6 +170,6 @@ A save that can be recovered at every step:
 5. Read the destination back and check it. If it is short or invalid, delete it and keep the temp and backup files.
 6. Delete the temp file only after step 5 passed.
 
-On load, judge a leftover `.tmp` by its content, never by its date. The full contract, with the nine places an I/O failure can strike and what must survive each one, is `references/sidecar-files.md` in the `dayz-persistence` skill.
+On load, judge a leftover `.tmp` by its content, never by its date. The full contract, with the nine places an I/O failure can strike and what must survive each one, is `sidecar-files.md`.
 
 Vanilla's own mission file is a counter example, not a pattern: `BunkerBroadcastPersistenceStorage` writes `$mission:BunkerBroadcastPersistenceStorage.bin` with a `FileSerializer`, no version header, and a `Load` that ignores what `Read` returns (`STORAGE_PATH` at `P:\scripts\4_world\classes\bunkerbroadcasthandler.c:18`; `Load` at `P:\scripts\4_world\classes\bunkerbroadcasthandler.c:56`).

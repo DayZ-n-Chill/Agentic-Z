@@ -38,6 +38,15 @@ How many exist, how long they stay and where they spawn. The format matches vani
 
 The meaning of each number is in the comments of `CEItemProfile` (`P:\scripts\3_game\ce\centraleconomy.c:754-768`): nominal is about how many should be on the map, min the lowest count, lifetime the idle seconds before an abandoned item is deleted, restock the idle time before it may respawn, cost its priority in respawn and cleanup.
 
+Reported from server operation, not checkable in `P:\scripts` (the economy is native):
+
+- `min` must be lower than `nominal`; the economy restocks when the count falls to `min`. `restock` 0 means the next cycle, not at once. `quantmin`/`quantmax` -1 means full.
+- The flags say what counts toward `nominal`: `count_in_map` (ground and buildings), `count_in_cargo`, `count_in_hoarder` (player storage and bases) and `count_in_player` (inventories, so hoarding can starve world spawns); `deloot` marks dynamic event loot.
+- Disable a type with `nominal` 0 rather than deleting its row: deleting stops new spawns, and the items already in the world stay until their lifetime ends.
+- When two registered `types` files hold the same class name, the last file loaded wins.
+- A rule of thumb for balance, not an engine contract: `min` at about 50 to 70% of `nominal` gives steady restocks; change one category at a time, starting from vanilla.
+- An item that never spawns: check `nominal` above 0, `min` below it, category, usage and value tags that exist in `cfglimitsdefinition.xml`, the hoarder and player flags, a sane lifetime, well formed XML, and that its file is registered in `cfgeconomycore.xml`. Watch the RPT on the first restart after an edit.
+
 Edit `types.xml` with `/dayz-edit-types`, which checks every entry and merges a chunk in one write.
 
 ### 2. `cfgspawnabletypes.xml` entry (optional)
@@ -156,4 +165,4 @@ The file is one object with an `Objects` array (`ObjectSpawnerJson` and `ITEM_Sp
 }
 ```
 
-Without `enableCEPersistency` the object spawns with `ECE_NOLIFETIME | ECE_DYNAMIC_PERSISTENCY`; with it, both flags are cleared so the CE manages it like loot (`objectspawner.c:48-54`). A `name` that holds a path spawns a static `.p3d`, but only from the plant and rock folders in `VALID_PATHS` (`objectspawner.c:3-8`).
+Without `enableCEPersistency` the object spawns with `ECE_NOLIFETIME | ECE_DYNAMIC_PERSISTENCY`; with it, both flags are cleared so the CE manages it like loot (`objectspawner.c:48-54`). A `name` that holds a path spawns a static `.p3d`, but only from the plant and rock folders in `VALID_PATHS` (`objectspawner.c:3-8`). Both this list and the player gear presets (`PlayerData.spawnGearPresetFiles`, `P:\scripts\3_game\cfggameplaydatajson.c:91`) are read only when `serverDZ.cfg` sets `enableCfgGameplayFile` (`P:\scripts\3_game\cfggameplayhandler.c:53`). Reported: a class that does not exist logs `Object spawner failed to spawn` in the RPT, and a gear preset file replaces the vanilla `StartingEquipSetup()` outfit as a whole.

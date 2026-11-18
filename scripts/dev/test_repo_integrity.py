@@ -746,41 +746,24 @@ def test_readme_ask_note_names_the_free_grep_fallback():
 # dayz-particles is reference-only (no script). dayz-record-correction ships check.py, but only
 # the agent running the skill calls it (root, baseline, compare steps in its SKILL.md), never a user.
 RUNNABLE_WITHOUT_BAT = {"dayz-particles", "dayz-record-correction"}
-# Reference-only skills: a SKILL.md and reference files, no Python script to run. Three carry a pytest file
-# for their own docs, and dayz-test-ingame ships launcher templates kept for reference and a test mod.
+# Reference-only skills: a SKILL.md and reference files, no Python script to run.
 RUNNABLE_WITHOUT_BAT |= {
     "3d-generation-harness",
     "ai-3d-to-dayz",
-    "ardy-motion-generation",
-    "blender-animation",
     "dayz-ai-patterns",
-    "dayz-aviation",
     "dayz-basebuilding",
-    "dayz-doors",
-    "dayz-environment-hazards",
-    "dayz-feature-spec",
     "dayz-mod-dev",
     "dayz-mod-workflow",
     "dayz-model-pipeline",
-    "dayz-motorbikes",
-    "dayz-physics-engine",
-    "dayz-sound-system",
-    "dayz-test-ingame",
-    "dayz-underground",
-    "dayz-weapons",
     "enforce-script-reference",
     "rigorous-data-audit",
-    "systematic-debugging",
-    "task-observer",
 }
 # Skills whose scripts a user never starts from a terminal with python.
 RUNNABLE_WITHOUT_BAT |= {
     "blender-assembly",    # blender_helpers.py runs inside Blender (import bpy), through the Blender MCP
-    "mixamo-retarget",     # its modules run inside Blender, through the Blender MCP
     "rip-vehicle-import",  # export_car_glb.py runs inside Blender (blender --background --python)
     "uv-clean-atlas",      # its scripts run inside Blender (blender -b <file> -P <script>)
     "dayz-3d-viewer",      # no script of its own; it runs the tool in scripts/tools/dayz-3d-viewer
-    "dayz-mcp-verify",     # references/drive_ladder.py talks to a running dayz-mcp daemon; the agent runs it
     "dayz-persistence",    # its .py files are the offline models under tests/ that its own tests import
 }
 
@@ -840,7 +823,23 @@ CITATION_EXEMPT = {
     "dayz-conventions.md",            # environment and workflow rules; facts live in the topic files
     "textures/checking-the-look.md",  # what to look at in Object Builder and in game
     "linux-proton.md",                # measured Linux, Proton and tool behaviour; no vanilla fact
-    "skill-resolution.md",            # which copy of a skill an agent uses; a tooling rule, not the game
+    "animation/blender-bpy-armatures.md",       # Blender bpy behaviour, no game fact
+    "animation/blender-bpy-objects-camera.md",  # Blender bpy behaviour, no game fact
+    "animation/blender-bpy-physics.md",         # Blender simulation behaviour, no game fact
+    "animation/blender-realism-and-review.md",  # animation craft and the Blender review loop, no game fact
+    "animation/blender-mcp-workflow.md",        # driving Blender through MCP; DayZ facts live in blender-txa-export.md
+    "animation/mixamo-bone-mapping.md",         # bone name matching between Blender rigs, no game fact
+    "animation/py3d-1.0.0-quirks.md",           # notes on an old Python library version
+    "animation/selections-for-actions.md",      # a tooling pattern for painting selections; measured results only
+    "models/tools-threejs-viewers.md",          # building Three.js viewer pages; no game fact
+    "models/tools-uv-mesh-health.md",           # Blender UV checks measured on test meshes
+    "models/tools-uv-mlod-audit.md",            # UV measurements on one assembled model
+    "models/tools-uv-multi-lod-atlas.md",       # a measured UV re-unwrap method
+    "models/tools-uv-organic-photograph.md",    # a measured projection method for a paint atlas
+    "models/tools-uv-partuv.md",                # setup and results of one UV tool
+    "models/tools-uv-tool-survey.md",           # a survey of UV tools
+    "textures/normal-bake.md",                  # Blender bake practice measured on one mod
+    "ui/templates/panel-contract.md",           # the contract of this repo's layout templates, not the game
 }
 CITATION_EXEMPT_FOLDERS = {"enscript-style"}  # the style guide's section files
 # A citation names a vanilla file, not just the drive: a path with a line

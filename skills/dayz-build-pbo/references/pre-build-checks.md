@@ -54,8 +54,8 @@ Each check reports **PASS**, **WARN**, or **FAIL** status. The final summary sho
 - **WARN:** Large asset files > 10MB (texture atlases, unoptimized meshes)
 - **Release package (manual; the checks above do not run it):** every class a player places, or that otherwise
   persists in the world, has an entry with an explicit lifetime in the `types.xml` the release ships. Without
-  one it runs out after 30 to 60 minutes of server time (the dayz-persistence skill,
-  `references/lifetime-and-storage.md`).
+  one it runs out after 30 to 60 minutes of server time (
+  `skills/_shared/persistence/lifetime-and-storage.md`).
 - **Publishing to the Workshop (manual):** signing with DsUtils, the item folder, the Publisher or SteamCMD,
   and why a SteamCMD login with the Steam client's account kicks that client off: `workshop-publish.md`.
   On Linux (dayzmake, `meta.cpp`, Workshop tags, the `workshop` uploader): `dayzmake-linux.md`.
@@ -63,7 +63,7 @@ Each check reports **PASS**, **WARN**, or **FAIL** status. The final summary sho
   (`@MyMod/MyMod.pbo`) is silently ignored: no config, no scripts, no error, while the folder still shows in the
   boot log's `ANIMATION (E): Can't load @MyMod/...` pass, which is not loading. Its `modded class` overrides then
   silently never run, and an A/B test of a fix reads as "the fix did not work". Measured on the native
-  Linux 1.30 server; the probe that proves it is in `dayz-test-ingame/references/linux-native-server.md`,
+  Linux 1.30 server; the probe that proves it is in `dayz-launch-test/references/linux-native-server.md`,
   section 4. The Workshop Publisher also refuses an upload with PBOs outside `addons/`.
 
 **Example output:**
@@ -153,8 +153,9 @@ Scans all texture references and verifies files exist.
   - .p3d face textures (if py3d available)
 - **Path existence:**
   - Every referenced `.paa` and `.rvmat` file MUST exist. A reference is a root path that starts with a PBO
-    prefix, not a path relative to the addon: vanilla writes `"dz\gear\tools\data\alarmclock_blue_co.paa"`
-    (`P:\DZ\gear\tools\config.cpp:85`), and a mod with prefix `mymod\myaddon` writes
+    prefix, not a path relative to the addon.
+    Vanilla writes `"dz\gear\tools\data\alarmclock_blue_co.paa"` (`P:\DZ\gear\tools\config.cpp:85`);
+    a mod with prefix `mymod\myaddon` writes
     `"mymod\myaddon\data\body_co.paa"`. Resolve it from the `P:\` root, where the addon sits at `P:\<prefix>`
   - Paths are case-sensitive on Linux/server (always check capitalization)
 - **File format checks:**
@@ -312,8 +313,8 @@ Vehicles only. For PhysX to seat a wheel (`WheelCountPresent() > 0`), the select
 named by `config.cpp > CfgSlots > <wheel-slot>.selection` MUST exist in the body's
 **FireGeometry LOD**. A selection present only in visual LODs binds the slot as
 inventory but the wheel never simulates: `WheelCountPresent()=0`, no traction, no
-spin, NO RPT error - a silent killer (see `references/vehicle-scripting.md` of the enforce-script-reference
-skill and rule 20 in `references/critical-rules.md` of the dayz-model-pipeline skill).
+spin, NO RPT error - a silent killer (see `skills/_shared/enscript/depth/vehicle-scripting.md`
+and rule 20 in `references/critical-rules.md` of the dayz-model-pipeline skill).
 
 This check lives in the `dayz-p3d-audit` validator. Run it pre-build and
 treat a CRITICAL as release-blocking:

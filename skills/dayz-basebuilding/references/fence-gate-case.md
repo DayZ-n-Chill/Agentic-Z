@@ -59,7 +59,7 @@ The gate state is persisted after the base three sync ints, following the strict
 
 `CombinationLock.SetActions` now includes `ActionCombinationLockUnlock` (`P:\scripts\4_world\entities\itembase\combinationlock.c:686`). Dialing the right combination is not enough. Persist: `OnStoreSave` writes `m_Combination`, `m_CombinationLocked`, then `m_CombinationInside`; `OnStoreLoad` reads the third int only when `version >= 143` (`combinationlock.c:128-136,169-177`). Fence gate fields themselves still follow the v110 branch (`fence.c:246-289`, the methods of §3).
 
-Building-door lock slots on `BuildingBase` (`P:\scripts\4_world\entities\game\super\building.c:10-11`) are covered by the doors skill (dayz-doors). This file only covers the Fence attachment.
+Building-door lock slots on `BuildingBase` (`P:\scripts\4_world\entities\game\super\building.c:10-11`) are covered by `skills/_shared/animation/door-patterns.md`. This file only covers the Fence attachment.
 
 `Fence.OnStoreSave` in 1.30:
 

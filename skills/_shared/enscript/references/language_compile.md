@@ -63,7 +63,7 @@ The defines come from the engine. `P:\scripts\1_core\defines.c` lists them for d
 | `BUILD_EXPERIMENTAL` | Experimental builds. | `:95` to `:97` |
 | `DAYZ_X_XX` | The game version, such as `DAYZ_1_16`. | `:12` to `:14` |
 | `ENABLE_LOGGING` | The `-doScriptLogs=1` launch parameter. | `:37` to `:39` |
-| `PLATFORM_WINDOWS`, `PLATFORM_LINUX`, `PLATFORM_CONSOLE` | The platform. | `:148` to `:161` |
+| `PLATFORM_WINDOWS`, `PLATFORM_LINUX`, `PLATFORM_CONSOLE` | The platform. `SERVER_FOR_WINDOWS` is also defined on a Linux server, since it names the clients a server serves, not its host (`:117` to `:121`); the native Linux `DayZServer` 1.30 logged both it and `PLATFORM_LINUX` (measured). | `:148` to `:161` |
 | `WORKBENCH`, `BULDOZER` | Compiling in Workbench, or the land editor. | `:17` to `:24` |
 
 What follows for mod code:
@@ -71,8 +71,9 @@ What follows for mod code:
 - `SERVER` is not defined in single player or offline mode, so code inside `#ifdef SERVER` does not exist there. Use `#ifdef SERVER` only for code that must never ship in the client build; use `GetGame().IsServer()` for authority work that must also run offline (`_shared/conventions/scripts.md`).
 - Vanilla guards client only RPC cases with `#ifndef SERVER` and GUI code with `#ifndef NO_GUI` together (`P:\scripts\3_game\dayzgame.c:3157`, `:3158`).
 - Most vanilla debug code sits behind `#ifdef DIAG_DEVELOPER`, so it is missing from retail. Code you need in retail must not depend on it.
-- `PluginDeveloper` is one such case: it is registered through `RegisterPluginDiag`, whose body sits inside `#ifdef DIAG_DEVELOPER` (`P:\scripts\4_world\plugins\pluginmanager.c:65`, `:249` to `:254`), so `GetPlugin(PluginDeveloper)` is `null` on a retail server and a teleport or give built on it does nothing there. The retail substitutes (`SetPosition`, moving the vehicle of a seated player, `CreateInInventory`) are in `skills/enforce-script-reference/references/pitfalls-advanced.md`.
-- `DEVELOPER` and `DIAG_DEVELOPER` are different defines. Reported, not checked on `P:\` (the defines come from the engine): DayZDiag defines `DIAG_DEVELOPER` but not `DEVELOPER`, so a mod that calls a symbol which exists only under `#ifdef DEVELOPER` stops its whole PBO compiling there. Read the `defines:` line of `script_*.log` on the server and on the client before you rely on a define.
+- `PluginDeveloper` is one such case: it is registered through `RegisterPluginDiag`, whose body sits inside `#ifdef DIAG_DEVELOPER` (`P:\scripts\4_world\plugins\pluginmanager.c:65`, `:249` to `:254`), so `GetPlugin(PluginDeveloper)` is `null` on a retail server and a teleport or give built on it does nothing there. The retail substitutes (`SetPosition`, moving the vehicle of a seated player, `CreateInInventory`) are in `skills/_shared/enscript/depth/pitfalls-advanced.md`.
+- `DEVELOPER` and `DIAG_DEVELOPER` are different defines. Reported, not checked on `P:\` (the defines come from the engine): DayZDiag defines `DIAG_DEVELOPER` but not `DEVELOPER`, so a mod that calls a symbol which exists only under `#ifdef DEVELOPER` stops its whole PBO compiling there. Read the `defines:` line of `script_*.log` on the server and on the client before you rely on a define. Measured on DayZDiag 1.30.164078: both the server and the client list `DIAG_DEVELOPER` and `ENABLE_LOGGING`, so code under either compiles in a DayZDiag test and is skipped on a retail client or server. A test that passes only on DayZDiag has not tested the retail branch.
+- An `#ifdef` block that holds only a comment compiles, at file scope, in a class body and in a method body (measured on DayZDiag 1.30.164289). Vanilla ships such blocks: `P:\scripts\4_world\classes\environment\environment.c:1-3` and, inside a method, `P:\scripts\4_world\classes\bunkerbroadcasthandler.c:338-340`. A block with nothing at all in it was not measured.
 - A define that another mod must see has to come from that mod's `CfgMods` class, not from a `#define` in one of its script files. Reported, not checked on `P:\`: since 1.26 a mod's `CfgMods` class name and the names in its `defines[]` array are defined for every mod's scripts, while a `#define X` written in a script file is seen only inside that mod. An `#ifdef` in your mod on a name the other mod only `#define`s in script compiles to nothing, so a `modded class` inside it is silently lost.
 
 ## Symbols that are in the source but not in the build
@@ -85,7 +86,7 @@ A correct `path:line` does not prove a symbol can be called. Check three things 
 
 ## Compiler traps
 
-Measured in compiles on DayZDiag and retail servers, except the two rows marked "reported"; the compiler is native, so only the vanilla examples were checked on `P:\`. The measurements and error texts are in `skills/enforce-script-reference/references/compiler-traps.md` and `skills/enforce-script-reference/references/hard-rules.md`.
+Measured in compiles on DayZDiag and retail servers, except the two rows marked "reported"; the compiler is native, so only the vanilla examples were checked on `P:\`. The measurements and error texts are in `skills/_shared/enscript/depth/compiler-traps.md` and `skills/_shared/enscript/depth/hard-rules.md`.
 
 | Trap | What the compiler says | What to write |
 |---|---|---|
@@ -106,8 +107,10 @@ Measured in compiles on DayZDiag and retail servers, except the two rows marked 
 | `a & b == b` (reported, not measured) | Nothing: it compiles as `a & (b == b)`, as in C | Write `(a & b) == b` |
 | `text.Replace(a, b).Replace(c, d)` | The second call is made on an `int`: `Replace` changes the string and returns a count (`P:\scripts\1_core\proto\enstring.c:156`) | One `Replace` per statement, on a local copy |
 
-The measurement behind the 17th-parameter row is in `skills/enforce-script-reference/references/verified-api-catalog.md`; the measurements behind the keyword-and-digit, type-name and 18-term rows are in `skills/enforce-script-reference/references/pitfalls-advanced.md`, which lists the `switch` and `a & b == b` rows as reported only. The `Replace` row follows from the vanilla return type it cites.
+The measurement behind the 17th-parameter row is in `skills/_shared/enscript/depth/verified-api-catalog.md`; the measurements behind the keyword-and-digit, type-name and 18-term rows are in `skills/_shared/enscript/depth/pitfalls-advanced.md`, which lists the `switch` and `a & b == b` rows as reported only. The `Replace` row follows from the vanilla return type it cites.
 
 Two things that do compile, against a common belief: C style casts, as in `(float)random_int / (float)max_range` (`P:\scripts\1_core\proto\enmath.c:110`), and a `string` plus a `bool`.
+
+A tool that reads `P:\scripts` must not decode it as strict UTF-8: a block comment in `P:\scripts\3_game\global\world.c:127` holds a cp1252 trademark byte (0x99) after the word `MangoBrand`. Decode with replacement; the game compiles the file, so an encoding finding on it is a false positive.
 
 Only the game compiles Enforce Script. `CfgConvert`, AddonBuilder ("Build Successful" means the PBO was packed) and a linter check form. A script module is proven to compile when a server or client boots with it, which is what `/dayz-gate` does.

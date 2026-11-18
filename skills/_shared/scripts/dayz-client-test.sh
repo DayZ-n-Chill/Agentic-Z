@@ -17,8 +17,8 @@
 #
 # Exit status: 0 = the DONE line appeared and no result line contains FAIL, 1 = FAIL line or timeout.
 # The mod decides what a test is; this only starts, waits, collects and stops (see
-# skills/dayz-test-ingame/references/linux-headless-client.md for the RPC-driven harness the
-# example mod, skills/dayz-test-ingame/assets/autotest-mod, uses).
+# skills/dayz-launch-test/references/linux-headless-client.md for the RPC-driven harness the
+# example mod, skills/dayz-launch-test/assets/autotest-mod, uses).
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd -P)

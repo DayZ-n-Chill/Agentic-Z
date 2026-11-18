@@ -2,7 +2,7 @@
 
 The corpora may not be redistributed and none of them is kept here. This
 module carries identity only -- pin, hashes, redistribution status -- and reads
-the actual bytes from wherever `scripts/dev/knowledge-pack/sources/local-roots.json`
+the actual bytes from wherever `scripts/tools/dayz-ui-lab/corpora/local-roots.json`
 under the root points, which is machine-local and untracked. A corpus whose root is missing is reported as such
 and fails the gate; it is never silently skipped, because "not measured" and
 "passed" must not look alike.
@@ -27,7 +27,7 @@ MODULE_DIR = Path(__file__).resolve().parent
 TOOL_DIR = MODULE_DIR.parent
 DEFAULT_MANIFEST = TOOL_DIR / "corpora" / "manifest.json"
 
-LOCAL_ROOTS_DIR = "scripts/dev/knowledge-pack/sources"
+LOCAL_ROOTS_DIR = "scripts/tools/dayz-ui-lab/corpora"
 LOCAL_ROOTS_FILE = f"{LOCAL_ROOTS_DIR}/local-roots.json"
 
 # Inside this tool's folder, .layout files belong only in these fixture

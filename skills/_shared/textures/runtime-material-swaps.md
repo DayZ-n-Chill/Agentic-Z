@@ -34,6 +34,10 @@ Body clothing has no simple selections to index. Under `P:\DZ\characters`, only 
 
 A scan of the `proto native` lines of `entityai.c` and `object.c` finds only these calls for textures, materials and simple selections. There is no general "refresh the visuals" call.
 
+`SetObjectTexture` changes the texture on the machine that calls it only. To show a skin to every player, ship the textures in the PBO through `hiddenSelectionsTextures[]`, sync only the chosen index (net sync or RPC), and let each client call `SetObjectTexture(i, textures[index])` itself (measured in a mod).
+
+What a mod cannot do with images at run time (checked across `P:\scripts`, Community Framework and Dabs Framework, none of which has a capture or readback call): read the screen or a render back into script; call a native DLL (`CallExtension` is an Arma 3 call and occurs nowhere in `P:\scripts`); save a screenshot through `Workspace.SaveScreenshot`, which does not exist. `MakeScreenshot` is still declared (`P:\scripts\1_core\proto\proto.c:142`) but was measured broken since 1.19. Render-to-texture (`r2t`) surfaces are declared in config and tied to memory points, not created from script. An image a mod must show has to reach the client as a file, loaded into an `ImageWidget` with `LoadImageFile` (`P:\scripts\1_core\proto\enwidgets.c:257`).
+
 ## Health levels swap materials in the engine
 
 `healthLevels[]` in an item's `DamageSystem` maps health thresholds to materials. For `TShirt_ColorBase` it is at `P:\DZ\characters\tops\config.cpp:2283-2330`: `1` and `0.7` give `tshirt.rvmat`, `0.5` and `0.3` give `tshirt_damage.rvmat`, and `0` gives `tshirt_destruct.rvmat`.

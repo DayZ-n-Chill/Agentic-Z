@@ -33,12 +33,11 @@ python .claude\skills\sync-skills\sync.py
 - `agents/` — DayZ specialist agent definitions.
 - `.claude/mcp/` — MCP server code (dayz-rag, etc.).
 - `docs/` — deep documentation.
-- `scripts/` — thin `.bat` wrappers around skills, grouped by audience, plus the offline tools and `packctl`:
+- `scripts/` — thin `.bat` wrappers around skills, grouped by audience, plus the offline tools:
   - `scripts/setup/` — pre-Claude bootstrap (workdrive, sync-skills, agentic-z-update, preflight, setup-objectbuilder, statusline)
   - `scripts/dayz/` — daily DayZ workflow (build, launch, scaffold, types, search, etc.)
   - `scripts/dev/` — template-author tools (the clean-repo, docs-sync and evals wrappers, the answer-test runner `run_evals.py`, the skill packager `pack_skill.py`, and the repo's own tests)
-  - `scripts/tools/` — the offline Python tools, one folder per tool with its tests (see `docs/knowledge-pack-tools.md`)
-  - `scripts/dev/knowledge-pack/` — `packctl`, the validation, packaging and promotion tooling (see `docs/knowledge-pack-maintenance.md`)
+  - `scripts/tools/` — the offline Python tools, one folder per tool with its tests (see `docs/tools.md`)
 - `skills/_shared/` — the L2 DayZ rules and the knowledge packs. A new pack file gets a row in `skills/_shared/README.md` in the same change, and cites the vanilla file on `P:\` for each fact about the game.
 - `evals/` — answer tests per agent (see `docs/evals.md`).
 - `.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md` — L1 rules (edit all three together; same content in each).

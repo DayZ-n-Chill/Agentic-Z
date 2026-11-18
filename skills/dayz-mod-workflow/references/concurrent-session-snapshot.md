@@ -2,7 +2,7 @@
 
 What a session that uses `dayz-mod-workflow` does when the skill files may be rewritten or promoted by another session while it runs, or when it must survive a later promote to the live copy. Load this reference only in that situation.
 
-It is the consumer's procedure. Authoring governed skills, validating and gating them, checking a promote before applying it, receipts and byte checks, and rolling back are the business of the skill maintenance tool `packctl` (under `scripts/dev/`); none of that is restated here. Nothing in this file is a game fact, so it cites no vanilla file.
+It is the consumer's procedure only. Nothing in this file is a game fact, so it cites no vanilla file.
 
 ## What a session pin is
 

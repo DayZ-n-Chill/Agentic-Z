@@ -1,7 +1,7 @@
 ---
 name: dayz-pack-texture
-description: "Converts PNG or TGA images to DayZ .paa textures with ImageToPAA, after checking each filename has a texture-role suffix such as _co, _ca, _nohq or _smdi. Use when a mod's textures need packing for config.cpp, .rvmat or hiddenSelectionsTextures references."
-argument-hint: "[--dry-run] <image_co.png|.tga> [<image2_nohq.png> ...]"
+description: "Converts PNG or TGA images to DayZ .paa textures with ImageToPAA, after checking each filename has a texture-role suffix such as _co, _ca, _nohq or _smdi. Also ships three offline material scripts: an .rvmat linter, an .rvmat template writer and a normal map convention check (OpenGL or DirectX). Use when a mod's textures need packing for config.cpp, .rvmat or hiddenSelectionsTextures references, when an .rvmat needs a starting point or a lint, or when a normal map may be inverted."
+argument-hint: "[--dry-run] <image_co.png|.tga> [<image2_nohq.png> ...] | scripts: <file.rvmat ...> | <super|damage|emissive|penetration|multi> --prefix <packed-path> | --normal <normal.png> --albedo <albedo.png>"
 ---
 
 <!-- skill-dir-note -->
@@ -77,6 +77,26 @@ Preflight complete.
 
 [OK]   2 of 2 textures packed.
 ```
+
+## Material scripts
+
+Three offline scripts in `scripts\` check and draft the material side. They only read the files they are given and print a report or a template, so they do not run `/dayz-preflight`; nothing here needs DayZ Tools except decoding a `.paa` to PNG with ImageToPAA before `normal_convention.py` reads it.
+
+| Script | What it does | Arguments, exit codes and how to read the result |
+|---|---|---|
+| `rvmat_lint.py` | Lints one or more `.rvmat` files (and a companion `.emat`), standard library only | `skills/_shared/textures/rvmat-cookbook.md`, "The template writer and the linter" |
+| `rvmat_template.py` | Writes a starter `super`, `damage`, `emissive`, `multi` or `penetration` `.rvmat`, standard library only | the same section |
+| `normal_convention.py` | Proposes whether a normal map is DirectX (Y-) or OpenGL (Y+) from the normal and its albedo; needs numpy and Pillow | `skills/_shared/textures/normal-maps.md`, "Measuring a source map's convention" |
+
+```cmd
+python "<skill-dir>\scripts\rvmat_lint.py" <file.rvmat> [<more.rvmat> ...] [--pdrive-root P:\] [--warnings-as-errors] [--json]
+python "<skill-dir>\scripts\rvmat_template.py" <super|damage|emissive|multi> --prefix <packed\path\name> [--output <file.rvmat>]
+python "<skill-dir>\scripts\rvmat_template.py" penetration [--surface <packed\path.bisurf>] [--output <file.rvmat>]
+python -m pip install -r "<skill-dir>\scripts\requirements.txt"
+python "<skill-dir>\scripts\normal_convention.py" --normal <normal.png> --albedo <albedo.png> [--json]
+```
+
+Each script takes `--help`; the two `.rvmat` scripts also take `--self-test`. Outside an agent session, `scripts\dayz\rvmat-lint.bat`, `scripts\dayz\rvmat-template.bat` and `scripts\dayz\normal-convention.bat` in the repo run them with the same arguments. Which route, map and material to make, and the checks before handing the work over, are in the texture pack, `skills/_shared/textures/README.md`.
 
 ## Do not
 

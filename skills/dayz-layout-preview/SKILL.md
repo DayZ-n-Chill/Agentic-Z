@@ -73,3 +73,14 @@ One `[OK]` line per PNG, then one `[WARN]` or `[NOTE]` line per finding. Finding
 
 - Don't treat a clean preview as proof the layout loads. Workbench and the game are the judges; `dayz-layout-validator` checks the rules.
 - Don't write PNGs into a mod folder; they would be packed into the PBO. The script refuses an `--out` under `workspace\<ModName>\`.
+
+## Generating a preview panel
+
+`gen_panel_layout.py` in this folder writes a small `.layout` made for the hot iteration loop: a chat or log feed, a label and value panel, or a minimal HUD. Like the preview, it reads and writes only the files you name, so it does not gate on `/dayz-preflight`.
+
+```cmd
+python "<skill-dir>\gen_panel_layout.py" <feed|info|hud> --rows N [--title TEXT] --out <file.layout> [--width W] [--height H] [--x X] [--y Y]
+python "<skill-dir>\gen_panel_layout.py" --self-test
+```
+
+`--self-test` writes the three example panels next to the script and checks that the braces balance and every widget name is unique; it prints `SELFTEST PASS` or `SELFTEST FAIL`. The widget names the generator writes, its defaults and how to load a panel in game are in `skills/_shared/ui/templates/panel-contract.md`; the three ready panels (`chat_feed.layout`, `info_panel.layout`, `mini_hud.layout`) are in the same folder. Outside an agent session, `scripts\dayz\ui-gen-panel.bat` runs the generator with the same arguments.

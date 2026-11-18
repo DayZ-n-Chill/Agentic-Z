@@ -27,7 +27,7 @@ EffectDef {
 }
 ```
 
-Five vanilla files spell the block `EmitterDef` instead of `EmitorDef` (for example `P:\graphics\particles\building_destruction_brick.ptc:4`), and the game registers them (`P:\scripts\3_game\particles\particlelist.c:382`). Whether the engine reads both spellings the same way is not yet checked; write `EmitorDef`, which the other 308 files use.
+Five vanilla files spell the block `EmitterDef` instead of `EmitorDef` (for example `P:\graphics\particles\building_destruction_brick.ptc:4`), and the game registers them (`BUILDNG_DESTRUCT_BRICK`, `P:\scripts\3_game\particles\particlelist.c:382`). Whether the engine reads both spellings the same way is not yet checked; write `EmitorDef`, which the other 308 files use.
 
 ---
 

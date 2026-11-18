@@ -2,7 +2,7 @@
 
 How to prove offline that a wheel, door, steering or dial animation turns the right way: compare the pseudovector of angle and axis against the matching class of a vanilla control.
 
-> Status: field notes. The mod-side values below were measured on mod test vehicles (the SUB_BRZ sedan and the LFQuad3 quad) and are mod behaviour, not vanilla; they were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo (a 1.30 build). "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: field notes. The mod-side values below were measured on mod test vehicles (the TestCoupe sedan and the TestQuad3 quad) and are mod behaviour, not vanilla; they were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo (a 1.30 build). "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
 
 Related file in this pack: `gauge-needles.md` (dashboard needles in full: frames, rotation direction, deriving `angle0` and `angle1`).
 
@@ -22,7 +22,7 @@ homologous class of the vanilla CONTROL.
 
 **Where the evidence lives after Binarize** (so this is an OFFLINE gate, not an in-game guess):
 the compiled ODOL carries the whole rig. In the `odol_reader` module of the external ODOL parser
-(the one `skills/dayz-vehicles/SKILL.md` says how to point at), `animations.classes[i]` has
+(the one `README.md` says how to point at), `animations.classes[i]` has
 `anim_name`, `anim_source`, `anim_type` (0=rotation, 4=translation), `angle0/angle1`,
 `offset0/offset1`; `animations.anims2bones[lod][i]` indexes the **global** skeleton (it does NOT
 go through `lod.sub_skeletons_to_skeleton`); `animations.axis_data[lod][i]` is
@@ -39,7 +39,7 @@ from, i.e. the parent of `wheel_X_1` in your skeleton chain), never the tie rod.
 control's skeleton chain before choosing; a comment in your own `model.cfg` asserting which one
 you matched is not evidence.
 
-**Worked parity check** (SUB_BRZ against `civiliansedan.p3d`, ODOL version 54, measured 2026-07-28):
+**Worked parity check** (TestCoupe against `civiliansedan.p3d`, ODOL version 54, measured 2026-07-28):
 
 | Leg | Mod | Control homologue | Verdict |
 |---|---|---|---|

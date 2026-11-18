@@ -20,7 +20,7 @@ python "<skill-dir>\preflight.py"
 
 Run it before other DayZ skills, after a fresh clone, and after each reboot (`P:\` does not auto-mount). Build and deploy skills run it for you as a gate.
 
-The in-game test script `skills/dayz-test-ingame/templates/dayz-test.ps1` (the orchestrator of the `dayz-test-ingame` skill) does not call this skill, so run `/dayz-preflight` before you use it. The script adds its own checks on top (game exe, work drive, the `P:\Mods` junction, `allowFilePatching` in `serverDZ.cfg`, the Steam session, AddonBuilder for a build) and creates the junction when it is missing.
+The dayz-mcp launcher script `skills/dayz-launch-test/scripts/dayz-test.ps1` does not call this skill, so run `/dayz-preflight` before you use it. The script adds its own checks on top (game exe, work drive, the `P:\Mods` junction, `allowFilePatching` in `serverDZ.cfg`, the Steam session, AddonBuilder for a build) and creates the junction when it is missing.
 
 ## What it checks
 
@@ -100,7 +100,7 @@ These hold checks and notes that `preflight.py` does not run.
 |---|---|
 | Object Builder's Buldozer preview never opens. Is the external viewer path valid? | `references/object-builder-viewer.md` |
 | What does DayZ 1.30 change for the environment (`-cacheP3D`, an unpacked `-mod` folder, the new Workbench editors)? | `references/dayz-1-30.md` |
-| What replaces each check on Linux? | `references/linux.md` |
+| What replaces each check on Linux? | `skills/_shared/linux-proton.md`, section 3, "What replaces each `/dayz-preflight` check" |
 
 When the work has to end in a mod that builds, loads and ships (`config.cpp` and `CfgMods`, `requiredAddons`, the PBO and its signature, a boot on a local server, the Workshop), follow `/dayz-mod-dev`, the entry point for mod development.
 

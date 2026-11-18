@@ -59,6 +59,22 @@ A mod recoil class is Enforce Script in `4_World` and follows `skills/_shared/en
 - Burst sets `burst=3` on a `Mode_Burst` class (AUG at `P:\DZ\weapons\firearms\aug\config.cpp:88`, `:114`).
 - Script hears a mode change through `Weapon_Base.OnFireModeChange` (`weapon_base.c:1048`).
 
+### Changing the modes of a weapon that already has them
+
+When the parent class already defines its mode classes, vanilla uses two forms, and no other:
+
+- Redeclare the mode from the root base, which replaces it. `AKS74U: AK74_Base` (`P:\DZ\weapons\firearms\ak74\config.cpp:331`) writes `class FullAuto: Mode_FullAuto` (`:412`) and `class SemiAuto: Mode_SemiAuto` (`:460`) and keeps full auto. This works only when `Mode_FullAuto` resolves to the root class (`weapon-config.md`, "Forward declarations").
+- Inherit the parent's own mode and change a few keys. `SawedoffMagnum: Magnum_Base` (`P:\DZ\weapons\pistols\magnum\config.cpp:302`) writes `class Single: Single` (`:314`) to swap only the shot sounds, as `SawedoffB95` does (`P:\DZ\weapons\firearms\b95\config.cpp:347`, `:411`).
+
+A mode class with no parent at all (`class FullAuto { ... }`) appears in no weapon config under `P:\DZ`; do not rely on it to keep the inherited `autoFire`. Leaving the modes alone (no `modes[]`, no mode classes) keeps the parent's modes unchanged.
+
+### How a mode change reaches the player
+
+- The fire mode key is read as `IsFireModeChange()` and calls `GetWeaponManager().SetNextMuzzleMode()` (`P:\scripts\4_world\entities\dayzplayerimplement.c:1102-1104`).
+- The HUD shows `WeaponManager.GetCurrentModeName()` (`P:\scripts\4_world\classes\weapons\weaponmanager.c:1335`, read at `P:\scripts\5_mission\gui\itemactionswidget.c:585`). An empty mode name in the HUD means the engine sees only one valid mode; check the mode scope first.
+- The hand animation profile does not decide how many modes a gun has. Registering the class through `RegisterOneHanded` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:309`, called at `:1552`) gives it the one handed tool behaviour (`SetToolsOneHanded`, `:227`); that it then has no fire selector was seen in a mod and is not checked on `P:\`.
+- Before assuming a third-party base "cannot be read" or has a single mode, derapify its `config.bin` with `CfgConvert -txt` (DayZ Tools). On one SMG base that was assumed protected, the file derapified completely and already listed `modes[]={"SemiAuto","FullAuto"}` (mod config, not on `P:\`).
+
 Keys on each mode class:
 
 | Key | What it does | Vanilla line |

@@ -40,7 +40,7 @@ Rules for the evidence itself:
 
 ## When to run the deep audit
 
-The steps above are the release check for a normal mod. When a bug would lose player progression on a live server (storage mods, virtual containers, banking, anything with its own files, queues or recovery after a crash), run the full procedure in the `rigorous-data-audit` skill: mechanical checks first (file name helpers, cleanup of every written marker, every entry point, flags against their files, state transitions), then eight review angles, then a check of every finding against the real file by a reader with fresh context, a cross-actor pass, fixes, a second pass and four tests in game. The report below is still what reaches the server lead.
+The steps above are the release check for a normal mod. When a bug would lose player progression on a live server (storage mods, virtual containers, banking, anything with its own files, queues or recovery after a crash), run the full procedure in `deep-audit.md`: mechanical checks first (file name helpers, cleanup of every written marker, every entry point, flags against their files, state transitions), then eight review angles, then a check of every finding against the real file by a reader with fresh context, a cross-actor pass, fixes, a second pass and four tests in game. The report below is still what reaches the server lead.
 
 ## Report format
 

@@ -2,7 +2,7 @@
 
 Why a door, hood or tailgate taken from a game rip shows a see-through edge when it opens, what does not close it, and the gate that proves a real cap.
 
-> Status: measured on the SUB_BRZ build, offline and in game, and not yet checked on `P:\`. A citation written with its full `P:\` path was opened on vanilla data. `build_detachable_doors` is a step of that build's own pipeline, which this repo does not ship.
+> Status: measured on the TestCoupe build, offline and in game, and not yet checked on `P:\`. A citation written with its full `P:\` path was opened on vanilla data. `build_detachable_doors` is a step of that build's own pipeline, which this repo does not ship.
 
 Related file in this pack: `doors-and-panel-edges.md` (measuring a missing door edge; hood and trunk against a door). Its scripted perimeter band ("The recipe that works") is refuted in game: do not apply it, and close the rim as this file describes.
 
@@ -10,7 +10,7 @@ Related file in this pack: `doors-and-panel-edges.md` (measuring a missing door 
 
 - The vanilla control for a closed door volume is the sedan door model, `P:\DZ\vehicles\wheeled\civiliansedan\proxy\sedandoors_driver.p3d`. It is a binarized ODOL, which py3d cannot read, so the free edge length of 0 quoted for vanilla was measured on a debinarized copy and is not yet checked on `P:\`.
 
-## A rip-imported panel is two parallel skins with an open rim; a vanilla panel is a closed volume (added 2026-08-15; SUB_BRZ doors, corrected the same day)
+## A rip-imported panel is two parallel skins with an open rim; a vanilla panel is a closed volume (added 2026-08-15; TestCoupe doors, corrected the same day)
 
 Any door, hood, tailgate or flap coming out of a game rip is a pair of surfaces — outer skin and
 inner card — that are never joined at the edge. The source game never shows that edge, so it was
@@ -46,7 +46,7 @@ for the car.**
 
 - **The rim has to be AUTHORED as a cap, on the vertical leading and trailing edges only.** Weld
   skin edge to card edge with its own UV strip (or a dedicated opaque edge material); do not sweep
-  the whole free perimeter, because most of it is not exposed — measured on SUB_BRZ, only 31.5% of
+  the whole free perimeter, because most of it is not exposed — measured on TestCoupe, only 31.5% of
   an automatic perimeter skirt landed on the two edges that were actually the complaint, while 17.4%
   (663 cm²) landed on the window top and became a new texture defect.
 

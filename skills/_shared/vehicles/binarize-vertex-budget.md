@@ -2,7 +2,7 @@
 
 The three verdicts of `binarize.exe` on a model, the real vertex ceiling in resolved triples, how thin the headroom of a deployed model can be, and which log lines do not discriminate.
 
-> Status: field notes. The results below were measured on mod models (an HH-60G helicopter, cross-checked against 25 in-game verdicts, an OH-1 helicopter, a vehicle called H2R and two buildings) and are mod behaviour, not vanilla; they were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo. "Invariant N", "preflight #N" and "#N" mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number. The short rule this file develops is invariant 24 in `invariants-lods-and-vertex-budget.md`.
+> Status: field notes. The results below were measured on mod models (an HH-60G helicopter, cross-checked against 25 in-game verdicts, an OH-1 helicopter, a vehicle called H2R and two buildings) and are mod behaviour, not vanilla; they were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo. "Invariant N", "preflight #N" and "#N" mean the numbered invariants; `README.md` lists which file holds each number. The short rule this file develops is invariant 24 in `invariants-lods-and-vertex-budget.md`.
 
 ## Vanilla anchors checked on `P:\`
 

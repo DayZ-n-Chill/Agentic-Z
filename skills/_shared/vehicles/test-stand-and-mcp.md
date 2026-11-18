@@ -2,7 +2,7 @@
 
 Measured limits of driving, seating and unseating a vehicle from an automated test harness (the dayz-mcp bridge), and which actions the server still validates.
 
-> Status: measured in game through dayz-mcp, a third-party MCP server that this repo does not ship, on DayZDiag 1.29 and 1.30 with `CivilianSedan` and the LFHeli build; not yet checked on `P:\`. A citation written with its full `P:\` path was opened on vanilla data (a 1.30 build); a bare `file.c:N` is a 1.30 line number that repeats or extends a full citation in the anchors list below, and a number given for 1.29 cannot be checked on `P:\`. `MCPBridge.c` is dayz-mcp's own script. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: measured in game through dayz-mcp, a third-party MCP server that this repo does not ship, on DayZDiag 1.29 and 1.30 with `CivilianSedan` and the TestHeli build; not yet checked on `P:\`. A citation written with its full `P:\` path was opened on vanilla data (a 1.30 build); a bare `file.c:N` is a 1.30 line number that repeats or extends a full citation in the anchors list below, and a number given for 1.29 cannot be checked on `P:\`. `MCPBridge.c` is dayz-mcp's own script. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -13,7 +13,7 @@ Measured limits of driving, seating and unseating a vehicle from an automated te
 
 ## Scripted pilot: UAInput has no injection API
 
-**Scripted-pilot limitation — `UAInput` has no injection API (added 2026-08-17, LFHeli):** the dayz-mcp bridge cannot pilot a vehicle whose mod neutralizes the CarController (`SetSteering(0)` every tick) and reads its own UA axes, because `UAInput` does not admit value injection. The working path is a DIAG script in the OWNER that substitutes the UA reading before `WriteToMove`: with the Pawn pattern of active forces the server consumes the axes from the Move (`ConsumeMove → ReadFromMove`), so the script needs no sync and no RPC. Status: pending — conditioned on the scripted pilot actually flying (do not promote a mechanic without in-game adjudication); the get-out re-registration of `runtime-state-and-sync.md` was adjudicated in-game 17-Aug.
+**Scripted-pilot limitation — `UAInput` has no injection API (added 2026-08-17, TestHeli):** the dayz-mcp bridge cannot pilot a vehicle whose mod neutralizes the CarController (`SetSteering(0)` every tick) and reads its own UA axes, because `UAInput` does not admit value injection. The working path is a DIAG script in the OWNER that substitutes the UA reading before `WriteToMove`: with the Pawn pattern of active forces the server consumes the axes from the Move (`ConsumeMove → ReadFromMove`), so the script needs no sync and no RPC. Status: pending — conditioned on the scripted pilot actually flying (do not promote a mechanic without in-game adjudication); the get-out re-registration of `runtime-state-and-sync.md` was adjudicated in-game 17-Aug.
 
 ## Invariant 15e: a client-side get-in is not enough for an action the server validates
 

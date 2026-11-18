@@ -259,7 +259,7 @@ ppw.SetModelOrientation(Vector(yaw, 0, 0));
 ppw.Refresh();
 ```
 
-`PlayerPreviewWidget` is `P:\scripts\3_game\gameplay.c:305`: `UpdateItemInHands` `:307`, `SetPlayer(DayZPlayer)` `:308`, `Refresh` `:312`.
+`PlayerPreviewWidget` is `P:\scripts\3_game\gameplay.c:305`: `UpdateItemInHands` `:307`, `SetPlayer(DayZPlayer)` `:308`, `GetDummyPlayer` `:310`, `Refresh` `:312`. It takes only a `DayZPlayer`, and vanilla has no matching preview widget for infected, animals or other AI (measured in a mod: only humans render).
 
 ---
 

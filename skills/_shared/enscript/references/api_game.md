@@ -32,6 +32,8 @@ Use `IsServer()` for authority work so it also runs in single player. Use `IsDed
 
 Both clocks start again at every boot, so neither is a timestamp you can save or use to order events across restarts. For a saved timestamp use the UTC wall clock: `GetYearMonthDayUTC(out int year, out int month, out int day)` (`P:\scripts\1_core\proto\ensystem.c:100`) and `GetHourMinuteSecondUTC(out int hour, out int minute, out int second)` (`P:\scripts\1_core\proto\ensystem.c:76`).
 
+The world clock speed has a setter and no getter: `proto native void SetTimeMultiplier(float timeMultiplier)` (`P:\scripts\3_game\global\world.c:14`), and no `GetTimeMultiplier` exists in `P:\scripts`. Code that reports the multiplier must remember what it set, or report it as unknown, never as a default `0`.
+
 The `Math` class has no `Exp`. Write an exponential as `Math.Pow(Math.EULER, x)`: `Pow` is at `P:\scripts\1_core\proto\enmath.c:183` and `EULER` at `P:\scripts\1_core\proto\enmath.c:11`, and vanilla writes `Pow(EULER,-mean)` itself (`P:\scripts\1_core\proto\enmath.c:710`).
 
 ## Mission and world
@@ -60,7 +62,7 @@ if (screen[2] > 0)
 
 `GetPlayer()` is the player this machine controls, `GetPlayers(out array<Man>)` fills every player, and `GetPlayerByIndex(i)` wraps it (`P:\scripts\3_game\global\game.c:944` to `:952`). A dedicated server controls no player, so server code finds players with `GetPlayers` or from a `PlayerIdentity`. More in `api_player.md`.
 
-On a client `GetPlayer()` is also `null` while the game is still loading. Reported, not checked on `P:\` (the crash is native): during that time the camera getters `GetCurrentCameraPosition()` and `GetCurrentCameraDirection()` (`P:\scripts\3_game\global\game.c:731`, `:732`) crash the client with a native crash that no script null check catches. In a client handler that can run early (an RPC, a polled command), return when `GetGame().GetPlayer()` is `null` before you call anything that reads the camera or the world. Detail: `skills/enforce-script-reference/references/runtime-traps.md`.
+On a client `GetPlayer()` is also `null` while the game is still loading. Reported, not checked on `P:\` (the crash is native): during that time the camera getters `GetCurrentCameraPosition()` and `GetCurrentCameraDirection()` (`P:\scripts\3_game\global\game.c:731`, `:732`) crash the client with a native crash that no script null check catches. In a client handler that can run early (an RPC, a polled command), return when `GetGame().GetPlayer()` is `null` before you call anything that reads the camera or the world. Detail: `skills/_shared/enscript/depth/runtime-traps.md`.
 
 ## Reading config
 
@@ -77,7 +79,7 @@ Paths are class names separated by spaces, not dots: `"CfgSurfaces " + surface +
 
 An object builds its own path from `GetType()`, for example `"CfgVehicles " + GetType() + " "` (`P:\scripts\3_game\entities\object.c:424`).
 
-`IsKindOf(string cfg_class_name, string cfg_parent_name)` follows the parents written in config, not the parents written in script (`P:\scripts\3_game\global\game.c:1436`). A class can be `class X : Y` in script and `class X : Z` in `CfgVehicles`; the test then answers for `Z`. When a check that should match through inheritance does not, read the class's config parent (for a packed mod, turn its `config.bin` back into text with `CfgConvert.exe -txt`) and compare the two chains. The reported case is in `skills/enforce-script-reference/references/api-patterns.md`.
+`IsKindOf(string cfg_class_name, string cfg_parent_name)` follows the parents written in config, not the parents written in script (`P:\scripts\3_game\global\game.c:1436`). A class can be `class X : Y` in script and `class X : Z` in `CfgVehicles`; the test then answers for `Z`. When a check that should match through inheritance does not, read the class's config parent (for a packed mod, turn its `config.bin` back into text with `CfgConvert.exe -txt`) and compare the two chains. The reported case is in `skills/_shared/enscript/depth/api-patterns.md`.
 
 ## Logging
 
@@ -92,4 +94,10 @@ An object builds its own path from `GetType()`, for example `"CfgVehicles " + Ge
 
 Use `Print` or `ErrorEx` for messages you must see in a normal test session; `Debug.Log` is silent unless logs are enabled.
 
-Reported, not checked on `P:\` (the log writer is native): the script log cuts every `Print` line at 255 characters (172 of 193 diagnostic lines were cut at exactly 255 in one measured session). Write a long diagnostic as several short lines that share a tag, and print a stack line by line.
+Reported, not checked on `P:\` (the log writer is native): the script log cuts every `Print` line at 255 characters (172 of 193 diagnostic lines were cut at exactly 255 in one measured session). Write a long diagnostic as several short lines that share a tag, and print a stack line by line. Later measurements narrow it: the cut came from the 1.29 retail logger, and neither DayZDiag 1.30 nor the 1.30 retail server cut long lines. Short lines stay the safe habit for a mod that may run on an older server.
+
+On the retail server the RPT repeats the script log's `SCRIPT` lines (server RPTs of 1.29 and 1.30.164200), so a script error shows in both.
+
+## Connect error codes
+
+A `CONNECTING FAILED (0x...)` message is an engine connect error, not a BattlEye kick. The code is two shorts: the high short is the `ErrorCategory`, the low one the value inside it (`P:\scripts\3_game\global\errormodulehandler\errormodulehandler.c:4-26`). Category 1 is `ConnectErrorClient` (`connecterrorclientmodule.c`) and 2 is `ConnectErrorServer` (`connecterrorservermodule.c`), both in `P:\scripts\3_game\global\errormodulehandler\`; each enum starts `UNKNOWN = -1`, `OK = 0`. So `0x00020005` is `EConnectErrorServer.FILE_PATCHING` (`connecterrorservermodule.c:10`) and `0x00010002` is `EConnectErrorClient.ALREADY_CONNECTING` (`connecterrorclientmodule.c:7`): the client is still busy with an earlier join. The usage examples in the comments of `errormodulehandler.c` number the categories one higher; the measured messages follow the enum. The codes seen in test runs and their fixes are in `skills/dayz-launch-test/references/troubleshooting.md`.

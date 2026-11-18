@@ -41,7 +41,7 @@ The game builds the list of playable characters when it starts. `DayZGame` walks
 
 A character with a new face needs a new head model and textures, which is art work for the Object Builder and asset specialists. A character that reuses a vanilla head with new skin textures needs only config: a new `SurvivorM_` or `SurvivorF_` class plus body part classes that inherit the vanilla `_Base` parts and set their own `hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]`. Say which kind the request is before starting, because the first is several times the work.
 
-A third kind is a whole new body: a custom survivor, human NPC or infected mesh. That is a rigging project, several times the work of a new head again. The mesh has to be weighted to the vanilla bone names in the vanilla bind pose, and the workflow, the export and the offline winding gate are in the `/dayz-characters` skill. Vanilla has no human AI to drive an NPC (`skills/_shared/ai/patrols-and-guards.md`).
+A third kind is a whole new body: a custom survivor, human NPC or infected mesh. That is a rigging project, several times the work of a new head again. The mesh has to be weighted to the vanilla bone names in the vanilla bind pose: the workflow and the export are in `body-rigging.md`, why a body deforms under animation in `canonical-bind.md`, and the texture bake in `body-uv-bake.md`. The infected class side is in `skills/_shared/ai/custom-infected.md`. Vanilla has no human AI to drive an NPC (`skills/_shared/ai/patrols-and-guards.md`).
 
 ## What every survivor inherits from `SurvivorBase`
 
@@ -57,7 +57,7 @@ A third kind is a whole new body: a custom survivor, human NPC or infected mesh.
 | `skeletonName` | `player_testing.xob` | `P:\DZ\characters\data\config.cpp:158` |
 | `ragdoll` | `DZ/characters/bodies/human.ragdoll` | `P:\DZ\characters\data\config.cpp:160` |
 
-A new `SurvivorM_` or `SurvivorF_` class inherits the block and needs none of it redeclared. A mod that replaces the block for a custom body keeps the `ragdoll` line or points it at its own file. The ragdoll is data since 1.30: `P:\DZ\characters\bodies\human.ragdoll` holds eleven `RagdollBone` blocks with a mass and capsule each, from `pelvis` (mass 17, `P:\DZ\characters\bodies\human.ragdoll:5`) down to the legs. The format and the mass table are in `skills/dayz-characters/references/character-ragdoll.md`.
+A new `SurvivorM_` or `SurvivorF_` class inherits the block and needs none of it redeclared. A mod that replaces the block for a custom body keeps the `ragdoll` line or points it at its own file. The ragdoll is data since 1.30: `P:\DZ\characters\bodies\human.ragdoll` holds eleven `RagdollBone` blocks with a mass and capsule each, from `pelvis` (mass 17, `P:\DZ\characters\bodies\human.ragdoll:5`) down to the legs. The format and the mass table are in `ragdoll.md`.
 
 The bone list behind `player_testing.xob` has 172 bones and starts at `P:\DZ\anims\cfg\skeletons.anim.xml:110`.
 
@@ -88,16 +88,14 @@ Clothing or item script that needs to know whether its wearer has surrendered as
 Infected are not survivors: `ZombieBase` inherits `DayZInfected` (`P:\DZ\characters\zombies\config.cpp:24`). Two differences matter for wearables.
 
 - They take four attachment slots only: `Vest`, `Back`, `Headgear` and `Eyewear` (`attachments[]` at `P:\DZ\characters\zombies\config.cpp:64`).
-- They bind to a shorter bone list. `ZombieBase` names `hermit_newbindpose.xob` as its `skeletonName` (`P:\DZ\characters\zombies\config.cpp:76`), 95 bones starting at `P:\DZ\anims\cfg\skeletons.anim.xml:2`, against the player's 172. The infected list has no face bones, so headgear weighted to face bones can stretch on an infected. That stretch, and the fix of overriding `skeletonName` on the infected class, are not yet checked on `P:\` or in game.
+- They bind to a shorter bone list, `hermit_newbindpose.xob` with 95 bones against the player's 172, and it has no face bones, so headgear weighted to face bones can stretch on an infected. The bone lists and the untested `skeletonName` override are in `canonical-bind.md`, "Survivors and infected bind to different skeletons".
 
 Since 1.30 there are female military infected (`ZmbF_SoldierNormal_Base` at `P:\DZ\characters\zombies\config.cpp:11119`) next to the male ones. Their behaviour is in `skills/_shared/ai/custom-infected.md`.
 
 ## The skeleton name inside character and clothing models
 
-A text search inside the vanilla binarized models (binary files, so no line numbers) finds the skeleton name `DayzTemporarySkeleton` in the survivor body parts model `P:\DZ\characters\bodies\bodyparts_above0.p3d`, in the infected body `P:\DZ\characters\zombies\hermit_above0.p3d` and in worn clothing such as `P:\DZ\characters\tops\hoodie_m.p3d`. Of the 897 models under `P:\DZ\characters\`, 584 contain that name and 4 unused ones contain `ofp2_manskeleton`.
-
-A worn model whose `model.cfg` names its skeleton `OFP2_ManSkeleton` renders as a rigid block above the player; this was measured in game on a body armor item on DayZ 1.29 diag, not on `P:\`. The rules for a worn model (skeleton name, frame, the `model.cfg` template) are in `worn-models.md`; the character-side account, with the tests that isolate the fault, is in `skills/dayz-characters/references/worn-clothing-skeleton.md`.
+Vanilla survivor bodies, infected bodies and worn clothing are all compiled with the skeleton name `DayzTemporarySkeleton`; the counts, the four unused models that carry `ofp2_manskeleton`, and what goes wrong with the other name are in `worn-models.md`, "Skeleton".
 
 ## Sandstorm protection on the wearer (1.30)
 
-Two protection types decide whether worn gear shields its wearer from sandstorm dust: `DEF_DUST_PARTICLE_BREATH` and `DEF_DUST_PARTICLE_EYES` (`P:\scripts\3_game\constants.c:549` and `:550`). `PluginTransmissionAgents` reads the first from the mask category and the second from eyewear, mask and night vision (`AGT_AIRBOURNE_SOLID` at `P:\scripts\4_world\plugins\pluginbase\plugintransmissionagents.c:414`). Head gear also cuts the sun's heat: `HeadGearProtectionAgainstSun()` reads the heat isolation of the item in the `HEADGEAR` slot (`P:\scripts\4_world\classes\environment\environment.c:2037`). The protection keys themselves are in `protection-and-insulation.md`.
+Two protection types decide whether worn gear shields its wearer from sandstorm dust: `DEF_DUST_PARTICLE_BREATH` and `DEF_DUST_PARTICLE_EYES` (`P:\scripts\3_game\constants.c:549` and `:550`). The dust agents they block are `SILICOSIS = 512` and `EYES_IRRITATION = 1024` in `eAgents` (`P:\scripts\3_game\enums\eagents.c:14` and `:15`). `PluginTransmissionAgents` reads the first type from the mask category for silicosis and the second from eyewear, mask and night vision for eye irritation (`AGT_AIRBOURNE_SOLID` at `P:\scripts\4_world\plugins\pluginbase\plugintransmissionagents.c:414`, the two cases at `:420` to `:433`), through `GetProtectionLevelCachedEquipment` (`:577`). A mod mask or goggles without these keys in its `Protection` class gives no sandstorm protection. Head gear also cuts the sun's heat: `HeadGearProtectionAgainstSun()` reads the heat isolation of the item in the `HEADGEAR` slot (`P:\scripts\4_world\classes\environment\environment.c:2037`). The protection keys themselves are in `protection-and-insulation.md`.

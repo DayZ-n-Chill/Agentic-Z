@@ -45,7 +45,7 @@ texture, a groove that runs along U, and the inverted copy reading that groove a
 
 What it does NOT check: inverting the green channel of the same map only negates the green
 correlation and swaps the two curl residuals, so it always flips the verdict and is no control.
-The controls are maps of known convention (test_normal_convention.py, next to this file). A map
+The controls are maps of known convention (test_texture_pipeline_normal_convention.py, next to this file). A map
 that is not a height field's slopes (painted, hand-edited, heavily compressed) can leave the curl
 reading inconclusive. Nor does it tell which channel is off: both readings compare the green's
 sign with the red's, so a map whose red is inverted against the real relief (X-, Y-) also reads

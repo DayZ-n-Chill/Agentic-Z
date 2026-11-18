@@ -2,7 +2,7 @@
 
 What a passing automated UI check does not tell you, how two layouts with the same widget names make one of them unreachable, why resizing the game window does not test another resolution, and the traps in the probes and harnesses used to check a UI on a running client.
 
-**How facts are marked here.** A `P:\` path with a line was opened and checked on `P:\` (DayZ 1.30). Everything described as measured was measured in game on DayZ 1.29.163709, mostly on the sorter panel of a power grid mod; none of it is yet repeated on 1.30. The verbs `ui_tree`, `ui_click`, `ui_set_text`, `ui_reload_layout`, `capture_screenshot`, `camera_get` and `logs_since` belong to the DayZ MCP bridge, a third party test harness described in `skills/dayz-mcp-verify/` and `skills/dayz-test-ingame/`; facts about them are harness facts, not game facts. The measurement logs, captures and probe layouts are not in this repo; the dates tell the measurements apart.
+**How facts are marked here.** A `P:\` path with a line was opened and checked on `P:\` (DayZ 1.30). Everything described as measured was measured in game on DayZ 1.29.163709, mostly on the sorter panel of a power grid mod; none of it is yet repeated on 1.30. The verbs `ui_tree`, `ui_click`, `ui_set_text`, `ui_reload_layout`, `capture_screenshot`, `camera_get` and `logs_since` belong to the DayZ MCP bridge, a third party test harness described in `skills/dayz-launch-test/references/mcp/README.md` and `skills/dayz-launch-test/references/README.md`; facts about them are harness facts, not game facts. The measurement logs, captures and probe layouts are not in this repo; the dates tell the measurements apart.
 
 ---
 

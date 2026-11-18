@@ -99,4 +99,26 @@ On `ZombieBase` (`P:\DZ\characters\zombies\config.cpp:24`):
 
 ## Global AI parameters
 
-`class AIParams` (`P:\DZ\data\aiconfigs\config.cpp:12`) holds values shared by every creature: `maxNoiseRange=300` (`:14`), the weather to noise multipliers the engine uses since 1.30 to lower what AI hears (`rainToNoiseMultiplier` to `sandstormToNoiseMultiplier`, `:15` to `:20`), `noiseDampeningMultiplier` (`:21`), `noiseCollisionDampeningMultiplier` and `noiseShotCollisionDampeningMultiplier` (`:22`, `:23`), `groupLODDistance=1000` (`:24`), and `class AgentTeams` with the team list and each team's `friends[]` (`:25`). The teams are the `teamName` values the templates above use: `Player`, `BigGame`, `Zombies`, `Predator` and `AmbientLife`. How the weather multipliers replace the old script helpers is in `perception.md`, "Weather and noise".
+`class AIParams` (`P:\DZ\data\aiconfigs\config.cpp:12`) holds values shared by every creature: `maxNoiseRange=300` (`:14`), the weather to noise multipliers the engine uses since 1.30 to lower what AI hears (`rainToNoiseMultiplier` to `sandstormToNoiseMultiplier`, `:15` to `:20`), `noiseDampeningMultiplier` (`:21`), `noiseCollisionDampeningMultiplier` and `noiseShotCollisionDampeningMultiplier` (`:22`, `:23`), `groupLODDistance=1000` (`:24`), and `class AgentTeams` with the team list and each team's `friends[]` (`:25`). The teams are the `teamName` values the templates above use: `Player`, `BigGame`, `Zombies`, `Predator` and `AmbientLife`.
+
+Each team's friends, as listed in `class AgentTeams`:
+
+| Team | `friends[]` | Line |
+|---|---|---|
+| `Player` | `Player` | `P:\DZ\data\aiconfigs\config.cpp:35` |
+| `Predator` | `Predator`, `Zombies`, `AmbientLife` | `P:\DZ\data\aiconfigs\config.cpp:42` |
+| `BigGame` | `BigGame`, `AmbientLife` | `P:\DZ\data\aiconfigs\config.cpp:51` |
+| `Zombies` | `Zombies`, `Predator`, `AmbientLife` | `P:\DZ\data\aiconfigs\config.cpp:59` |
+| `AmbientLife` | `AmbientLife` | `P:\DZ\data\aiconfigs\config.cpp:68` |
+
+The list says infected and predators count each other as friends; that this is why they leave each other alone is the reading of the config, not tested in game. The bear template uses `teamName="Predator"` too (`P:\DZ\AI_bliss\config.cpp:19`).
+
+## Picking a template for a new animal
+
+Start from the vanilla template closest in role and change as little as possible, as for the animation side (`skills/_shared/animation/creature-rig-to-game.md`, "AI wiring for an ambient creature"):
+
+- A harmless ambient creature (a bird, a small animal) starts from an `AmbientLife` template, `AmbientLife_Gallus_Gallus_Domesticus` for the hen (`P:\DZ\AI\config.cpp:155`), and keeps `teamName="AmbientLife"` (`:158`), which the predator, infected and big game teams list as a friend.
+- A grazing animal starts from a `Herbivores` species template such as `Herbivores_CervusElaphus` (`P:\DZ\AI\config.cpp:4883`), team `BigGame`.
+- A predator starts from `Predators_Wolf` (`P:\DZ\AI\config.cpp:5420`) or the bear's `Predator_UrsusArctos` (`P:\DZ\AI_bliss\config.cpp:16`), then its attack range and the `AttackActions` of its creature class are tuned.
+
+The class also needs the script side of an animal (skinning, hit components), which comes from inheriting the closest vanilla `AnimalBase` child (`creatures.md`). That a new animal template works is unverified until the in game test shows the creature moves, flees or attacks as intended. How the weather multipliers replace the old script helpers is in `perception.md`, "Weather and noise".

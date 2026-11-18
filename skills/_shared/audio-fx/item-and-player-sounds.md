@@ -104,7 +104,7 @@ The check itself is `IsHeadlessOrDedicatedServer()` on the game (`P:\scripts\3_g
 - It plays through the player's own `PlaySound(SoundObject so, SoundObjectBuilder sob)`, which sets the position and calls `Play3D` (`P:\scripts\4_world\entities\dayzplayerimplement.c:3254`).
 - The noise part, which is what AI hears, is separate: `AddNoise(NoiseParams noisePar, float noiseMultiplier = 1.0)` (`P:\scripts\4_world\entities\dayzplayerimplement.c:3258`). See `noise-for-ai.md`.
 
-Step and gesture sounds bound to animation events are played by the engine on each client; nothing has to be synced for them. Config hooks for item animation events are in `effects-wiring.md`.
+Step and gesture sounds bound to animation events are played by the engine on each client; nothing has to be synced for them. The player handles its animation sound events in `OnSoundEvent(string pEventType, string pUserString, int pUserInt)` (`P:\scripts\4_world\entities\dayzplayerimplement.c:3484`), and an animal in `OnSoundEvent(int event_id, string event_user_string)`, registered as the animation event `"Sound"` (`P:\scripts\3_game\entities\dayzanimal.c:260`, `:298`). `ItemBase` has no `OnSoundEvent` to override: for an item, use the item sound handler above, `PlaySoundSet`, or an `AnimEvents` class in config. Config hooks for item animation events are in `effects-wiring.md`.
 
 ## Player sound events: heavy breathing (1.30)
 

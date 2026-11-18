@@ -165,7 +165,7 @@ When a bound `ButtonWidget` is clicked or a bound `CheckBoxWidget` changes, the 
 One click can run a command twice, in two ways. The symptom is the same for both: a toggle cancels itself and seems to do nothing.
 
 1. **The handler does not return `true`** (read from the Dabs source). "Handled" is the method's return value. `ViewBinding.InvokeCommand` (`3_Game\DabsFramework\MVC\ViewBinding.c`) calls the method through `g_Script.CallFunction` and, when the result is not true, calls the same method name on each parent in turn. A handler declared `void`, or one that returns false, can therefore run again on a parent that has a method of that name. Declare handlers `bool` and return `true` when the click was handled: `bool OnRefreshExecute(ButtonCommandArgs args)`.
-2. **The view overrides `OnClick` and calls `super.OnClick()` while the widget also has a `Relay_Command`** (third party mod behaviour, not checked against the Dabs source; code in `skills/enforce-script-reference/references/dabs-mvc-advanced.md`). The override and the command both run. Use the command or the override, not both.
+2. **The view overrides `OnClick` and calls `super.OnClick()` while the widget also has a `Relay_Command`** (third party mod behaviour, not checked against the Dabs source; code in `skills/_shared/enscript/depth/dabs-mvc-advanced.md`). The override and the command both run. Use the command or the override, not both.
 
 ### Which widgets bind
 
@@ -228,7 +228,7 @@ class MyMod_Menu: ScriptViewMenuTemplate<MyMod_StatusController>
 
 More depth (the full `WidgetAnimator` and `LinearColor` calls, the complete `ObservableCollection` operations, click dispatch and the shipped prefab layouts) is in `skills/dayz-ui-development/references/dabs-framework.md`.
 
-Third party mod behaviour, not checked against the Dabs source; the code for each is in `skills/enforce-script-reference/references/dabs-mvc-advanced.md`:
+Third party mod behaviour, not checked against the Dabs source; the code for each is in `skills/_shared/enscript/depth/dabs-mvc-advanced.md`:
 
 - **Do not create a `ScriptView` from an RPC handler or during early init.** The constructor creates widgets and needs a workspace. Queue the creation on `CALL_CATEGORY_GUI` instead.
 - **Widgets inside a `ButtonWidget` can bind to the wrong widget.** Auto binding and `FindAnyWidget` returned wrong, non null references for children of a button. Fetch those children yourself from the button after the view is created.

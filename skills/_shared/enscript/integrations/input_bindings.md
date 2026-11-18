@@ -181,7 +181,7 @@ Exclude groups include each other. In `P:\bin\specific.xml` the group `aiming` i
 - Pass only groups that do not reach `aiming`: open each group you pass in `specific.xml` and follow its `<include>` lines.
 - Read the look axes as the vanilla spectator does: `GetUApi().GetInputByID(UAAimLeft).LocalValue()` (`P:\scripts\4_world\entities\dayzspectator.c:39`).
 
-For a sight used from a vehicle seat, do not take the camera away from the player at all; `skills/enforce-script-reference/references/hard-rules.md` (rules 37b to 37d) has the measured reasons and the vehicle camera method.
+For a sight used from a vehicle seat, do not take the camera away from the player at all; `skills/_shared/enscript/depth/hard-rules.md` (rules 37b to 37d) has the measured reasons and the vehicle camera method.
 
 ---
 

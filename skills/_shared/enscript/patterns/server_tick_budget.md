@@ -1,6 +1,6 @@
 # Pattern: keeping periodic server work inside the tick
 
-How to stop many entities from doing the same expensive work on the same server tick: a work budget, staggering, backoff, events in place of polling, and compile-time side gates. The techniques are measured in third-party mods (Expansion's AI and a power grid mod), so they are marked as reported; the vanilla calls they are built from were opened on `P:\`. The fuller write-up is `skills/enforce-script-reference/references/server-performance.md`.
+How to stop many entities from doing the same expensive work on the same server tick: a work budget, staggering, backoff, events in place of polling, and compile-time side gates. The techniques are measured in third-party mods (Expansion's AI and a power grid mod), so they are marked as reported; the vanilla calls they are built from were opened on `P:\`. The fuller write-up is `skills/_shared/enscript/depth/server-performance.md`.
 
 See also: `scheduler.md` (timers and per tick allocation) and `../references/api_scheduling.md` (call categories and queues).
 

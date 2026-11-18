@@ -124,6 +124,36 @@ consistency, not that the geometry is right (`references/winding-absolute-check.
 three py3d gates"), and several faults cannot be seen from one file
 (`references/manual-checks.md`). Spawning the built model in game is the last check.
 
+## Vehicle checks
+
+Three more scripts check ground and water vehicles. The vehicle pack (`skills/_shared/vehicles/README.md`) says what each finding means.
+
+| Script | What it checks | Input |
+|---|---|---|
+| `scripts\audit_getin_wheels.py` | Get-in memory points, seat selections and wheel axis handedness | One or more MLOD `.p3d` files |
+| `scripts\gate_odol_sections.py` | Whether each named selection of a binarized model has a section the engine draws | One ODOL `.p3d` taken out of the packed PBO, and the selection names |
+| `scripts\check_odol_bone_refs.py` | Which skeleton bone the vertices of a section bind to in a binarized model | One ODOL `.p3d` taken out of the packed PBO, and a texture substring |
+
+They read only the files you pass, so they do not gate on `/dayz-preflight`. `audit_getin_wheels.py` loads py3d like the audit. The two ODOL scripts do not use py3d (it reads MLOD only): they need an external ODOL parser, the `bis_reader` and `odol_reader` modules of an ODOL to MLOD converter that reads ODOL version 56, which this repo does not ship. Point at its folder with `--backend-root <dir>` or the environment variable `DAYZ_ODOL_BACKEND_ROOT` (also read by `scripts/tools/dayz-odol-strict/`); without it they exit 2 and say what is missing.
+
+**Get-in anchors, seats and wheel axes:**
+```cmd
+python "<skill-dir>\scripts\audit_getin_wheels.py" path\to\car.p3d [path\to\control.p3d ...]
+```
+For each model it prints the LOD list; each get-in anchor of the Memory LOD (`crewdriver`, `crewcodriver`, `pos_driver`, `pos_driver_dir`, `pos_codriver`, `pos_codriver_dir`, `seat_con_1_1`, `seat_con_2_1`) as `OK` with point count and centroid, `EMPTY` or `ABSENT`; the unit direction of each wheel axis (`wheel_1_1_axis` to `wheel_2_2_axis`), where left and right axes with different X signs predict one side spinning backwards under a shared `angle1` (`animation-sign-and-axis.md` of the vehicle pack); and which seat selections (`seat_driver`, `seat_codriver`, `seatback_driver`, `seatback_codriver`) the Geometry, View Geometry and Fire Geometry LODs hold. Pass a car that works in game next to the one under test and compare the blocks. Exit 0 when every anchor, wheel axis (two points or more) and seat selection (in Geometry or View Geometry) is present; 1 with a `FAIL:` line per defect; 2 for no input, a missing or unparsable file (`INPUT_ERROR:`, no report printed) or no py3d. The required names are the two-seat roster of the reference quad: a four-seat car is checked on its front pair, and a car without seat-back selections gets a `FAIL:` for each, so read those lines against the car's own `Crew` config. The rules are in `invariants-get-in-and-seats.md` and `invariants-wheels-and-hubs.md` of the vehicle pack.
+
+**Drawable sections in a binarized model:**
+```cmd
+python "<skill-dir>\scripts\gate_odol_sections.py" path\to\binarized.p3d --selection screen_nav --selection light_dashboard [--lod 0 --lod 1100] [--keyword dashboard] [--backend-root path\to\odol-backend]
+```
+Run it on the `.p3d` extracted from the PBO you are about to deploy, after any change that adds geometry or a textured selection: a selection can be in every string table and still never render, because its section decides (`animation-bake-and-odol-sections.md` of the vehicle pack). It prints the ODOL version and LODs, the bones named like a gated selection or keyword, and for each LOD read (default 0 and 1100) the counts, bounding box, keyword textures and materials (default keywords `gps`, `marker`, `cluster`, `screen`, `argb`, `color`, `dashboard`, `cab_screen`), faces no section covers, and proxies; for each `--selection` its faces, vertices, sections (face range, bone range, texture, material, `special` flags), vertex positions, UVs and bone references, and face areas in square millimetres. Exit 0 when every gated selection is drawable in every LOD read (or no `--selection` was given); 1 with a `FAIL:` line when a selection is missing, not sectional (not in `CfgModels` `sections[]`), owns no section, or has a section without the hidden-selection bit `0x20000` in `special` (a `0x0000C000` section is never drawn); 2 for no input, a missing file, an MLOD file, an unreadable file, a `--lod` the model lacks or no parser. A selection absent from the first-person LOD on purpose fails at 1100: pass `--lod 0` alone.
+
+**Which bone a section binds to:**
+```cmd
+python "<skill-dir>\scripts\check_odol_bone_refs.py" path\to\binarized.p3d --texture gps_arrow [--texture cluster --max-faces 2] [--reference-texture cluster_co.paa] [--lod 0] [--backend-root path\to\odol-backend]
+```
+Use it when a section passes the gate above and still does not show: a vertex bound to a bone whose hide animation starts at phase 1 is invisible from spawn. For each LOD it lists every section whose texture path contains a `--texture` substring (with `--max-faces N`, only sections of at most N faces; a witness quad has two) and, per vertex, the bone name, index and weight or `NONE/static`. `--reference-texture` also prints the bone of the first vertex of a section known to render (the first of more than ten faces whose texture ends with that suffix). Read the bones against the model's `model.cfg` animations; the script reports and does not judge. Exit 0 when the report printed; 2 for no `--texture`, a missing or unreadable file, a `--lod` the model lacks or no parser.
+
 ## Diagnostic decision tree
 
 ```

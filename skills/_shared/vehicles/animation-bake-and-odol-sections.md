@@ -2,7 +2,7 @@
 
 Proving offline that a `model.cfg` animation and a new piece of geometry survived binarization: skeleton bones, `sections[]`, the ODOL section flags, PAA encoding and translation offsets.
 
-> Status: field notes. The build and in-game results below were measured on a mod test car (SUB_BRZ, a sedan with a dashboard map screen) and are mod behaviour, not vanilla; they were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo (a 1.30 build). "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: field notes. The build and in-game results below were measured on a mod test car (TestCoupe, a sedan with a dashboard map screen) and are mod behaviour, not vanilla; they were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo (a 1.30 build). "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -11,7 +11,7 @@ Proving offline that a `model.cfg` animation and a new piece of geometry survive
 
 ## Animations only bake for selections that are skeleton bones
 
-Measured 2026-08-19 on SUB_BRZ; this was the root cause of a grey dashboard screen.
+Measured 2026-08-19 on TestCoupe; this was the root cause of a grey dashboard screen.
 
 AddonBuilder silently DROPS every model.cfg animation whose `selection` is not declared in the
 model's `CfgSkeletons` `skeletonBones[]`: the build exits 0, the anim classes stay in the source
@@ -32,7 +32,7 @@ texture path or the apply call.
 
 ## Verify new geometry by its ODOL section, not by strings
 
-Measured 2026-08-19 on the SUB_BRZ dash marker, across seven builds.
+Measured 2026-08-19 on the TestCoupe dash marker, across seven builds.
 
 Geometry added to a MLOD by tooling can be present in every string table of the binarized
 p3d (selection name, material, texture) and still never render, because whether the
@@ -57,11 +57,11 @@ address table is found by chaining (`lod_end[i] == lod_start[i-1]`, max end ≈ 
 a naive scan for the first plausible table hits a false positive. String-only scans pass
 while the geometry is undrawable: five in-game cycles were wasted before this gate existed.
 
-The gate is `skills/dayz-vehicles/scripts/gate_odol_sections.py`: name the selections
+The gate is `skills/dayz-p3d-audit/scripts/gate_odol_sections.py`: name the selections
 with `--selection` and it fails any that is not sectional, owns no section or lacks the `0x20000`
-bit. `skills/dayz-vehicles/scripts/check_odol_bone_refs.py` next to it prints the skeleton bone of
+bit. `skills/dayz-p3d-audit/scripts/check_odol_bone_refs.py` next to it prints the skeleton bone of
 each vertex of a section, for the case where the section is drawable but its bone is hidden by an
-animation. Both need the same external ODOL parser; `skills/dayz-vehicles/SKILL.md` says how to
+animation. Both need the same external ODOL parser; `README.md` says how to
 point at it.
 
 ## PAA files: always encode with ImageToPAA
@@ -73,7 +73,7 @@ on the pass: an 8x8 DXT1 `_co` renders as the engine grey fallback, while a `_ca
 
 ## Recycle existing faces instead of authoring new ones
 
-Measured 2026-08-21 on SUB_BRZ, over ten builds.
+Measured 2026-08-21 on TestCoupe, over ten builds.
 
 On a ripped vehicle model, faces ADDED by tooling can be perfectly formed and still
 never render, while every modification of pre-existing faces shows up reliably. A static
@@ -91,7 +91,7 @@ faces to a ripped model, prove one renders before building anything on top of it
 For `type="translation"` in model.cfg, `offset0`/`offset1` are documented inconsistently, as metres in some
 places and as a fraction of the axis vector in others, and picking
 wrong is silent: the selection simply moves somewhere off the model, which reads exactly like
-"my geometry does not render". SUB_BRZ lost six build cycles (2026-08-21) to a marker translated with
+"my geometry does not render". TestCoupe lost six build cycles (2026-08-21) to a marker translated with
 `offset1 = 1.0` against a 169 mm axis: under the metre reading each phase step threw it half a
 metre out of the cabin. Author the memory axis **1.0 m long** in the travel direction and set
 `offset1` to the travel in metres (0.169 for 169 mm of sweep). Both readings then produce the

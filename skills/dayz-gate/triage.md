@@ -25,7 +25,7 @@ A line is an error when one of the category patterns in `triage.py` (`ERROR_CATE
 | `mission`, `missing_config`, `missing_texture`, `missing_model` | `Mission script has no main function`, `No entry '...'`, `Cannot load texture`, `Cannot open object` |
 | `script_fail` | A `[FAIL] ...` line printed by one of the skill scripts (preflight, build, deploy, launch) |
 
-The `storage` and `server_exit` lines say the test run itself is not valid; they are not defects of the mod. A `storage` line names a random persisted entity, not the cause: the cause is the mod set or an unclean stop, and the fix resets the world, so ask the user before applying it. The measured cases behind these entries are in `skills/dayz-test-ingame/references/troubleshooting.md`, `skills/dayz-test-ingame/references/build-and-storage-traps.md` and, for `[Server] :: termination in: N`, `skills/dayz-test-ingame/references/windows-launch-cycle.md`.
+The `storage` and `server_exit` lines say the test run itself is not valid; they are not defects of the mod. A `storage` line names a random persisted entity, not the cause: the cause is the mod set or an unclean stop, and the fix resets the world, so ask the user before applying it. The measured cases behind these entries are in `skills/dayz-launch-test/references/troubleshooting.md`, `skills/dayz-launch-test/references/build-and-storage-traps.md` and, for `[Server] :: termination in: N`, `skills/dayz-launch-test/references/windows-launch-cycle.md`.
 
 Two things DayZDiag sessions print are deliberately not errors, and `test_triage.py` pins that:
 

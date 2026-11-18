@@ -17,7 +17,7 @@ Search: Grep for known names, RAG (`search_dayz_source`) for questions by meanin
 
 Workbench plugin APIs are thinly documented and change between DayZ Tools versions. Don't write a call, base class, attribute or file location from memory.
 
-1. Find real plugin code first: Grep the vanilla Workbench scripts in `P:\scripts\editor\plugins\`, `P:\scripts\editor\workbench\` and `P:\scripts\1_core\workbenchapi.c`, then use `search_dayz_source` for plugin examples by meaning. `skills/_shared/knowledge/workbench-scripting-api.md` maps the entry points, modules and events of a newer Workbench API than `P:\` holds: use it to know what to look for, and its last section to see what `P:\` really has.
+1. Find real plugin code first: Grep the vanilla Workbench scripts in `P:\scripts\editor\plugins\`, `P:\scripts\editor\workbench\` and `P:\scripts\1_core\workbenchapi.c`, then use `search_dayz_source` for plugin examples by meaning. `skills/_shared/enscript/references/workbench_api.md` maps the entry points, modules and events of the Workbench API, both the shape `P:\` holds and a newer folder layout: use it to know what to look for, and its "On `P:\` (checked)" bullet at the top to see what `P:\` really has. `COMPONENT_SYSTEM` classes, which exist only in Workbench builds, are in `skills/_shared/enscript/references/entity_components.md`.
 2. Use only classes, methods and attributes you found there, and cite each as `path:line`.
 3. If you can't find how something is done (for example a call or attribute that isn't in those files), say so and ask the script lead or your caller. Don't invent a manifest format, a C++ SDK or an install folder. Where plugin files go is known; see the next section.
 

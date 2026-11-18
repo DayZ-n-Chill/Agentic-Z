@@ -34,13 +34,14 @@ below were not measured at all.
 | Object Builder | `dayz-proton.sh gui ObjectBuilder [model.p3d]` | starts, loads a model; editing not exercised |
 | Workbench | `dayz-proton.sh gui Workbench` | starts and compiles the bundled scripts; game config needs `P:\dz` (section 3) |
 | Terrain Builder, DSUtils GUI, ImageToPAA GUI | `dayz-proton.sh gui <Tool>` | **not verified** |
-| Dedicated server (`DayZServer_x64.exe`) | native `DayZServer` (Steam app 223350) from a private tree: `skills/_shared/scripts/find-dayzserver.sh`, `make-server-tree.sh`, `free-ports.sh` | native, preferred; `skills/dayz-test-ingame/references/linux-native-server.md` |
-| Client (`DayZ_x64.exe`) | retail client under Proton, paired with the native server: `skills/_shared/scripts/dayz-client-headless.sh`, `dayz-client-test.sh` | works; `skills/dayz-test-ingame/references/linux-headless-client.md` |
+| Dedicated server (`DayZServer_x64.exe`) | native `DayZServer` (Steam app 223350) from a private tree: `skills/_shared/scripts/find-dayzserver.sh`, `make-server-tree.sh`, `free-ports.sh` | native, preferred; `skills/dayz-launch-test/references/linux-native-server.md` |
+| Client (`DayZ_x64.exe`) | retail client under Proton, paired with the native server: `skills/_shared/scripts/dayz-client-headless.sh`, `dayz-client-test.sh` | works; `skills/dayz-launch-test/references/linux-headless-client.md` |
 | `DayZDiag_x64.exe` (client or `-server`) | `dayz-proton.sh headless start <state> DayZDiag <args>`, or managed through dayz-mcp `main` (Linux host support since 2026-11-14; last row) | both roles run; a diag client joins a diag server and reaches the world (section 5, pairing) |
 | `P:` drive (WorkDrive, `subst`) | a plain directory, mapped by `dayz-proton.sh init <dir>` | works (section 3) |
+| Blender model work (Blender, py3d, the model checks) | `apt-get install -y blender`, `pip install opensimplex --break-system-packages`, then `pip install -e scripts/tools/py3d`; py3d, the model preflight tool (`scripts/tools/dayz-model-preflight`) and the 3D viewer (`scripts/tools/dayz-3d-viewer`) are Python and run natively | install described for Debian; not run on this workspace |
 | PowerShell scripts (`*.ps1`) | rewrite the steps in sh; `pwsh` exists on Linux but the scripts call Windows programs, the registry and `subst` | translate, do not run |
 | `%LOCALAPPDATA%\DayZ` logs | `<prefix>/pfx/drive_c/users/steamuser/AppData/Local/DayZ` (section 5) | |
-| dayz-mcp in-game bridge | Linux host support is in dayz-mcp `main` since 2026-11-14: `dayz_test_run` (`mode=all/server/client`, `build=true`), `dayz_test_close`, `dayz_test_stop`, bound polls | observations here were measured on its `linux-port` branch on 2026-11-06, before that merge (not re-measured on `main`); managed binarization with assets unverified; section 9 of `skills/_shared/knowledge/linux-proton-findings.md` |
+| dayz-mcp in-game bridge | Linux host support is in dayz-mcp `main` since 2026-11-14: `dayz_test_run` (`mode=all/server/client`, `build=true`), `dayz_test_close`, `dayz_test_stop`, bound polls | observations here were measured on its `linux-port` branch on 2026-11-06, before that merge (not re-measured on `main`); managed binarization with assets unverified; the bridge side is in `skills/dayz-launch-test/references/linux.md` |
 
 Build, sign, binarize and publish with dayzmake and `workshop`; they are what the Linux route
 is built on. AddonBuilder and Publisher are not needed on Linux. Use the Proton route when the question
@@ -135,11 +136,30 @@ From a `Z:` path it is a Linux directory, possibly your home, and binarize then 
 (scans of `~/.cargo` and of a network mount were recorded).
 
 Vanilla data under `P:\dz` (what WorkDrive's "extract game data" does on Windows): unpack the game's
-PBOs with `dayzmake unpack` into `P/` at their prefix paths using dayzmake >= `v2.0.0` (tag `v2.0.0`, commit `f31056ae`, `src/pbo.rs` `safe_relative_path`/`crosses_symlink`; `v1.0.0` `src/pbo.rs:724,731-733` has no entry-name containment — on < `v2.0.0` check every entry name with `dayzmake inspect` first; the `dayz-pbo-reverse-engineering` skill has the unpacking rules). For scripts and configs
+PBOs with `dayzmake unpack` into `P/` at their prefix paths using dayzmake >= `v2.0.0` (tag `v2.0.0`, commit `f31056ae`, `src/pbo.rs` `safe_relative_path`/`crosses_symlink`; `v1.0.0` `src/pbo.rs:724,731-733` has no entry-name containment — on < `v2.0.0` check every entry name with `dayzmake inspect` first; the unpacking rules are in `skills/dayz-import-mod/references/extraction-pitfalls.md`). For scripts and configs
 only, `skills/_shared/scripts/extract-dayz-sources.sh <install> <dir>` (configs derapified; about 90 s). Workbench without the
 extracted data compiled its bundled scripts but logged `No entry 'config.bin/CfgVehicles/…'`
 for vanilla classes. Whether an extracted `P:\dz` removes those errors is **not verified**,
 and neither is a model that references vanilla textures.
+
+### What replaces each `/dayz-preflight` check
+
+`preflight.py` looks for `P:\` and reads the Windows registry, so on Linux it stops at the first check with
+`[FAIL]  P:\ is NOT mounted`. Measured on Debian with Steam and Proton in November 2026:
+
+| Windows check | Linux equivalent |
+|---|---|
+| DayZ Tools, DayZ and DayZ Server located | `dayz-proton.sh doctor`. It reads `libraryfolders.vdf` and the app manifests, and prints the game versions and any pending updates. |
+| `P:\` mounted | A plain directory recorded by `dayz-proton.sh init <dir>`. `doctor` prints it. |
+| `DayZDiag_x64.exe` found | It is in the DayZ folder (Steam app 221100) and runs under Proton. |
+| Workshop folder | `<library>/steamapps/workshop/content/221100/<id>` |
+| Registry values | They do not exist on the host. `init` writes the values the tools read into its own private prefix. |
+
+`init` is the Linux counterpart of mounting `P:`. The rule for mounting carries over: do not run it unasked.
+Tell the user what it does (it creates private prefixes under `~/.local/share/dayz-proton` and takes about two
+minutes) and let them run it. The Object Builder viewer value that `/dayz-preflight` checks
+(`skills/dayz-preflight/references/object-builder-viewer.md`) lives in the tools prefix's registry on Linux;
+that check was not run there.
 
 ## 4. DayZ Tools under Proton: what was measured
 
@@ -188,11 +208,15 @@ repeated with the `v1.0.0` binary. This is a record of the comparison, not a new
   thread to `enfMain`, so a name-based kill or count silently finds nothing while servers of about 7.5 GB each keep
   running (measured on 1.30.164289). List with `ps aux | grep "[D]ayZServer"`, check the arguments (tree, ports) and kill
   by PID; a server that must outlive an agent's tool call needs `setsid nohup`.
+- **A Proton game process is a host process with a padded command line.** Pressure-vessel does not hide
+  `DayZDiag_x64.exe`: its `comm` is `enfMain`, `argv[0]` is the `Z:\…` path and its parent is `pv-adverb`. Wine
+  leaves the rewritten argv padded with NULs, which psutil reads as empty arguments (222 after one DayZDiag command
+  line), so a tool that matches a process by its arguments must drop empty ones first (measured 2026-11-05).
 - **A diag client only joins a diag server.** `DayZDiag_x64.exe` on the native `DayZServer` stops at the
   modal `CONNECTING FAILED (0x00020017): Client is using Diag exe while the server is not`, after the client
   has loaded; the log shows no error, only the screen does, and the server never sees a player. Pair them: both
   `DayZDiag` (`-server` under Proton, with `allowFilePatching = 1` in `serverDZ.cfg`), or the retail `DayZ_x64.exe`
-  with the native server (`skills/dayz-test-ingame/references/linux-headless-client.md`). Measured 2026-11-06, 1.30.164289.70: the diag pair joined,
+  with the native server (`skills/dayz-launch-test/references/linux-headless-client.md`). Measured 2026-11-06, 1.30.164289.70: the diag pair joined,
   `Player "Dev" … is connected` in the server RPT and the player in the world, from one prefix with each role
   in its own headless sway (`PROTON_ENABLE_WAYLAND=1`).
 - **An absolute `-mission` on the native server boots without a mission.** `DayZServer` 1.30 with
@@ -203,8 +227,8 @@ repeated with the `v1.0.0` binary. This is a record of the comparison, not a new
 - **Absolute `-mod=` / `-servermod=` paths mount nothing on the native server.** The engine probes the folder,
   loads no PBO from it and prints no error; the server starts and the mod is simply absent. Give mod paths relative
   to the server tree (symlinks or `../` work). This is the reverse of the Windows rule in
-  `skills/dayz-test-ingame/references/windows-launch-cycle.md` ("MOD PATHS MUST BE ABSOLUTE"); evidence: `skills/dayz-test-ingame/references/linux-native-server.md`, section 3.
-  `-config` and `-profiles` take absolute paths; `DayZDiag` under Proton loads an absolute `-mod=Z:\…` (`skills/_shared/knowledge/linux-proton-findings.md`, section 8).
+  `skills/dayz-launch-test/references/windows-launch-cycle.md` ("MOD PATHS MUST BE ABSOLUTE"); evidence: `skills/dayz-launch-test/references/linux-native-server.md`, section 3.
+  `-config` and `-profiles` take absolute paths; `DayZDiag` 1.30.164289 under GE-Proton loads an absolute `-mod=Z:\…` and writes its logs into an absolute `-profiles=Z:\…`, so mods need not be linked into the Steam install for the diag client (measured 2026-11-05).
 - **Which PID is Steam**: `~/.steam/steam.pid`, the file `steam.sh` itself checks. `SteamPID` in
   `~/.steam/registry.vdf` can name a start-up process that is already gone (measured 2026-11-06: `SteamPID`
   20624, no such process, `steam.pid` 20622, the live `ubuntu12_32/steam`).

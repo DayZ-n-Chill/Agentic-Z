@@ -67,7 +67,7 @@ Vanilla water, wash and fill actions no longer use `CCTWaterSurfaceEx` at the wa
 
 [DESIGN] Copy `CCTLiquid` for a custom drink, wash or fill action on sea or pond; keep `CCTWaterSurfaceEx` only when you mean to differ from vanilla. A listed action that never starts is often `CanBeStarted() == false`, not a broken target condition.
 
-`ActionFillBottleBase` carries `[Obsolete("1.30: replaced by class ActionObtainLiquidBase")]` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionfillbottlebase.c:28-29`). For the workflow that means: do not `modded class` an obsolete vanilla action that `ActionConstructor` no longer registers. The domain detail is in `enforce-script-reference` and `dayz-basebuilding`.
+`ActionFillBottleBase` carries `[Obsolete("1.30: replaced by class ActionObtainLiquidBase")]` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionfillbottlebase.c:28-29`). For the workflow that means: do not `modded class` an obsolete vanilla action that `ActionConstructor` no longer registers. The domain detail is in `skills/_shared/enscript/depth/` and `skills/_shared/persistence/base-building-1-30.md`.
 
 ## Central Economy root classes: `MotorbikeScript` and `HouseDestructible`
 
@@ -137,7 +137,7 @@ Since 1.30 there is an in-game editor for underground triggers, on diag builds o
 
 [DESIGN] For level design of underground volumes, use this editor on DayZDiag instead of hand-editing trigger configs blind. It does not exist in retail.
 
-The trigger JSON schema, the 4096-trigger limit, triggers tied to Object Spawner objects, the underground presence sync and terrain holes are in `dayz-underground`.
+The trigger JSON schema, the 4096-trigger limit, triggers tied to Object Spawner objects, the underground presence sync and terrain holes are in the world pack: `skills/_shared/world/underground-triggers.md`, `underground-presence.md` and `terrain-holes.md`.
 
 ## `NVTypes`: environment variants (custom cameras)
 
@@ -174,7 +174,7 @@ enum NVTypes
 
 Not yet checked on `P:\` (the data here predates it): the 1.30.164200 stable file is reported to have two more values in the middle of the list, `NV_OPTICS_UNDERGROUND_DAY` right after `NV_OPTICS_UNDERGROUND` and `NV_OPTICS_UNDERGROUND_SANDSTORM_DAY` right after `NV_OPTICS_UNDERGROUND_SANDSTORM`, so every value after `NV_OPTICS_UNDERGROUND` has a different number than on the earlier 1.30 builds. The two listings agree on the rule: never store or compare an `NVTypes` value as an `int`.
 
-[DESIGN] Custom night-vision cameras: handle the new values, or call vanilla `ResolveNVType` (used at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameraironsights.c:272`) instead of applying the raw type directly. Camera detail is in `enforce-script-reference`.
+[DESIGN] Custom night-vision cameras: handle the new values, or call vanilla `ResolveNVType` (used at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameraironsights.c:272`) instead of applying the raw type directly. Camera detail is in `skills/_shared/enscript/depth/`.
 
 ## Headless and dedicated guards
 
@@ -212,7 +212,7 @@ static bool MyMod_IsHeadlessOrDedicated()
 }
 ```
 
-By their documented meaning (the `game.c` excerpt above) both guards agree on a rendered client and on a dedicated server and differ only on a headless client; that is inferred, not measured. Measured on the public DayZDiag 1.30.164014, client and server: `ROBOCLIENT` and `INPUT_OVERRIDE` are defined, so code under `#ifdef ROBOCLIENT` (vanilla has such blocks, `P:\scripts\3_game\dayzgame.c:972`) compiles for everyone on that exe and every `PlayerBase` carries an idle `m_Bot`. Details: `dayz-mcp-verify`, `references/dayz-1-30-mcp-verify.md`.
+By their documented meaning (the `game.c` excerpt above) both guards agree on a rendered client and on a dedicated server and differ only on a headless client; that is inferred, not measured. Measured on the public DayZDiag 1.30.164014, client and server: `ROBOCLIENT` and `INPUT_OVERRIDE` are defined, so code under `#ifdef ROBOCLIENT` (vanilla has such blocks, `P:\scripts\3_game\dayzgame.c:972`) compiles for everyone on that exe and every `PlayerBase` carries an idle `m_Bot`. Details: `skills/dayz-launch-test/references/dayz-1-30.md`, "Roboclients vs server-side dummy bots".
 
 ## Migration checklist
 

@@ -11,7 +11,7 @@ with or without --rest-pose, so no output of this script is ready for the game.
 --rest-pose is read (the frame 0 rotation of each bone) and the note inside the
 file then says so, but the rotations are not rebased against it. Use the output
 as a position reference for posing, or finish that step first; the rest pose
-procedure is in references/vehicle-rider-ik-pose.md. The notes this script
+procedure is in skills/_shared/animation/rider-pose-solver.md. The notes this script
 writes are free text, and DayZATool refused free text notes as malformed events
 when seanim_export.py wrote them, so expect --generate-anim to refuse these
 files as they are.
@@ -66,7 +66,7 @@ from pathlib import Path
 # -----------------------------------------------------------------------------
 # 21 joints written by this solver. The hand IK helpers (LeftHandIK, etc.) are
 # intentionally NOT written; they are driven by OFP2_ManSkeleton at runtime.
-# Cross-ref references/player-skeleton.md.
+# Cross-ref skills/_shared/animation/player-skeleton.md.
 # -----------------------------------------------------------------------------
 JOINTS = [
     "Pelvis", "Spine", "Spine1", "Spine2", "Spine3", "Neck", "Head",
@@ -248,7 +248,7 @@ def load_rest_pose(path):
         return None
     # Frame 0 local rotation of each bone is the rest reference. Whether a
     # rebase against it is right can only be judged in game
-    # (see references/weapon-anim-authoring-viewer.md).
+    # (see skills/_shared/animation/weapon-anim-viewer.md).
     this_dir = Path(__file__).resolve().parent
     if str(this_dir) not in sys.path:
         sys.path.insert(0, str(this_dir))
@@ -291,7 +291,7 @@ def write_seanim_for_variant(pose, name, output_dir, calibrated):
 
     Status: rotations are identity quaternions until
     positions_to_local_rotations is written (see its docstring and
-    references/vehicle-rider-ik-pose.md). The output is therefore
+    skills/_shared/animation/rider-pose-solver.md). The output is therefore
     POSITIONALLY APPROXIMATE and not ready for the game, with or without a
     rest pose. The notes say so, so nobody later mistakes this output for a
     finished clip. `calibrated` is true when a rest pose was read.
@@ -336,7 +336,7 @@ def write_seanim_for_variant(pose, name, output_dir, calibrated):
         notes = [
             (0, f"{name} :: STUB OUTPUT, no rest pose"),
             (0, "positions to rotations step not written; rotations are identity"),
-            (0, "see references/vehicle-rider-ik-pose.md rest-pose section"),
+            (0, "see skills/_shared/animation/rider-pose-solver.md rest-pose section"),
         ]
 
     seanim_writer.write_seanim(

@@ -1,6 +1,6 @@
 # Reference: recipes, the energy manager and the damage pipeline
 
-Quick facts on three vanilla systems that mods often extend: crafting recipes (`RecipeBase` and `PluginRecipesManager`), `ComponentEnergyManager`, and how damage reaches an entity. Every line cited as `P:\...:N` was opened on `P:\`; anything marked "reported" was measured in game and not re-run here. More depth on the same systems is in `skills/enforce-script-reference/references/vanilla-deep-dive.md`.
+Quick facts on three vanilla systems that mods often extend: crafting recipes (`RecipeBase` and `PluginRecipesManager`), `ComponentEnergyManager`, and how damage reaches an entity. Every line cited as `P:\...:N` was opened on `P:\`; anything marked "reported" was measured in game and not re-run here. More depth on the same systems is in `skills/_shared/enscript/depth/vanilla-deep-dive.md`.
 
 ## Recipes
 
@@ -52,4 +52,4 @@ The events to override are empty methods on `EntityAI`: `OnWorkStart()`, `OnWork
 | Damage in a radius is `DamageSystem.ExplosionDamage(source, directHitObject, ammoType, pos, damageType)`. There is no `ProcessIndirectDamage` in script. | `P:\scripts\3_game\damagesystem.c:25` |
 | `GetProtectionLevel(type, ...)` covers four environmental hazard types only (`DEF_BIOLOGICAL`, `DEF_CHEMICAL`, `DEF_DUST_PARTICLE_BREATH`, `DEF_DUST_PARTICLE_EYES`, `P:\scripts\3_game\constants.c:547-550`). Ballistic protection of clothing is config and engine work with no script call. | `P:\scripts\4_world\entities\itembase.c:4073` |
 
-`DecreaseHealth` changes health directly and skips this pipeline, so no `EEHitBy`, hit animation or bleeding follows it (reported; the call is in `api_player.md`, "Health"). Disease agents are not config classes: there is no `CfgAgents`, and each agent is a script class registered with `RegisterAgent` in `PluginTransmissionAgents` (`P:\scripts\4_world\plugins\pluginbase\plugintransmissionagents.c:22`). The vehicle hit flow line by line is in the `dayz-physics-engine` skill, `references/damage-and-transporthit.md`.
+`DecreaseHealth` changes health directly and skips this pipeline, so no `EEHitBy`, hit animation or bleeding follows it (reported; the call is in `api_player.md`, "Health"). Disease agents are not config classes: there is no `CfgAgents`, and each agent is a script class registered with `RegisterAgent` in `PluginTransmissionAgents` (`P:\scripts\4_world\plugins\pluginbase\plugintransmissionagents.c:22`). The vehicle hit flow line by line is in the physics pack: `skills/_shared/physics/damage-pipeline.md` (`TransportHit`) and `skills/_shared/physics/contact.md` (vehicle contact).

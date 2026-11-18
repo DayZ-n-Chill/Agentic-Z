@@ -25,7 +25,7 @@ Related calls on other classes:
 | `GetSelectionBasePositionLS(string name)` | `Object`, `P:\scripts\3_game\entities\object.c:871` | Where it was modelled, with no animation applied. The difference from the call above is how far the part has moved. |
 | `HideSelection`, `ShowSelection` | `EntityAI` | Shortcuts for a hide source named after the selection; see `items-in-hands.md`, "Showing and hiding parts". |
 
-A phase that reads back as expected does not prove the part moved or that the source exists on that object; list the sources first (`animation-sources.md`, "Checking that a source exists").
+A phase that reads back as expected does not prove the part moved or that the source exists on that object; list the sources first (`animation-sources.md`, "Diagnosing a `user` source").
 
 ## Buildings: the door API, no mod script needed
 
@@ -52,14 +52,14 @@ Use this when a moving part shows a state that clients must see and saves must k
 - Change state on the server. The user action runs `OnExecuteServer` or `OnStartServer`.
 - Clients must end with the same phase. Pattern 1 does that by calling the same method in `OnVariablesSynchronized`.
 - Sounds tied to the move play on clients only (`fence.c:516`, `if (!g_Game.IsHeadlessOrDedicatedServer())`).
-- Two writers of one source, the owning client locally and the server through sync, only coexist when they write the same target. For a part that follows a long action, let the server write the start and the end and the owning client the states between (measured in game on 1.30; method in `skills/dayz-animation-pipeline/references/item-ik-and-hide.md`).
+- Two writers of one source, the owning client locally and the server through sync, only coexist when they write the same target. For a part that follows a long action, let the server write the start and the end and the owning client the states between (measured in game on 1.30; method in `items-in-hands.md`).
 - A steering part is not a script job at all: use the engine's `steeringwheel` source in `model.cfg`. A steering visual set from the client through a `user` source snapped back to 0 in multiplayer (measured in game, not checked on `P:\`).
 
 ## The player's own animation
 
 An action also plays a player animation through `m_CommandUID`, for example `DayZPlayerConstants.CMD_ACTIONMOD_OPENDOORFW` for doors (`actionopendoors.c:7`) and `CMD_ACTIONMOD_INTERACTONCE` for the barrel (`actionopenbarrel.c:5`). Pick an existing command; new player animations are out of scope (see `rtm-and-character-animation.md`).
 
-The command constants are in `DayZPlayerConstants` (`P:\scripts\3_game\dayzplayer.c`): the `CMD_ACTIONMOD_` group plays over the player's movement and the `CMD_ACTIONFB_` group takes the full body. 1.30 added, among others, `CMD_ACTIONMOD_COMBINATIONLOCK` (:766), `CMD_ACTIONFB_BRICKSTACK` (:892), `CMD_ACTIONFB_MIX_MORTAR` (:894) and `CMD_ACTIONFB_SHARPEN` (:896); the full list of additions is in `skills/dayz-animation-pipeline/references/anim-graph.md`.
+The command constants are in `DayZPlayerConstants` (`P:\scripts\3_game\dayzplayer.c`): the `CMD_ACTIONMOD_` group plays over the player's movement and the `CMD_ACTIONFB_` group takes the full body. 1.30 added, among others, `CMD_ACTIONMOD_COMBINATIONLOCK` (:766), `CMD_ACTIONFB_BRICKSTACK` (:892), `CMD_ACTIONFB_MIX_MORTAR` (:894) and `CMD_ACTIONFB_SHARPEN` (:896); the full list of additions is in `anim-graphs.md`.
 
 Since 1.30 script can also switch the player's whole animation instance without an item in the hands, with `SetAnimationInstanceByName` (`P:\scripts\3_game\human.c:1384`); see `items-in-hands.md`.
 
@@ -74,4 +74,4 @@ For a test that has to measure what the game really shows, not what was sent:
 | `GetBonePivotsForAnimationSource(int level, string animationSource, out TIntArray pivots)` | `Object`, `P:\scripts\3_game\entities\object.c:233` | The bones a `model.cfg` animation source moves, so the part's real angle can be read with `GetBoneRotationMS`. Vanilla uses it for the motorbike's sounds (`P:\scripts\4_world\entities\vehicles\motorbikescript.c:292`). |
 | `OverrideRaise(HumanInputControllerOverrideType overrideType, bool value)` | `HumanInputController`, `P:\scripts\3_game\human.c:268` | Holds the weapon raised for a capture. `ENABLED` stays until `DISABLED` is passed (`P:\scripts\3_game\human.c:10`). |
 
-Two results measured in game on 1.30: a raise forced only on the server does not change the pose the owning client renders, so force it on the client; and a dedicated server placed a rider's hand 0.35 m from where the client did while pelvis and head agreed, so measure hand placement on the client. Methods: `skills/dayz-animation-pipeline/references/weapon-in-hands.md` and `skills/dayz-animation-pipeline/references/vehicle-rider-ik-pose.md`.
+Two results measured in game on 1.30: a raise forced only on the server does not change the pose the owning client renders, so force it on the client; and a dedicated server placed a rider's hand 0.35 m from where the client did while pelvis and head agreed, so measure hand placement on the client. Methods: `weapon-in-hands.md` and `rider-pose-solver.md`.

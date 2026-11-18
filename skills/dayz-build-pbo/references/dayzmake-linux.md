@@ -9,7 +9,7 @@ Not checkable on `P:\`: this is Linux tool behaviour, measured on Debian, with P
 comparisons. End to end, a PBO built, signed and verified this way loaded
 on a server with `-mod=@Mod` and `verifySignatures = 2`, and its scripts ran, also on DayZ 1.30 stable (build
 not recorded). Not verified: the v3-against-v2 signature check on a real client. The AutoTest mod
-(`skills/dayz-test-ingame/assets/autotest-mod`) builds, signs and verifies with this flow and dayzmake 1.0.0 in
+(`skills/dayz-launch-test/assets/autotest-mod`) builds, signs and verifies with this flow and dayzmake 1.0.0 in
 `skills/_shared/scripts/test_linux_helpers.py`.
 
 ## Get the right dayzmake
@@ -110,7 +110,7 @@ a PBO that `inspect`/`unpack` refused with `failed to fill whole buffer`; older 
 - `dayzmake verify <Name.bikey> <x.pbo> [sig]` exits 0 for a valid signature.
 - For a PBO with `config.bin`, a `.c` script and an rvmat, dayzmake's v3 `.bisign` was **byte-identical** to
   `DSSignFile.exe`'s, and `DSCheckSignatures.exe -deep` reported it OK (under Proton). For a negative
-  control see `skills/dayz-test-ingame/references/build-and-storage-traps.md`, "A signature negative control that cannot fail".
+  control see `skills/dayz-launch-test/references/build-and-storage-traps.md`, "A signature negative control that cannot fail".
 - Sign after the final build. In v3 signatures, the v3 file hash (`Hash 3`) selects entries by extension (`sqf`, `c`, `inc`, `bikb`, `ext`, `fsm`, `sqm`, `hpp`, `cfg`, `sqs`, `h` in dayzmake v1.0.0 `src/sign.rs:157-177`) and hashes each selected entry's whole stored content, omitting other extensions such as `.paa` or `.p3d`, while `Hash 1` signs the PBO's SHA-1 checksum over headers and all entry bytes (`src/pbo.rs:311-314,548-563`). `dayzmake verify` (`src/sign.rs:202-234,475-521`) checks `Hash 1`, `Hash 2` and `Hash 3`, so a changed header timestamp or modified `.paa` with a recomputed PBO trailer and the old `.bisign` is rejected by `dayzmake verify`; the negative controls where edits to uncovered entries still verified were run with Bohemia's `DSCheckSignatures` (same section of `build-and-storage-traps.md`). Sign every PBO of a mod with one key, so one `.bikey` covers all.
 
 ## Other commands
@@ -124,7 +124,7 @@ dayzmake cat <pbo> <file> [dst]      one file; inner paths use \  ('scripts\5_Mi
 dayzmake img2paa | paa2img | binarize
 ```
 
-Unpacking any PBO you did not build yourself requires dayzmake >= `v2.0.0` (tag `v2.0.0`, commit `f31056ae`; `src/pbo.rs` `safe_relative_path` and `crosses_symlink` validate relative paths and skip unsafe entries). In `v1.0.0` (`src/pbo.rs:724,731-733`) `unpack` joins entry names without containment (`..\x` escapes, an absolute name replaces the base, `--force` overwrites); on < `v2.0.0` inspect all entry names first into a fresh empty directory (`skills/dayz-pbo-reverse-engineering/references/linux.md`).
+Unpacking any PBO you did not build yourself requires dayzmake >= `v2.0.0` (tag `v2.0.0`, commit `f31056ae`; `src/pbo.rs` `safe_relative_path` and `crosses_symlink` validate relative paths and skip unsafe entries). In `v1.0.0` (`src/pbo.rs:724,731-733`) `unpack` joins entry names without containment (`..\x` escapes, an absolute name replaces the base, `--force` overwrites); on < `v2.0.0` inspect all entry names first into a fresh empty directory (`skills/_shared/linux-proton.md`; Linux extraction pitfalls in `skills/dayz-import-mod/references/extraction-pitfalls.md`).
 
 Debug recipes: `dayzmake preprocess src/MyMod/config.cpp | less` shows what the parser sees;
 `dayzmake cat Vanilla.pbo config.bin | dayzmake derapify` shows what an official PBO set; `dayzmake inspect x.pbo` must
@@ -190,7 +190,7 @@ workshop --no-prompt update --content build/@MyMod --ignore-file .workshopignore
 A wrong or missing prefix loads the PBO but compiles none of its scripts (`files[]` resolves against the
 prefix). `-servermod=` PBOs need no key on clients; `-mod=` PBOs do. `build` holds files in memory, so very large asset
 mods need RAM to match. Before uploading, boot the result on a local server and compare script module counts with
-vanilla (`skills/dayz-test-ingame/references/linux-native-server.md`, section 4).
+vanilla (`skills/dayz-launch-test/references/linux-native-server.md`, section 4).
 
 ## What changes on Linux for `/dayz-build-pbo`
 

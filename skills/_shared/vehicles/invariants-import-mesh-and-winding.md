@@ -2,16 +2,16 @@
 
 Checks for a vehicle body that comes from an OBJ, a glTF or a game rip: mesh and UV health, mirror against rotation, winding, the nose direction, cabin alignment and what offline visual gates cannot see.
 
-> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
 
 ## Vanilla anchors checked on `P:\`
 
 - The third person vehicle camera sets `m_fIgnoreParentYaw` to `0.0` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:189`), which is why the seated player's yaw decides what reads as forward.
 - The vanilla control these notes measure against is `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d`. It is a binarized ODOL, which py3d cannot read, so the nose, hub and proxy numbers quoted from it are not checked on `P:\`.
 
-## Mirror or rotation: check all three axes before declaring a model mirrored (added 2026-08-02, LFHeli HH-60G)
+## Mirror or rotation: check all three axes before declaring a model mirrored (added 2026-08-02, TestHeli HH-60G)
 
-**Mirror-vs-rotation invariant (added 2026-08-02, LFHeli HH-60G):** before you declare an
+**Mirror-vs-rotation invariant (added 2026-08-02, TestHeli HH-60G):** before you declare an
 imported model "mirrored" and reach for the `det=-1` import rule, **check all THREE axes**. A table
 of memory points cannot tell a reflection from a rotation on its own — points have no handedness, so
 only the PATTERN of sign flips does:
@@ -81,8 +81,8 @@ this ladder first; each rung is minutes, the full audit is sessions.
 3. **Render the same material on a known-good control.** If a vanilla-derived control looks right
    with the same route, the pipeline is exonerated and the defect is in this asset.
 4. **Only now** audit `.rvmat` stages, `_co/_nohq/_smdi` paths, `.paa` conversion and
-   `hiddenSelections` — see dayz-texture-pipeline, and its
-   `skills/dayz-texture-pipeline/references/vehicle-materials-and-color-variants.md` for the vehicle-specific shader choice
+   `hiddenSelections` — see the texture pack `skills/_shared/textures/`, and its
+   `skills/_shared/textures/vehicle-materials.md` for the vehicle-specific shader choice
    (Super where faces carry a `_co`, NormalMapSpecularMap for constant-colour parts, tiled detail
    for overlapping or un-baked UVs).
 
@@ -90,10 +90,10 @@ this ladder first; each rung is minutes, the full audit is sessions.
 is REFUTED — change branch instead of running a third. An audit that exonerates the pipeline is
 evidence about where the bug is NOT, and repeating it produces no new information.
 
-Evidence for the rule: on LFHeli OH-1, a double audit cleared the entire offline
+Evidence for the rule: on TestHeli OH-1, a double audit cleared the entire offline
 chain (UVs identical across blend/MLOD/ODOL, old PAA identical to new, `rvmat uvSource=tex`, zero
 `hiddenSelections`, no faces inside the watermark box) — the textures were never the problem. On
-SUB_BRZ the documented root cause was the decimated rip's topology, reached after six rounds and
+TestCoupe the documented root cause was the decimated rip's topology, reached after six rounds and
 a pivot to a human artist. In both cases the ladder above would have branched away on rung 1 or 2.
 
 ### Rip-specific rung 0 — a "paint" material in the source has NO diffuse; never substitute a livery sheet (added 2026-07-27)
@@ -113,7 +113,7 @@ numbers and camo stamped across the whole fuselage. The symptom reads as "the UV
 - **Fix direction**: those faces want a **flat colour `_co`** (the host game's paint slot has no DayZ
   equivalent), not the decal sheet and not a re-unwrap. Their UVs were never meant to address a
   texture, so no UV work is involved.
-- **Measured evidence.** LFHeli HH-60G (2026-07-27): `hh60g_sign_1_co.paa` — a 22.4 MB livery sheet —
+- **Measured evidence.** TestHeli HH-60G (2026-07-27): `hh60g_sign_1_co.paa` — a 22.4 MB livery sheet —
   carried **23,716 / 35,385 faces (67%)**, of which **8,695 (24.6% of the model)** were pure fallback
   (7,568 of the body's `[PRIMARY]` material plus all four doors), with
   `vehicle_generic_smallspecmap3.dds` confirmed **0 bytes** on disk. The user's independent report was
@@ -138,7 +138,7 @@ legible by a human, checker render with SMOOTH shading (flat shading + grid rast
 ## Invariant 0b: when LOD1 and LOD2 come from a decimate modifier, audit its output
 
 **Gate #0b — when LOD1/2 come from DECIMATE instead of an artist, audit the modifier's OUTPUT
-(added 2026-08-06, MercedesAMGLF).** No artist is now the normal case, so per-object COLLAPSE +
+(added 2026-08-06, TestMercedes).** No artist is now the normal case, so per-object COLLAPSE +
 planar DISSOLVE is the default LOD path. The modifier leaves **loose vertices** — vertices no
 triangle indexes. Every count-based gate stays green (triangles, resolved, identity, monotonicity,
 frame parity), and the streams ship broken: a per-vertex extract loop driven by `mesh.loops` never
@@ -194,7 +194,7 @@ is the gate. → #10(j).
 
 **Vanilla forward convention is nose = −Z (ENGINE-NATIVE), and the "visual side" of an imported car
 is NOT one homogeneous block — measure EVERY body proxy separately before any bulk rotation
-(MercedesAMGLF, 2026-07-03; convention verified offline on native data, the yaw-180 fix's
+(TestMercedes, 2026-07-03; convention verified offline on native data, the yaw-180 fix's
 in-game gate pending).**
 - Convention measured on the raw vanilla ODOL (NOT a debinarized MLOD, so no converter-flip doubt):
   sedan `light_1_1` Z=−2.387, `dmgzone_front` −2.355, front axle −1.655, exhaust at +Z (tail).
@@ -207,7 +207,6 @@ in-game gate pending).**
 - Symptom map: shell visual yaw-180 vs sim ⇒ 1st gear reads as "drives backwards" AND wheel
   proxies sit mirrored (−X,−Z) off their hubs, BOTH at once. Diagnose by comparing
   `dmgZone_front`/hubs (sim) vs headlights/wheel-proxies (visual) against nose=−Z.
-> History of the superseded text: `history/superseded-family-b-rules.md`, section "Invariant 11".
 
 - **CORRECTION to THE TRAP (added 2026-08-01, adjudicated from the applied fix's dated backups +
   in-game outcome — supersedes the "interior/dash/steering/occlusion correctly sim-aligned" claim
@@ -243,23 +242,23 @@ in-game gate pending).**
 
 ## Invariant 12: white car (moved)
 
-For family B this item now lives in the rip-vehicle-import skill, in its family B cookbook `cookbook-white-car.md`.
+This item now lives in `symptom-white-vehicle.md`.
 
 ## Invariant 14: steering wheel against hands
 
 **Steering wheel vs hands: measure rim-center delta AND plane tilt vs the control BEFORE moving
 anything — the seat anim is the control's, so hands land on ITS wheel plane.** (added 2026-07-07,
-measured on SUB_BRZ) SUB_BRZ: rim-center delta vs crew anchor already in parity (1-1.6 cm) but rim
+measured on TestCoupe) TestCoupe: rim-center delta vs crew anchor already in parity (1-1.6 cm) but rim
 tilt 15.8° vs sedan 31.0°, so Δ = 15.2°. The rim's top and bottom edges sit ±r·sin(Δ) = ±4.2 cm
 off the control's plane at r=0.159; a hand gripping at half the radius above or below the rim center
 sits ±(r/2)·sin(Δ) = ±2.1 cm off, which matches the user's "top hand 2 cm behind, bottom hand 2 cm
 in front". Fix = rotate the wheel PIECE about its own rim center to the
 control's tilt and re-author `drivewheel`/`drivewheel_axis` memory points parallel to the new rim
-normal (SUB_BRZ's axis was 38° off its own rim; the sedan's is exactly parallel — a misaligned axis
+normal (TestCoupe's axis was 38° off its own rim; the sedan's is exactly parallel — a misaligned axis
 also wobbles the steering wheel animation). Do NOT recline the crew proxy when the positional delta is in
 parity. To measure, fit the rim by outer-radial PCA; on a debinarized model, recover selections whose
 point membership is lost through their faces.
-Same open symptom on MercedesAMGLF.
+Same open symptom on TestMercedes.
 
 ## Invariant 29: a rig threshold on a measured axis needs its source declared for both members of a pair
 

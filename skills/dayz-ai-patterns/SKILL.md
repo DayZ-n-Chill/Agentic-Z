@@ -46,7 +46,7 @@ File names are relative to the Expansion scripts repository; the full paths are 
 | P11 | Group targets: distribution by who already tracks a target | `eAIGroup.c:726`, `eAIBase.c:3497-3505` |
 | P12 | Formation positions cached per unit, refreshed every 2 to 4 s | `eAIGroup.c:822-830` |
 
-P5, P7 and P8 are the Expansion AI instances of general server scheduling rules (a budget per frame, an interval that adapts to load, staggering by index). The general rules for our own code are in `skills/_shared/ai/spawning-and-performance.md` ("Server performance") and `skills/_shared/enscript/patterns/scheduler.md`. The longer write-up is `skills/enforce-script-reference/references/server-performance.md`, which also covers `#ifdef SERVER` against `IsServer()` checks and the `ScriptInvoker` lifecycle (rules 17 to 20 and 28 in `skills/enforce-script-reference/references/hard-rules.md`).
+P5, P7 and P8 are the Expansion AI instances of general server scheduling rules (a budget per frame, an interval that adapts to load, staggering by index). The general rules for our own code are in `skills/_shared/ai/spawning-and-performance.md` ("Server performance") and `skills/_shared/enscript/patterns/scheduler.md`. The longer write-up is `skills/_shared/enscript/depth/server-performance.md`, which also covers `#ifdef SERVER` against `IsServer()` checks and the `ScriptInvoker` lifecycle (rules 17 to 20 and 28 in `skills/_shared/enscript/depth/hard-rules.md`).
 
 ### State machine
 

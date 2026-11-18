@@ -79,7 +79,7 @@ The penetration materials are vanilla files under `P:\DZ\data\data\penetration\`
 
 ## View Geometry
 
-What the action cursor and view checks hit. Without it the player gets no action prompt on the object (`p3d-killers.md` section 4). A building door is found from its View Geometry component (`P:\scripts\3_game\entities\building.c:27` to `:28`), so each door needs its own convex component plus a named selection named after the door here; see `doors.md`.
+What the action cursor and view checks hit. Without it the player gets no action prompt on the object (`p3d-killers.md` section 4). A building door is found from its View Geometry component (`P:\scripts\3_game\entities\building.c:27` to `:28`), so each door needs its own convex component plus a named selection named after the door here; see `_shared/animation/doors.md`.
 
 Two more things read this LOD:
 

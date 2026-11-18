@@ -36,7 +36,7 @@ Action ActionMyMod_DrinkContaminate dosn't exist!
 Two more registration facts, checked on `P:\`:
 
 - To change what an existing action does, write a `modded class` of that action. A new class that `extends` it changes nothing, because the game still creates the vanilla class that `RegisterActions` inserted.
-- Since 1.30 the bottle fill action that is registered is `ActionObtainLiquidBase` (`P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:156`). `ActionFillBottleBase` is marked `[Obsolete]` and is no longer inserted, so `AddAction(ActionFillBottleBase)` from a 1.29 mod adds nothing. The other 1.30 action changes are in `skills/enforce-script-reference/references/dayz-1-30-enforce-script.md`.
+- Since 1.30 the bottle fill action that is registered is `ActionObtainLiquidBase` (`P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:156`). `ActionFillBottleBase` is marked `[Obsolete]` and is no longer inserted, so `AddAction(ActionFillBottleBase)` from a 1.29 mod adds nothing. The other 1.30 action changes are in `skills/_shared/enscript/depth/dayz-1-30-enforce-script.md`.
 
 To test from outside whether an action is available, call the public `Can(PlayerBase player, ActionTarget target, ItemBase item)` (`P:\scripts\4_world\classes\useractionscomponent\actionbase.c:968`). `ActionCondition` is `protected`, and calling it from another class stops the module compiling.
 

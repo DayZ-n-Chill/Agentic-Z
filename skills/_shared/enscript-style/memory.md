@@ -30,7 +30,7 @@ class MyClass : Managed
 
 **Note:** Entities (`Object`, `EntityAI`, `ItemBase`, `PlayerBase`) are owned by the engine. Give your own helper and data classes `Managed` (or a vanilla class that has it) as the root; see `../enscript/references/language_memory.md`, "The two roots".
 
-**Measured, not checked on `P:\`** (dedicated server, DayZ 1.30.164289, a class declared in the mission module): `ref` also keeps a plain class with no `Managed` ancestor alive, so inheriting `Managed` is not what makes `ref` work, and a member field without `ref` is weak for both kinds of class. `Managed` as the root stays the style rule here, because vanilla's own script-owned classes use it (`Param`, `TimerBase`, `Serializer`; cited in `language_memory.md`). The probe and its other results are in `skills/enforce-script-reference/references/memory-management.md`.
+**Measured, not checked on `P:\`** (dedicated server, DayZ 1.30.164289, a class declared in the mission module): `ref` also keeps a plain class with no `Managed` ancestor alive, so inheriting `Managed` is not what makes `ref` work, and a member field without `ref` is weak for both kinds of class. `Managed` as the root stays the style rule here, because vanilla's own script-owned classes use it (`Param`, `TimerBase`, `Serializer`; cited in `language_memory.md`). The probe and its other results are in `skills/_shared/enscript/depth/memory-management.md`.
 
 ### Freeing objects
 
@@ -119,7 +119,7 @@ typedef array<ref MyData> MyDataRefArray;
 // WRONG: ref on a parameter fails to compile on DayZDiag
 // ("Method argument can't be strong reference", then "Can't compile "World"
 // script module!"); retail lets it pass. ref on the return type is style only.
-// Both messages: skills/enforce-script-reference/references/review-and-troubleshooting.md
+// Both messages: skills/_shared/enscript/depth/review-and-troubleshooting.md
 ref MyClass MyMethod(ref MyClass1 a, ref MyClass2 b)
 {
 	// ...
@@ -267,7 +267,7 @@ ref array<EntityAI> GetItems()
 
 - **Freed too early**: a member made with `new` and no `ref` is freed at once, so later uses find `null` (`../enscript/references/language_memory.md`, rule 1, engine behaviour)
 - **Leaks**: two objects holding `ref`s to each other are never freed (`../enscript/references/language_memory.md`, rule 3, engine behaviour)
-- **Failed compile on DayZDiag**: `ref` on a method parameter stops the build with `Method argument can't be strong reference`, then `Can't compile "World" script module!`; the retail compiler lets it pass (`../enscript/references/language_compile.md`, compile traps table, has the first message; `skills/enforce-script-reference/references/review-and-troubleshooting.md` has both)
+- **Failed compile on DayZDiag**: `ref` on a method parameter stops the build with `Method argument can't be strong reference`, then `Can't compile "World" script module!`; the retail compiler lets it pass (`../enscript/references/language_compile.md`, compile traps table, has the first message; `skills/_shared/enscript/depth/review-and-troubleshooting.md` has both)
 - **Unverified**: crashes or effects on other mods. No vanilla source on `P:\scripts\` shows that a `ref` mistake causes either.
 
 `ref` on return types and locals is a style point only (Quick Reference Rules, rule 2); it is not on this list.

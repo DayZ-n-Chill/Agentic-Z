@@ -2,7 +2,7 @@
 
 Where wheel hubs live in the model, how wheel proxies line up with them, hub height against tyre radius, wheel facing, and the axle classes the engine counts.
 
-> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -16,11 +16,11 @@ Where wheel hubs live in the model, how wheel proxies line up with them, hub hei
 **A bit-exact import and correctly-fitting pieces are different properties.** When a model is
 assembled by script, each piece is placed at a **procedurally computed anchor** (centroid, bbox
 centre, a reference point). If that anchor diverges from the real reference, the pieces sit wrong
-while every import check passes. Seen on three vehicles (MercedesAMGLF, SUB_BRZ, LFHeli):
+while every import check passes. Seen on three vehicles (TestMercedes, TestCoupe, TestHeli):
 
-- MercedesAMGLF: the 28 wheel proxies sat **-0.240 m in X** from their Memory hubs. Fix: measure
+- TestMercedes: the 28 wheel proxies sat **-0.240 m in X** from their Memory hubs. Fix: measure
   the offset with py3d and shift only those triangles (max error 0.0 m afterwards).
-- LFHeli OH-1: import fidelity 12/12 at max 3.2e-7 m, and the `SEATS` procedural anchor still
+- TestHeli OH-1: import fidelity 12/12 at max 3.2e-7 m, and the `SEATS` procedural anchor still
   diverged **583 mm** from the source mesh.
 
 **Gate before declaring an assembly good**: for every proxy, measure its anchor against the real
@@ -34,14 +34,14 @@ false fix: it displaces everything else that was already correct. Correct the in
 **False friend — `autocenter=0` is not this bug.** It is a real and separate requirement (the
 engine recenters LODs by bbox without it, displacing collision ~20-25 cm from visual; see
 dayz-model-pipeline and `dayz-p3d-audit`), but it does not cause or cure anchor divergence.
-MercedesAMGLF spent a full RCA on that hypothesis and closed it as unproven: adding `autocenter=0`
+TestMercedes spent a full RCA on that hypothesis and closed it as unproven: adding `autocenter=0`
 to all 18 proxy LODs changed nothing geometric, and the protrusions and see-through were already
 present in the earlier baseline. Do not re-run that investigation.
 
 ## Invariant 5b: wheelHub names a Geometry and Memory selection, not the visual wheel
 
 **`wheelHub` names a GEOMETRY/MEMORY selection, not the visual `wheel_X_Y` — and the visual
-`wheel_X_Y` IS the proxy's own triangle under a second name (added 2026-08-07, MercedesAMGLF).**
+`wheel_X_Y` IS the proxy's own triangle under a second name (added 2026-08-07, TestMercedes).**
 `class Wheels { class Left { wheelHub="wheel_1_1_damper_land"; } }` resolves to a selection that
 lives in Geometry `1e13` (a ~0.20 m hub box) and Memory `1e15` (1 point) — vanilla
 `DZ\vehicles\wheeled\config.cpp:297`. It is NOT the `wheel_X_Y` selection on the visual LOD.
@@ -56,7 +56,7 @@ as 1 face too). Consequences, each of which cost a session:
 - **Proxy triangle size bakes NO scale.** The frame is derived from UNIT vectors
   (`derive_proxy_frame` in `scripts/tools/py3d/py3d/__init__.py`), and vanilla's binarised proxy
   matrix is orthonormal (`|aside|=|up|=|dir|=1.000000` on `civiliansedan.p3d`, ODOL v54 when measured; the copy on `P:\` carries version 56 in its header). A 1 mm
-  canonical triangle and a 0.34 m one place the same wheel; SUB_BRZ shipped on `scale=0.001`.
+  canonical triangle and a 0.34 m one place the same wheel; TestCoupe shipped on `scale=0.001`.
   Do not "fix" a small triangle.
 - **Vanilla reference, if you need one:** `civiliansedan` puts the hub **0.106334-0.107333 m
   INBOARD** of the wheel proxy, the whole delta in X. Hub coincident with the proxy (0 m) is
@@ -91,8 +91,8 @@ reversed spin without an in-game cycle. → `build-packaging-and-debug.md` §2-3
 ## Invariant 15: hub level uses the radius of the wheel you mount
 
 **Hub level must use the radius of the wheel you actually MOUNT, not the rip's rim.**
-Hypothesis with numbers, not yet confirmed in game. (added 2026-07-07, SUB_BRZ)
-SUB_BRZ profile `WHEEL_R=0.3637` (source-game rim) while the mounted wheel is `CivSedanWheel` radius 0.34
+Hypothesis with numbers, not yet confirmed in game. (added 2026-07-07, TestCoupe)
+TestCoupe profile `WHEEL_R=0.3637` (source-game rim) while the mounted wheel is `CivSedanWheel` radius 0.34
 (`P:\DZ\vehicles\wheeled\config.cpp:4762-4778`) → 2.4 cm hub-vs-radius mismatch, same order as the
 observed damper rest −4.3/−5.6 cm ("wheels slightly up"). Day-1 check: `WHEEL_R == mounted-wheel
 radius` or document why not.
@@ -131,7 +131,7 @@ the measured x-axle wheel, correct a reversed side with the 180° Y rotation
 known-good mounted wheel, never on the candidate, then repeat the measurement on
 the wheel blob extracted from the deployed PBO.
 
-## A componentNN-tagged hub is useless in the wrong LOD (added 2026-08-29, LFQuad2, an Arma 2 OA ATV port)
+## A componentNN-tagged hub is useless in the wrong LOD (added 2026-08-29, TestQuad2, an Arma 2 OA ATV port)
 
 Invariant 4 (`invariants-get-in-and-seats.md`) requires seats and hubs to carry the dual-tag `componentNN`. It states
 WHAT tag, not WHERE. The other half --that selection must live in **Geometry** LOD-- is
@@ -148,10 +148,10 @@ Consequence: `CreateObjectEx` returns **null**. Vehicle **fails to spawn**; it i
 
 | model | `*_damper_land` in Geometry | LandContact LOD |
 |---|---|---|
-| LFQuad (working reference) | 4, with faces and dual-tag `componentNN` | **does not exist** |
+| TestQuad (working reference) | 4, with faces and dual-tag `componentNN` | **does not exist** |
 | `civiliansedan_mlod.p3d` (vanilla) | 4 | **does not exist** |
 | a second working quad bike mod | 4 | **does not exist** |
-| LFQuad2 (port, failed to spawn) | **0** | exists, and there all 4 were, with 1 point and 0 faces |
+| TestQuad2 (port, failed to spawn) | **0** | exists, and there all 4 were, with 1 point and 0 faces |
 
 **The port trap:** an Arma 2 MLOD has a LandContact LOD, and a port leaves the contact
 points there because the names match. DayZ does not read the hub from that LOD: `wheelHub` in
@@ -162,15 +162,14 @@ points there because the names match. DayZ does not read the hub from that LOD: 
 the Geometry LOD, with faces, and carry both tags. Take the list of hubs from the model's own
 config, which names them, not from a hand-written list.
 
-A process warning, and the costly half of this entry: the signature of this error is also
-written in `history/superseded-family-b-rules.md` (its Invariant 23 block), but that history file
-carries no authority, so nobody reads it as a rule. When you archive a rule, check that the part
-still in force keeps BOTH questions: what, and where.
+A process warning, and the costly half of this entry: the signature of this error was once
+written only in an archived rule, which carried no authority, so nobody read it as a rule. When
+you archive a rule, check that the part still in force keeps BOTH questions: what, and where.
 
 **Confirmed in game the same day.** After the four selections were moved to the Geometry LOD
 (names put on geometry that ALREADY existed, without adding a single face), the vehicle **spawns**:
 
-    [LFQ2-TEST] LFQuad2 type=LFQuad2 pos=<13282.5, 7.27, 6883.2> wheels=4 fuel=1
+    [TestQ2-TEST] TestQuad2 type=TestQuad2 pos=<13282.5, 7.27, 6883.2> wheels=4 fuel=1
 
 `CreateObjectEx` returns the object instead of null, with all four wheels attached. So the missing
 Geometry selections were not only a necessary fix: they were **sufficient** for the engine to

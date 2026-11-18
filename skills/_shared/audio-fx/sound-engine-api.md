@@ -93,8 +93,10 @@ A case measured in game on DayZ 1.30 experimental (not checked on `P:\`) shows w
 | Line | Method | Note |
 |---|---|---|
 | 173 | `Play()` | Starts the wave. |
+| 175 | `PlayWithOffset(float offset)` | A script method: `Play()`, then `SetStartOffset(offset)`. |
 | 181 | `Stop()` | Stops it. |
 | 182 | `Restart()` | Starts again from the beginning. |
+| 183 | `SetStartOffset(float offset)` | Where in the sample playback starts. |
 | 185 | `GetLength()` | Length of the sound. The vanilla comment warns that it blocks until the header has loaded. |
 | 187 | `GetCurrPosition()` | Current position as a fraction of the length. |
 | 188 | `Loop(bool setLoop)` | Turns looping on or off. |
@@ -102,9 +104,11 @@ A case measured in game on DayZ 1.30 experimental (not checked on `P:\`) shows w
 | 191 | `SetVolumeRelative(float value)` | Volume relative to the config volume. |
 | 192 | `SetFrequency(float value)` | Pitch. See the note below. |
 | 193 | `GetFrequency()` | Current pitch value. |
+| 194 | `SetPosition(vector position, vector velocity = "0 0 0")` | Moves the playing wave; the velocity feeds the doppler shift. |
 | 195 | `SetFadeInFactor(float volume)` | Fade in factor. |
 | 196 | `SetFadeOutFactor(float volume)` | Fade out factor. The music player calls it on a 0.2 second tick to fade a track (`P:\scripts\3_game\systems\dynamicmusicplayer\dynamicmusicplayer.c:579`). |
 | 197 | `SetDoppler(bool setDoppler)` | Doppler shift on or off. |
+| 198 | `Skip(float timeSec)` | Jumps forward by that many seconds. |
 | 199 | `IsHeaderLoaded()` | True once the header is in. Ask before `GetLength()`. |
 | 201 | `GetEvents()` | The wave's `AbstractWaveEvents`. |
 
@@ -136,6 +140,6 @@ The controller names, from the vanilla comment at line 34: `rain`, `night`, `mea
 
 ## Legacy: CreateSoundOnObject and SoundOnVehicle
 
-`CreateSoundOnObject(Object source, string sound_name, float distance, bool looped, bool create_local = false)` on the game returns a `SoundOnVehicle` (`P:\scripts\3_game\global\game.c:692`). That is an entity class with one method, `GetSoundLength()` (`P:\scripts\3_game\entities\soundonvehicle.c:1`), not an `EffectSound`. `Object.PlaySound` and `Object.PlaySoundLoop` are thin wrappers around it (`P:\scripts\3_game\entities\object.c:1235`).
+`CreateSoundOnObject(Object source, string sound_name, float distance, bool looped, bool create_local = false)` on the game returns a `SoundOnVehicle` (`P:\scripts\3_game\global\game.c:692`). That is an entity class with one method, `GetSoundLength()` (`P:\scripts\3_game\entities\soundonvehicle.c:1`), not an `EffectSound`. `Object.PlaySound` and `Object.PlaySoundLoop` are thin wrappers around it (`P:\scripts\3_game\entities\object.c:1235`). Its partner `CreateSoundWaveOnObject(Object source, SoundObject soundObject, AbstractWave soundWave)` returns a `SoundWaveOnVehicle` (`P:\scripts\3_game\global\game.c:693`).
 
 It is still in the API, and some third-party mods use it for building sounds (for example `building.PlaySound` and `building.PlaySoundLoop` in a door unlock action; those are the `Object` methods above, not methods of the building class). For new work prefer the sound set helpers in `sound-script.md`, which return an `EffectSound` you can stop, fade and free.

@@ -287,8 +287,8 @@ assembled from the tools under `scripts/tools/` and keybind-toggled test harness
    game does, section 1.1). Open the `*.preview.html` and diff the 1080p view against the design mockup for
    gross layout. *(corrected 2026-10-03: this step said the «resolution switcher exposes exact-flag
    breakage» and had you «flip through resolutions».)*
-5. Build with `/dayz-build-pbo` and run with `/dayz-launch-test` (DayZDiag, no signing; the `dayz-test-ingame`
-   skill covers the in-game checks) with a keybind-toggled test menu (LF_ColorTest / LFPG_UITest pattern). Optionally add a DbgUI slider panel for live tuning.
+5. Build with `/dayz-build-pbo` and run with `/dayz-launch-test` (DayZDiag, no signing; `skills/dayz-launch-test/references/README.md`
+   covers the in-game checks) with a keybind-toggled test menu (LF_ColorTest / LFPG_UITest pattern). Optionally add a DbgUI slider panel for live tuning.
 6. Post-session: grep RPT for `Cannot open layout` + harness PASS/FAIL; screenshot at target
    resolution; diff vs the calibrated mockup (section 6.3).
 
@@ -297,7 +297,7 @@ assembled from the tools under `scripts/tools/` and keybind-toggled test harness
 ## 5. The UI plan/spec artifact (write this before any `.layout`)
 
 Produce this small artifact first; it is the forward contract for
-the UI (it mirrors the `dayz-feature-spec` skill).
+the UI (it mirrors `skills/dayz-scope-mod/references/feature-spec.md`).
 
 **5.1 Widget-tree spec table** — one row per widget the plan requires:
 

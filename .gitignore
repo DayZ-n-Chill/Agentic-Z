@@ -48,14 +48,9 @@ docs/superpowers/
 # Claude Code worktrees: full copies of the repo, one per isolated agent session
 .claude/worktrees/
 
-# packctl and skill scripts: per-machine roots and files written at run time
-scripts/dev/knowledge-pack/sources/local-roots.json
-scripts/dev/knowledge-pack/promotions/local-targets.json
-scripts/dev/knowledge-pack/promotions/plans/
-scripts/dev/knowledge-pack/promotions/journals/
-scripts/dev/knowledge-pack/promotions/backups/
-scripts/dev/knowledge-pack/examples/end-to-end/work/
+# Tools and skill scripts: per-machine roots and files written at run time
+scripts/tools/dayz-ui-lab/corpora/local-roots.json
 skills/*/scripts/agent_calls.jsonl
 
-# Package metadata that `pip install -e scripts/tools/<name>` (or scripts/dev/knowledge-pack) writes next to the source
+# Package metadata that `pip install -e scripts/tools/<name>` writes next to the source
 *.egg-info/

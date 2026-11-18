@@ -8,13 +8,13 @@ Open only the file the current step needs.
 |---|---|
 | Parent classes, addon, vanilla bikes, mandatory overrides, differences from a car | this file |
 | The ten rules that break a motorbike when ignored, measured tuning lessons, what is unfinished in 1.30 | `motorbike-invariants.md` |
-| Literal `config.cpp` blocks and the Motorbike_01 against Motorbike_02 parameter table | `skills/dayz-motorbikes/references/config-contract.md` |
-| Native `Motorbike` API, callbacks, `MotorbikeScript` lifecycle | `skills/dayz-motorbikes/references/script-api.md` |
-| Start, stop, pick-up and repair actions, HUD, lights, horn, particles, sound classes | `skills/dayz-motorbikes/references/actions-hud-lights-sounds.md` |
-| Rider pose, animation graph, third-person camera, custom poses | `skills/dayz-motorbikes/references/rider-animation.md` |
-| Full checklist for a new motorbike, what to measure in the model | `skills/dayz-motorbikes/references/forward-contract.md` |
-| What the vanilla models contain (bones, animations, memory points) | `skills/dayz-motorbikes/references/vanilla-p3d-anatomy.md` |
-| Porting a 1.29 car mod to the 1.30 vehicle scripts | `skills/dayz-motorbikes/references/vehicle-1.30-refactor.md` |
+| Literal `config.cpp` blocks and the Motorbike_01 against Motorbike_02 parameter table | `motorbike-config-contract.md` |
+| Native `Motorbike` API, callbacks, `MotorbikeScript` lifecycle | `motorbike-script-api.md` |
+| Start, stop, pick-up and repair actions, HUD, lights, horn, particles, sound classes | `motorbike-actions-hud-lights-sounds.md` |
+| Rider pose, animation graph, third-person camera, custom poses | `motorbike-rider-animation.md` |
+| Full checklist for a new motorbike, what to measure in the model | `motorbike-forward-contract.md` |
+| What the vanilla models contain (bones, animations, memory points) | `motorbike-vanilla-p3d-anatomy.md` |
+| Porting a 1.29 car mod to the 1.30 vehicle scripts | `dayz-1-30-vehicles.md` |
 
 ## The class tree
 
@@ -97,7 +97,23 @@ The constructor sets what the base leaves empty (`motorbike_01.c:3-26`): the con
 | `speedGeomActivation`, `speedGeoms[]` | `config.cpp:258-262` | Hides the kickstand collision component `geotohide` at speed. |
 | Wheel classes and proxies | `config.cpp:154-219`, `config.cpp:2316-2350` | One class per wheel on `MotorbikeWheel`, a `_Ruined` child each, and a `ProxyVehiclePart` class per wheel model. |
 
-The literal blocks are in `skills/dayz-motorbikes/references/config-contract.md`.
+The literal blocks are in `motorbike-config-contract.md`.
+
+## Testing a motorbike
+
+1. Offline: run `/dayz-lint` on the mod, then the script validator on the addon folder (`python scripts\tools\dayz-script-validator\scripts\script_validator.py <addon_root>`). It prints JSON with `errors` and `warnings` and exits 0 (pass), 1 (fail) or 2 (warnings only), so gate on no `errors`; compare with the unchanged base tree to isolate what the mod added.
+2. In game (`/dayz-launch-test`, server started with `-filePatching`), in this order:
+   - Spawn: the bike stands on its kickstand without endless oscillation and does not sink.
+   - Render: wheels show their proxies, materials respond, no panel is grey or invisible from a wrong selection name.
+   - Get in from the left, then the right: `ActionGetInTransport` plays `GetIn_L` and `GetIn_R`.
+   - Start and ride: `ActionStartEngineMotorbike` plays the kickstart sound and the headlight turns with the handlebars (`drivewheel`).
+   - Telemetry: rpm, speed and gear respond as the `SimulationModule` says.
+   - Fall and recover: a side hit or sharp turn tips the bike, the rider is thrown off (`CrewShouldEject`) and `ActionPickUpMotorbike` stands it up.
+3. A spawn with no simulation: look for an `Axles` block where `Wheels` should be (the exact failure is not measured).
+
+Limits of the DayZ-MCP bridge on motorbikes (third-party tool behaviour, as of 2026-10-28, not re-measured): its addon does not know `Motorbike`. Control and telemetry cast to `CarScript`, so `engine_set`, `vehicle_control` and the engine part of `vehicle_telemetry` do not see a bike (it inherits `Transport`, not `CarScript`), `ResolveOwnedCar` answers `not_seated`, and no verb reads player bones. Without the bridge, a diagnostic addon with the scenario in a `modded MissionServer` behind a command-line parameter, log markers in `script_*.log` and a Python driver that waits for them works; seating the player from the server gives a crew member without `HumanCommandVehicle` on the client, which is fine for measuring the pose on the server but not for testing actions or the HUD.
+
+What could not be checked: the vanilla bikes' source `model.cfg` is not shipped, and `/dayz-p3d-audit` reads only MLOD models; the anatomy in `motorbike-vanilla-p3d-anatomy.md` comes from an ODOL 56 reader that is not in this repo. The gyroscopic solver, stability logic and balance model are native and not reachable from script, so curve units and the effect of `tipoverAngle` are unverified.
 
 ## Where vanilla keeps motorbike data
 

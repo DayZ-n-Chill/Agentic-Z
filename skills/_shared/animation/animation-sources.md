@@ -46,9 +46,16 @@ A car declares its doors, seats and suspension as `user` sources. `CarScript` al
 
 The sources for steering (`steeringwheel`), wheel spin (`wheelfrontleft` and its siblings), steered hubs (`turnfrontleft`, `turnfrontright`) and gauges (`speed`, `rpm`, `fuel`, `coolant`) are used by the hatchback's model (`P:\DZ\vehicles\wheeled\offroadhatchback\offroadhatchback.p3d`) and are not declared in `AnimationSources`. The engine supplies them. Steering and gauges are named only in `model.cfg`. The wheel and hub sources are also named by the `SimulationModule` wheel classes, the same way as `animDamper`: `animTurn="turnfrontleft"` and `animRotation="wheelfrontleft"` (`P:\DZ\vehicles\wheeled\config.cpp:294` to `:295`), or `animTurn="turnfront"` and `animRotation="wheelfront"` on a single track vehicle (`P:\DZ\vehicles\singletrack\config.cpp:78` to `:79`). A mod vehicle inherits these keys or writes its own, and uses the same names in `model.cfg`. Older Bohemia documentation lists many more engine sources (aircraft, turrets, clocks); before using one, find it in a shipped DayZ model.
 
-## Checking that a source exists
+## Diagnosing a `user` source: a read phase does not prove movement
 
-A phase read with `GetAnimationPhase` does not prove the object has that source. List the object's `user` sources with `GetNumUserAnimationSourceNames()` and `GetUserAnimationSourceName(int index)` (`P:\scripts\3_game\entities\entity.c:17`, `:19`) before blaming the phase, and keep the probe read only: setting a phase to test for a source changes live state.
+`GetAnimationPhase(src) == 1.0` before the first `SetAnimationPhase(src, 1)` does not prove the part is at phase 1. A source that is not registered on that object can read the same way. Before blaming the phase:
+
+1. List the sources with `GetNumUserAnimationSourceNames()` and `GetUserAnimationSourceName(int index)` (`P:\scripts\3_game\entities\entity.c:17`, `:19`) and confirm `src` is among them.
+2. Compare on the same model with a source that does move something, for example a rotor proxy. A selection made of the model's own faces on a bone can fail to move where a proxy on that bone does; for doors, consider making the door a proxied sub-model.
+
+Keep the probe read only. Do not call `SetAnimationPhase(door, 0)` to see whether a source exists: it changes live state. If the door was open, a cached open state in the mod's own script may not restore it, leaving it shown closed while the logic says open until the next toggle. Test writing through the real open and close action with logging added.
+
+The second point and the cache trap were seen in game on one vehicle mod; they are not checked on `P:\`.
 
 ## Buildings: `class Doors`
 

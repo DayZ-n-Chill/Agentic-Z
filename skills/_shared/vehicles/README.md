@@ -2,7 +2,7 @@
 
 Reference for building cars, boats and helicopters: the class tree, simulation config, attachment slots, crew seats, fluids and damage. Every fact cites the vanilla file on `P:\` it came from. Line numbers match the vanilla data at the time of writing; when a line has moved, Grep for the class or key name.
 
-The pack also covers motorbikes and aircraft built on `CarScript`, and it holds field notes measured on real vehicle builds (imports, rips, gauges, lights, build and test gates). Each field-note file opens with a status note that says what was opened on `P:\` and what was measured in game on a mod test vehicle, which is mod behaviour and not vanilla. The numbered invariants those notes cite ("invariant N", "preflight #N") are indexed in `skills/dayz-vehicles/SKILL.md`.
+The pack also covers motorbikes and aircraft built on `CarScript`, and it holds field notes measured on real vehicle builds (imports, rips, gauges, lights, build and test gates). Each field-note file opens with a status note that says what was opened on `P:\` and what was measured in game on a mod test vehicle, which is mod behaviour and not vanilla. The numbered invariants those notes cite ("invariant N", "preflight #N") are indexed in `README.md`.
 
 Open only the file the current step needs.
 
@@ -20,7 +20,93 @@ Open only the file the current step needs.
 | Motorbikes: the three-layer class tree, the addon, differences from a car, script overrides, config blocks | `motorbikes.md` |
 | The ten rules that break a motorbike, measured tuning lessons, what is unfinished in 1.30 | `motorbike-invariants.md` |
 
-The deeper aircraft and motorbike references are skill packs: `skills/dayz-aviation/SKILL.md` and `skills/dayz-motorbikes/SKILL.md` index them. A ripped racing-game car has its own route in `skills/rip-vehicle-import/SKILL.md`.
+A ripped racing-game car has its own route in `skills/rip-vehicle-import/SKILL.md`.
+
+## Pick the route first
+
+Choose by where the asset came from and how it is built, not by its symptom.
+
+| What you have | Route |
+|---|---|
+| A car ripped from a racing game, split into proxies, with doors or other moving parts (family B) | `skills/rip-vehicle-import/SKILL.md`: follow only its adapter, golden and allowlist, then the asset's own `asset-contract.json` |
+| An asset already in flight with a frozen plan or runbook | That runbook; do not migrate it here |
+| Any other vehicle: authored from scratch, an OBJ import, a port from another mod or game | The tables of this README |
+| A family B asset whose adapter is missing | Stop and report; do not improvise a route from the pack |
+
+Before re-importing or re-assembling any piece, measure whether it is complete, face for face, against the model already packed: a mesh that looks rotten is usually complete and the defect lies elsewhere (`rip-panel-open-rim.md`). The offline vehicle checks (get-in anchors, seat selections, wheel axes, ODOL sections and bone bindings) are scripts of `/dayz-p3d-audit`.
+
+## Numbered invariants
+
+Other files cite these as "invariant N", "preflight #N" or "#N".
+
+| Number | File |
+|---|---|
+| 0, 0b, 7, 10, 11, 12, 14, 29, 33 | `invariants-import-mesh-and-winding.md` |
+| 1, 2, 3, 4, 5, 20, 20b, 21, 22, 23, 28, 30, 31, 32, 34 | `invariants-get-in-and-seats.md` |
+| 5b, 5c, 6, 15, 15a, 15b | `invariants-wheels-and-hubs.md` |
+| 8, 9, 15c, 15f, 15g, 15h, 16, 17, 18, 19, 35 | `invariants-engine-fluids-and-handling.md` |
+| 13, 24, 27 | `invariants-lods-and-vertex-budget.md` |
+| 15d | `lights.md` |
+| 15e | `test-stand-and-mcp.md` |
+| 25, 26 | `gta-rip-intake.md` |
+| #10(a) to #10(o) | `visual-gates-and-winding.md` |
+| "METHOD #1" to "#4" | `method-and-gate-calibration.md` |
+| "Day-1" items | `new-car-day-one.md` |
+
+Items 3, 12 and 21 moved to the family B cookbooks of the rip-vehicle-import skill; the invariant files keep a pointer under each number. Before writing a class name, property or named selection, Grep it under `P:\DZ\vehicles\` or in the file a pack file cites, and mark a value you could not check as "not yet checked on `P:\`".
+
+## Aircraft in depth
+
+| Question | File |
+|---|---|
+| Fixed-wing flight in script: lift, drag, stall, atmosphere, self levelling, NaN guards, seaplane buoyancy | `aviation-aerodynamics.md` |
+| `AnimationSources` and `model.cfg` classes for control surfaces, dials, dampers and the propeller | `aviation-animation-and-modelcfg.md` |
+| What DayZ 1.30 changed under a plane or helicopter that inherits `CarScript` | `aviation-dayz-1-30.md` |
+| Navigation lights, headlights and seaplane spray | `aviation-effects-and-lights.md` |
+| One base class for several planes: config skeleton, `requiredAddons`, sub-mod wrapper | `aviation-fixed-wing.md` |
+| Testing a scripted flight model in game and judging it from logs | `aviation-flight-testing.md` |
+| Flight inputs in `Inputs.xml`, keyboard and pad scheme, stringtable | `aviation-input-bindings.md` |
+| Offsets measured with py3d that land on the wrong end of the aircraft, and the runtime probe that settles it | `aviation-model-axes.md` |
+| Engine sound shaders and sets, RPM band crossfade | `aviation-sounds.md` |
+| Thermal (FLIR) view by swapping textures and materials per entity | `aviation-thermal-imaging.md` |
+| Optional aircraft weapons: tracer projectiles, hitscan damage, the fire pipeline | `aviation-weapons.md` |
+| Helicopter flight loops of published mods, one file each | `helicopter-expansion.md`, `helicopter-mh6.md`, `helicopter-rffs.md`, `helicopter-sib.md` |
+| Those helicopter mods side by side | `helicopter-model-comparison.md` |
+| Which Workshop helicopter mods can be read as plain script | `helicopter-mod-sources.md` |
+
+Before the first boot of an aircraft, check these faults, which compile clean and fail silently:
+
+| Check | File |
+|---|---|
+| A flight loop in `EOnSimulate` sets `SetEventMask(EntityEvent.SIMULATE)` in the constructor (`CarScript` registers only `POSTSIMULATE` and `POSTFRAME`); nothing is pumped from `EOnFrame` with a hardcoded dt | `aviation-carscript-base.md` |
+| A kinematic solver adds gravity back each tick, zeroes angular velocity after `SetOrientation`, and the test airframe has no wheels | `aviation-carscript-base.md` |
+| The body is kept awake while flown and never put to sleep in the tick of `EEInit`; a fixed direct gear does not stop the engine when the pilot gets out (`OnDriverExit`) | `aviation-carscript-base.md` |
+| Every custom `UA*` name matches across `inputs.xml`, the script read and the stringtable; the driver's client primes each custom action with `SyncedValue` every tick when the server reads it | `aviation-inputs-and-actions.md` |
+| `GetNetworkMoveStrategy()` was probed on the client before the network model was chosen; no smoothing filter sits on the pilot's own camera | `aviation-networking.md` |
+| Lights and battery follow the 1.30 vehicle contract | `aviation-dayz-1-30.md` |
+| A helicopter that flies on `CarScript` does not use `HelicopterScript` as its base | `helicopters.md` |
+
+## Motorbikes in depth
+
+| Question | File |
+|---|---|
+| Motorbike actions, `MotorbikeHud`, lights, horn and VFX components, sound classes | `motorbike-actions-hud-lights-sounds.md` |
+| The vanilla `config.cpp` blocks and the parameter table | `motorbike-config-contract.md` |
+| The full specification for a new motorbike | `motorbike-forward-contract.md` |
+| Rider animation: vehicle command, `vehicles.agf`, clips, camera | `motorbike-rider-animation.md` |
+| Native `Motorbike` interface, callbacks, `MotorbikeScript` lifecycle, net sync | `motorbike-script-api.md` |
+| What the binarized vanilla bike models hold | `motorbike-vanilla-p3d-anatomy.md` |
+| Every vanilla file the motorbike files cite, with line counts | `motorbike-vanilla-sources.md` |
+
+## Symptoms of a ripped car
+
+| Symptom | File |
+|---|---|
+| An attached wheel, door or part simulates but does not render | `symptom-attachment-invisible.md` |
+| A door shows no open or close action | `symptom-door-action-missing.md` |
+| The get-in prompt never shows | `symptom-get-in-missing.md` |
+| Wheels are attached but do not simulate | `symptom-wheels-not-present.md` |
+| The car renders white or untextured on a dedicated server | `symptom-white-vehicle.md` |
 
 ## Authoring and config
 

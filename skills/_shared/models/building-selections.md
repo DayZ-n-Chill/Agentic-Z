@@ -17,13 +17,13 @@ Every name below was read from the plain text a binarized vanilla model stores, 
 What the vanilla models show:
 
 - **Numbering starts at 1** and the skeleton is named for the door count: `Skeleton2Doors` in `garage_small.p3d`, `Skeleton6Doors` in `barn_wood1.p3d`, `Skeleton7Doors` in `farm_cowsheda.p3d`.
-- **A double door is two leaves and one door.** In `farm_cowsheda.p3d` the leaves `doors1` and `doors2` each have their own `doors1_axis` and `doors2_axis`, but there is no `doors1_action`: the pair is opened as `doorstwin1`, with one `doorstwin1_action`. The config side of the pairing is in `doors.md`.
+- **A double door is two leaves and one door.** In `farm_cowsheda.p3d` the leaves `doors1` and `doors2` each have their own `doors1_axis` and `doors2_axis`, but there is no `doors1_action`: the pair is opened as `doorstwin1`, with one `doorstwin1_action`. The config side of the pairing is in `_shared/animation/doors.md`.
 - **Not every door has an `_axis` point.** `barn_wood1.p3d` stores `doors1_axis`, `doors5_axis` and `doors6_axis` only, while all six doors have a `doorsN_action`. Do not assume one axis per door when reading a vanilla model.
 - **The names are stored in lower case**, while the animation classes inside the model keep their capitals (`Doors1`).
 
 Two more things are format knowledge that no vanilla file read here confirms: a `bounding` selection for the opened volume, and a standard door size of 120 by 220 cm. Treat both as hints.
 
-The rest of the door, including the config class and who writes it, is in `doors.md` and `_shared/animation/animation-sources.md`.
+The rest of the door, including the config class and who writes it, is in `_shared/animation/doors.md` and `_shared/animation/animation-sources.md`.
 
 ## Ladders
 

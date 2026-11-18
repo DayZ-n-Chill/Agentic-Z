@@ -94,7 +94,7 @@
         "re:roll(ed|ing)?[ -]?back|downgrad|previous release|old(er)? reader",
         "re:(not|never|no|without) (re)?writ|(not|never) (delete|overwrite)|preserv|intact|untouched|unchanged"
       ],
-      "verified": "skills/dayz-persistence/references/migration-matrix.md 'Normative seven cells' (legacy: read, write new after backup; future-version: reject, do not write; truncated: reject, discard partial; rollback-old-reader: old reader rejects, does not delete) and 'Transversal write rule'; vanilla rejects a short record by returning false: P:/scripts/4_world/entities/itembase/basebuildingbase.c:439 (failed Read of m_SyncParts01) to :443"
+      "verified": "skills/_shared/persistence/migration-matrix.md 'The seven cells' (legacy: read, write new after backup; future-version: reject, do not write; truncated: reject, discard partial; rollback-old-reader: old reader rejects, does not delete) and 'Transversal write rule'; vanilla rejects a short record by returning false: P:/scripts/4_world/entities/itembase/basebuildingbase.c:439 (failed Read of m_SyncParts01) to :443"
     },
     {
       "id": "persistence-mod-version",
@@ -106,7 +106,7 @@
       "must_not_include": [
         "re:(use|rely on) (g_Game|GetGame\\(\\))\\.SaveVersion\\(\\) (alone|only|as (the|your) (only )?(mod|format))"
       ],
-      "verified": "Community Framework (third-party, not on P:): CfgMods storageVersion -> ModStructure.GetStorageVersion() -> CF_ModStorage.GetVersion(), described in skills/dayz-persistence/references/cf-modstorage.md 'Version unit: the mod'. The game's number is one per build: P:/scripts/3_game/global/game.c:435 (SaveVersion) and :5 (GAME_STORAGE_VERSION)"
+      "verified": "Community Framework (third-party, not on P:): CfgMods storageVersion -> ModStructure.GetStorageVersion() -> CF_ModStorage.GetVersion(), described in skills/_shared/persistence/cf-modstorage.md 'The mod's version'. The game's number is one per build: P:/scripts/3_game/global/game.c:435 (SaveVersion) and :5 (GAME_STORAGE_VERSION)"
     },
     {
       "id": "basebuilding-part-id-cap",

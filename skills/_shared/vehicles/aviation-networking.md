@@ -1,6 +1,6 @@
 # Aircraft networking: prediction, ownership and the pilot's camera
 
-How a scripted aircraft on `CarScript` stays smooth for its pilot: the vanilla Pawn classes and events, the move strategy a car reports, what a full owner prediction pipeline needs, when ownership really changes hands, and why the pilot's own camera must not be smoothed. Vanilla facts cite `P:\` (1.30 scripts). Results measured in the LFHeli helicopter project and facts read from shipped mods (RFFS, MH6, LM_Planes, Expansion) are marked and are not checked on `P:\`.
+How a scripted aircraft on `CarScript` stays smooth for its pilot: the vanilla Pawn classes and events, the move strategy a car reports, what a full owner prediction pipeline needs, when ownership really changes hands, and why the pilot's own camera must not be smoothed. Vanilla facts cite `P:\` (1.30 scripts). Results measured in the TestHeli helicopter project and facts read from shipped mods (RFFS, MH6, LM_Planes, Expansion) are marked and are not checked on `P:\`.
 
 Related file in this pack: `network-physics-ownership.md` (ground vehicle field notes on network ownership against a forced seat and a custom Pawn frame).
 
@@ -30,7 +30,7 @@ All of it sits inside `#ifdef FEATURE_NETWORK_RECONCILIATION` (`P:\scripts\3_gam
 
 ## A car is reconciled with PHYSICS, so the owner must predict
 
-Measured in LFHeli on 2026-07-14, in game on 1.29: a `CarScript` child reports `GetNetworkMoveStrategy() == NetworkMoveStrategy.PHYSICS` on the owner client (the probe printed 2). The engine expects the owner to predict and reconcile. Probe the strategy on the client before choosing a network model.
+Measured in TestHeli on 2026-07-14, in game on 1.29: a `CarScript` child reports `GetNetworkMoveStrategy() == NetworkMoveStrategy.PHYSICS` on the owner client (the probe printed 2). The engine expects the owner to predict and reconcile. Probe the strategy on the client before choosing a network model.
 
 What does not work under `PHYSICS`:
 
@@ -45,9 +45,9 @@ What works is the full Pawn pipeline:
 4. The solver run once, in `EOnSimulate`, behind `IsServerOrOwner`.
 5. Tuning values sent to the owner through a guaranteed RPC handshake: the values, an acknowledgement, then `ForceCorrection`.
 
-LM_Planes, MH6 and Expansion ship this pattern (state and move classes on `CarScriptOwnerState` and `CarScriptMove`); their layouts are in the `dayz-aviation` skill's `references/fixed-wing-lm-planes.md`, `references/helicopter-mh6.md` and `references/helicopter-expansion.md`. RFFS and SIB sync with plain net sync variables and a server only solver instead.
+LM_Planes, MH6 and Expansion ship this pattern (state and move classes on `CarScriptOwnerState` and `CarScriptMove`); their layouts are in `aviation-fixed-wing.md`, `helicopter-mh6.md` and `helicopter-expansion.md`. RFFS and SIB sync with plain net sync variables and a server only solver instead.
 
-Rules for the replay (measured in LFHeli; full text in the skill's `references/flight-testing-and-measurement.md`): class every field the solver reads during a replay as restored, recomputed after the handshake, or always initialised, and never initialise gains or derived tables only on the server; retry the handshake until it is acknowledged, because crew, possession and spawn are asynchronous; and use the move itself as the scripted pilot channel instead of a second RPC.
+Rules for the replay (measured in TestHeli; full text in `aviation-flight-testing.md`): class every field the solver reads during a replay as restored, recomputed after the handshake, or always initialised, and never initialise gains or derived tables only on the server; retry the handshake until it is acknowledged, because crew, possession and spawn are asynchronous; and use the move itself as the scripted pilot channel instead of a second RPC.
 
 ## ForceCorrection corrects the vehicle, never a seated character
 
@@ -58,11 +58,11 @@ Rules for the replay (measured in LFHeli; full text in the skill's `references/f
 
 ## The RFFS client pump is not a smoothing mechanism
 
-RFFS re-enters `EOnSimulate(0.025)` from `EOnFrame` on the client (`RFFSHeli_Core.c:1008-1016`), but that never reaches the pose: its `FlightSimulation()` is gated on `IsServer() && m_heli_state == 2` (`RFFSHeli_Core.c:1149-1156`), so the pump only advances `ExecuteAnimations()` and `KeyboardInputClient()` (`RFFSHeli_Core.c:1143-1145`). Do not copy the pump expecting a smoother picture. Proxy pose smoothness in RFFS is native car replication. (LFHeli, 2026-08-03.)
+RFFS re-enters `EOnSimulate(0.025)` from `EOnFrame` on the client (`RFFSHeli_Core.c:1008-1016`), but that never reaches the pose: its `FlightSimulation()` is gated on `IsServer() && m_heli_state == 2` (`RFFSHeli_Core.c:1149-1156`), so the pump only advances `ExecuteAnimations()` and `KeyboardInputClient()` (`RFFSHeli_Core.c:1143-1145`). Do not copy the pump expecting a smoother picture. Proxy pose smoothness in RFFS is native car replication. (TestHeli, 2026-08-03.)
 
 ## Never smooth the pilot's own camera
 
-Refuted in LFHeli with data and with feel in two iterations (2026-08-03). A spring or spike filter on the seat camera delays exactly the feedback the pilot steers by: the pitch response lagged (one tap dropped the nose hard) and the jerk distribution became more intermittent (the 95th percentile of the root delta rose 14.65 percent with a 0.14 s spring).
+Refuted in TestHeli with data and with feel in two iterations (2026-08-03). A spring or spike filter on the seat camera delays exactly the feedback the pilot steers by: the pitch response lagged (one tap dropped the nose hard) and the jerk distribution became more intermittent (the 95th percentile of the root delta rose 14.65 percent with a 0.14 s spring).
 
 It also stacks with a lag vanilla already has: the third person vehicle camera smooths its offset and orientation with `Math.SmoothCD` and `Math.SmoothCDPI2PI` over 0.3 s (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:142-148`), so a custom smoother is a second spring fighting the first.
 
@@ -70,7 +70,7 @@ Fix presentation in the cockpit or shell visual or in the network layer, never i
 
 ## Ownership is measured in flight, not at the mount event
 
-`IsOwner()` sampled at the mount event (`OnCommandVehicleStart`, `P:\scripts\4_world\entities\manbase\playerbase.c:4342`, or a get-in hook) reads too early: the transfer lands after the get-in completes. LFHeli measured owner false at mount, then owner true in 3,404 of 3,404 samples in flight across four flights, with the strategy at `PHYSICS`. Vanilla hands the pawn over in `OnVehicleSeatDriverEnter` with `identity.Possess(pawn)` (`P:\scripts\4_world\entities\manbase\playerbase.c:4561-4577`). Any branch that depends on the role (a proxy path, a "is driver" trick) must be decided from a probe taken in flight.
+`IsOwner()` sampled at the mount event (`OnCommandVehicleStart`, `P:\scripts\4_world\entities\manbase\playerbase.c:4342`, or a get-in hook) reads too early: the transfer lands after the get-in completes. TestHeli measured owner false at mount, then owner true in 3,404 of 3,404 samples in flight across four flights, with the strategy at `PHYSICS`. Vanilla hands the pawn over in `OnVehicleSeatDriverEnter` with `identity.Possess(pawn)` (`P:\scripts\4_world\entities\manbase\playerbase.c:4561-4577`). Any branch that depends on the role (a proxy path, a "is driver" trick) must be decided from a probe taken in flight.
 
 ## Two ways shipped helicopters replicate
 

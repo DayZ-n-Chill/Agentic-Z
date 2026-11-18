@@ -2,7 +2,7 @@
 
 The four-link condition chain behind the get-in prompt, the two registrations a cursor-targeted vehicle action needs, the `Geometry` and `autocenter=0` gate for a submodel placed by proxy, where the occupant's pose really comes from, and why a part's `model=` governs both the fitted part and the loose item.
 
-> Status: the measurements below were taken on mod test vehicles (LFHeli, LFQuad, LFQuad2, SUB_BRZ), named in each entry; they are mod behaviour, not vanilla, and were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo (a 1.30 build); a bare `file.c:N` repeats a full citation from the anchors list below. A number marked 1.29 belongs to the 1.29 build, which is not on `P:\`. "Invariant N", "preflight #N" and "#N" mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number. The symptom-first version of the get-in checks is in `invariants-get-in-and-seats.md` and in `attachments-and-crew.md` ("When a seat or door action does not appear"); the 1.30 changes to the condition are in `dayz-1-30-vehicles.md`, section 5.
+> Status: the measurements below were taken on mod test vehicles (TestHeli, TestQuad, TestQuad2, TestCoupe), named in each entry; they are mod behaviour, not vanilla, and were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo (a 1.30 build); a bare `file.c:N` repeats a full citation from the anchors list below. A number marked 1.29 belongs to the 1.29 build, which is not on `P:\`. "Invariant N", "preflight #N" and "#N" mean the numbered invariants; `README.md` lists which file holds each number. The symptom-first version of the get-in checks is in `invariants-get-in-and-seats.md` and in `attachments-and-crew.md` ("When a seat or door action does not appear"); the 1.30 changes to the condition are in `dayz-1-30-vehicles.md`, section 5.
 
 Related files in this pack: `proxies-and-get-in.md` (proxy placement and the contract of detachable parts) and `invariants-get-in-and-seats.md` (the numbered get-in checks).
 
@@ -127,7 +127,7 @@ claim that every single-LOD engine proxy follows the same path.
 ## Two caveats from the measured case (added 2026-07-26)
 
 - several `modded class PlayerBase` files may coexist in a mod, but two of them must not add the same field or the same non-override method; a `SetActions` override can go in any of them, and each must call `super.SetActions()`.
-- prompt shown + hand animation playing + server state flipping (`[LFHELI-DBG] door open=true`) with NO visible door motion = the SCRIPT chain is fine; suspect the baked-anim side (selection content in the binarized ODOL, skeleton bone, axis) — the script/anim boundary is exactly SetAnimationPhase.
+- prompt shown + hand animation playing + server state flipping (`[TESTHELI-DBG] door open=true`) with NO visible door motion = the SCRIPT chain is fine; suspect the baked-anim side (selection content in the binarized ODOL, skeleton bone, axis) — the script/anim boundary is exactly SetAnimationPhase.
 
 ## Vanilla script passes the 1 m limit; instrument before moving the condition point (added 2026-09-07)
 
@@ -141,7 +141,7 @@ vanilla script calls the method. That is false on the 1.30 data on `P:\` and, pe
 `dayz-1-30-vehicles.md` section 5, on 1.29 too.
 
 What still holds is a warning against guessing the result of a memory-point change.
-Measured cost of guessing (LFQuad2, 2026-09-07): a quad whose
+Measured cost of guessing (TestQuad2, 2026-09-07): a quad whose
 `GetDoorConditionPointFromSelection` returned the approach points `pos_driver`/`pos_codriver`
 instead of centred ones was "corrected" to return the centred crew points. The change had three
 true supports — two vanilla vehicles return centred points (`van_01.c:269`,
@@ -157,7 +157,7 @@ ship it **alone**, never bundled with other changes, so the outcome is attributa
 
 ## The occupant's pose comes from the ViewGeometry crew proxy, not the Memory point (added 2026-09-07)
 
-Moving `crewdriver` in the **Memory LOD** does not move the occupant. Measured on LFQuad2 across
+Moving `crewdriver` in the **Memory LOD** does not move the occupant. Measured on TestQuad2 across
 two runs differing only in that point (40 mm forward), with a probe printing player bone
 positions in the vehicle frame:
 
@@ -182,8 +182,8 @@ there raises `KeyError` instead of reporting a difference.
 
 **Cheap offline check that catches a half-moved anchor**: the Memory-to-ViewGeometry offset must
 match what the model shipped with, and in a healthy model it is **the same for every crew
-position** — LFQuad measures 0.0 / 100.7 / 200.3 mm for driver and codriver alike. Two seats with
-different offsets mean somebody moved one copy and not the others. On LFQuad2 that showed up as
+position** — TestQuad measures 0.0 / 100.7 / 200.3 mm for driver and codriver alike. Two seats with
+different offsets mean somebody moved one copy and not the others. On TestQuad2 that showed up as
 18.9 mm of X disagreement on the codriver after a centring edit, and the user reported it as the
 camera jumping for an instant on mounting: the engine seats you with one anchor and corrects to
 the other.
@@ -212,7 +212,7 @@ the same pattern holds for the Niva (`HatchbackWheel` at `:853`, `HatchbackWheel
 the loose inventory item, because they are the same entity in two states. So it cannot be used to
 fix an inventory preview, a loose-item icon or a mounted mesh in isolation: change it and both
 move together. Pointing a codriver door item at the driver door's `.p3d` puts a left-hand door on
-the right-hand side of the car — measured in a deployed build of a custom vehicle (SUB_BRZ,
+the right-hand side of the car — measured in a deployed build of a custom vehicle (TestCoupe,
 reverted in the next build with a negative gate; the failing case was reported by the user as the door on the
 wrong side, not as a config error).
 

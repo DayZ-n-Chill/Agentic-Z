@@ -2,7 +2,7 @@
 
 Process rules that cost more iterations than any config fact: the iteration budget, calibrating a gate before trusting it, what a PASS covers, and the habits that stop re-deriving known causes.
 
-> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
 
 Related file in this pack: `process-gates.md` (negative fixtures for import gates and the promoted process rules).
 
@@ -12,8 +12,8 @@ Related file in this pack: `process-gates.md` (negative fixtures for import gate
 
 ## Iteration budget: check this before opening a front (added 2026-07-27)
 
-Measured over one month of vehicle work (125 session handoffs: MercedesAMGLF 46, SUB_BRZ 38,
-LFHeli 37): **26 sessions ended in STOP/BLOCKED/FALSIFIED against 24 green**. The three failure
+Measured over one month of vehicle work (125 session handoffs: TestMercedes 46, TestCoupe 38,
+TestHeli 37): **26 sessions ended in STOP/BLOCKED/FALSIFIED against 24 green**. The three failure
 modes below are process gates, not config facts — and each burned dozens of sessions on a
 different project before being named. They cost more iterations than any invariant below.
 
@@ -21,7 +21,7 @@ different project before being named. They cost more iterations than any invaria
    "after 2 rebuilds without progress, STOP and change strategy" does not bite when nobody
    tracks N. Carry `cycles_on_this_objective: N` in the HANDOFF `LIVE-STATE`, and at N>=3 the
    re-entry gate must pick one of three exits before touching code: change strategy, escalate to a
-   human, or drop the objective. Evidence: one MercedesAMGLF task reached **64 builds across 29 sessions**,
+   human, or drop the objective. Evidence: one TestMercedes task reached **64 builds across 29 sessions**,
    and what finally closed it was shifting 28 proxy triangles by -0.240 m in X.
 
 2. **Keep the test harness OUT of the product task.** That task mixed "align the Mercedes proxies"
@@ -32,22 +32,22 @@ different project before being named. They cost more iterations than any invaria
 
 3. **When the judge is the eye, offline analysis gets ONE round.** Green offline gates do not
    predict the live result. One build of it reported `263/263 global + verifier 35/35 hard PASS` plus
-   every SHA, and then: `Visual: FAIL of evidence, client hung`. The LFHeli "six fronts" night
+   every SHA, and then: `Visual: FAIL of evidence, client hung`. The TestHeli "six fronts" night
    spent ~25 agent sessions to produce refutations only (binding intact, re-bake refuted, clock and
    interpolation refuted) and concluded the discriminator was the user's own screenshot. If the
    discriminator is visual or feel, spend one offline round ruling out cheap causes, then go to the
    game — extra offline rounds postpone the verdict, they do not replace it.
 
-Corollary already paid twice: SUB_BRZ needed 30+ sessions to conclude that a decimated rip mesh
-cannot reach game-ready quality (pivot to a human artist), and the LFHeli HH-60G reached the same
+Corollary already paid twice: TestCoupe needed 30+ sessions to conclude that a decimated rip mesh
+cannot reach game-ready quality (pivot to a human artist), and the TestHeli HH-60G reached the same
 verdict independently weeks later. A visual red that survives N rounds is a signal to escalate to a
 human, not to run round N+1.
 
-For family B (a new car ripped from a source game and split into proxies), the absent door radial is covered by the family B cookbook `cookbook-door-radial-missing.md` of the rip-vehicle-import skill.
+The absent door radial is covered by `symptom-door-action-missing.md`.
 
-## Before any numbered invariant: calibrate the gate itself (added 2026-07-29; LFHeli HH-60G and OH-1)
+## Before any numbered invariant: calibrate the gate itself (added 2026-07-29; TestHeli HH-60G and OH-1)
 
-**BEFORE any numbered gate below — calibrate the gate itself (added 2026-07-29; LFHeli HH-60G + OH-1).**
+**BEFORE any numbered gate below — calibrate the gate itself (added 2026-07-29; TestHeli HH-60G + OH-1).**
 Two rules in this file already cover this — the "Calibration and scope" section
 below and habit 2 of the "Method" section ("never close a phase on a tautological gate"). Both were live and **neither
 fired across four gates in one week**, because both read as being about *car render/winding* gates. They
@@ -92,19 +92,19 @@ not verified.
 - **Every rung must catch at least one KNOWN in-game bug, not just a synthetic self-test.** The
   self-test proves the MECHANICS; a real known-bad case proves COVERAGE. Keep a short per-car list of
   known in-game defects and confirm the ladder catches each: BRZ backlight mixed-winding -> caught by
-  rung 2 (`winding_consistency`: glass 18.2% of area); MercedesAMGLF left tail-lamp inverted -> caught
+  rung 2 (`winding_consistency`: glass 18.2% of area); TestMercedes left tail-lamp inverted -> caught
   by rung 4 (`gate_car` see-through, L-vs-R 310/0). (both 2026-07-01)
 - **A PASS states its SCOPE — never a bare "clean".** "clean of see-through in `color`/`glass`" is NOT
   "clean of winding". `gate_car` reporting "BRZ clean" while rung 2 (per-piece uniformity) was
   unchecked was a FALSE GREEN the user caught in-game (2026-07-01). Name what each gate covered and did not.
 - **Freshness:** the analysis prints model SHA+mtime and flags changes vs the last run
-  — the deployed `.p3d` can change under you between sessions (on SUB_BRZ a
+  — the deployed `.p3d` can change under you between sessions (on TestCoupe a
   de-dup removed 20320 faces mid-analysis; a stale golden then misleads). Owner of a shared artifact
   (a car's `.p3d`) = the session working it; edit append-only + verify.
 
 ## Method: habits that stop the re-derivation (apply before the per-invariant fixes)
 
-Not invariants but the working method that would have saved most of the LFQuad→SUB_BRZ→MercedesAMGLF
+Not invariants but the working method that would have saved most of the TestQuad→TestCoupe→TestMercedes
 iterations. They are otherwise diffuse across the references; they live here at the front on purpose:
 
 1. **Parity-first.** Debinarize a known-good vanilla vehicle (`civiliansedan`; ODOL v54 when this was first done, version 56 in the header of the copy on `P:\`) ONCE and diff your
@@ -123,7 +123,7 @@ iterations. They are otherwise diffuse across the references; they live here at 
      re-derive its targets from source before believing a negative.** The probe is not the thing that
      rots; a hardcoded seat centre is. Re-running it verbatim yields a `hit=0` that is **aim, not
      mechanism**, and it is indistinguishable from the real verdict — while being exactly the
-     "interesting" answer nobody re-questions. Measured on SUB_BRZ: the old probe mission
+     "interesting" answer nobody re-questions. Measured on TestCoupe: the old probe mission
      aims at engine `(-0.40, 0.72, -0.12)` / `(0.54, 0.72, -0.12)`,
      while today's boxes come from the car profile's seat parameters at
      py3d `(±0.357, 0.55, 0.12)` with half-extents `(0.22, 0.25, 0.25)` — the codriver ray passes
@@ -142,7 +142,7 @@ iterations. They are otherwise diffuse across the references; they live here at 
    read the actual mechanism (engine source / wiki, not intuition), instrument BOTH client and server
    (verify the hook actually fires — a silent log IS a signal, `OnUpdate` is not an engine callback), then
    ONE directed fix. If two probes also fail, escalate to a multi-agent audit over the REAL files — that
-   escalation resolved the LFQuad wheelsim stall (4 sessions serial) in one session.
+   escalation resolved the TestQuad wheelsim stall (4 sessions serial) in one session.
 
 ## Cite, then verify
 

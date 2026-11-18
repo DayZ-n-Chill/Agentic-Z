@@ -2,7 +2,7 @@
 
 What changes when the vehicle is not a four-wheeled `CarScript` car: boats (a sibling of `Car` under `Transport`), trucks (a `CarScript` config with three axles and double wheels), mod-made quads, and the motorbike family that arrived in DayZ 1.30.
 
-> Status: written from the vanilla scripts and configs. Every citation of a 1.30 file below was opened on `P:\` (a 1.30 build); a citation without the `P:\` prefix names the same file under `P:\scripts`, `P:\DZ` or `P:\bin`. A number marked "1.29" belongs to the 1.29 build, which is not on `P:\`, and is not yet checked on `P:\`. A citation written with its full `P:\` path is also checked by the repo tests. `[UNVERIFIED]` marks anything the vanilla data does not pin down. "Preflight #N" and "invariant N" mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: written from the vanilla scripts and configs. Every citation of a 1.30 file below was opened on `P:\` (a 1.30 build); a citation without the `P:\` prefix names the same file under `P:\scripts`, `P:\DZ` or `P:\bin`. A number marked "1.29" belongs to the 1.29 build, which is not on `P:\`, and is not yet checked on `P:\`. A citation written with its full `P:\` path is also checked by the repo tests. `[UNVERIFIED]` marks anything the vanilla data does not pin down. "Preflight #N" and "invariant N" mean the numbered invariants; `README.md` lists which file holds each number.
 
 The invariant files of this pack are written around the `CarScript` (wheeled) case. This file is the difference for the other `Transport` subclasses: boats, trucks (a car config, not a new class), mod-made quads, and the motorbike gap that 1.30 closed. `class-hierarchy.md` holds the short form of the class tree and `simulation.md` the `SimulationModule` keys; this file adds the per-type detail.
 
@@ -33,7 +33,7 @@ Pawn (FEATURE_NETWORK_RECONCILIATION) / EntityAI
 ```
 
 (up to 1.29: the diagram above is complete — `Transport` has two scripted children.)
-(since 1.30: a third native sibling `Motorbike` with `simulation = "motorbike"` sits next to `Car` and `Boat`. Engine proto `class Motorbike extends Transport` at `scripts\3_game\vehicles\motorbike.c:30`; config `bin\config.cpp:1481-1486`. Scripted layer `MotorbikeScript` does **not** inherit `CarScript`. Two-wheel contract: `motorbikes.md` and `motorbike-invariants.md` of this pack, and the `dayz-motorbikes` skill. Full 1.30 vehicle deltas: `dayz-1-30-vehicles.md`.)
+(since 1.30: a third native sibling `Motorbike` with `simulation = "motorbike"` sits next to `Car` and `Boat`. Engine proto `class Motorbike extends Transport` at `scripts\3_game\vehicles\motorbike.c:30`; config `bin\config.cpp:1481-1486`. Scripted layer `MotorbikeScript` does **not** inherit `CarScript`. Two-wheel contract: `motorbikes.md` and `motorbike-invariants.md` of this pack. Full 1.30 vehicle deltas: `dayz-1-30-vehicles.md`.)
 
 - `class Transport extends Pawn` (with `FEATURE_NETWORK_RECONCILIATION`) /
   `extends EntityAI` (without) — `scripts\3_game\vehicles\transport.c:66-69`.
@@ -249,14 +249,14 @@ is still `CarScript`.
 Mod-made ATVs are plain `CarScript` with slots hung off `Chassis` instead of
 `Body`. (No vanilla ATV in the base game; this is third-party mod behaviour, not
 vanilla, and not yet checked on `P:\`.) Everything else is the standard
-`CarScript` contract of the invariant files (LFQuad is the worked example throughout
+`CarScript` contract of the invariant files (TestQuad is the worked example throughout
 them: a quad IS a car).
 
 ---
 
 ## 6. Motorbikes — honest gap
 
-> (updated 2026-09-16) This gap closed with DayZ 1.30 Experimental (build 1.30.164014): the engine ships `class Motorbike: Transport` with `simulation = "motorbike"` (`bin\config.cpp:1481-1486`), `MotorbikeScript` (`4_World\Entities\Vehicles\MotorbikeScript.c:53`, not a `CarScript`), two vanilla bikes (`Motorbike_01` = Jawa_05, `Motorbike_02` = Jawa_Bitrak in `vehicles_singletrack.pbo`) and a 2-wheel `SimulationModule` (`Wheels{Front,Rear}` instead of `Axles`, `Steering.maxLeanAngle[]`/`tipoverAngle`, `Brakes{Front input=1, Rear input=0}`; `DZ\vehicles\singletrack\config.cpp:263-378` for `Motorbike_01_ColorBase`). The contract, script API, actions, sounds and rider animation live in `motorbikes.md` and `motorbike-invariants.md` of this pack and in the `dayz-motorbikes` skill. The paragraph below is the pre-1.30 state; its "do not derive from Axles" warning still holds.
+> (updated 2026-09-16) This gap closed with DayZ 1.30 Experimental (build 1.30.164014): the engine ships `class Motorbike: Transport` with `simulation = "motorbike"` (`bin\config.cpp:1481-1486`), `MotorbikeScript` (`4_World\Entities\Vehicles\MotorbikeScript.c:53`, not a `CarScript`), two vanilla bikes (`Motorbike_01` = Jawa_05, `Motorbike_02` = Jawa_Bitrak in `vehicles_singletrack.pbo`) and a 2-wheel `SimulationModule` (`Wheels{Front,Rear}` instead of `Axles`, `Steering.maxLeanAngle[]`/`tipoverAngle`, `Brakes{Front input=1, Rear input=0}`; `DZ\vehicles\singletrack\config.cpp:263-378` for `Motorbike_01_ColorBase`). The contract, script API, actions, sounds and rider animation live in `motorbikes.md` and `motorbike-invariants.md` and the other motorbike files of this pack. The paragraph below is the pre-1.30 state; its "do not derive from Axles" warning still holds.
 
 (up to 1.29:) No vanilla motorbike exists, so the 2-wheel physics pattern has no vanilla reference.
 Do not fabricate a `SimulationModule` for two wheels from the car pattern — a

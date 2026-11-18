@@ -63,6 +63,8 @@ The manager keeps a strong reference to every effect it registers (warning at li
 | 217 | `void SoundStop()` | Stops it. With a fade out set, it fades first instead of stopping at once. |
 | 816 | `void SetSoundLoop(bool loop)` | Loops the playing wave. The loop flag is applied again when the wave starts (line 383), so a script loop works even when the set says `loop=0`. The vanilla generator relies on this: `powerGeneratorLoop_SoundSet` has `loop=0` (`P:\DZ\sounds\hpp\config.cpp:319409`) and is played with `PlaySoundSetLoop` (`powergenerator.c:95`). |
 | 856 | `void SetSoundVolume(float volume)` | Relative volume on top of the config volume. |
+| 798 | `void SetSoundSet(string snd)` | The sound set to play, for an `EffectSound` you build yourself. |
+| 917 | `void SetDoppler(bool setDoppler)` | Doppler shift on or off for this sound. |
 | 899, 908 | `SetSoundFadeIn(float)`, `SetSoundFadeOut(float)` | Fade times in seconds. |
 | 607 | `override void SetAutodestroy(bool auto_destroy)` | Free the effect when it stops. |
 | 11 | `ref ScriptInvoker Event_OnSoundWaveEnded` | Fires when the wave ends. Also `Event_OnSoundWaveStarted`, `Event_OnSoundFadeInStopped`, `Event_OnSoundFadeOutStarted` (lines 10 to 13). |
@@ -131,6 +133,6 @@ The server cannot play sounds. When the server decides a sound should play, send
 
 - For a one-shot, register a signal bool: `RegisterNetSyncVariableBoolSignal("m_PlayCrashSoundLight")` (`P:\scripts\4_world\entities\vehicles\carscript.c:280`). The doc comment says the value is sent to clients while true and then becomes false again (`P:\scripts\3_game\entities\entityai.c:2835` to `2840`). The client plays the sound in `OnVariablesSynchronized()` (`carscript.c:435` to `442`). `ItemBase` uses the same pattern for impact sounds (`P:\scripts\4_world\entities\itembase.c:194`).
 - For a state that lasts (running, stopped), sync a bool or int and start or stop the loop in `OnVariablesSynchronized()` when it changes. Pattern: `skills/_shared/enscript/patterns/netsync.md`.
-- For a sound that belongs to an item event (placed, deployed, opened, locked), use the vanilla item sound handler: link a `SoundConstants` ID to a sound set in `InitItemSounds()` and call `StartItemSoundServer(id)` on the server (`P:\scripts\4_world\entities\itembase.c:4451`). The steps and what 1.30 changed are in `item-and-player-sounds.md`.
+- For a sound that belongs to an item event (placed, deployed, opened, locked), use the vanilla item sound handler: link a `SoundConstants` ID to a sound set in `InitItemSounds()` and call `StartItemSoundServer(id)` on the server (`P:\scripts\4_world\entities\itembase.c:4451`). The steps and what 1.30 changed are in `item-and-player-sounds.md`. An impact sound fits this route: call `StartItemSoundServer` from the server's contact event (contact events are in `skills/_shared/physics/contact.md`).
 - When AI should notice the sound too, add a noise on the server; players do not hear it and AI does not hear the sound set. See `noise-for-ai.md`.
 - Energy devices are simpler: the energy manager's `DeviceUpdate` runs on clients too and calls `OnWorkStart` and `OnWorkStop` there; only the energy use is limited to the server (`P:\scripts\3_game\tools\component\componentenergymanager.c:1781` to `1840`). That is why the vanilla generator plays its sounds in those two events.

@@ -15,10 +15,10 @@ Search: Grep for known names, RAG (`search_dayz_source`) for questions by meanin
 
 Deeper references. You have no Skill tool, so Read the file, and open one only when the task is its topic:
 
-- `skills/dayz-sound-system/SKILL.md`: a sound that does not play or is silent on a dedicated server, a sound the server starts, pitch, volume or range problems, and the 1.30 audio changes (steps 2 and 3).
+- `skills/_shared/audio-fx/README.md`: which call for which job, the common traps (a sound that does not play or is silent on a dedicated server, a sound the server starts, pitch, volume or range problems) and the DayZ 1.30 audio checklist (steps 2 and 3).
 - `skills/dayz-particles/SKILL.md` also indexes the 1.30 particle changes, the standalone particle reference, contaminated area particles and the client guard for `PlayOnObject`.
 - A sound that infected and animals should hear: `skills/_shared/audio-fx/noise-for-ai.md` and "Weather and noise" in `skills/_shared/ai/perception.md`.
-- Vehicles, for the lines you hand dayz-vehicle-specialist: aircraft in `skills/dayz-aviation/references/sounds.md` and `skills/dayz-aviation/references/effects-and-lights.md`, motorbikes in section 4 of `skills/dayz-motorbikes/references/actions-hud-lights-sounds.md`.
+- Vehicles, for the lines you hand dayz-vehicle-specialist: aircraft in `skills/_shared/vehicles/aviation-sounds.md` and `skills/_shared/vehicles/aviation-effects-and-lights.md`, motorbikes in section 4 of `skills/_shared/vehicles/motorbike-actions-hud-lights-sounds.md`.
 
 ## Workflow
 

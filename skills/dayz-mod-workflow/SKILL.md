@@ -33,22 +33,22 @@ Marks used in this skill and its references: a fact with a `P:\` citation was re
 
 ## 1. Activation check
 
-Which step comes first is fixed by the plan, not by this skill: the pre-implementation questions, then `dayz-feature-spec`, then this skill. Do not declare this skill mandatory for a one-line change.
+Which step comes first is fixed by the plan, not by this skill: the pre-implementation questions, then the feature spec of `dayz-scope-mod` (its `references/feature-spec.md`), then this skill. Do not declare this skill mandatory for a one-line change.
 
 Before writing or fixing any code:
 
 - [ ] Is there an approved plan or design? If not, plan first (`dayz-mod-architect` writes `output/<ModName>-plan/plan.md`).
 - [ ] For a placeable or usable object: were the questions in `references/pre-implementation-grill.md` answered by the user?
 - [ ] Which domain skills and packs apply? Load them now; do not work from memory:
-  - Enforce Script: `skills/_shared/enscript/README.md`, `skills/_shared/enscript-style.md`, `enforce-script-reference`
+  - Enforce Script: `skills/_shared/enscript/README.md`, `skills/_shared/enscript-style.md`, `skills/_shared/enscript/depth/`
   - UI and layouts: `skills/_shared/conventions/ui.md`, `dayz-ui-development`
   - Particles: `/dayz-particles`
   - 3D models: `skills/_shared/models/`, `dayz-model-pipeline`
   - PBO packaging: `/dayz-build-pbo` and its `references/` folder
-  - Physics, collision, raycasts: `skills/_shared/physics/`, `dayz-physics-engine`
-  - Sound and `CfgSoundSets`: `skills/_shared/audio-fx/`, `dayz-sound-system`
-  - AI, infected and creature behaviour: `skills/_shared/ai/`, `dayz-ai-patterns`
-  - The build, deploy and launch loop: `/dayz-launch-test`, `/dayz-gate`, `dayz-test-ingame`
+  - Physics, collision, raycasts: `skills/_shared/physics/`
+  - Sound and `CfgSoundSets`: `skills/_shared/audio-fx/`
+  - AI, infected and creature behaviour: `skills/_shared/ai/`
+  - The build, deploy and launch loop: `/dayz-launch-test` and its `references/` folder, `/dayz-gate`
 - [ ] Is vanilla or mod reference code at hand for the key patterns? Vanilla is on `P:\`; for another mod's code, ask the user.
 - [ ] List every file to write or fix, in dependency order.
 - [ ] Could another session rewrite this skill while you work? Follow `references/concurrent-session-snapshot.md`.
@@ -193,7 +193,7 @@ Error lines in the logs are a different list: `/dayz-gate` and `/dayz-logwatch` 
 
 When something "doesn't work" after it was implemented, diagnose top down: config and engine, entity setup, action registration, client conditions, server execution, response path. Never debug layer N+1 until layer N is confirmed. Propose the fix and say why before applying it; under 90% confidence, ask the user first; after a fix, run the edge-case checklist again.
 
-The layers, the rules for probes (both sides from the first cycle, a time stamp on every line, proving a probe can be reached before adding fields to it, attributing an engine-channel error to whoever emitted it) and Layer 7, component bisection, are in `references/debug-protocol.md`. What the aligned numbers mean is in `references/measurement-discipline.md`. For the general method (root cause before fix) use `systematic-debugging`; for a log that already names the error use `/dayz-gate`, and hand a new error line to `dayz-mod-debugger`.
+The layers, the rules for probes (both sides from the first cycle, a time stamp on every line, proving a probe can be reached before adding fields to it, attributing an engine-channel error to whoever emitted it) and Layer 7, component bisection, are in `references/debug-protocol.md`. What the aligned numbers mean is in `references/measurement-discipline.md`. For the general method (root cause before fix) use the Superpowers debugging skill; for a log that already names the error use `/dayz-gate`, and hand a new error line to `dayz-mod-debugger`.
 
 Two rules apply before a debug cycle starts:
 
@@ -291,7 +291,7 @@ A deployed fix records `F@<hash>`, but that token does **not** mean fixed. Close
 
 ## 12. Audits
 
-Severity labels (crash, VM exception, corruption, degradation, cosmetic: verify before labelling), the severity of something that is missing, the engine minimums that crash when absent, and the independence of parallel auditors are in `references/audit-escalation.md`. To run a data-critical audit use `rigorous-data-audit` and `skills/_shared/persistence/data-audit.md`.
+Severity labels (crash, VM exception, corruption, degradation, cosmetic: verify before labelling), the severity of something that is missing, the engine minimums that crash when absent, and the independence of parallel auditors are in `references/audit-escalation.md`. To run a data-critical audit use `skills/_shared/persistence/deep-audit.md` and `skills/_shared/persistence/data-audit.md`.
 
 ## 13. Handoff document
 

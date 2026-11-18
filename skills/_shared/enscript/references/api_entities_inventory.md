@@ -41,7 +41,7 @@ Two flag sets (the flags were checked on `P:\`; the behaviour was measured in ga
 - **Infected and animals need `ECE_INITAI`** (`P:\scripts\3_game\ce\centraleconomy.c:18`). `ECE_PLACE_ON_SURFACE | ECE_INITAI | ECE_CREATEPHYSICS` gives a creature that walks and attacks; without `ECE_INITAI` it stands like a statue. Add `ECE_NOPERSISTENCY_WORLD` (`P:\scripts\3_game\ce\centraleconomy.c:31`) so a restart removes it. The surface placement of an AI is deferred: `GetPosition()` right after the call still returns the height you asked for.
 - **A client can create a preview only with `ECE_LOCAL`** (`P:\scripts\3_game\ce\centraleconomy.c:25`); without it the client's `CreateObjectEx` returns `null`. The preview has no network ID and the server never sees it. To make it inert, cast to `EntityAI` before `DisableSimulation(true)`: the method is declared on `Entity` (`P:\scripts\3_game\entities\entity.c:3`), not on `Object`. Do not do this to a local infected or animal: making it inert crashed the client, and so did leaving it simulating for a second or two.
 
-More creation and placement traps (raycasts, surface normals, scaled local segments): `skills/enforce-script-reference/references/api-patterns.md`.
+More creation and placement traps (raycasts, surface normals, scaled local segments): `skills/_shared/enscript/depth/api-patterns.md`.
 
 ## Creating inside an inventory
 
@@ -111,7 +111,7 @@ The `EntityAI` wrappers pick the mode for you. Since 1.30 vanilla comments mark 
 
 `FindInventoryLocationType` is `ATTACHMENT`, `CARGO`, `HANDS`, `PROXYCARGO`, `ANY_CARGO` or `ANY` (`P:\scripts\3_game\systems\inventory\inventorylocation.c:17`). An `InventoryLocation` names one exact place (ground, attachment slot, cargo cell or hands); `GetInventory().FindFreeLocationFor(item, flags, out loc)` finds one (`inventory.c:276`).
 
-The return value of a take call is not proof that the item moved. When the target slot is already occupied, `TakeEntityAsTargetAttachmentEx` combines the items and returns `true` without attaching the new one: it reads the slot with `FindAttachment(slot)` first (`P:\scripts\3_game\systems\inventory\inventory.c:1106` to `:1118`). After a scripted attach, confirm with `FindAttachment(slot) == item`, comparing the entity and not its type. A trace of the local take path on a live player, which returns `true` in every case, is in `skills/enforce-script-reference/references/api-patterns.md`.
+The return value of a take call is not proof that the item moved. When the target slot is already occupied, `TakeEntityAsTargetAttachmentEx` combines the items and returns `true` without attaching the new one: it reads the slot with `FindAttachment(slot)` first (`P:\scripts\3_game\systems\inventory\inventory.c:1106` to `:1118`). After a scripted attach, confirm with `FindAttachment(slot) == item`, comparing the entity and not its type. A trace of the local take path on a live player, which returns `true` in every case, is in `skills/_shared/enscript/depth/api-patterns.md`.
 
 ### Merging stacks in a loop: skip a stack that is already emptied
 

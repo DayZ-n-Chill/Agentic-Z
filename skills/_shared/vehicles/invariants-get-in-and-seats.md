@@ -2,7 +2,7 @@
 
 Why a get-in, seat or door action does not appear on a new or imported car, and the model, config and script contract that makes it appear.
 
-> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
 
 Related file in this pack: `get-in-actions-and-proxy-pose.md` (the get-in condition chain link by link, and which anchor places the occupant).
 
@@ -69,7 +69,7 @@ with no `.c` runs as bare `CarScript`, which inherits `Transport.CrewCanGetThrou
 (`P:\scripts\3_game\vehicles\transport.c:724`) → the get-in action is filtered out and **never appears,
 no bone/proxy/componentNN fix helps**. Author `<Mod>_Base extends CarScript` overriding
 `CrewCanGetThrough` + `GetAnimInstance` + `GetSeatAnimationType` (+ `CfgMods` worldScriptModule).
-Verified in game on LFQuad, MercedesAMGLF and SUB_BRZ. → `vehicle-structural-parity.md` "Crew get-in".
+Verified in game on TestQuad, TestMercedes and TestCoupe. → `vehicle-structural-parity.md` "Crew get-in".
 
 ## Invariant 2: the script module must load or the class never binds
 
@@ -79,7 +79,7 @@ back-slashes / a `.p3d` path that resolves to `*.p3d.p3d` → module not loaded 
 
 ## Invariant 3: wheels not present (moved)
 
-For a new car ripped from a source game and split into proxies (family B), this item now lives in the rip-vehicle-import skill, in its family B cookbook `cookbook-wheelpresent-0.md`.
+This item now lives in `symptom-wheels-not-present.md`.
 
 ## Invariant 4: seats and wheel hubs need the componentNN dual tag, and each seat must be hit by the view raycast
 
@@ -89,7 +89,7 @@ invisible → spawn blocker / no seat. Tag the SAME faces with a `componentNN` t
 must be INWARD-wound with every point flag = `0x0000003F`:** a py3d box left outward + flags 0 passes every
 offline shape/winding/dual-tag check yet `RaycastRV(ObjIntersectView)` does NOT hit it → the get-in cursor
 falls through to component0 → the driver "works" by fallback but the CODRIVER never resolves. The decisive,
-in-game-confirmed copilot blocker on BOTH SUB_BRZ and MercedesAMGLF (headless `hit=1 comp=6 crewIdx=1`). The SUB_BRZ patch changed winding and flags together and never isolated the flag as cause; the safe rule is to copy the convention of the sealed vanilla control or of a positive control (a mod car whose get-in works), never py3d's default. → "componentNN DUAL-TAG" + "CRITICAL EXTENSION 2026-06-28" (`vehicle-structural-parity.md`).
+in-game-confirmed copilot blocker on BOTH TestCoupe and TestMercedes (headless `hit=1 comp=6 crewIdx=1`). The TestCoupe patch changed winding and flags together and never isolated the flag as cause; the safe rule is to copy the convention of the sealed vanilla control or of a positive control (a mod car whose get-in works), never py3d's default. → "componentNN DUAL-TAG" + "CRITICAL EXTENSION 2026-06-28" (`vehicle-structural-parity.md`).
 **Resolve the seat's `componentNN`; never hardcode its number (added
 2026-08-31).** Assembly order moves component numbers. For every `seat_*`
 selection, compare both point and face membership against each `componentNN` in
@@ -104,7 +104,7 @@ engine identity frame (`R=((-1,0,0),(0,0,1),(0,1,0))`, model-space), NOT py3d `r
 
 ## Invariant 20: the config inherits a vanilla car but the script class does not
 
-**Config inherits a vanilla car but your SCRIPT class does not extend that car's script = SWEEP every parent script override.** If the config says `class X: OffroadHatchback` while the script is `class X extends MyBase` (with `MyBase extends CarScript`), the config->script binding does NOT drag in the parent car's script overrides - those live on the vanilla `inheritedcars\<parent>.c`, which your class never inherits. Every method with a hostile default in the base that ALL vanilla cars override then bites: `CrewCanGetThrough` (false in `Transport`, `P:\scripts\3_game\vehicles\transport.c:724` -> get-in impossible; see #1), `IsVitalGlowPlug` (true in `Transport`, `transport.c:409-412` -> engine won't start; see #8), `GetAnimInstance` / `GetSeatAnimationType` (`Error()` in `Transport`, `transport.c:665,685`), `Get3rdPersonCameraType` (`Error()`, `transport.c:701`). Procedure: diff method-by-method against the parent config's `.c` (`4_world\entities\vehicles\inheritedcars\<parent>.c`) and replicate EVERY runtime-contract override, not just the two pose ones - this is the rule "sweep the invariant to all call-sites" in config form. Origin: LFHeli - `LFHeli_Placeholder: OffroadHatchback` (config) + `extends LFHeli_Base` (script) had no get-in and no engine start after passing two reviews; the first fix restored only the two pose methods.
+**Config inherits a vanilla car but your SCRIPT class does not extend that car's script = SWEEP every parent script override.** If the config says `class X: OffroadHatchback` while the script is `class X extends MyBase` (with `MyBase extends CarScript`), the config->script binding does NOT drag in the parent car's script overrides - those live on the vanilla `inheritedcars\<parent>.c`, which your class never inherits. Every method with a hostile default in the base that ALL vanilla cars override then bites: `CrewCanGetThrough` (false in `Transport`, `P:\scripts\3_game\vehicles\transport.c:724` -> get-in impossible; see #1), `IsVitalGlowPlug` (true in `Transport`, `transport.c:409-412` -> engine won't start; see #8), `GetAnimInstance` / `GetSeatAnimationType` (`Error()` in `Transport`, `transport.c:665,685`), `Get3rdPersonCameraType` (`Error()`, `transport.c:701`). Procedure: diff method-by-method against the parent config's `.c` (`4_world\entities\vehicles\inheritedcars\<parent>.c`) and replicate EVERY runtime-contract override, not just the two pose ones - this is the rule "sweep the invariant to all call-sites" in config form. Origin: TestHeli - `TestHeli_Placeholder: OffroadHatchback` (config) + `extends TestHeli_Base` (script) had no get-in and no engine start after passing two reviews; the first fix restored only the two pose methods.
 
 ## Invariant 20b: a working control's skeleton is baked into its ODOL
 
@@ -127,17 +127,16 @@ reference is inherited even when the named bone or selection is absent.
 
 ## Invariant 21: attached part is invisible (moved)
 
-For family B this item now lives in the rip-vehicle-import skill, in its family B cookbook `cookbook-attachment-invisible.md`.
+This item now lives in `symptom-attachment-invisible.md`.
 
 ## Invariant 22: an attached part with its own actions needs a raycast-visible View Geometry
 
-**An attached item with its OWN radial actions (CarDoor open/close, hood, trunk) needs a raycast-visible ViewGeometry — point flags 0x0000003F — or the action NEVER appears (SUB_BRZ).** The action chain resolves the TARGET by raycast: `ActionCarDoorsOutside.ActionCondition` casts `target.GetObject()` to CarDoor and reads the selections of the hit VG COMPONENT of the ITEM (`actioncardoorsoutside.c:34-46`); a VG whose points carry flags 0x0 is not hit by `RaycastRV(ObjIntersectView)` — the same mechanism as the seat-cube blocker (preflight #4, verified in game on SUB_BRZ and MercedesAMGLF) — so the item under the cursor never resolves and the radial is silently filtered, with config, script overrides, slots, bones and anim sources all CORRECT. Contract for the item's VG: (a) componentNN dual-tagged with a selection named EXACTLY what the vehicle's `GetAnimSourceFromSelection` expects (e.g. `doors_driver`); (b) every VG point flags 0x0000003F; (c) inward winding (copy a fixed seat cube as control). Symptom signature: attachment renders/attaches/damages fine, `GetCarDoorsState` works, but no open/close radial (and hence no get-in-through-door). Diagnose offline in seconds: census the item's VG point flags vs a working control BEFORE touching config or scripts. Origin: SUB_BRZ; the door fix's own in-game gate closed 2026-08-24 (the radial action DOES appear on the attached panel), but the raycast mechanism is the twice-verified #4 one.
+**An attached item with its OWN radial actions (CarDoor open/close, hood, trunk) needs a raycast-visible ViewGeometry — point flags 0x0000003F — or the action NEVER appears (TestCoupe).** The action chain resolves the TARGET by raycast: `ActionCarDoorsOutside.ActionCondition` casts `target.GetObject()` to CarDoor and reads the selections of the hit VG COMPONENT of the ITEM (`actioncardoorsoutside.c:34-46`); a VG whose points carry flags 0x0 is not hit by `RaycastRV(ObjIntersectView)` — the same mechanism as the seat-cube blocker (preflight #4, verified in game on TestCoupe and TestMercedes) — so the item under the cursor never resolves and the radial is silently filtered, with config, script overrides, slots, bones and anim sources all CORRECT. Contract for the item's VG: (a) componentNN dual-tagged with a selection named EXACTLY what the vehicle's `GetAnimSourceFromSelection` expects (e.g. `doors_driver`); (b) every VG point flags 0x0000003F; (c) inward winding (copy a fixed seat cube as control). Symptom signature: attachment renders/attaches/damages fine, `GetCarDoorsState` works, but no open/close radial (and hence no get-in-through-door). Diagnose offline in seconds: census the item's VG point flags vs a working control BEFORE touching config or scripts. Origin: TestCoupe; the door fix's own in-game gate closed 2026-08-24 (the radial action DOES appear on the attached panel), but the raycast mechanism is the twice-verified #4 one.
 
 ## Invariant 23: the componentNN dual tag fixes seat and wheel selection failures; LOD order is hygiene
 
-**`componentNN` dual-tag is the confirmed fix for simultaneous seat/wheel selection failures; ascending LOD order is match-vanilla practice, not a proven cause (LFHeli OH-1 v2, 2026-07-17).** Sorted-without-dual-tag still failed; sorted-plus-dual-tag spawned; dual-tag-without-sort was never isolated. Therefore a py3d/hand-assembled model with `seat_* not found` / `wheel ... no proper selection` must be checked for collision-selection dual-tag first. `model.lods.sort(key=resolution)` may remain as deterministic authoring hygiene, but no gate may report that sorting fixed the defect. `binarize` accepts either order silently.
+**`componentNN` dual-tag is the confirmed fix for simultaneous seat/wheel selection failures; ascending LOD order is match-vanilla practice, not a proven cause (TestHeli OH-1 v2, 2026-07-17).** Sorted-without-dual-tag still failed; sorted-plus-dual-tag spawned; dual-tag-without-sort was never isolated. Therefore a py3d/hand-assembled model with `seat_* not found` / `wheel ... no proper selection` must be checked for collision-selection dual-tag first. `model.lods.sort(key=resolution)` may remain as deterministic authoring hygiene, but no gate may report that sorting fixed the defect. `binarize` accepts either order silently.
 
-> History of the superseded text: `history/superseded-family-b-rules.md`, section "Invariant 23".
 
 ## Invariant 28: one crew_cargo model, numbered by its instance index
 
@@ -170,6 +169,6 @@ back left door look like an outlier instead of an inheritance. **Resolve the cha
 value, and say which link you read it from.** The same trap applies to every inherited
 config key, not just `rotationFlags`.
 
-## Family B: get-in absent
+## Get-in absent: the step by step repair
 
-For a new car ripped from a source game and split into proxies, the step by step repair for a missing get-in is the family B cookbook `cookbook-get-in-missing.md` of the rip-vehicle-import skill.
+The ordered guards of the get-in action and how to name the one that blocks are in `symptom-get-in-missing.md`.

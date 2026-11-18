@@ -46,7 +46,11 @@ A sound set and a particle both play on clients only, so the usual route is a sy
 - Item sounds: `StartItemSoundServer(id)` sends the sound to every client by RPC. See `item-and-player-sounds.md`.
 - Short particle effects: `SEffectManager.CreateParticleServer(vector pos, EffecterParameters parameters)` creates an effecter entity on the server that shows the particle on nearby clients (`P:\scripts\3_game\effectmanager.c:586`). Vanilla uses it for tree cutting, fishing, fish traps and, since 1.30, ceiling dust. See `dayz-particles/references/dayz-1-30-particles.md`.
 
-Since 1.30 a surface can also name the sound that goes with its particle. `SurfaceInfo` has a sound set getter next to the step, wheel, wheel contact, vehicle dust, cloud and ground particle getters, such as `GetWheelContactSoundSetName()` beside `GetWheelContactParticleId()` (`P:\scripts\3_game\surfaceinfo.c:54`). The dust kickup getters, such as `GetDustKickupEffectId()` (`P:\scripts\3_game\surfaceinfo.c:59`), and `GetCeilingDustParticleId()` (`P:\scripts\3_game\surfaceinfo.c:70`) have no sound set getter. The vanilla wheel contact effect reads both and creates the sound with `SEffectManager.CreateSound` (`P:\scripts\4_world\entities\effects\effwheelcontact.c:34`).
+Since 1.30 a surface can also name the sound that goes with its particle: `SurfaceInfo` has a sound set getter beside most of its particle getters, such as `GetWheelContactSoundSetName()` beside `GetWheelContactParticleId()` (`P:\scripts\3_game\surfaceinfo.c:54`). The full list of getters, and which ones have no sound set getter, is in `dayz-particles/references/dayz-1-30-particles.md`. The vanilla wheel contact effect reads both and creates the sound with `SEffectManager.CreateSound` (`P:\scripts\4_world\entities\effects\effwheelcontact.c:34`).
+
+## Weather sounds
+
+Weather sounds are config only; script does not start them. The weather class `Sandstorm` names three sound sets in `soundSets[]`: `SandStorm_Debris_SoundSet`, `SandStorm_Close_SoundSet` and `SandStorm_Dist_SoundSet` (`P:\DZ\data\config.cpp:1534` to `:1539`), next to its `particlePath` (`P:\DZ\data\config.cpp:1540`). The engine plays them with the weather. The visual side is in `dayz-particles/references/dayz-1-30-particles.md`, "Sandstorm", and what the sandstorm does to AI hearing is in `noise-for-ai.md`.
 
 ## Config hooks: sounds and particles without script
 

@@ -33,6 +33,13 @@ After validation passes, use AddonBuilder to pack and binarize.
 <DayZ Tools>\Bin\AddonBuilder\
 ```
 
+**Calling CfgConvert yourself.** Run from PowerShell with quoted paths passed through
+`Start-Process -ArgumentList`, `CfgConvert -bin -dst` exited 0 and wrote nothing. What worked: set
+`-WorkingDirectory` to the config's folder and pass relative paths without quotes
+(`CfgConvert -bin -dst config.bin config.cpp`). Check the output by its timestamp and exact location,
+not by a file of that name existing: an old `config.bin` in the working folder nearly went into a
+PBO. Reported tool behaviour, not checked on `P:\`.
+
 ### Locate the authoritative build source before validation
 
 This applies to a mod that has its own build script; `/dayz-build-pbo` always packs `workspace\<ModName>\`.
@@ -157,7 +164,7 @@ passed as `-temp`: with `-clear`, AddonBuilder wipes its `-temp` before copying.
    spawns (bisection with vanilla `Armband_Pink` as the control). Correlated symptom: `unRap` exit 255
    on that config.bin. **Rule:** (a) when this happens, pack config.cpp as text (the full-build
    binarize is then only used for the p3d ODOL); (b) the "it actually mounts" gate is an in-game
-   spawn (through `/dayz-mcp-verify` or the debug console), never just the strings or entries
+   spawn (through the dayz-mcp verification in `skills/dayz-launch-test/references/mcp/README.md`, or the debug console), never just the strings or entries
    of the PBO: static analysis of config.bin reported "healthy" while the engine ignored it.
 
 5. **Check that binarize can find every file the p3d cite: before the build, and in the ODOL
@@ -183,8 +190,8 @@ passed as `-temp`: with `-clear`, AddonBuilder wipes its `-temp` before copying.
      and wrote nothing. A file you cannot read as text confirms nothing. Run the control once:
      the same build without the cited files must turn their materials into leads.
    - Compare ODOLs by those fields, not by hash: three flagpole models varied by up to
-     67 B across five builds that resolved the same files (`post-build-gates.md`, "Binarize is
-     not byte-deterministic").
+     67 B across five builds that resolved the same files (`post-build-gates.md`, "AddonBuilder
+     non-determinism").
    - **A texture missing on its own has only a confounded case.** A vehicle mod's direct
      `binarize.exe` calls (BINARIZE
      1.30.164078.38, source outside `P:\`) logged `Material not loaded` for the same 65 `.rvmat`
@@ -202,8 +209,9 @@ passed as `-temp`: with `-clear`, AddonBuilder wipes its `-temp` before copying.
      directory, per its rpt). AddonBuilder builds staged outside `P:\` resolved
      their files (rule 1). What these entries do in game is rule 1's open point.
 
-The orchestrated build path (temp wipe, deploy, launch) lives in
-`skills/dayz-test-ingame/templates/dayz-test.ps1`.
+In this repo the build path is `/dayz-build-pbo` (temp wipe, stage, result code, content check). The
+dayz-mcp launcher `skills/dayz-launch-test/scripts/dayz-test.ps1` carries a weaker build of its own; build
+with `/dayz-build-pbo` and launch it without `-Build`.
 
 
 **Binarize through the AddonBuilder command line** (command-line rules):

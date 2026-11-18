@@ -5,7 +5,7 @@ and `.rvmat` files. It turns silent compile/runtime failures into a JSON
 report before a PBO is packed.
 
 This is the OFFLINE layer. It does not launch DayZ. In-game verification
-belongs to DayZ-MCP (`skills/dayz-mcp-verify/`).
+belongs to DayZ-MCP (`skills/dayz-launch-test/references/mcp/`).
 
 It is a rule linter, not a compiler: a PASS means no rule fired, not that the
 script compiles. The engine compile is the only full syntax gate.
@@ -113,7 +113,7 @@ were not measured again.
   an `--external-scripts` root. `bool Debug;` in a 4_World settings class
   made DayZDiag 1.29 refuse the module with `Variable name 'Debug' already
   used as type name`; a local `Widget map`
-  failed the same way (`skills/enforce-script-reference/`,
+  failed the same way (`skills/_shared/enscript/depth/`,
   `pitfalls-advanced.md`). Only a member and a local are on record; a
   parameter, an enum and
   a typedef are judged the same way without a failure on record. The match
@@ -417,7 +417,7 @@ under:
 
 | Cited as | Skill folder |
 |---|---|
-| `SKILL.md rule N`, `enforce-script-reference SKILL.md`, `pitfalls-advanced.md`, `networking.md`, `memory-management.md` | `skills/enforce-script-reference/` (`SKILL.md` and `references/`) |
+| `SKILL.md rule N`, `enforce-script-reference SKILL.md`, `pitfalls-advanced.md`, `networking.md`, `memory-management.md` | `skills/_shared/enscript/depth/` (rule N is in `hard-rules.md`) |
 | `dayz-ui-development SKILL.md`, `layout-format.md` | `skills/dayz-ui-development/` (`SKILL.md` and `references/`) |
 | `dayz-mod-workflow` | `skills/dayz-mod-workflow/` |
 | `dayz-p3d-audit/SKILL.md` | `skills/dayz-p3d-audit/` |

@@ -2,7 +2,7 @@
 
 The parity-first method: debinarize a vanilla car once, diff your model against it, and build every missing LOD, selection, crew proxy, wheel hub and script override in one pass, with the dated addenda that corrected the method as it was used on real vehicles.
 
-> Status: third-party mod behaviour and field measurements, not vanilla, unless a line cites `P:\`. The measurements were taken on the mod vehicles named in each entry (LFQuad, SUB_BRZ, MercedesAMGLF, WRX STI), on a working third-party quadbike mod (called "the reference quad" below), on a shipped third-party car mod, and on an example 4x4 built to the documented method; they are not checked on `P:\`. A citation written with its full `P:\` path was opened on the vanilla data (a 1.30 build). A citation without `P:\` names a file under `P:\scripts` or `P:\DZ\vehicles\wheeled`: the `carscript.c`, `car.c`, `transport.c`, `civiliansedan.c`, `offroadhatchback.c`, `van_01.c`, `actiongetintransport.c` and `dayzphysics.c` numbers were opened there and match. Values read from the binarized vanilla models were read with an external ODOL reader and are not checked by the repo tests. `[DOC]` marks a rule documented by Bohemia Interactive.
+> Status: third-party mod behaviour and field measurements, not vanilla, unless a line cites `P:\`. The measurements were taken on the mod vehicles named in each entry (TestQuad, TestCoupe, TestMercedes, WRX STI), on a working third-party quadbike mod (called "the reference quad" below), on a shipped third-party car mod, and on an example 4x4 built to the documented method; they are not checked on `P:\`. A citation written with its full `P:\` path was opened on the vanilla data (a 1.30 build). A citation without `P:\` names a file under `P:\scripts` or `P:\DZ\vehicles\wheeled`: the `carscript.c`, `car.c`, `transport.c`, `civiliansedan.c`, `offroadhatchback.c`, `van_01.c`, `actiongetintransport.c` and `dayzphysics.c` numbers were opened there and match. Values read from the binarized vanilla models were read with an external ODOL reader and are not checked by the repo tests. `[DOC]` marks a rule documented by Bohemia Interactive.
 
 The addenda are in the order they were written, and later ones correct earlier ones. Read a "Correction" before acting on the addendum it names; the last three sections (occluder membership, LOD frame parity, ground contact) refine the sections they name.
 
@@ -94,13 +94,13 @@ config wires them.
 
 ## Cross-reference
 
-- Tools: an external ODOL→MLOD converter (to debinarize the reference; not part of this repo), skill `enforce-script-reference` (config blocks),
+- Tools: an external ODOL→MLOD converter (to debinarize the reference; not part of this repo), the Enforce Script pack `skills/_shared/enscript/depth/` (config blocks),
   `dayz-animation-pipeline` (model.cfg / AnimationSources), `dayz-particles` (damage effects).
 - After deploy, gate on the RPT, not on the offline diff.
 
 ---
 
-## Addendum (2026-05-26) — Lessons from "the quad doesn't drive" debugging (LFQuad)
+## Addendum (2026-05-26) — Lessons from "the quad doesn't drive" debugging (TestQuad)
 
 > Verified against civiliansedan (ODOL v54 on DayZ 1.29, not re-checked on `P:\`, whose copy is v56) (full), hatchback_02/offroadhatchback/offroad_02 (FireGeo), and
 > the reference quad v53 (header only). Marked [VERIFIED] vs [HYPOTHESIS]: a divergence from the
@@ -173,7 +173,7 @@ vanilla wreck spawn to copy. Empty healthLevels {} is valid.
 
 > This section covers the `.p3d` of the **wheel attachment** (the separate file referenced
 > from `CfgNonAIVehicles` `ProxyVehiclePart` and tied to the body via `inventorySlot`), not the
-> body. A gap here gave LFQuad a permanent `contact=0` and a divergent bounce.
+> body. A gap here gave TestQuad a permanent `contact=0` and a divergent bounce.
 
 ### The wheel proxy `.p3d` is NOT "a wheel with visual LODs". PhysX uses its Memory LOD to build the wheel collider.
 
@@ -209,9 +209,8 @@ with `factor_radial = wheel_radius / 0.38587` and X with `factor_axial = width /
 
 All 6 quirks of py3d 1.0.0 apply (constructor with args, int weight, rebind after grow,
 lowercase matname, overwrite-in-place for `ce_center` if it already exists, +Z/-Z frame if
-wheel comes from Blender). See `skills/dayz-animation-pipeline/references/py3d-1.0.0-quirks.md` of the dayz-animation-pipeline
-skill and `skills/_shared/py3d-mlod-notes.md`. DO NOT duplicate the pattern here — the animation pipeline skill
-is the canonical place for writing Memory LODs via py3d.
+wheel comes from Blender). See `skills/_shared/py3d-mlod-notes.md`, "Writing a `.p3d` from a script". Do not duplicate the pattern here: that file
+is the one home for writing Memory LODs with py3d.
 
 ### Acceptance criterion for wheel proxies generated from scratch
 
@@ -237,7 +236,7 @@ If an audit of a wheel proxy returns PASS with only `ce_center`, the check did n
 
 ## Addendum (2026-05-30) — Canonical car-build invariants [build rules documented by Bohemia; cause analysis corrected below]
 
-> What it resolves: LFQuad shipped bouncing/launching on spawn despite 4+ iterations. This addendum
+> What it resolves: TestQuad shipped bouncing/launching on spawn despite 4+ iterations. This addendum
 > encodes the canonical build method for the Geometry LOD and the mass of a DayZ car. The build rules
 > stand; the claim that a monolithic Geometry causes the launch was later refuted (see the
 > corrections of 2026-06-01 and 2026-06-02 below). Marks: [DOC] = documented by Bohemia Interactive
@@ -268,15 +267,15 @@ monolithic hull.** [DOC] The Geometry LOD checklist: convex components; named pr
 with value `0`; a simple shape with no unnecessary components; **mass applied on ALL
 components**; wheel hubs present with their selections assigned; centre of mass checked. Every
 component's vertices carry weight, and the total mass of the vehicle and its centre of mass are
-computed from those weights. (The reference quad = **23 chassis components + 4 hubs**; LFQuad shipped with **1**
+computed from those weights. (The reference quad = **23 chassis components + 4 hubs**; TestQuad shipped with **1**
 `component01` hoarding ~90% of mass — anti-pattern.)
 
-Consequences of building it as a monolith, as first diagnosed on LFQuad's bounce (both legs were
+Consequences of building it as a monolith, as first diagnosed on TestQuad's bounce (both legs were
 later refuted as the launch cause; see the corrections below):
 1. **Trigger (shape):** a single tightly fitted convex hull with sharp edges, upon waking rigid body on
    spawn, overlaps terrain/hubs → PhysX resolves penetration in one step → huge impulse → launch.
 2. **Amplifier (inertia):** mass concentrated in 1 component → pathological/low inertia tensor
-   (LFQuad Izz **128.5** = 37% of the reference quad's **350.7** [MEASURED]) → any impulse spins/flips it →
+   (TestQuad Izz **128.5** = 37% of the reference quad's **350.7** [MEASURED]) → any impulse spins/flips it →
    re-penetrates → gains energy → `Will delete object with !finite or outside world coords`.
 
 ### Canonical checklist (each point offline-verifiable; add to the round-trip)
@@ -286,8 +285,8 @@ later refuted as the launch cause; see the corrections below):
 | 1 | Geometry = multiple **closed** convex `componentNN` (no monolith) | [DOC] | clean `Find Non-Convexities` + `Find Non-Closed`; component count > 1 for the chassis |
 | 2 | **Mass on ALL components** (incl. 4 hubs), not concentrated in one | [DOC] | sum weight per component; none at 0; none >~60% of total |
 | 3 | `autocenter = 0` as named property on **each** Geometry component | [DOC] | read named properties per component |
-| 4 | CoM **centered in X** (left-right); reasonable Y/Z, no large bias | [DOC] | `CoM.x ≈ 0`; LFQuad CoM (0, 0.513, **+0.399**) vs the reference quad (0, 0.474, −0.011) [MEASURED] → large Z bias |
-| 5 | Component thickness ≥ 0.5 m (a quad is narrow: the reference quad's chassis ±0.275 = 0.55 m) | [DOC] | chassis component width ≥0.5 m away from the wheels (LFQuad at ±0.175 = 0.35 m ✗; see "Tension with item #5" below) |
+| 4 | CoM **centered in X** (left-right); reasonable Y/Z, no large bias | [DOC] | `CoM.x ≈ 0`; TestQuad CoM (0, 0.513, **+0.399**) vs the reference quad (0, 0.474, −0.011) [MEASURED] → large Z bias |
+| 5 | Component thickness ≥ 0.5 m (a quad is narrow: the reference quad's chassis ±0.275 = 0.55 m) | [DOC] | chassis component width ≥0.5 m away from the wheels (TestQuad at ±0.175 = 0.35 m ✗; see "Tension with item #5" below) |
 | 6 | Hubs `wheel_X_X_damper_land` = real convex components with mass, NOT just face selections | [DOC] | each hub is a closed component with weight |
 | 7 | Proxies (wheel/crew/doors) **NOT** in Geometry LOD (they don't animate, don't collide there) | [DOC] | Geometry without proxies; wheel-proxies yes in Visual+ViewGeo+FireGeo |
 | 8 | Fire Geometry mandatory in vehicles | [DOC] | FireGeo present |
@@ -305,9 +304,9 @@ wheelHubMass=15;      // KG, only applies if wheel is NOT attached
 wheelHubRadius=0.284; // measured from hub component (Shift+E, Y axis), never negative
 ```
 
-Comparison [MEASURED]: the reference quad's stiffness 40000–41000; **LFQuad 20000** (half), damping 9000, travelMaxUp
+Comparison [MEASURED]: the reference quad's stiffness 40000–41000; **TestQuad 20000** (half), damping 9000, travelMaxUp
 0.293/0.414. Documented trap: mass too LOW + stiffness copied from a heavier vehicle →
-catapult. (LFQuad is NOT in that trap: its mass is correct 1061.5 and its stiffness is lower than the
+catapult. (TestQuad is NOT in that trap: its mass is correct 1061.5 and its stiffness is lower than the
 reference — suspension is NOT the bounce trigger; confirmed in-game. Swapping suspension and
 damping values does not cure a floating/bouncing car whose cause lies elsewhere.)
 
@@ -455,12 +454,12 @@ flags the Geometry as a VEHICLE physics body. A procedurally-assembled Geometry 
 it. Replicate it: `geo_lod.properties['class'] = 'vehicle'`, write back, confirm
 `strings model.p3d | grep -c vehicle`.
 
-Causation caveat (verified in-game 2026-05-27): adding `class=vehicle` did NOT fix LFQuad's
+Causation caveat (verified in-game 2026-05-27): adding `class=vehicle` did NOT fix TestQuad's
 `WheelCountPresent()==0` -- it was deployed, confirmed present in the binarized Geometry LOD, and the
 in-game result was unchanged. So treat `class=vehicle` as REQUIRED PARITY (6/6 vanilla carry it; a
 vehicle build must replicate it and it is cheap), NOT as the proven wheel-simulation gate. The
 actual silent wheel-sim gate verified in-game is the `CfgSlots.selection` <-> FireGeometry proxy
-selection consistency rule (see `enforce-script-reference`, wheel attachment).
+selection consistency rule (see `skills/_shared/enscript/depth/`, wheel attachment).
 
 ## Correction (2026-06-01) — spawn-launch is wheel-collision + placement, NOT mass/inertia [VERIFIED probe + in-game]
 
@@ -480,10 +479,10 @@ selection consistency rule (see `enforce-script-reference`, wheel attachment).
   The engine wheel collider self-penetrates with the chassis → PhysX ejects (the mechanism
   "overlapping objects explode" is real, but overlap is chassis-vs-WHEEL, not monolith-vs-terrain).
   Fixed: in-game wheels proceed to make contact (`wc` 0→1111 at t0.3).
-- **Cause #2 MEASURED (in-game, side-by-side): placement.** Even with #1 fixed, LFQuad spawns at
+- **Cause #2 MEASURED (in-game, side-by-side): placement.** Even with #1 fixed, TestQuad spawns at
   h=−0.264 (origin below surface) vs the reference quad +0.216 → buried wheels → ejection. Trace
   mechanism **unresolved**; do not claim "ECE traces over Geometry Y_min" as general
-  fact (matches LFQuad but the reference quad +0.216 does not fit).
+  fact (matches TestQuad but the reference quad +0.216 does not fit).
 - **Still valid from 2026-05-30:** Geometry = multiple closed convex components + mass in all (the reference quad
   23 chassis + 4 hubs) is **real parity**, but it is parity, NOT the bounce trigger.
 
@@ -497,14 +496,14 @@ The old check "hubs outside hull" validated only the 8-pt hub box, NOT the full 
 → overlap slipped through. Correct, measurable check: for each wheel center (`*_damper_land`
 centroid), **no chassis (non-hub) collision point may fall inside the tire radius**
 (config `radius`, ~0.34, NOT the small `wheelHubRadius`). Target = reference clearance (radius +
-~0.07-0.09 m). [VERIFIED: LFQuad 0.16-0.19 < 0.34 = overlap → bounce; the reference quad 0.43-0.46, 0 inside].
+~0.07-0.09 m). [VERIFIED: TestQuad 0.16-0.19 < 0.34 = overlap → bounce; the reference quad 0.43-0.46, 0 inside].
 Across travel: clear in X (lateral) → well holds when
 wheel moves up under compression.
 
 ### WHEEL `.p3d` Geometry must be a cylinder ~radius, NOT a box
 
 A box with semi-axis = radius has **corners at radius·√2 (+42%)** → oversized square collider.
-[VERIFIED: LFQuad wheel box, corners 0.482 vs config 0.34; the reference quad's 24-pt cylinder, uniform radial
+[VERIFIED: TestQuad wheel box, corners 0.482 vs config 0.34; the reference quad's 24-pt cylinder, uniform radial
 0.340-0.366; check: `radial(Y-Z)` from center ≈ radius and uniform — box ⇒ max=min·√2].
 And wheel `.p3d` needs **ViewGeo + FireGeo** (the reference quad has them;
 a from-scratch build often omits them). Construct the cylinder: N-gon in Y-Z (radius) extruded in X (width) →
@@ -516,7 +515,7 @@ the reference quad); `material=""` degrades ballistics/surface (does not block s
 ### Reference collision = decomposition into NON-uniform convex boxes (not fine mesh, not uniform grid, not arbitrary hull)
 
 [VERIFIED: the reference quad's Geometry = 23 skewed 8-pt boxes sized to the body (spine X±0.13, slabs
-X±0.66) + 4 cylinders; LFQuad was 27 uniform axis-aligned boxes]. "Following
+X±0.66) + 4 cylinders; TestQuad was 27 uniform axis-aligned boxes]. "Following
 contour" = non-uniform boxes per region (width = actual body width there, narrowed at wheels
 for wells) — NOT a convex hull of the body (engulfs it: VISUAL body reaches X±0.472,
 over the wheel) and NOT decomposition into arbitrary hulls (inflate/bridge at fenders).
@@ -535,7 +534,7 @@ redistributes mass → shifts CoM). [VERIFIED: reshape by moving points ±X main
 Log `WheelHasContact(i)` per wheel + `WheelCountPresent()` for vehicle AND a working reference
 (the reference quad) **side by side** in the test mission. `wc=0000` vs `wc=1111` isolates "wheels never
 make contact". With `wp=0` (no wheel-item attached) the engine still simulates colliders from the model →
-`wc` reflects the health of the model's wheel collision. Side-by-side delta (LFQuad −0.264 vs the reference quad
+`wc` reflects the health of the model's wheel collision. Side-by-side delta (TestQuad −0.264 vs the reference quad
 +0.216 at spawn) pinpointed placement immediately; "flies to 38 m" alone did not indicate it. API: `Car.Cast(o)`,
 `WheelHasContact(int)`, `WheelCount()`, `WheelCountPresent()` — `P:\scripts\3_game\vehicles\car.c:286`, `:345` and `:348`.
 
@@ -548,7 +547,7 @@ wheels, not to wheel-well boxes.
 
 ---
 
-## 2026-06-02 — Spawn-launch root cause CORRECTED (confirmed in-game, LFQuad)
+## 2026-06-02 — Spawn-launch root cause CORRECTED (confirmed in-game, TestQuad)
 
 The earlier "monolithic Geometry / low inertia -> spawn launch" hypothesis (2026-05-30, marked
 [verify in-game]) is **refuted**. Confirmed cause of a vehicle that spawns underground and gets
@@ -558,7 +557,7 @@ ejected: a stray `#Mass#` tag on a NON-Geometry LOD (typically FireGeometry 7e15
   ODOL ModelInfo `CoM=(0,0,0)`, inertia=0 -> `ECE_PLACE_ON_SURFACE` seats by CoM=0 -> spawns ~0.48 m low
   -> wheels buried -> PhysX depenetration -> ejection.
 - The Geometry LOD (multi-component, convex, hubs) was correct the whole time. Proven by bisection:
-  the reference quad's model + LFQuad's Geometry baked CoM 0.627; LFQuad-without-FireGeo baked 0.627. Material,
+  the reference quad's model + TestQuad's Geometry baked CoM 0.627; TestQuad-without-FireGeo baked 0.627. Material,
   mass-distribution, tris-vs-quads, skeleton and the py3d writer were all ruled out by experiment.
 - `#Mass#` MUST live only on the Geometry LOD (1e13). py3d emits `#Mass#` on any LOD with a point whose
   `mass != None`. After every assemble, assert `lod.mass` per-LOD: only Geometry `!= None`, rest `None`.
@@ -572,7 +571,7 @@ ejected: a stray `#Mass#` tag on a NON-Geometry LOD (typically FireGeometry 7e15
 ## (added 2026-06-22) Audit an INHERITED / imported vehicle BEFORE planning
 
 When receiving a finished vehicle (config + model.cfg + p3d) or importing one from another game, audit it
-host-direct BEFORE committing a plan — it reframes the scope and is cheap. Measured on MercedesAMGLF
+host-direct BEFORE committing a plan — it reframes the scope and is cheap. Measured on TestMercedes
 (2026-06-22), a car received with config, model.cfg and p3d already made.
 
 - **MLOD parse of the p3d (host-direct, ~60 Python lines)**: per LOD prints resolution + number of points/faces +
@@ -600,7 +599,7 @@ host-direct BEFORE committing a plan — it reframes the scope and is cheap. Mea
 
 ## Addendum (2026-06-24) — proxy-path format + DayZ vehicle axis convention [VERIFIED vs CivilianSedan + a shipped third-party car mod]
 
-> Two vehicle-general facts pinned on SUB_BRZ. Apply to ANY DayZ vehicle,
+> Two vehicle-general facts pinned on TestCoupe. Apply to ANY DayZ vehicle,
 > not just imports from another game.
 
 ### MLOD proxy selections carry NO `.p3d` extension
@@ -613,11 +612,11 @@ attachment/geometry silently missing in-game** (wheels don't simulate, body prox
 silent failure: offline editor/py3d checks still "see" the proxy selection. ALWAYS author proxy paths
 without the extension. py3d `add_proxy(path, index, ...)` → pass `path` without `.p3d`.
 
-### Pure-geometry body-proxy TRIANGLE FRAME — py3d "identity" != engine identity [VERIFIED in-game 2026-06-24, MercedesAMGLF]
+### Pure-geometry body-proxy TRIANGLE FRAME — py3d "identity" != engine identity [VERIFIED in-game 2026-06-24, TestMercedes]
 
 A pure-geometry proxy (body chunk / engine / interior / dash — 1 visual LOD, no config class) renders its
 referenced geometry transformed by the frame the engine derives from the proxy TRIANGLE. MODEL-SPACE geometry +
-the right triangle = the chunk overlays the shell exactly. Two traps, both bit MercedesAMGLF:
+the right triangle = the chunk overlays the shell exactly. Two traps, both bit TestMercedes:
 
 - **Geometry MODEL-SPACE, not centered.** Author each chunk at its real car position (vanilla `prox_int`
   Y[0.36,1.56] cabin, `sedan_engine` Z[-2.30,-1.12] front — measured by debinarizing the vanilla proxy `.p3d`).
@@ -628,7 +627,7 @@ the right triangle = the chunk overlays the shell exactly. Two traps, both bit M
   ROTATED ~90 deg — it passed every offline check yet failed in-game twice. Author with:
   `lod.add_proxy(path, index, origin=(0,0,0), rotation=((-1,0,0),(0,0,1),(0,1,0)), scale=0.1)` (path WITHOUT `.p3d`).
 
-GATE: for proxies the offline frame/render is NOT a valid acceptance gate (false-green twice on MercedesAMGLF) —
+GATE: for proxies the offline frame/render is NOT a valid acceptance gate (false-green twice on TestMercedes) —
 the gate is the in-game spawn+render; offline only rules out gross errors (missing selection, duplicate `.p3d`).
 Attachment proxies (wheel/crew/door) are placed by physics/config, not the triangle — their `pos` is NOT a
 reference for pure-geometry placement.
@@ -655,7 +654,7 @@ the case and stays silent. The same code for a collision LOD with faces and no c
 to wave off: on an item and a building that collision was gone (vehicles not measured); from 1.9.0 it is
 the only reason the code fires, on the Geometry, View or Fire LOD.
 
-## Addendum (2026-06-24) — componentNN DUAL-TAG: hub/seat selections must SHARE faces with a componentNN [VERIFIED in-game, was the SUB_BRZ spawn blocker]
+## Addendum (2026-06-24) — componentNN DUAL-TAG: hub/seat selections must SHARE faces with a componentNN [VERIFIED in-game, was the TestCoupe spawn blocker]
 
 The LOD tables above list `componentNN` + `wheel_X_Y_damper_land` + `seat_driver`/`seat_codriver` as if they were
 independent selections. They are NOT independent: **the engine enumerates collision/action components ONLY by
@@ -671,8 +670,8 @@ dual-tag a FireGeo already does for `dmgzone_*` + `componentNN` on one box — e
 ViewGeo/Geometry seats.
 
 THE DISCRIMINATOR (add to the car's verifier): for each hub/seat selection, the % of its faces also covered by a
-`componentNN` in the same LOD. Working cars = **100%** (CivilianSedan 15/15, a shipped third-party car mod 15/15, LFQuad 60/60); the
-SUB_BRZ that would NOT spawn = **0/12**. 100% = pass; anything else = the spawn blocker.
+`componentNN` in the same LOD. Working cars = **100%** (CivilianSedan 15/15, a shipped third-party car mod 15/15, TestQuad 60/60); the
+TestCoupe that would NOT spawn = **0/12**. 100% = pass; anything else = the spawn blocker.
 ```python
 def component_overlap(lod, sel_name):  # returns 1.0 when ok
     comp = {tuple(sorted(v.point_index for v in f.vertices))
@@ -684,12 +683,12 @@ def component_overlap(lod, sel_name):  # returns 1.0 when ok
 Why it survives many "the selection is present and parity-correct" cycles: everyone checks PRESENCE; nobody checks
 the componentNN face-OVERLAP. Offline parity ≠ drivable — this is one more thing only the in-game spawn gate (or
 this overlap check) catches. Two other candidate deltas (hub 16pt-vs-8pt-box, seats-in-Geometry) were RED HERRINGS:
-a box hub is a valid component, seats-in-Geometry is fine (LFQuad does it) — once they are ALSO componentNN.
+a box hub is a valid component, seats-in-Geometry is fine (TestQuad does it) — once they are ALSO componentNN.
 
 
 ---
 
-## Addendum (2026-06-25) — ATTACHMENT proxy needs a companion BONE-NAME selection (py3d add_proxy omits it) [VERIFIED vs CivilianSedan + a shipped third-party car mod; confirmed in-game on SUB_BRZ]
+## Addendum (2026-06-25) — ATTACHMENT proxy needs a companion BONE-NAME selection (py3d add_proxy omits it) [VERIFIED vs CivilianSedan + a shipped third-party car mod; confirmed in-game on TestCoupe]
 
 An **attachment** proxy (crew / wheel / door — i.e. one the engine binds to a skeleton bone, NOT a pure-geometry
 body chunk) needs TWO things in the LOD, not one:
@@ -716,25 +715,25 @@ wheel_1_1 -> sedanwheel.003  wheel_1_2 -> sedanwheel.004  wheel_2_1 -> sedanwhee
 doors_driver -> sedandoors_driver.001   doors_codriver -> sedandoors_codriver.001   radiator -> radiator_car.001
 ```
 The wheel **bone name maps by POSITION** (`wheel_<side>_<axle>`, side1=+x/2=−x, axle1=front=−z/2=rear=+z), NOT by the
-proxy index. The bone names must also exist in `model.cfg` `CfgSkeletons skeletonBones[]` (SUB_BRZ already declares
+proxy index. The bone names must also exist in `model.cfg` `CfgSkeletons skeletonBones[]` (TestCoupe already declares
 `crewdriver`/`crewcodriver`/`wheel_*`).
 
 DISCRIMINATOR / verifier (add to the car's verifier): for each attachment proxy, assert a same-points companion
-selection named after its bone exists. SUB_BRZ had **0** bone selections (only the 4 occlusion components + 2 seats);
+selection named after its bone exists. TestCoupe had **0** bone selections (only the 4 occlusion components + 2 seats);
 CivilianSedan and the third-party car mod have the full set. Builder rule: after each crew/wheel `add_proxy`, create
 the bone selection (`add_proxy(rotation=R, scale=1.0)` + point flags 63 + a bone selection from the proxy's
 faces/points).
 
-GATE: as with every proxy finding here, offline checks gave FALSE-GREEN 4 times on SUB_BRZ (occlusion / frame / scale
+GATE: as with every proxy finding here, offline checks gave FALSE-GREEN 4 times on TestCoupe (occlusion / frame / scale
 / flags) — the only valid gate is the in-game RPT (the `bone name not found` line gone). This bone-selection fix is
-**CONFIRMED in-game on SUB_BRZ (2026-06-25)**: after a re-spawn the server RPT has ZERO `PHYSICS (E/W)` lines
+**CONFIRMED in-game on TestCoupe (2026-06-25)**: after a re-spawn the server RPT has ZERO `PHYSICS (E/W)` lines
 (all `bone name not found` / `no proper selection` gone). BUT this only fixes get-in **gate-1** (`CrewPositionIndex`);
 **gate-2 (`CrewCanGetThrough`) needs the car to run as an Enforce Script CLASS, not bare `CarScript`** — a car imported
 from a racing game with config `class <MOD>: CarScript` and no `.c` runs as bare CarScript whose `CrewCanGetThrough` returns false (base
 `Transport` stub) → get-in still never appears. See the next addendum, "GET-IN ROOT CAUSE #2".
 
 **Separate, do not conflate with get-in:** (a) doors do not have to open or close before get-in shows (see
-"Doors are NOT required for get-in" below; SUB_BRZ has no CarDoor **attachments**, its doors are baked into body
+"Doors are NOT required for get-in" below; TestCoupe has no CarDoor **attachments**, its doors are baked into body
 chunks). (b) get-in's `CanReachSeatFromDoors` (`carscript.c:2177`) uses the
 `seat_con_X_Y` **memory point** + player within 1.0 m, NOT the physical door attachment.
 
@@ -742,7 +741,7 @@ chunks). (b) get-in's `CanReachSeatFromDoors` (`carscript.c:2177`) uses the
 
 ---
 
-## Addendum (2026-06-25) — GET-IN ROOT CAUSE #2: a custom CarScript vehicle needs an Enforce Script CLASS, not just geometry [VERIFIED in-game on SUB_BRZ 2026-06-25 + vs vanilla source]
+## Addendum (2026-06-25) — GET-IN ROOT CAUSE #2: a custom CarScript vehicle needs an Enforce Script CLASS, not just geometry [VERIFIED in-game on TestCoupe 2026-06-25 + vs vanilla source]
 
 > Project-agnostic. Applies to ANY DayZ ground vehicle declared `class <MOD>: CarScript` with no `.c` script
 > class — imports from another game, OBJ or Blender, cars/trucks/quads authored from scratch. This is the get-in blocker that
@@ -838,7 +837,7 @@ control**: run the UNIVERSAL subset of checks against a known-good vanilla car (
 debinarized MLOD) and require it to PASS. If the sedan fails a "universal" check, the contract is
 wrong, not the car. Give the verifier a positive-control mode that takes the sedan MLOD.
 
-What the positive control CAUGHT and corrected — the per-car verifiers of MercedesAMGLF and SUB_BRZ both had it:
+What the positive control CAUGHT and corrected — the per-car verifiers of TestMercedes and TestCoupe both had it:
 - They asserted `wheel_X_Y_damper` / `wheel_X_Y_damper_axis` and `wheel_X_1_steering` / `_steering_axis`
   as **Memory-LOD universal** selections. **The vanilla sedan has NONE of them in Memory.** It uses a
   `susp_arm_*` linkage (double-wishbone) with `susp_arm_steering_X_1_axis` for steering, and keeps
@@ -894,27 +893,27 @@ The implementation for imports from another game and the MANDATORY-gates spec: `
 
 ---
 
-## Addendum (2026-06-27) — Crew get-in: dedicated seat components + canonical crew-proxy triangle [VERIFIED in-game: LFQuad + MercedesAMGLF]
+## Addendum (2026-06-27) — Crew get-in: dedicated seat components + canonical crew-proxy triangle [VERIFIED in-game: TestQuad + TestMercedes]
 
-The "Get in" radial and the seated player are governed by TWO ViewGeometry structures that procedural / regen body pipelines get wrong by default. Both blocked LFQuad (resolved 2026-06-05) and MercedesAMGLF (2026-06-27). Symptom: the driver works but the **codriver radial never appears**, and the seated player sits sideways/backward or mis-placed.
+The "Get in" radial and the seated player are governed by TWO ViewGeometry structures that procedural / regen body pipelines get wrong by default. Both blocked TestQuad (resolved 2026-06-05) and TestMercedes (2026-06-27). Symptom: the driver works but the **codriver radial never appears**, and the seated player sits sideways/backward or mis-placed.
 
 ### 1. Get-in appears for driver but NOT codriver (raycast "always driver")
 
 DayZ resolves the seat with **`Transport.CrewPositionIndex(componentIdx)`** (proto native, `P:\scripts\3_game\vehicles\transport.c:179`) over the **collision component the cursor raycast HITS in the ViewGeometry LOD** (`ObjIntersectView`, `dayzphysics.c:88`; consumed at `actiongetintransport.c:45-46`) — NOT by memory-point proximity. So each seat needs its OWN dedicated, clean, closed-convex component:
 
 - `seat_driver` = 1 dedicated `ComponentNN` (its own cube); `seat_codriver` = 1 dedicated `ComponentNN`. Dual-tag: the seat selection and its `ComponentNN` share the SAME faces (100% overlap).
-- Seats painted across a multi-component grid -> the raycast never lands cleanly on the 2nd seat -> "always driver". (LFQuad: `seat_driver/codriver` spread over 88/112 points across ~23 components -> codriver never appeared.)
+- Seats painted across a multi-component grid -> the raycast never lands cleanly on the 2nd seat -> "always driver". (TestQuad: `seat_driver/codriver` spread over 88/112 points across ~23 components -> codriver never appeared.)
 - References: vanilla CivilianSedan `seat_driver`=component31 / `seat_codriver`=component32 (one each); the reference quad one each.
-- **FIX (LFQuad + MercedesAMGLF):** replace with 2 dedicated seat-cube components — each a clean closed box (8 verts, 12 tris, ALL faces outward) tagged `seat_X` + its own `ComponentNN` on the same faces.
+- **FIX (TestQuad + TestMercedes):** replace with 2 dedicated seat-cube components — each a clean closed box (8 verts, 12 tris, ALL faces outward) tagged `seat_X` + its own `ComponentNN` on the same faces.
 
-Closed-car note (MercedesAMGLF): a closed car does NOT need the full body shell in ViewGeo — 2 dedicated seat cubes + wheel/crew proxies suffice. A solid body box (e.g. a central "spine") only OCCLUDES the seat cubes (cursor hits the spine first -> no seat hit) -> remove it. LFQuad/vanilla keep a shell only because they are open / have window openings.
+Closed-car note (TestMercedes): a closed car does NOT need the full body shell in ViewGeo — 2 dedicated seat cubes + wheel/crew proxies suffice. A solid body box (e.g. a central "spine") only OCCLUDES the seat cubes (cursor hits the spine first -> no seat hit) -> remove it. TestQuad/vanilla keep a shell only because they are open / have window openings.
 
 ### 2. Seated player sideways/backward/mis-placed, and proxy translations "don't move" him
 
 Seated position AND orientation come from the **crew-proxy triangle** (`crewdriver`/`crewcodriver`, present in ViewGeo AND FireGeo), NOT from `pos_driver`/`pos_codriver` memory points. Two traps:
 
-- **Triangle SHAPE must be CANONICAL = 3 distinct angles.** `origin + e1 + e2` with edge lengths ~1.0 and ~2.0 (angles 90 / 63.4 / 26.6). An isosceles 90/45/45 triangle = AMBIGUOUS frame (the proxy angle-sort rule ties -> orientation rotates differently per seat). A TINY triangle (py3d `add_proxy(scale=0.1)` -> edges ~0.05) is below the engine's frame-derivation threshold -> player mis-placed AND **translating the proxy has little/no visible effect** (the "I moved it and nothing happened" symptom on MercedesAMGLF). Make it canonical and translations respond.
-- **FRAME (facing) depends on e1/e2 AND the model's base orientation.** Model facing -z (vanilla convention) -> SUB_BRZ and vanilla use `e1=(0,0,1), e2=(0,2,0)` -> `R=((-1,0,0),(0,0,1),(0,1,0))`. A model yaw-rotated 180 deg (e.g. an import reoriented in a later phase, like MercedesAMGLF) needs `e1=(0,0,-1)` -> `R=((1,0,0),(0,0,-1),(0,1,0))` to face forward. Replicate a KNOWN-GOOD same-orientation reference; do NOT copy a frame cross-model without recomputing. Practical tell: with the canonical triangle, +z moved the MercedesAMGLF player FORWARD (its forward is -z after the 180 deg yaw) — establish the sign empirically once, then it is exact.
+- **Triangle SHAPE must be CANONICAL = 3 distinct angles.** `origin + e1 + e2` with edge lengths ~1.0 and ~2.0 (angles 90 / 63.4 / 26.6). An isosceles 90/45/45 triangle = AMBIGUOUS frame (the proxy angle-sort rule ties -> orientation rotates differently per seat). A TINY triangle (py3d `add_proxy(scale=0.1)` -> edges ~0.05) is below the engine's frame-derivation threshold -> player mis-placed AND **translating the proxy has little/no visible effect** (the "I moved it and nothing happened" symptom on TestMercedes). Make it canonical and translations respond.
+- **FRAME (facing) depends on e1/e2 AND the model's base orientation.** Model facing -z (vanilla convention) -> TestCoupe and vanilla use `e1=(0,0,1), e2=(0,2,0)` -> `R=((-1,0,0),(0,0,1),(0,1,0))`. A model yaw-rotated 180 deg (e.g. an import reoriented in a later phase, like TestMercedes) needs `e1=(0,0,-1)` -> `R=((1,0,0),(0,0,-1),(0,1,0))` to face forward. Replicate a KNOWN-GOOD same-orientation reference; do NOT copy a frame cross-model without recomputing. Practical tell: with the canonical triangle, +z moved the TestMercedes player FORWARD (its forward is -z after the 180 deg yaw) — establish the sign empirically once, then it is exact.
 - **The triangle ORIGIN (v0) anchor sets the seated HEIGHT + longitudinal position** — not the memory point. Translate all 3 verts together; use ~15 cm steps (small steps read as "no change"). A low sports-car roof may clip the standing pose regardless (inherent; not fixable from the .p3d).
 
 ### Builder fix (so future cars never hit this)
@@ -922,25 +921,25 @@ Import and regen builders create crew proxies via `add_proxy(..., scale=0.1)` ->
 
 The earlier diagnosis "codriver needs crew proxies in FireGeo" is REFUTED: the cause is collision-component cleanliness + the canonical proxy triangle, not FireGeo presence.
 
-### CRITICAL EXTENSION (2026-06-28, SUB_BRZ — in-game CONFIRMED): seat ComponentNN cubes must be INWARD-wound + point flags `0x0000003F`, or they are NOT raycast-collidable
+### CRITICAL EXTENSION (2026-06-28, TestCoupe — in-game CONFIRMED): seat ComponentNN cubes must be INWARD-wound + point flags `0x0000003F`, or they are NOT raycast-collidable
 
 The "2 dedicated clean cubes, all faces outward" rule above is NECESSARY BUT NOT SUFFICIENT for a py3d-authored vehicle. A seat cube with **OUTWARD winding + point flags 0** is **invisible to `DayZPhysics.RaycastRV(..., ObjIntersectView)`** — the get-in action-target raycast never resolves it, so `CrewPositionIndex` falls back to component0 and the **codriver radial never appears** (the driver "works" only by that fallback; even the driver cube isn't truly hit). The crew mapping `CrewPositionIndex(comp)->crewIdx` is already correct (comp0→driver, comp1→codriver) — irrelevant while the geometry isn't raycast-collidable.
 
-Measured (SUB_BRZ vs LFQuad positive control, headless probe): BRZ seat cubes were OUTWARD + flags 0 → `RaycastRV` `hit=0` from every direction at the exact cube center. After rebuilding the BRZ ViewGeo seat ComponentNN with **inward winding + point flags copied from the control** (not just shape/name), `RaycastRV` returns `hit=1 comp=1 crewIdx=1` and the codriver get-in works **in-game (confirmed 2026-06-28)**. The flag value to copy is `0x0000003F`: sealed control `civiliansedan_mlod.p3d` SHA `823585B6EC9727F70C3ABCAD309ECBF7E87DBA1E66FA14A1ECAB9AB1FCA921DD`, ViewGeometry (res 6e15), 478 points / 422 faces, histogram `0x0000003F` → 478 points (100.0%), `0x02000000` → 0 points (measured with py3d 1.4.0, reproduced on two byte-identical copies of the file). The patch changed winding and flags together and never isolated the flag as cause; the safe rule is the sealed vanilla convention. Corroborated on a second working model: the MLOD of the reference quad carries `0x0000003F` on 482 of 482 ViewGeometry points. The `0x02000000` once recorded as the requirement is what the py3d-based exporter emits — 290 of 296 points on the LFQuad body — so that value had been measured on the product, not on the control.
+Measured (TestCoupe vs TestQuad positive control, headless probe): BRZ seat cubes were OUTWARD + flags 0 → `RaycastRV` `hit=0` from every direction at the exact cube center. After rebuilding the BRZ ViewGeo seat ComponentNN with **inward winding + point flags copied from the control** (not just shape/name), `RaycastRV` returns `hit=1 comp=1 crewIdx=1` and the codriver get-in works **in-game (confirmed 2026-06-28)**. The flag value to copy is `0x0000003F`: sealed control `civiliansedan_mlod.p3d` SHA `823585B6EC9727F70C3ABCAD309ECBF7E87DBA1E66FA14A1ECAB9AB1FCA921DD`, ViewGeometry (res 6e15), 478 points / 422 faces, histogram `0x0000003F` → 478 points (100.0%), `0x02000000` → 0 points (measured with py3d 1.4.0, reproduced on two byte-identical copies of the file). The patch changed winding and flags together and never isolated the flag as cause; the safe rule is the sealed vanilla convention. Corroborated on a second working model: the MLOD of the reference quad carries `0x0000003F` on 482 of 482 ViewGeometry points. The `0x02000000` once recorded as the requirement is what the py3d-based exporter emits — 290 of 296 points on the TestQuad body — so that value had been measured on the product, not on the control.
 
-**Rule:** build ViewGeometry collision ComponentNN for vehicles (seats, and any cursor/action-targetable component) by COPYING the sealed vanilla control's convention — **inward winding + point flags `0x0000003F`** — not py3d's default outward+flags0. Outward py3d boxes pass every offline shape/winding/dual-tag check yet are NOT raycast-collidable. Dual-tag and the in-game confirmations stand: SUB_BRZ and MercedesAMGLF headless `hit=1 comp=6 crewIdx=1`.
+**Rule:** build ViewGeometry collision ComponentNN for vehicles (seats, and any cursor/action-targetable component) by COPYING the sealed vanilla control's convention — **inward winding + point flags `0x0000003F`** — not py3d's default outward+flags0. Outward py3d boxes pass every offline shape/winding/dual-tag check yet are NOT raycast-collidable. Dual-tag and the in-game confirmations stand: TestCoupe and TestMercedes headless `hit=1 comp=6 crewIdx=1`.
 
 **Diagnostic (reusable, no manual aim):** a headless mission probe that spawns the car + a known-good control, dumps `CrewPositionIndex(0..79)`, and casts `DayZPhysics.RaycastRV` (FIRE+VIEW) at each seat — localizes "mapping vs raycast vs collidability" in one run. Parse the raw `hit=1 comp=N crewIdx=N` lines, NOT a boolean verdict — a regex `-match '1'` also matches `-1` (a false-green seen in practice).
 
-### MercedesAMGLF CONFIRMATION + refinements (2026-06-28) — the seat winding+flags fix CONFIRMED on a 2nd car
+### TestMercedes CONFIRMATION + refinements (2026-06-28) — the seat winding+flags fix CONFIRMED on a 2nd car
 
-The CRITICAL EXTENSION above is now CONFIRMED on MercedesAMGLF (headless crew-probe: codriver VIEW ray from its door side -> `hit=1 comp=6 crewIdx=1`; driver -> `hit=1 comp=5 crewIdx=0`). Three refinements from applying it to a CLOSED car:
+The CRITICAL EXTENSION above is now CONFIRMED on TestMercedes (headless crew-probe: codriver VIEW ray from its door side -> `hit=1 comp=6 crewIdx=1`; driver -> `hit=1 comp=5 crewIdx=0`). Three refinements from applying it to a CLOSED car:
 
-- **Apply it MINIMALLY when the seat ComponentNN already map.** If the ViewGeo seats already enumerate as their own ComponentNN with the correct crew mapping (verify with the get-in diag PROBE / crew-probe `CrewPositionIndex(comp)`), do NOT rebuild the whole ViewGeo (SUB_BRZ rebuilt all ~23 components). Flip ONLY the seat ComponentNN faces in-place to inward winding + set their point flags to `0x0000003F`, recomputing each face normal from the new (inward) order. This preserves the verified component indices/positions and the seat<->componentNN dual-tag. MercedesAMGLF: only `seat_driver`=Component06 / `seat_codriver`=Component07 changed; body components left untouched; the car's verifier stayed 35/35.
+- **Apply it MINIMALLY when the seat ComponentNN already map.** If the ViewGeo seats already enumerate as their own ComponentNN with the correct crew mapping (verify with the get-in diag PROBE / crew-probe `CrewPositionIndex(comp)`), do NOT rebuild the whole ViewGeo (TestCoupe rebuilt all ~23 components). Flip ONLY the seat ComponentNN faces in-place to inward winding + set their point flags to `0x0000003F`, recomputing each face normal from the new (inward) order. This preserves the verified component indices/positions and the seat<->componentNN dual-tag. TestMercedes: only `seat_driver`=Component06 / `seat_codriver`=Component07 changed; body components left untouched; the car's verifier stayed 35/35.
 
-- **"Body shell in ViewGeo / high-index seats" is a RED HERRING for the codriver blocker.** MercedesAMGLF added 5 body occlusion components + moved seats to high indices (idx 5/6) on the theory that the engine "could not discriminate 2 bare cubes" -> the codriver STILL failed. The real and ONLY cause was winding+flags (proven on the next run). Confirms + sharpens the 2026-06-27 closed-car note: a closed car needs NEITHER a body shell NOR high-index seat placement in ViewGeo -- just the 2 seat cubes, inward-wound + point-flagged. Leave any body occlusion components OUTWARD + flags 0 (inert, non-raycast-collidable -> cannot occlude the seat ray). Do not chase the "give the ViewGeo a body" lever; chase winding+flags.
+- **"Body shell in ViewGeo / high-index seats" is a RED HERRING for the codriver blocker.** TestMercedes added 5 body occlusion components + moved seats to high indices (idx 5/6) on the theory that the engine "could not discriminate 2 bare cubes" -> the codriver STILL failed. The real and ONLY cause was winding+flags (proven on the next run). Confirms + sharpens the 2026-06-27 closed-car note: a closed car needs NEITHER a body shell NOR high-index seat placement in ViewGeo -- just the 2 seat cubes, inward-wound + point-flagged. Leave any body occlusion components OUTWARD + flags 0 (inert, non-raycast-collidable -> cannot occlude the seat ray). Do not chase the "give the ViewGeo a body" lever; chase winding+flags.
 
-- **Crew-probe seat anchor: aim at `pos_driver`/`pos_codriver` memory points (engine space) -- but ONLY if they sit inside the seat cube.** `c.GetMemoryPointPos("pos_driver")` returns ENGINE-space coords, sidestepping the py3d->engine sign flip (MercedesAMGLF engine driver = +x, py3d driver = -x). Its pos_driver/codriver are y~0.78, INSIDE the seat cubes -> aim there directly (no height-raise). CAVEAT for the positive control: a VANILLA car's `pos_driver` is the door-sill ENTRY point (CivilianSedan: y~0.07, x~+-1.4), NOT the seat center -> a ray aimed there hits the body (comp=-1), giving a FALSE "control failed". For a positive control, anchor at the seat ComponentNN centroid, or use a car whose `pos_X` is at the seat (LFQuad). The target's result is self-validating when its rays hit the real seat comps.
+- **Crew-probe seat anchor: aim at `pos_driver`/`pos_codriver` memory points (engine space) -- but ONLY if they sit inside the seat cube.** `c.GetMemoryPointPos("pos_driver")` returns ENGINE-space coords, sidestepping the py3d->engine sign flip (TestMercedes engine driver = +x, py3d driver = -x). Its pos_driver/codriver are y~0.78, INSIDE the seat cubes -> aim there directly (no height-raise). CAVEAT for the positive control: a VANILLA car's `pos_driver` is the door-sill ENTRY point (CivilianSedan: y~0.07, x~+-1.4), NOT the seat center -> a ray aimed there hits the body (comp=-1), giving a FALSE "control failed". For a positive control, anchor at the seat ComponentNN centroid, or use a car whose `pos_X` is at the seat (TestQuad). The target's result is self-validating when its rays hit the real seat comps.
 
 - **Crew-probe tooling** (reusable, no manual aim): a mission `init.c` that spawns target + control near the player, dumps the `CrewPositionIndex` table and casts RaycastRV VIEW+FIRE per seat from +-x/+-z; and a runner that injects the probe into the PROJECT-LOCAL `<Mod>_dev\_server\mpmissions\...\init.c` (NOT the shared DayZServer mission), launches detached, polls the server `script.log` for `[CREW-PROBE]`, and restores the original init.c in `finally`. Parse the raw `hit=N comp=N crewIdx=N` integers, never a regex `-match '1'` (it also matches `-1`). Build-only PBO for the probe: `dayz-test.ps1 -Build` builds and then launches (it has no build-only switch) -> replicate its AddonBuilder call directly (`<src> <target> -prefix=<Mod> -temp=<FRESH_DIR> -packonly`); a FRESH `-temp` gives a clean sync.
 
@@ -954,7 +953,7 @@ The CRITICAL EXTENSION above is now CONFIRMED on MercedesAMGLF (headless crew-pr
 
 Regenerating a high-poly body from a glTF/FBX and splitting it into proxies to beat the
 vertex ceiling (measured per model, gated by binarize: see `binarize-vertex-budget.md`) has two traps that pass every offline gate and
-only surface in-game. Measured on MercedesAMGLF, 2026-06-24.
+only surface in-game. Measured on TestMercedes, 2026-06-24.
 
 ### glTF→DayZ winding: the offline check can be a tautology
 The transform `DayZ=(-s·bx,+s·bz,-s·by)` has `det=-1` (a mirror) and flips face handedness. A winding
@@ -974,14 +973,14 @@ A proxy `proxy:\...\X.NNN` is a tiny triangle whose engine-derived frame (angle-
 frame is not the whole story: the engine places the referenced model by a **non-origin reference
 point**, so a vanilla wheel (local geometry centered at its own origin, ~0.4 m, full LOD set) lands
 right while a body region in **model-space** (car-sized, single visual LOD) is shifted by roughly its
-own extent. Two fixes that FAILED on MercedesAMGLF: bumping the proxy-triangle scale (the engine
+own extent. Two fixes that FAILED on TestMercedes: bumping the proxy-triangle scale (the engine
 normalizes the triangle, so scale is moot) and the "wheel pattern" (re-center the geometry to its
 bbox-center + anchor at that center — proves the engine does not use bbox-center either).
 
 A first reading of this ("vanilla does not proxy the car body, so fit the body under 65535 as direct
 geometry instead") is superseded by the next block.
 
-### proxy placement — the confirmed convention (in-game, 2026-06-24, MercedesAMGLF)
+### proxy placement — the confirmed convention (in-game, 2026-06-24, TestMercedes)
 
 The model-space geometry with py3d's "identity" frame FAILED in game: the body proxies rendered rotated or
 invisible, while the offline gate (frame = identity for all 6 `mb_` proxies, scatter render, verifier 33/33) was
@@ -999,28 +998,28 @@ Detailed car mods DO proxy the body and it works. A pure-geometry proxy (1 visua
 
 Attachment proxies (wheel/crew/door) are NOT a placement reference: they are placed by physics/config (axles,
 `proxyPos`) so their non-zero `pos` misleads. Re-fit/decimate is the WRONG default for a high-detail body
-(MercedesAMGLF body ~167k resolved → ~60% decimation); proxies are correct and work when authored as above.
+(TestMercedes body ~167k resolved → ~60% decimation); proxies are correct and work when authored as above.
 The transform-scale reference must be a STABLE artifact (the donor `.p3d`), never the
 deployed shell (pointing at your own output shrinks scale ~3%/rebuild). **For proxies the offline
 frame/render is NOT a valid gate — the gate is the in-game render.**
 
 
 
-## GET-IN RADIAL + LOD LADDER on proxy-body cars (added 2026-06-27, MercedesAMGLF)
+## GET-IN RADIAL + LOD LADDER on proxy-body cars (added 2026-06-27, TestMercedes)
 
 ### Script binding (precondition, silent failure)
 A car `class X: CarScript` whose `CfgMods.<Mod>.defs.worldScriptModule` does not load its script path →
 the script class never binds → the get-in trio (and every override) is DEAD without error (`script.log`
 0-byte = false-clean; telemetry reports BASE class `CarScript`). On DayZ 1.29 the working form was
 `dir = "<Mod>";` plus backslashes, `files[] = {"<Mod>\scripts\4_World"}`. On DayZ 1.30.164200 that does not
-hold (measured in game): LFQuad's `dir = "LFQuad"` plus a backslash path loaded nothing on the server, and the
+hold (measured in game): TestQuad's `dir = "TestQuad"` plus a backslash path loaded nothing on the server, and the
 same path with forward slashes loaded; detail and counts are in `dayz-1-30-vehicles.md`. Write forward slashes.
 Confirm with telemetry `ClassName()` ≠ base, and by comparing the script log's
 `Module: World; loaded Nx files` line with a run without the mod. For telemetry to read the EXACT
 config-class name, the leaf class `class <Mod> extends <Mod>_Base {}` is required.
 
 ### The "Get in" radial — blocker is GEOMETRIC (collision component + crew proxy), NOT `GetCrewIndex`
-A missing `GetCrewIndex` override is not the cause: MercedesAMGLF resolved DRIVER get-in in game without
+A missing `GetCrewIndex` override is not the cause: TestMercedes resolved DRIVER get-in in game without
 touching `GetCrewIndex` (telemetry `comp=0 crewIdx=0`, the native mapping works). The full mechanism is in
 Addendum 2026-06-27 "Crew get-in" above. Summary:
 
@@ -1028,28 +1027,28 @@ Addendum 2026-06-27 "Crew get-in" above. Summary:
 hit by cursor raycast in ViewGeo** (`ObjIntersectView`, actiongetintransport.c:45-46) — NOT by
 `GetCrewIndex` nor by memory points. The two real blockers, both geometric:
 - an **occluding solid box** in ViewGeo (e.g., a central "spine") → cursor hits it BEFORE the seat
-  cube → no get-in. Fix = delete it (MercedesAMGLF driver, in-game).
+  cube → no get-in. Fix = delete it (TestMercedes driver, in-game).
 - each seat = its **own clean, dedicated ComponentNN** (closed cube, dual-tag); painted onto a multi-component
-  grid → "always driver", codriver is never hit (LFQuad).
+  grid → "always driver", codriver is never hit (TestQuad).
 - pose comes from **CANONICAL crew-proxy triangle** (edges ~1.0/2.0), not from tiny `add_proxy(scale=0.1)`.
 
 `GetCrewIndex` and the door system are NOT the path for basic get-in (both
-LFQuad and MercedesAMGLF show the driver radial without them). A forced seat entry does not prove
+TestQuad and TestMercedes show the driver radial without them). A forced seat entry does not prove
 get-in: an MCP `vehicle_enter` call puts the player in the seat and bypasses `ActionCondition`, so a
 car on which the radial was never observed is a FALSE-GREEN. Observe the radial itself.
 
 
 ### DECISIVE codriver blocker = INWARD-wound seat ComponentNN + point flags `0x0000003F`
-"Clean seat cubes, all faces outward" is NECESSARY BUT NOT SUFFICIENT, and the door system is not needed. The rule, the measurement on the sealed vanilla control, the minimal way to apply it and the crew-probe gate are in "CRITICAL EXTENSION (2026-06-28)" and "MercedesAMGLF CONFIRMATION + refinements" above. Codriver get-in works on SUB_BRZ (in game) and MercedesAMGLF (headless probe) with it. For any new py3d-built car apply it up front; do not discover the blocker in game.
+"Clean seat cubes, all faces outward" is NECESSARY BUT NOT SUFFICIENT, and the door system is not needed. The rule, the measurement on the sealed vanilla control, the minimal way to apply it and the crew-probe gate are in "CRITICAL EXTENSION (2026-06-28)" and "TestMercedes CONFIRMATION + refinements" above. Codriver get-in works on TestCoupe (in game) and TestMercedes (headless probe) with it. For any new py3d-built car apply it up front; do not discover the blocker in game.
 
 ### Inverted wheels: measure axis in .p3d BEFORE setting `angle1` (offline check, predicts bug without in-game)
 `model.cfg` wheel `angle1` must match `dir` of each `wheel_X_Y_axis` (2 points in Memory LOD):
-- UNIFORM axes (all 4 with same X sign) → UNIFORM `angle1` across all 4 (LFQuad `(1,0,0)`; SUB_BRZ `(1,0,0)`→`-6.283`).
+- UNIFORM axes (all 4 with same X sign) → UNIFORM `angle1` across all 4 (TestQuad `(1,0,0)`; TestCoupe `(1,0,0)`→`-6.283`).
 - MIRRORED axes (opposite X sign L/R) → alternating L/R `angle1` (the example 4x4's convention).
 Applying the right-side flip on uniform axes spins the right side backwards.
-**Audit 2026-06-27:** MercedesAMGLF had uniform axes `(-1,0,0)` but alternating `angle1` → inverted
+**Audit 2026-06-27:** TestMercedes had uniform axes `(-1,0,0)` but alternating `angle1` → inverted
 wheels, predicted OFFLINE. Fix = uniform `angle1`. Offline check: `py3d` → `dir` of `wheel_X_Y_axis`, compare
-X signs between L and R (reusable script: `skills/dayz-vehicles/scripts/audit_getin_wheels.py`).
+X signs between L and R (reusable script: `skills/dayz-p3d-audit/scripts/audit_getin_wheels.py`).
 
 ### LOD ladder for a shell+proxy car (re-import of decimated model)
 The body is split into shell-core (carpaint/glass/lights, direct in LOD) + N `mb_` proxies (each under the
@@ -1065,7 +1064,7 @@ per-model vertex ceiling of `binarize-vertex-budget.md`). For a ladder of visual
 - Gate PER LOD and PER proxy on binarize's verdict, not on a fixed number (see `binarize-vertex-budget.md`
   item 4: the 65535 resolved count is a false friend; the measured cliff was 46,133 triples); the car's verifier must stay green.
 - First gentle step (e.g., −20% LOD0→LOD1) preserves close-up quality; accelerate after. Measured ladder on
-  MercedesAMGLF: 5 LODs 182k/145k/73k/23k/7k + shadow.
+  TestMercedes: 5 LODs 182k/145k/73k/23k/7k + shadow.
 
 ## Occluder membership beats component granularity (correction, added 2026-08-31)
 

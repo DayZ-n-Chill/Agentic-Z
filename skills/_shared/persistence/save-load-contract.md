@@ -4,7 +4,9 @@ How the object store saves an entity, what vanilla already writes for you, and t
 
 ## Where it runs
 
-Both hooks run on the server only. The engine calls `OnStoreSave` to collect an entity's data and `OnStoreLoad` when it reads it back (`P:\scripts\3_game\entities\entityai.c:2894` and `:2955`). Never call them yourself, and never send their data to clients; use net sync for that.
+Both hooks run on the server only. The engine calls `OnStoreSave` to collect an entity's data and `OnStoreLoad` when it reads it back (`P:\scripts\3_game\entities\entityai.c:2910` and `:2978`). Never call them yourself, and never send their data to clients; use net sync for that.
+
+Nothing registers an entity for saving in script: overriding the pair is the whole opt-in. The scripts hold no `RegisterPersistent` call; the only similar name, `RegisterPersistentObject`, belongs to the underground power generator (`P:\scripts\4_world\entities\building\underground\powergeneratorstatic.c:18`, `:26`).
 
 | Hook | Signature | Source |
 |---|---|---|
@@ -33,7 +35,7 @@ Never skip a fixed number of values after `super` to reach your own. What `Entit
 | A version and ten ints, for a rebuildable map building | `Rebuilding` overrides `HandleStoreSave` and calls `SerializeConstructionData` | `P:\scripts\4_world\classes\rebuilding\rebuilding.c:473`; `SerializeConstructionData` at `P:\scripts\4_world\classes\rebuilding\rebuilding.c:501` |
 | Eight energy values, or none | Only when the entity has an energy manager (`m_EM`) | `P:\scripts\3_game\entities\entityai.c:2917` to `:2948` |
 
-A reader that counts values instead of calling `super.OnStoreLoad` passes every test made with one kind of object and breaks on the other. Test a class that can exist with and without the energy component in both forms. The deep version of this contract is `references/vanilla-stream.md` in the `dayz-persistence` skill.
+A reader that counts values instead of calling `super.OnStoreLoad` passes every test made with one kind of object and breaks on the other. Test a class that can exist with and without the energy component in both forms.
 
 ## What vanilla already saves
 
@@ -70,7 +72,7 @@ Do not return `false` to mean "this save has no value for my new field". That ca
 
 Two additions, neither of which changes the advice above:
 
-* **Measured in game, not checkable on `P:\`.** A mod class that returned `false` from `OnStoreLoad` on DayZDiag 1.29.163709 was kept by the engine: the RPT printed `!!! Scripted variables corrupted upon "<class>"` and the object stayed in the world with its script variables at their defaults, apart from what the load had already assigned. So a `false` loses the saved state, not necessarily the object, and can leave a half loaded object behind. To remove the object, delete it yourself. What the next save writes was not measured. Details: `references/load-and-restore.md` in the `dayz-persistence` skill.
+* **Measured in game, not checkable on `P:\`.** A mod class that returned `false` from `OnStoreLoad` on DayZDiag 1.29.163709 was kept by the engine: the RPT printed `!!! Scripted variables corrupted upon "<class>"` and the object stayed in the world with its script variables at their defaults, apart from what the load had already assigned. So a `false` loses the saved state, not necessarily the object, and can leave a half loaded object behind. To remove the object, delete it yourself. What the next save writes was not measured. Details: `load-and-restore.md`.
 * **Read into locals, then commit.** Vanilla reads straight into members and sets a default before it returns `false`, for example `m_Combination = 0` in `CombinationLock` (`P:\scripts\4_world\entities\itembase\combinationlock.c:145` to `:148`). That leaves partly applied state after a failed load. In mod code, read every value into a local variable and copy the locals to the members only after the last read succeeded.
 
 ## Other saving hooks worth knowing
@@ -87,11 +89,11 @@ The central economy keeps a lifetime in seconds on every entity it persists. `Se
 
 Measured in game on DayZDiag 1.29.163709 with a mod's placed objects (engine behaviour, not checkable on `P:\`): a class with no entry in any `types.xml` gets a maximum lifetime of 1800 seconds, a new object starts at 1 to 2 times that, the lifetime runs down with a player standing next to it, a restart saves and restores what remains, and objects whose lifetime ran out are deleted during the next startup. Adding the entry later protects only objects created after it.
 
-So correct save code does not keep an object in the world. Every class a player places, or that otherwise persists, needs an entry with an explicit `lifetime` in the mod's own `types.xml` (vanilla gives `Fence` and `Watchtower` 3888000 in the Chernarus mission's `db/types.xml`, a server file that is not on `P:\`), and a persistence test with objects younger than an hour proves nothing. Evidence and limits: `references/lifetime-and-storage.md` in the `dayz-persistence` skill.
+So correct save code does not keep an object in the world. Every class a player places, or that otherwise persists, needs an entry with an explicit `lifetime` in the mod's own `types.xml` (vanilla gives `Fence` and `Watchtower` 3888000 in the Chernarus mission's `db/types.xml`, a server file that is not on `P:\`), and a persistence test with objects younger than an hour proves nothing. Evidence and limits: `lifetime-and-storage.md`.
 
 ## Stored entities load after `OnMissionStart`
 
-Measured in game on DayZDiag 1.29.163709 (not checkable on `P:\`): the engine creates stored entities after `MissionServer.OnMissionStart` returns, and an entity's `EEInit` runs before its `OnStoreLoad`. A structure the mod rebuilds from its own file, and that stored entities can rest on (a floor, a platform), is therefore created inside `OnMissionStart`, not in a delayed call; a stored vehicle parked on a platform that was rebuilt two seconds later fell to the terrain. A later pass may only bind what already exists. Details: `references/load-and-restore.md` in the `dayz-persistence` skill.
+Measured in game on DayZDiag 1.29.163709 (not checkable on `P:\`): the engine creates stored entities after `MissionServer.OnMissionStart` returns, and an entity's `EEInit` runs before its `OnStoreLoad`. A structure the mod rebuilds from its own file, and that stored entities can rest on (a floor, a platform), is therefore created inside `OnMissionStart`, not in a delayed call; a stored vehicle parked on a platform that was rebuilt two seconds later fell to the terrain. A later pass may only bind what already exists. Details: `load-and-restore.md`.
 
 ## Vanilla examples to read
 

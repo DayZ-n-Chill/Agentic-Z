@@ -515,7 +515,8 @@ def test_every_user_facing_dayz_skill_is_a_target():
     assert sorted(skills - not_targets - set(CFG["targets"])) == []
 
 
-# The model, texture, animation and test tool skills: a request for the tool itself goes to the skill.
+# The model, texture, animation and test tools: a request for the tool goes to the skill that runs it,
+# or to the agent that reads the pack when the old tool skill became knowledge.
 @pytest.mark.parametrize(
     "text, expected",
     [
@@ -525,48 +526,51 @@ def test_every_user_facing_dayz_skill_is_a_target():
         ("inspect my vest.p3d", "dayz-p3d-inspector"),
         ("show me the memory points of the door", "dayz-p3d-inspector"),
         ("build a p3d from this recipe json", "dayz-p3d-inspector"),
-        ("reverse engineer this Workshop mod", "dayz-pbo-reverse-engineering"),
-        ("extract the pbos of that trader mod and look for patterns", "dayz-pbo-reverse-engineering"),
+        ("reverse engineer this Workshop mod", "dayz-import-mod"),
+        ("extract the pbos of that trader mod and look for patterns", "dayz-import-mod"),
         ("align the proxies on my mannequin", "dayz-proxy-align"),
         ("the vest proxy comes out rotated", "dayz-proxy-align"),
-        ("verify MyVest in game with MCP", "dayz-mcp-verify"),
-        ("run the vehicle acceptance ladder", "dayz-mcp-verify"),
+        ("verify MyVest in game with MCP", "dayz-launch-test"),
+        ("run the vehicle acceptance ladder", "dayz-launch-test"),
         ("lint my rvmat", "dayz-texture-pipeline"),
         ("is my normal map OpenGL or DirectX?", "dayz-texture-pipeline"),
-        ("check the get-in points on my truck", "dayz-vehicles"),
-        ("audit my car model before I pack it", "dayz-vehicles"),
+        ("check the get-in points on my truck", "dayz-p3d-audit"),
+        ("audit my car model before I pack it", "dayz-p3d-audit"),
         ("run the winding gate on my zombie", "dayz-characters"),
-        ("write a motion contract for the reload", "dayz-realistic-animation-director"),
-        ("write a feature spec for the trader", "dayz-feature-spec"),
+        ("write a motion contract for the reload", "dayz-animation-pipeline"),
+        ("write a feature spec for the trader", "dayz-scope-mod"),
         ("open the alignment viewer for my vest", "dayz-clothing"),
+        ("use dayz-model-tools", "dayz-model-tools"),
+        ("make realistic animations for the vault", "dayz-animation-specialist"),
         ("port my mod to 1.30", "dayz-mod-dev"),
         ("show me the error catalog", "dayz-mod-workflow"),
-        ("what hot-reloads with file patching?", "dayz-test-ingame"),
-        ("how do I run a headless client under Proton", "dayz-test-ingame"),
+        ("what hot-reloads with file patching?", "dayz-build-engineer"),
+        ("how do I run a headless client under Proton", "dayz-build-engineer"),
     ],
 )
 def test_domain_tool_skills_route_confidently(text, expected):
     _assert_confident(text, expected, None)
 
 
-# The reference skills: asking for the reference goes to the skill, as with dayz-particles.
+# The reference skills: asking for the reference goes to the skill, as with dayz-particles; a reference
+# that is now a knowledge pack goes to the agent that reads it.
 @pytest.mark.parametrize(
     "text, expected",
     [
         ("use dayz-animation-pipeline", "dayz-animation-pipeline"),
         ("open the model pipeline", "dayz-model-pipeline"),
         ("show me the AI patterns", "dayz-ai-patterns"),
-        ("open the aviation reference", "dayz-aviation"),
+        ("open the aviation reference", "dayz-vehicle-specialist"),
         ("where is the base building reference?", "dayz-basebuilding"),
-        ("show me the doors reference", "dayz-doors"),
-        ("open the sandstorm reference", "dayz-environment-hazards"),
-        ("open the motorbike reference", "dayz-motorbikes"),
+        ("show me the doors reference", "dayz-animation-specialist"),
+        ("open the sandstorm reference", "dayz-map-specialist"),
+        ("open the motorbike reference", "dayz-vehicle-specialist"),
         ("open the persistence reference", "dayz-persistence"),
-        ("open the physics engine reference", "dayz-physics-engine"),
-        ("open the sound system reference", "dayz-sound-system"),
+        ("open the physics engine reference", "dayz-physics-specialist"),
+        ("open the sound system reference", "dayz-audio-fx-specialist"),
         ("open the UI development reference", "dayz-ui-development"),
-        ("open the underground reference", "dayz-underground"),
-        ("open the weapons reference", "dayz-weapons"),
+        ("open the underground reference", "dayz-map-specialist"),
+        ("open the weapons reference", "dayz-weapon-specialist"),
     ],
 )
 def test_reference_skills_route_confidently(text, expected):

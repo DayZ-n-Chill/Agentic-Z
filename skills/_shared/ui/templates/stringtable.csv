@@ -1,0 +1,8 @@
+"Language","original","english","spanish","german","russian","chinesesimp"
+"STR_UI_MODAL_TITLE","Confirm action","Confirm action","Confirmar accion","Confirm action","Confirm action","Confirm action"
+"STR_UI_MODAL_MESSAGE","This body text is deliberately long so wrap has something to split. A key that resolves to one unbroken token cannot wrap, because wrap breaks on spaces.","This body text is deliberately long so wrap has something to split. A key that resolves to one unbroken token cannot wrap, because wrap breaks on spaces.","Este texto es largo a proposito para que wrap tenga por donde partir. Una clave sin resolver es un solo token y no puede partirse, porque wrap parte por espacios.","This body text is deliberately long so wrap has something to split. A key that resolves to one unbroken token cannot wrap, because wrap breaks on spaces.","This body text is deliberately long so wrap has something to split. A key that resolves to one unbroken token cannot wrap, because wrap breaks on spaces.","This body text is deliberately long so wrap has something to split. A key that resolves to one unbroken token cannot wrap, because wrap breaks on spaces."
+"STR_UI_YES","Yes","Yes","Si","Yes","Yes","Yes"
+"STR_UI_NO","No","No","No","No","No","No"
+"STR_UI_HUD_LABEL","Water","Water","Agua","Water","Water","Water"
+"STR_UI_HUD_VALUE","72%","72%","72%","72%","72%","72%"
+"STR_UI_FORM_LABEL","Player name","Player name","Nombre del jugador","Player name","Player name","Player name"

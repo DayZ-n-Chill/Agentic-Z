@@ -2,7 +2,7 @@
 
 Which per-tick event a car runs, what a non-owner client reads, why script visual state is missing on a fresh spawn, and how to probe a vehicle that draws or exits in the wrong place.
 
-> Status: measured in game on worked vehicle builds, each named in its entry (LFHeli OH-1, SUB_BRZ), and not yet checked on `P:\`. A citation written with its full `P:\` path was opened on vanilla data (a 1.30 build); a bare `file.c:N` repeats a full citation from the anchors list below. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: measured in game on worked vehicle builds, each named in its entry (TestHeli OH-1, TestCoupe), and not yet checked on `P:\`. A citation written with its full `P:\` path was opened on vanilla data (a 1.30 build); a bare `file.c:N` repeats a full citation from the anchors list below. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -12,7 +12,7 @@ Which per-tick event a car runs, what a non-owner client reads, why script visua
 - `EngineIsOn` is native on `Car` (`P:\scripts\3_game\vehicles\car.c:230`).
 - `RemoteObjectTreeDelete` and `RemoteObjectTreeCreate` are native on the game object (`P:\scripts\3_game\global\game.c:708-710`).
 
-## Per-tick events: CarScript has no EOnSimulate (added 2026-07-29, LFHeli OH-1)
+## Per-tick events: CarScript has no EOnSimulate (added 2026-07-29, TestHeli OH-1)
 
 Which events a `CarScript` registers, why `super.EOnSimulate` does nothing on a car, and where
 the car's per-tick work runs are written once, in `aviation-carscript-base.md` ("Events: where the
@@ -25,7 +25,7 @@ mod's checks that depend on replicated items (`CheckVitalItem`) must stay server
 
 ## Engine state on a non-owner occupant
 
-**Crew / engine state on a non-owner occupant (measured on LFHeli):**
+**Crew / engine state on a non-owner occupant (measured on TestHeli):**
 `Car.EngineIsOn()` on a client that is not the Pawn owner returns **false** even when the
 authority has the engine running — no exception, no warning. Measured on the occupant of
 seat 1 with a two-component probe in the same frame (`natEng=false syncEng=true`) and the
@@ -42,7 +42,7 @@ When the user reports that a vehicle **draws** somewhere the entity is not — b
 the vehicle climbs, a part left behind, a piece floating — the reflex is to instrument the transforms
 and compare. **That reflex has already been paid for and it returns nothing.**
 
-Measured on LFHeli OH-1 over a 26 m climb: root position, `GetRenderTransform`, both bones, the
+Measured on TestHeli OH-1 over a 26 m climb: root position, `GetRenderTransform`, both bones, the
 physics body (`dBodyGetWorldTransform`) and the pilot's world position **agreed digit-for-digit**
 while the hull was drawn on the ground. The consequence is the general rule:
 
@@ -86,7 +86,7 @@ PAIRS of twin events (the two EXIT lines gave a stable 33,99 s offset) and corre
 the owner's position series (FRAME p0) to date the divergence. Complements the Pawn ladder
 in `network-physics-ownership.md`.
 
-## Script visual state is not applied to a newly spawned vehicle, and the config default looks like a result (added 2026-09-10, SUB_BRZ)
+## Script visual state is not applied to a newly spawned vehicle, and the config default looks like a result (added 2026-09-10, TestCoupe)
 
 Visual code running from `OnVariablesSynchronized` **never executes** on a
 vehicle created with a bare spawn, because that vehicle has not synchronized anything yet. Car paints

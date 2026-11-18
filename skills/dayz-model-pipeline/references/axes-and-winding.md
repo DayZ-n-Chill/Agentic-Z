@@ -52,7 +52,7 @@ included), and every normal negated — `py3d.blender_to_dayz(model)`. Do **not*
 A glTF read without Blender needs one more step first (last paragraph). Not checked on this path:
 a mirrored node (negative determinant, below) arrives in Blender as an object with negative scale;
 read that part's winding in the exported MLOD (signed volume per closed shell, with the
-`check_dayz_winding.py` script of the `dayz-characters` skill) before trusting it.
+`check_dayz_winding.py` script of `/dayz-model-tools`) before trusting it.
 
 **glTF front faces are CCW by spec**, as Blender's are (a node whose global transform has a
 negative determinant, a mirrored instance, winds them clockwise: glTF 2.0 §3.7.4
@@ -65,7 +65,7 @@ inside-out (`py3d-direct-generation.md`, "Face Winding Verification"). [EXACT]
 Measured in game on two GLB/glTF-origin models:
 
 - an imported rifle (2026-06-11, binarized): pure swap, normals `−S·n` and `REVERSE_WINDING=False`
-  rendered with correct textures (the weapon import rule of the `dayz-weapons` skill, `import-rule-v4.md`);
+  rendered with correct textures (the weapon import transform, `skills/_shared/weapons/model-import.md`);
 - an imported car (2026-06-24): with its faces reversed after its det=-1 map it rendered
   see-through, and with the glTF order kept it rendered solid (`skills/_shared/vehicles/vehicle-structural-parity.md`,
   under "glTF→DayZ winding: the offline check can be a
@@ -102,8 +102,8 @@ vertex order encodes the attachment frame (P0/P1/P2) and must NOT be reversed.";
 Rule 12 — Blender-authored FBX follows the det=-1 map with negated normals; GLB keeps its own
 path above (not re-tested against the 2026-10-01 in-game test)." The reversal dates from
 an early stage of the imported rifle above, when that project's
-builds shipped a stray raw MLOD at the PBO root, the file the engine loaded (`dayz-weapons`
-`references/import-rule-v4.md`, W-BUILD1); its first build that loaded the binarized model,
+builds shipped a stray raw MLOD at the PBO root, the file the engine loaded (`skills/_shared/weapons/model-import.md`,
+"Test the build the game will run"); its first build that loaded the binarized model,
 v12c, kept the vertex order.)*
 
 ## Decimate COLLAPSE corner normals
@@ -129,7 +129,7 @@ chirality check, as the `ai-3d-to-dayz` skill says. Every lineage measured with 
 det=+1 map started from Blender coordinates, where any det=+1 map mirrors the model: this profile's one
 calibration, a helicopter (2026-07-19: an artist's Blender model exported as OBJ, mapped with
 `x'=x, y'=z, z'=-y` and judged by which side rendered), an infected character (read mirrored in game:
-the character rigging notes of the `dayz-characters` skill, section 6) and the 2026-09-26 recipe (the history
+`skills/_shared/wearables/references/body-rigging.md`, section 6) and the 2026-09-26 recipe (the history
 section above). *(Aligned 2026-10-03 with Rule 12, measured in game 2026-10-01: from "An OBJ is in the
 frame" to here, this paragraph read "For other raw OBJ imports whose measured axis transform preserves
 the source winding, reverse the vertices of every **visual** MLOD face before binarization, and check

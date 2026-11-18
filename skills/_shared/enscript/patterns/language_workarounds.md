@@ -13,6 +13,7 @@ A "not supported" claim below means no vanilla script under `P:\scripts\` uses t
 - [No `null` for Primitives](#no-null-for-primitives)
 - [Overloading works, but keep it simple](#overloading-works-but-keep-it-simple)
 - [No Exception Handling](#no-exception-handling)
+- [No `do`/`while`](#no-dowhile)
 - [`foreach` with an index](#foreach-with-an-index)
 
 ---
@@ -147,6 +148,12 @@ int val;
 if (!TryParse(rawInput, val))
     Print("[MyMod] Parse failed for: " + rawInput);
 ```
+
+---
+
+## No `do`/`while`
+
+`do { } while (cond);` does not compile (measured). Write a `while` loop, testing the condition first or carrying a flag, as vanilla walks files with `while(FindNextFile(worlds, fileName, fileAttr))` (`P:\scripts\2_gamelib\entities\worldsmenu.c:79`).
 
 ---
 

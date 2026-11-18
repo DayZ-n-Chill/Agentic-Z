@@ -132,6 +132,12 @@ constructed by walking `sections` and mapping each face to its material. Vertex 
 comparable because vertex order is stable (its hash matches across runs). Diagnose in three
 steps: counts, then payload, then the canonical multiset.
 
+A second measurement (AddonBuilder for DayZ 1.29, staging outside `P:\`, `-temp` under `P:\`): two consecutive builds of one assembled tree, a door and a room MLOD byte-identical by SHA-256, gave door ODOL entries of 339,554 and 339,551 bytes and room entries of 2,597,078 and 2,598,395 bytes, while every script, config, rvmat, paa and csv entry hashed the same. So:
+
+- Per-entry hashes are an identity gate for scripts, configs, materials and textures only; a changed `.p3d` entry between two builds proves nothing by itself.
+- Accredit a binarized model by the hash of its MLOD input plus the engine check (render and raycast), never by ODOL bytes. Keep the MLOD hashes next to the PBO hash in the evidence.
+- Do not chase a byte diff in a `.p3d` entry when the MLOD did not change. When the doubt is already open, close it by content: extract the ODOL from each PBO and compare baked animations, bones, face counts and dimensions against the stage (measured identical in a case where `pbo_diff.py` showed 127 entries equal and the 10 `.p3d` different).
+
 **Mandatory self-check:** if the sections do not cover ALL faces of the LOD, the multiset is
 incomplete and the gate must declare itself **VOID** rather than pass.
 
@@ -160,7 +166,7 @@ python scripts/tools/dayz-pbo-diff/pbo_diff.py --old <old.pbo> --new <new.pbo> -
 It compares the SHA-256 of every entry's payload and the header properties; `differing` lists every
 entry that changed or is on one side only. Read it with the non-determinism rule above: between two builds a
 different `.p3d` entry proves nothing by itself, while a different script, config, material or
-texture entry does (§"Binarize is not byte-deterministic" below). `--ignore-prefix <prefix>` drops
+texture entry does. `--ignore-prefix <prefix>` drops
 a prefix from `differing_not_ignored`, never from `differing`. A compressed entry is refused
 (exit 1); see `scripts/tools/dayz-pbo-diff/README.md`.
 
@@ -228,8 +234,6 @@ can be checked against — otherwise an old PBO is indistinguishable from a new 
 nothing.
 
 ---
-
-## Build appendices
 
 ## Mandatory post-build PBO verification
 
@@ -357,34 +361,11 @@ grep -c -a -F "<new marker>"      <path>/Addons/<Mod>.pbo   # must be >= 1
 grep -c -a -F "<control marker>" <path>/Addons/<Mod>.pbo   # must be >= 1 always
 ```
 
-**The fix in the wrapper** is four lines and is fail-closed: delete, **verify
-that it was deleted**, and abort with own code if it survives. Never let an
-`ignore_errors=True` decide for you what gets packed.
-
-```python
-shutil.rmtree(temp, ignore_errors=True)
-if os.path.exists(temp):
-    print("ABORT: temp dir survived removal: %s" % temp)
-    raise SystemExit(4)
-```
-
-Verified with positive control: pointing `--temp` to a file (so `rmtree` fails and the
-flag swallows it), guard aborts with `RC=4` without ever invoking AddonBuilder, and the
-wrapper's `finally` block continues running — important if, as here, it puts configs
-from other projects in quarantine while the build lasts.
+**The fix is fail-closed removal.** `build.py` does it (step 11 in `SKILL.md`): it removes `P:	emp\<ModName>\` before every build and stops when the folder survives. A wrapper of your own needs the same check after its `rmtree`: abort when the temp folder still exists, and never let `ignore_errors=True` decide what gets packed.
 
 ### Cross-link: load order and thin lower layers
 
 The `requiredAddons[]` dependency graph orders cross-mod compile within each script module layer (see `/dayz-mod-workflow`). Prefer not inventing 1_Core/2_GameLib content unless you truly need that surface; default shared data to 3_Game.
-
-## Binarize is not byte-deterministic
-
-Measured with AddonBuilder for DayZ 1.29 (staging outside `P:\`, `-temp` under `P:\`): two consecutive builds of the same assembled tree (a door and a room MLOD `.p3d`, byte-identical by sha256) produced different ODOL entries — door 339,554 vs 339,551 B, room 2,597,078 vs 2,598,395 B — while every script, config, rvmat, paa and csv entry hashed the same. Consequences for a release or A/B gate:
-
-- **Per-entry PBO hashes are an identity gate for scripts, config, materials and textures only.** A changed `.p3d` entry between two builds proves nothing by itself.
-- **A binarized model is accredited by the hash of its MLOD input plus the engine check** (render + raycast), never by ODOL bytes. Keep the MLOD hashes next to the PBO hash in the evidence.
-- **Do not chase a byte diff in a `.p3d` entry** when the MLOD did not change; rebuild twice and compare before opening a debinarizer.
-- When the doubt is already open (a test PBO whose ten `.p3d` all hash differently and whose body is ~33 KB smaller), close it by CONTENT: extract the ODOL from inside each PBO and compare what matters — baked animations, bones, face counts, dimensions — against the stage (measured identical there, `pbo_diff.py`: 127 entries equal, the 10 `.p3d` different). Size and hash differences between builds of the same stage are expected binarize noise, not evidence of a geometry change.
 
 ## A content gate string that the base build also contains cannot turn red
 

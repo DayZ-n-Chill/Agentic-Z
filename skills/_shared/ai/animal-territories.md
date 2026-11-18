@@ -36,7 +36,7 @@ The three `Ambient` territories that follow do declare agents: `AmbientHen` (`:5
 
 `ZombieTest` is the counterexample in the same file. It is a `Herd` territory (`:96-112`, `<territory type="Herd" name="ZombieTest" behavior="DZdomesticGroupBeh">` at `:96`, `<file usable="zombie_territories" />` at `:97`) and it does declare agents: `<agent type="Male">` at `:99` and `<agent type="Female">` at `:104`, neither with a `chance` attribute.
 
-The `zombie_territories.xml` registration at `:16` is the infected counterpart of the animal zone files; infected zones are covered in `spawning-and-performance.md`, and infected classes in `creatures.md` and the dayz-characters skill.
+The `zombie_territories.xml` registration at `:16` is the infected counterpart of the animal zone files; infected zones are covered in `spawning-and-performance.md`, and infected classes in `creatures.md` and `custom-infected.md`.
 
 ## 3. `<agent>`, `<spawn>` and `<item>`
 

@@ -38,6 +38,11 @@ Vanilla `CfgNoises` is small: `DeerStepNoise`, `DeerRoarNoise`, `WolfStepNoise`,
 - Opening a door: `LoadFromPath("CfgVehicles SurvivorBase NoiseActionDefault")` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionopendoors.c:83`), then `AddNoisePos` at the player (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionopendoors.c:90`).
 - A shot: `class NoiseShoot` in the weapon config. Its keys and the suppressor modifier are in `skills/_shared/weapons/muzzle-effects.md`.
 
+The player's own noises come from the player type, not from `CfgNoises`:
+
+- A step loads the noise of the stance: `GetNoiseParamsStand()`, `GetNoiseParamsCrouch()` or `GetNoiseParamsProne()`, with stand as the fallback for an unknown stance (`P:\scripts\4_world\entities\dayzplayerimplement.c:3460` to `:3470`).
+- A landing adds `GetNoiseParamsLandLight()` for a fall under 3 m and `GetNoiseParamsLandHeavy()` for 3 m and more (`P:\scripts\4_world\entities\dayzplayerimplement.c:2530` to `:2555`).
+
 For your own item, add a noise class to its config (copy the keys of a vanilla one, `strength` and `type`) and load it by path. Do not pass `"FlareLight"` or `"Footstep_Heavy"` to `Load()`; neither name is a class of `CfgNoises` on `P:\`. Use one of the six names above or a path.
 
 A distraction noise, server side:

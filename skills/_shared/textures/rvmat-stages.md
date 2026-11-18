@@ -28,11 +28,11 @@ What each key and stage of a DayZ `.rvmat` does, for the two shaders mod items u
 
 A mod item uses Super. Use Skin only for a new character body or head, and copy a vanilla head material when you do. The other shaders belong to map and building work, not to this pack.
 
-Three of them do reach item and vehicle work, and each is covered in the `/dayz-texture-pipeline` skill:
+Three of them do reach item and vehicle work, and each is covered elsewhere in this pack:
 
-- **A part with a constant color and no color texture on its faces** uses `PixelShaderID="NormalMapSpecularMap"` with `VertexShaderID="NormalMap"`, as the Sakhal road does (`P:\DZ\structures_sakhal\roads\parts\data\asf2_sakhal.rvmat:7-8`): a `_nohq` in Stage1, an `_sm` in Stage2, and the color from `diffuse[]`. See `dayz-texture-pipeline/references/vehicle-materials-and-color-variants.md`.
-- **Collision faces** take a penetration material: `surfaceInfo` naming a `.bisurf`, then `PixelShaderID="Normal"` and `VertexShaderID="Basic"` (`P:\DZ\data\data\penetration\wood_desk.rvmat:1-9`). See `dayz-texture-pipeline/references/rvmat-cookbook.md`.
-- **Multi** blends four tiled material families through a mask on the second UV set, for example `PixelShaderID="Multi"` at `P:\DZ\rocks\data\rock_apart1\rock_apart1.rvmat:7`. See `dayz-texture-pipeline/references/multi-rvmat-section-texturing.md`. The `Multi` shader's vanilla counts, and what the model has to carry for it (a mask, two UV sets, faces with no texture), are in `_shared/models/multi-rvmat-texturing.md`.
+- **A part with a constant color and no color texture on its faces** uses `PixelShaderID="NormalMapSpecularMap"` with `VertexShaderID="NormalMap"`, as the Sakhal road does (`P:\DZ\structures_sakhal\roads\parts\data\asf2_sakhal.rvmat:7-8`): a `_nohq` in Stage1, an `_sm` in Stage2, and the color from `diffuse[]`. See `vehicle-materials.md`.
+- **Collision faces** take a penetration material: `surfaceInfo` naming a `.bisurf`, then `PixelShaderID="Normal"` and `VertexShaderID="Basic"` (`P:\DZ\data\data\penetration\wood_desk.rvmat:1-9`). See `rvmat-cookbook.md`.
+- **Multi** blends four tiled material families through a mask on the second UV set, for example `PixelShaderID="Multi"` at `P:\DZ\rocks\data\rock_apart1\rock_apart1.rvmat:7`. See `multi-materials.md`. The `Multi` shader's vanilla counts, and what the model has to carry for it (a mask, two UV sets, faces with no texture), are in `_shared/models/multi-rvmat-texturing.md`.
 
 ## The keys above the stages
 

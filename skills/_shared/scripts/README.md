@@ -29,4 +29,4 @@ The index that `build-api-index.py` writes holds Bohemia's and mod authors' decl
 | `test_dayz_proton.py` | `dayz-proton.sh` | Linux only (skips on Windows) |
 | `test_linux_helpers.py` | the other shell scripts, on a fake Steam tree | Linux only (skips on Windows) |
 
-Where the Linux material continues: `skills/dayz-build-pbo/references/dayzmake-linux.md` (building and signing), `skills/dayz-test-ingame/references/linux-native-server.md` and `linux-headless-client.md` in the same folder (running the server and client), `skills/dayz-preflight/references/linux.md` (what replaces each preflight check).
+Where the Linux material continues: `skills/dayz-build-pbo/references/dayzmake-linux.md` (building and signing), `skills/dayz-launch-test/references/linux-native-server.md` and `linux-headless-client.md` in the same folder (running the server and client), `skills/_shared/linux-proton.md`, section 3 (what replaces each preflight check).

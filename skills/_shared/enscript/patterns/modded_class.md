@@ -83,7 +83,7 @@ A `modded class` in the wrong module fails in one of two ways:
 - The class is from a lower module than the file. `modded class Transport` written in `4_World` fails with `Unknown type 'Transport'` (reported); `Transport` is a `3_game` class (`P:\scripts\3_game\vehicles\transport.c:68`).
 - The class is from a higher module than the file. `modded class MissionServer`, `MissionGameplay` or `Chat` written in `4_World` may compile, depending on parse order, but the override is never bound to the live object, so `OnInit`, `OnMissionStart` and `InvokeOnConnect` never run from your code and nothing is logged (reported). `MissionServer` is declared in `5_mission` (`P:\scripts\5_mission\mission\missionserver.c:5`). Put the file in `Scripts/5_Mission/`.
 
-More on which code goes in which module: `skills/enforce-script-reference/references/script-layers.md`.
+More on which code goes in which module: `skills/_shared/enscript/depth/script-layers.md`.
 
 ---
 
@@ -258,6 +258,8 @@ Some classes are made and driven by the engine, not by script. Their constructor
 | `Widget` and every widget class (`TextWidget`, `ButtonWidget`, `ImageWidget`, ...) | `class Widget: Managed` with `proto private void Widget()` (`P:\scripts\1_core\proto\enwidgets.c:107-110`); `TextWidget` at :189, `ButtonWidget` at :381 | Call the widget's script API (`SetText`, `SetColor`, `SetPos`) from the menu or HUD that owns it, or attach a `ScriptedWidgetEventHandler` (`enwidgets.c:656`) |
 | `UIManager` | The engine's menu manager. Its menu calls are `proto native` (`EnterScriptedMenu`, `CreateScriptedMenu`, `ShowScriptedMenu`, `HideScriptedMenu` at `P:\scripts\3_game\tools\uimanager.c:4-10`, `GetMenu` at :59). Its script helpers (`Back` :62, `CloseMenu` :117, `IsMenuOpen` :154) have bodies, but every menu goes through them, so a modded layer changes all menus at once. | Mod the concrete menu, or the mission that opens it |
 | `UIScriptedMenu` | A script class (`P:\scripts\3_game\tools\uiscriptedmenu.c:66`), but the base of every menu, so a change there reaches all of them and is not a hook for one menu | `modded class InventoryMenu` (`P:\scripts\5_mission\gui\inventorymenu.c:8`) or the one menu you need |
+
+Some classes the compiler refuses outright. Measured on DayZDiag 1.30.164200 (engine behaviour, not checkable on `P:\`): `modded class DayZPlayerInventory` and `modded class Magazine` stop the World module with `Engine class '...' cannot be modded.`, and `Transport` was refused the same way on 1.29. Both are script classes on `P:\` (`P:\scripts\4_world\systems\inventory\dayzplayerinventory.c:147`, `P:\scripts\4_world\entities\itembase\magazine\magazine.c:38`), so a source search does not warn you. `Magazine_Base` is only a typedef of `Magazine` (`magazine.c:1`), not a way around it. Mod a class below them instead: `PlayerBase`, `MagazineStorage` (`magazine.c:463`) or the one magazine class, or `CarScript`.
 
 Being rooted at `Managed` is not the test. `Managed` (`P:\scripts\1_core\proto\enscript.c:117`) is the root of most script classes, including `Hud` (`P:\scripts\3_game\gameplay.c:637`), and `IngameHud extends Hud` (`P:\scripts\5_mission\gui\ingamehud.c:1`) is the usual HUD hook.
 

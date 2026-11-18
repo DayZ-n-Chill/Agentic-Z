@@ -1,6 +1,6 @@
 ---
 name: dayz-launch-test
-description: "Launches a local DayZ Diag server for an instance from /dayz-add-server, then the diag client connected to it with the given built mods loaded. Run-only; does no setup. Use when you want to test built mods in game, or to preview the exact launch commands with a dry run."
+description: "Launches a local DayZ Diag server for an instance from /dayz-add-server, then the diag client connected to it with the given built mods loaded. Run-only; does no setup. Use when you want to test built mods in game, or to preview the exact launch commands with a dry run. Its references cover why a session starts but does not test the change, scripted test cells, server and mission config, the Linux server and headless client, and in-game verification through the dayz-mcp server (spawn, capture, collision, vehicle ladder), with the dayz-mcp launcher and ladder scripts."
 argument-hint: "<ModName> [<ModName2> ...] [--server-only <ModName>]... [--server <instance>] [--port N] [--dry-run]"
 ---
 
@@ -111,15 +111,15 @@ The `Wrote default client display prefs` line appears only on the first real lau
 
 ## When the session starts but does not work
 
-This skill checks what it can before it spawns anything; the cases below pass those checks and still fail. They are measured results from real test sessions, recorded in the `dayz-test-ingame` skill, and are not yet checked on `P:\`.
+This skill checks what it can before it spawns anything; the cases below pass those checks and still fail. They are measured results from real test sessions, recorded in `references/`, and are not yet checked on `P:\`.
 
 | What you see | Likely cause | Read |
 |---|---|---|
-| The client hangs on a modal dialog `unable to locate running instance of Steam`: the process stays alive with 0 CPU, its RPT holds only the header, and an `ErrorMessage_DayZDiag_x64_*.mdmp` with exception `0x80000003` appears | `steam.exe` is running but no user is signed in, or the registry value `HKCU\Software\Valve\Steam\ActiveProcess` holds the pid of a Steam that has exited. The Steam check in step 7 only looks for the process. | `skills/dayz-test-ingame/references/troubleshooting.md`, the section on the Steam `pid` in the registry |
-| The server counts down `[Server] :: termination in: N` and exits | `serverDZ.cfg` has no `class Missions` block or no `instanceId`. `/dayz-add-server` writes both; a hand-edited cfg can lose them. | `skills/dayz-test-ingame/references/windows-launch-cycle.md` |
-| The server dies before it binds the port with `!!! Serious stream damage detected during load`, or crashes with `Failed to read modstorage for entity`, or floods the log with `Scripted variables corrupted` | The mission's `storage_1` is half written, or was written by a different mod set (with or without Community Framework) than the one now loading it | `skills/dayz-test-ingame/references/troubleshooting.md`, the symptom table; `skills/dayz-test-ingame/references/build-and-storage-traps.md` |
+| The client hangs on a modal dialog `unable to locate running instance of Steam`: the process stays alive with 0 CPU, its RPT holds only the header, and an `ErrorMessage_DayZDiag_x64_*.mdmp` with exception `0x80000003` appears | `steam.exe` is running but no user is signed in, or the registry value `HKCU\Software\Valve\Steam\ActiveProcess` holds the pid of a Steam that has exited. The Steam check in step 7 only looks for the process. | `references/troubleshooting.md`, the section on the Steam `pid` in the registry |
+| The server counts down `[Server] :: termination in: N` and exits | `serverDZ.cfg` has no `class Missions` block or no `instanceId`. `/dayz-add-server` writes both; a hand-edited cfg can lose them. | `references/windows-launch-cycle.md` |
+| The server dies before it binds the port with `!!! Serious stream damage detected during load`, or crashes with `Failed to read modstorage for entity`, or floods the log with `Scripted variables corrupted` | The mission's `storage_1` is half written, or was written by a different mod set (with or without Community Framework) than the one now loading it | `references/troubleshooting.md`, the symptom table; `references/build-and-storage-traps.md` |
 | The client is refused with `0x00010002` | A signature mismatch: the instance's `serverDZ.cfg` was edited to turn `verifySignatures` back on, and a PBO's `.bisign` does not match its key. `/dayz-add-server` writes `verifySignatures = 0`. The other refusal codes in the `connection` row (a diag client on a server that is not diag, different game builds) cannot come from this launch, which starts both sides from the same `DayZDiag_x64.exe` with `forceSameBuild = 0`. | `skills/dayz-gate/triage.md`, the `connection` row |
-| The mod's change is not in game although the build said it succeeded | A stale or locked PBO, or `-filePatching` not serving what you expect. On the measured install scripts came from the PBO even with `-filePatching`, so rebuild for a script change. | `skills/dayz-test-ingame/references/build-and-storage-traps.md`, `skills/dayz-test-ingame/references/windows-launch-cycle.md` |
+| The mod's change is not in game although the build said it succeeded | A stale or locked PBO, or `-filePatching` not serving what you expect. On the measured install scripts came from the PBO even with `-filePatching`, so rebuild for a script change. | `references/build-and-storage-traps.md`, `references/windows-launch-cycle.md` |
 
 `/dayz-gate` and `/dayz-logwatch` name the storage, countdown and refusal lines with their fix (`skills/dayz-gate/triage.md`). Renaming `storage_1` resets the world and characters, so ask the user first.
 
@@ -142,3 +142,12 @@ These map to `-window`, `-x=<width>`, `-y=<height>`. Edit the file freely. A fil
 - Don't launch the client without the server. DayZ has no offline mode for mod testing.
 - Don't substitute retail `DayZ_x64.exe` or `DayZServer_x64.exe` for the diag binary.
 - Don't kill the session from here once it is running; close the windows or use `/dayz-stop-test`.
+
+## References and scripts
+
+Everything this skill knows beyond the launch itself is in `<skill-dir>\references\`; start at `references/README.md`, which lists every file, the rules that hold on every route, and when to read each one.
+
+- In-game verification through the third-party dayz-mcp server (spawn, camera captures, collision raycasts, placement, the vehicle acceptance ladder, a PASS or FAIL report with evidence) is `references/mcp/README.md`. A dayz-mcp run is started and stopped by its own `dayz_test_run` and `dayz_test_stop`, never by this skill or `/dayz-stop-test` (`references/mcp/run-lifecycle.md`).
+- `scripts/dayz-test.ps1`, with `server.bat`, `client.bat` and `offline.bat`, is the launcher dayz-mcp's managed runs start. It is an option for machines with dayz-mcp, not a replacement for this skill: run `/dayz-preflight` first, build with `/dayz-build-pbo`, and read `references/managed-launcher.md` before using it.
+- `skills/dayz-launch-test/scripts/drive_ladder.py` runs the vehicle acceptance ladder against a running dayz-mcp daemon (`references/mcp/acceptance-ladder.md`).
+- `assets/autotest-mod/` is a small self-reporting test mod (`references/linux-headless-client.md`, section 3). Keep it out of a release.

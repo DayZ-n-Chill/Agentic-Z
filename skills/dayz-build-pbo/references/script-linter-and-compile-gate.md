@@ -36,7 +36,7 @@ checkout, or the command dies with `No such file or directory` and reads as "not
   271 files: about 60 s; removing 8 left them at 263, with 0 errors on both sides.
 - ⚠ **And it has a blind spot that costs a startup: it does not see an undeclared member.** Detail,
   measured case, and the sweep that does catch it, in
-  `dayz-test-ingame/references/windows-launch-cycle.md`, Step 0.
+  `dayz-launch-test/references/windows-launch-cycle.md`, Step 0.
 
 The heuristic checks in `pre-build-checks.md` (check 7) are the fallback when the validator is not
 available, and a useful second pass when it is.
@@ -58,7 +58,7 @@ i++;  --i;                            // increment / decrement
 foreach (string s : selections) { }   // foreach over a collection
 ```
 
-For the authoritative Enforce Script rule set, see the `enforce-script-reference` skill.
+For the authoritative Enforce Script rule set, see the Enforce Script pack (`skills/_shared/enscript/depth/`).
 
 ---
 

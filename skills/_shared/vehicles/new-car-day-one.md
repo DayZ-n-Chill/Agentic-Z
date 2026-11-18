@@ -2,7 +2,7 @@
 
 What to measure offline before a new or ported vehicle goes in game for the first time, what each of the three files owns, and the gaps no config review reveals.
 
-> Status: the costs and counts below were measured on mod vehicles (a quad bike, two imported cars, a ported quad), not on vanilla ones. A citation written with its full `P:\` path, and a bare `file.c:N` (the vanilla script of that name under `P:\scripts\`), were opened on the vanilla data on `P:\` (a 1.30 build). "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: the costs and counts below were measured on mod vehicles (a quad bike, two imported cars, a ported quad), not on vanilla ones. A citation written with its full `P:\` path, and a bare `file.c:N` (the vanilla script of that name under `P:\scripts\`), were opened on the vanilla data on `P:\` (a 1.30 build). "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
 
 ## Vanilla anchors checked on `P:\`
 

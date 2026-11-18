@@ -1,6 +1,6 @@
 # Audit escalation: severity discipline and independent auditors
 
-How to label the severity of an audit finding on a DayZ mod, how to label the severity of something that is missing, and how to keep parallel auditors independent. `dayz-mod-workflow` points here. To run a data-critical audit use `rigorous-data-audit` (its seven steps and parallel auditors) and `skills/_shared/persistence/data-audit.md`; this file is only the note on labels and independence.
+How to label the severity of an audit finding on a DayZ mod, how to label the severity of something that is missing, and how to keep parallel auditors independent. `dayz-mod-workflow` points here. To run a data-critical audit use `skills/_shared/persistence/deep-audit.md` (its seven steps and parallel auditors) and `skills/_shared/persistence/data-audit.md`; this file is only the note on labels and independence.
 
 The cases were measured on mod projects (a power-grid mod, a virtual-storage mod, a quad vehicle mod). The vanilla facts are cited on `P:\`.
 
@@ -10,7 +10,7 @@ The pattern, seen in audits of a power-grid mod: findings labelled "P1, crash" t
 
 Before writing audit findings:
 
-1. Reproduce the bug on a local server (`/dayz-launch-test`; depth in `dayz-test-ingame`).
+1. Reproduce the bug on a local server (`/dayz-launch-test`; depth in its `references/` folder).
 2. Log one complete cycle of the bug: load, execute, autosave, reload.
 3. Tell these apart:
    - **crash**: the process dies, the server drops, a restart is needed.

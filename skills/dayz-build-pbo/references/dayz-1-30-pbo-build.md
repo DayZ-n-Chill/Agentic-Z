@@ -32,7 +32,7 @@ Pre-build check 2 in `pre-build-checks.md` now covers both class names **and** m
 ## Unpacked mods do not retire the PBO gate
 
 Since 1.30, `-mod` can point at a folder and RV configs load
-unpacked. That is a **diag iteration** path (`/dayz-test-ingame`). Workshop /
+unpacked. That is a **diag iteration** path (`/dayz-launch-test`). Workshop /
 dedicated shipping still needs a PBO. Do not skip AddonBuilder for a release
 because unpacked load exists.
 

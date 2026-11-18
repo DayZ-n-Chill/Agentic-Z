@@ -26,11 +26,11 @@ Marks used here: a fact with a `P:\` citation was read in that vanilla file. "Me
 
 | Step | What happens | Run or read |
 |---|---|---|
-| 1. Scope | A non-trivial feature first gets a spec: success criteria and a forward contract. The plan and task list come from `dayz-mod-architect`. | `dayz-feature-spec` |
+| 1. Scope | A non-trivial feature first gets a spec: success criteria and a forward contract. The plan and task list come from `dayz-mod-architect`. | `/dayz-scope-mod` |
 | 2. Write | Read the domain skill (router below) and `dayz-mod-workflow`; look up every API before using it (next section). A new mod starts with `/dayz-new-mod`. | domain skill, `dayz-mod-workflow` |
 | 3. Build | Validate, pack, sign. | `/dayz-lint`, `/dayz-build-pbo`; depth in `skills/dayz-build-pbo/references/` |
-| 4. Boot it | A PBO that builds is not a tested mod. Boot it on a local server, compare the script module counts with a vanilla boot, read `script_*.log`. | `/dayz-launch-test`, `/dayz-gate ingame`, `/dayz-logwatch`; depth in `dayz-test-ingame` |
-| 5. Verify in game | When the change is visible or driven by the player. | `/dayz-gate behavior`, `/dayz-gate visual`; `dayz-test-ingame`, `dayz-mcp-verify` |
+| 4. Boot it | A PBO that builds is not a tested mod. Boot it on a local server, compare the script module counts with a vanilla boot, read `script_*.log`. | `/dayz-launch-test`, `/dayz-gate ingame`, `/dayz-logwatch`; depth in `skills/dayz-launch-test/references/` |
+| 5. Verify in game | When the change is visible or driven by the player. | `/dayz-gate behavior`, `/dayz-gate visual`; the bridge checks in `skills/dayz-launch-test/references/mcp/` |
 | 6. Publish | Only when the user says so. | `/dayz-release-pack`, `/dayz-server-kit`; `skills/dayz-build-pbo/references/workshop-publish.md` on Windows, `skills/dayz-build-pbo/references/dayzmake-linux.md` on Linux |
 
 ## Rules for every task
@@ -43,7 +43,7 @@ Marks used here: a fact with a `P:\` citation was read in that vanilla file. "Me
 - **A `modded class` lives in the script module of the class it modifies.** `Transport` is declared in `3_Game` (`P:\scripts\3_game\vehicles\transport.c:68`), so `modded class Transport` in `4_World` fails with `Unknown type 'Transport'`.
 - **A compile error can crash the server** right after `Can't compile ... script module!` (measured on the Linux server build 1.30.164014, the pre-release; section 4 of `references/dayz-1-30-server-measured.md` in `dayz-mod-workflow`). When a server dies at boot, read `script_*.log` before anything else.
 - **`FindFile` works again from 1.30.164200.** Its declaration is unchanged: `FindFile`, `FindNextFile` and `CloseFindFile` are at `P:\scripts\1_core\proto\ensystem.c:520-522`. Measured on Linux build 25963285: `$profile:`, `$mission:`, `$saves:` and `$storage:` resolve again; the first stable 1.30 release was broken (`dayz-mod-workflow`, `references/dayz-1-30-server-measured.md`). `CF.FindFileEx` and copied `FindFile` path helpers are leftovers to remove on that build or later.
-- **Never write into Steam's directories for test servers or Workshop folders.** Test servers run from a tree of their own; in this repo that is `.server/<instance>/`. The two exceptions are on Linux: the client's own Proton prefix, and a symlink to the test mod in the client's install folder, which you create by hand and must remove after the run. The headless client script runs the game in the client's own Proton prefix but does not create the mod symlink (`dayz-test-ingame`, `references/linux-headless-client.md`, section 2). This does not contradict the Windows `P:\Mods` junction to `!Workshop` that Tier 2 requires.
+- **Never write into Steam's directories for test servers or Workshop folders.** Test servers run from a tree of their own; in this repo that is `.server/<instance>/`. The two exceptions are on Linux: the client's own Proton prefix, and a symlink to the test mod in the client's install folder, which you create by hand and must remove after the run. The headless client script runs the game in the client's own Proton prefix but does not create the mod symlink (`skills/dayz-launch-test/references/linux-headless-client.md`, section 2). This does not contradict the Windows `P:\Mods` junction to `!Workshop` that Tier 2 requires.
 - **Uploading to the Workshop is the user's call.** Prepare the commands; never run them unprompted.
 - **On Linux, build and sign with dayzmake 1.0.0 or newer**, never the original armake2: that is built for Arma, leaves `*.c` out of the signature and lacks the DayZ-only functions dayzmake adds (`skills/_shared/linux-proton.md`, section 1).
 
@@ -54,7 +54,7 @@ Details and evidence for the measured rules: `dayz-mod-workflow`, `references/da
 In this order:
 
 1. **The vanilla files on `P:\`.** This is the Tier 2 search rule: Grep `P:\scripts\` for a known name, the `dayz-rag` search for a question by meaning, then open the hit and cite `path:line`. `/dayz-ask` does the same for a one-off question. `P:\` holds whatever build was last unpacked onto it, not necessarily the installed one, so unpack it again after a game update and check which build it holds before relying on it.
-2. **The packs.** `skills/_shared/enscript/README.md` for Enforce Script, `enforce-script-reference` (its `references/verified-api-catalog.md` and `references/dayz-1-30-enforce-script.md`), and the domain skill's `references/dayz-1-30-*.md`.
+2. **The packs.** `skills/_shared/enscript/README.md` for Enforce Script, `skills/_shared/enscript/depth/` (its `verified-api-catalog.md` and `dayz-1-30-enforce-script.md`), and the domain skill's `references/dayz-1-30-*.md`.
 3. **A local API index**, for a machine with no `P:\` (Linux) or when you need inherited members in one answer. Three helpers sit in the repo's `skills/_shared/scripts/` folder: `extract-dayz-sources.sh` (scripts plus derapified configs, about 90 s), `skills/_shared/scripts/build-api-index.py` and `skills/_shared/scripts/dayz-api.py`. From the repo root:
 
    ```sh
@@ -78,30 +78,30 @@ Match the request and read that skill first; read more than one when the request
 
 | Request mentions | Read |
 |---|---|
-| Enforce Script, `modded class`, `config.cpp`, `CfgPatches`, `CfgMods`, `ScriptRPC`, sync variables, `CallLater`, inputs | `enforce-script-reference`, and the pack index `skills/_shared/enscript/README.md` |
-| How to implement or debug, "it doesn't work", client and server split, error catalog | `dayz-mod-workflow` (and `systematic-debugging`) |
-| Spec, acceptance criteria, "ready to code?" | `dayz-feature-spec` |
-| `OnStoreSave`, `OnStoreLoad`, CF ModStorage, storage versions, `types.xml`, `events.xml`, Central Economy files | `dayz-persistence` (`references/central-economy-files.md`); audits: `rigorous-data-audit` |
-| `serverDZ.cfg`, `cfggameplay.json`, mission files, starting a local server, the mod does not load | `/dayz-add-server`, `/dayz-launch-test`; `dayz-test-ingame` (`references/server-and-mission-config.md`) |
+| Enforce Script, `modded class`, `config.cpp`, `CfgPatches`, `CfgMods`, `ScriptRPC`, sync variables, `CallLater`, inputs | The pack index `skills/_shared/enscript/README.md` and its `depth/` folder |
+| How to implement or debug, "it doesn't work", client and server split, error catalog | `dayz-mod-workflow` |
+| Spec, acceptance criteria, "ready to code?" | `/dayz-scope-mod` |
+| `OnStoreSave`, `OnStoreLoad`, CF ModStorage, storage versions, `types.xml`, `events.xml`, Central Economy files | `skills/_shared/persistence/` (`central-economy-files.md`); audits: `skills/_shared/persistence/deep-audit.md` |
+| `serverDZ.cfg`, `cfggameplay.json`, mission files, starting a local server, the mod does not load | `/dayz-add-server`, `/dayz-launch-test`; `skills/dayz-launch-test/references/server-and-mission-config.md` |
 | PBO, prefix, signing, keys, Workshop | `/dayz-build-pbo` (and its `references/`), `/dayz-release-pack` |
 | Environment check: `P:`, DayZ Tools, Workshop folder | `/dayz-preflight` |
 | Mod setup errors before packing | `/dayz-lint` |
-| UI, `.layout`, widgets, HUD, Dabs | `dayz-ui-development` |
-| Cars, trucks, boats | `dayz-vehicles` |
-| Motorbikes (read both) | `dayz-motorbikes` and `dayz-vehicles` |
-| Aircraft | `dayz-aviation` |
-| Firearms / clothing / doors and locks / base building | `dayz-weapons` / `dayz-clothing` / `dayz-doors` / `dayz-basebuilding` |
-| Characters and infected / AI (Expansion eAI) | `dayz-characters` / `dayz-ai-patterns` |
-| Physics, collisions, ragdoll / sound / particles | `dayz-physics-engine` / `dayz-sound-system` / `dayz-particles` |
-| Sandstorm, heat, oil pits / terrain holes, bunkers | `dayz-environment-hazards` / `dayz-underground` |
+| UI, `.layout`, widgets, HUD, Dabs | `skills/_shared/ui/README.md`; `/dayz-layout-preview` for offline previews |
+| Cars, trucks, boats | `skills/_shared/vehicles/README.md` and `/dayz-p3d-audit` |
+| Motorbikes | `skills/_shared/vehicles/motorbikes.md` |
+| Aircraft | `skills/_shared/vehicles/README.md`, "Aircraft in depth" |
+| Firearms / clothing / doors and locks / base building | `skills/_shared/weapons/` / `skills/_shared/wearables/` / `skills/_shared/models/doors.md` / `skills/_shared/persistence/base-building-structures.md` |
+| Characters and infected / AI (Expansion eAI) | `skills/_shared/wearables/` / `skills/_shared/ai/` |
+| Physics, collisions, ragdoll / sound / particles | `skills/_shared/physics/README.md` / `skills/_shared/audio-fx/README.md` / `dayz-particles` |
+| Sandstorm, heat, oil pits / terrain holes, bunkers | `skills/_shared/world/README.md` |
 | Models `.p3d`, LODs, memory points | `dayz-model-pipeline`, `dayz-p3d-audit`, `dayz-p3d-inspector` |
-| Textures `.paa`, `.rvmat` / animations | `dayz-texture-pipeline` / `dayz-animation-pipeline` |
+| Textures `.paa`, `.rvmat` / animations | `skills/_shared/textures/` and `/dayz-pack-texture` / `dayz-animation-pipeline` |
 | Proxies on a host model / previewing `.p3d`, `.paa`, `.rvmat` / UV atlases | `dayz-proxy-align` / `dayz-3d-viewer` / `uv-clean-atlas` |
 | Assets from AI generation or a ripped vehicle | `ai-3d-to-dayz` / `rip-vehicle-import` |
-| Animation authoring in Blender, Mixamo retargeting, realistic motion | `blender-animation`, `mixamo-retarget`, `dayz-realistic-animation-director` |
+| Animation authoring in Blender, Mixamo retargeting, realistic motion | `skills/_shared/animation/README.md` (`blender-mcp-workflow.md`, `mixamo-retarget.md`, `realistic-motion.md`); the scripts are in `dayz-animation-pipeline` |
 | Blender geometry, render review | `blender-assembly`, `blender-visual-review` |
-| Reading a third-party mod | `dayz-pbo-reverse-engineering` |
-| Verifying in game through the dayz-mcp server | `dayz-mcp-verify` |
+| Reading a third-party mod | `/dayz-import-mod` |
+| Verifying in game through the dayz-mcp server | `skills/dayz-launch-test/references/mcp/README.md` |
 | A mod that runs beside CF, COT or Expansion; a DayZ update | `/dayz-conflict-check`; `/dayz-upgrade-guard` |
 
 ## Porting or reviewing a mod for 1.30 or later
@@ -119,13 +119,13 @@ Third-party mod behaviour, not vanilla.
 
 - **CF.** Use the regular Workshop CF 1.5.9 or newer (Workshop id 1559212036), one dependency: `JM_CF_Scripts`. `#ifdef CF_MODULES` detects it without a hard dependency. Removing CF from a tree whose storage was written with CF is an observed breakage. Whether adding CF needs a wipe is a hypothesis that was not isolated: isolate first (rebuild with the same storage kept, or copy the storage aside) before rotating `storage_1`.
 - **Expansion** needs CF, Dabs Framework and DayZ-Expansion-Licensed before the Bundle. The ids, the order and the failure without Dabs are in section 8 of `references/dayz-1-30-server-measured.md` in `dayz-mod-workflow` (the one copy to keep current).
-- More: sections 8 and 9 of that file; CF storage in `dayz-persistence` (`references/cf-modstorage.md`) and `skills/_shared/persistence/versioning-and-migration.md`; Expansion AI in `dayz-ai-patterns`; the Expansion market UI in `dayz-ui-development`; collisions with CF, COT and Expansion in `/dayz-conflict-check`.
+- More: sections 8 and 9 of that file; CF storage in `skills/_shared/persistence/cf-modstorage.md` and `skills/_shared/persistence/versioning-and-migration.md`; scripted AI brains in `skills/_shared/ai/design-ideas.md`; the Expansion market UI in `skills/_shared/ui/expansion-market-menu.md`; collisions with CF, COT and Expansion in `/dayz-conflict-check`.
 
 ## Testing a mod or a server
 
-- **Windows.** In this repo: `/dayz-add-server` once, then `/dayz-launch-test` (a DayZDiag server and client with the same mods), `/dayz-gate` for the scripted gates and `/dayz-logwatch` while you play. The managed cycle through the dayz-mcp server and its `dayz-test.ps1` template is in `dayz-test-ingame`.
-- **Linux.** The native `DayZServer` from a private tree, the retail client headless under Proton, and the self-reporting AutoTest mod: `dayz-test-ingame`, `references/linux-native-server.md` and `references/linux-headless-client.md`. DayZ Tools and DayZDiag under Proton: `skills/_shared/linux-proton.md`.
-- **Ports and instances.** On Windows the test machine runs one DayZ instance at a time on the default port 2302, which `/dayz-launch-test` and `/dayz-gate` use; never kill another session's DayZ process without asking (`dayz-test-ingame`, `references/windows-launch-cycle.md`). On the Linux native server every server takes its own tree and its own non-default game, query and RCon ports, and you run the trees one at a time: each used about 7.5 GB resident with the Expansion bundle, so check free memory first if two must overlap (`references/linux-native-server.md`).
+- **Windows.** In this repo: `/dayz-add-server` once, then `/dayz-launch-test` (a DayZDiag server and client with the same mods), `/dayz-gate` for the scripted gates and `/dayz-logwatch` while you play. The managed cycle through the dayz-mcp server and its `dayz-test.ps1` template is in `skills/dayz-launch-test/references/managed-launcher.md`.
+- **Linux.** The native `DayZServer` from a private tree, the retail client headless under Proton, and the self-reporting AutoTest mod: `skills/dayz-launch-test/references/linux-native-server.md` and `linux-headless-client.md`. DayZ Tools and DayZDiag under Proton: `skills/_shared/linux-proton.md`.
+- **Ports and instances.** On Windows the test machine runs one DayZ instance at a time on the default port 2302, which `/dayz-launch-test` and `/dayz-gate` use; never kill another session's DayZ process without asking (`skills/dayz-launch-test/references/windows-launch-cycle.md`). On the Linux native server every server takes its own tree and its own non-default game, query and RCon ports, and you run the trees one at a time: each used about 7.5 GB resident with the Expansion bundle, so check free memory first if two must overlap (`skills/dayz-launch-test/references/linux-native-server.md`).
 - **Either way:** a vanilla boot as the baseline, and a deliberate syntax error as the probe when an override silently does nothing. Compare each script module the mod adds files to against the vanilla baseline count; an unchanged count in such a module means its scripts did not load.
 
 ## Building, signing, publishing

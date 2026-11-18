@@ -1,7 +1,7 @@
 """The Linux local-server, client and packaging helper scripts, without Steam or DayZ.
 
 What needs a Steam install, a game or Proton was measured by hand (see
-skills/dayz-test-ingame/references/linux-native-server.md); these tests cover the scripts
+skills/dayz-launch-test/references/linux-native-server.md); these tests cover the scripts
 themselves: syntax, shellcheck, and the parts that run on a fake Steam tree.
 """
 
@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 SCRIPTS = Path(__file__).resolve().parent
-AUTOTEST = Path(__file__).resolve().parents[2] / "dayz-test-ingame" / "assets" / "autotest-mod"
+AUTOTEST = Path(__file__).resolve().parents[2] / "dayz-launch-test" / "assets" / "autotest-mod"
 POSIX = ["find-dayzserver.sh", "make-server-tree.sh", "free-ports.sh", "dayz-client-headless.sh", "dayz-client-test.sh"]
 BASH = ["dayz-mod-pack.sh", "extract-dayz-sources.sh"]
 

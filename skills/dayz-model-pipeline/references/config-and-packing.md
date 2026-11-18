@@ -211,8 +211,8 @@ class CfgNonAIVehicles
 - Class name must be `Proxy` followed by the basename of `model`, compared case-insensitively
   (`MySlot.p3d` -> `ProxyMySlot`). A class named otherwise draws nothing and logs nothing, also
   for an inventory slot: measured in game on a quad mod (third-party mod behaviour), whose three inventory slots drew
-  nothing until its proxy classes were renamed (the `rip-vehicle-import` skill's invisible
-  attachment cookbook, `skills/rip-vehicle-import/references/cookbook-attachment-invisible.md`,
+  nothing until its proxy classes were renamed (the vehicle pack's invisible attachment file,
+  `skills/_shared/vehicles/symptom-attachment-invisible.md`,
   section "Check first: the `Proxy` class name against the file name"). Check it in `config.cpp` before measuring any proxy frame
 - Class name (`ProxyMySlot`) must be unique across all loaded addons, so the proxy basename must be too
 - Multiple slots can point to the same proxy .p3d
@@ -417,4 +417,4 @@ In Agentic-Z, `/dayz-launch-test` starts the local server and client with the bu
 3. Use the in-game admin tools or script to spawn the object
 4. Verify: visual appearance, collision, bullet interaction, animations, sounds
 
-Since 1.30 (official changelog) `-mod` also accepts an unpacked source folder, not only a packed `@Mod` with PBOs. Pair it with `-cacheP3D=0` or `-cacheP3D=1` and `-resolveFilePatchingUsingEnfusion=0` or `-resolveFilePatchingUsingEnfusion=1`. The 1.30 notes on the build and in-game test side are in `skills/dayz-build-pbo/references/dayz-1-30-pbo-build.md` and `skills/dayz-test-ingame/references/dayz-1-30-test-ingame.md`.
+Since 1.30 (official changelog) `-mod` also accepts an unpacked source folder, not only a packed `@Mod` with PBOs. Pair it with `-cacheP3D=0` or `-cacheP3D=1` and `-resolveFilePatchingUsingEnfusion=0` or `-resolveFilePatchingUsingEnfusion=1`. The 1.30 notes on the build and in-game test side are in `skills/dayz-build-pbo/references/dayz-1-30-pbo-build.md` and `skills/dayz-launch-test/references/dayz-1-30.md`.

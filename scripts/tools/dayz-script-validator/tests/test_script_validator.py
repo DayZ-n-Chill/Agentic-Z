@@ -418,7 +418,7 @@ class TestEsEmptyIfdef(unittest.TestCase):
         "1.30.164289 a block holding only a comment compiled and ran on server "
         "and client, at file scope, in a class body and in a method body, with "
         "a macro DayZDiag defines and with one nobody defines "
-        "(enforce-script-reference pitfalls-advanced.md, section 5). Not "
+        "(skills/_shared/enscript/depth/pitfalls-advanced.md, section 5). Not "
         "measured: a block with nothing at all inside, a retail build, DayZ "
         "1.29. Remove the block if it holds no code."
     )
@@ -2219,7 +2219,7 @@ class TestReservedWordIdentifier(unittest.TestCase):
     sealed: parameter, DayZDiag 1.29.163709, 2026-10-02, "Expected name, not a
     keyword 'sealed'". local: local variable, DayZDiag 1.30.164014 (Exp),
     2026-09-28, "Broken expression (missing ';'?)". owned and out: the same
-    error on a local (enforce-script-reference SKILL.md).
+    error on a local (skills/_shared/enscript/depth/review-and-troubleshooting.md and compiler-traps.md).
     """
 
     def test_sealed_parameter_fails(self):

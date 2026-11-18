@@ -2,7 +2,7 @@
 
 History only: the superseded order of diagnostic gates for an imported car, kept for vehicles already in flight, plus the LOD frame parity rung.
 
-> Status: the measurements below were taken on third-party vehicle mods (SUB_BRZ, MercedesAMGLF), named in each entry; they are third-party mod behaviour, not vanilla, and were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. Script names such as `winding_consistency.py`, `gate_car.py`, `raycast_winding.py`, `dedup_faces.py`, `position_dedup.py` and `cabin_align.py` belong to those mods' work folders, which are not part of this repo. "Preflight #N" and "#N" mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number.
+> Status: the measurements below were taken on third-party vehicle mods (TestCoupe, TestMercedes), named in each entry; they are third-party mod behaviour, not vanilla, and were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. Script names such as `winding_consistency.py`, `gate_car.py`, `raycast_winding.py`, `dedup_faces.py`, `position_dedup.py` and `cabin_align.py` belong to those mods' work folders, which are not part of this repo. "Preflight #N" and "#N" mean the numbered invariants; `skills/_shared/vehicles/README.md` lists which file holds each number.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -35,7 +35,7 @@ The findings that used to sit under this heading and are current (the open rim o
    too — same symptom as inverted winding, different cause; rule it out here.
 
 6. **LOD FRAME PARITY — every `_lodN` variant carries the SAME frame as its LOD0** (added 2026-08-01,
-   MercedesAMGLF). Any post-hoc transform of a proxy-split body (yaw fix, flip, translate)
+   TestMercedes). Any post-hoc transform of a proxy-split body (yaw fix, flip, translate)
    must enumerate EVERY file the host references — including the `_lod1`/`_lod2`/`_lodN` variant of
    each proxy — not just the base pieces. A fix that touches only the bases leaves the distant LODs in
    the OLD frame: the car looks perfect up close and draws its cabin/mechanicals rotated at mid
@@ -50,10 +50,10 @@ The findings that used to sit under this heading and are current (the open rim o
    legitimately simplified LOD has no vertex correspondence with LOD0, so demanding identical
    topology between them would forbid the decimation the ladder exists for. Plus one in-game orbit
    backing off through LOD1 and LOD2.
-   Real cost: the MercedesAMGLF yaw-180 fix rotated the 6 base proxies and left 12 `_lod1`/`_lod2`
+   Real cost: the TestMercedes yaw-180 fix rotated the 6 base proxies and left 12 `_lod1`/`_lod2`
    files byte-identical to the pre-fix backup — undetected for 25 days across several visual reviews,
    because the generating script's file list enumerated only the bases (`cabin_align.py`).
    Corollary for the CONTRACT, not just the gate: if no acceptance criterion demands LOD-to-LOD frame
    parity, this defect is not merely missed — it is *out of scope*, so no reviewer is wrong to pass it.
    Add the criterion alongside the check. Any car with a LOD
-   ladder plus body proxies has the identical exposure (SUB_BRZ shares the shape exactly).
+   ladder plus body proxies has the identical exposure (TestCoupe shares the shape exactly).

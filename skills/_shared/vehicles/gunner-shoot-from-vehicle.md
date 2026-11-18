@@ -91,5 +91,5 @@ A `$profile:` JSON keyed by vehicle **type**, with up to **10 slots** (`gunner1`
 
 ## Cross-references
 
-- The RPC dispatch used here (one fixed id plus a function name) is in `skills/enforce-script-reference/references/networking.md`, "One ID and a function name: the RPCManager pattern".
+- The RPC dispatch used here (one fixed id plus a function name) is in `skills/_shared/enscript/depth/networking.md`, "One ID and a function name: the RPCManager pattern".
 - Pose command work: the dayz-animation-pipeline skill.

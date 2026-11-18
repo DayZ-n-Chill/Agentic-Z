@@ -4,7 +4,7 @@ The measured evidence behind killers 1 to 10 of `p3d-killers.md`: what was teste
 
 Where this file and `p3d-killers.md` once disagreed (killers 1, 2 and 8), the in-game measurements here are the newer evidence and `p3d-killers.md` was corrected to match.
 
-**Not yet checked on `P:\`.** The measurements below were made in game on mod models (DayZDiag 1.29.163709, LFPowerGrid and synthetic test boxes) and offline with py3d. Vanilla models on `P:\` are binarized, so the winding and component facts cannot be read from them. The vanilla script and config lines that are cited were opened and confirmed.
+**Not yet checked on `P:\`.** The measurements below were made in game on mod models (DayZDiag 1.29.163709, TestPowerGrid and synthetic test boxes) and offline with py3d. Vanilla models on `P:\` are binarized, so the winding and component facts cannot be read from them. The vanilla script and config lines that are cited were opened and confirmed.
 
 **Terms used throughout**
 
@@ -124,14 +124,14 @@ removed from the script for false positives.
 > not from the LOD, so neither a walk nor a moving body tells
 > the winding. A player walking through the object is not evidence of outward winding either:
 > look for a collision LOD with no `ComponentNN` selection (killer #2) and at the body itself
-> (its layer, its height, how it was created: the dayz-physics-engine skill).
+> (its layer, its height, how it was created: the physics pack, `skills/_shared/physics/layers-and-raycasts.md` and `rigid-body-api.md`).
 
 **Fix**: `face.vertices.reverse()` on each face that reads outward, and only on those
 (`proxy:*` faces excluded): on a convex, closed component the reading is exact, and a component
 wound outward reads outward on every face. Never a `vertices[1]`/`[2]` swap, which inverts a
 triangle but turns a quad `[0,1,2,3]` into `[0,2,1,3]`, a crossed face (the py3d README under `scripts/tools/py3d/`).
 Do not reverse a collision LOD to match the Visual LOD: shipped collision LODs carry mixed
-whole-LOD signs, while seven debinarized vanilla models and four LFPowerGrid models wind 0 % outward per
+whole-LOD signs, while seven debinarized vanilla models and four TestPowerGrid models wind 0 % outward per
 component (`winding-absolute-check.md`, rule 7). Read the stored normals of the faces you
 reverse with the Check A table in `winding-diagnostics.md`: negate a face's normals in the same
 pass only if they pointed outward along with its winding (otherwise py3d's absolute check then
@@ -167,8 +167,8 @@ invisible."; and the MANDATORY note ended "A separately-created dynamic physics 
 boxes stopped a walking player like the inward ones and held one standing on top, and only the
 LOD raycasts missed them, the `view` rays the action cursor casts among them: the missing action
 fits the measurement, the walk-through does not. The sentence matches the
-rolling stone in the engine deep-dive reference of the dayz-physics-engine skill (section 7), a
-`dBodyCreateDynamicEx` sphere, and that section puts the stone's walk-through down to a body
+rolling stone in the physics pack (`skills/_shared/physics/rigid-body-api.md` and `drop-and-throw.md`), a
+`dBodyCreateDynamicEx` sphere, and that pack puts the stone's walk-through down to a body
 created only on the server and its missing action to a missing View Geometry LOD.)*
 
 ## 2. No `ComponentNN` Selection in the Collision LODs (CRITICAL)
@@ -225,10 +225,10 @@ cursor, vehicles hitting it, AI), vehicles.
 *(Corrected 2026-10-02: titled "Component Selection Case Sensitivity", this entry read: "Geometry
 LOD component MUST be `Component01` (uppercase C). The engine string-matches exactly.
 `component01`, `COMPONENT01`, or any variation silently fails — engine finds zero components and
-ignores ALL collision geometry." and "**Verified against**: LFPowerGrid production models (fridge,
-furnace, battery_adapter) all use `Component01`." Those files show which name LFPowerGrid used,
+ignores ALL collision geometry." and "**Verified against**: TestPowerGrid production models (fridge,
+furnace, battery_adapter) all use `Component01`." Those files show which name TestPowerGrid used,
 not that another name fails. An earlier run the same day (the kit-box measurement behind rule 6
-of `winding-absolute-check.md`) also reported LFPowerGrid's `lf_solarpanel.p3d`, whose collision
+of `winding-absolute-check.md`) also reported TestPowerGrid's `lf_solarpanel.p3d`, whose collision
 component is `component01`, taking 21 of 21 rays.)*
 
 ## 3. Missing `autocenter=0` LOD Property
@@ -307,7 +307,7 @@ and every point of a covered face that no component holds, stay `WARN_COMPONENT_
 message says they were not measured. A LOD with no component at all is `ERR_COMPONENT_NAMING`'s
 finding (killer #2); one whose component selections are all empty is read like any other, its closed
 parts raising the ERROR (an empty selection itself was not measured). On the three door samples of
-the door tutorial in the dayz-doors skill it is silent on `Simple_Door` and `Door_w_Button` and raises the ERROR on
+the door tutorial (`skills/_shared/animation/door-patterns.md`) it is silent on `Simple_Door` and `Door_w_Button` and raises the ERROR on
 the Geometry and Fire LODs of `Expert_Mode`, whose lever (18 faces, one closed piece: selection
 `lever` in Geometry, `door1_open` in Fire) is in no component there, though the tutorial's text
 lists the lever among the parts that take up space. py3d 1.10.1, the version under

@@ -1,8 +1,8 @@
 # Players and physics
 
-Covers the player's character controller: where it is simulated and what that means for collision, the calls script has on it, riding a moving platform, lifting the player from a command script, the ragdoll, and fall damage. The 1.30 changes are marked.
+Covers the player's character controller: where it is simulated and what that means for collision, the calls script has on it, riding a moving platform, lifting the player from a command script, and walking a player from script. The ragdoll and fall damage are in `ragdoll-and-fall-damage.md`.
 
-The measured results below come from in-game tests; each names its build where it is known. They can't be checked on `P:\`, so confirm them in game before a design depends on one. The full write-ups are in `skills/dayz-physics-engine/SKILL.md` and `skills/dayz-physics-engine/references/ragdoll-and-fall-damage.md`.
+The measured results below come from in-game tests; each names its build where it is known. They can't be checked on `P:\`, so confirm them in game before a design depends on one.
 
 ## The controller is not a rigid body
 
@@ -20,7 +20,8 @@ The measured results below come from in-game tests; each names its build where i
 | `PhysicsWasSlidingOffLinkedEntity()` | Did that entity move faster than its config `animPhysDetachSpeed` | `P:\scripts\3_game\human.c:1438` |
 | `PhysicsGetVelocity(out vector pVelocity)` | The controller's linear velocity | `P:\scripts\3_game\human.c:1441` |
 | `PhysicsEnableGravity(bool pEnable)` | Controller gravity on or off | `P:\scripts\3_game\human.c:1443` |
-| `PhysicsSetSolid(bool pSolid)` | By its name, whether the controller is solid; vanilla has no comment on it and calls it with `true` after pulling a player out of a vehicle | `P:\scripts\3_game\human.c:1446` |
+| `PhysicsIsSolid()` and `PhysicsSetSolid(bool pSolid)` | By their names, whether the controller is solid; vanilla has no comment on them and calls `PhysicsSetSolid(true)` after pulling a player out of a vehicle (`P:\scripts\4_world\entities\dayzplayerimplement.c:661`) | `P:\scripts\3_game\human.c:1445`, `:1446` |
+| `LinkToLocalSpaceOf(child, pLocalSpaceMatrix[4])` | Links an entity into the local space of the player | `P:\scripts\3_game\human.c:1391` |
 | `CheckFreeSpace(localDir, distance, useHeading, ...)` | Is there room for the collider in a direction | `P:\scripts\3_game\human.c:1381` |
 | `CollisionMoveTest(dir, offset, xzScale, ignoreEntity, ...)` | Can the character move that way; returns the fraction of the distance | `P:\scripts\3_game\human.c:1387` |
 
@@ -33,45 +34,21 @@ Vanilla's only config use of `animPhysDetachSpeed` is on boats (`animPhysDetachS
 Measured in game (DayZDiag 1.29.163709, one client on localhost):
 
 - **Animated geometry of a building does not carry a player.** A piece moved by a config animation leaves a standing player hanging in the air on the way down, and clips through a parked car on the way up. A lift needs script.
-- **A separate entity moved with `SetPosition` every frame, on the server and on each client, does carry a player**, once the player is linked to it (`PhysicsGetLinkedEntity() == platform`). The test platform was a `House` inheriting `HouseNoDestruct` with `animPhysDetachSpeed=100`; it lifted a standing player 8.9 m in 15 s within 5 cm on the server. Walking and jumping on it kept the link. A player teleported onto it needs one native step before linking; a player who walks on links at once.
+- **A separate entity moved with `SetPosition` every frame, on the server and on each client, does carry a player**, once the player is linked to it (`PhysicsGetLinkedEntity() == platform`). The test platform was a `House` inheriting `HouseNoDestruct` with `animPhysDetachSpeed=100`; it lifted a standing player 8.9 m in 15 s within 5 cm on the server. The client stayed within 7.9 cm, one frame of lag behind the server. Walking and jumping on it kept the link. A player teleported onto it needs one native step before linking; a player who walks on links at once.
+- **A jump on the platform is relative to it.** Two jumps on the way down stayed linked, spent 0.42 to 0.47 s in the air, peaked 0.30 to 0.32 m above the face and landed on the platform, close to the vanilla jump on still ground: `StartCommand_Fall(2.6)` (`P:\scripts\4_world\entities\dayzplayerimplementjumpclimb.c:97`; `StartCommand_Fall(float pYVelocity)`, `P:\scripts\3_game\human.c:1501`) is a 0.345 m, 0.53 s arc. Not measured: a jump while the platform rises.
 - **`EOnFrame` does not reach a `House`.** Drive the platform from the update queue, which runs every frame on server and client: `GetUpdateQueue(CALL_CATEGORY_GAMEPLAY)` (`P:\scripts\3_game\dayzgame.c:3081`).
 - **A Roadway face of another model inside the travel stops the ride down.** The measured case, and why no raycast finds such a face, are in `collision-lods.md`; keep every other model's Roadway faces out of the volume the cabin sweeps.
-- **Vehicles on the platform:** keep them awake and set their velocity each frame to the platform's velocity plus a correction for the position error. A sleeping vehicle moved with `SetPosition` is not sent to clients until it wakes.
+- **Vehicles on the platform:** keep them awake and set their velocity each frame to the platform's velocity plus 4 times the position error. With that, a sedan (with and without wheels) and a helicopter on a `CarScript` flight model rode within 4.6 cm on the server and 11.5 cm on the client and stopped exactly when released. Awake with no velocity set, the sedan rode well but the helicopter bounced up to 24 cm and slid 31 cm. A sleeping vehicle moved with `SetPosition`, even with `Transport.Synchronize()`, is not sent to clients until it wakes.
 
 ## Lifting the player from a command script
 
 Measured in game (DayZDiag 1.30.164014 experimental, 2026-10-06):
 
-- A `HumanCommandScript` that raises the player with `PrePhys_SetTranslation` (local space, `P:\scripts\3_game\human.c:1313`) gets no lift while controller gravity is on: the first air tick lost its whole upward step. With `PhysicsEnableGravity(false)` from take-off to landing the body followed the translation.
+- A `HumanCommandScript` that raises the player with `PrePhys_SetTranslation` (local space, `P:\scripts\3_game\human.c:1313`) gets no lift while controller gravity is on: the first air tick lost its whole upward step, and 0.2 s into the flight the server read the body 1 cm under its take-off height where about +0.34 m was asked for. With `PhysicsEnableGravity(false)` from take-off to landing the body followed the translation: every server air tick stayed within 3 cm, and the apex on the owner client came to 0.996 to 1.001 times the ballistic height. Not measured: a remote observer, flights longer than 0.6 s, and fall damage after a flight with gravity off.
 - The command owns switching gravity back on at every exit, including a ride that ends in the air. Vanilla itself only ever calls `PhysicsEnableGravity(true)`, when a vehicle death's simulation ends (`P:\scripts\4_world\entities\dayzplayerimplement.c:32`).
 - `PhysicsIsFalling(true)` is not a pure read. Skipping that call on the ticks before the lift made every take-off lose its first air tick; calling it again, result ignored, fixed it. What `pValidate` does is not documented (`P:\scripts\3_game\human.c:1428`).
 - `PostPhys_SetPosition` takes world space (`P:\scripts\3_game\human.c:1327`); `PrePhys_SetTranslation` takes local space. Mixing them up is a common cause of a body that snaps.
 
 ## Walking a player from script
 
-`OverrideMovementSpeed` and `OverrideMovementAngle` (`P:\scripts\3_game\human.c:253`, `:256`) move a client controlled player only when both the owner client and the server apply them on every move. Measured in game (DayZDiag 1.29): set on the client only, the player moved 0.24 to 0.40 m in 1.5 s; applied on both sides every tick, 1.52 m/s with both ending at the same position.
-
-## Ragdoll
-
-- **1.30:** the calls are `PhysicsSetSimpleDeath(bool pEnable)` (new, `P:\scripts\3_game\human.c:1449`), `PhysicsSetRagdoll(bool pEnable)` (`:1451`) and `PhysicsIsRagdoll()` (`:1452`). An unconscious player's command has `IsRagdoll()` (`P:\scripts\3_game\human.c:647`).
-- **1.30:** the death branch that starts no death command now calls `PhysicsSetSimpleDeath(true)` (`P:\scripts\4_world\entities\dayzplayerimplement.c:745`). 1.29 called `PhysicsSetRagdoll(true)` there (that build is not on `P:\`; the comment at `P:\scripts\3_game\human.c:1448` says the death state "was previously handled by PhysicsSetRagdoll").
-- **1.30:** the ragdoll's bodies are data: `RagdollDef` in `P:\DZ\characters\bodies\human.ragdoll:1`, 11 `RagdollBone` entries with a mass, capsule or sphere geometries on `flesh.bisurf`, and joint limits. The masses add up to 73.9 kg (pelvis `Mass 17` at `P:\DZ\characters\bodies\human.ragdoll:5`).
-- These calls are on `Human` only. Infected and animals inherit `DayZCreature`, which extends `EntityAI` (`P:\scripts\3_game\entities\dayzanimal.c:24`), so they have no ragdoll call. Giving an infected a `ragdoll =` entry and player death clips did nothing in game (seen on 1.30.164078; not checkable on `P:\`).
-- **A ragdoll on a living player works on the server only.** Measured in game (2026-06-10): after `DisableSimulation(false)`, waking the body and `PhysicsSetRagdoll(true)`, an impulse took and the body slid 77.6 m on the server, but the owner's client kept a standing, controllable avatar. It needs custom position sync to be usable.
-- **Waking too early buries the player.** In that test a wake at 0.5 s left the player 40 m under the terrain. Vanilla waits for `m_UnconsciousTime > 2` (`P:\scripts\4_world\entities\manbase\playerbase.c:3420`), and from 1.30 also refuses while `PhysicsIsFalling(false)` is true (`:3423`). Keep both guards in a custom wake.
-- Vanilla pushes a body from script only when it is dead: `RegisterTransportHit` calls `dBodyApplyImpulse` behind `IsDamageDestroyed()` (`P:\scripts\3_game\entities\entityai.c:4159`). A living player is moved by the collision itself. See `contact.md`.
-
-## Fall damage (1.30)
-
-`DayZPlayerImplementFallDamage` changed in 1.30 from a straight line to a curve, with lower starting heights.
-
-| Effect | Starts at | Full at | Curve power | Source |
-|---|---|---|---|---|
-| Health | 2 m (`HEALTH_HEIGHT_LOW`) | 12 m | 2.0 | `P:\scripts\4_world\entities\dayzplayerimplementfalldamage.c:26`, `:104` |
-| Shock | 0 m (`SHOCK_HEIGHT_LOW`) | 8 m | 2.0 | `P:\scripts\4_world\entities\dayzplayerimplementfalldamage.c:29`, `:108` |
-| Broken legs | 3 m (`BROKENLEGS_HEIGHT_LOW`) | 8 m | 2.5 | `P:\scripts\4_world\entities\dayzplayerimplementfalldamage.c:31`, `:111` |
-
-- The curve is `CurveExp(low, high, value, power)`: the height's position between low and high, clamped to 0 to 1, raised to the power (`P:\scripts\4_world\entities\dayzplayerimplementfalldamage.c:92-97`).
-- `Randomize` returns a coefficient of 1 unchanged, so a lethal fall is not rolled back down (`P:\scripts\4_world\entities\dayzplayerimplementfalldamage.c:160-163`).
-- The damage is dealt with `ProcessDirectDamage` and the ammo `FallDamageHealth` and `FallDamageShock` (`FALL_DAMAGE_AMMO_HEALTH`, `P:\scripts\4_world\entities\dayzplayerimplementfalldamage.c:20`; applied at `:155`), both defined in `P:\DZ\weapons\melee\config.cpp:2182` (`FallDamageHealth`).
-- The 1.29 values were health 5 to 14 m, shock 3 to 12 m and broken legs 5 to 9 m, on a straight line (that build is not on `P:\`). A `modded class` that copies those constants and `Math.InverseLerp` compiles on 1.30 and silently brings the old, weaker curve back.
+`OverrideMovementSpeed` and `OverrideMovementAngle` (`P:\scripts\3_game\human.c:253`, `:256`) move a client controlled player only when both the owner client and the server apply them on every move. Measured in game (DayZDiag 1.29): set on the client only, the player moved 0.24 to 0.40 m in 1.5 s; set on the client and once on the server by RPC, 0.00 m. What walked it: the owner sets both overrides on every command tick and sends a `ScriptInputUserData` request; the server applies the same two overrides in every `ConsumeMove` after `super` and in its `CommandHandler`, and switches them off at the end. Owner and server then moved 1.52 m/s and stopped at the same position. Script fields added to `PlayerBaseMove` never reached the server.

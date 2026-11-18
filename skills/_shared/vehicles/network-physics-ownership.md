@@ -21,7 +21,7 @@ Related file in this pack: `aviation-networking.md` (the same Pawn owner-predict
 - `dBodyApplyForce` is declared at `P:\scripts\1_core\proto\enphysics.c:146`.
 - `GetOwnerStateType` is overridden by `CarScript`: `P:\scripts\4_world\entities\vehicles\carscript.c:2568`.
 
-The sections below are ordered by topic. The reference tables of `skills/dayz-vehicles/SKILL.md` say when to read this file.
+The sections below are ordered by topic. The reference tables of `README.md` say when to read this file.
 
 ---
 

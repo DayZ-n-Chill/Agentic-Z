@@ -151,13 +151,13 @@ How lines are fingerprinted, which lines count as errors and which vanilla lines
 
 ## When a run fails for a reason that is not the mod
 
-The gate judges log lines; it cannot tell that the run itself was not a valid test. The measured cases are in the `dayz-test-ingame` skill:
+The gate judges log lines; it cannot tell that the run itself was not a valid test. The measured cases are in the references of the `/dayz-launch-test` skill:
 
 | The gate shows | Read |
 |---|---|
-| The server or client does not start or connect, a client that dies before it logs, a kick code | `skills/dayz-test-ingame/references/troubleshooting.md` |
-| A `storage` failure, a PASS that did not test the change (stale or locked PBO, an old signature, storage written by another mod set) | `skills/dayz-test-ingame/references/build-and-storage-traps.md` |
-| A scripted check that cannot fail, or a verdict from a run whose `-mod=` line is not what you meant | `skills/dayz-test-ingame/references/automated-cells.md` |
+| The server or client does not start or connect, a client that dies before it logs, a kick code | `skills/dayz-launch-test/references/troubleshooting.md` |
+| A `storage` failure, a PASS that did not test the change (stale or locked PBO, an old signature, storage written by another mod set) | `skills/dayz-launch-test/references/build-and-storage-traps.md` |
+| A scripted check that cannot fail, or a verdict from a run whose `-mod=` line is not what you meant | `skills/dayz-launch-test/references/automated-cells.md` |
 
 ## Limits
 

@@ -1,5 +1,5 @@
-"""Static checks for the three mod-development reference skills: dayz-mod-workflow,
-dayz-mod-dev and dayz-feature-spec. Frontmatter, the path note, the references table
+"""Static checks for the two mod-development reference skills: dayz-mod-workflow
+and dayz-mod-dev. Frontmatter, the path note, the references table
 against the files in references/, and the error index against the error catalog.
 
 Run with: py -m pytest skills/dayz-mod-workflow
@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 SKILLS_DIR = Path(__file__).resolve().parent.parent
-SKILL_NAMES = ["dayz-mod-workflow", "dayz-mod-dev", "dayz-feature-spec"]
+SKILL_NAMES = ["dayz-mod-workflow", "dayz-mod-dev"]
 SPANISH_RE = re.compile(r"\b(?:Úsala|cuando|según|Ejes|Plantilla|Reglas|Referencia cruzada|Mantenimiento|Caso real)\b")
 MACHINE_PATH_RE = re.compile(r"[A-Za-z]:\\Users\\|/home/\w+|<vault>|<claude-home>")
 

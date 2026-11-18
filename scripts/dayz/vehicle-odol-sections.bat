@@ -1,6 +1,6 @@
 @echo off
 REM Check the sections of a binarized vehicle .p3d (ODOL) per named selection. Thin wrapper, forwards all arguments.
-REM See skills\dayz-vehicles\SKILL.md for full usage.
+REM See skills\dayz-p3d-audit\SKILL.md for full usage.
 REM Uses python when it runs, otherwise the py launcher. Running it (not just
 REM finding it) skips the Microsoft Store alias, which is on PATH but exits 9009.
 REM If neither runs it prints one [FAIL] line and exits 9009. (call ) clears the
@@ -14,4 +14,4 @@ set PYTHONIOENCODING=utf-8
 set "PY=python"
 call python -c "" >nul 2>nul || set "PY=py"
 if "%PY%"=="py" ((call ) & call py -c "" >nul 2>nul || (>&2 echo [FAIL] Python 3 not found: install it from python.org or add python/py to PATH& exit /b 9009))
-%PY% "%~dp0..\..\skills\dayz-vehicles\scripts\gate_odol_sections.py" %*
+%PY% "%~dp0..\..\skills\dayz-p3d-audit\scripts\gate_odol_sections.py" %*

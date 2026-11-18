@@ -1,6 +1,6 @@
 # Reference: reflection, the script profiler and debugging globals
 
-Reading and writing fields by name, calling methods by name, creating a class from a string, measuring script time with `EnProfiler`, and the global functions used while debugging. Every line cited as `P:\...:N` was opened on `P:\`; behaviour marked "reported" was measured in production mods and not re-run here. More examples are in `skills/enforce-script-reference/references/verified-api-catalog.md` and `timers-performance.md` in the same folder.
+Reading and writing fields by name, calling methods by name, creating a class from a string, measuring script time with `EnProfiler`, and the global functions used while debugging. Every line cited as `P:\...:N` was opened on `P:\`; behaviour marked "reported" was measured in production mods and not re-run here. More examples are in `skills/_shared/enscript/depth/verified-api-catalog.md` and `timers-performance.md` in the same folder.
 
 ## Reflection
 

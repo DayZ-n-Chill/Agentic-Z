@@ -11,6 +11,12 @@ a SteamCMD login does to the Steam client on the same machine. Updating an item
 and the subscriber's side (the download, the `!Workshop` junction and
 `meta.cpp`) were **not** measured.
 
+**Licence limits.** Content built with DayZ Tools is non-commercial under the DayZ Tools EULA,
+reuse of Bohemia game data falls under Bohemia's non-commercial terms, and content may not sit
+behind a paywall (voluntary donations and free content are allowed). This matters most for mods
+built from ripped or AI-generated assets. Read Bohemia's current EULA and monetization rules
+before publishing.
+
 ## The item folder
 
     addons\<Mod>.pbo

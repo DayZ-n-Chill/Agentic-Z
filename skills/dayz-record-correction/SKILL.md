@@ -36,6 +36,8 @@ Bad: <the version the user corrected>
 Tier: 1 | 2 | 3 (<file>)
 ```
 
+Write the rule as something that stays true. A rule outlives the session, so a present-tense claim about the current state ("X is currently broken", "the server now does Y") goes wrong silently; write instead how to check that state before acting on it. A dated or versioned fact ("on 1.30", "measured with ExtractPbo 2.35") can stay, because it stays true as history.
+
 Pick the tier by scope:
 
 - **Tier 1**: how any agent works in this repo, DayZ or not (reporting, tooling, file locations). Goes in `.claude/CLAUDE.md`, `AGENTS.md` and `GEMINI.md`, all three with the same text.

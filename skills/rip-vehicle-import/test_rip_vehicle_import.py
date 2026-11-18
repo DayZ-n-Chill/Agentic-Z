@@ -28,10 +28,12 @@ def test_skill_md_and_references_folder_list_the_same_files():
     )
 
 
-def test_every_cookbook_is_in_the_symptom_index():
-    index = SKILL_MD.split("## Symptom to cookbook index", 1)[1].split("\n## ", 1)[0]
-    cookbooks = {p.name for p in (SKILL / "references").glob("cookbook-*.md")}
-    assert set(re.findall(r"`references/(cookbook-[\w.-]+\.md)`", index)) == cookbooks
+def test_symptom_index_names_five_vehicle_pack_files_that_exist():
+    index = SKILL_MD.split("## Symptom index", 1)[1].split("\n## ", 1)[0]
+    named = re.findall(r"`(skills/_shared/vehicles/symptom-[\w.-]+\.md)`", index)
+    assert len(set(named)) == 5
+    repo = SKILL.parents[1]
+    assert [n for n in named if not (repo / n).is_file()] == []
 
 
 def _string_constants(tree: ast.AST) -> set[str]:

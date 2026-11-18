@@ -73,6 +73,10 @@ The state machine helper that chambers from the attached magazine calls `mag.Loc
 
 The official 1.30 modding changelog also names `SoundHitType` and `SurfaceInfo.GetSoundHitType()`. Neither exists in `P:\scripts\3_game\surfaceinfo.c` or anywhere else under `P:\scripts`; do not call them.
 
+## Where a swapped magazine lands
+
+When a magazine swap cannot put the old magazine in the inventory, `WeaponManager` drops it on the ground with an orientation built from the player's yaw (`Math3D.YawPitchRollMatrix`, `Math3D.MatrixToQuat`, then `SetGroundEx`, `P:\scripts\4_world\classes\weapons\weaponmanager.c:1364-1368`). DayZ 1.29 passed an unset `dir` array there (the 1.29 scripts are not on `P:\`, so not checked); a mod that copied the 1.29 block should take the 1.30 one.
+
 ## Depth
 
-Measured lessons for a custom firearm (selection and memory point checks, the bone remap, the fire mode scope trap, the import rule) are in the `dayz-weapons` skill, `skills/dayz-weapons/SKILL.md`.
+Measured lessons for a custom firearm are in this pack: the selection, memory point and bone remap checks in `model-selections.md`, the fire mode scope trap in `weapon-config.md`, the mesh import in `model-import.md`, and a symptom table in `troubleshooting.md`.

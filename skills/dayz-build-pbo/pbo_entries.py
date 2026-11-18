@@ -6,7 +6,7 @@ it. This module reads the header and checks the trailer. It never unpacks or
 decompresses an entry, so it works on any PBO, binarized or not.
 
 Used by build.py (is the mod's source really in the PBO it just built?) and by
-dayz-pbo-reverse-engineering/inventory.py (what is in a PBO somebody else built?).
+dayz-import-mod/pbo_inventory.py (what is in a PBO somebody else built?).
 """
 from __future__ import annotations
 

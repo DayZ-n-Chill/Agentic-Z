@@ -57,5 +57,3 @@ These checks need fixtures for successive generations, retry after `ABORT`, fail
 ## Evidence
 
 Verification level: the mechanism was cross-checked against its design contract and exercised by offline termination and recovery tests, 2026-07-24.
-
-The rules above are the audit invariants the recovery code of the `packctl` promotion tool (its `common` and `promotion` modules and its promotion tests) was written against.

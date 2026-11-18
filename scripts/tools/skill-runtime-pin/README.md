@@ -188,7 +188,6 @@ foreign absolute path with a copied hash is a failed grade.
 
 ```powershell
 python -m pytest -q -p no:cacheprovider scripts/tools/skill-runtime-pin
-python -m pytest -q -p no:cacheprovider scripts/dev/knowledge-pack/tests/packctl/test_packctl_runtime_pin.py
 ```
 
 The tests need `git` on PATH and build their fixture repositories in a

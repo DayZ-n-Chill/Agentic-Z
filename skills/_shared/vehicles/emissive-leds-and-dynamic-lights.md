@@ -330,5 +330,5 @@ object is removed.
 - The 3D viewer (`scripts/tools/dayz-3d-viewer/`) — previews emissive RVMATs; its
   RVMAT reader takes the `emmisive` key.
 - The dayz-ui-development skill — if the LED state is user-driven from a menu.
-- The enforce-script-reference skill — SyncVars + OnVariablesSynchronized for state
+- the Enforce Script pack (`skills/_shared/enscript/depth/`) — SyncVars + OnVariablesSynchronized for state
   propagation.

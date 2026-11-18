@@ -1,6 +1,6 @@
 # Scripted trigger volumes
 
-The script API under every scripted trigger: `ScriptedEntity` and its collision shapes, who is told when something enters or leaves, and the server and client hooks of `TriggerEvents`. Read from source on `P:\` (DayZ 1.30); nothing here was measured in a running game. Underground areas built on this are in `skills/dayz-underground/SKILL.md`, and hazard areas with a synced trigger in `skills/dayz-environment-hazards/SKILL.md`.
+The script API under every scripted trigger: `ScriptedEntity` and its collision shapes, who is told when something enters or leaves, and the server and client hooks of `TriggerEvents`. Read from source on `P:\` (DayZ 1.30); nothing here was measured in a running game. Underground areas built on this are in `skills/_shared/world/underground-triggers.md`, and hazard areas with a synced trigger in `skills/_shared/world/oil-pits.md`.
 
 ## The class
 

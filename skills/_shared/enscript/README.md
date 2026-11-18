@@ -14,8 +14,10 @@ This folder fills the gap between those: the recurring patterns themselves (nets
 
 Files in this folder are in one of two states:
 
-- **Checked on `P:\`**, every fact cites the vanilla file and line it was read from: all of `references/`; in `patterns/`, `modded_class.md` (which marks each of its reported claims as such), `netsync.md`, `persistence.md`, `rpc.md`, `singleton.md` (which marks the `JsonSerializer` behavior it could not read in script), `actions.md`, `json_config_migration.md`, `language_workarounds.md`, `physics_items.md`, `scheduler.md` (which marks each of its reported claims as such) and `server_tick_budget.md` (which cites the vanilla calls and marks the third-party techniques as reported); in `integrations/`, `vanilla_plugins.md`, `central_economy.md` and `input_bindings.md`; in `examples/`, `01` to `10`, the three layouts and `layouts.md`.
+- **Checked on `P:\`**, every fact cites the vanilla file and line it was read from: all of `references/` except `network_payload_limits.md` (measured in game, not checkable on `P:\`) and the newer API layout in `workbench_api.md` (which `P:\` does not hold; its `P:\` section is checked); in `patterns/`, `modded_class.md` (which marks each of its reported claims as such), `netsync.md`, `persistence.md`, `rpc.md`, `singleton.md` (which marks the `JsonSerializer` behavior it could not read in script), `actions.md`, `json_config_migration.md`, `language_workarounds.md`, `physics_items.md`, `scheduler.md` (which marks each of its reported claims as such) and `server_tick_budget.md` (which cites the vanilla calls and marks the third-party techniques as reported); in `integrations/`, `vanilla_plugins.md`, `central_economy.md` and `input_bindings.md`; in `examples/`, `01` to `10`, the three layouts and `layouts.md`.
 - **Checked against the framework's own scripts**, not vanilla: `integrations/community_framework.md` (`P:\Mods\@CF\Addons\scripts.pbo`), `integrations/dabs_framework.md` (the Dabs scripts PBO) and `integrations/expansion_style.md` (the shipped Expansion PBOs under `P:\Mods\`, and CF's `scripts.pbo` for its CF names).
+
+- **`depth/`** mixes lines checked on `P:\` with results measured in game on a named build and third-party mod behaviour; each file marks which is which (see `depth/README.md`).
 
 When you add or change a fact in a checked file, check it on `P:\` (or in the framework's PBO) and cite the line. Never overwrite a checked file with content that was not checked.
 
@@ -26,7 +28,8 @@ enscript/
 ├── patterns/         # Recurring implementation patterns
 ├── integrations/     # External frameworks (CF, DABS) + vanilla systems (CE, inputs)
 ├── references/       # API surface by topic (player, item, game, types, paths, etc.)
-└── examples/         # Complete .c / .layout files (copy-paste starting points)
+├── examples/         # Complete .c / .layout files (copy-paste starting points)
+└── depth/            # Measured traps, crashes and migrations from real mods (index: depth/README.md)
 ```
 
 ### patterns/
@@ -58,7 +61,7 @@ enscript/
 
 ### references/
 
-Every file below cites the vanilla file and line on `P:\` for its facts. Start with the `language_*` and `api_*` files.
+Every file below cites the vanilla file and line on `P:\` for its facts, apart from the two exceptions named above. Start with the `language_*` and `api_*` files.
 
 | File | Topic |
 |---|---|
@@ -79,6 +82,17 @@ Every file below cites the vanilla file and line on `P:\` for its facts. Start w
 | `file_paths.md` | `$profile`/`$saves`/`$mission` path tokens, `FileExist`, `MakeDirectory`, `CopyFile`, `JsonFileLoader.LoadFile`, `FileMode` |
 | `gui_layout.md` | `.layout` file format, RGBA colors, coords, every widget class vanilla layouts use, `ItemPreviewWidget`/`PlayerPreviewWidget` |
 | `widget_api.md` | Widget script classes and methods, events and `ScriptedWidgetEventHandler`, loading layouts, `UIScriptedMenu`, imagesets |
+| `mission_lifecycle.md` | The order `MissionServer` and `MissionGameplay` run constructor, `OnInit`, `OnMissionStart` and `OnUpdate`, where each calls `super`, the client `m_Initialized` guard, RPCs with no target |
+| `input_user_data.md` | `ScriptInputUserData`: the player input channel, its `CanStoreInputUserData()` guard, the engine driven receive path, and when to use it instead of `ScriptRPC` |
+| `network_payload_limits.md` | Measured, not checkable on `P:\`: string and array sizes each channel delivered, the input queue depth, RPC order across reliability modes, what an acknowledgement proves |
+| `native_declarations.md` | Where the `proto native` declarations are, what `owned` and `static` mean on one, calling a native that fills `vector mat[4]` or returns a handle |
+| `entity_components.md` | `GenericComponent`, `ScriptComponent` and `GenericEntity` under the `COMPONENT_SYSTEM` guard (Workbench builds): insert and remove, event order, event masks |
+| `workbench_api.md` | The Workbench scripting API for plugin authors: what `P:\` holds, the newer `workbenchapi\` folder layout, the `#ifdef WORKBENCH` guard, modules, plugin events |
+| `game_builds.md` | Which build `P:\` is, the 1.29 to 1.30.164289 timeline, which line a citation gives, and the porting rules the 1.30 patches taught |
+
+### depth/
+
+The traps behind the short facts above: compiler and runtime failures, memory, networking, timers, server load, `config.cpp`, vehicle scripting, the DayZ 1.30 script changes, an API lookup catalog and third-party framework patterns, each with the build it was measured on. `depth/README.md` lists every file and the question it answers; open it when a short fact here is not enough or the question is a crash, a silent failure or a 1.29 to 1.30 port.
 
 ### examples/
 
@@ -141,4 +155,8 @@ When debugging, jump to the file that owns the symptom.
 | Server code inside `#ifdef SERVER` does nothing in offline mode | `references/language_compile.md` (`SERVER` is dedicated only) |
 | `Debug.Log` prints nothing | `references/api_game.md` (silent unless logs are enabled) |
 | `set.Contains` or `string.StartsWith` does not compile | `references/language_types.md` (methods that do not exist) |
+| Modded `MissionGameplay` HUD missing, or client start skipped | `references/mission_lifecycle.md` (`m_Initialized`, `OnMissionStart` must call `super`) |
+| `ScriptInputUserData` packet never arrives | `references/input_user_data.md` (guard and routing key) and `references/network_payload_limits.md` (`Write` returns false when full) |
+| A cited vanilla line does not match `P:\` | `references/game_builds.md` (which build `P:\` is) |
+| `Engine class '...' cannot be modded` | `patterns/modded_class.md` (engine-backed classes) |
 | Attachment slot silently rejects modded item | `../conventions/config.md` (T148506: `+=` on a parent whose `inventorySlot` is a string drops the slot) |

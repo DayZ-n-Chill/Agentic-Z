@@ -45,17 +45,19 @@ To find out why a gun will not cycle its fire modes: add a throwaway `scope=2` c
 | `weaponStateAnim` | Weapon state animation file. | `cz527\config.cpp:178` |
 | `model`, `itemSize[]`, `weight` | The `.p3d`, the inventory size, the weight in grams. | `cz527\config.cpp:185`, `:192`, `:35` |
 
+The same keys on an automatic rifle, the AKM (`P:\DZ\weapons\firearms\akm\config.cpp`): `initSpeedMultiplier` `:43`, `chamberableFrom[]` `:46`, `magazines[]` `:51`, `simpleHiddenSelections[]` `:68`, `modes[]` `:77`, the mode classes `:87` and `:119` with `dispersion` at `:116` and `:164`, `discreteDistance[]` `:170`, `weaponStateAnim` `:189` and `attachments[]` `:197`. The base you inherit may differ; Grep the key in its config before quoting a line.
+
 More keys seen in vanilla:
 
 - `chamberSize` is 1 on most firearms; guns that hold their rounds in the chamber or an internal tube set it higher: 5 on the Mosin (`P:\DZ\weapons\firearms\mosin9130\config.cpp:47`), 7 on the Repeater (`P:\DZ\weapons\firearms\repeater\config.cpp:41`).
 - `chamberedRound=""` sits next to `chamberSize` on several guns (`P:\DZ\weapons\firearms\b95\config.cpp:40`; SCAR-H at `P:\DZ\weapons\firearms\scarh\config.cpp:39`). Engine key; no vanilla script reads it.
 - `recoilModifier[]={1,1,1}` is the neutral value (`P:\DZ\weapons\firearms\b95\config.cpp:61`).
 - `aiRateOfFire` and `aiRateOfFireDistance` appear on the launchers (`P:\DZ\weapons\launchers\rpg7\config.cpp:37`, `:38`). Engine keys.
-- `reloadAction` is set only on the bow and launcher bases in vanilla (`P:\DZ\data\config.cpp:4592`, `:4756`); third-party weapon packs set it on rifles too (for example `reloadAction = "ReloadAKM"` on an AK; mod config, not on `P:\`). It does not drive the reload; see `hand-animation-and-grip.md`, "`reloadAction` does not drive the reload".
+- `reloadAction` is set only on the bow and launcher bases in vanilla (`P:\DZ\data\config.cpp:4592`, `:4756`); third-party weapon packs set it on rifles too (for example `reloadAction = "ReloadAKM"` on an AK; mod config, not on `P:\`). It does not drive the reload; see `_shared/animation/weapon-anim-blender.md`, "The `reloadAction` key is legacy".
 
 ## Model path
 
-`model` must name the file where it really sits inside the PBO, for example `model="\MyMod\data\my_rifle.p3d"` when the model is under `data\`. On a custom rifle, a `model` that pointed at the PBO root while the file lived under `data\` wasted a whole series of builds: builds made without a clean temp folder carried an old unbinarized copy at the root, the game loaded that copy, and every measurement of the real model was meaningless; the first clean build then showed an invisible weapon and crashed on equip (measured in game on that rifle). `/dayz-lint` reports a `model` path that names no file in the mod (`missing-model`), and `/dayz-build-pbo <ModName> --clean` rebuilds without leftovers. More in `skills/dayz-weapons/references/import-rule-v4.md`.
+`model` must name the file where it really sits inside the PBO, for example `model="\MyMod\data\my_rifle.p3d"` when the model is under `data\`. On a custom rifle, a `model` that pointed at the PBO root while the file lived under `data\` wasted a whole series of builds: builds made without a clean temp folder carried an old unbinarized copy at the root, the game loaded that copy, and every measurement of the real model was meaningless; the first clean build then showed an invisible weapon and crashed on equip (measured in game on that rifle). `/dayz-lint` reports a `model` path that names no file in the mod (`missing-model`). `/dayz-build-pbo <ModName>` empties its temp folder (`P:\temp\<ModName>`) before every build, which is what removes such leftovers; its `--clean` flag does something else, wiping `P:\Mods\@<ModName>\Addons\` before the build. Importing the mesh and testing the binarized build: `model-import.md`.
 
 ## Jamming
 

@@ -2,7 +2,7 @@
 
 When a pose complaint is a perspective artifact, where a HUD marker ray must be anchored, and how to validate a visual metric on a control before trusting it.
 
-> Status: field notes measured in game and offline on third-party mods, each named in its entry (LFHeli OH-1, LFHeli B-4, SUB_BRZ). This is third-party mod behaviour, not vanilla, and the measurements were not repeated on `P:\`. Every vanilla citation is written with its full `P:\` path and was opened on the vanilla data on `P:\` (a 1.30 build). Labels such as s42 number the work sessions in date order.
+> Status: field notes measured in game and offline on third-party mods, each named in its entry (TestHeli OH-1, TestHeli B-4, TestCoupe). This is third-party mod behaviour, not vanilla, and the measurements were not repeated on `P:\`. Every vanilla citation is written with its full `P:\` path and was opened on the vanilla data on `P:\` (a 1.30 build). Labels such as s42 number the work sessions in date order.
 
 Nothing in this file is repealed: these are active lessons, ordered by topic and not by date.
 
@@ -23,9 +23,9 @@ When the user reports "piece X sits N cm off / tilted" on an imported model (rot
 2. **If the measurement says centered (offset ~mm, tilt ~0 deg), the complaint is PERSPECTIVE**: a ring/aperture with depth along its axis projects obliquely, so a geometrically centered piece LOOKS off-center from an angle - and the apparent offset direction changes with camera angle. Confirm by reproducing the illusion: flat-color render (piece magenta / hull grey) from the user's capture angle vs an orthographic front-on render.
 3. **Apply an offset ONLY if the deployed-artifact measurement demands it.** An eyeballed offset on an already-centered model is a REGRESSION (it moves what was right) and burns an in-game cycle to discover it.
 
-Measured case (LFHeli OH-1 round 3, AMENDED same day): user reported tail rotor "10 cm low" + interior "10 cm high, pokes through the canopy". First pass measured global bboxes and called it all perspective - WRONG on two counts: (a) "interior inside the glass" by global bbox missed a REAL 7.25 cm LOCAL protrusion through the canopy roof (per-cell interior-maxY vs glass-surface-Y grid found it; the user's eye was right); (b) the ring fit gave 9.7 mm misreported as 0.9 mm (units slip). CAVEAT the rule accordingly: bbox-vs-bbox NEVER proves containment - protrusion is LOCAL, measure per-cell surface-vs-surface before declaring a pose complaint perceptual. The split is: a complaint about subjective feel is settled with player data; a measurable pose complaint is settled by measuring the deployed artifact.
+Measured case (TestHeli OH-1 round 3, AMENDED same day): user reported tail rotor "10 cm low" + interior "10 cm high, pokes through the canopy". First pass measured global bboxes and called it all perspective - WRONG on two counts: (a) "interior inside the glass" by global bbox missed a REAL 7.25 cm LOCAL protrusion through the canopy roof (per-cell interior-maxY vs glass-surface-Y grid found it; the user's eye was right); (b) the ring fit gave 9.7 mm misreported as 0.9 mm (units slip). CAVEAT the rule accordingly: bbox-vs-bbox NEVER proves containment - protrusion is LOCAL, measure per-cell surface-vs-surface before declaring a pose complaint perceptual. The split is: a complaint about subjective feel is settled with player data; a measurable pose complaint is settled by measuring the deployed artifact.
 
-## HUD reticle/marker: anchor the ray at the CAMERA, never at the vehicle (added 2026-08-07, LFHeli B-4)
+## HUD reticle/marker: anchor the ray at the CAMERA, never at the vehicle (added 2026-08-07, TestHeli B-4)
 
 A direction reticle drawn by projecting vehicle_origin + GetDirection()*D reads laterally skewed
 against the airframe from any 3PP camera sitting off the symmetry plane: at D=300 the world point
@@ -33,8 +33,8 @@ projects ~0.2 deg off the vanishing point while the nearby nose projects ~7 deg 
 the reticle appears left/right of the hull even though the world point is exactly on axis.
 Camera-anchored is the flight-director pattern and kills the parallax for every camera (3PP
 orbited, 1PP): nose = GetGame().GetCurrentCameraPosition() + veh.GetDirection() * D, then
-GetGame().GetScreenPos(nose), keep the projZ>0 gate. Verified in-game fix path (LFHeli
-LFHeliHUD.c 2026-08-07); the previous bone-anchored origin was a no-op built on a misattributed
+GetGame().GetScreenPos(nose), keep the projZ>0 gate. Verified in-game fix path (TestHeli
+TestHeliHUD.c 2026-08-07); the previous bone-anchored origin was a no-op built on a misattributed
 probe (see next paragraph).
 
 Two measurement traps that produced that dead fix, worth one line each:
@@ -44,12 +44,12 @@ Two measurement traps that produced that dead fix, worth one line each:
   (DayZPlayerCamera3rdPersonVehicle pivots at vehicle origin + GetTransportCameraOffset, default
   0 1.3 0; both opened on `P:\`, see the anchors above) before hypothesizing an offset.
 - Selection membership can be PHANTOM: points in a named selection with zero faces referencing
-  them (LFHeli glass carried 357 such points on one side). Any per-side point count over a
+  them (TestHeli glass carried 357 such points on one side). Any per-side point count over a
   selection must count only face-referenced points or the asymmetry measurement lies.
 
-## Diagnose before re-authoring, and validate every visual metric on an in-game-verified control (added 2026-08-07, SUB_BRZ)
+## Diagnose before re-authoring, and validate every visual metric on an in-game-verified control (added 2026-08-07, TestCoupe)
 
-SUB_BRZ was one session away from re-assembling both doors from the raw rip, on
+TestCoupe was one session away from re-assembling both doors from the raw rip, on
 the premise that the s42-cut mesh was rotten (five winding passes, 74.7% orphan
 verts). Measured first: all six visual factory groups were ALREADY present face
 for face in the shipped proxy - skin 2043, card 3344, handle 1176, speaker 18,
@@ -112,6 +112,6 @@ to skip - and separately excluded from the component census by material. When a
 defect outlives several passes, first check whether its faces are even in the set
 those passes adjudicate; rim/enclosed are blind spots, not clean bills of health.
 
-The checks above were each a small parametrised script on the SUB_BRZ build, not part of
+The checks above were each a small parametrised script on the TestCoupe build, not part of
 this repo: face completeness, exact surface gap, the self-validating visibility oracle,
 the culling-correct seam raster, and the transform fit with abstention.

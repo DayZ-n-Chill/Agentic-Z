@@ -16,6 +16,8 @@ Finding players, telling them apart, the connect hooks in `MissionServer`, and r
 | `identity.GetPlayer()` | The player of a `PlayerIdentity`. | `P:\scripts\3_game\gameplay.c:374` |
 | `player.GetIdentity()` | The player's `PlayerIdentity`. | `P:\scripts\3_game\entities\man.c:21` |
 
+To show a player a short line of text, call `player.MessageStatus(text)` (`P:\scripts\4_world\entities\manbase\playerbase.c:6924`), not `GetGame().Chat()`: it does not depend on a chat mod.
+
 ## `PlayerIdentity`
 
 | Method | Value | Source (`3_game\gameplay.c`) |
@@ -47,11 +49,11 @@ All on `MissionServer` in `P:\scripts\5_mission\mission\missionserver.c`. Mod it
 
 ### Asking for a respawn from script
 
-`GetGame().RespawnPlayer()` (`P:\scripts\3_game\global\game.c:1107`) sends the request, and the server's `OnClientRespawnEvent` kills the character only when it is unconscious or restrained (`player.IsUnconscious() || player.IsRestrained()`, `P:\scripts\5_mission\mission\missionserver.c:615`). For a living, conscious, unrestrained player nothing happens on the server. The vanilla menu's `GameRespawn` calls `RespawnPlayer()` and then runs the death screen on the client without waiting for an answer (`P:\scripts\5_mission\gui\ingamemenu.c:345` to `:348`), so copying it for a living player reports success while nothing changed (measured in game with a 1.30 diag build). Before the call, refuse on the client when the player exists, `IsAlive()`, is not unconscious and is not restrained; to give a living player a new body, kill it first. Detail: `skills/enforce-script-reference/references/api-patterns.md`.
+`GetGame().RespawnPlayer()` (`P:\scripts\3_game\global\game.c:1107`) sends the request, and the server's `OnClientRespawnEvent` kills the character only when it is unconscious or restrained (`player.IsUnconscious() || player.IsRestrained()`, `P:\scripts\5_mission\mission\missionserver.c:615`). For a living, conscious, unrestrained player nothing happens on the server. The vanilla menu's `GameRespawn` calls `RespawnPlayer()` and then runs the death screen on the client without waiting for an answer (`P:\scripts\5_mission\gui\ingamemenu.c:345` to `:348`), so copying it for a living player reports success while nothing changed (measured in game with a 1.30 diag build). Before the call, refuse on the client when the player exists, `IsAlive()`, is not unconscious and is not restrained; to give a living player a new body, kill it first. Detail: `skills/_shared/enscript/depth/api-patterns.md`.
 
 ### Seated players
 
-`GetCommand_Vehicle()` returns a command that exists only on the machine that started it. The get in action creates it with `StartCommand_Vehicle` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:104`); nothing creates it from the replicated crew list. A player that server script put in a seat is in the crew on the client, yet `GetCommand_Vehicle()` is `null` there, so any client check written as "is seated" fails (measured in game with a scripted helicopter mod, not checked on `P:\`). The other vehicle traps are in `skills/enforce-script-reference/references/vehicle-scripting.md`.
+`GetCommand_Vehicle()` returns a command that exists only on the machine that started it. The get in action creates it with `StartCommand_Vehicle` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:104`); nothing creates it from the replicated crew list. A player that server script put in a seat is in the crew on the client, yet `GetCommand_Vehicle()` is `null` there, so any client check written as "is seated" fails (measured in game with a scripted helicopter mod, not checked on `P:\`). The other vehicle traps are in `skills/_shared/enscript/depth/vehicle-scripting.md`.
 
 To move a seated player from server script, move the vehicle: `GetCommand_Vehicle()` (`P:\scripts\3_game\human.c:1528`) gives the `HumanCommandVehicle`, its `GetTransport()` (`P:\scripts\3_game\human.c:716`) the vehicle, and `GetTransform` and `SetTransform` on the vehicle carry the occupant along. Reported, not checked on `P:\`: the occupant's own position lags one frame, so read the vehicle's `GetPosition()` when you report where it went. A player on foot moves with `SetPosition(pos)`.
 

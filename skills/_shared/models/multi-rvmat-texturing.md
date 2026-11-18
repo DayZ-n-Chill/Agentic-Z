@@ -44,6 +44,9 @@ Unlike a Super material, a `Multi` material does not put `uvSource` in each stag
 
 So a model textured this way usually carries two UV sets: one that tiles the detail textures and one that lays the mask over the whole mesh once. A tiling factor is written in the texGen's `uvTransform`: `TexGen2` of `a1-1_multi1.rvmat` has `aside[]={2,0,0}` and `up[]={0,2,0}`, which repeats that surface twice as often.
 
+- A scale below 1 makes the texture appear bigger (0.5 shows it twice as large); above 1 it tiles more. To move a texture into place, change the `pos[]` offset (U, V) before rescaling. How `aside[]` and `up[]` work in general is in `uv-mapping.md`.
+- Vanilla `Multi` materials write the untransformed texGen in two forms: `dir[]={0,0,1}` with `pos[]={0,0,0}` (12,401 texGen classes) and `dir[]={0,0,0}` with `pos[]={0,0,1}` (1,514). `a1-1_multi1.rvmat` has both, the second at `P:\DZ\structures\residential\houseblocks\data\a1-1_multi1.rvmat:16-17` and the first at `:93-94`. Write the first; the second is not an error.
+
 Tool knowledge, not shown by a vanilla file: a face that uses a `Multi` material keeps its texture field empty and carries the material only, and the model must be exported with both UV sets or the mask smears across the tiled UVs. After export, read the model with py3d and check the UV set count of each LOD.
 
 ## Who does what

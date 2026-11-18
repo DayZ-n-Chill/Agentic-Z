@@ -9,7 +9,7 @@ Covers the two separate numbers that make an object heavy, where each is set, ho
 | `weight` | `config.cpp` | grams | Inventory weight and the item's impact sound |
 | Body mass | the model's Geometry LOD (**model knowledge**) | kilograms | The physics body: pushing, impulses, vehicle crash damage |
 
-- `weight` is read as an integer: `m_ConfigWeight = ConfigGetInt("weight")` (`P:\scripts\3_game\entities\entityaitype.c:49`).
+- `weight` is read as an integer: `m_ConfigWeight = ConfigGetInt("weight")` (`P:\scripts\3_game\entities\entityaitype.c:49`). In 1.30 it is a field of the entity type, `EntityAIType.m_ConfigWeight` (`:18`), not of each item.
 - It is in grams: vanilla names a 10 kg limit `OBJECT_OBSTRUCTION_WEIGHT = 10000; //in grams` (`P:\scripts\5_mission\gui\inventorynew\vicinityitemmanager.c:13`).
 - The base value is `weight=1000` on `Inventory_Base` (`P:\DZ\data\config.cpp:3171`). `WoodenCrate` sets `weight=10000` (`P:\DZ\gear\camping\config.cpp:10174`).
 - Inventory weight is the config weight times the wetness modifier (`P:\scripts\3_game\entities\entityai.c:3574`).

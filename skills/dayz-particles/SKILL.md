@@ -1,6 +1,6 @@
 ---
 name: dayz-particles
-description: "Reference for creating and playing custom DayZ particle effects without Workbench: .ptc and .emat files, .edds sprites, the Particle, ParticleManager and SEffectManager script API, the vanilla particle catalog, contaminated area particle budgets (cfgeffectarea.json) and the DayZ 1.30 changes (dust, vehicle effects, sandstorm, the headless client check). Use when an agent needs to look up a particle format, API call or vanilla effect; the dayz-audio-fx-specialist agent reads it when it writes, changes or debugs an effect in a mod. Sound is not covered here; see dayz-sound-system."
+description: "Reference for creating and playing custom DayZ particle effects without Workbench: .ptc and .emat files, .edds sprites, the Particle, ParticleManager and SEffectManager script API, the vanilla particle catalog, contaminated area particle budgets (cfgeffectarea.json) and the DayZ 1.30 changes (dust, vehicle effects, sandstorm, the headless client check). Use when an agent needs to look up a particle format, API call or vanilla effect; the dayz-audio-fx-specialist agent reads it when it writes, changes or debugs an effect in a mod. Sound is not covered here; see the audio pack in skills/_shared/audio-fx/."
 ---
 
 <!-- skill-dir-note -->
@@ -17,7 +17,7 @@ Follow `skills/_shared/dayz-conventions.md`. This skill is reference only; it ru
 | Write or edit a `.ptc` (emitters, curves, every property) | `references/ptc-format-reference.md` |
 | Write or edit an `.emat`, pick a vanilla material or sprite GUID | `references/emat-format-reference.md` |
 | Play, stop or tune particles from script | `references/script-api-reference.md` |
-| Wire particles into a device (toggle, one-shot, cleanup), or read and update LFPowerGrid (LFPG) device code | `references/integration-patterns.md` |
+| Wire particles into a device (toggle, one-shot, cleanup), or bring older device code up to date | `references/integration-patterns.md` |
 | Find a vanilla particle to reuse | `references/vanilla-particle-catalog.md` |
 | Build a layered effect (explosion, impact, fireball), use `Mast` curves, switch single emitters from script, or convert an old `CfgCloudlets` particle | `references/standalone-particle-reference.md` |
 | Size a contaminated area in `cfgeffectarea.json`: emitter budget, the 1,000 cap, the vertical band, safe positions | `references/effect-area-particles.md` |

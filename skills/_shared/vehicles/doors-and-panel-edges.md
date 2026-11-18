@@ -11,7 +11,7 @@ Why an imported door shows a missing edge when it opens, how to measure that edg
 
 ## How this file is ordered
 
-The door-edge rules come first, in the order they build on each other: the missing caps, the metric that measures them, then the script that closes them. The hood and trunk rules follow. The reference tables of `skills/dayz-vehicles/SKILL.md` say when to read this file.
+The door-edge rules come first, in the order they build on each other: the missing caps, the metric that measures them, then the script that closes them. The hood and trunk rules follow. The reference tables of `README.md` say when to read this file.
 
 ---
 

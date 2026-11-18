@@ -42,7 +42,7 @@ This directory contains a fail-closed operation. There are no full projections n
 | `dayz-p3d-audit/scripts/audit_p3d.py` | `not_applicable` | Projection is a strict subset of live: 7 of 15 functions; all 15 are preserved, including `check_wheel_slot_firegeo`. |
 | `dayz-pbo-build/references/validation-scripts.md` | `not_applicable` | Contains no 1.4.0 delta; projected changes belong to another scope. |
 | `dayz-proxy-align/SKILL.md` | `retired` | Live declares `>= 1.6.0` (`SKILL.md:37,40`), already has `add / inspect / align / remove` cycle (`SKILL.md:49`) and preserves **on purpose** patch delta under "py3d 1.4.0 lifecycle (plugin projection, historical)" (`SKILL.md:92`). Not lost: relabeled. |
-| `dayz-animation-pipeline/references/py3d-1.0.0-quirks.md` | `retired` | Already applied in live: `git apply --reverse --check` exited 0 when the patch was retired. |
+| `skills/_shared/py3d-mlod-notes.md` ("Writing a `.p3d` from a script") | `retired` | Already applied in live: `git apply --reverse --check` exited 0 when the patch was retired. |
 | `dayz-animation-pipeline/SKILL.md` | `retired` | Already applied in live (`git apply --reverse --check` exited 0 when the patch was retired) and live minimum is `>= 1.6.0` (`SKILL.md:16`). |
 
 The six `not_applicable` remain in manifest: although not written, their hash is checked to detect preimage drift. No empty patch is fabricated.

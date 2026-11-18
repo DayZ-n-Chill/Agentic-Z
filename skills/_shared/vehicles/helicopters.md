@@ -124,14 +124,14 @@ Handling on a live server (opinion, not a measurement): RFFS is the easiest and 
 
 ## Where the depth is
 
-The per-mod breakdowns live in the `dayz-aviation` skill's `references/` folder; open only the one the task needs.
+The per-mod breakdowns are files of this pack; open only the one the task needs.
 
-| Need | File in `skills/dayz-aviation/references/` |
+| Need | File |
 |---|---|
 | The RFFS integrator, config framework, damage zones, actions and HUD | `helicopter-rffs.md` |
 | The MH6 force model, Pawn replication, auto hover and auto land | `helicopter-mh6.md` |
 | The SIB simple model, its JSON store, and what is missing from it | `helicopter-sib.md` |
 | The Expansion module system, aerofoil and rotor module | `helicopter-expansion.md` |
 | The five way comparison, trade-offs and player feel in full | `helicopter-model-comparison.md` |
-| Which Workshop PBO holds readable flight scripts | `mod-sources.md` |
-| Testing a flight model in game and reading the logs | `flight-testing-and-measurement.md` |
+| Which Workshop PBO holds readable flight scripts | `helicopter-mod-sources.md` |
+| Testing a flight model in game and reading the logs | `aviation-flight-testing.md` |

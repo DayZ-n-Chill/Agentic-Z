@@ -126,6 +126,8 @@ CopyFile("$mission:mymod_defaults.json", "$profile:\\MyMod\\config.json");
 | Workbench project | `<DayZDir>\Projects\MyMod\` |
 | Profile root | `<ServerDir>\profiles\<profileName>\` |
 
+The same asset path is written two ways. In `config.cpp` a backslash is single: `"dz\gear\camping\data\tent_pristine_co.paa"` (`P:\DZ\gear\camping\config.cpp:61`). In an Enforce Script string the backslash escapes, so it is doubled: `"dz\\gear\\cultivation\\data\\soil_digged_wet_lime_CO.paa"` (`P:\scripts\4_world\entities\gardenbase.c:4`).
+
 ---
 
 ## File Mode Constants

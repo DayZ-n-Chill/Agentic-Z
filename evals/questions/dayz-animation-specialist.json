@@ -65,7 +65,7 @@
       "must_not_include": [
         "re:\\A\\W*yes\\b"
       ],
-      "verified": "skills/blender-animation/SKILL.md 'Hard runtime rules' item 7 (bpy.ops.rigidbody.bake_to_keyframes fails in background mode; use bpy_extras.anim_utils.bake_action) and skills/blender-animation/references/physics-sims.md 'Caching & baking'. Blender tool behaviour, not checkable on P:. Evidence of a simulation is either live rigid bodies or dense per-frame location keys with no rigid body world (bake, then remove the world)."
+      "verified": "skills/_shared/animation/blender-mcp-workflow.md 'Hard runtime rules' item 7 (bpy.ops.rigidbody.bake_to_keyframes fails in background mode; use bpy_extras.anim_utils.bake_action) and skills/_shared/animation/blender-bpy-physics.md 'Caching & baking'. Blender tool behaviour, not checkable on P:. Evidence of a simulation is either live rigid bodies or dense per-frame location keys with no rigid body world (bake, then remove the world)."
     },
     {
       "id": "easing-overshoot-audit",
@@ -76,7 +76,7 @@
         "re:stagger|offset",
         "re:moving hold|drift"
       ],
-      "verified": "skills/blender-animation/SKILL.md 'The authoring workflow' step 3 (EASE_OUT with BACK for overshoot and settle), step 4 (stagger follower channels and bones by 1 to 3 frames) and step 5 (moving holds: small drift keys across any hold longer than 6 frames); skills/blender-animation/references/realism-and-iteration.md 'Robotic-animation fixes' rows 2, 4 and 6. Blender tool behaviour measured on Blender 5.1.1, not checkable on P:."
+      "verified": "skills/_shared/animation/blender-mcp-workflow.md 'The authoring workflow' step 3 (EASE_OUT with BACK for overshoot and settle), step 4 (stagger follower channels and bones by 1 to 3 frames) and step 5 (moving holds: small drift keys across any hold longer than 6 frames); skills/_shared/animation/blender-realism-and-review.md 'Robotic-animation fixes' rows 2, 4 and 6. Blender tool behaviour measured on Blender 5.1.1, not checkable on P:."
     },
     {
       "id": "video-output-gate-order",
@@ -87,7 +87,7 @@
         "re:\\bNOISE\\b",
         "re:PNG|image sequence|try|probe|build_options|codec_ffmpeg"
       ],
-      "verified": "skills/blender-animation/SKILL.md 'Hard runtime rules' item 3 (set ims.media_type = 'VIDEO' first; only then is file_format = 'FFMPEG' a valid enum value; probe with try/except and fall back to a PNG sequence); skills/blender-animation/references/realism-and-iteration.md 'Video (MP4) output' (bpy.app.build_options.codec_ffmpeg, never assume MP4 output exists); skills/blender-animation/references/objects-camera-materials-drivers.md 'NOISE - camera shake / idle wobble' (fcurve.modifiers.new(type='NOISE')). Blender tool behaviour, not checkable on P:."
+      "verified": "skills/_shared/animation/blender-mcp-workflow.md 'Hard runtime rules' item 3 (set ims.media_type = 'VIDEO' first; only then is file_format = 'FFMPEG' a valid enum value; probe with try/except and fall back to a PNG sequence); skills/_shared/animation/blender-realism-and-review.md 'Video (MP4) output' (bpy.app.build_options.codec_ffmpeg, never assume MP4 output exists); skills/_shared/animation/blender-bpy-objects-camera.md 'NOISE - camera shake / idle wobble' (fcurve.modifiers.new(type='NOISE')). Blender tool behaviour, not checkable on P:."
     },
     {
       "id": "txa-add-spine-up-export",
@@ -102,7 +102,7 @@
         "re:(RightHandRing|RightHandPinky|they|ring and pinky)[^.\\n]{0,60}(do not|don't|does not|doesn't) exist in (the )?vanilla"
       ],
       "cite": "skeletons.anim.xml",
-      "verified": "P:/DZ/anims/cfg/skeletons.anim.xml:113 (EntityPosition), :115 (RightHand_Dummy), :230 (RightHandRing) and :247 (RightHandPinky), all in the player bone list; skills/blender-animation/SKILL.md 'DayZ handoff (.txa)' (action animations are spine-up: never key EntityPosition, Pelvis or the legs, and leave RightHand_Dummy out; Export Type ADD for action animations with Selected Bones Only; bone names must match OFP2_ManSkeleton). The vanilla player bone list holds the ring and pinky bones, so the question checks that fact."
+      "verified": "P:/DZ/anims/cfg/skeletons.anim.xml:113 (EntityPosition), :115 (RightHand_Dummy), :230 (RightHandRing) and :247 (RightHandPinky), all in the player bone list; skills/_shared/animation/blender-txa-export.md 'Skeleton and exclusion rules' (action animations are spine-up: never key EntityPosition, Pelvis or the legs, and leave RightHand_Dummy out; Export Type ADD for action animations with Selected Bones Only; bone names must match OFP2_ManSkeleton). The vanilla player bone list holds the ring and pinky bones, so the question checks that fact."
     }
   ]
 }

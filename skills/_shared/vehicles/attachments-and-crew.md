@@ -108,4 +108,4 @@ The usual causes, each checked on `P:\`; the field notes behind them are in `inv
 - **Rear seats share one crew model.** Vanilla ships only `crew_driver.p3d` and `crew_cargo.p3d` (`P:\DZ\vehicles\wheeled\proxies\crew_cargo.p3d`); the seat comes from the proxy's instance index. `CivilianSedan` names its rear seats `crewCargo1` and `crewCargo2` in `class Crew` (`P:\DZ\vehicles\wheeled\config.cpp:5221-5234`).
 - **Donor choice.** `Sedan_02` is rear-engined: its battery and spark plug sit behind `Sedan_02_Trunk` and its radiator behind `Sedan_02_Hood` (`P:\scripts\4_world\entities\vehicles\inheritedcars\sedan_02.c:142`, `P:\scripts\4_world\entities\vehicles\inheritedcars\sedan_02.c:156`). For a front-engined four-seater copy `CivilianSedan`.
 
-To check the model side offline, run `/dayz-vehicles` on the source `.p3d`: it lists the get-in memory points, the seat selections per LOD and the wheel axes.
+To check the model side offline, run `audit_getin_wheels.py` of `/dayz-p3d-audit` on the source `.p3d`: it lists the get-in memory points, the seat selections per LOD and the wheel axes.

@@ -66,13 +66,13 @@ Exit code 0 means no error line was seen, 1 means at least one was, and 2 means 
 
 - Hand each `known` error to its `owner_agent` with the fix. Owner `user` means the user has to act.
 - Send the `new` ones to `dayz-mod-debugger` with the file and line. Once it names the cause, record it with `triage.py --learn` (see `/dayz-gate`) so the next watch knows it.
-- A `storage` or `server_exit` error (`Serious stream damage`, `Failed to read modstorage`, `Scripted variables corrupted`, `[Server] :: termination in:`) means the session is not a valid test of the mod. The entity a storage line names is not the cause. Its fix resets the world, so ask the user first. Background: `skills/dayz-test-ingame/references/build-and-storage-traps.md`; other symptoms by what you see: `skills/dayz-test-ingame/references/troubleshooting.md`.
+- A `storage` or `server_exit` error (`Serious stream damage`, `Failed to read modstorage`, `Scripted variables corrupted`, `[Server] :: termination in:`) means the session is not a valid test of the mod. The entity a storage line names is not the cause. Its fix resets the world, so ask the user first. Background: `skills/dayz-launch-test/references/build-and-storage-traps.md`; other symptoms by what you see: `skills/dayz-launch-test/references/troubleshooting.md`.
 
 ## What the watch cannot see
 
 - A refusal the client shows only as a modal. `0x00020017` (a diag client on a server that is not diag) was measured with nothing in the RPT, so the watch stays quiet; paste the modal's text into `triage.py --text` to get its fix.
-- A client that dies with an RPT that holds only its header (measured when Steam was running but no user was signed in). `/dayz-launch-test` checks only that `steam.exe` runs; `skills/dayz-test-ingame/references/troubleshooting.md` has the rest.
-- A mod that did not load. No error line is printed for a mod that was never mounted, so read the `-mod=` line of the session's RPT before trusting a quiet watch (`skills/dayz-test-ingame/references/automated-cells.md`).
+- A client that dies with an RPT that holds only its header (measured when Steam was running but no user was signed in). `/dayz-launch-test` checks only that `steam.exe` runs; `skills/dayz-launch-test/references/troubleshooting.md` has the rest.
+- A mod that did not load. No error line is printed for a mod that was never mounted, so read the `-mod=` line of the session's RPT before trusting a quiet watch (`skills/dayz-launch-test/references/automated-cells.md`).
 
 ## Do not
 

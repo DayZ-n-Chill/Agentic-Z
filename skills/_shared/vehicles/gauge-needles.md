@@ -2,7 +2,7 @@
 
 How to build a working speedometer, tachometer and fuel gauge on a vehicle model: the needle part, the dial frame and its mirror traps, deriving `angle0` and `angle1`, the wiring in `model.cfg`, a fuel panel from scratch, and a complete recipe with an offline gate per step.
 
-> Status: the measurements below were taken on three mod test vehicles (the LFQuad3 quad from 2026-09-03 to 2026-09-07, then the LFQuad2 quad and the SUB_BRZ car), named in each entry; they are mod behaviour, not vanilla, and were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo (a 1.30 build). The table of vanilla cluster animations in trap 5 was read from DayZ 1.29 models with an ODOL reader; the models on `P:\` are ODOL version 56, which this repo cannot parse, so the table is not yet checked on `P:\`. `[ASSUMPTION]` marks a statement that was not measured. Script names such as `assemble_lfquad3.py`, `dial_derive_final.py` or `normal_sign.py`, the folder `_shared_parts\gauge_needles\` and files such as `generated/model.cfg` belong to those vehicles' build folders, which are not part of this repo; the rules they implement are written out below. The OBJ object names `aguja_derecha` and `aguja_izquierda` are the source model's own (Spanish for "right needle" and "left needle"). "Trap N" numbers the eighteen traps of this file; they are not the numbered invariants of the vehicle pack.
+> Status: the measurements below were taken on three mod test vehicles (the TestQuad3 quad from 2026-09-03 to 2026-09-07, then the TestQuad2 quad and the TestCoupe car), named in each entry; they are mod behaviour, not vanilla, and were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo (a 1.30 build). The table of vanilla cluster animations in trap 5 was read from DayZ 1.29 models with an ODOL reader; the models on `P:\` are ODOL version 56, which this repo cannot parse, so the table is not yet checked on `P:\`. `[ASSUMPTION]` marks a statement that was not measured. Script names such as `assemble_lfquad3.py`, `dial_derive_final.py` or `normal_sign.py`, the folder `_shared_parts\gauge_needles\` and files such as `generated/model.cfg` belong to those vehicles' build folders, which are not part of this repo; the rules they implement are written out below. The OBJ object names `aguja_derecha` and `aguja_izquierda` are the source model's own (Spanish for "right needle" and "left needle"). "Trap N" numbers the eighteen traps of this file; they are not the numbered invariants of the vehicle pack.
 
 Related files in this pack: `animation-sign-and-axis.md` (the general rule for whether a wheel, steering, door or dial animation turns the right way) and `vehicle-config-and-modelcfg.md`, section "Dashboard needles: what the engine feeds `speed` / `rpm`" (the vanilla source units, the `"rad N"` syntax and where needle bones and selections must live).
 
@@ -16,7 +16,7 @@ Related files in this pack: `animation-sign-and-axis.md` (the general rule for w
 
 ## What was accepted in game, and what was not broken down
 
-The LFQuad3 dashboard was accepted as good in game on 2026-09-06 with the verdict "dashboard is good now" (build `5ac339d3`). That verdict is global; it was not broken down per gauge. Three things were still not checked one by one: that the fuel needle moves with the tank; that the painted dial does not rotate with the needles (the object's original disc travels in the animated selection; [ASSUMPTION] it stays occluded); and that the rest position lands exactly on the printed zero (measured offline with the gate, not checked in game). LFQuad2 was confirmed in game on 2026-09-07 00:15 (build `77303210b92d63bd`); see the table "Confirmation status".
+The TestQuad3 dashboard was accepted as good in game on 2026-09-06 with the verdict "dashboard is good now" (build `5ac339d3`). That verdict is global; it was not broken down per gauge. Three things were still not checked one by one: that the fuel needle moves with the tank; that the painted dial does not rotate with the needles (the object's original disc travels in the animated selection; [ASSUMPTION] it stays occluded); and that the rest position lands exactly on the printed zero (measured offline with the gate, not checked in game). TestQuad2 was confirmed in game on 2026-09-07 00:15 (build `77303210b92d63bd`); see the table "Confirmation status".
 
 ## The part: `_shared_parts/gauge_needles/`
 
@@ -60,15 +60,15 @@ had 86 tris: the two ENTIRE blade octagons (real tip, at
 0.880 r_obj) plus 5 of its 6 sides, without cap or hub skirt, and
 with blade BEHIND hub plane (z -0.00261..0): incomplete and badly
 placed, not a splinter at the tip. Bad is not same as invisible:
-mounted as-is on LFQuad2, blade sits +1.89 mm IN FRONT of painted
+mounted as-is on TestQuad2, blade sits +1.89 mm IN FRONT of painted
 disk and is visible (depth probe of that session, 2026-09-06);
 visibility is decided by `lift` of each dash disk, not part.
-LFQuad2 adopts new version in its own batch with its gate; until
+TestQuad2 adopts new version in its own batch with its gate; until
 then it mounts the old one.
 
 ## Trap 1 — the object named "needle" is not a needle
 
-`aguja_derecha` of LFQuad3 OBJ is **105 faces**. Topology measured in
+`aguja_derecha` of TestQuad3 OBJ is **105 faces**. Topology measured in
 assembler framework (`needle_parts_probe.py`; drawing `needle_parts.png`):
 
 | part | faces | canonical r | z relative to hub |
@@ -95,7 +95,7 @@ Canonical z is shifted so rear of blade sits at 0. Angular width
 filter (5 degree threshold, "ring 32 + blade 7") is form 1: a blade
 triangle glued to pivot covers a wide angle BECAUSE IT IS CLOSE, not
 because it is a wedge, leaving 10 tris of splinter at the tip. Invisible in game in
-LFQuad3. 2026-09-03 library came from that same rule with ANOTHER
+TestQuad3. 2026-09-03 library came from that same rule with ANOTHER
 remainder (the two whole octagons and 5 sides, without cap, blade behind
 hub; census, above): rule gives different parts depending on where applied, and
 none is the needle.
@@ -113,7 +113,7 @@ Real symptom: text read upside down, half turn was added, and it became
 reflection. Mapping was `u <- -b`, `v <- -a`: axis swap PLUS a
 negation, which is a reflection. **No angular offset removes it.**
 
-Cross product alone is not enough either. LFQuad3 generator constructed
+Cross product alone is not enough either. TestQuad3 generator constructed
 `u = cross(w, axis)` and claimed that is screen right "when axis
 points to observer". On this model that `u` comes out +X and driver's right
 is -X: model itself says so, writing `light_left` at x +0.373
@@ -142,7 +142,7 @@ mapping is `(uc + k*<radial,u>, vc - k*<radial,w>)`: +U to driver's right,
 (`polar_uv`).
 
 > **The sign of V in this snippet is NOT universal.** Here it takes minus
-> because in this pipeline V=0 is the top edge of image. With `+` LFQuad3
+> because in this pipeline V=0 is the top edge of image. With `+` TestQuad3
 > art came out **vertically mirrored** two cycles in a row. Trap 10
 > gives procedure to certify sign in YOUR pipeline and to distinguish
 > a mirror from a rotation.
@@ -151,7 +151,7 @@ Without `atan2`: angle only served to recompose what are already the two
 point coordinates, and upon recomposing it swapped axes.
 
 **The direction of V is MEASURED in your own pipeline; not inherited from here.** What
-was measured on LFQuad3: writing complemented V, atlas
+was measured on TestQuad3: writing complemented V, atlas
 render reproduced EXACTLY the mirroring user reported; with naive
 V render came out good and game bad.
 
@@ -162,7 +162,7 @@ V render came out good and game bad.
 > ending up in `.p3d` is `1 - v_obj`, and dials only need to be
 > consistent with it.
 >
-> Counter-case on LFQuad2, whose UVs come from an
+> Counter-case on TestQuad2, whose UVs come from an
 > Arma 2 MLOD and never pass through that `1-v`: with V as-is
 > art comes out upright and readable, and with `1-v` model samples **another region
 > of the atlas**, not a mirror. They do not contradict each other: they are different pipelines, and the
@@ -175,11 +175,11 @@ V render came out good and game bad.
 > rendered with actual `.p3d` UVs. Making a mistake produces either a mirror or
 > a translation, both "plausible": without that anchor they are indistinguishable.
 >
-> The LFQuad3 dash was accepted as good in game on 2026-09-06 ("dashboard
+> The TestQuad3 dash was accepted as good in game on 2026-09-06 ("dashboard
 > is good now", build `5ac339d3`): anchored frame, newly converted faces, and
 > new fuel needle. It was not broken down per gauge. Still not broken down:
 > movement of `fuel`, original disk inside animated selection, and
-> exact zero (offline gate). LFQuad2: its frame by cross product WAS
+> exact zero (offline gate). TestQuad2: its frame by cross product WAS
 > checked against headlights on 2026-09-06 (`light_left` x +0.3011,
 > `light_right` x -0.3131, right = -X; `<u, light_right - light_left>` =
 > -0.6142; det +164.81 on both disks): MIRRORED, same root as here, and
@@ -187,7 +187,7 @@ V render came out good and game bad.
 > `angle0`/`angle1` on Sep 4 was a self-consistent compensation:
 > needles nailed to correct number on a face written backwards. That
 > session corrected and deployed it (UVs of 64 wedges rewritten in all three LODs
-> with right read from model and fatal guard; det -164.81; `LFQuad2.pbo`
+> with right read from model and fatal guard; det -164.81; `TestQuad2.pbo`
 > sha `77303210b92d63bd`), and it was confirmed in game on 2026-09-07; what
 > was seen, and the three defects of that build that do not come from the frame,
 > are in the table "Confirmation status". What discriminates the mirror is
@@ -196,14 +196,14 @@ V render came out good and game bad.
 **Instrument that closes this**: rasterize gauge faces from `.p3d` ALREADY
 BUILT with their real UVs, sampling texture with engine's V. That
 is what will be seen in game. A synthetic render on an invented disk is
-invalid — does not carry UVs written by model. In LFQuad3 that closure is
+invalid — does not carry UVs written by model. In TestQuad3 that closure is
 `dial_gate_final.py`, which takes right from `LIGHT_RIGHT_MINUS_LEFT`.
 `dial_render_v5.py` (and its Sep 4 `view_all_fix.png`) mounted frame with
 `cross(-axis, up)`, same expression as generator: reproduced failure and
 called it correct. Does not count as closure.
 
-**Chirality rule for a NEW part** (measured 2026-09-07, LFQuad2).
-LFQuad2 reintroduced the same mirror in its own code when mounting
+**Chirality rule for a NEW part** (measured 2026-09-07, TestQuad2).
+TestQuad2 reintroduced the same mirror in its own code when mounting
 panel frame: it did `Up = cross(Np, Rp)` and, if Up came out inverted,
 flipped Up AND recalculated Rp, which dragged Rp to driver's
 left (`<Rp, right> = -1.0000`); caught by a guard, not an eye. The frame
@@ -241,7 +241,7 @@ Numbers from 2026-09-03 (`C = 443` for speedometer, old 225 -> measured
 instrument section and in `generated/model.cfg`.
 
 **Beware of measuring arc by tick ring ends**: there may be entry
-and exit ticks beyond last label. On LFQuad3 tachometer
+and exit ticks beyond last label. On TestQuad3 tachometer
 ticks cover 299 degrees and printed scale 240.
 
 **If vehicle top exceeds last printed number**, do not stretch
@@ -273,10 +273,10 @@ texture change TOGETHER, and hardcoded axis fallback too.
 1. Geometry in a dedicated named selection (e.g. `kmh`).
 2. In Memory LOD, two points: pivot (centroid of needle Black
    cube) and pivot plus normal TOWARDS driver, aligned against a
-   fixed reference (`n_pilot` in LFQuad3), named `<selection>_axis`.
+   fixed reference (`n_pilot` in TestQuad3), named `<selection>_axis`.
 3. Bone in skeleton (`skeletonBones[]`), child of dashboard
-   (`kmh`/`rpm`/`fuel` of `drivewheel` in LFQuad3). `sections[]` only if
-   selection changes texture or material; LFQuad3 needles are not in it.
+   (`kmh`/`rpm`/`fuel` of `drivewheel` in TestQuad3). `sections[]` only if
+   selection changes texture or material; TestQuad3 needles are not in it.
 4. Dial face painted 1.2 mm behind needle (`lift = 0.0012` along
    `ring_n`, which points away from driver) and in front of panel. Entire needle
    in front of panel (z >= 0 in canonical pose; fuel pivot 0.0004 m
@@ -288,10 +288,10 @@ texture change TOGETHER, and hardcoded axis fallback too.
      and same sign column across all cluster selections.
 5. One texture per dial, power of two (padded, not stretched). DEDICATED rvmat
    with flat normal and specular (`#(argb,8,8,3)color(0.5,0.5,1,1,NOHQ)` and
-   `color(1,0,1,1,SMDI)`, attested in vanilla; LFQuad2 finding). Discs and
+   `color(1,0,1,1,SMDI)`, attested in vanilla; TestQuad2 finding). Discs and
    needles OUTSIDE color `hiddenSelections` (`camo1`): otherwise, the
    variant overwrites their texture.
-6. In `CfgModels`, the three classes. LFQuad3 values (measured 2026-09-06):
+6. In `CfgModels`, the three classes. TestQuad3 values (measured 2026-09-06):
 
 ```
 class IndicatorSpeed
@@ -338,7 +338,7 @@ in km/h, `rpm` normalised 0..1, `fuel` and `coolant` as native engine sources
 with no script `AnimationSources`, and `"rad N"` as degrees against a bare
 number in radians. Every `angle*` in the block above uses `"rad N"`.
 
-In LFQuad3 the last point of `torqueCurve` is 6400 and the dial prints up to
+In TestQuad3 the last point of `torqueCurve` is 6400 and the dial prints up to
 6000, so `angle1` was derived as if `maxValue 1.0` were 6.4 printed units;
 trap 7 says why that ceiling has to be measured.
 
@@ -347,21 +347,21 @@ trap 7 says why that ceiling has to be measured.
 > false. **Absence on the script side is not absence in the engine**: `model.cfg`
 > sources are native and do not have to show up in Enforce.
 
-LFQuad3 carries `source = "fuel"` and the user accepted the cluster as good, but the
+TestQuad3 carries `source = "fuel"` and the user accepted the cluster as good, but the
 movement of that needle **is not broken down** in game.
 
 `dashboardMatOn`/`dashboardMatOff` is the material for cluster backlighting; has
 nothing to do with needles.
 
 When mounting a needle from an object bringing a disc, the disc does **NOT enter** the
-animated selection. In LFQuad3 the original disc of each needle travels inside
+animated selection. In TestQuad3 the original disc of each needle travels inside
 `kmh`/`rpm` ([ASSUMPTION] remains occluded by the new dial; user did not
 break it down).
 
 ## Names
 
 Unit is decided by source, not texture or selection name. Even
-so, **do not name `mph` a speedometer in km/h**: in LFQuad3 that inherited
+so, **do not name `mph` a speedometer in km/h**: in TestQuad3 that inherited
 name led to belief that gauge was in wrong unit, costing a
 round. And check whether art has unit printed before discussing it — that of
 this quad has none.
@@ -414,12 +414,12 @@ The table was reproduced on the DayZ 1.29 models of
 The current models on `P:\` are ODOL version 56, which this repo cannot parse
 yet, so re-checking the table on today's data needs an ODOL version 56 reader.
 
-In LFQuad3 this convention (axis towards driver, `angle0 = rest - theta(min)`)
+In TestQuad3 this convention (axis towards driver, `angle0 = rest - theta(min)`)
 is that of cluster approved in game on 2026-09-06. If a cluster with this
 rule rests off zero, first suspect is frame (trap 2), not vanilla
 rule. Cheap check: `light_left` and `light_right` of Memory
 LOD and sign of `<u_of_frame, light_right - light_left>`; negative = mirrored
-frame. LFQuad2 confirms it a second time, in game (build
+frame. TestQuad2 confirms it a second time, in game (build
 `77303210b92d63bd`; see the table "Confirmation status"). On 2026-09-06 its
 speedometer was below 0 and tachometer above, with the sign negated
 on Sep 4; measured against headlights, the frame was MIRRORED (trap 2) and
@@ -437,7 +437,7 @@ interior of the solid**, so "axis is aligned with normal" means
 axis goes inward, not that it looks at driver. Reading it in reverse inverts
 entire diagnosis.
 
-Measured in LFQuad3: 94-97% of flank faces have cross
+Measured in TestQuad3: 94-97% of flank faces have cross
 pointing inward.
 
 **The positive control resolving it, valid in any model:** choose
@@ -453,19 +453,19 @@ d = dot(normalize(n), (1, 0, 0))
 
 Two warnings regarding the control, both paid for:
 
-1. **Choose test face carefully.** Top strip of LFQuad3 yielded 38% and does not
+1. **Choose test face carefully.** Top strip of TestQuad3 yielded 38% and does not
    conclude: luggage rack tube is there, with faces pointing in all
    directions. Flanks yielded 3% and 6% across 2,400 faces each. **A control
    that does not discriminate is not a tie: it is a poorly chosen control**, and counting
    it as a vote degrades foundation without changing result.
 2. **Do not use pilot point as arbiter.** `dot(axis, pilot - pivot)`
    seems intrinsic and is not: depends on WHICH pilot point is taken. In
-   LFQuad3 handlebar cluster is above pelvis (`crewdriver`
+   TestQuad3 handlebar cluster is above pelvis (`crewdriver`
    y=0.964) and below eyes, with pivot at y=1.200 — sign flips
    according to anchor, +0.142 with pelvis and -0.994 with eye. In a car
    with low dashboard this does not happen; on a motorcycle or quad, it does.
 
-In LFQuad3 `<sel>_axis` normal is ALIGNED (not simply negated) against
+In TestQuad3 `<sel>_axis` normal is ALIGNED (not simply negated) against
 `n_pilot = (0, 0.82162, 0.57004)`, which points to driver: an unconditional
 negation would depend on OBJ triangle winding (`apply_needle_axis`).
 
@@ -481,7 +481,7 @@ wiring as if ceiling were 6000 makes **the needle lie across the entire
 sweep**, not just at top.
 
 Design corollary worth stating before artist finalizes art:
-compare **painted redline zone** with MEASURED engine top. In LFQuad3
+compare **painted redline zone** with MEASURED engine top. In TestQuad3
 red starts at 5,000 and sustained top is 5,805 rpm (measured, 404 samples
 with engine running), so at full throttle needle is **always** inside the
 red. It is a legitimate decision, but it is a decision.
@@ -540,11 +540,11 @@ seen until in game:
 
 **One texture per dial** eliminates both at once: art goes at full resolution and
 UV window becomes `[0,1]^2`, with no crop to measure. It is also a
-trivial convention to share across vehicles. In LFQuad3: `Dial_kmh`,
-`Dial_rpm`, `Dial_fuel` -> `LFQuad3_dial_*_co.paa`, shared gauges rvmat
-(contract calls for dedicated flat one; see LFQuad2 finding).
+trivial convention to share across vehicles. In TestQuad3: `Dial_kmh`,
+`Dial_rpm`, `Dial_fuel` -> `TestQuad3_dial_*_co.paa`, shared gauges rvmat
+(contract calls for dedicated flat one; see TestQuad2 finding).
 
-Limit is SCREEN, not atlas. Measured in LFQuad2 (2026-09-07): the
+Limit is SCREEN, not atlas. Measured in TestQuad2 (2026-09-07): the
 complaint "pixelated texture" was NOT the texture. Dial occupied 110 px on a
 1920 screen and texture provided 501 (4.6 texels per pixel); a
 printed digit is 3% of diameter, i.e. 3.3 px, and inevitably looks
@@ -558,18 +558,18 @@ changes nothing.
 
 ## Trap 10 — driver SCREEN frame, and why it resolves both things at once
 
-Measured in LFQuad3 on 2026-09-04 and closed on 2026-09-06, after three cycles with
+Measured in TestQuad3 on 2026-09-04 and closed on 2026-09-06, after three cycles with
 art upside down. User complaints —"gauges are upside down" and
 "needles do not start at 0"— were **a single defect**, both arising from not
 having a declared frame. Frame is READ, not deduced.
 
 **The frame, anchored to model.** Needle axis in Memory LOD points AT
 driver (trap 6). "Up" is vehicle +Y projected onto plane.
-Right is NOT `cross(view, up)` nor "must come out +X": in LFQuad3
+Right is NOT `cross(view, up)` nor "must come out +X": in TestQuad3
 driver's right is -X, and file itself knew this from headlights.
 Right is projected onto dial plane from model markers
 (`light_right` minus `light_left`, or `wheel_1_1`/`wheel_2_1`, or a `*_dir`).
-Guard `SystemExit` if they disagree (in LFQuad3 `memory_lod` writes them; if
+Guard `SystemExit` if they disagree (in TestQuad3 `memory_lod` writes them; if
 read from outside, also if missing). Instrument
 (`dial_derive_final.py`) uses `LIGHT_RIGHT_MINUS_LEFT` and stops if that right
 matches old base `cross(-axis, up)`.
@@ -578,12 +578,12 @@ matches old base `cross(-axis, up)`.
 minus is not an arbitrary convention: V=0 is TOP edge of image.
 
 **How to accredit that direction without blind belief: positive control is model
-itself.** No need for test art. LFQuad3 bodywork writes
+itself.** No need for test art. TestQuad3 bodywork writes
 `(u, 1.0 - v)` from an OBJ (having v=0 bottom), meaning V=0 is top
 edge — and that bodywork has cycles seen in game without anyone saying
-texture is flipped. That is anchor. In another toolchain (LFQuad2, Arma 2 MLOD
+texture is flipped. That is anchor. In another toolchain (TestQuad2, Arma 2 MLOD
 without that `1-v`) anchor is different: **look at what rest of model does,
-not what this page says**. The LFQuad2 result in game is in the table
+not what this page says**. The TestQuad2 result in game is in the table
 "Confirmation status" (build `77303210b92d63bd`).
 
 **How what is there is MEASURED, instead of argued.** Least squares
@@ -601,18 +601,18 @@ mapping, and then:
 `det > 0` = MIRROR. Negative = unmirrored **ONLY if frame +U is the
 REAL right of model**. A +U derived by cross product without checking
 against markers can be real left, and then
-determinant is read in a mirrored frame and conclusion inverts. In LFQuad3
+determinant is read in a mirrored frame and conclusion inverts. In TestQuad3
 the instrument first shared the generator's frame (`u = cross(w, axis)`,
 pointing +X while the driver's right is -X): on 4 September it read
 +512/+491 for the round dials with the (-U,-V) mapping and -1290 for the
 fuel panel, and once the mapping went to (+U,-V) it read all three
 negative, on a build that was still mirrored in game. Measured again with
 the frame anchored to `light_left`/`light_right`, that same mirrored build
-(`LFQuad3_body.p3d.pre-mirrorfix-20260906`) yields +513 / +491 / +1290 and
+(`TestQuad3_body.p3d.pre-mirrorfix-20260906`) yields +513 / +491 / +1290 and
 the corrected one -513 / -491 / -1290. Sign is only evidence in anchored
 frame; the bug was the frame. Bound
 fit to ONE disc: mixing two dials and a swatch gives anisotropy 6.9 and
-780 px residue (LFQuad2); a single disc, anisotropy 1.000000 and 0.0000 px
+780 px residue (TestQuad2); a single disc, anisotropy 1.000000 and 0.0000 px
 residue.
 
 ★ That table is what distinguishes a MIRROR from a ROTATION, and it is needed: user
@@ -620,7 +620,7 @@ reported "upside down, rotate 180" and measurement said vertical mirror. **Do no
 symptom-describing correction: map to absolute target.** That way
 result is correct regardless of label used to describe failure.
 
-Calibration of the instrument against two known states (LFQuad3):
+Calibration of the instrument against two known states (TestQuad3):
 
 | mapping | basis | render | in-game observation |
 |---|---|---|---|
@@ -671,7 +671,7 @@ preserved: fix moves origin, not scale.
 
 ## Trap 11 — do not STRETCH non-power-of-two art: PAD IT
 
-LFQuad3 fuel panel is 1536x1024 and texture must be power
+TestQuad3 fuel panel is 1536x1024 and texture must be power
 of two. Was resized to 2048x1024, i.e. 1.333 stretch in x only.
 
 That stretch turns tick arc —a **circle** in art— into an **ellipse**.
@@ -681,7 +681,7 @@ center that is no longer center, and needle passes above E and F without touchin
 **Pad with black on sides** (art background is usually black anyway) and arc remains
 a circle. Constants translate automatically: `u_2048 = (pad + x_arte) / 2048`.
 
-In LFQuad3 panel is a `Screen` QUAD of part 32 chosen by centroid
+In TestQuad3 panel is a `Screen` QUAD of part 32 chosen by centroid
 (`FUEL_FACE_POS`). `fuel_face_uv` maps a window with aspect ratio of face
 itself centered on texture, V = row/H directly (without `1 -`). Pivot and reach
 come from art arc (`FUEL_C_U/V`, `FUEL_R_U`) by inverting same mapping. Needle
@@ -698,18 +698,18 @@ two anisotropies cancel out.
 face already brings good UV (exact [0,1] window, no mirror, negative det) and only issue
 is non-isotropic mapping, there is NO need to reassign host model UVs:
 simply compose art already deformed by INVERSE factor and both anisotropies cancel
-on face. SUB_BRZ: real panel measures 264.78 x 105.61 mm (2.5072:1) against a
+on face. TestCoupe: real panel measures 264.78 x 105.61 mm (2.5072:1) against a
 2:1 texture, so art was composed PRE-COMPRESSED horizontally by 0.797711; face
 isotropy gate 1.0000 / 1.0053 / 0.9947. This avoids reassigning UVs of a 20 MB `.p3d`
 not yours: same result with an order of magnitude less scope.
 
 Condition to use it: anisotropy must be CONSTANT across face (2x2 fit with
-residue ~0; in SUB_BRZ, 5e-07). If varying across face, deforming art only
+residue ~0; in TestCoupe, 5e-07). If varying across face, deforming art only
 cancels it at one point and one must return to remapping.
 
 ## Fuel panel from scratch
 
-For a model bringing NO rectangular face to map art to. LFQuad3
+For a model bringing NO rectangular face to map art to. TestQuad3
 REUSES a `Screen` quad of part 32 (trap 11); that recipe does not cover
 constructing the panel. Numbers from official art `dial_fuel_official.png`
 (measured in `assemble_lfquad3.py:140-158` and `convert_textures.py:223-233`).
@@ -736,7 +736,7 @@ without padding bands):
   BOTTOM edge: very open arc)
 - r = 634.7/1536 = 0.4132 of face width
 
-**Face and three clean windows.** In LFQuad3 face is a `Screen` quad of
+**Face and three clean windows.** In TestQuad3 face is a `Screen` quad of
 1.84:1 aspect ratio, chosen by centroid (`FUEL_FACE_POS`,
 `assemble_lfquad3.py:164-167`). `fuel_face_uv` (`assemble_lfquad3.py:866-893`)
 opens a window with aspect ratio of FACE ITSELF centered on 2:1
@@ -748,7 +748,7 @@ directly, without `1 -` (`assemble_lfquad3.py:886-893`).
 
 Consequence for a NEW face: with ratio A, V goes from
 0.5 - 1/A to 0.5 + 1/A; at 1.5:1 it would overflow 170 px and wrap would bring
-art hub rows to top of face. Therefore LFQuad3 1.84:1 mapping
+art hub rows to top of face. Therefore TestQuad3 1.84:1 mapping
 is NOT copied. Three clean windows:
 
 - 2:1 face (padded texture ratio): U 0..1, V 0..1; black padding
@@ -757,7 +757,7 @@ is NOT copied. Three clean windows:
 - 1.5:1 face (art ratio): window of art ONLY, U 0.125..0.875,
   V 0..1; no bands; center and radius, those of ART (0.6120 / 0.9460 /
   0.4132). Rectangular shape for a pod bringing no face.
-- face of DRAWING within art (measured 2026-09-07, LFQuad2): art
+- face of DRAWING within art (measured 2026-09-07, TestQuad2): art
   brings its own black border; box x 305..1742, y 149..875 = 1437x726 px
   = 1.9793:1. Window U 0.1489..0.8506 (305/2048 .. 1742/2048), V
   0.1455..0.8545 (149/1024 .. 875/1024); no padding or art
@@ -772,18 +772,18 @@ of ANCHORED frame (traps 2 and 10). Art is neither stretched nor mirrored.
 
 **Where the pivot falls.** With the drawing window (V up to 875/1024 =
 0.8545), the arc center (row 968.7, V 0.9460) falls BELOW the
-bottom edge of the face (3.3 mm at LFQuad2 size). So the
-needle cannot be a needle from the hub: LFQuad2 built it as a
+bottom edge of the face (3.3 mm at TestQuad2 size). So the
+needle cannot be a needle from the hub: TestQuad2 built it as a
 SHORT POINTER between 0.55 and 0.96 of the arc radius; drawn from the
 pivot, it would stick out below the panel. With the entire art window
-(LFQuad3, V up to 1.0), the pivot stays inside (V 0.9460) and the hub is seen
+(TestQuad3, V up to 1.0), the pivot stays inside (V 0.9460) and the hub is seen
 flush with the bottom edge.
 
-A single quad suffices. In LFQuad3 the face belongs to the pod itself and has no lift; the
+A single quad suffices. In TestQuad3 the face belongs to the pod itself and has no lift; the
 painted discs use lift 0.0012 (`assemble_lfquad3.py:771`). For a
-new face over a pod: use whatever lift the discs of that model already use. LFQuad2
+new face over a pod: use whatever lift the discs of that model already use. TestQuad2
 measures +1.89 mm of blade ahead of its disc and it works
-(measured 2026-09-06, LFQuad2).
+(measured 2026-09-06, TestQuad2).
 
 **Pivot, offset push, reach, and scale.** The pivot is the arc center
 inverted by the same face mapping (`assemble_lfquad3.py:955-960`),
@@ -793,7 +793,7 @@ z-fight with it"). The reach is the radius in meters:
 `reach = FUEL_R_U * FUEL_TEX_W * m_per_px` (`assemble_lfquad3.py:961`),
 that is, r_fraction x window width. The canonical needle
 (`canonical_needle`, `assemble_lfquad3.py:972-1035`; trap 14) is scaled
-`reach/tip` (`assemble_lfquad3.py:1985-1988`; in LFQuad3 x0.665).
+`reach/tip` (`assemble_lfquad3.py:1985-1988`; in TestQuad3 x0.665).
 
 Needle criterion: the cut by radius in trap 1. The
 parts in `_shared_parts\gauge_needles\` are regenerated with that cutoff
@@ -809,20 +809,20 @@ the tip of selection `fuel` measured in the BUILT p3d, in the anchored
 frame (`needle_rest`, `dial_derive_final.py:148`; printed in
 `dial_derive_final.py:232-236`).
 
-In LFQuad3, fuel rest is 0.90, which is why -129.1 / -47.6 are obtained
+In TestQuad3, fuel rest is 0.90, which is why -129.1 / -47.6 are obtained
 (instrument table). With the canonical needle mounted with the tip towards
 +u, rest is ~0: it would yield rest - 130.0 and rest - 48.5, i.e.,
--130.0 / -48.5; with another mesh, it is measured. LFQuad2 built the needle
+-130.0 / -48.5; with another mesh, it is measured. TestQuad2 built the needle
 pointing UP (rest = 90 in its anchored frame) and obtains angle0
 "rad -40.0", angle1 "rad 41.5", sweep +81.5: art thetas
-(130.0 / 48.5) transfer, rest does not. Wiring identical to LFQuad3 and
+(130.0 / 48.5) transfer, rest does not. Wiring identical to TestQuad3 and
 bone "fuel" parented to "drivewheel". The pairs -129.1/-47.6 must NOT be
 copied to another model.
 
 **Wiring.** `generated/model.cfg:238-247` (`IndicatorFuel`, source
 "fuel", selection `fuel`, axis `fuel_axis`, memory = 1, minValue 0,
 maxValue 1). The bone hangs from the corresponding dashboard or handlebar
-bone (`skeletonBones[]`: in LFQuad3 `fuel` from `drivewheel`;
+bone (`skeletonBones[]`: in TestQuad3 `fuel` from `drivewheel`;
 wiring contract, above). The new panel geometry AND its
 points belong in that animated selection (trap 15); otherwise, when turning the
 part, the panel stays behind.
@@ -834,7 +834,7 @@ Checklist:
 - anchored frame (u = driver's right, traps 2 and 10)
 - chirality: new part frame projected from anchored frame (Gram-Schmidt),
   not reconstructed via cross product or flipped component-wise;
-  `<u_part, anchored_right>` > 0 (trap 2; measured 2026-09-07, LFQuad2)
+  `<u_part, anchored_right>` > 0 (trap 2; measured 2026-09-07, TestQuad2)
 - where pivot falls: inside the face (art window, V up to 1.0)
   or below (drawing window, V up to 0.8545); if it falls outside, short
   pointer 0.55..0.96 of radius, not needle from hub
@@ -863,7 +863,7 @@ needle angles", point 3), or you will measure an arc that falls short
 precisely at the end that defines `angle0`.
 
 
-## Three silent traps when deriving needle angles (added 2026-09-04, LFQuad3)
+## Three silent traps when deriving needle angles (added 2026-09-04, TestQuad3)
 
 All three were found by measuring the built `.p3d`, and each one produced a
 plausible number rather than an error.
@@ -881,7 +881,7 @@ Fit the affine map (driver-screen x,y) -> (U,V) over the dial faces of the built
 model. Image V grows **down** and screen y grows **up**, so an unmirrored texture
 gives a **negative** determinant. Positive means mirrored, whatever the numbers
 "look like" in a small render. That sign is valid only in a frame whose +right
-is the model's real right (trap 2); the LFQuad3 measurements that show a wrong
+is the model's real right (trap 2); the TestQuad3 measurements that show a wrong
 frame flipping the sign are in trap 10.
 
   ★ Corollary about evidence: two user reports of the same defect are not two
@@ -914,7 +914,7 @@ frame flipping the sign are in trap 10.
 
 **And a fit rule when the printed scale is not regular.** The needle rotates
 linearly, so a printed scale that is compressed at one end cannot be matched
-everywhere. Fit the line to the regular part that is actually used (LFQuad3:
+everywhere. Fit the line to the regular part that is actually used (TestQuad3:
 0-100 km/h, residual 1.53 degrees over 11 majors) and let the error fall in the
 range the vehicle never reaches, rather than spreading it across the whole face.
 Gate it by drawing the needle on **every** printed value, not on the endpoints —
@@ -932,7 +932,7 @@ actual UVs with anchored frame, needle over each printed value), `fit_gauge.py`
 `needle_draw.py`. `dial_render_v5.py` predates frame anchoring and is not
 used for sign-off.
 
-Final numbers (measured 2026-09-06, LFQuad3; `dial_angles_final.json`;
+Final numbers (measured 2026-09-06, TestQuad3; `dial_angles_final.json`;
 `generated/model.cfg`):
 
 | dial | minValue | maxValue | angle0 | angle1 | sweep | gate |
@@ -979,18 +979,18 @@ in PBO if packaging copies entire tree (95.7 MB instead of 21.8, with
 
 ## Trap 14 — a count is not a shape: three fake fuel needles
 
-LFQuad3's fuel needle went through probes three times with three different
+TestQuad3's fuel needle went through probes three times with three different
 shapes, none of which was a needle. Topology: see trap 1.
 
 **Shape 1** (Sep 4 build): filter by angular width seen from hub,
 cutoff at 5 degrees. A blade triangle close to pivot spans a wide angle
 BECAUSE IT IS CLOSE: filter ate up blade interior and left 10 tris of
-sliver at tip (r 0.01122..0.01217). Invisible in-game on LFQuad3.
+sliver at tip (r 0.01122..0.01217). Invisible in-game on TestQuad3.
 THAT is the rule this reference recommended. It is bogus. The shared
 library was extracted with that rule on 2026-09-03 (7 blade faces: both
 full octagons and 5 sides, no cap, blade behind hub) and was
 regenerated on 2026-09-07 with `canonical_needle` (census, above). When checking
-who else uses them, do not look only for missing needles: on LFQuad2 the old
+who else uses them, do not look only for missing needles: on TestQuad2 the old
 part protrudes +1.89 mm ahead of painted disc (another lift) and is visible.
 
 **Shape 2** (round 1 from 2026-09-06, "keep all"): furthest vertex
@@ -1023,7 +1023,7 @@ more than three rounds of probes).
 
 ## Trap 15 — new geometry inherits NO selection
 
-Measured on LFQuad2, build `77303210b92d63bd`, 2026-09-07 00:15. The 64 painted
+Measured on TestQuad2, build `77303210b92d63bd`, 2026-09-07 00:15. The 64 painted
 disc faces added as new geometry were in NO
 selection; needles were (`dial_speed` / `dial_rpm`, which in `skeletonBones`
 hang from "drivewheel"). In-game result, literal quote from user: "when turning
@@ -1037,10 +1037,10 @@ dials turn WITH handlebars.
 Generalizable: new geometry inherits no selection, and symptom
 only appears when TURNING; no static screenshot reveals it. It is symmetric
 to already documented case (original disc traveling INSIDE animated
-selection when it should not; confirmation table, LFQuad3 row): here it is the one
+selection when it should not; confirmation table, TestQuad3 row): here it is the one
 staying OUTSIDE that should be inside.
 
-Cheap self-check (measured 2026-09-07, LFQuad2): scaling gauge IN
+Cheap self-check (measured 2026-09-07, TestQuad2): scaling gauge IN
 PLANE (non-uniform, so as not to eat up needle margin over disc)
 changes neither UVs (`uv_disco` divides radius by `R_DIAL`: maximum
 change 0.000000 px) nor angles (102.55/405.45 and 71.95/315.16 before and
@@ -1048,35 +1048,35 @@ after). If they change upon scaling, scaling and mapping are inconsistent.
 
 ## Trap 16 — handlebars with rake separate hands from grips when turning
 
-Measured on two models (2026-09-07). LFQuad2 `drivewheel_axis` was 3.4 degrees off
+Measured on two models (2026-09-07). TestQuad2 `drivewheel_axis` was 3.4 degrees off
 vertical (direction (0, +0.9982, -0.0599)); at +-30 degrees rotation the grips, at 0.378 m from
 axis, rise and fall +-11.5 mm with OPPOSITE sign on each side (dz +-190 mm dominant, dx
 +-41..60). With EXACTLY vertical axis that term is 0.00 by construction. Hands do not
 follow: this model has no IK (Memory LOD only holds `crewdriver` and `drivewheel_axis`),
 hand is placed by animation relative to seat. User verdict, verbatim, after making axis
-vertical through same point: "axis better now". LFQuad3 confirms from the other side: its axis
+vertical through same point: "axis better now". TestQuad3 confirms from the other side: its axis
 is exact (0, 1, 0) (Memory LOD, measured in deployed p3d `9499be34`), animation
 `drivingwheel` with `angle0 "rad -30"` / `angle1 "rad 30"`, grips at 0.464 m.
 
-What it was NOT: the sweep. LFQuad3 sweeps the same (+-30) with grips FURTHER away (0.464 versus
+What it was NOT: the sweep. TestQuad3 sweeps the same (+-30) with grips FURTHER away (0.464 versus
 0.378 m; 232 mm travel versus 189) and lacks reported symptom; if sweep were
-cause, it would separate more on LFQuad3. Open question whether hands track grips at STOPS on
-LFQuad3 (not itemized). Relative seat-grip posture differs between both models under
-same animation: LFQuad2 has handlebar 22 cm further forward and 12 cm lower relative to
+cause, it would separate more on TestQuad3. Open question whether hands track grips at STOPS on
+TestQuad3 (not itemized). Relative seat-grip posture differs between both models under
+same animation: TestQuad2 has handlebar 22 cm further forward and 12 cm lower relative to
 seat, and driver 16 cm higher and 12 cm further back relative to axis base.
 
-Status at 02:30 on 2026-09-07 (LFQuad2, after its closure): sweep at +-22.5 (was +-15) and
+Status at 02:30 on 2026-09-07 (TestQuad2, after its closure): sweep at +-22.5 (was +-15) and
 driver 125 mm forward of original, with seat-grip reach at 588.7 mm, identical
-to LFQuad3. Open contradiction: LFQuad3 uses +-30 with 232 mm travel and is signed
-off, so if its hands hold that, +-30 on LFQuad2 was not "excessive" and user's
-range measures something else; LFQuad2 hypothesis: grip HEIGHT above
-seat (+210 mm in LFQuad3, +118 in LFQuad2). Deciding factor is checking LFQuad3 hands at
+to TestQuad3. Open contradiction: TestQuad3 uses +-30 with 232 mm travel and is signed
+off, so if its hands hold that, +-30 on TestQuad2 was not "excessive" and user's
+range measures something else; TestQuad2 hypothesis: grip HEIGHT above
+seat (+210 mm in TestQuad3, +118 in TestQuad2). Deciding factor is checking TestQuad3 hands at
 both stops (not done).
 
 Rule: handlebar axis in Memory LOD is written VERTICAL unless measurement indicates
 otherwise, and is verified with vector direction, not by eye (3.4 degrees cannot be seen).
 
-Methodological trap when modifying sweep (LFQuad2, same night): pattern `minValue -1 / maxValue
+Methodological trap when modifying sweep (TestQuad2, same night): pattern `minValue -1 / maxValue
 1 / angle0 "rad -30" / angle1 "rad 30"` matches THREE blocks in `model.cfg`: `drivingwheel` and
 both front wheels (`turnfrontleft`, `turnfrontright`, ACTUAL steering angle). A
 pattern replace leaves quad steering half as much as it should, and in-game reads as "drives
@@ -1091,15 +1091,15 @@ culling) and STORED per-vertex normal (determines lighting). Neither is deduced 
 are checked SEPARATELY. Same night (2026-09-07), one failed in each model, and in
 both the other sign was correct:
 
-- **LFQuad2, stored normal.** Correct winding on all four parts (`<cross, axis>`
+- **TestQuad2, stored normal.** Correct winding on all four parts (`<cross, axis>`
   = -1.000, like discs), but fuel panel and needle with stored normal at
   +1.000, written "towards driver". By day they looked identical to dials; at NIGHT they did
-  not shine under same rvmat. Measured on the LFQuad2 `.p3d` and reproduced with
+  not shine under same rvmat. Measured on the TestQuad2 `.p3d` and reproduced with
   a second instrument on `.p3d` of its deployed PBO (`3670fe455648c1ac`: 1 + 1 faces
   with `<normal, cross> < 0` in each visual LOD) and on its fixed tree
   (`5f49257c4380280d`: 0). Its PBO carries it since 02:10 (`bea1b889b3ecedae`, body
   `5f47e2cbf8ea323f`, 0 with this instrument); NIGHT inspection remains pending.
-- **LFQuad3, winding.** Stored normal = cross on all cluster faces (generator
+- **TestQuad3, winding.** Stored normal = cross on all cluster faces (generator
   saves cross `n` in `add_tri`): 0 inverted. But `add_fuel_needle`
   forced `<cross, axis> > 0` with `axis` towards driver, and EVERYTHING else in cluster
   has `<cross, axis> < 0`: discs, rings, numbers, fuel panel, and OBJ
@@ -1111,19 +1111,19 @@ both the other sign was correct:
 
 **Rule.** For each new cluster selection: `sign(<cross, axis>)` equal to that of
 already visible discs, and `<stored_normal, cross> >= 0` at each vertex (60-degree
-smoothing never drops below 0.5). Both columns come from `normal_sign.py` (LFQuad3
+smoothing never drops below 0.5). Both columns come from `normal_sign.py` (TestQuad3
 measurement tools): groups cluster faces by selection + texture against nearest Memory
 axis. Positive control: `--control <sel>` negates in memory the
 normals of a selection and all its faces must be flagged. Independent control:
-LFQuad2 PBO above, which is a real defect made independently. The instrument also provides
+TestQuad2 PBO above, which is a real defect made independently. The instrument also provides
 winding verdict: each gauge group (needle selections, dial textures,
 numbers and needles) against average sign of painted discs. Functional LODs
 (Geometry 1e13, ViewGeometry 6e15, FireGeometry 7e15) are excluded unless `--all-lods`:
 they carry 1-2 untextured faces with normal at +0.6 that are not rendered and which a blind
-counter reads as "5 discrepancies" on a clean model (noise measured on LFQuad2). And normal
+counter reads as "5 discrepancies" on a clean model (noise measured on TestQuad2). And normal
 counter sums only gauge groups: rest of cluster is reported separately,
 informational, because decimated LODs of a base model ship with some face having
-smoothed normal against its cross (LFQuad2, LOD 1-3: 5-7 faces each).
+smoothed normal against its cross (TestQuad2, LOD 1-3: 5-7 faces each).
 
 **And in-game, inspect cluster also at NIGHT** or with dash lights turned on
 (`dashboardMatOn`, the material that 1.30 registers on the `DashboardOn` selection,
@@ -1133,7 +1133,7 @@ visible at any hour, but only when inspecting THAT specific part: global verdict
 **And winding instrument has its own failure mode: radial metric does not decide on
 a shell.** Counting what fraction of faces has cross pointing OUTWARD from
 mesh centroid works on a convex solid and means nothing in a cockpit. Inside
-SUB_BRZ that metric gave **0.0% of faces "towards driver"** and looked like
+TestCoupe that metric gave **0.0% of faces "towards driver"** and looked like
 entire model reversed. It was not. A cockpit is a shell viewed from INSIDE and
 a cluster is almost a torus: centroid falls outside material, so radius is no
 reference for anything. Signed volume also failed to arbitrate: negative in BOTH
@@ -1148,7 +1148,7 @@ defect believed to be fixed. Rule: winding witness is a VISIBLE neighboring
 face of known normal; centroid statistics only apply to convex shapes, and signed
 volume only to watertight meshes, which must be verified BEFORE citing it.
 
-## Trap 18 — a verdict on a STATIC cluster does not accredit needle motion (added 2026-10-01, SUB_BRZ)
+## Trap 18 — a verdict on a STATIC cluster does not accredit needle motion (added 2026-10-01, TestCoupe)
 
 The interior proxy carried the three needles with their `Indicator*` classes. The user's
 verdict on that build was "driver dash correct", and the turn sign was taken as proven from it;
@@ -1161,46 +1161,46 @@ a gauge task. Where needles must live (the vehicle model, not a proxy) is in
 
 ## Complete recipe for a new cluster, in order
 
-Numbered steps. Each with its offline gate and LFQuad3 function that
-implements it. Another pipeline (LFQuad2 or other) follows the order, not the example's
+Numbered steps. Each with its offline gate and TestQuad3 function that
+implements it. Another pipeline (TestQuad2 or other) follows the order, not the example's
 numbers.
 
 1. **Anchor the frame.** Right = model markers projected to gauge
    plane (`light_left`/`light_right`, or equivalent). Fatal guard if
    discrepant (and if missing, when read externally). Gate: sign of `<u, light_right - light_left>`
    (negative = mirrored frame); instrument halts if old and model bases
-   coincide. LFQuad3: `MODEL_RIGHT`, `dial_basis`, guard in
+   coincide. TestQuad3: `MODEL_RIGHT`, `dial_basis`, guard in
    `memory_lod`; `LIGHT_RIGHT_MINUS_LEFT` in `dial_derive_final.py`.
 2. **One texture per gauge**, power of two padded (trap 11), separate flat
    rvmat, excluded from color selections. Gate: PAA matches current
-   art; 0 dial faces in `camo1`. LFQuad3: `MAT_TEX` `Dial_*`,
-   `convert_textures.py`; own flat rvmat discovered in LFQuad2.
+   art; 0 dial faces in `camo1`. TestQuad3: `MAT_TEX` `Dial_*`,
+   `convert_textures.py`; own flat rvmat discovered in TestQuad2.
 3. **Painted disc + polar UV (+U, -V)** with anchored basis. Gate: `det < 0`
-   on EACH disc separately (trap 10). LFQuad3: `add_dial_faces`,
+   on EACH disc separately (trap 10). TestQuad3: `add_dial_faces`,
    `polar_uv`, `remap_gauge_discs`.
    - **Fuel panel.** If model DOES NOT supply face: section
      `## Fuel panel from scratch`. If reusing face: trap 11
-     (`fuel_face_uv`). Do not copy LFQuad3 1.84:1 mapping to new face.
+     (`fuel_face_uv`). Do not copy TestQuad3 1.84:1 mapping to new face.
    - **Animated selection** (trap 15). Put faces AND their points (discs,
      panel) into rotating bone selection, across ALL LODs with
      dials. Gate: when turning, dials move with pod.
 4. **Needle:** canonical pose, pivot = Black hub, hub + blade only (never
    disc), in front of panel, disc 1.2 mm behind (`lift = 0.0012`). Gate:
    depth probe in green (`z < -0.0003` behind panel = HIDDEN) and
-   part DRAWING. LFQuad3: `canonical_needle`, `add_fuel_gauge` (pivot
+   part DRAWING. TestQuad3: `canonical_needle`, `add_fuel_gauge` (pivot
    0.0004), `needle_parts_probe.py`, `fuel_needle_probe.py`, `needle_draw.py`.
    Gate 2: `normal_sign.py`, needle winding and stored normal matching sign of
    discs (trap 17): render without culling misses it.
 5. **`<sel>_axis`** = pivot and pivot + normal towards driver; bones;
    Indicator classes with `"rad"`. Gate: both points exist in Memory;
-   bone hangs from dashboard. LFQuad3: `apply_needle_axis`, `memory_lod`,
+   bone hangs from dashboard. TestQuad3: `apply_needle_axis`, `memory_lod`,
    `generated/model.cfg`.
 6. **Angles via instrument:** value<->tick pairs written and re-measured
    (`TOL = 0.5`), fit to regular span, `angle0 = rest - theta(min)`, rpm
    over `rpmMax`. Gate = needle over EACH printed value (`dial_gate_final.py`).
-   LFQuad3: `dial_derive_final.py` -> `dial_angles_final.json`.
+   TestQuad3: `dial_derive_final.py` -> `dial_angles_final.json`.
 7. **Texture cache by content** (`<paa>.src.sha256`) and PBO of expected
-   size (stamps do not travel; trap 13). LFQuad3: `emit` in
+   size (stamps do not travel; trap 13). TestQuad3: `emit` in
    `convert_textures.py`, `ignore_patterns` in `pack_lfquad3.py`.
 8. **Before trusting a new render**, reproduce two known states
    (trap 10). A single green does not tell good from bad.
@@ -1208,7 +1208,7 @@ numbers.
    needle visible and between E and F, moving with tank; with engine
    running, kmh/rpm moving and painted dial NOT rotating
    with them; rest resting on zero. Record **verbatim** verdict,
-   with build and date, and items remaining not itemized. LFQuad3 closed with
+   with build and date, and items remaining not itemized. TestQuad3 closed with
    "dashboard is good now" (2026-09-06, `5ac339d3`); fuel motion,
    original disc, and exact zero remain not itemized. Inspect also at NIGHT or
    with dash light on: inverted stored normal surfaces only in low
@@ -1218,8 +1218,8 @@ numbers.
 
 | | signed off in-game | not itemized / open |
 |---|---|---|
-| LFQuad3 | "dashboard is good now" (2026-09-06, build `5ac339d3`) | fuel motion; original disc in animated selection; exact zero (offline gate); fuel needle: in `5ac339d3` its 182 tris have winding reversed relative to rest of cluster (culled from seat, measured 2026-09-07, trap 17), fixed in generator and UNCONFIRMED in-game |
-| LFQuad2 `77303210b92d63bd` | 2026-09-07 00:15, cycle `@CF` + `@VPPAdminTools` + `@SurvivorAnims`, 1st person: speedometer 0-150 CLOCKWISE, "km/h" legible, red on RIGHT, needle at printed 0; tachometer 0-6 CLOCKWISE, "RPM x1000" legible, red on right, needle at 0; both dials visible from seat. Verbatim user verdict: "nothing seen on fuel gauge, plus when turning the part, dash does not turn with it, both circles stay behind (needles do rotate). On the other hand, as you can see, texture is pixelated, must be fixed". Second in-game confirmation of the mirrored-frame finding, on another model; the measurement that found the mirror is in trap 2. Deployed as `LFQuad2.pbo` `77303210b92d63bd` + `model.cfg` `1a2df84507870fc8`. | fuel: none; discs outside drivewheel (trap 15); pixelated texture = screen resolution limit (trap 9). None of the three stems from frame. |
-| LFQuad2 `4034b2e35a9fbb96` | 2026-09-07 00:33 (R 0.038 and discs in drivewheel): dials turn WITH handlebars; legible numbers; unmirrored faces; needles at 0. User verdict: PENDING. | user verdict pending; fuel: none. |
-| LFQuad2 batch 2 (fuel panel + driver 1 cm forward; PBO 12,632,912 B; 2026-09-07) | offline gate green: actual UVs from .p3d rasterized against texture with frame anchored to headlights, needle drawn at E, 1/2, and F, det -231.92 direct, anisotropy 1.0049, residual 5.0e-07; deployed and verified by content inside PBO. CONFIRMED IN-GAME (2026-09-07 01:16, clean cycle, cycled storage, new character, frame_stale=false): panel visible above gauges, centered, FUEL / E / 1-2 / F legible and unmirrored; needle built pointing UP (rest 90) points in-game to F with fuel = 1.0: engine rotated it +41.5 = its angle1. First WIRING test of recipe, not just drawing. | user verdict on LFQuad2 in that window: hands and handlebar separate when turning ("handlebar moves slightly upward and hand animation slightly downward"), defect unrelated to cluster (handlebar axis with 3.4 degrees rake, under study); no recorded objection to panel or mirroring. |
-| SUB_BRZ `AF365A3C` (2026-09-07) | STATIC cluster only, confirmed in game by the user on 2026-09-07, manually launched cycle (`@DayZ_MCP;@CF;@VPPAdminTools;@SurvivorAnims;@SUB_BRZ`, Chernarus). Verbatim verdict: "Driver dash correct, leaving it like this now". That verdict covers the drawn dials only: needle motion and rotation sign are UNCONFIRMED, and a later session found the needles never moved on this build (trap 18). | needle motion and rotation sign (trap 18). Built offline: three custom dials (km/h 0-220, rpm 0-8, fuel E-F) in `brz_cluster_co.paa` DXT1 2048x1024 across the 42 faces of `light_dashboard`, which already had an exact [0,1] UV window and native emissive swap `dashboardMatOn/Off`; three canonical 182-tri needles in BOTH visual LODs of interior proxy (1.0 and 1100 = first person); `mph` -> `kmh`; `IndicatorSpeed maxValue` 60 -> 220, which was a REAL defect (needle stuck at 60 km/h and rest of scale was dead). Verified INSIDE PBO: binarized ODOL of interior contains `kmh`/`kmh_axis`/`rpm`/`rpm_axis`/`fuel_1`/`fuel_1_axis` and zero `mph`. **Rotation SIGN is DERIVED** (right hand + `DrivingWheel` from same file), not measured: if it sweeps backwards, it is a sign. Inherited trap: BODY (`sub_brz.p3d`, byte-for-byte identical to the build before it) retains obsolete `mph`/`rpm`/`fuel_1` memory points with PURE +-Z axes vs inclined interior axes; `model.cfg` does not reference them, but car #2 could be wired to wrong pair. |
+| TestQuad3 | "dashboard is good now" (2026-09-06, build `5ac339d3`) | fuel motion; original disc in animated selection; exact zero (offline gate); fuel needle: in `5ac339d3` its 182 tris have winding reversed relative to rest of cluster (culled from seat, measured 2026-09-07, trap 17), fixed in generator and UNCONFIRMED in-game |
+| TestQuad2 `77303210b92d63bd` | 2026-09-07 00:15, cycle `@CF` + `@VPPAdminTools` + `@SurvivorAnims`, 1st person: speedometer 0-150 CLOCKWISE, "km/h" legible, red on RIGHT, needle at printed 0; tachometer 0-6 CLOCKWISE, "RPM x1000" legible, red on right, needle at 0; both dials visible from seat. Verbatim user verdict: "nothing seen on fuel gauge, plus when turning the part, dash does not turn with it, both circles stay behind (needles do rotate). On the other hand, as you can see, texture is pixelated, must be fixed". Second in-game confirmation of the mirrored-frame finding, on another model; the measurement that found the mirror is in trap 2. Deployed as `TestQuad2.pbo` `77303210b92d63bd` + `model.cfg` `1a2df84507870fc8`. | fuel: none; discs outside drivewheel (trap 15); pixelated texture = screen resolution limit (trap 9). None of the three stems from frame. |
+| TestQuad2 `4034b2e35a9fbb96` | 2026-09-07 00:33 (R 0.038 and discs in drivewheel): dials turn WITH handlebars; legible numbers; unmirrored faces; needles at 0. User verdict: PENDING. | user verdict pending; fuel: none. |
+| TestQuad2 batch 2 (fuel panel + driver 1 cm forward; PBO 12,632,912 B; 2026-09-07) | offline gate green: actual UVs from .p3d rasterized against texture with frame anchored to headlights, needle drawn at E, 1/2, and F, det -231.92 direct, anisotropy 1.0049, residual 5.0e-07; deployed and verified by content inside PBO. CONFIRMED IN-GAME (2026-09-07 01:16, clean cycle, cycled storage, new character, frame_stale=false): panel visible above gauges, centered, FUEL / E / 1-2 / F legible and unmirrored; needle built pointing UP (rest 90) points in-game to F with fuel = 1.0: engine rotated it +41.5 = its angle1. First WIRING test of recipe, not just drawing. | user verdict on TestQuad2 in that window: hands and handlebar separate when turning ("handlebar moves slightly upward and hand animation slightly downward"), defect unrelated to cluster (handlebar axis with 3.4 degrees rake, under study); no recorded objection to panel or mirroring. |
+| TestCoupe `AF365A3C` (2026-09-07) | STATIC cluster only, confirmed in game by the user on 2026-09-07, manually launched cycle (`@DayZ_MCP;@CF;@VPPAdminTools;@SurvivorAnims;@TestCoupe`, Chernarus). Verbatim verdict: "Driver dash correct, leaving it like this now". That verdict covers the drawn dials only: needle motion and rotation sign are UNCONFIRMED, and a later session found the needles never moved on this build (trap 18). | needle motion and rotation sign (trap 18). Built offline: three custom dials (km/h 0-220, rpm 0-8, fuel E-F) in `brz_cluster_co.paa` DXT1 2048x1024 across the 42 faces of `light_dashboard`, which already had an exact [0,1] UV window and native emissive swap `dashboardMatOn/Off`; three canonical 182-tri needles in BOTH visual LODs of interior proxy (1.0 and 1100 = first person); `mph` -> `kmh`; `IndicatorSpeed maxValue` 60 -> 220, which was a REAL defect (needle stuck at 60 km/h and rest of scale was dead). Verified INSIDE PBO: binarized ODOL of interior contains `kmh`/`kmh_axis`/`rpm`/`rpm_axis`/`fuel_1`/`fuel_1_axis` and zero `mph`. **Rotation SIGN is DERIVED** (right hand + `DrivingWheel` from same file), not measured: if it sweeps backwards, it is a sign. Inherited trap: BODY (`testcoupe.p3d`, byte-for-byte identical to the build before it) retains obsolete `mph`/`rpm`/`fuel_1` memory points with PURE +-Z axes vs inclined interior axes; `model.cfg` does not reference them, but car #2 could be wired to wrong pair. |

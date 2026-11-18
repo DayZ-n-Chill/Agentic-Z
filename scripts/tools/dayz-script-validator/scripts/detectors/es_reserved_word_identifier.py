@@ -22,10 +22,10 @@ ES_RESERVED_WORD_IDENTIFIER_RULE_ID = "ES-RESERVED-WORD-IDENTIFIER"
 #           `Broken expression (missing ';'?)`, then
 #           `Can't compile "Mission" script module!`
 #   owned   local `EntityAI owned;`, 2026-07-20: `Broken expression (missing
-#           ';'?)` (enforce-script-reference SKILL.md)
+#           ';'?)` (skills/_shared/enscript/depth/review-and-troubleshooting.md)
 #   out     a local named `out`: `Broken expression (missing ';'?)`
-#           (enforce-script-reference SKILL.md, "Three ways to break the
-#           compiler that do not produce a readable error")
+#           (skills/_shared/enscript/depth/compiler-traps.md, "Three ways to break the
+#           compiler without a readable error")
 #
 # Vanilla uses all four as keywords, never as names: `sealed class Contact`
 # (1_core/physics/contact.c:9), `local array<string> overridden`

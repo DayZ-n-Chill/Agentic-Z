@@ -29,7 +29,7 @@ ES_EMPTY_IFDEF_MESSAGE = (
     "segfault, and no measurement shows it: on DayZDiag 1.30.164289 a block "
     "holding only a comment compiled and ran on server and client, at file "
     "scope, in a class body and in a method body, with a macro DayZDiag "
-    "defines and with one nobody defines (enforce-script-reference "
+    "defines and with one nobody defines (skills/_shared/enscript/depth/"
     "pitfalls-advanced.md, section 5). Not measured: a block with nothing at "
     "all inside, a retail build, DayZ 1.29. Remove the block if it holds no "
     "code."

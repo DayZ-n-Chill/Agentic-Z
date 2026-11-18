@@ -12,12 +12,6 @@ Answer tests check what an agent actually says. Each agent has a set of question
 | `scripts/dev/evals.bat` | The no-token wrapper for the runner. |
 | `output/evals/` | Results files, one per run. Not committed. |
 | `evals/fixtures/<agent>/` | Small files a question tells the agent to read. The question's `unchanged` list guards them. |
-| `evals/cases/` and `evals/schema.json` | Ten mechanical cases. Each one carries its own canned answers and the verdict each must get, so they test a grader, not an agent. The `packctl` tool under `scripts/dev/knowledge-pack/` runs them (its `gate` and `eval run` commands), not the runner above. |
-| `evals/live/cases/`, `evals/live/schema.json` | Five live cases. Each asks a model the same question several times with and without one skill mounted and passes only when the skill makes the difference. The runner above cannot do that: it asks one agent once and has no arm without the skill. `packctl`'s `eval live` command runs them. |
-| `evals/live/runners/claude-code.py` | The adapter the `eval live` command calls for each run. It reads one JSON request on stdin, runs `claude -p --bare` in the given workspace and prints the answer as JSON. It needs `PACKCTL_LIVE_EVAL_MODEL` and `PACKCTL_LIVE_EVAL_EFFORT` set and costs tokens. |
-| `scripts/dev/test_kp_evals.py` | Checks the mechanical and live case files, the adapter and that every case still has its question in `evals/questions/`. It never calls `claude`. |
-
-Twenty of the questions in `evals/questions/` ask what these fifteen cases ask; `evals/README.md` lists them by agent and says which are not in the baseline yet.
 
 ## Question file format
 

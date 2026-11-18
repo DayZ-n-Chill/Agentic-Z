@@ -29,4 +29,4 @@ A real case with a default and a question per point makes a good template for th
 
 ## Related rules
 
-Ask before assuming; do not add what was not asked for, and by extension do not assume what was not asked for; write criteria that can be verified (`dayz-feature-spec`). Tier 1 says the same under "Scope".
+Ask before assuming; do not add what was not asked for, and by extension do not assume what was not asked for; write criteria that can be verified (`/dayz-scope-mod`, `references/spec-checklist.md`). Tier 1 says the same under "Scope".

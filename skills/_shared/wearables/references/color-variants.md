@@ -40,6 +40,7 @@ In the worn models, everything that is not a camo selection sits in a section na
 3. Color textures end in `_co` and are packed with `/dayz-pack-texture`.
 4. Only the color classes have `scope=2`; the color base stays at `scope=0` so it never spawns.
 5. **Engine:** a hidden selection must be present in every visual LOD of a model, or that LOD keeps its original texture. Say so in the notes for Object Builder.
+6. **Engine:** a selection listed in `hiddenSelections[]` with no texture given renders invisible, not grey. That is why only the color classes spawn: `Barrel_ColorBase` lists `camoGround` (`P:\DZ\gear\containers\config.cpp:61`) and sets no texture, and `Barrel_Green` sets `scope=2` and the texture (`:144` and `:146`). An item that shows up invisible in game is usually missing a texture entry or has its entries out of order.
 
 ## Changing a color from script
 

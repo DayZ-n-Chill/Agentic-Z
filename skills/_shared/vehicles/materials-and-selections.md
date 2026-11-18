@@ -2,7 +2,7 @@
 
 Two diagnoses that look solid and are not (one material on two identical textures, and a part that follows on the server but not on screen), and the rule that a selection the car's config drives must live in the parent model, never only in a proxy.
 
-> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/dayz-vehicles/SKILL.md` lists which file holds each number. The light selections of a car and their order are in `lights.md`.
+> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number. The light selections of a car and their order are in `lights.md`.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -13,7 +13,7 @@ Two diagnoses that look solid and are not (one material on two identical texture
 
 ## How these lessons are ordered
 
-The reference tables of `skills/dayz-vehicles/SKILL.md` say when to read this file.
+The reference tables of `README.md` say when to read this file.
 Nothing in this file is repealed: these are active lessons, ordered by topic
 instead of date.
 
@@ -21,7 +21,7 @@ instead of date.
 
 ## Two diagnoses that look solid and are not: identical textures, and server co-move (added 2026-07-26)
 
-Both cost real cycles on LFHeli OH-1. Both are one cheap measurement away.
+Both cost real cycles on TestHeli OH-1. Both are one cheap measurement away.
 
 **A. "One .rvmat bound to two base textures" is NOT automatically the cause of a texture defect.**
 On OH-1, `oh1_fuselage.rvmat` resolved to `rd_oh1_fuselage_co.paa` (10403 faces) and
@@ -43,18 +43,18 @@ part "does not follow", measure BOTH sides before designing a fix. A perfect ser
 a visible mismatch points at render/replication/perception, and it rules out the physics and
 cohesion branches - which is worth a lot, because those are the expensive ones to chase.
 
-## Parent-driven selections (hiddenSelections / config anims) do NOT reach a PROXY - host them in the SHELL (added 2026-08-07, SUB_BRZ + LFVehicleUI)
+## Parent-driven selections (hiddenSelections / config anims) do NOT reach a PROXY - host them in the SHELL (added 2026-08-07, TestCoupe + TestVehicleUI)
 
 Any named selection the CAR's config must drive - hiddenSelections swaps
 (SetObjectTexture/SetObjectMaterial), model.cfg Animations declared on the parent,
 sections[] entries - must live in the PARENT model, never only inside a proxy sub-p3d.
-Evidence, both measured on SUB_BRZ: (a) dashboard needle anims declared over the interior
+Evidence, both measured on TestCoupe: (a) dashboard needle anims declared over the interior
 proxy = needles STATIC in-game; (b) the selections that DO work
 (light_dashboard idx 8; screen_nav idx 9 for the nav screen) are faces hosted in the shell
 - light_dashboard ships duplicated shell+proxy with identical coords and works FROM the
-shell copy. MercedesAMGLF carries the same latent defect (interior selections in proxy).
+shell copy. TestMercedes carries the same latent defect (interior selections in proxy).
 
-A static proxy animates NONE of its pieces, and one dead anim hides the rest (added 2026-10-01, SUB_BRZ). A first fix moved the needles off the interior proxy and left `DrivingWheel` on it - the steering wheel had never turned, and finding it cost another full cycle. When a dead animation exposes a static proxy, enumerate EVERY `Animations` class bound to that proxy and move them ALL to the shell in the SAME change, with their bones appended to the shell skeleton.
+A static proxy animates NONE of its pieces, and one dead anim hides the rest (added 2026-10-01, TestCoupe). A first fix moved the needles off the interior proxy and left `DrivingWheel` on it - the steering wheel had never turned, and finding it cost another full cycle. When a dead animation exposes a static proxy, enumerate EVERY `Animations` class bound to that proxy and move them ALL to the shell in the SAME change, with their bones appended to the shell skeleton.
 
 Rules for a proxy-split car (day-1 for car #2, surgery for cars in flight):
 1. Every hiddenSelections entry needs its faces in the SHELL, in LOD0 AND the ViewPilot
@@ -68,7 +68,7 @@ Rules for a proxy-split car (day-1 for car #2, surgery for cars in flight):
    control: the instrument cluster).
 4. Do the surgery with asserts: component pick by aspect+centre, per-LOD face deltas,
    selection cardinality, proxies/bones untouched.
-5. Scan body-vs-proxy for COINCIDENT faces and keep ONE copy (added 2026-10-01, SUB_BRZ): a vertex-match scan (0.05 mm tolerance, negative control) found 384 `light_dashboard_static`
+5. Scan body-vs-proxy for COINCIDENT faces and keep ONE copy (added 2026-10-01, TestCoupe): a vertex-match scan (0.05 mm tolerance, negative control) found 384 `light_dashboard_static`
    body faces sitting exactly on proxy faces wearing a DIFFERENT material, plus 42 proxy panel faces
    0.5 mm behind `light_dashboard` - the user saw intermittent flicker at rest. Coincident duplicates
    that can ever wear different materials z-fight; leave one owner per face.

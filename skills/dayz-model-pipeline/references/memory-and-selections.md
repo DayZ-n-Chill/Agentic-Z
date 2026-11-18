@@ -217,7 +217,7 @@ An entity whose visual LOD contains only proxy triangles (py3d `LOD.add_proxy`, 
 - draws the attached item at the proxy, shows in the vicinity panel and accepts drag in and out (a probe entity of a third-party mod, checked in game), and persists with its attachments across restarts without a `types.xml` entry;
 - needs `autocenter = 0` in its `CfgVehicles` class: without it the engine recenters the model (memory points and the bounding center shift);
 - still collides with the player: its bounding volume blocks movement even with no Geometry, no View Geometry and no Fire Geometry (four variants measured). Design proxies and cursor boxes inside geometry that already blocks, or prototype without a physics body before accepting the placement;
-- must be verified with both an instance loaded from storage and one created at runtime: attachments created in `EEInit` or in the creation tick never reach clients (the `enforce-script-reference` skill).
+- must be verified with both an instance loaded from storage and one created at runtime: attachments created in `EEInit` or in the creation tick never reach clients (the Enforce Script pack (`skills/_shared/enscript/depth/`)).
 
 ### Vanilla attachment model paths
 

@@ -45,7 +45,7 @@ The usual split:
 
 ## 2. Enforce Script, general
 
-The full rules are in `skills/_shared/enscript-style.md` (the style guide, which wins on style) and in `enforce-script-reference`. The restrictions that bite most often:
+The full rules are in `skills/_shared/enscript-style.md` (the style guide, which wins on style) and in `skills/_shared/enscript/depth/`. The restrictions that bite most often:
 
 - [ ] No ternary operator (`? :` does not compile). Workarounds: `skills/_shared/enscript/patterns/language_workarounds.md`.
 - [ ] `ref` on owning member fields; never on parameters, return types or typedefs, and never `new ref` (on a local it is valid and redundant, so leave it out). Detail: `skills/_shared/enscript-style/memory.md`.

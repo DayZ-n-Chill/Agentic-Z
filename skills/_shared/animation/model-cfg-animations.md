@@ -6,6 +6,16 @@ How the bones and the `class Animations` block in a mod's `model.cfg` are laid o
 
 The file is shared with `dayz-object-builder`. The animation specialist writes the bone entries for the moving parts (`skeletonBones[]`) and the `class Animations` block inside the model's `CfgModels` class. `dayz-object-builder` keeps the rest: the skeleton class itself and its inheritance, `sections[]`, the named selections and the LOD setup in the `.p3d`.
 
+## How it fits together
+
+A controller, the `source`, outputs a value. An `Animations` entry maps that value onto a transform (rotate, translate or hide) of a named `selection`, usually around an `axis`. For script driven motion the source is a `user` source and script sets its value with `SetAnimationPhase`. No clip, no graph, no Workbench: an agent writes all of it.
+
+| File | Holds |
+|---|---|
+| `model.cfg` | The skeleton (bones) and the `class Animations` transforms. |
+| `config.cpp` | `class AnimationSources`, only for `user` sources (`animation-sources.md`). |
+| script `.c` | `SetAnimationPhase("<source name>", phase)` (`script-hooks.md`). |
+
 ## Layout
 
 Key names below are the Binarize input format. Vanilla does not ship `model.cfg` text on `P:\`, so the layout is format knowledge; the names and values in the next section are what vanilla models store.
@@ -65,14 +75,23 @@ The key is `isDiscrete`, not `discrete`: 1 for mechanical parts, 0 for organic m
 | `translationX`, `translationY`, `translationZ` | Slides along a model axis. | `offset0`, `offset1` |
 | `hide` | Hides the bone once the phase reaches `hideValue`. | `hideValue` |
 
-Optional keys of an entry, from the same format documentation:
+Keys of an entry, from the same format documentation:
 
 | Key | Meaning |
 |---|---|
+| `source` | The controller: an engine source name, or the name of a class in `AnimationSources`. |
+| `selection` | The named selection (bone) that moves. It must be in the skeleton's `skeletonBones[]`. |
+| `axis` | A named selection of two memory points that defines the axis. |
 | `begin`, `end` | Two named points instead of `axis`, giving an oriented axis. |
 | `memory` | Whether the axis is in the Memory LOD. Default 1. |
+| `minValue`, `maxValue` | The source values mapped to the start and the end of the move. |
 | `minPhase`, `maxPhase` | The reverse mapping: the phase at the source's minimum and maximum. |
 | `sourceAddress` | `"clamp"` (default), `"loop"` or `"mirror"`: what happens outside the range. A spinning wheel uses `"loop"`. |
+| `angle0`, `angle1` | Start and end angle in radians. `"rad 90"` converts 90 degrees; a bare `90` is 90 radians. |
+| `offset0`, `offset1` | Start and end offset for translations, in axis lengths. |
+| `hideValue` | The value at which a `hide` animation hides the selection. |
+
+A `hide` in vanilla: the barrel lids hide at 0.6, and script sets phase 1 to hide a lid and 0 to show it (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:148` sets `Lid` to 1 when the barrel opens).
 
 No vanilla model checked here uses the types `translationModelX`, `translationModelY`, `translationModelZ` or `direct`; do not write them.
 
@@ -102,6 +121,23 @@ What this shows:
 - **A model source of `user` means the animation's own name is the source.** Fence stores `Wall_Gate_Rotate` with source `user`, and its config class `Wall_Gate_Rotate` (`P:\DZ\gear\camping\config.cpp:4450`) is the name script passes (`fence.c:498`). The barrel and house doors name the source directly instead (`lid`, `doors5`).
 - **Animation name and source can differ.** The house model's `Doors1` animation uses source `doorstwin1`, the config door class `DoorsTwin1` (`P:\DZ\structures\residential\config.cpp:7359`). Script and doors find animations by source; `SetAnimationPhase` takes the source name.
 
+## Engine sources
+
+Sources the engine drives need no `AnimationSources` entry. Besides the rows in the table above, the vanilla vehicles use these, read from the shipped models:
+
+| Animation in the model | `source` | Value range | Model |
+|---|---|---|---|
+| `steering_hub_1_1`, `steering_hub_2_1` | `turnfrontleft`, `turnfrontright` | −1.571 to 1.571 | `P:\DZ\vehicles\wheeled\offroadhatchback\offroadhatchback.p3d` |
+| the other wheels | `wheelfrontright`, `wheelbackleft`, `wheelbackright` | 0 to 6.283 | same |
+| `suspension_*` | `damper_1_1`, `damper_2_1`, `damper_1_2`, `damper_2_2` | 0 to 1 | same |
+| `IndicatorSpeed`, `IndicatorRPM`, `IndicatorFuel`, `IndicatorCoolant` | `speed` (0 to 120), `rpm`, `fuel`, `coolant` | 0 to 1 unless noted | same |
+| `DoorsDriver`, `DoorsCoDriver`, `DoorsHood`, `DoorsTrunk` | `doorsdriver`, `doorscodriver`, `doorshood`, `doorstrunk` | 0 to 1 | same |
+| `wheel_1`, `damper_1`, `Kickstand` | `wheelfront`, `damperfront`, `kickstand` | | `P:\DZ\vehicles\singletrack\motorbike_01\motorbike_01.p3d` |
+
+The door, seat and damper sources are `user` sources declared in the car's `AnimationSources`; the steering, wheel spin, wheel turn and gauge sources are supplied by the engine (`animation-sources.md`, "Vehicles").
+
+The Bohemia `model.cfg` documentation for the older Real Virtuality games lists these engine sources (not checked for DayZ; several are aircraft and tank sources DayZ has no use for): `wheel`, `drivingWheel`, `speed`, `fuel`, `rpm`, `direction`, `time`, `clockHour`, `clockMinute`, `clockSecond`, `gear`, `altBaro`, `altRadar`, `horizonBank`, `horizonDive`, `vertSpeed`, `aileron`, `aileronB`, `aileronT`, `aoa`, `elevator`, `flap`, `rotor`, `rudder`, `speedBrake`, `damper`, `mainGun`, `mainTurret`, `rotorH`, `rotorV`, `rotorHDive`, `rotorVDive`, `hatchCommander`, `hatchDriver`, `hatchGunner`, `obsGun`, `obsTurret`, `turretDir`, `wheelL`, `wheelR`, `reload`, `revolving`, `compassArrow`, `compassCover`, `compassPointer`, `pedals`, `support`, `gmeter`. Before using one, find it in a shipped vanilla model as the tables here do. The vanilla car's steering source is `steeringwheel`; `DrivingWheel` is only the name of its animation.
+
 ## Naming checklist
 
 1. Every bone in `skeletonBones[]` is a named selection in every visual LOD that moves, and in the Geometry, FireGeometry and ViewGeometry LODs where those parts should move with it.
@@ -112,13 +148,16 @@ What this shows:
 
 Items 1, 2, 4 and 5 are Binarize rules, not something a vanilla file on `P:\` shows; the vanilla models above follow them (bone `doors5` with axis `doors5_axis`).
 
+Adding a missing selection or the two axis points to an MLOD `.p3d` is script work for the dayz-p3d-inspector or dayz-model-pipeline skills (py3d), checked with `/dayz-p3d-audit`; offer it instead of sending the user to Object Builder. A binarized model has to be converted to MLOD by the user first.
+
 ## Limits and measured behaviour
 
 Measured in game or tool behaviour; not checked on `P:\`.
 
 - **Which way a positive angle turns.** Right handed around the axis from its first memory point to its second, the points taken in index order (measured in game on DayZDiag 1.29.163709). With the axis toward +Z, +X moves toward +Y.
-- **A child rotation composes with its parent's.** A part that folds on another folding part works when it is a child bone of it.
+- **A child rotation composes with its parent's.** A part that folds on another folding part works when it is a child bone of it. Checked with rays on a leaf that folds on a folding part: blade tips cut at x = ±3.15 m against ±3.21 m predicted.
+- **Chained segments.** Several entries with different `minValue` to `maxValue` segments over one clamped source play as one sequence, and play back in reverse when the source returns.
 - **A sub-piece of a proxy cannot be animated in place.** Animations move whole selections and whole proxies. Split the moving piece into its own proxy or selection.
 - **A mod that derives from another mod's model** needs its own `.p3d`, its own `model.cfg` and its own `model=` entry to add animations; inheriting the config class alone binds no new skeleton.
 
-More keys, engine sources and diagnostics: `skills/dayz-animation-pipeline/references/config-driven-animation.md`. Steering parts: `skills/dayz-animation-pipeline/references/handlebar-and-steering-config.md`.
+Steering parts: `handlebar-and-steering.md`. Checking that a source exists: `animation-sources.md`.

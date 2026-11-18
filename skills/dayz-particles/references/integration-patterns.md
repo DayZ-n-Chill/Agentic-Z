@@ -19,7 +19,7 @@ which is a 4_World class.
 - [Cleanup checklist (apply to every device with particles)](#cleanup-checklist-apply-to-every-device-with-particles)
 - [Vanilla particles for placed devices](#vanilla-particles-for-placed-devices)
 - [Pattern D with a synced bool instead of the energy manager](#pattern-d-with-a-synced-bool-instead-of-the-energy-manager)
-- [LFPowerGrid: reading and updating its device code](#lfpowergrid-reading-and-updating-its-device-code)
+- [Bringing older device code up to date](#bringing-older-device-code-up-to-date)
 
 ---
 
@@ -464,7 +464,7 @@ The vanilla lines behind each row:
 
 ## Pattern D with a synced bool instead of the energy manager
 
-Pattern D starts and stops its smoke in `OnWorkStart` and `OnWorkStop`, which needs an `EnergyManager` class in config. A device that is switched by its own server logic can drive the same `SEffectManager` effect from a synced bool, the way Pattern B drives a plain particle. This is how the LFPowerGrid furnace (see the next section) does it. `EffMyModSmoke` is the class defined in Pattern D.
+Pattern D starts and stops its smoke in `OnWorkStart` and `OnWorkStop`, which needs an `EnergyManager` class in config. A device that is switched by its own server logic can drive the same `SEffectManager` effect from a synced bool, the way Pattern B drives a plain particle. `EffMyModSmoke` is the class defined in Pattern D.
 
 ```
 class MyMod_SyncedFurnace extends MyMod_DeviceBase
@@ -522,26 +522,16 @@ class MyMod_SyncedFurnace extends MyMod_DeviceBase
 
 ---
 
-## LFPowerGrid: reading and updating its device code
+## Bringing older device code up to date
 
-LFPowerGrid (LFPG) is a mod of powered devices: a sprinkler, a furnace, overload sparks, a searchlight. Its devices use Patterns A to E under the mod's own names. This is third-party mod behaviour, not vanilla, and nothing about LFPG is on `P:\`; the notes below record how its code differs from the patterns above, so LFPG code can be read and brought up to date.
+Mod device code written before 1.30 often uses the same patterns as this file in a different form. Where it differs, keep the form below:
 
-How LFPG names map onto this file:
-
-- Helpers. LFPG adds `LFPG_PlayParticle(out Particle particle, int particleType, vector localPos)` and `LFPG_StopParticle(out Particle particle)` to each device class. Pattern A is the same pair, moved onto one base class.
-- Base class and hooks. LFPG devices extend the mod's `LFPG_DeviceBase` and override two hooks of that mod: `LFPG_OnVarSync`, where a client reacts to synced variables, and `LFPG_OnWiresCut`, where the server sets the synced state to off so that the next sync stops the particle. The patterns above use the vanilla `OnVariablesSynchronized` and `OnWorkStop` for the same two jobs, so they compile without the mod.
-- Devices. `LFPG_Sprinkler` is Pattern B, the overload sparks of any LFPG device are Pattern C, and `LFPG_Furnace` with its `EffLFPGSmoke` effect and its synced `m_SourceOn` bool is the synced form of Pattern D shown above.
-- Particles. LFPG registers `LFPG_SPRINKLER_SPRAY` and `LFPG_OVERLOAD_SPARKS` from `LFPowerGrid/data/particles/` (files `lfpg_sprinkler_spray.ptc` and `lfpg_overload_sparks.ptc`), with an optional material `lfpg_blue_water.emat` under `data/particles/materials/`. The registration is the one in `SKILL.md`, "Registering custom particles", with the mod's names.
-- Cleanup contract. Every LFPG device with a looping particle cleans up in three places: `EEDelete`, `LFPG_OnWiresCut` and the destructor. The checklist above is the same contract in vanilla terms.
-- House style. LFPG code avoids the ternary operator, `++`, `foreach`, string literals as call arguments and untyped variables, and gives members an `m_` prefix. Only the missing ternary is a language limit; the rest is that mod's style. That is why LFPG writes a position as `string pos = "0 0.15 0"; return pos.ToVector();` where the patterns above assign the literal to a `vector`.
-
-Where LFPG code differs from the patterns above, and which form to keep:
-
-- Client check in the helpers. LFPG tests `GetGame().IsDedicatedServer()`. That matched the vanilla fireplace up to 1.29 (1.29, not yet checked on `P:\`). Since 1.30 the fireplace `PlayParticle` helper tests `IsHeadlessOrDedicatedServer` (`P:\scripts\4_world\entities\itembase\fireplacebase.c:1112`), and so does its `StopParticle` helper (`P:\scripts\4_world\entities\itembase\fireplacebase.c:1132`). Change both LFPG helpers to that check so a headless client skips the effect.
-- `#ifndef SERVER` around client code. LFPG wraps the bodies of Patterns B to D in `#ifndef SERVER` and the server part of `LFPG_OnWiresCut` in `#ifdef SERVER`. The define removes the code from a dedicated server build only. It does not skip a headless client, and in a test run where one diagnostic executable is both server and client it separates nothing (`SKILL.md`, pitfall 1). Keep the runtime check.
-- One-shot sparks. LFPG plays them with the legacy `Particle.PlayOnObject(sparkId, this, sparkPos)`. Pattern C uses the pool, `ParticleManager.GetInstance().PlayOnObject`, as vanilla barbed wire does. Both delete a non-looping particle for you.
-- Destroying the furnace smoke. LFPG calls `SEffectManager.DestroyEffect(m_SmokeEffect)` and leaves the member as it is. Pattern D also sets the member to null, so the next start creates a fresh effect.
-- Stopping a loop sound. LFPG cleanup code calls `m_LoopSound.SoundStop()` and then sets `m_LoopSound = null`. `StopSoundSet(m_LoopSound)`, used in the template above, does both (`P:\scripts\3_game\entities\object.c:1314`).
-- Particle choices. Where LFPG device code plays `CAMP_STEAM_EXTINGUISH_START` for a steam vent or `EVAPORATION` as a looping dust effect for a searchlight, replace them. On `P:\` the first is the placeholder particle and the second is a one-shot, as the table above and the vanilla lines under it show. Use `SMOKING_BARREL_STEAM` for the vent, and pick another looping effect for the searchlight.
+- Client check in the helpers. Older code tests `GetGame().IsDedicatedServer()`, which matched the vanilla fireplace up to 1.29 (1.29, not yet checked on `P:\`). Since 1.30 the fireplace `PlayParticle` helper tests `IsHeadlessOrDedicatedServer` (`P:\scripts\4_world\entities\itembaseireplacebase.c:1112`), and so does its `StopParticle` helper (`P:\scripts\4_world\entities\itembaseireplacebase.c:1132`). Change both helpers to that check so a headless client skips the effect.
+- `#ifndef SERVER` around client code. The define removes the code from a dedicated server build only. It does not skip a headless client, and in a test run where one diagnostic executable is both server and client it separates nothing (`SKILL.md`, pitfall 1). Keep the runtime check.
+- One-shot sparks played with the legacy `Particle.PlayOnObject(sparkId, this, sparkPos)`. Pattern C uses the pool, `ParticleManager.GetInstance().PlayOnObject`, as vanilla barbed wire does. Both delete a non-looping particle for you.
+- `SEffectManager.DestroyEffect(m_SmokeEffect)` that leaves the member as it is. Pattern D also sets the member to null, so the next start creates a fresh effect.
+- A loop sound stopped with `m_LoopSound.SoundStop()` and then `m_LoopSound = null`. `StopSoundSet(m_LoopSound)`, used in the cleanup template above, does both (`P:\scripts\3_game\entities\object.c:1314`).
+- Particle choices. Replace `CAMP_STEAM_EXTINGUISH_START` used for a steam vent and `EVAPORATION` used as a looping effect. On `P:\` the first is the placeholder particle and the second is a one-shot, as the table in "Vanilla particles for placed devices" and the vanilla lines under it show. Use `SMOKING_BARREL_STEAM` for a vent, and pick another looping effect for anything that must keep running.
+- A device with several looping effects cleans up in `EEDelete`, in the server path that switches it off, and in the destructor: the cleanup checklist above.
 
 Since 1.30, vanilla vehicle effects do not retune a particle with separate `SetParameter` calls after playing it, as Pattern E does. They override `ParticleParamsOverride(ParticleParamsOverrideData)` on the effect class (`P:\scripts\3_game\effects\effectparticle.c:619`). Pattern E still works for a device; the vehicle form is in `dayz-1-30-particles.md`.

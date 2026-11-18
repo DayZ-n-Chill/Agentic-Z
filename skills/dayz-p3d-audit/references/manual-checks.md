@@ -2,7 +2,7 @@
 
 Faults that `/dayz-p3d-audit` cannot see from one `.p3d`, with how to measure each by hand, and rules for trusting any new gate you build. Open this when the audit passes and the model still misbehaves, or before copying numbers between sibling models.
 
-**Not yet checked on `P:\`**, except the vanilla LOD counts in the performance section: these are measured results from mod projects (LFPowerGrid, LFQuad, LFDucati, an HH-60G helicopter) and tool behaviour (binarize, an ODOL to MLOD converter).
+**Not yet checked on `P:\`**, except the vanilla LOD counts in the performance section: these are measured results from mod projects (TestPowerGrid, TestQuad, TestDucati, an HH-60G helicopter) and tool behaviour (binarize, an ODOL to MLOD converter).
 
 **Contents**
 
@@ -31,7 +31,7 @@ pitch 90) have opposite long axes and the SAME pitch. Corollary: "the two kits
 are identical except this override" is a hypothesis about CONFIG; measure the
 model before acting on it.
 
-Measured 2026-08-10 on LFPowerGrid (a batch reorientation of placed kits). `switch_v2.p3d`
+Measured 2026-08-10 on TestPowerGrid (a batch reorientation of placed kits). `switch_v2.p3d`
 vs `switch_v2_remote.p3d`, memory points: `switch_axis` (-0.0407, 0.0288, -0.1472)
 → (-0.0407, 0.1472, 0.0288); `ce_center` (0.0001, 0.0366, -0.1286) → (0.0001,
 0.1286, 0.0366); `boundingbox_max` (0.1833, 0.1039, -0.3665) → (0.1833, 0.3665,
@@ -43,10 +43,10 @@ reader gives (py3d included). See also the model pipeline skill (`dayz-model-pip
 ## UV audit step (added 2026-07-06)
 
 `audit_p3d.py` reads no UVs. A UV audit beyond out-of-range values was run with a project-local
-script (`uv_audit.py` of the LFQuad project, not shipped here). Its checks: zero-uv%, NaN, bounds vs ODOL int16 quantization
+script (`uv_audit.py` of the TestQuad project, not shipped here). Its checks: zero-uv%, NaN, bounds vs ODOL int16 quantization
 (range ≤ ~32 on 2048 tex — min/max over the WHOLE LOD), degenerate faces, mirrored islands
 (signed UV area — breaks _nohq), Monte-Carlo overlap per group and cross-group, island count
-(union-find) + texel density (px/m; healthy reference ≈ 292 px/m LFQuad wheels; 27 px/m =
+(union-find) + texel density (px/m; healthy reference ≈ 292 px/m TestQuad wheels; 27 px/m =
 measured cause of bake artifacts). Gotchas: whitelist `proxy:*` faces (degenerate by design),
 exclude full-frame tris (UV area > 0.2) from cross-group overlap, classic raster misses
 subpixel islands. Which in-game symptom points at which UV fault is in `skills/_shared/models/uv-mapping.md`; the repair workflow is the `uv-clean-atlas` skill.
@@ -118,4 +118,4 @@ Everything above is the Windows workflow and stays valid there. On Linux, the Pr
 - Pack, sign and binarize with dayzmake, the DayZ build of armake2, at a pinned release; which version to pin and how to install it are in `skills/dayz-build-pbo/references/dayzmake-linux.md`, "Get the right dayzmake". Use `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. The original armake2 is no substitute: it is built for Arma, its V3 file hash omits `*.c` files (dayzmake includes them) and it lacks the DayZ-only functions of dayzmake. `skills/_shared/scripts/dayz-mod-pack.sh` wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`; its notes are in that same file). A textured cube binarized with dayzmake `v1.0.0` on 2026-11-03 matched BI binarize from a `P:` root byte for byte; this is not an in-game ODOL check. See the shared Linux and Proton notes (`skills/_shared/linux-proton.md`) for setup and limits.
 - `P:\` is a plain directory mapped by `dayz-proton.sh init <dir>` (the script is `skills/_shared/scripts/dayz-proton.sh`); a `P:\<Mod>\...` path in this skill is `<dir>/<Mod>/...`.
 - Object Builder and TexView run under Proton: `dayz-proton.sh gui ObjectBuilder <p3d>`, `gui TexView <paa>`. Object Builder opened and displayed a model; editing in it was not exercised. Offline checks (`py3d`, the model preflight tool under `scripts/tools/dayz-model-preflight/`, `dayz-3d-viewer`) are Python and run natively.
-- In-game checks: the Linux notes of the `dayz-test-ingame` skill (`skills/dayz-test-ingame/references/linux.md`).
+- In-game checks: the Linux notes of the `/dayz-launch-test` skill (`skills/dayz-launch-test/references/linux.md`).

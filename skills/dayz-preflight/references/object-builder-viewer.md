@@ -41,4 +41,4 @@ A second install (DayZ Tools with game 1.30.164289) showed a different broken st
 
 Nobody has measured that Buldozer opens a custom `.p3d` together with its `.rvmat` files. Until that is measured, do not make "preview in Buldozer" a visual gate in the model or vehicle skills. This check only tells you whether the viewer can start.
 
-On DayZ 1.30 the check itself is unchanged; see `dayz-1-30.md` for the `-cacheP3D` option that goes with Buldozer work. On Linux the key lives in the tools prefix's registry and the check was not run; see `linux.md`.
+On DayZ 1.30 the check itself is unchanged; see `dayz-1-30.md` for the `-cacheP3D` option that goes with Buldozer work. On Linux the key lives in the tools prefix's registry and the check was not run; see `skills/_shared/linux-proton.md`, section 3.

@@ -206,7 +206,7 @@ Design note: `OnCEUpdate` is marked obsolete in favour of `OnCEIterate` (`P:\scr
 
 ## Sandstorm: a postprocess material, not a particle material
 
-The weather class `Sandstorm` names three sound sets and one particle path, `particlePath="Graphics/Particles/sandstorm/sandstorm"` (`P:\DZ\data\config.cpp:1540`).
+The weather class `Sandstorm` names three sound sets and one particle path, `particlePath="Graphics/Particles/sandstorm/sandstorm"` (`P:\DZ\data\config.cpp:1540`). The sound sets are listed in the audio pack, `skills/_shared/audio-fx/effects-wiring.md`, "Weather sounds".
 
 `sandstorm.emat` is not a `Particle` or `ParticleSprite` material:
 

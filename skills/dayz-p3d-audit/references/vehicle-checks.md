@@ -2,7 +2,7 @@
 
 What `/dayz-p3d-audit` checks on a wheeled vehicle body, and the vehicle faults it does not check that an auditor has to measure by hand. Killers 11 to 13 continue the numbering of `p3d-killers.md`. The full vehicle build rules (config, `model.cfg`, structural parity with vanilla, the wider list of vehicle killers) belong to the vehicles pack, `_shared/vehicles/` (the measured field notes on these killers are `skills/_shared/vehicles/p3d-vehicle-killers.md`, and structural parity is `skills/_shared/vehicles/vehicle-structural-parity.md`); this file covers only what an audit of the `.p3d` can see.
 
-**Not yet checked on `P:\`**, except where a vanilla file is cited: the faults below were measured in game on custom vehicles (the LFQuad quad bike, built against a working third-party quad as its reference, the SUB_BRZ car, an HH-60G helicopter) and their fixes confirmed there.
+**Not yet checked on `P:\`**, except where a vanilla file is cited: the faults below were measured in game on custom vehicles (the TestQuad quad bike, built against a working third-party quad as its reference, the TestCoupe car, an HH-60G helicopter) and their fixes confirmed there.
 
 ## What the script checks
 
@@ -31,7 +31,7 @@ The engine resolves the wheel slot→model binding via the selection named by
 **FireGeometry LOD** and contain the wheel-proxy faces. If it exists only in visual LODs,
 the slot binds as inventory but the wheel never simulates: `WheelCountPresent()=0` while
 `WheelCount()=N`, with NO RPT error — chassis bounces/sinks, wheels mount as items but do
-not rotate, RPM climbs while speedo stays ≈0. The fix (confirmed in game on LFQuad,
+not rotate, RPM climbs while speedo stays ≈0. The fix (confirmed in game on TestQuad,
 wheelPresent 0→4): alias the wheel-proxy face ALSO into a selection with the exact name
 `CfgSlots.selection` expects — additive, preserving the original selection. Automated:
 `check_wheel_slot_firegeo` in `audit_p3d.py` (runs only with `--config` or a
@@ -42,7 +42,7 @@ wheelPresent 0→4): alias the wheel-proxy face ALSO into a selection with the e
 If you audit a wheel proxy `.p3d` (the separate file referenced by `ProxyVehiclePart`
 in `CfgNonAIVehicles`, attached to the body via `inventorySlot`) and its Memory LOD
 contains only `ce_center`, it differs from most vanilla wheels. The common
-pattern (the vanilla scan below, and the working third-party quad wheel LFQuad was
+pattern (the vanilla scan below, and the working third-party quad wheel TestQuad was
 compared with on 2026-05-29) is 5 mem-points:
 `ce_center`, `ce_radius`, `boundingbox_min`, `boundingbox_max`, `invview`. On the quad
 measured, the wheel collider behaved as if built from those points; without the 4
@@ -93,7 +93,7 @@ if is_wheel_proxy:  # set from config.cpp, never from the file name alone
 X axial, Z with intentional min/max inversion). Reference values + scaling rules in
 `skills/_shared/vehicles/vehicle-structural-parity.md`, the 2026-05-29 addendum on
 wheel proxy Memory anatomy. Bake with py3d; its write quirks are in
-`skills/dayz-animation-pipeline/references/py3d-1.0.0-quirks.md`. The 5 mem-points
+`skills/_shared/py3d-mlod-notes.md` ("Writing a `.p3d` from a script"). The 5 mem-points
 do NOT carry weight — each is its own one-vertex Selection.
 
 **Caveat (Visual LOD diameter vs collider size)**: on the quad measured, the wheel collider
@@ -108,7 +108,7 @@ wheel proxy passed ALL PASSED with only `ce_center`, and the bug surfaced 4 sess
 later as a bounce blocker. The script still does not check it, so surface this proactively when the symptom is "vehicle bounces on
 spawn / contact=0 / speedo diverges to ±inf / delete-outside-world".
 
-Measured on the LFQuad bounce diagnostic of 2026-05-29. See also Rule 19 of the model
+Measured on the TestQuad bounce diagnostic of 2026-05-29. See also Rule 19 of the model
 pipeline skill (`dayz-model-pipeline`).
 
 ---
@@ -117,7 +117,7 @@ pipeline skill (`dayz-model-pipeline`).
 
 A wheeled vehicle whose wheels sit too LOW relative to the body rides with its belly too close to the ground. **Symptom:** `wheelCount=N wheelPresent=N` OK but `contact=0` permanently on all wheels even at rest; chassis bounces elastically on terrain; vehicle falls unbalanced / rotates. No RPT error -- silent killer.
 
-3 working references (a third-party quad, vanilla `offroadhatchback`, `civiliansedan`) all place the **tire bottom ~ at/above the model origin** (never negative) and the **chassis floor ~ at/above the wheel-center line**. Anti-example: LFQuad shipped with tire bottom Y=-0.114, chassis floor Y=0.120 (0.107 BELOW the wheel center 0.227) -- 4+ iterations of geometry fixes never measured this because the invariant was written down only as prose, with no check behind it.
+3 working references (a third-party quad, vanilla `offroadhatchback`, `civiliansedan`) all place the **tire bottom ~ at/above the model origin** (never negative) and the **chassis floor ~ at/above the wheel-center line**. Anti-example: TestQuad shipped with tire bottom Y=-0.114, chassis floor Y=0.120 (0.107 BELOW the wheel center 0.227) -- 4+ iterations of geometry fixes never measured this because the invariant was written down only as prose, with no check behind it.
 
 **Check** (measure, don't eyeball; compare to a debinarized working reference):
 ```python
@@ -139,7 +139,7 @@ if chassis_floor < wheel_center_Y - 0.05:
 
 A working DayZ car's Geometry LOD is a **compound of several closed convex components**, each with mass, on a LOD that carries the `autocenter=0` named property — never a single monolithic hull holding all the mass. This is construction practice, not a diagnosis. The classic **launch/bounce at spawn** (the chassis shoots upward the instant it is created, tumbles, gains energy, and the engine deletes it with `Will delete object with !finite or outside world coords`, no RPT error) was traced in game to a `#Mass#` tag on a LOD other than the Geometry LOD, not to a one-component Geometry LOD. For that symptom, run the mass-only-Geometry check first (see the correction below and "`#Mass#` must live only in the Geometry LOD").
 
-Original hypothesis, which did not hold (see the correction below): PhysX resolves spawn interpenetration in a single step, which gives a large separating impulse, and the sharp edges of a tight monolithic hull turn that impulse into a large moment that sends the body into the air. Mass concentrated in one component gives a low inertia tensor, so the impulse becomes a runaway tumble: the mass distribution sets the moment of inertia. Anti-example: LFQuad shipped with **1** chassis component (`component01`) holding ~90% of mass, Izz 128.5 vs 350.7 on the working reference quad (37%); that reference quad has **23 chassis components + 4 hubs**.
+Original hypothesis, which did not hold (see the correction below): PhysX resolves spawn interpenetration in a single step, which gives a large separating impulse, and the sharp edges of a tight monolithic hull turn that impulse into a large moment that sends the body into the air. Mass concentrated in one component gives a low inertia tensor, so the impulse becomes a runaway tumble: the mass distribution sets the moment of inertia. Anti-example: TestQuad shipped with **1** chassis component (`component01`) holding ~90% of mass, Izz 128.5 vs 350.7 on the working reference quad (37%); that reference quad has **23 chassis components + 4 hubs**.
 
 The construction rule for a car's Geometry LOD: convex components; every component's vertices carry weight, and the vehicle's total mass and centre of mass are computed from those weights; wheel hubs have their own components. The Object Builder checklist for a car body is: convex components, `autocenter` value 0, a mass applied on **all** components, wheel hubs present, centre of mass checked. See `skills/_shared/vehicles/vehicle-structural-parity.md`, the 2026-05-30 addendum on car-build invariants.
 
@@ -165,7 +165,7 @@ if abs(com.x) > 0.05:
 
 Note `autocenter=0` is already Killer #3, which the script applies to any config.cpp class whose model is this p3d and that sets `autocenter = 0`; on a **vehicle**, whatever its config.cpp says, the Geometry LOD must carry it as a named property too (the checklist above). MLOD named properties belong to a LOD, not to a selection or component, so one property covers every component; without it the engine recomputes the origin and shifts the CoM relative to the mass you assigned. The fix couples with Killer #12 (ride-height): rebuild the chassis as multiple convex components with distributed mass AND correct vertical placement together — raising one without the other creates a new anomaly. The causal link to the launch was tested in game and did not hold (see the correction below); the construction divergence vs 3 references is verified.
 
-> **Correction (2026-06-02, verified in-game):** the `[verify in-game]` above was settled and the causal attribution did NOT hold. The CONFIRMED root cause of the LFQuad spawn-launch/bounce was a spurious `#Mass#` tagg (all zeros) on a non-Geometry LOD (FireGeometry) → AddonBuilder/binarize baked the mass of THAT LOD → deployed ODOL with `CoM=(0,0,0)` and zero inertia → `ECE_PLACE_ON_SURFACE` spawned the vehicle ~0.48 m below ground → PhysX ejection. It was **not** the monolithic Geometry nor the low inertia tensor. Multi-component Geometry with distributed mass remains **best-practice** (ride-height, collision, convex-component correctness, the checklist above), but it is NOT the cause of the spawn-launch — keep this Killer as a recommended construction practice, not as the spawn-launch diagnosis. Fix = strip `#Mass#` from every LOD that is not the Geometry LOD (set `point.mass = None`, not `0.0`). See "`#Mass#` must live only in the Geometry LOD" below, and the mirrored correction in `skills/_shared/vehicles/vehicle-structural-parity.md`, the 2026-05-30 addendum. First diagnose with the mass-only-Geometry check (it catches the real cause in seconds) before suspecting the chassis-component count.
+> **Correction (2026-06-02, verified in-game):** the `[verify in-game]` above was settled and the causal attribution did NOT hold. The CONFIRMED root cause of the TestQuad spawn-launch/bounce was a spurious `#Mass#` tagg (all zeros) on a non-Geometry LOD (FireGeometry) → AddonBuilder/binarize baked the mass of THAT LOD → deployed ODOL with `CoM=(0,0,0)` and zero inertia → `ECE_PLACE_ON_SURFACE` spawned the vehicle ~0.48 m below ground → PhysX ejection. It was **not** the monolithic Geometry nor the low inertia tensor. Multi-component Geometry with distributed mass remains **best-practice** (ride-height, collision, convex-component correctness, the checklist above), but it is NOT the cause of the spawn-launch — keep this Killer as a recommended construction practice, not as the spawn-launch diagnosis. Fix = strip `#Mass#` from every LOD that is not the Geometry LOD (set `point.mass = None`, not `0.0`). See "`#Mass#` must live only in the Geometry LOD" below, and the mirrored correction in `skills/_shared/vehicles/vehicle-structural-parity.md`, the 2026-05-30 addendum. First diagnose with the mass-only-Geometry check (it catches the real cause in seconds) before suspecting the chassis-component count.
 
 ## Checks the script does not run (measure by hand)
 

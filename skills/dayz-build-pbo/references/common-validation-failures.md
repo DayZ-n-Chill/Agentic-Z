@@ -53,6 +53,5 @@ hiddenSelectionsMaterials[] = {"mat1.rvmat", "mat2.rvmat"};   // 2 materials (on
 ```
 
 ### FAIL: Binarizer stops — member defined multiple times (DayZ 1.30)
-Until 1.29, duplicate **properties** inside one class were silent and the last one won. Since 1.30 the binarizer stops when a member is defined more than once in a config file; `build.py` prints its `Member already defined` line from AddonBuilder's log.
-**Cause:** The same member (`scope`, `displayName`, `weight`, `hiddenSelections[]`, an inner class, …) appears twice in one class body. Duplicate **class names** were already a FAIL (`pre-build-checks.md` check 2); duplicate **members** are now a hard binarize stop too.
-**Fix:** Delete or merge the extra assignment so each member appears once per class block. Then rebuild. Detail: `dayz-1-30-pbo-build.md`.
+**Cause:** The same member (`scope`, `displayName`, `weight`, `hiddenSelections[]`, an inner class, …) appears twice in one class body; `build.py` prints binarize's `Member already defined` line from AddonBuilder's log.
+**Fix:** Delete or merge the extra assignment so each member appears once per class block, then rebuild. What changed in 1.30 and how to audit for it: `dayz-1-30-pbo-build.md`.
