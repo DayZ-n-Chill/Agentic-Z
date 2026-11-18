@@ -1,7 +1,7 @@
 """blender_helpers.py — verified helper library for building models in Blender
 (the rules are in skills/_shared/models/blender-assembly.md).
 
-Version: 2.1 (2026-06-10)
+Version: 2.1
 Convention: execute this whole file via the Blender MCP at session start instead
 of re-pasting functions. A new helper enters this library only after it passes
 a test in Blender (see "Helper library" in skills/_shared/models/blender-assembly.md).

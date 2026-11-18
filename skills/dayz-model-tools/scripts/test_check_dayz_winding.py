@@ -4,7 +4,7 @@ Run from the repository root:
     python -m pytest -q -p no:cacheprovider skills/dayz-model-tools/scripts/test_check_dayz_winding.py
 
 The fixtures in winding_fixtures/ are the three MLODs of the inward-winding in-game test,
-byte for byte (DayZDiag 1.29.163709, 2026-10-01: b and a solid, c inside-out; a is mirrored), plus b with its
+byte for byte (DayZDiag 1.29.163709: b and a solid, c inside-out; a is mirrored), plus b with its
 normals negated. make_fixtures.py regenerates them with py3d >= 1.8.0. Each test ties a verdict line to the
 measurement it reports - the volume sign and the agreement - so a test cannot pass on a phrase with the
 sign turned.

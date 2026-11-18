@@ -9,14 +9,14 @@ ES_MODULO_FLOAT_CONTEXT_RULE_ID = "ES-MODULO-FLOAT-CONTEXT"
 # `%` compiles between integers, but not inside an arithmetic expression that
 # also holds a float literal, even when both operands of `%` are integers:
 #
-#   `((g % 5) - 2) * 7.0`, DayZDiag 1.29, 2026-09-28:
+#   `((g % 5) - 2) * 7.0`, DayZDiag 1.29:
 #     SCRIPT (E): fx_probe3d.c,255: Unknown operator '%'
 #     SCRIPT (E): Can't compile "Mission" script module!
-#   `float ox = (n % 4) * 0.7 - 1.05;`, DayZ 1.30 (Exp), 2026-09-24: the
+#   `float ox = (n % 4) * 0.7 - 1.05;`, DayZ 1.30 (Exp): the
 #     same error, and the mission did not compile.
 #   `float x = (cell % 103) * 150 + 150 * 0.5;` and
 #     `float x = (cell % SIDE) * STEP + STEP * 0.5;` (static const float STEP,
-#     static const int SIDE), DayZDiag 1.30.164289, 2026-11-09, each in a
+#     static const int SIDE), DayZDiag 1.30.164289, each in a
 #     mod's 4_World script:
 #     SCRIPT (E): @"MCPProbeD35aB/scripts/4_World/mcpprobed35ab.c,6": Unknown operator '%'
 #     SCRIPT (E): Can't compile "World" script module!

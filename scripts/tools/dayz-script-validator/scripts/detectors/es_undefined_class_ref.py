@@ -10,7 +10,7 @@ from shared.vanilla_patches import VANILLA_PATCHES
 ES_UNDEFINED_CLASS_REF_RULE_ID = "ES-UNDEFINED-CLASS-REF"
 
 
-# Observed on 2026-09-19 on a mod: a change deletes a 4_World file (class
+# Observed on a mod: a change deletes a 4_World file (class
 # FX_ExternalStagingSortPlanner) while a 5_Mission file still calls
 #
 #   int sortResult = FX_ExternalStagingSortPlanner.Sort(player, source);
@@ -264,7 +264,7 @@ def _template_spans(stripped, spaced=False):
 
     A comma between template arguments (`Param3<bool, vector, int>`,
     `typedef map<string, ref array<string>> Name;`) is not a declarator
-    separator; vanilla control 2026-10-13 found 104 (1.29) and 109 (1.30)
+    separator; a vanilla control run found 104 (1.29) and 109 (1.30)
     such false findings of ES-VARIABLE-NAMED-AS-TYPE before this check. A
     `<` opens template arguments only as _template_end reads them, so the
     comparison in `bool first = a < b, Debug = false;` hides no declarator.
@@ -434,7 +434,7 @@ def vanilla_definitions(vanilla_root):
 def vanilla_variables(vanilla_root):
     """Class-like variable names declared in vanilla.
 
-    Measured 2026-09-19: half of the vanilla scan (0.62 of ~1.3 s). Only an
+    Measured: half of the vanilla scan (0.62 of ~1.3 s). Only an
     unresolved static-call receiver needs it, which is rare, so it is lazy.
     """
     names = set()
@@ -802,7 +802,7 @@ def check_es_undefined_class_ref(
             % (", ".join(uncovered), "it" if len(uncovered) == 1 else "them", shown)
         )
     elif not direct and not addon_is_vanilla:
-        # Observed on 2026-09-19 across 161 addon roots under P:\: three mods
+        # Observed across 161 addon roots under P:\: three mods
         # (six trees) with `requiredAddons[]={};` use CF, Expansion or another mod's
         # classes outside any #ifdef. They can only compile next to those mods,
         # and the empty list does not say which. Empty is "not declared", not

@@ -3,10 +3,10 @@ r"""CfgPatches names that Bohemia's vanilla data declares.
 ES-UNDEFINED-CLASS-REF treats a requiredAddons[] entry as vanilla, and so as
 covered by the vanilla scripts tree, only when it is one of these names. A
 prefix test is not enough: mods name their own patches DZ_* too (four found
-in the config.cpp files under P:\ on 2026-10-03, among them
+in the config.cpp files under P:\, among them
 DZ_Expansion_AI_Weapons_Debug).
 
-Measured on 2026-10-03 with declared_patches() over every config.cpp: 206
+Measured with declared_patches() over every config.cpp: 206
 names in P:\DZ (DayZ 1.29.0.163451), DZ_Scripts from the scripts tree's own
 config.cpp, and 202 in the extracted 1.30.164014 Exp data, 211 together. A
 vanilla patch missing here is read as a dependency that no scanned root

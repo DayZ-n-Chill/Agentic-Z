@@ -15,13 +15,13 @@ ES_RESERVED_WORD_IDENTIFIER_RULE_ID = "ES-RESERVED-WORD-IDENTIFIER"
 # whole script module from compiling, and the error rarely names the word.
 # Only words whose use as a name failed in a real compile are listed:
 #
-#   sealed  parameter `vector sealed`, DayZDiag 1.29.163709, 2026-10-02:
+#   sealed  parameter `vector sealed`, DayZDiag 1.29.163709:
 #           `Expected name, not a keyword 'sealed'`, then
 #           `Can't compile "World" script module!`
-#   local   local `vector local;`, DayZDiag 1.30.164014 (Exp), 2026-09-28:
+#   local   local `vector local;`, DayZDiag 1.30.164014 (Exp):
 #           `Broken expression (missing ';'?)`, then
 #           `Can't compile "Mission" script module!`
-#   owned   local `EntityAI owned;`, 2026-07-20: `Broken expression (missing
+#   owned   local `EntityAI owned;`: `Broken expression (missing
 #           ';'?)` (skills/_shared/enscript/depth/review-and-troubleshooting.md)
 #   out     a local named `out`: `Broken expression (missing ';'?)`
 #           (skills/_shared/enscript/depth/compiler-traps.md, "Keywords and file level

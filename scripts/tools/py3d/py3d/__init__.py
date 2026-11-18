@@ -119,7 +119,7 @@ SHADOWVOLUME_RESOLUTION_MAX = 2.0e4
 #: The rotation by -90 degrees about X, (x,y,z) -> (x,z,-y), det=+1.
 #: It is NOT a Blender -> DayZ conversion: Blender is right-handed and DayZ
 #: left-handed, so any det=+1 map from one to the other MIRRORS the model
-#: (measured in game 2026-10-01). For geometry authored in Blender call
+#: (measured in game). For geometry authored in Blender call
 #: blender_to_dayz(). This rotation is right where the mirror cancels out,
 #: e.g. to undo a det=+1 DayZ -> Blender export such as (x,y,z) -> (x,-z,y).
 #: Until 1.8.0 it was published as BLENDER_TO_DAYZ, which is now a
@@ -150,7 +150,7 @@ def __getattr__(name):
             "py3d.BLENDER_TO_DAYZ is deprecated: it is the det=+1 rotation "
             "(x,y,z)->(x,z,-y), and a model authored in Blender "
             "(right-handed) comes out MIRRORED in DayZ (left-handed) "
-            "through it - measured in game 2026-10-01. For Blender-authored "
+            "through it - measured in game. For Blender-authored "
             "geometry call py3d.blender_to_dayz(p3d) instead of "
             "p3d.transform(...). The value is unchanged; to keep this exact "
             "rotation, e.g. to undo a det=+1 (x,-z,y) export, use "
@@ -1312,7 +1312,7 @@ def _check_component_naming(lod, lod_index, kind_label):
     """A collision LOD (Geometry, View or Fire) with faces of its own and
     no component selection -> ERR_COMPONENT_NAMING.
 
-    Measured in game (DayZDiag 1.29.163709, 2026-10-02; dayz-p3d-audit
+    Measured in game (DayZDiag 1.29.163709; dayz-p3d-audit
     killer #2): a 2 m box whose Geometry, View and Fire LODs had no
     component took no ray in geom, view or fire, missed the physics ray
     and let the player walk through, packed unbinarized and binarized,
@@ -1490,8 +1490,8 @@ def _check_component_coverage(lod, lod_index, kind_label):
     every edge used twice, once each way, around a volume; a flat
     double-sided sheet is not one) with no face and no point in any
     component is a closed part left out whole; the ERROR counts those
-    parts and their faces. Measured in game (DayZDiag 1.29.163709,
-    2026-10-02; dayz-p3d-audit killer #8): beside a box in Component01, a
+    parts and their faces. Measured in game (DayZDiag 1.29.163709;
+    dayz-p3d-audit killer #8): beside a box in Component01, a
     second box in no component, in its Geometry, View and Fire LODs, took
     no ray in geom, view or fire and no physics ray, and the player walked
     through it; the same box as Component02 took every ray and stopped the
@@ -3351,7 +3351,7 @@ class P3D:
         non-Geometry LOD, which makes binarize bake CoM=(0,0,0)).
         Codes of the absolute winding check (_check_winding_absolute, run
         on every visual, Geometry, View and Fire LOD), added after the
-        August 2026 audit and present by 1.7.0; the release that added
+        adversarial audit and present by 1.7.0; the release that added
         them is not recorded: ERR_WINDING_VS_NORMALS,
         WARN_WINDING_NORMAL_MISMATCH, WARN_WINDING_EDGE_INCOHERENT, and WARN_WINDING_UNVERIFIABLE (no
         face has both a non-degenerate winding and a non-degenerate
@@ -3423,7 +3423,7 @@ def blender_to_dayz(p3d):
     reverses every face for a det<0 matrix, which is right for a reflection
     inside one frame and wrong here; this function undoes it.
 
-    Measured in game (DayZDiag 1.29.163709, 2026-10-01): one chiral model,
+    Measured in game (DayZDiag 1.29.163709): one chiral model,
     an "F" in relief on a plate, written three ways and binarized with
     AddonBuilder.
 

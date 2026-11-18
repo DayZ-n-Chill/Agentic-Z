@@ -1,7 +1,7 @@
 """Regression tests for seanim_export.py: viewer bone frames -> DayZATool SEAnim.
 
 Expected values are written out by hand from the Route C conversion calibrated
-2026-06-29 on the JD rig: rotation (x,y,z,w) -> (-y,-z,x,w), rest position
+on the JD rig: rotation (x,y,z,w) -> (-y,-z,x,w), rest position
 (x,y,z) -> (y,z,-x) in cm. The FBX rig built by build_rig_dayz.py carries the
 same skeleton turned 90 deg about Z, (x,y,z) -> (y,-x,z), so one pose authored
 on either rig must come out as the same SEAnim.

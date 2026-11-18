@@ -1,4 +1,4 @@
-# QUARANTINED 2026-08-18 - not imported by script_validator.py and not executed.
+# QUARANTINED - not imported by script_validator.py and not executed.
 # The premise is FALSE. `DT_*` is not "only a comment in object.c": the same tree
 # CALLS it, in shipped code with no #ifdef -
 #   3_game/entities/entityai.c:4153

@@ -1,4 +1,4 @@
-# QUARANTINED 2026-08-18 - not imported by script_validator.py and not executed.
+# QUARANTINED - not imported by script_validator.py and not executed.
 # The premise is FALSE. `string + bool` compiles: vanilla concatenates
 # bool-returning calls into debug strings, outside any #ifdef -
 #   3_game/entities/entityai.c:3300  text += "Disabled: " + GetIsSimulationDisabled()

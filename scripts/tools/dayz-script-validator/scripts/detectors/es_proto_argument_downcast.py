@@ -37,7 +37,7 @@ ES_PROTO_ARGUMENT_DOWNCAST_RULE_ID = "ES-PROTO-ARGUMENT-DOWNCAST"
 # 'Object.Cast'", "Types 'IEntity' and 'Object' are unrelated" and "Cannot
 # convert 'IEntity' to 'Object' for argument '6' to method 'RaycastRV'", and
 # the World module did not compile. The compiler counts arguments from 0.
-# DayZDiag 1.30.164289 (2026-11-09, a mod's 4_World
+# DayZDiag 1.30.164289 (a mod's 4_World
 # script) refused that call again, and refused an Object passed to the
 # EntityAI parameter 0 of ItemPreviewWidget.SetItem, the shape this rule
 # had found in a mod:

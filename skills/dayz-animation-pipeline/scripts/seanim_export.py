@@ -2,19 +2,19 @@
 """Convert an authoring-viewer anim JSON (per-frame per-bone LOCAL quaternions)
 into a SEAnim file (the open bridge format to DayZ's .anm via DayZATool).
 
-Bone-frame convention (2026-10-02):
+Bone-frame convention:
   The viewer stores each bone's rotation and rest offset in its rig's
   bone-local frame, inside a right-handed Y-up world. DayZ is left-handed and
   its .anm/SEAnim bone-local frame puts a chain child on X (finger phalanx
   offsets are (length,0,0) in a DayZATool-extracted vanilla SEAnim).
   seanim_rot/seanim_pos_cm apply one reflection per rig family, read from the
   rig's rest offsets (detect_rig_frame); any other rig is refused:
-    jd  - JD Master Rig (jd_dayz.json): calibrated 2026-06-29, exact offline.
+    jd  - JD Master Rig (jd_dayz.json): calibrated, exact offline.
     fbx - BI FBX rig built by build_rig_dayz.py (rig_dayz.json): derived from
-          the calibrated map offline; in game (2026-10-02) one LeftArm pose
+          the calibrated map offline; in game (DayZDiag 1.29.163709) one LeftArm pose
           played as authored through it and wrong through the jd map.
   A root bone (no parent) is relative to the viewer world, which neither map
-  covers. In game (a custom weapon, 2026-06-30) the jd map played a full-body action
+  covers. In game (a custom weapon) the jd map played a full-body action
   wrong (head and body needed Route A). In-game playback is the gate.
 --rest-pose takes a DayZATool-extracted vanilla SEAnim of the same slot and
 emits only the bones it contains (that mask fixed the flop in game). Its
@@ -42,14 +42,14 @@ UNIT_CM = 100.0  # rig meters -> SEAnim cm (verified against the finger offsets 
 
 # Viewer bone-local frame -> DayZATool .seanim bone-local frame. Each map is a change of
 # basis with det -1: rest offsets p -> M p, quaternion vector parts v -> -M v, w kept.
-#  jd:  CALIBRATED 2026-06-29 against a DayZATool-extracted reference (one fire clip: its .txa via
+#  jd:  CALIBRATED against a DayZATool-extracted reference (one fire clip: its .txa via
 #       plugin vs .anm extract): EXACT to 0.00deg over 73 bone/frame pairs.
 #       rot (x,y,z,w) -> (-y,-z,x,w); pos (x,y,z) -> (y,z,-x).
 #  fbx: the FBX rig's bone frames are the JD frames turned 90deg about Z, q_fbx = (y,-x,z,w)_jd
 #       (113/114 rest rotations within 1deg, the root excepted), so this is the calibrated map
-#       after that turn. DERIVED 2026-10-02, offline: rest offsets through it match DayZATool-
+#       after that turn. DERIVED offline: rest offsets through it match DayZATool-
 #       extracted vanilla SEAnims (77/77 bones within 5deg, 1.2% longer) and rest rotations land
-#       within 0.87deg of where the jd map lands the JD rig; no rotation pair. In game 2026-10-02
+#       within 0.87deg of where the jd map lands the JD rig; no rotation pair. In game
 #       (DayZDiag 1.29.163709) LeftArm keyed straight ahead on the FBX rig came out forward through
 #       this map and out to the side through the jd map: one bone, rotations only
 #       (skills/_shared/animation/weapon-anim-viewer.md, "Bone frame maps per rig").

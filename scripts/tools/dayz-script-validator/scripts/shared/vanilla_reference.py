@@ -170,7 +170,7 @@ def vanilla_global_class_citation(name):
 
 
 # Method names verified ABSENT from the entire vanilla script tree (0
-# occurrences each; host-side grep over P:\scripts, 2026-06-10). Calling one
+# occurrences each; host-side grep over P:\scripts). Calling one
 # compile-fails with `Undefined function`. Used by ES-NONEXISTENT-METHOD.
 # Value = fix message with the verified alternative.
 VANILLA_NONEXISTENT_METHODS = {

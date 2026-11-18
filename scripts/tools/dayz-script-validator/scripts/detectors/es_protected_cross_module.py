@@ -6,8 +6,8 @@ ES_PROTECTED_CROSS_MODULE_RULE_ID = "ES-PROTECTED-CROSS-MODULE"
 
 # Enforce enforces `protected` ACROSS script modules: a class compiled into
 # 5_Mission cannot read a protected member declared by a class compiled into
-# 4_World, even though Mission sees World's types. Verified at runtime on
-# 2026-09-17 with a disposable probe built into a PBO and booted on a dedicated
+# 4_World, even though Mission sees World's types. Verified at runtime
+# with a disposable probe built into a PBO and booted on a dedicated
 # server:
 #
 #   SCRIPT (E): fx_probeprotectedreader.c,13:

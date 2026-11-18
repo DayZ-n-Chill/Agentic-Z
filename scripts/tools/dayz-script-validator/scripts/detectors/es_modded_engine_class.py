@@ -14,7 +14,7 @@ ES_MODDED_ENGINE_CLASS_RULE_ID = "ES-MODDED-ENGINE-CLASS"
 #   Can't compile "Game" script module!
 #   <file>.c(9): Engine class 'Transport' cannot be modded.
 #
-# DayZDiag 1.30.164200 (a mod, 2026-10-24), scripts/4_World, the
+# DayZDiag 1.30.164200 (a mod), scripts/4_World, the
 # server script log of two boots:
 #
 #   <file>.c,315: Engine class 'DayZPlayerInventory' cannot be modded.

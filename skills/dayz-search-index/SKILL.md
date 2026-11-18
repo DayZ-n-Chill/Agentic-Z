@@ -38,7 +38,7 @@ After a build, restart Claude Code so the MCP server opens the new index.
 
 ## What it indexes
 
-The indexer walks `P:\scripts`, `P:\gui`, `P:\dz`, `P:\core`, `P:\graphics` and `P:\languagecore` and picks up `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`. Run `--status` to see the current chunk, file and token counts (a full build of vanilla came to 61,757 chunks when counted on 2026-10-22, with XML, JSON and CSV windowed too).
+The indexer walks `P:\scripts`, `P:\gui`, `P:\dz`, `P:\core`, `P:\graphics` and `P:\languagecore` and picks up `.c .cpp .hpp .h .cfg .layout .rvmat .xml .json .csv`. Run `--status` to see the current chunk, file and token counts (a full build of vanilla came to 61,757 chunks when counted, with XML, JSON and CSV windowed too).
 
 How each file type is chunked, and what an index built by an older version is missing, is in [references/chunking.md](references/chunking.md).
 

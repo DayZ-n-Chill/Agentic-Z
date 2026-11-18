@@ -29,7 +29,7 @@ order, and the frame comes out rotated. A canonical triangle has three distinct
 angles, so the assignment has one answer. Rotating a canonical triangle keeps its
 angles, so canonical triangles carry an exact frame through a write-back.
 
-Engine frame against this frame (measured in game, 2026-06-24): the
+Engine frame against this frame (measured in game): the
 engine renders the triangle as h(R) = P'.R, with
 P' = [[-1,0,0],[0,0,1],[0,1,0]], relative to derive_frame. derive_frame is left
 as it is because callers use it as the raw frame; bake canonical_triangle(anchor, P')

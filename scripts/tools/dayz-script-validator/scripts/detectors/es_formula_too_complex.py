@@ -6,7 +6,7 @@ ES_FORMULA_TOO_COMPLEX_RULE_ID = "ES-FORMULA-TOO-COMPLEX"
 
 
 # One statement that joins many terms with `+` stops the script module with
-# "Formula too complex". Measured on DayZDiag 1.30.164289, 2026-11-09, in a
+# "Formula too complex". Measured on DayZDiag 1.30.164289, in a
 # mod's 4_World script, with one statement on one
 # line that alternates a string literal, an int, a string literal and a
 # float's ToString():

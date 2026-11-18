@@ -70,7 +70,7 @@ DEFAULT_NUM_CTX = 8192   # the factory default (262144) reserves KV cache for a 
 # Ollama: prompt_eval_count bills a single image and the model describes only one of the two.
 # Which one survives is not fixed -- it follows the prompt cache -- so a --reference call can
 # judge the REFERENCE and never see the render, and report it as a verdict on the render.
-# Measured 2026-08-16 on qwen3.5:27b and qwen3.8:27b at 8k/16k/32k num_ctx and from 558 to
+# Measured on qwen3.5:27b and qwen3.8:27b at 8k/16k/32k num_ctx and from 558 to
 # 2164 tokens per image, so it is neither a context budget nor a size budget. gemma4:26b is
 # unaffected. One pixel of difference restores both images (1100x1100 + 1099x1100: both
 # encoded and described, 5/5). The guard is on the images, not on the model name: an earlier
@@ -176,7 +176,7 @@ def ollama_chat(host: str, model: str, prompt: str, images: list[Path],
 
     think=False is not cosmetic: with thinking on, current models put the entire reply
     in message.thinking and return message.content EMPTY, so every call ends in a JSON
-    parse error and the tool produces no verdict at all (measured 2026-08-16 on both
+    parse error and the tool produces no verdict at all (measured on both
     judge models).
     """
     payload = {
@@ -237,7 +237,7 @@ def load_checklist(path: Path) -> list[dict[str, Any]]:
     utf-8-sig, not utf-8: PowerShell's Out-File / Set-Content -Encoding utf8
     emits a BOM on 5.1, and a checklist authored that way raised
     "Unexpected UTF-8 BOM" and killed the run. utf-8-sig reads both
-    (measured 2026-08-16).
+    (measured).
     """
     data = json.loads(path.read_text(encoding="utf-8-sig"))
     if not isinstance(data, list):

@@ -1,6 +1,6 @@
 """EXPERIMENTAL: drive a Terrain Builder instance this runner launched, by Win32 messages only.
 
-Status 2026-10-03: menus and standard file dialogs verified without taking focus after
+Status: menus and standard file dialogs verified without taking focus after
 launch (see README.md). Generate Layers, a real import and an end-to-end WRP export are
 NOT driven by this tool yet.
 

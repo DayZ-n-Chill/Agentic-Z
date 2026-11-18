@@ -1,4 +1,4 @@
-# QUARANTINED 2026-08-18 - not imported by script_validator.py and not executed.
+# QUARANTINED - not imported by script_validator.py and not executed.
 # The premise is FALSE. C-style casts DO exist in Enforce Script and vanilla uses
 # them in code that ships and compiles:
 #   1_core/proto/proto.c:312    a = (int)h << 24;        (h is float, set at :310)

@@ -1,5 +1,5 @@
-// Both shapes failed with "Unknown operator '%'": the first on DayZDiag 1.29
-// (2026-09-28), the second on DayZ 1.30 Exp (2026-09-24).
+// Both shapes failed with "Unknown operator '%'": the first on DayZDiag 1.29,
+// the second on DayZ 1.30 Exp.
 class FX_ProbeGrid
 {
     vector Cell(int g)

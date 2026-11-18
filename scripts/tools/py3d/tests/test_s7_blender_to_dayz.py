@@ -1,7 +1,7 @@
 """Blender -> DayZ: blender_to_dayz(), ROT_X_NEG90 and the deprecated
 BLENDER_TO_DAYZ.
 
-The fixture is the model of the in-game test of 2026-10-01 (DayZDiag
+The fixture is the model of the in-game test (DayZDiag
 1.29.163709): an "F" in relief on a plate, authored in Blender space -
 right-handed, Z up, front at -Y, faces counter-clockwise seen from outside
 and outward normals - written three ways and binarized with AddonBuilder:

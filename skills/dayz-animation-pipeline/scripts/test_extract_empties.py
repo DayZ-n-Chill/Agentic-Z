@@ -279,7 +279,7 @@ def test_a_failed_run_leaves_no_earlier_file_behind(
         tmp_path, monkeypatch, objects, import_error, read_only, stop):
     """Breaks if an earlier run's empties_armworld.json outlives a failed one:
     build_rig_dayz.py would build on it and the viewer fall back without a word.
-    The {} is the stand-in a session wrote by hand on 2026-10-02."""
+    The {} is the stand-in a session wrote by hand."""
     earlier = tmp_path / "empties_armworld.json"
     earlier.write_text("{}", encoding="utf-8")
     if read_only:

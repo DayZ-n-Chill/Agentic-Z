@@ -1,4 +1,4 @@
-"""The three critical defects the August 2026 adversarial audit found.
+"""The three critical defects the adversarial audit found.
 
 Each test was written to fail BEFORE its fix:
 

@@ -7,8 +7,8 @@ WHY THIS EXISTS
   wrong way only surface in game (inside-out: textures on the interior), and a wrong normal sign only as
   inverted lighting. This reads both offline, before AddonBuilder.
 
-THE CONVENTION IT CHECKS (the inward MLOD winding, measured in game 2026-10-01; dayz-p3d-audit "Absolute
-winding check", engine verdict 2026-09-07)
+THE CONVENTION IT CHECKS (the inward MLOD winding, measured in game on DayZDiag 1.29.163709; dayz-p3d-audit "Absolute
+winding check", engine verdict)
   In a DayZ MLOD the vertex-order cross product cross(v1-v0, v2-v0) and the stored shading normals both point
   away from the side meant to be seen: into the material, inward on a solid. py3d.blender_to_dayz() writes
   that. Per visual LOD:

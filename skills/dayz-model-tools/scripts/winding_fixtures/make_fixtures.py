@@ -2,8 +2,8 @@
 """
 make_fixtures.py - regenerate the fixtures of check_dayz_winding.py with py3d >= 1.8.0.
 
-The model is the one of the inward-winding in-game test (DayZDiag 1.29.163709,
-2026-10-01): an "F" in relief on a plate, authored in Blender space (right-handed, Z up, front -Y, faces
+The model is the one of the inward-winding in-game test (DayZDiag 1.29.163709):
+an "F" in relief on a plate, authored in Blender space (right-handed, Z up, front -Y, faces
 counter-clockwise seen from outside, outward normals); four closed boxes, 48 triangles. It is written the
 three ways the test wrote it, under the file names the test used:
 

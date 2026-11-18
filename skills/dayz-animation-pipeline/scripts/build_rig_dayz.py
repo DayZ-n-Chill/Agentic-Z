@@ -88,7 +88,7 @@ anchors={}
 for k,m in emp.items():
     R,tr=RT(m); Rd,td=to_dayz(R,tr); anchors[k]={"pos":[round(float(x),5) for x in td],"quat":quat(Rd)}
 
-# "space" was "dayz_yup_meters" until 2026-10-02; no script in this skill reads it.
+# "space" was once "dayz_yup_meters"; no script in this skill reads it.
 out={"space":"viewer_yup_rh_meters","align":{"scale":s,"translate":list(t)},"bone_order":order,
      "bones":bones_out,"anchors":anchors,"mesh":{"verts":mverts,"faces":rig['mesh']['faces'],"skin":skin}}
 json.dump(out,open(os.path.join(SCR,'rig_dayz.json'),'w'))

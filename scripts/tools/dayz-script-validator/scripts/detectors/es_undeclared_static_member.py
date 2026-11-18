@@ -46,7 +46,7 @@ _IDENT_RE = re.compile(r"[A-Za-z_]\w*")
 
 # Methods of Class, the implicit root: the ten that `class Class` declares at
 # 1_core/proto/enscript.c:10-114, the same lines in 1.29.0.163451 and
-# 1.30.164078 (read 2026-10-17); it declares no field. A vanilla tree, when
+# 1.30.164078; it declares no field. A vanilla tree, when
 # passed, adds the names of its own `class Class`.
 CLASS_ROOT_MEMBERS = frozenset({
     "IsInherited", "ClassName", "GetDebugName", "Type", "StaticType",

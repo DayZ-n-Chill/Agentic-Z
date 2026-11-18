@@ -283,7 +283,7 @@ def build_multilod_v2_p3d(m):
     return p3d
 
 
-# The model of the in-game Blender -> DayZ test of 2026-10-01: an "F" in
+# The model of the in-game Blender -> DayZ test (DayZDiag 1.29.163709): an "F" in
 # relief on a plate, in Blender space (x right, y depth with the front at
 # -y, z up), every quad counter-clockwise seen from outside with an outward
 # normal. The texture strings are the ones that test wrote, so the bytes

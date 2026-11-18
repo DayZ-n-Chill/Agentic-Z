@@ -3,7 +3,7 @@
 Why this exists instead of skill-creator/scripts/package_skill.py: that script's
 validator reads SKILL.md without an explicit encoding, so on Windows Python falls
 back to cp1252 and dies with UnicodeDecodeError on any em-dash, arrow or accent
-(verified 2026-07-27: 3 of 8 skills failed there). It also matters that the zip
+(verified: 3 of 8 skills failed there). It also matters that the zip
 entries use forward slashes -- PowerShell's CreateFromDirectory writes them with
 backslashes and the installer then cannot find "<name>/SKILL.md".
 
