@@ -4,7 +4,9 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 
 | Idea | Where it came up | Date |
 | --- | --- | --- |
-| Build Agentic-Z's own in-game test tool, written from scratch: a small in-game DayZ mod that carries out commands (spawn, teleport, drive a vehicle, raycast, camera and screenshot, read logs) and an MCP server in this repo that agents call, wired into `/dayz-launch-test` and `dayz-ingame-tester`. The engine facts are in `skills/dayz-launch-test/references/`. Next project; plan with `dayz-mod-architect` first. | Owner decision | 2026-11-18 |
+| A RestApi push channel for the `dayz-testbridge` (outbound HTTP from the mod, `P:\scripts\3_game\http\restapi.c`), so the host need not poll files; whether a diag client may use RestApi is not measured. | Test bridge plan, owner decision 6 | 2026-11-18 |
+| Linux support for the `dayz-testbridge`: the headless client under Proton, and screenshots without `PrintWindow`. | Test bridge plan, owner decision 7 | 2026-11-18 |
+| Checks files for `/dayz-gate ingame --test-bridge`: bridge commands with expected results, run as part of the gate. | Test bridge plan, owner decision 2 | 2026-11-18 |
 | Derive the seat roster in `skills/dayz-p3d-audit/scripts/audit_getin_wheels.py` from the car's `Crew` config, so it is right for four-seat cars and cars with no seat-back selections. | Vehicles review | 2026-11-17 |
 | A census script for the hidden-selection face ownership check and the light selection preflight the vehicle pack describes by hand. | Vehicles review | 2026-11-17 |
 | A PBO reader for the checks in section 5 of `skills/_shared/vehicles/build-packaging-and-debug.md` (completeness, build mode, baked wheel angle, stray drive letters); `scripts/tools/dayz-pbo-diff/` may cover part of it. | Vehicles review | 2026-11-17 |

@@ -92,6 +92,31 @@ def test_search_tools_work_in_clones_and_plugin_installs(path):
 
 
 @pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
+def test_testbridge_tools_work_in_clones_and_plugin_installs(path):
+    # The dayz-testbridge server is registered by the plugin (mcp__plugin_agentic-z_dayz-testbridge__*);
+    # a clone that declares it in its own .mcp.json sees mcp__dayz-testbridge__*. List both, like dayz-rag.
+    tools = set(_tools(path))
+    for tool in tools:
+        if tool.startswith("mcp__dayz-testbridge__"):
+            assert tool.replace("mcp__dayz-testbridge__", "mcp__plugin_agentic-z_dayz-testbridge__") in tools, tool
+        if tool.startswith("mcp__plugin_agentic-z_dayz-testbridge__"):
+            assert tool.replace("mcp__plugin_agentic-z_dayz-testbridge__", "mcp__dayz-testbridge__") in tools, tool
+
+
+def test_ingame_tester_drives_the_game_through_the_test_bridge():
+    # Plan task 14: the fallback in-game gate runs custom in-game checks through the
+    # dayz-testbridge tools and always stops the session it started.
+    sys.path.insert(0, str(REPO / ".claude" / "mcp" / "dayz-testbridge"))
+    server = importlib.import_module("server")
+    tools = set(_tools(AGENTS_DIR / "dayz-ingame-tester.md"))
+    names = {"list_commands", "session_start", "session_status", "session_stop", "command", "mark", "logs_since", "screenshot"}
+    assert {f"mcp__plugin_agentic-z_dayz-testbridge__{n}" for n in names} <= tools
+    assert "def build_app" in Path(server.__file__).read_text(encoding="utf-8")
+    text = (AGENTS_DIR / "dayz-ingame-tester.md").read_text(encoding="utf-8")
+    assert "`session_stop` always" in text and "in-game-check-validity.md" in text and "test-bridge.md" in text
+
+
+@pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
 def test_rag_agents_fall_back_to_rag_after_failed_greps(path):
     # The wiki (team.md) says every RAG-equipped specialist turns to RAG search
     # after two or three failed greps; an agent that drops that fallback keeps
@@ -140,7 +165,7 @@ def test_referenced_repo_files_exist(path):
 def test_referenced_agents_exist(path):
     text = path.read_text(encoding="utf-8")
     for ref in re.findall(r"`((?:dayz|figma)-[a-z-]+)`", text):
-        if ref == "dayz-rag":
+        if ref in ("dayz-rag", "dayz-testbridge"):  # the MCP servers under .claude/mcp/
             continue
         assert ref in AGENT_NAMES or (SKILLS_DIR / ref).exists(), f"{_ref_id(path)} names unknown agent {ref}"
 
@@ -356,8 +381,9 @@ def test_ingame_tester_matches_gate(tmp_path, monkeypatch):
     # The ingame CLI passes the module defaults to gate_ingame.
     seen = {}
 
-    def fake_gate_ingame(mod, project_dir, rt, deps, server, port, timeout, settle, ready_pattern):
+    def fake_gate_ingame(mod, project_dir, rt, deps, server, port, timeout, settle, ready_pattern, test_bridge=False):
         seen.update(timeout=timeout, settle=settle, ready=ready_pattern)
+        assert test_bridge is False, "gate.py ingame must not load the test bridge unless --test-bridge is given"
         return {"verdict": "PASS"}
 
     monkeypatch.setattr(GATE, "gate_ingame", fake_gate_ingame)

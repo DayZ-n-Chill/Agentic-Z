@@ -319,7 +319,7 @@ The skills say how to build something; the tools say whether it survived. An age
 | Need `.layout` text / color / image | `dayz-ui-lab` | Format parser; see the two-parser contract above |
 | Changing a linter rule, detector or parser | `vanilla_control.py` | Gate for linter authors, not a mod-cycle step |
 | Preview an MLOD `.p3d` / PAA / RVMAT | `dayz-3d-viewer` | HTML loads three.js 0.185.1 from a CDN; SWIZ, proxies and ViewPilot 1100 are documented gaps |
-| Verifying anything in-game | `/dayz-gate ingame`, `/dayz-launch-test`, `/dayz-logwatch` | The gate launches the mod and reads `script.log` and the RPT; anything beyond the logs is checked by a person in game |
+| Verifying anything in-game | `/dayz-gate ingame`, `/dayz-launch-test`, `/dayz-logwatch`, the `dayz-testbridge` MCP tools | The gate launches the mod and reads `script.log` and the RPT; spawning, driving, rays, camera and screenshots go through `dayz-testbridge` (`skills/dayz-launch-test/references/test-bridge.md`); held input, doors and key presses are still checked by a person in game |
 | Rebuilding or patching a PBO | `dayz-pbo-diff` | Payload SHA-256 per entry; between two builds a different `.p3d` entry proves nothing by itself |
 | Regenerating a terrain's navmesh | `dayz-navmesh-compare` | Structure, not bytes; verified only for one 12 288 m world in 12.5, 25 or 50 m tiles |
 | Driving Terrain Builder without the desktop | `dayz-terrain-builder-runner` | EXPERIMENTAL, Windows only: menus and file dialogs verified; Generate Layers, imports and WRP export not; a disposable instance only |

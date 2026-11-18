@@ -75,7 +75,7 @@ Beside the workflow skills above, the repo carries reference and tool skills for
 | Physics | pack `skills/_shared/physics/` | `dayz-physics-specialist` |
 | Sound | pack `skills/_shared/audio-fx/` | `dayz-audio-fx-specialist` |
 | AI | pack `skills/_shared/ai/` | `dayz-ai-specialist` |
-| Build and test | `/dayz-launch-test` (its `references/`, including the DayZ facts behind an in-game check), `/dayz-gate ingame`, `/dayz-logwatch`, `/dayz-import-mod` ("Studying a packed mod") | `dayz-build-engineer`, `dayz-ingame-tester` |
+| Build and test | `/dayz-launch-test` (its `references/`, including the DayZ facts behind an in-game check), `/dayz-gate ingame`, `/dayz-logwatch`, `/dayz-import-mod` ("Studying a packed mod"), and the `dayz-testbridge` MCP tools to drive the running game (`skills/dayz-launch-test/references/test-bridge.md`) | `dayz-build-engineer`, `dayz-ingame-tester` |
 
 The deep material behind them is in the packs under `skills/_shared/` (index in `skills/_shared/README.md`) and each skill's own `references/` folder. Standalone tools the skills call live in `scripts/tools/`.
 
@@ -247,6 +247,7 @@ Two locations hold per-clone, gitignored, user/machine-specific state:
 | `.server/<instance>/serverDZ.cfg` | Per-instance server config. Tunable. | `/dayz-add-server` (default written on first add; preserved thereafter) |
 | `.server/<instance>/Profiles/` | Per-instance server `-profiles=` dir (RPT, script.log, BattlEye state). | `/dayz-add-server` (created empty); populated by `/dayz-launch-test` |
 | `.server/!ClientDiagLogs/` | Shared client `-profiles=` dir (RPT, BattlEye state, Users/, DataCache/). | `/dayz-add-server` (created empty); populated by `/dayz-launch-test` |
+| `.server/<instance>-bridge/` and `.server/!TestBridge/session.json` | The storage-free instance copy a `dayz-testbridge` session runs on, and the record of the running session (token, process ids, log offsets). | `dayz-testbridge` `session_start`; the record is deleted by `session_stop` |
 
 Override the author handle: `python skills\dayz-new-mod\new_mod.py MyMod --author "NewHandle"` (overwrites the cache) or delete `.claude/local-memory/dayz-author.txt`.
 

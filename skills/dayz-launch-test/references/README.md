@@ -16,6 +16,7 @@ Most files here are results measured in test sessions with third-party mods (Com
 | Stop them | `/dayz-stop-test` |
 | Read and triage the logs | `/dayz-logwatch` |
 | PASS or FAIL: builds, boots clean, behaves, looks right | `/dayz-gate build`, `ingame`, `behavior`, `visual` |
+| Drive the running game from an agent: spawn, teleport, drive, raycast, camera, screenshot, logs since a mark | the `dayz-testbridge` MCP tools (`test-bridge.md`); judge what they return by `in-game-check-validity.md` |
 | Check the running game by script: spawn, capture, raycast, drive | the in-game check files below, starting at `in-game-check-validity.md` |
 | A server only boot on Linux, a headless client, a self-reporting test mod, a scripted test | the files below and `../assets/autotest-mod/` |
 
@@ -60,6 +61,7 @@ Most files here are results measured in test sessions with third-party mods (Com
 | Why is the capture black, flat or stale? What does a scripted camera do to the player? How do I capture a raised weapon or measure UI pixels? | `screenshots-and-cameras.md` |
 | Can a script drive an action, a door or an inventory move? How do I run a mission driver for logic no input reaches? | `actions-doors-and-inventory.md` |
 | Who owns a car's drive, how does a test give it wheels and fuel, how are gears read, and why does deleting it crash? | `vehicle-in-game-facts.md` |
+| How do I drive the running game from an agent (spawn, teleport, get in and drive, rays, camera and screenshot, logs since a mark), and what can the bridge not do? | `test-bridge.md` |
 | Which checks accept an imported car, and which fix does each failure point to? | `vehicle-acceptance-checks.md` |
 | Which skill runs each step from scope to Workshop, which pack do I read for a request, and how do I port a mod to 1.30? | `mod-loop.md` |
 | How do I run the fast DayZDiag script loop, when do I stop iterating, and which debug tools does vanilla offer? | `test-loop.md` |
@@ -71,4 +73,5 @@ Most files here are results measured in test sessions with third-party mods (Com
 
 | Path | What it is |
 |---|---|
+| `../assets/testbridge-mod/` | `AZ_TestBridge`, the Diag-only mod half of the `dayz-testbridge` MCP server: packed for one session and removed after. Never in a release; `/dayz-release-pack` refuses one that names it. See `test-bridge.md`. |
 | `../assets/autotest-mod/` | AutoTest, a small mod whose test cases run on server and client and print their results to the logs, so a run reports on itself. Source under `src/AutoTest/`. How to build, load and read it: `linux-headless-client.md`, "Tests that run on both sides and report back". Keep it out of a release. |
