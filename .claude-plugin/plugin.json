@@ -99,6 +99,12 @@
       "args": [
         "${CLAUDE_PLUGIN_ROOT}/.claude/mcp/dayz-rag/server.py"
       ]
+    },
+    "dayz-testbridge": {
+      "command": "python",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/.claude/mcp/dayz-testbridge/server.py"
+      ]
     }
   }
 }

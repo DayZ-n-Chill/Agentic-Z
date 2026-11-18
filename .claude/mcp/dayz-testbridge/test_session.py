@@ -1,4 +1,4 @@
-﻿"""Session start, status and stop against a fake launch and fake peers: no DayZ, no P: drive."""
+"""Session start, status and stop against a fake launch and fake peers: no DayZ, no P: drive."""
 from __future__ import annotations
 
 import json

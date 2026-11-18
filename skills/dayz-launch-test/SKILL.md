@@ -1,4 +1,4 @@
-﻿---
+---
 name: dayz-launch-test
 description: "Launches a local DayZ Diag server for an instance from /dayz-add-server, then the diag client connected to it with the given built mods loaded. Run-only; does no setup. Use when you want to test built mods in game, or to preview the exact launch commands with a dry run. Its references cover why a session starts but does not test the change, scripted test cells, server and mission config, the Linux server and headless client, and what makes an in-game check valid (spawning, raycasts, captures, actions, vehicle acceptance checks); also the recurring error catalog (E01 to E35), the top-down debug protocol, the fast DayZDiag loop, measured 1.30 server facts and the mod loop from code to Workshop."
 argument-hint: "<ModName> [<ModName2> ...] [--server-only <ModName>]... [--server <instance>] [--port N] [--test-bridge TOKEN] [--dry-run]"
