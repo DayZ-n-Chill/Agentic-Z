@@ -15,7 +15,7 @@ A child `.asi` of `player_main.asi` that overrides only the column the bike ride
 
 Traps:
 
-- After the get out clip the command still reads as seated until `OnCommandVehicleFinish`. A check every frame switched the rider back on for about 30 ms. Latch the swap off from the start of the get out until the command is gone.
+- After the get out clip the command still reads as seated until `OnCommandVehicleFinish`. A check every frame switched the rider back on for 32 ms on the server and 28 ms on the client. Latch the swap off from the start of the get out until the command is gone.
 - `GetBoneIndexByName` on `Human` (`P:\scripts\3_game\human.c:1417`) returns hash like ids, several negative: `RightHand` gave -1405358722, and `RightFoot`, `RightToeBase`, `LeftForeArm` and `RightHandRing1` were negative too. Only -1 means missing.
 - The server's hands are not the client's. For the same stopped pose the dedicated server put the left hand 0.35 m (vanilla pose) and 0.55 m (swapped pose) from the client's, while pelvis and head agreed within a few millimetres. Measure hand placement on the client.
 

@@ -133,7 +133,7 @@ class MyMod_CurrencyMenu extends UIScriptedMenu
 }
 ```
 
-Each button is half the track, and the indicator sits at 0 or 100. To slide it instead of jumping, a mod that depends on Dabs Framework can call `WidgetAnimator.AnimateEx(m_ToggleIndicator, WidgetAnimatorProperty.POSITION_X, targetX, 200, WidgetAnimatorEasing.EASE_OUT_CUBIC)` (`dabs-observables-and-animation.md`). To read a key every frame, use `GetUApi().GetInputByName("UAxxx").LocalPress()` (`GetInputByName`, `P:\scripts\3_game\inputapi\uainput.c:218`); the input must be declared in `inputs.xml` and that file named in `config.cpp`, or `GetInputByName` returns null (`skills/_shared/enscript/integrations/input_bindings.md`).
+Each button is half the track, and the indicator sits at 0 or 100. To slide it instead of jumping, a mod that depends on Dabs Framework can call `WidgetAnimator.AnimateEx(m_ToggleIndicator, WidgetAnimatorProperty.POSITION_X, targetX, 200, WidgetAnimatorEasing.EASE_OUT_CUBIC)` (`dabs-observables-and-animation.md`). `WidgetAnimator` is static: there is no `Dabs_WidgetAnimator.Create(w).AnimateProperty(...)` factory. 200 ms reads as smooth but snappy. `UAInputAPI` has no `GetInputManager()`, so `GetUApi().GetInputManager().AddActionListener(this)` does not compile. To read a key every frame, use `GetUApi().GetInputByName("UAxxx").LocalPress()` (`GetInputByName`, `P:\scripts\3_game\inputapi\uainput.c:218`); the input must be declared in `inputs.xml` and that file named in `config.cpp`, or `GetInputByName` returns null (`skills/_shared/enscript/integrations/input_bindings.md`).
 
 ## A numeric input that converts
 

@@ -138,7 +138,7 @@ A shader or set can inherit a vanilla one and change only what differs. Declare 
 - `base_closeShot_SoundShader` sets `volume=1`, `range=3000` and `rangeCurve="closeShotAttenuationCurve"` (line 17117).
 - `Rifle_Shot_Base_SoundSet` sets `volumeFactor`, `volumeCurve="RifleShotCurve"`, `sound3DProcessingType="WeaponMediumShot3DProcessingType"`, `distanceFilter`, `occlusionFactor`, `obstructionFactor`, `spatial=1`, `doppler=0`, `loop=0`, `soundShadersLimit=2` and `soundObjectsLimit=2` (line 323687).
 
-Check the parent's name on the build you target: DayZ 1.29 renamed the VSS and AmphibianS silenced sounds, `VSS_Vintorez_*` to `VSS_silencer_*` (`class VSS_silencerCloseShot_SoundShader` at `P:\DZ\sounds\hpp\config.cpp:79480`) and `AmphibianS_InteriorTail` to `AmphibianS_silencerInteriorTail` (`class AmphibianS_silencerInteriorTail_SoundSet` at `P:\DZ\sounds\hpp\config.cpp:326852`). A mod that inherits the old name breaks; a mod's own sets in its own PBO need no alias.
+Check the parent's name on the build you target: DayZ 1.29 renamed the VSS and AmphibianS silenced sounds, `VSS_Vintorez_*` to `VSS_silencer_*` (`class VSS_silencerCloseShot_SoundShader` at `P:\DZ\sounds\hpp\config.cpp:79480`) and `AmphibianS_InteriorTail` to `AmphibianS_silencerInteriorTail` (`class AmphibianS_silencerInteriorTail_SoundSet` at `P:\DZ\sounds\hpp\config.cpp:327522`). A mod that inherits the old name breaks; a mod's own sets in its own PBO need no alias.
 
 The pattern, as a weapon mod writes it for a rifle (third-party mod config, not vanilla):
 

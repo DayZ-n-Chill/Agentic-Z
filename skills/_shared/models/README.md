@@ -68,7 +68,8 @@ How to run the scripts of `/dayz-model-tools` and what was measured with them. T
 | What an extract and rebuild can lose, and how to test for it | `tools-p3d-inspector-round-trip.md` |
 | A proxy renders at the floor, floats or turns: extract, rewrite, edit and write back the proxy triangles | `tools-proxy-align.md` |
 | The offline winding and normal gate: what it reads, its verdicts, what a PASS does not cover | `tools-winding-gate.md` |
-| A clean, readable UV atlas for a hard-surface mesh, the exact overlap gate and the traps | `tools-uv-atlas.md` |
+| A clean, readable UV atlas for a hard-surface mesh and the exact overlap gate | `tools-uv-atlas.md` |
+| Which Blender, SLIM, fold guard and Windows traps break the clean UV atlas pipeline | `tools-uv-atlas-traps.md` |
 | What a mesh must pass before unwrapping, seams, stitching and splitting islands | `tools-uv-mesh-health.md` |
 | Re-unwrapping a model that already ships, or one atlas shared between LODs | `tools-uv-multi-lod-atlas.md` |
 | A paint atlas for an organic one-shell mesh by projection | `tools-uv-organic-photograph.md` |

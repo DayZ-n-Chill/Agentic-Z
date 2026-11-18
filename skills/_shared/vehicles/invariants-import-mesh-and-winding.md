@@ -13,7 +13,7 @@ For any imported model, ripped or not, audit mesh and UVs before anything else; 
 3. Unwrap by sections as `_shared/models/uv-mapping.md` describes.
 4. Require overlap near zero for baking, even density, an atlas a person can read, and a checker render with smooth shading; flat shading on a grid reads falsely as low poly or blurry.
 
-No overlap means an exact separating-axis test of zero. A Monte Carlo estimate has a measured floor above zero, so its "0%" proves nothing. Route vehicle UV repair to the clean UV atlas method (`_shared/models/tools-uv-atlas.md`); `PartUV` is not the vehicle default. Run the exact overlap test after every anti-fold round, keep going while it is above zero, and block any mesh that never reaches zero.
+No overlap means an exact separating-axis test of zero (`SAT=0`). A Monte Carlo estimate has a measured floor above zero, so its "0%" proves nothing. Route vehicle UV repair to the clean UV atlas method (`_shared/models/tools-uv-atlas.md`); `PartUV` is not the vehicle default. Run the exact overlap test after every anti-fold round, keep going while it is above zero, and block any mesh that never reaches zero.
 
 ## LODs made by a decimate modifier
 
@@ -43,7 +43,7 @@ Counting flipped axes is the axis-aligned shortcut of the same test, and easy to
 | Two, the third intact | 180 degree rotation about the third axis |
 | All three | Point reflection, a 180 degree rotation plus a mirror; split it before acting |
 
-On an imported helicopter one session measured only X, saw it flipped and called the model mirrored. Measuring Z too showed all 38 points with X and Z flipped and Y intact: a 180 degree yaw, the pipeline's normal convention, and the sister airframe already flying in game had the same nose at minus Z. The tetrahedron test gave +6.076679 in the file against +6.076514 at runtime, the same sign, which settled it without a game session. A determinant -1 import would have added a real mirror and broken winding already confirmed in game.
+On an imported helicopter one session measured only X, saw it flipped and called the model mirrored. Measuring Z too showed all 38 points with X and Z flipped and Y intact: a 180 degree yaw, the pipeline's normal convention, and the sister airframe already flying in game had the same nose at minus Z. The tetrahedron test gave +6.076679 in the file against +6.076514 at runtime, ratio +0.999973, the same sign, which settled it without a game session. A determinant -1 import would have added a real mirror and broken winding already confirmed in game.
 
 A proper file to runtime transform does not rule out a mirror baked in earlier, in the source mesh or the exporter, or a mirrored UV island, which shows as backwards lettering on correct geometry. Those need their own checks.
 

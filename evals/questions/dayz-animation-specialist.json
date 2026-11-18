@@ -19,7 +19,7 @@
         "re:maxValue|value range|range"
       ],
       "cite": "fence.c",
-      "verified": "P:/scripts/4_world/entities/itembase/basebuildingbase/fence.c:12 (GATE_ROTATION_ANGLE_DEG = 100) and :498 (SetAnimationPhase(\"Wall_Gate_Rotate\", value)); P:/DZ/gear/camping/config.cpp:4450; fence.p3d stores a 0 to 100 range for Wall_Gate_Rotate"
+      "verified": "P:/scripts/4_world/entities/itembase/basebuildingbase/fence.c:12 (GATE_ROTATION_ANGLE_DEG = 100) and :512 (SetAnimationPhase(\"Wall_Gate_Rotate\", value)); P:/DZ/gear/camping/config.cpp:4460; fence.p3d stores a 0 to 100 range for Wall_Gate_Rotate"
     },
     {
       "id": "user-source-missing",

@@ -41,7 +41,8 @@ Vanilla ships `model.cfg` only inside the packed `.p3d` files, so there is no va
 
 | Question | Open |
 |---|---|
-| How does an item get its pose in the hands, how do parts show or hide with attach state, how does script switch the animation instance? | `items-in-hands.md` |
+| How does an item get its pose in the hands, and how does script switch the animation instance? | `items-in-hands.md` |
+| How do parts of a model show, hide or swap with attach state? | `attach-state-parts.md` |
 | How a custom weapon sits in the hands and in the sights, and why the grip fix is geometry | `weapon-in-hands.md` |
 | A custom player weapon animation from Blender to the game: what it is, the two routes, plugin setup, the rig and its IK helpers, starting from a vanilla pose | `weapon-anim-blender.md` |
 | Authoring each kind of weapon clip: IK pose, fire, weapon states, reload, hold actions with loop notes, helper bone rules | `weapon-anim-authoring.md` |
@@ -103,6 +104,6 @@ These three vanilla objects cover the common cases. `animation-sources.md`, `mod
 |---|---|---|---|
 | Building door, no mod script | `P:\DZ\structures\residential\config.cpp:7341` (`Land_HouseBlock_3F_Corner1`, `class Doors` at :7357) | `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionopendoors.c:1` | `P:\DZ\structures\Residential\HouseBlocks\houseblock_3f_corner1.p3d` |
 | Item lid that hides and shows | `P:\DZ\gear\containers\config.cpp:99` (`Barrel_ColorBase` `AnimationSources`) | `P:\scripts\4_world\entities\itembase\barrel_colorbase.c:144` | `P:\DZ\gear\containers\55galDrum.p3d` |
-| Gate that rotates with a custom range | `P:\DZ\gear\camping\config.cpp:4418` (`Fence` `AnimationSources`) | `P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:488` | `P:\DZ\gear\camping\fence.p3d` |
+| Gate that rotates with a custom range | `P:\DZ\gear\camping\config.cpp:4428` (`Fence` `AnimationSources`) | `P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:502` | `P:\DZ\gear\camping\fence.p3d` |
 
 Humanoids rigged to the vanilla skeleton (a custom infected, survivor or NPC) are in the wearables pack (`skills/_shared/wearables/references/body-rigging.md`); `/dayz-model-tools` runs the winding gate on them.

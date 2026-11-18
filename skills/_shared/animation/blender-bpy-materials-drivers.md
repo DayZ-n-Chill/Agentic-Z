@@ -24,7 +24,7 @@ Emission pulses, alpha fades and mix factors all follow the same recipe: set `de
 
 ## Principled BSDF socket names
 
-Socket names are node data at run time, not static properties, so read them with `[s.name for s in node.inputs]` before keying; Blender has renamed them between versions. In 5.1, in order: Base Color, Metallic, Roughness, IOR, Alpha, Normal, Weight, Diffuse Roughness, Subsurface Weight, Subsurface Radius, Subsurface Scale, Subsurface IOR, Subsurface Anisotropy, Specular IOR Level, Specular Tint, Anisotropic, Anisotropic Rotation, Tangent, Transmission Weight, Coat Weight, Coat Roughness, Coat IOR, Coat Tint, Coat Normal, Sheen Weight, Sheen Roughness, Sheen Tint, Emission Color, Emission Strength, Thin Film Thickness, Thin Film IOR.
+Socket names are node data at run time, not static properties (the `ShaderNodeBsdfPrincipled` reference page lists only `distribution`, `subsurface_method` and the class methods `input_template(index)` and `output_template(index)`), so read them with `[s.name for s in node.inputs]` before keying; Blender has renamed them between versions. In 5.1, in order: Base Color, Metallic, Roughness, IOR, Alpha, Normal, Weight, Diffuse Roughness, Subsurface Weight, Subsurface Radius, Subsurface Scale, Subsurface IOR, Subsurface Anisotropy, Specular IOR Level, Specular Tint, Anisotropic, Anisotropic Rotation, Tangent, Transmission Weight, Coat Weight, Coat Roughness, Coat IOR, Coat Tint, Coat Normal, Sheen Weight, Sheen Roughness, Sheen Tint, Emission Color, Emission Strength, Thin Film Thickness, Thin Film IOR.
 
 Clearcoat is now Coat Weight and its siblings, and Transmission is Transmission Weight, so the several Weight inputs do not clash. Emission is split into Emission Color and Emission Strength.
 

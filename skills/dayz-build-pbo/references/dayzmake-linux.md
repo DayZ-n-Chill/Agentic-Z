@@ -78,11 +78,11 @@ What the three hashes cover (dayzmake 1.0.0, `src/pbo.rs:311` to `:322` and `:54
 
 | Hash | Covers |
 |---|---|
-| `Hash 1` | The SHA-1 checksum stored in the PBO's trailer, which covers the headers and all entry bytes. |
+| `Hash 1` | The SHA-1 checksum stored in the PBO's trailer, which covers the headers and all entry bytes (`src/pbo.rs:311` to `:314` and `:548` to `:563`). |
 | `Hash 2` | That checksum with the entry names and the prefix. |
-| `Hash 3` | The v3 file hash, the whole stored content of the entries ending in `sqf`, `c`, `inc`, `bikb`, `ext`, `fsm`, `sqm`, `hpp`, `cfg`, `sqs` or `h`, with the names and the prefix. Other extensions such as `.paa` and `.p3d` are left out. |
+| `Hash 3` | The v3 file hash, the whole stored content of the entries ending in `sqf`, `c`, `inc`, `bikb`, `ext`, `fsm`, `sqm`, `hpp`, `cfg`, `sqs` or `h` (the list at `src/sign.rs:157` to `:177`), with the names and the prefix. Other extensions such as `.paa` and `.p3d` are left out. |
 
-`dayzmake verify` checks all three. A PBO rebuilt with any change to its headers or entry bytes writes a new trailer, so it fails against an older `.bisign`. The trailer is read, not recomputed: a same-size byte change inside an entry outside the v3 hash, such as a `.paa`, made without rewriting the trailer keeps all three hashes and still verifies, since the name hash covers the non-empty entries and a same-size change keeps every entry's name and size. The same change in a `.c` entry fails on `Hash 3`. A changed header timestamp or a modified `.paa` with a recomputed trailer and the old `.bisign` is rejected. The controls where edits to uncovered entries still verified were run with Bohemia's `DSCheckSignatures`, in the same section of `skills/dayz-launch-test/references/build-and-storage-traps.md`.
+`dayzmake verify` checks all three (`src/sign.rs:202` to `:234` and `:475` to `:521`). A PBO rebuilt with any change to its headers or entry bytes writes a new trailer, so it fails against an older `.bisign`. The trailer is read, not recomputed: a same-size byte change inside an entry outside the v3 hash, such as a `.paa`, made without rewriting the trailer keeps all three hashes and still verifies, since the name hash covers the non-empty entries and a same-size change keeps every entry's name and size. The same change in a `.c` entry fails on `Hash 3`. A changed header timestamp or a modified `.paa` with a recomputed trailer and the old `.bisign` is rejected. The controls where edits to uncovered entries still verified were run with Bohemia's `DSCheckSignatures`, in the same section of `skills/dayz-launch-test/references/build-and-storage-traps.md`.
 
 ## Other commands
 

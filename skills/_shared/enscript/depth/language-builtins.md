@@ -36,7 +36,7 @@ string msg = "Count: " + val.ToString();
 
 ## Math and vectors
 
-`Math.Clamp` (`P:\scripts\1_core\proto\enmath.c:540`), `VectorToAngles` (`P:\scripts\1_core\proto\enconvert.c:374`), `GetScreenPos` (`P:\scripts\3_game\global\game.c:963`). The rest of `Math` and `vector` is in `../references/types_collections.md`.
+`Math.Clamp` (`P:\scripts\1_core\proto\enmath.c:540`), `VectorToAngles` (`P:\scripts\1_core\proto\enconvert.c:353`), `GetScreenPos` (`P:\scripts\3_game\global\game.c:963`). The rest of `Math` and `vector` is in `../references/types_collections.md`.
 
 ```c
 float clamped = Math.Clamp(value, 0, 1.0);
@@ -73,7 +73,7 @@ Vanilla builds the path with no trailing space: `ConfigIsExisting(CFG_VEHICLESPA
 | Change | Source |
 |---|---|
 | `array<T>.Slice(int from, int to)`; `to` is inclusive | `P:\scripts\1_core\proto\enscript.c:720` to `:727` |
-| `typename.EnumFlagsToString` and `EnumTools.EnumFlagsToString` | `P:\scripts\1_core\proto\enconvert.c:614` and `:704` |
+| `typename.EnumFlagsToString` and `EnumTools.EnumFlagsToString` | `P:\scripts\1_core\proto\enconvert.c:593` and `:683` |
 | `class DoOnce`, to run a method by name once per key | `P:\scripts\3_game\doonce.c:1` |
 | `GAME_STORAGE_VERSION = 144`; 1.29 had `142` on the same line | `P:\scripts\3_game\global\game.c:5` |
 | `vector.Cross(vector v)` existed in 1.30 Experimental and the 1.30 release, and the first 1.30 patch removed it. `P:\` still shows it because its extraction is older (`../references/game_builds.md`). Write the cross product out instead of calling `Cross` | `enconvert.c:239` to `:246` |

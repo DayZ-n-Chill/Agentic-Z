@@ -12,7 +12,7 @@ Binarize stores selection names in lower case. The wooden case's collision compo
 
 | Kind | LOD | Read by |
 |---|---|---|
-| Hidden selection (texture or material swap) | every visual LOD | `hiddenSelections[]` in config, then `GetHiddenSelectionIndex` (`P:\scripts\3_game\entities\entityai.c:2778`) and `SetObjectTexture` (`:2881`). Vanilla: `camoGround` on the wooden case (`P:\DZ\gear\camping\config.cpp:10180`). |
+| Hidden selection (texture or material swap) | every visual LOD | `hiddenSelections[]` in config, then `GetHiddenSelectionIndex` (`P:\scripts\3_game\entities\entityai.c:2778`) and `SetObjectTexture` (`:2881`). Vanilla: `camoGround` on the wooden case (`P:\DZ\gear\camping\config.cpp:10190`). |
 | Bone of a moving or hideable part | every visual LOD, and each collision LOD that should move with it | the `Animations` class in `model.cfg` (`selection=`), driven from script with `SetAnimationPhase` (`P:\scripts\3_game\entities\entity.c:15`); `HideSelection` and `ShowSelection` are wrappers over it (`P:\scripts\3_game\entities\entityai.c:3355`) |
 | Axis of that part | Memory | the same animation class (`axis=`); see `memory-points.md` |
 | Collision component `Component01`, `Component02` ... | Geometry, View Geometry, Fire Geometry | the engine; without one a collision LOD collides with nothing (`dayz-p3d-audit/references/p3d-killers.md` sections 2 and 8) |

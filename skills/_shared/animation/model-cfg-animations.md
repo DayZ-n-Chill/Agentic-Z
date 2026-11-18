@@ -118,7 +118,7 @@ What this shows:
 - **A negative angle opens the other way.** Mirror a door by changing the sign, not the bone.
 - **Hide works on a threshold.** The barrel lids hide at 0.6, so phase 1 hides and phase 0 shows; `Lid2` starts at phase 1 (hidden) in `P:\DZ\gear\containers\config.cpp:110`.
 - **Names are stored in lower case.** The model holds `lid` while `config.cpp` says `class Lid` (`P:\DZ\gear\containers\config.cpp:101`), so matching ignores case. Keep the case identical anyway so a reviewer can grep it.
-- **A model source of `user` means the animation's own name is the source.** Fence stores `Wall_Gate_Rotate` with source `user`, and its config class `Wall_Gate_Rotate` (`P:\DZ\gear\camping\config.cpp:4450`) is the name script passes (`fence.c:498`). The barrel and house doors name the source directly instead (`lid`, `doors5`).
+- **A model source of `user` means the animation's own name is the source.** Fence stores `Wall_Gate_Rotate` with source `user`, and its config class `Wall_Gate_Rotate` (`P:\DZ\gear\camping\config.cpp:4460`) is the name script passes (`fence.c:512`). The barrel and house doors name the source directly instead (`lid`, `doors5`).
 - **Animation name and source can differ.** The house model's `Doors1` animation uses source `doorstwin1`, the config door class `DoorsTwin1` (`P:\DZ\structures\residential\config.cpp:7359`). Script and doors find animations by source; `SetAnimationPhase` takes the source name.
 
 ## Engine sources

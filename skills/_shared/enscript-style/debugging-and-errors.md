@@ -111,7 +111,7 @@ bool IsPlayerWearingSunglasses(notnull PlayerBase player)
 
 ### Value Validation
 
-`typename.StringToEnum` returns `-1` when no enum member has the given name (`P:\scripts\1_core\proto\enconvert.c:670-683`, `return -1;` at line 683), so test for `-1` before using the value:
+`typename.StringToEnum` returns `-1` when no enum member has the given name (`P:\scripts\1_core\proto\enconvert.c:649-662`, `return -1;` at line 662), so test for `-1` before using the value:
 
 ```
 int value = typename.StringToEnum(EMyMod_State, stateName);

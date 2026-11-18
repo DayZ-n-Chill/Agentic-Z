@@ -43,7 +43,7 @@ Prefer the config parameter on static `House` classes that never need a tick; ca
 
 ## `liquid_source` on a well
 
-The liquid actions on a well object (not a pond surface) look for the View Geometry components in a selection named `liquid_source`, through `UAMisc.LIQUID_SOURCE_SELECTION` (`P:\scripts\4_world\classes\useractionscomponent\actions\actionconstants.c:180`). The callers, all in `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\`:
+The liquid actions on a well object (not a pond surface) look for the View Geometry components in a selection named `liquid_source`, through `UAMisc.LIQUID_SOURCE_SELECTION` (`P:\scripts\4_world\classes\useractionscomponent\actions\actionconstants.c:180`, in the `UAMisc` class at `:175` to `:181`, beside `FLAG_STEP_INCREMENT = 0.2` and `CONSUMPTION_SLOWDOWN_COEF_HOT = 5.0`). The callers, all in `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\`:
 
 | Action | Line |
 |---|---|

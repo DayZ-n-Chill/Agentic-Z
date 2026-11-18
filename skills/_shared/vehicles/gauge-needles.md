@@ -64,9 +64,9 @@ class IndicatorFuel
 };
 ```
 
-These angles belong to that model's mesh and art; derive your own (`gauge-dial-frame.md`). `fuel` is a native engine source like `speed` and `rpm`: `model.cfg` sources need not appear in script, so its absence from Enforce Script proves nothing. `speed` is in km/h; `GetSpeedometer` is native on `Car` (`P:\scripts\3_game\vehicles\car.c:102`), and `CAR_JUMPOUT_THRESHOLD` is commented as km/h and compared with it (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetouttransport.c:34`).
+These angles belong to that model's mesh and art; derive your own (`gauge-dial-frame.md`). `fuel` is a native engine source like `speed` and `rpm`: `model.cfg` sources need not appear in script, so its absence from Enforce Script, where fuel shows up only as `GetFluidFraction()`, proves nothing. `speed` is in km/h; `GetSpeedometer` is native on `Car` (`P:\scripts\3_game\vehicles\car.c:102`), and `CAR_JUMPOUT_THRESHOLD` is commented as km/h and compared with it (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetouttransport.c:34`).
 
-`dashboardMatOn` and `dashboardMatOff` are the cluster backlight, not the needles. In 1.30 `dashboardMatOn` is registered on the `DashboardOn` selection (`P:\scripts\4_world\entities\vehicles\carscript.c:230`), which uses hidden selection 8, `SELECTION_ID_DASHBOARD_LIGHT` (`:182`).
+`dashboardMatOn` and `dashboardMatOff` are the cluster backlight, not the needles. In 1.30 `dashboardMatOn` is registered on the `DashboardOn` selection (`P:\scripts\4_world\entities\vehicles\carscript.c:230`), which uses hidden selection 8, `SELECTION_ID_DASHBOARD_LIGHT` (`:182`). On 1.29 the method `DashboardShineOn` applied it (1.29 `carscript.c:2481` to `:2497`, not on `P:\`).
 
 The unit comes from the source, not from the selection name. Still, never name a km/h speedometer `mph`: the inherited name makes everyone believe the gauge is in the wrong unit. Check whether the art prints a unit at all before arguing about it.
 

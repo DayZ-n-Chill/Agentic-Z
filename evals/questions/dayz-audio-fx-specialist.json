@@ -8,7 +8,7 @@
         "DZ_Sounds_Effects",
         "requiredAddons"
       ],
-      "verified": "P:/DZ/sounds/hpp/config.cpp:3 (class DZ_Sounds_Effects) and :318381 (class baseCharacter_SoundSet); P:/DZ/sounds_bliss/config.cpp:3-13 requires DZ_Sounds_Effects"
+      "verified": "P:/DZ/sounds/hpp/config.cpp:3 (class DZ_Sounds_Effects) and :319051 (class baseCharacter_SoundSet); P:/DZ/sounds_bliss/config.cpp:3-13 requires DZ_Sounds_Effects"
     },
     {
       "id": "loop-and-stop-helpers",

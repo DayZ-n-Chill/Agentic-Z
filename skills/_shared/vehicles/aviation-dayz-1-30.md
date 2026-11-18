@@ -44,7 +44,7 @@ An aircraft that still overrides `CreateFrontLight` or subclasses `CarLightBase`
 ```
 
 - `ForceUpdateLightsStart` and `ForceUpdateLightsEnd` are `[Obsolete("1.30: no replacement")]` (`carscript.c:2805` to `:2809`). Delete those calls from any parked beam code.
-- `NeedElectricitySourceDevice()` (`P:\scripts\3_game\vehicles\transport.c:821`) replaces `IsVitalCarBattery`, now `[Obsolete("1.30: use Transport.NeedElectricitySourceDevice")]` (`carscript.c:2811` and `:2812`). An aircraft with a magneto can return `false`, as the vanilla motorbike does (`P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_02.c:34` to `:37`).
+- `NeedElectricitySourceDevice()` (`P:\scripts\3_game\vehicles\transport.c:830`) replaces `IsVitalCarBattery`, now `[Obsolete("1.30: use Transport.NeedElectricitySourceDevice")]` (`carscript.c:2811` and `:2812`). An aircraft with a magneto can return `false`, as the vanilla motorbike does (`P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_02.c:34` to `:37`).
 - The vehicle light toggle input is `UAToggleVehicleLights`, set by `ToggleVehicleLightsActionInput` (`P:\scripts\4_world\classes\useractionscomponent\actioninput.c:849` to `:855`). `UAToggleHeadlight` is the head torch. Custom flight `UA*` inputs are unaffected.
 - The LM_Planes headlight, a `CarLightBase` child such as `LM_TigermothFrontLight` (`aviation-effects-and-lights.md`), is the older pattern. Keep it in a mod that already ships it; write new work as a `VehicleLightProfileBase` child with a `VehicleLightBase`.
 

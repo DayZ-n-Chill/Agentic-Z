@@ -113,7 +113,7 @@ Opened on this repo's `P:\`, which is a 1.30 build. The port blockers in detail,
 | Obsolete member | Line in `carscript.c` | Use instead |
 |---|---|---|
 | `CreateRearLight`, `CreateFrontLight` | `:2938`, `:2945` | `VehicleLightsComponent` |
-| `IsVitalCarBattery`, `IsVitalTruckBattery` | `:2812`, `:2818` | `Transport.NeedElectricitySourceDevice` (`P:\scripts\3_game\vehicles\transport.c:821`) |
+| `IsVitalCarBattery`, `IsVitalTruckBattery` | `:2812`, `:2818` | `Transport.NeedElectricitySourceDevice` (`P:\scripts\3_game\vehicles\transport.c:830`) |
 | `CarPartsHealthCheck` | `:2977` | `PartsHealthCheck` (`P:\scripts\3_game\vehicles\transport.c:437`; `CarScript` override at `P:\scripts\4_world\entities\vehicles\carscript.c:2121`) |
 | `ForceUpdateLightsStart`, `ForceUpdateLightsEnd` | `:2806`, `:2809` | Nothing; the attribute says "no replacement". |
 | `OnBeforeSwitchLights` | `:2797` | Nothing ("no replacement"); light control is immediate in the component. |

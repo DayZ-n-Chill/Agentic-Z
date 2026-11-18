@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 
 
-SOURCE_ROOT = Path(__file__).with_name("LF_UIProbe")
+SOURCE_ROOT = Path(__file__).with_name("AZ_UIProbe")
 TEMPLATE_RELATIVE_PATH = Path("gui/layouts/continuation.layout.template")
 
 
@@ -34,13 +34,13 @@ def build_probe(destination: Path) -> tuple[Path, Path]:
 
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Stage LF_UIProbe with byte-controlled LF/CRLF fixtures."
+        description="Stage AZ_UIProbe with byte-controlled LF/CRLF fixtures."
     )
     parser.add_argument(
         "--out",
         type=Path,
         required=True,
-        help="new destination directory for the staged LF_UIProbe source",
+        help="new destination directory for the staged AZ_UIProbe source",
     )
     return parser
 

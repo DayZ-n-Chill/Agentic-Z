@@ -80,8 +80,8 @@ A lethal space with no gas can be a deliberate design, but it should never happe
 
 `SafePositions` is one global list in the JSON, not a list per area (`P:\scripts\4_world\classes\contaminatedarea\jsondatacontaminatedarea.c:5`).
 
-- `TeleportCheck` moves a player who has just connected inside an area, and was not in one when they logged out, to the closest safe position (`P:\scripts\4_world\static\miscgameplayfunctions.c:1823`). The area exposure modifier calls it (`P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\areaexposure.c:44`).
-- `GetClosestSafePos` searches the whole list and measures in two dimensions only (`P:\scripts\4_world\static\miscgameplayfunctions.c:1850`).
+- `TeleportCheck` moves a player who has just connected inside an area, and was not in one when they logged out, to the closest safe position (`P:\scripts\4_world\static\miscgameplayfunctions.c:1767`). The area exposure modifier calls it (`P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\areaexposure.c:44`).
+- `GetClosestSafePos` searches the whole list and measures in two dimensions only (`P:\scripts\4_world\static\miscgameplayfunctions.c:1794`).
 
 After any change of radius, measure every safe position against every area. A rescue point that lies inside another area's cylinder moves a reconnecting player from gas to gas.
 

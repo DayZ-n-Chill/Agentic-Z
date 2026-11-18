@@ -807,6 +807,7 @@ CITATION_EXEMPT = {
     "models/tools-threejs-viewers.md",          # building Three.js viewer pages; no game fact
     "models/tools-3d-viewer.md",                # how to run the .p3d to .glb converter; no game fact
     "models/tools-uv-atlas.md",                 # a measured UV atlas method for hard-surface meshes
+    "models/tools-uv-atlas-traps.md",           # Blender and SLIM traps measured on the UV atlas pipeline
     "models/tools-uv-mesh-health.md",           # Blender UV checks measured on test meshes
     "models/tools-uv-mlod-audit.md",            # UV measurements on one assembled model
     "models/tools-uv-multi-lod-atlas.md",       # a measured UV re-unwrap method
@@ -1064,7 +1065,6 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
     "_shared/enscript/references/language_types.md": {
         r"P:\scripts\1_core\proto\enconvert.c:109",
         r"P:\scripts\1_core\proto\enconvert.c:22",
-        r"P:\scripts\1_core\proto\enconvert.c:556",
     },
     "_shared/persistence/data-audit.md": {
         r"P:\scripts\3_game\entities\entityai.c:1393",
@@ -1092,6 +1092,11 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
     },
     "_shared/vehicles/simulation.md": {
         r"P:\DZ\vehicles\water\config.cpp:124",
+    },
+    # glass_i.rvmat:1 to :5 are its ambient, diffuse, forcedDiffuse, emmisive and specular
+    # values with alpha 0; the citing line backticks only the material's own name.
+    "_shared/vehicles/rip-textures-and-materials.md": {
+        r"P:\DZ\vehicles\wheeled\civiliansedan\data\glass_i.rvmat:1",
     },
     "_shared/wearables/references/color-variants.md": {
         r"P:\DZ\characters\tops\config.cpp:2269",

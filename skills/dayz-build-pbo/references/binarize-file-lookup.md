@@ -18,7 +18,7 @@ AddonBuilder passes binarize `-addon="<parent of the source folder>"`, as the `[
 Stage the mod in a folder that holds nothing else, `%TEMP%\<mod>_build_<stamp>\src\<Mod>`, together with every file its models cite outside its own prefix. Copy each one to its cited path (`src\dz\data\data\penetration\metalplate.rvmat`, taken from the files the game loads), or reach the vanilla ones through a junction `src\DZ` to the extracted vanilla data. A junction target is parsed too, so it must hold no broken `config.cpp`. These files only feed binarize; AddonBuilder packs the source folder alone. Check them before and after the build (below).
 
 - `-project=<source>` narrows `-addon` to the source itself and is no way out: the PBO came out with no `.paa`, no `.rvmat` and no `texHeaders.bin` ("no textures found"), 606 KB against 16.5 MB.
-- A dedicated folder is also fast: `-addon` over a whole projects folder took about 250 seconds, the dedicated folder 6 to 13.
+- A dedicated folder is also fast: `-addon` over a whole projects folder took 249 to 251 seconds, the dedicated folder 6 to 13.
 
 What staging changes, measured on a flag pole mod: with the mod alone in its folder, a flag kit model came out with `dz\gear\consumables\data\rags_bandages.rvmat` (visual LOD) and `dz\data\data\penetration\wood.rvmat` (collision LODs) embedded empty. With a `DZ` junction beside it, both resolved and the model was byte identical to the build whose `-addon` was the whole projects folder. In a second mod, a staged build embedded `dz\data\data\penetration\metalplate.rvmat` empty although it is on `P:\DZ`, and a leaf material of a mod it depends on as well. With the cited files staged there were none, and the control build without them failed the check.
 
@@ -26,11 +26,11 @@ What staging changes, measured on a flag pole mod: with the mod alone in its fol
 
 Call binarize directly only with `-addon=<parent of the staged source>`, as the direct-call templates do (`skills/_shared/models/py3d-collision-and-mass.md`, `skills/_shared/vehicles/p3d-vehicle-killers.md`). On a vehicle mod whose source sat outside `P:\`, the first model loaded about 5 minutes after launch in one run without it; in later runs none had come out after 13 or 30 minutes. With the dedicated `-addon` the first model loaded within a second and every build converted all eight models in under 3.5 minutes.
 
-The stalled run's signal: binarize alive, no file reads, a flat working set of about 15 MB, and an empty output folder. Why the wait grew is not established. That binarize walks `P:` meanwhile is a guess, and one fact cuts against it: vanilla penetration materials on `P:\DZ` still failed to load without `-addon`.
+The stalled run's signal: binarize alive, no file reads, a flat working set of about 15 MB, and an empty output folder. Over 10 seconds a stalled run did about 183,000 other I/O operations (the Windows `OtherOperationCount` counter), against about 100,000 for a run with the dedicated `-addon`, which also read files and grew its working set. Why the wait grew is not established. That binarize walks `P:` meanwhile is a guess, and one fact cuts against it: vanilla penetration materials on `P:\DZ` still failed to load without `-addon`.
 
 ## Before the build: every cited file is staged
 
-List every path the faces cite, in every LOD: `face.texture` and `face.material` with py3d (`scripts/tools/py3d/py3d/__init__.py:1866` and `:1867`, read at `:1882` and `:1883`), or scan the MLOD bytes for `*.paa` and `*.rvmat` paths. Stop if one does not exist under the staging folder, because binarize looks there and nowhere else. Stage each cited `.rvmat` together with the textures it names; a texture missing on its own is not cleanly tested (below).
+List every path the faces cite, in every LOD: `face.texture` and `face.material` with py3d (`scripts/tools/py3d/py3d/__init__.py:1866` and `:1867`, read at `:1881` and `:1882`), or scan the MLOD bytes for `*.paa` and `*.rvmat` paths. Stop if one does not exist under the staging folder, because binarize looks there and nowhere else. Stage each cited `.rvmat` together with the textures it names; a texture missing on its own is not cleanly tested (below).
 
 ## After the build: read the ODOL
 

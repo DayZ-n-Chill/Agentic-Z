@@ -42,7 +42,7 @@ void OnStoreSave (ParamsWriteContext ctx)
 
 `OnStoreLoad` reads the block only when `version >= 143` and a component exists (`entityai.c:2978` to `:2983`). On `ConstructionBasic` the hook writes nothing and `HandleStorageEvents` returns `false` (`P:\scripts\3_game\systems\construction_basic.c:29` to `:35`), so a player built fence has an empty block. Only `Rebuilding` writes one.
 
-The energy part still has eight values when an energy manager exists: energy, passive, switched on, plugged, and the source's persistent id in four ints, then `SaveVariables` (`entityai.c:2951`). `LoadVariables` still runs only when `version >= 140` (`entityai.c:3053` to `:3058`). The full layout is in `save-load-contract.md`.
+The energy part still has eight values when an energy manager exists: `m_EM.GetEnergy()`, `IsPassive()`, `IsSwitchedOn()`, `IsPlugged()`, and the energy source's persistent id in four ints (`entityai.c:2920` to `:2947`), then `SaveVariables` (`:2951`). `LoadVariables` still runs only when `version >= 140` (`entityai.c:3053` to `:3058`). The full layout is in `save-load-contract.md`.
 
 ## The player's thermal value
 
@@ -65,7 +65,7 @@ if (!m_ThermalBiasHandler.OnStoreLoad(ctx, version))
 
 The handler saves one float, `m_TemporaryResistanceTime`, and returns `false` when the read fails (`P:\scripts\4_world\classes\thermalbiashandler.c:67` to `:78`).
 
-A 1.29 player record in `storage_1/players.db` ends after the arrow manager, with no float. A 1.30 multiplayer server always reads it, so the load fails with `failed to load ThermalBiasHandler`; nothing fills in a default. A mod that overrides `PlayerBase.OnStoreSave` or `OnStoreLoad` must keep calling `super` in the same place. Fields put before `super`, or after a copied 1.29 ending without the float, load the rest of the record wrong. Do not add your own version check around the thermal value unless you also stop writing it.
+A 1.29 player record in `storage_1/players.db` ends after the arrow manager (`arrowManager.Save`, 1.29 `4_world\entities\manbase\playerbase.c:7073` to `:7075`), with no float. A 1.30 multiplayer server always reads it, so the load fails with `failed to load ThermalBiasHandler`; nothing fills in a default. A mod that overrides `PlayerBase.OnStoreSave` or `OnStoreLoad` must keep calling `super` in the same place. Fields put before `super`, or after a copied 1.29 ending without the float, load the rest of the record wrong. Do not add your own version check around the thermal value unless you also stop writing it.
 
 ## The combination lock's third value
 
@@ -90,7 +90,7 @@ Vanilla sets defaults such as `m_Combination = 0` before returning `false` on a 
 
 ## The code lock
 
-`DigitalCodeLock` saves `super`, then its `CodeLockComponent` (`P:\scripts\4_world\entities\itembase\codelock.c:484` and `:491`). The component writes `m_LockPIN`, `m_IsLocked` and `m_DoorIndex` (`P:\scripts\4_world\classes\codelockcomponent.c:257` to `:262`) and reads them back with no version check, since the class is new. A failed PIN read sets `m_LockPIN` to empty and `m_HasPIN` to false before returning `false` (`codelockcomponent.c:264` onwards): the same half applied state, not to be copied.
+`DigitalCodeLock` saves `super`, then its `CodeLockComponent` (`P:\scripts\4_world\entities\itembase\codelock.c:505` and `:512`). The component writes `m_LockPIN`, `m_IsLocked` and `m_DoorIndex` (`P:\scripts\4_world\classes\codelockcomponent.c:257` to `:262`) and reads them back with no version check, since the class is new. A failed PIN read sets `m_LockPIN` to empty and `m_HasPIN` to false before returning `false` (`codelockcomponent.c:264` onwards): the same half applied state, not to be copied.
 
 ## Base building and rebuilt houses
 

@@ -89,7 +89,7 @@ These values are a starting point for a custom LED and are not checked on `P:\`.
 
 ## Spelling
 
-Vanilla spells the key `emmisive`, two m's (`P:\DZ\vehicles\wheeled\offroadhatchback\data\engine_niva.rvmat:4`); keep that spelling. Every vanilla material under `P:\DZ` that sets it spells it that way and none uses `emissive[]`. That the engine ignores `emissive[]` is not checked on `P:\`.
+Vanilla spells the key `emmisive`, two m's (`P:\DZ\vehicles\wheeled\offroadhatchback\data\engine_niva.rvmat:4`, a material on `PixelShaderID="Super"` at `:7`); keep that spelling. Every vanilla material under `P:\DZ` that sets it spells it that way and none uses `emissive[]`. That the engine ignores `emissive[]` is not checked on `P:\`.
 
 ## An LED that renders black
 

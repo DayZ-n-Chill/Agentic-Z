@@ -45,7 +45,7 @@ override protected void ApplyFlightPhysics(float dt)
 
 This is also how to add any extra layer (ground effect, gusts) without rewriting the base. The same class overrides `CalculateStallFactor` to return 0 while on water, so taxiing never sounds the stall warning.
 
-On water is checked every 0.25 s (`WATER_CHECK_INTERVAL`) with vanilla calls: `SurfaceIsSea(x, z)` for the sea, `SurfaceIsPond(x, z)` for fresh water, and `SurfaceGetSeaLevel()` for the absolute height of the water (`P:\scripts\3_game\global\game.c:1196`, `:1197` and `:1191`). The same calls serve any amphibious vehicle.
+On water is checked every 0.25 s (`WATER_CHECK_INTERVAL`) by the mod's `CheckIsOnWater()`, which uses vanilla calls: `SurfaceIsSea(x, z)` for the sea, `SurfaceIsPond(x, z)` for fresh water, and `SurfaceGetSeaLevel()` for the absolute height of the water (`P:\scripts\3_game\global\game.c:1196`, `:1197` and `:1191`). The same calls serve any amphibious vehicle.
 
 `ApplyWaterPhysics` works in five steps, all scaled by a height fade: `1 - heightAboveSea / maxHeight`, clamped to 0 to 1, then squared.
 

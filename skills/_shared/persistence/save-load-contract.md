@@ -45,9 +45,9 @@ You do not write these yourself. They are written by the base classes your class
 |---|---|---|
 | Construction component data | `EntityAI.OnStoreSave` | `P:\scripts\3_game\entities\entityai.c:2912` |
 | Energy: amount, passive, switched on, plugged, and the energy source's persistent ID in four ints | `EntityAI.OnStoreSave` | `P:\scripts\3_game\entities\entityai.c:2917` to `:2948` |
-| Variables mask and values (temperature in `EntityAI`; quantity, wetness, liquid type, color and cleanness in `ItemBase`) | `SaveVariables` and `WriteVarsToCTX` | `P:\scripts\3_game\entities\entityai.c:3160`; `P:\scripts\4_world\entities\itembase.c:2962` |
-| Quick bar slot when a player carries it | `ItemBase.OnStoreSave` | `P:\scripts\4_world\entities\itembase.c:3190` |
-| Disease agents | `ItemBase.OnStoreSave` calls `SaveAgents` | `P:\scripts\4_world\entities\itembase.c:3190` |
+| Variables mask and values (temperature in `EntityAI`; quantity, wetness, liquid type, color and cleanness in `ItemBase`) | `SaveVariables` and `WriteVarsToCTX` | `P:\scripts\3_game\entities\entityai.c:3160`; `P:\scripts\4_world\entities\itembase.c:2966` |
+| Quick bar slot when a player carries it | `ItemBase.OnStoreSave` | `P:\scripts\4_world\entities\itembase.c:3194` |
+| Disease agents | `ItemBase.OnStoreSave` calls `SaveAgents` | `P:\scripts\4_world\entities\itembase.c:3194` |
 | Remote trigger pairing | `RemotelyActivatedItemBehaviour.OnStoreSave` from `ItemBase` | `P:\scripts\4_world\entities\itembase.c:3210` to `:3214` |
 
 Attachments and cargo are stored by the engine as their own records, not in your stream. `AfterStoreLoad` runs "after all children loaded" (`P:\scripts\3_game\entities\entityai.c:1418`), and `OnBinLoadItemsDropped` fires when a child could not be put back into its parent and was dropped (`:1423`). So a safe's contents survive a restart without any script; only state the engine does not know about (a code, a timer, an owner) needs `OnStoreSave`.
@@ -55,8 +55,8 @@ Attachments and cargo are stored by the engine as their own records, not in your
 ## Load hook order
 
 1. `OnStoreLoad` on the entity. Read your values here and store them in member variables. Do not look up other entities yet.
-2. `AfterStoreLoad`, after this entity and all its children are loaded. Apply state that depends on loaded values or on children. `ItemBase` sets the loaded quantity here (`P:\scripts\4_world\entities\itembase.c:3218`), and `BaseBuildingBase` rebuilds its parts here (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:466`).
-3. `EEOnAfterLoad`, for links between separate entities. `ItemBase` clears its damage reset flag here (`P:\scripts\4_world\entities\itembase.c:3234`), which shows vanilla expects it to run after `AfterStoreLoad`.
+2. `AfterStoreLoad`, after this entity and all its children are loaded. Apply state that depends on loaded values or on children. `ItemBase` sets the loaded quantity here (`P:\scripts\4_world\entities\itembase.c:3222`), and `BaseBuildingBase` rebuilds its parts here (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:466`).
+3. `EEOnAfterLoad`, for links between separate entities. `ItemBase` clears its damage reset flag here (`P:\scripts\4_world\entities\itembase.c:3238`), which shows vanilla expects it to run after `AfterStoreLoad`.
 
 ## Links to other entities
 
@@ -100,6 +100,6 @@ Measured in game on DayZDiag 1.29 (not checkable on `P:\`): the engine creates s
 | Class | What it shows | Source |
 |---|---|---|
 | `CombinationLock` | A field removed and a field added, both behind the game version | `P:\scripts\4_world\entities\itembase\combinationlock.c:128` and `:138` |
-| `DigitalCodeLock` with `CodeLockComponent` | A helper object that saves its own fields inside the owner's stream | `P:\scripts\4_world\entities\itembase\codelock.c:484`; `P:\scripts\4_world\classes\codelockcomponent.c:257` |
+| `DigitalCodeLock` with `CodeLockComponent` | A helper object that saves its own fields inside the owner's stream | `P:\scripts\4_world\entities\itembase\codelock.c:505`; `P:\scripts\4_world\classes\codelockcomponent.c:257` |
 | `TerritoryFlag` | A timer saved and checked after load | `P:\scripts\4_world\entities\itembase\basebuildingbase\totem.c:101` and `:111` |
 | `PlayerBase` | Large chain of sub systems, each with its own save call, written only on a multiplayer server | `P:\scripts\4_world\entities\manbase\playerbase.c:7353` and `:7408` |

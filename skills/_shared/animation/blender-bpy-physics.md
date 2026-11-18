@@ -6,7 +6,7 @@ This is Blender behaviour, run on Blender 5.1 with `blender --background` or tak
 
 ## Adding a rigid body
 
-There is no data API constructor: `bpy.types.RigidBodyObject()` raises `TypeError`. Use the operator, which works headless with only the active object set:
+There is no data API constructor: `bpy.types.RigidBodyObject()` raises `TypeError: bpy_struct.__new__(struct): expected a single argument`. Use the operator, which works headless with only the active object set:
 
 ```python
 bpy.ops.mesh.primitive_plane_add(size=10, location=(0, 0, 0))

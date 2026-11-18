@@ -1,6 +1,6 @@
 class CfgPatches
 {
-    class LF_UIProbe_Scripts
+    class AZ_UIProbe_Scripts
     {
         units[] = {};
         weapons[] = {};
@@ -10,18 +10,18 @@ class CfgPatches
 
 class CfgMods
 {
-    class LF_UIProbe
+    class AZ_UIProbe
     {
         type = "mod";
-        name = "LF_UIProbe";
-        dir = "LF_UIProbe";
+        name = "AZ_UIProbe";
+        dir = "AZ_UIProbe";
 
         class defs
         {
             class missionScriptModule
             {
                 value = "";
-                files[] = {"LF_UIProbe/scripts/5_Mission"};
+                files[] = {"AZ_UIProbe/scripts/5_Mission"};
             };
         };
     };

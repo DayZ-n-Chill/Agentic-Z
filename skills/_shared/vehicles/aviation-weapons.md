@@ -13,7 +13,7 @@ The server casts a 1500 m ray for the damage and, at the same time, spawns a tra
 | Tracer model | `P:\DZ\weapons\projectiles\tracer_red.p3d` |
 | `Ammo_308Win` and `Ammo_308WinTracer` ammunition | `P:\DZ\weapons\ammunition\config.cpp:100` and `:164` |
 | `RGD5Grenade_Ammo` damage profile | `P:\DZ\weapons\explosives\config.cpp:24` |
-| `Grenade_explosion_SoundSet` | `P:\DZ\sounds\hpp\config.cpp:338734` |
+| `Grenade_explosion_SoundSet` | `P:\DZ\sounds\hpp\config.cpp:339404` |
 | `ParticleList.GUN_IZH18`, the IZH-18 muzzle flash (`weapon_shot_izh18_01`) | `P:\scripts\3_game\particles\particlelist.c:176` |
 | `DayZPhysics.RaycastRV` | `P:\scripts\3_game\global\dayzphysics.c:199` |
 | `ProcessDirectDamage` and `ProcessDirectDamageFlags.ALL_TRANSFER` | `P:\scripts\3_game\entities\object.c:1138` and `:3` |

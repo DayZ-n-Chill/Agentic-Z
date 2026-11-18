@@ -59,7 +59,7 @@ class ExpansionMarketMenuItemManagerPreset
 }
 ```
 
-They go under `MarketPresets\Weapons\` and `MarketPresets\Clothing\` (`EXPANSION_MARKET_WEAPON_PRESETS_FOLDER`, `EXPANSION_MARKET_CLOTHING_PRESETS_FOLDER`). The economy lives on the server; UI preferences live on the client, with the same loader.
+The static `LoadItemPreset(string presetName, string path)` reads one back. They go under `MarketPresets\Weapons\` and `MarketPresets\Clothing\` (`EXPANSION_MARKET_WEAPON_PRESETS_FOLDER`, `EXPANSION_MARKET_CLOTHING_PRESETS_FOLDER`). The economy lives on the server; UI preferences live on the client, with the same loader.
 
 ## Market item fields
 

@@ -60,10 +60,10 @@ From `actiontargetscursor.c:146` to `:150`. Up to 1.29 the setters loaded fixed 
 | `MainWrap` | `WrapSpacerWidgetClass` | 350 by 51 | `"Size To Content V" 1` |
 | `MainGrid` | `GridSpacerWidgetClass` | | Columns 100, rows 100 |
 | `SecondaryGrid0` | `GridSpacerWidgetClass` | 51 by 51 | Tools; rows 100 |
-| `IconMarginCard_Wrap4` to `6` | `WrapSpacerWidgetClass` | 55 by 55 | Each holds an `IconBg_Image` of 51 by 51 |
+| `IconMarginCard_Wrap4` to `6` | `WrapSpacerWidgetClass` | 55 by 55 | Each holds an image of 51 by 51: `IconBg_Image4`, `IconBg_Image5`, `IconBg_Imag6` |
 | `Separator` | `PanelWidgetClass` | 14 by 55 | Holds `Spacer_Image`, 3 by 15, empty `image0` |
 | `SecondaryGrid1` | `GridSpacerWidgetClass` | 51 by 51 | Materials; columns 5, rows 100 |
-| `IconMarginCard_Wrap1` to `3` | `WrapSpacerWidgetClass` | 55 by 55 | Each holds an `IconBg_Image` of 51 by 51 |
+| `IconMarginCard_Wrap1` to `3` | `WrapSpacerWidgetClass` | 55 by 55 | Each holds an image of 51 by 51: `IconBg_Image1` to `IconBg_Image3` (`:190` to `:244`) |
 
 The third tools image is spelled `IconBg_Imag6` in the vanilla file (`:117`); keep that spelling if you look it up.
 
@@ -78,11 +78,11 @@ The third tools image is spelled `IconBg_Imag6` in the vanilla file (`:117`); ke
 | `Col` | `PanelWidgetClass` | Style `rover_sim_colorable` |
 | `PanelWidget` | `PanelWidgetClass` | Style `blank`; holds the rest |
 | `Render` | `ItemPreviewWidgetClass` | With `OutOfReach`, `Mounted`, `AmmoIcon`, `Cursor`, `TemperaturePanel` |
-| `QuantityPanel` | `PanelWidgetClass` | Holds `QuantityBar` (progress bar), `Quantity` (rich text) and `Quantity0` (text) |
+| `QuantityPanel` | `PanelWidgetClass` | Holds `QuantityBar` (progress bar), then `Quantity` (rich text) inside the grid spacer `QuantityStackPanel` (`:369`) and `Quantity0` (text) inside `QuantityStackPanel0` (`:421`) |
 
 ## The classes
 
-`TargetActionInfoPanelBase` (`actioninfopanels.c:5` to `:20`) extends `ActionInfoPanelBase` and holds `m_VisibleGridCount`, `m_ActionInfo`, `m_Target` and `m_GridsArray`; `Init()` calls `InitGridStructure()`, which creates the array. `ConstructionActionInfoPanel` (`:82` to `:108`) overrides `InitGridStructure` to add both grids and find `Separator`, and shows or hides the separator in `UpdateInterval` (`:100` to `:108`):
+`TargetActionInfoPanelBase` (`actioninfopanels.c:5` to `:20`) extends `ActionInfoPanelBase` and holds `m_VisibleGridCount`, `ActionInfoDataBase m_ActionInfo`, `m_Target` and `m_GridsArray`; `Init()` calls `InitGridStructure()`, which creates the array. `ConstructionActionInfoPanel` (`:82` to `:108`) overrides `InitGridStructure` to add both grids and find `Separator`, and shows or hides the separator in `UpdateInterval` (`:100` to `:108`):
 
 ```c
 override protected void InitGridStructure()
@@ -123,4 +123,4 @@ Read from the vanilla code above; not run in game.
 1. Subclass `TargetActionInfoPanelBase`. `CreateActionInfoPanel` casts to that class and calls `Init()`, so a bare `ActionInfoPanelBase` subclass does not work there.
 2. Override `SetLayoutName()` to point at your own spacer and grid layout.
 3. In a `modded class ActionTargetsCursor`, override `InitActionInfoPanels()`, call `super.InitActionInfoPanels()` first, then `CreateActionInfoPanel(MyMod_InfoPanel, ACTION_ORDER_CONTINUOUS)`.
-4. In your action, return true from `IsTargetInfoAction()` and your payload from `GetClientActionInfo()` (`P:\scripts\4_world\classes\useractionscomponent\actionbase.c:277` and `:282`).
+4. In your action, override `bool IsTargetInfoAction()` to return true and `ActionInfoDataBase GetClientActionInfo()` to return your payload (`P:\scripts\4_world\classes\useractionscomponent\actionbase.c:277` and `:282`).

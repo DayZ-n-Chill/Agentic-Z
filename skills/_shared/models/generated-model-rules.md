@@ -49,13 +49,7 @@ Give every collision face a penetration `.rvmat`: `face.material = "dz\\data\\da
 
 ### The per component winding check
 
-After export, check every collision component for faces wound outward. Comparing the cross product with the stored normal (the audit's Check A) is not enough: it returns `UNIFORM_NON_FLIPPED` whenever the two agree, right or wrong.
-
-- **Before you check.** Every non proxy face belongs to a `ComponentNN`, every component is closed and convex, and no face is degenerate. Short of that the check proves nothing.
-- **The check.** For each non proxy face, `outward = face_centroid - component_centroid` and `cross_n = normalize(cross(v1-v0, v2-v0))`. `dot(outward, cross_n) < 0` is right. A face above zero is wound outward, and `ObjIntersectFire` treats it as a back face and misses it. Read every face, not most.
-- **Symptoms**, all three at once: bullets pass through, the hologram falls to the ground when stacking, and nothing can be placed on top.
-- **The fix.** `face.vertices.reverse()` on the faces that read outward and only those, `proxy:*` faces excluded, with their stored normals set as `p3d-killers.md` section 1 says. A component wound outward reads outward on every face and is reversed whole; a healthy component in the same LOD is left alone. Never reverse a collision LOD to match the visual LOD (`dayz-p3d-audit/references/winding-absolute-check.md`). The visual LOD has its own test, because its stored normals drive lighting while its winding drives culling.
-- **What runs it.** Nothing in this pipeline, and not `audit_p3d.py`. `check_face_winding` in `py3d-shape-checks.md` compares winding with stored normals on `model.lods[0]` only, which is Check A's question; on a model whose first LOD is Memory it finds nothing. The loop under "When to reverse faces" in `py3d-axis-map.md` reverses every face of every LOD, which is right only to undo a reversal of the whole model. Measured offline on 2 m test boxes: reversing every face of a LOD with one healthy and one outward component moves the fault onto the healthy one.
+After export, check every collision component for faces wound outward, per component and every face. The check, its symptoms, the fix and which tool runs it are in `axes-and-winding.md`, "Collision LODs"; nothing in this pipeline runs it.
 
 ## Visual LODs, memory and selections
 
@@ -75,7 +69,7 @@ Blender Z up to DayZ Y up is a reflection. Map every point and normal of every L
 
 ### The three parts of an attachment
 
-An attached item shows only when all three exist: a proxy face and selection in the parent's visual LODs, the proxy `.p3d` that the selection names, and a `CfgNonAIVehicles` class that ties the slot to the proxy model. With one missing the attachment is there in the inventory but invisible. Vanilla's plank proxy class is `Proxysingle_plank` (`P:\DZ\gear\camping\config.cpp:13405`). Since 1.30 also put the proxy triangle in View Geometry, so a dedicated server does not fall back to the parent's origin (`dayz-1-30-models.md`). More in `memory-and-selections-authoring.md`, `model-config-and-packing.md` and `proxies.md`.
+An attached item shows only when all three exist: a proxy face and selection in the parent's visual LODs, the proxy `.p3d` that the selection names, and a `CfgNonAIVehicles` class that ties the slot to the proxy model. With one missing the attachment is there in the inventory but invisible. Vanilla's plank proxy class is `Proxysingle_plank` (`P:\DZ\gear\camping\config.cpp:13415`). Since 1.30 also put the proxy triangle in View Geometry, so a dedicated server does not fall back to the parent's origin (`dayz-1-30-models.md`). More in `memory-and-selections-authoring.md`, `model-config-and-packing.md` and `proxies.md`.
 
 ### Proxy names
 

@@ -42,7 +42,9 @@ Per-piece materials (wipers plastic, bumper metal) must come from the source par
 
 ## Glass
 
-Clone the vanilla sedan glass, `P:\DZ\vehicles\wheeled\civiliansedan\data\glass.rvmat`: ambient and diffuse alpha 0.75, `renderFlags[]` with `"noZwrite"`, the Super shader, `gazglass_nohq.paa` in `Stage1`. Its textures ship in `DZ_Vehicles_Wheeled`, which a car already requires. It is translucent and does not depend on UVs, which also cures "missing parts" that were just untextured windows. Building glass uses the Super shader too (`P:\DZ\structures\data\alpha\glass_int_new.rvmat`); the `Glass` pixel shader appears only in `P:\DZ\data\data\glass_enviro.rvmat` and `chrome_enviro.rvmat`, which nothing vanilla references. One test car used alpha 0.22 to 0.32, a value tuned for that mod.
+Clone the vanilla sedan glass, `P:\DZ\vehicles\wheeled\civiliansedan\data\glass.rvmat`: ambient and diffuse alpha 0.75 (`:1` and `:2`), `renderFlags[]` with `"noZwrite"` (`:7` to `:10`), the Super shader, `gazglass_nohq.paa` in `Stage1`. Its textures ship in `DZ_Vehicles_Wheeled`, which a car already requires. It is translucent and does not depend on UVs, which also cures "missing parts" that were just untextured windows. Building glass uses the Super shader too (`P:\DZ\structures\data\alpha\glass_int_new.rvmat`); the `Glass` pixel shader appears only in `P:\DZ\data\data\glass_enviro.rvmat` and `chrome_enviro.rvmat`, which nothing vanilla references. One test car used alpha 0.22 to 0.32, a value tuned for that mod.
+
+Never put visible glass on the sedan's `glass_i.rvmat`: its ambient, diffuse, emissive and specular alpha are all 0, so it is invisible by design (`P:\DZ\vehicles\wheeled\civiliansedan\data\glass_i.rvmat:1` to `:5`). Read a material's alpha before moving faces to it; a fix that adds geometry with `glass_i` adds glass nobody sees.
 
 Keep car glass one sided with the raw glTF winding. A rip's inner glass panes are the cabin side of a two-sided pair, not a doubled pane fighting for depth. Doubling glass faces blends the alpha twice and makes it too opaque. If glass is invisible from outside, fix winding, not alpha.
 

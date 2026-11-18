@@ -23,7 +23,7 @@ Related calls on other classes:
 |---|---|---|
 | `GetSelectionPositionLS(string name)`, `GetSelectionPositionMS`, `GetSelectionPositionWS` | `Object`, `P:\scripts\3_game\entities\object.c:863` to `:865` | Where a selection is now, with animations applied, in local, model or world space. |
 | `GetSelectionBasePositionLS(string name)` | `Object`, `P:\scripts\3_game\entities\object.c:871` | Where it was modelled, with no animation applied. The difference from the call above is how far the part has moved. |
-| `HideSelection`, `ShowSelection` | `EntityAI` | Shortcuts for a hide source named after the selection; see `items-in-hands.md`, "Showing and hiding parts". |
+| `HideSelection`, `ShowSelection` | `EntityAI` | Shortcuts for a hide source named after the selection; see `attach-state-parts.md`. |
 
 A phase that reads back as expected does not prove the part moved or that the source exists on that object; list the sources first (`animation-sources.md`, "Diagnosing a `user` source").
 

@@ -41,7 +41,7 @@ The usual split:
 - [ ] `inventorySlot` is a string for one slot and `inventorySlot[]` an array for several; mixing the forms silently breaks the attachment. The rule and the vanilla examples are in `skills/_shared/conventions/config.md`.
 - [ ] `ghostIcon` is `"set:setname image:imagename"`, and the imageset exists (`/dayz-build-imageset` builds one).
 - [ ] `imageSets` sits inside `CfgMods > <Mod> > defs > imageSets`, not at the root and not in `CfgSlots` (E02).
-- [ ] A vehicle or custom wheel class declares `DamageSystem` with `GlobalHealth` (E35), and the other engine minimums in `skills/dayz-launch-test/references/audit-escalation.md`, "Grade what is missing by what its absence does".
+- [ ] A vehicle or custom wheel class declares `DamageSystem` with `GlobalHealth` (E35), and the other engine minimums in `skills/dayz-launch-test/references/debug-protocol.md`, "Engine minimums to check early".
 
 ## Enforce Script, general
 

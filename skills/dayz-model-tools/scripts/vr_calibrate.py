@@ -7,8 +7,8 @@ passes here it stays SHADOW-only.
 
 Two steps:
 
-  run    Sweep a folder of renders through one or more models (sequentially —
-         a 17 GB model fills the 24 GB card, two will not co-reside) writing one
+  run    Sweep a folder of renders through one or more models (sequentially,
+         one model in GPU memory at a time) writing one
          shadow-log record per (model, render). Costs GPU time, zero credits.
 
   report Join those records against the agent's own verdicts (a small JSON the

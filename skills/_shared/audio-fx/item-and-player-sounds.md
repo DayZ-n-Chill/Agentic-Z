@@ -40,7 +40,7 @@ override void InitItemSounds()
 
 - `AddSound(int sound, string soundset, SoundParameters params = null)` is at `P:\scripts\4_world\classes\soundhandlers\itemsoundhandler.c:134`.
 - `SoundParameters` has three fields: `m_FadeIn`, `m_FadeOut` and `m_Loop` (`P:\scripts\4_world\classes\soundhandlers\itemsoundhandler.c:1`).
-- The base `InitItemSounds()` already links the place, deploy and deploy loop IDs when the item overrides `GetPlaceSoundset()`, `GetDeploySoundset()` or `GetLoopDeploySoundset()` (`P:\scripts\4_world\entities\itembase.c:4416`). For those three sounds, overriding the getter is enough.
+- The base `InitItemSounds()` already links the place, deploy and deploy loop IDs when the item overrides `GetPlaceSoundset()`, `GetDeploySoundset()` or `GetLoopDeploySoundset()` (`P:\scripts\4_world\entities\itembase.c:4420`). For those three sounds, overriding the getter is enough.
 
 ### Start and stop from the server
 
@@ -53,10 +53,10 @@ Vanilla calls it from the action, on the server (`P:\scripts\4_world\classes\use
 
 ### What happens on the way to the client (1.30)
 
-- `StartItemSoundServer(int id, int slotId)` returns at once unless it runs on the server, then puts the sound in a queue and schedules one flush for the frame (`P:\scripts\4_world\entities\itembase.c:4436`).
-- `FlushItemSoundQueue` sends every queued sound in one `RPC_ITEM_SOUND_PLAY` (`P:\scripts\4_world\entities\itembase.c:4476`).
+- `StartItemSoundServer(int id, int slotId)` returns at once unless it runs on the server, then puts the sound in a queue and schedules one flush for the frame (`P:\scripts\4_world\entities\itembase.c:4440`).
+- `FlushItemSoundQueue` sends every queued sound in one `RPC_ITEM_SOUND_PLAY` (`P:\scripts\4_world\entities\itembase.c:4480`).
 - `StopItemSoundServer(int id)` sends one `RPC_ITEM_SOUND_STOP` (`P:\scripts\4_world\entities\itembase.c:4502`).
-- On the client, `ItemBase.OnRPC` reads `RPC_ITEM_SOUND_PLAY` and calls `PlayItemSoundClient` for each entry (`P:\scripts\4_world\entities\itembase.c:2796`), and reads `RPC_ITEM_SOUND_STOP` and calls `StopItemSoundClient` (`P:\scripts\4_world\entities\itembase.c:2816`).
+- On the client, `ItemBase.OnRPC` reads `RPC_ITEM_SOUND_PLAY` and calls `PlayItemSoundClient` for each entry (`P:\scripts\4_world\entities\itembase.c:2800`), and reads `RPC_ITEM_SOUND_STOP` and calls `StopItemSoundClient` (`P:\scripts\4_world\entities\itembase.c:2816`).
 - `PlayItemSoundClient` plays the set at the item's position and sets autodestroy on it. It does nothing when that ID is already playing (`P:\scripts\4_world\classes\soundhandlers\itemsoundhandler.c:56`).
 
 So on 1.30 several sounds started in one frame all arrive. The handler's header comment still says to avoid starting two sounds at the same time because one variable carries them (`P:\scripts\4_world\classes\soundhandlers\itemsoundhandler.c:20`); that comment describes the older path below.
@@ -68,7 +68,7 @@ Up to 1.29 the server wrote the ID into a synced variable, `m_SoundSyncPlay` or 
 1.30 keeps the variables, marked as deprecated but kept for older mods (`P:\scripts\4_world\entities\itembase.c:117`), and keeps the old path only for a class that asks for it:
 
 - `LegacyItemSoundSync()` plays and stops from the two variables (`P:\scripts\4_world\entities\itembase.c:3293`). It runs only if your class calls it from its own `OnVariablesSynchronized`.
-- `LegacyStopItemSoundServer(int id)` writes `m_SoundSyncStop` and clears it 100 ms later (`P:\scripts\4_world\entities\itembase.c:4483`).
+- `LegacyStopItemSoundServer(int id)` writes `m_SoundSyncStop` and clears it 100 ms later (`P:\scripts\4_world\entities\itembase.c:4487`).
 
 A 1.29 mod that relied on `OnVariablesSynchronized` to play item sounds keeps working through the RPC path without changes, as long as it starts sounds with `StartItemSoundServer`.
 

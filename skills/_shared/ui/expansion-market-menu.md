@@ -12,8 +12,8 @@ The UI sends intents and the server decides. The menu never assumes a price or s
 2. The server sends items in batches (`RPC_LoadTraderItems`); the client inserts them into `ObservableCollection`s and the bindings update the widgets. The last batch fires `SI_SetTraderInvoker.Invoke()`.
 3. The player clicks Buy. `OnBuyButtonClick()` sets the menu state to `DIALOG`, or straight to `REQUESTING_PURCHASE` when confirmations are off, and calls `m_MarketModule.RequestPurchase(itemID, qty, price_seen, ...)`.
 4. The server RPC `RPC_RequestPurchase` recalculates the price with `FindPurchasePriceAndReserveEx()` and reserves the stock with `zone.RemoveStock(..., true)`.
-5. The client RPC `RPC_Callback(PurchaseSuccess)` sets the state back to `NONE` and confirms the purchase.
-6. The confirming `RPC_RequestPurchase` removes the stock for real, takes the money, spawns the item and calls `zone.Save()`. A final callback refreshes the UI.
+5. The client RPC `RPC_Callback(PurchaseSuccess)` sets the state back to `NONE` and confirms the purchase (`ActualPurchase`, `ConfirmPurchase`).
+6. The confirming `RPC_RequestPurchase` removes the stock for real, takes the money, spawns the item and calls `zone.Save()`. A final `RPC_Callback` refreshes the menu with `UpdateUI`.
 
 ## Menu, controller and layout
 
@@ -91,7 +91,7 @@ The client setting `MarketMenuSkipConfirmations` skips the dialog.
 
 ## The server rechecks the price
 
-The price the client sends is only a proposal (`Scripts/4_World/DayZExpansion_Market/Systems/Market/ExpansionMarketModule.c:2862`):
+The price the client sends is only a proposal (`Scripts/4_World/DayZExpansion_Market/Systems/Market/ExpansionMarketModule.c:2862`; the menu side is `ExpansionMarketMenu.c:2623` to `:2644`):
 
 ```c
 if (!FindPurchasePriceAndReserveEx(item, player, count, reservedList, ..., result)
@@ -109,7 +109,7 @@ if (!FindPurchasePriceAndReserveEx(item, player, count, reservedList, ..., resul
 
 A difference of exactly 1, from rounding, is accepted; anything more fails with `FailedStockChange`.
 
-The confirmation (`ExpansionMarketModule.c:3007` to `:3044` and `:3089` to `:3150`) checks again before touching anything: the item must still be reserved (`FailedReserveTime` otherwise) and the player within `MAX_TRADER_INTERACTION_DISTANCE` (`FailedTooFarAway`). Then it removes the stock, takes the money with `RemoveMoney`, pays back change with `SpawnMoney`, clears the reservation and calls `zone.Save()`. The order is check, change, then save; the file is written only after the item and the charge have succeeded.
+The confirmation (`ExpansionMarketModule.c:3007` to `:3044` and `:3089` to `:3150`) checks again before touching anything: the item must still be reserved (`player.IsMarketItemReserved(itemClassName)`, `FailedReserveTime` otherwise) and the player within `MAX_TRADER_INTERACTION_DISTANCE` (`FailedTooFarAway`). Then it removes the stock, takes the money with `RemoveMoney`, pays back change with `SpawnMoney`, clears the reservation and calls `zone.Save()`. The order is check, change, then save; the file is written only after the item and the charge have succeeded.
 
 ## Reserved stock
 
@@ -129,11 +129,11 @@ int GetStock(string className, bool actual = false)
 }
 ```
 
-`actual = true` gives the real stock; the default gives stock minus active reservations. A purchase reserves first with `AddReservedEx`, which calls `zone.RemoveStock(item.ClassName, amt, true)`; a cancel or timeout runs `ClearReserved`, which gives it back (`Scripts/4_World/DayZExpansion_Market/Systems/Market/ExpansionMarketReserveItem.c:56` to `:82`). Two players buying the last item at once can't both get it.
+`actual = true` gives the real stock; the default gives stock minus active reservations. A purchase reserves first with `AddReservedEx`, which calls `zone.RemoveStock(item.ClassName, amt, true)`; a cancel or timeout runs `ClearReserved`, which calls `zone.ClearReservedStock(...)` and gives it back (`Scripts/4_World/DayZExpansion_Market/Systems/Market/ExpansionMarketReserveItem.c:56` to `:82`). Two players buying the last item at once can't both get it.
 
 ## The trader decides what can be traded
 
-A trader is more than a placed NPC (`Scripts/3_Game/DayZExpansion_Market/Settings/ExpansionMarketTrader.c:56` to `:58` and `:449` to `:459`). It holds the accepted `Currencies`, the `DisplayCurrencyValue` and `DisplayCurrencyName`, its categories and items, and a right per item: `CanOnlyBuy`, `CanOnlySell`, `CanBuyAndSell` or attachment only.
+A trader is more than a placed NPC (`Scripts/3_Game/DayZExpansion_Market/Settings/ExpansionMarketTrader.c:56` to `:58` and `:449` to `:459`). It holds the accepted `Currencies`, the `DisplayCurrencyValue` and `DisplayCurrencyName`, its categories and items, and a right per item: `CanOnlyBuy`, `CanOnlySell`, `CanBuyAndSell` or attachment only (`IsAttachmentBuySell(string item)`).
 
 ```c
 bool CanSellItem(string item) { return Items.Get(item) != ExpansionMarketTraderBuySell.CanOnlyBuy; }
@@ -149,7 +149,7 @@ The action that opens the trader calls `ExpansionMarketModule.s_Instance.StartTr
 | Step | Side | Call |
 |---|---|---|
 | 1 | Server | `StartTrading` |
-| 2 | Client | `RPC_LoadTraderData` (the zone's buy and sell percentages) |
+| 2 | Client | `RPC_LoadTraderData` (the zone's `BuyPricePercent` and `SellPricePercent`) |
 | 3 | Client | `RequestTraderItems(trader, 0, stockOnly)` |
 | 4 | Server | `RPC_RequestTraderItems`, then `LoadTraderItems` in batches |
 | 5 | Client | `RPC_LoadTraderItems`; the last batch fires `SI_SetTraderInvoker.Invoke(trader, true)` (`:4083` to `:4107`) |

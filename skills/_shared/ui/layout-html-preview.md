@@ -19,13 +19,13 @@ Open the `.html` in a browser. It switches between 1080p, 1440p, 21:9 and 720p. 
 | `color` | Yes | As a background or text color |
 | Generated color images `#(argb,...)color(...)` | Yes | As a flat color |
 | `.paa` textures | No | Needs a texture decoder, such as the one in `scripts/tools/dayz-3d-viewer/` |
-| `text "..."` | Yes | A `#STR_` key shows as a placeholder |
+| `text "..."` | Yes | A `#STR_KEY` key shows as the placeholder `[loc:#STR_KEY]` |
 | Dabs `scriptclass "ViewBinding"` | Yes | Not drawn; the binding name shows as a placeholder when the widget has no text |
 | `ScriptParamsClass` | Yes | Not drawn |
 | `Relay_Command` | Yes | As a badge on the widget |
 | `Metron` against `MetronBook` | Yes | As a heavier and a lighter weight |
 | `text halign`, `text valign` | Yes | |
-| `clipchildren`, `ignorepointer`, `visible 0` | Yes | Clipping, no pointer events, hidden |
+| `clipchildren`, `ignorepointer`, `visible 0` | Yes | As CSS `overflow: hidden`, `pointer-events: none` and `display: none` |
 | Animations | No | A static picture |
 | Live binding data | No | Placeholders only |
 | Item preview, map and player preview widgets | No | They need game state |

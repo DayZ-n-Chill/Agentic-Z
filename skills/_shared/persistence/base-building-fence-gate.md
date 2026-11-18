@@ -58,7 +58,7 @@ That branch tests the game's storage version, which only the game can raise. A m
 
 ## Repair
 
-`Fence.CanBeRepairedToPristine()` returns true (`fence.c:466` to `:469`). Repair needs 15 percent of the build materials, `REPAIR_MATERIAL_PERCENTAGE = 0.15` (`P:\scripts\4_world\classes\constructionbase.c:34`, used at `:1105` and `:1167`), and at least 1. The repair itself is the generic `ActionRepairPart`, not code in `fence.c`.
+`Fence.CanBeRepairedToPristine()` returns true (`fence.c:466` to `:469`). Repair needs 15 percent of the build materials, `REPAIR_MATERIAL_PERCENTAGE = 0.15` (`P:\scripts\4_world\classes\constructionbase.c:34`, used at `:1105` and `:1167`), rounded down and at least 1 (`Math.Max(Math.Floor(quantity), 1)`, `:1106` and `:1168`). The repair itself is the generic `ActionRepairPart`, not code in `fence.c`.
 
 ## Copying the pattern
 

@@ -83,7 +83,7 @@ What this means for a mod:
 
 ## The client post process
 
-On the client, `OnStart` asks for `PPERequesterBank.REQ_SANDSTORMEFFECT` and sets the target intensity (`scriptedsandstormcontroller.c:310` to `:327`). The effect class is `PPERequester_SandstormEffect` (`P:\scripts\3_game\ppemanager\requesters\ppersandstorm.c:1`): amber color, saturation and god rays. Its material is a postprocess material, not a particle material; the shader, the tint and the storm's `.ptc` are in `dayz-particles/references/dayz-1-30-particles.md`, section "Sandstorm: a postprocess material, not a particle material".
+On the client, `OnStart` asks for `PPERequesterBank.REQ_SANDSTORMEFFECT` and sets the target intensity (`scriptedsandstormcontroller.c:310` to `:327`). The effect class is `PPERequester_SandstormEffect` (`P:\scripts\3_game\ppemanager\requesters\ppersandstorm.c:1`): amber color, saturation and god rays. Its material is a postprocess material, not a particle material; the shader, the tint and the storm's `.ptc` are in `dayz-particles/references/dayz-1-30-world-particles.md`, section "Sandstorm: a postprocess material, not a particle material".
 
 ## What a world needs
 

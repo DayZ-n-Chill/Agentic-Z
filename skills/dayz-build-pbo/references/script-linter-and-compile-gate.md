@@ -71,13 +71,13 @@ Sort findings by path before believing any count: split the mod's own source fro
 
 ## Both sides must compile
 
-A server compile pass does not cover the whole build. Code under `#ifndef SERVER` (vanilla has such blocks, for example `P:\scripts\4_world\classes\constructionbase.c:151`) is left out of the server's compile and can still break the client's module. Before accepting a build, boot both server and client, read the script compile of each, and record a pass for each side. Wrapping a failing declaration in a side guard is no fix unless the side that still compiles it passes too. `/dayz-gate ingame` boots both and reads both sets of logs.
+A server compile pass does not cover the whole build. Code under `#ifndef SERVER` (vanilla has such blocks, for example `P:\scripts\4_world\classes\constructionbase.c:186`) is left out of the server's compile and can still break the client's module. Before accepting a build, boot both server and client, read the script compile of each, and record a pass for each side. Wrapping a failing declaration in a side guard is no fix unless the side that still compiles it passes too. `/dayz-gate ingame` boots both and reads both sets of logs.
 
 ## A deployed PBO with the right version may still not compile
 
 A clean offline result plus a correct deploy is still not a compile. One mod was rebuilt and deployed with its version raised, the deployed PBO scanned clean (the new version string and every new verb present, a negative control against the previous build), and the server still died with `Can't compile "Mission" script module!`.
 
-The cause was a partial sync between the repo's addon tree and the `P:\<Mod>` build tree. The feature was two files, a field in one and its reader in the other. The sync copied the file that declares the field, dropping the field because that feature is deliberately unpublished, but not the file that reads it, which was left reading a field that no longer existed (`if (a.dest == "hands" || a.hands)` with no `string hands;` declared).
+The cause was a partial sync between the repo's addon tree and the `P:\<Mod>` build tree. The feature was two files, a field in one and its reader in the other. The sync copied the file that declares the field, dropping the field because that feature is deliberately unpublished, but not the file that reads it, which was left reading a field that no longer existed (`if (a.dest == "hands" || a.hands)` at `P:\<Mod>\scripts\5_Mission\Bridge.c:1340`, with no `string hands;` left in the dev tree's `Messages.c`).
 
 Enforce Script fails the whole module on one unresolved symbol, so the log also shows errors from unrelated mods loaded in the same run. The first error names the real culprit; debug that one first.
 

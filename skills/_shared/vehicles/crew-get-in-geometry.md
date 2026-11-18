@@ -28,7 +28,7 @@ When an open vehicle does need a shell occluder, small components alone do not p
 
 ## The crew proxy triangle sets the seated pose
 
-The seated player's position and facing come from the crew proxy triangle (`crewdriver`, `crewcodriver`, in View Geometry and Fire Geometry), not from `pos_driver` or `pos_codriver`.
+The seated player's position and facing come from the crew proxy triangle (`crewdriver`, `crewcodriver`, in View Geometry and Fire Geometry), not from `pos_driver` or `pos_codriver`. `class Crew` names those proxies through `proxyPos` (vanilla `proxyPos="crewDriver"` and `proxyPos="crewCoDriver"`, `P:\DZ\vehicles\wheeled\config.cpp:270` and `:278`); memory points of the same name are not enough.
 
 - Make the triangle's shape unambiguous: `origin + e1 + e2` with edges of about 1.0 and 2.0, angles 90, 63.4 and 26.6 degrees. A 90, 45, 45 triangle ties in the engine's angle sort and turns each seat differently. A tiny triangle (py3d `add_proxy(scale=0.1)`, edges about 0.05) falls below the engine's threshold: the player is misplaced and moving the proxy has little visible effect.
 - The facing depends on `e1`, `e2` and the model's own orientation. A car facing -z, like vanilla, uses `e1=(0,0,1)`, `e2=(0,2,0)`, which gives `R=((-1,0,0),(0,0,1),(0,1,0))`. A model turned 180 degrees needs `e1=(0,0,-1)`, giving `R=((1,0,0),(0,0,-1),(0,1,0))`. Copy a known good car with the same orientation and confirm the sign of one move in game.
@@ -65,7 +65,7 @@ These three methods are enough to get in and drive. Opening doors and switching 
 
 The model must carry the memory points `seat_con_1_1` and `seat_con_2_1` within 1.0 m of a player at the door, and the crew config must use `seat_driver` and `seat_codriver`; the base `GetDoorConditionPointFromSelection` maps them (`P:\scripts\4_world\entities\vehicles\carscript.c:2141`). That mapping is left-hand drive; right-hand drive cars need the override in `get-in-guards.md`.
 
-Doors are not needed. `GetCarDoorsState` returns `DOORS_MISSING` when no `CarDoor` is attached (`civiliansedan.c:185` to `:193`), which is not `DOORS_CLOSED`, so `CrewCanGetThrough` passes. A car with doors baked into the body gets in fine; opening doors is a separate feature (`vehicle-door-mechanisms.md`).
+Doors are not needed. `GetCarDoorsState` returns `DOORS_MISSING` when no `CarDoor` is attached (`civiliansedan.c:185` to `:193`), which is not `DOORS_CLOSED`, so `CrewCanGetThrough` passes. A car with doors baked into the body gets in fine; opening doors is a separate feature (`CarDoor` classes, door proxies and models, the `AnimationSources` door classes such as `DoorsDriver`, and door bones in `model.cfg`; `vehicle-door-mechanisms.md`).
 
 ## The script module must load
 

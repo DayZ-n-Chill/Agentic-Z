@@ -42,11 +42,12 @@ So colors that look darker than their hex values are the player's brightness set
 
 These come from the documented markup of the newer Enfusion engine (Arma Reforger), not from `P:\`. Confirm each one in game before you rely on it in DayZ; `RichTextWidget` itself is vanilla (`enwidgets.c:224`).
 
-- Tags: `<b>`, `<i>`, `<color>` (by rgba, hex or name), `<image set name scale>`, `<outline>`, `<shadow>`, `<font>`.
+- Tags: `<b>`, `<i>`, `<color>` (by rgba, hex or name: `<color rgba="R,G,B,A">`, `<color hex="0xAARRGGBB">`), `<image set name scale>`, `<outline>`, `<shadow>`, `<font>`.
 - Tags can't overlap; the parser needs a clean nesting.
 - Wrapping and relaying out long text is expensive.
 - Bold and italic need SDF fonts.
-- `<image set="..." name="..." scale="1" />` draws an image inline; scale 1 is the line height.
+- `<image set="..." name="..." scale="1" />` draws an image inline; scale 1 is the line height. Vanilla's own text writes it that way: `<image set="dayz_gui" name="icon_pin" />` (`P:\scripts\data\news_feed.txt:2`).
+- `<font name='gui/fonts/MetronBook'>...</font>` switches the face for a span; the attribute form is not checked on `P:\`.
 
 ## Still to test in game
 

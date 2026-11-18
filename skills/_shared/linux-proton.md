@@ -33,10 +33,10 @@ Build, sign, binarize and publish with dayzmake and `workshop`; the Linux route 
 
 dayzmake is the DayZ fork of armake2, renamed at `v1.0.0`. Use the fork; the original armake2 is built for Arma. Its V3 file hash leaves out `.c` files, while dayzmake includes them. Whether the original armake2 fails on DayZ configs is not checked.
 
-- **Which version.** `v1.0.0` or later is enough to build and sign your own mod. Unpacking any PBO you did not build needs `v2.0.0` or later: `v2.0.0` checks each entry's relative path (`safe_relative_path` and `crosses_symlink` in `src/pbo.rs`) and skips unsafe entries, and `v1.0.0` has no such check. dayz-mcp's managed `build=true` path pins the `v1.0.0` release binary for building.
+- **Which version.** `v1.0.0` or later is enough to build and sign your own mod. Unpacking any PBO you did not build needs `v2.0.0` or later: `v2.0.0` checks each entry's relative path (`safe_relative_path` and `crosses_symlink` in `src/pbo.rs`) and skips unsafe entries, and `v1.0.0` has no such check (its entry handling at `src/pbo.rs:724` and `:731` to `:733`). dayz-mcp's managed `build=true` path pins the `v1.0.0` release binary for building.
 - **How to install.** Take the pinned `v2.0.0` release binary from the dayzmake releases page, or build the `v2.0.0` tag with `cargo install` (needs `libssl-dev`).
 - **What the fork adds.** Preprocessor fixes (`#include` directives, nested macro arguments), `$PREFIX$` accepted when building PBOs, `img2paa` and `paa2img`, a `binarize` command, texture and material checks in `build` (`missing-texture`, `missing-material`) and the opt-in `build --proton-binarize`.
-- **Inspecting a model.** `dayzmake inspect` shows format and version for MLOD and ODOL, and the LODs, textures, materials, properties and selections only for an editable MLOD (`README.md` of dayzmake `v1.0.0`).
+- **Inspecting a model.** `dayzmake inspect` shows format and version for MLOD and ODOL, and the LODs, textures, materials, properties and selections only for an editable MLOD (`README.md:130` of dayzmake `v1.0.0`).
 - **Telling builds apart.** A binary is the fork when `dayzmake -h` lists `--proton-binarize`. `dayzmake --version` prints `v1.0.0`; builds from before the rename are called `armake2` and print `v0.3.0` whatever their commit.
 
 The fork keeps adding functions only DayZ needs, or needs differently from Arma. Read the release notes before you upgrade a pinned build.

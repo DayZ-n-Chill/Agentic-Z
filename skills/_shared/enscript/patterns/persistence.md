@@ -2,7 +2,7 @@
 
 DayZ persists entity data through a positional binary stream. Fields are written and read in **strict order**. Adding new fields requires a version guard at the read site.
 
-The hooks are `void OnStoreSave(ParamsWriteContext ctx)` and `bool OnStoreLoad(ParamsReadContext ctx, int version)` on `EntityAI` (`P:\scripts\3_game\entities\entityai.c:2910` and `:2978`), overridden by `ItemBase` (`P:\scripts\4_world\entities\itembase.c:3190` and `:3089`) and `PlayerBase` (`P:\scripts\4_world\entities\manbase\playerbase.c:7353` and `:7408`). The full contract (what vanilla already saves, the load hook order, what `false` means) is in [`../../persistence/save-load-contract.md`](../../persistence/save-load-contract.md); this file is the short pattern.
+The hooks are `void OnStoreSave(ParamsWriteContext ctx)` and `bool OnStoreLoad(ParamsReadContext ctx, int version)` on `EntityAI` (`P:\scripts\3_game\entities\entityai.c:2910` and `:2978`), overridden by `ItemBase` (`P:\scripts\4_world\entities\itembase.c:3194` and `:3089`) and `PlayerBase` (`P:\scripts\4_world\entities\manbase\playerbase.c:7353` and `:7408`). The full contract (what vanilla already saves, the load hook order, what `false` means) is in [`../../persistence/save-load-contract.md`](../../persistence/save-load-contract.md); this file is the short pattern.
 
 ---
 

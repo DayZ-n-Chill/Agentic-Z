@@ -71,7 +71,7 @@ A mode class with no parent at all (`class FullAuto { ... }`) appears in no weap
 ### How a mode change reaches the player
 
 - The fire mode key is read as `IsFireModeChange()` and calls `GetWeaponManager().SetNextMuzzleMode()` (`P:\scripts\4_world\entities\dayzplayerimplement.c:1102-1104`).
-- The HUD shows `WeaponManager.GetCurrentModeName()` (`P:\scripts\4_world\classes\weapons\weaponmanager.c:1335`, read at `P:\scripts\5_mission\gui\itemactionswidget.c:585`). An empty mode name in the HUD means the engine sees only one valid mode; check the mode scope first.
+- The HUD shows `WeaponManager.GetCurrentModeName()` (`P:\scripts\4_world\classes\weapons\weaponmanager.c:1335`, read at `P:\scripts\5_mission\gui\itemactionswidget.c:593`). An empty mode name in the HUD means the engine sees only one valid mode; check the mode scope first.
 - The hand animation profile does not decide how many modes a gun has. Registering the class through `RegisterOneHanded` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:309`, called at `:1552`) gives it the one handed tool behaviour (`SetToolsOneHanded`, `:227`); that it then has no fire selector was seen in a mod and is not checked on `P:\`.
 - Before assuming a third-party base "cannot be read" or has a single mode, derapify its `config.bin` with `CfgConvert -txt` (DayZ Tools). On one SMG base that was assumed protected, the file derapified completely and already listed `modes[]={"SemiAuto","FullAuto"}` (mod config, not on `P:\`).
 

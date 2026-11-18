@@ -32,7 +32,7 @@ Two levels: `Construction`, then a main part, then a part. The vanilla Fence has
 | `id` | the part's save and sync bit, unique, 1 to 93 | `constructionparttyped.c:83`; used by `RegisterPartForSync` (`basebuildingbase.c:137` to `:164`) |
 | `is_base` | 1 marks the foundation; dismantling it destroys the whole object | `constructionparttyped.c:84`; destroy path at `basebuildingbase.c:615` to `:619` |
 | `is_gate` | 1 marks a gate, as on the Fence | `constructionparttyped.c:85` |
-| `required_parts[]` | parts that must be built first | `InitRequiredParts`, `constructionparttyped.c:88` to `:93`; checked by `HasRequiredPart` (`P:\scripts\4_world\classes\constructionbase.c:682` to `:695`) |
+| `required_parts[]` | parts that must be built first | `InitRequiredParts`, `constructionparttyped.c:88` to `:93`; checked by `HasRequiredPart` (`P:\scripts\4_world\classes\constructionbase.c:780` to `:793`) |
 | `conflicted_parts[]` | parts that block this one once built | `constructionparttyped.c:141`; checked by `HasConflictPart` (`constructionbase.c:704` to `:726`) |
 | `collision_data[]` | two memory point names, min and max, for the build collision box | `constructionparttyped.c:151` |
 | `build_action_type` | bit mask matched against the tool's own `build_action_type` | `InitActionMasks`, `constructionparttyped.c:95` to `:107` |
@@ -40,6 +40,8 @@ Two levels: `Construction`, then a main part, then a part. The vanilla Fence has
 | `material_type` | a `ConstructionMaterialType` value that picks the build and dismantle sounds | `constructionparttyped.c:132` |
 
 `show_on_init` still appears in old configs. No script on `P:\` reads it (a search of `P:\scripts\4_world` finds nothing), so leave it out.
+
+On 1.29 the same keys were read per instance in `construction.c`. `UpdateConstructionParts` (1.29 `construction.c:256` to `:264`) read `name`, `id`, `is_base`, `is_gate` and `show_on_init`; `show_on_init` had no seen effect on the show and hide paths even then. `HasRequiredPart` was at `:415` to `:418` and `:546` to `:553`, `HasConflictPart` at `:441` to `:443`, the `collision_data[]` reader at `:1128` to `:1141`, the `build_action_type` check at `:959` and `:966` to `:1003`, the `dismantle_action_type` read at `:989`, and the `material_type` read at `:1005` to `:1015`.
 
 ### Material types
 
@@ -61,11 +63,11 @@ A part with no `Materials` block needs no material.
 
 ## Inventory categories
 
-`GUIInventoryAttachmentsProps` (`config.cpp:4375` to `:4417`) groups the slots into inventory categories (Base, Attachments, Material). Each child has `attachmentSlots[]`, `selection` (the model selection the category maps to), `icon` and `name`. `GetAttachmentSlotFromSelection` and `GetAttachmentsFromSelection` read it to find the slot an attach action targets (`P:\scripts\4_world\classes\basebuilding\constructionactiondata.c:469` and `:499`). No script on `P:\` reads a `platform_support` key; `DropNonUsableMaterialsServer` is at `constructionbase.c:1221` to `:1276`.
+`GUIInventoryAttachmentsProps` (`config.cpp:4375` to `:4417`) groups the slots into inventory categories (Base, Attachments, Material). Each child has `attachmentSlots[]`, `selection` (the model selection the category maps to), `icon` and `name`. `GetAttachmentSlotFromSelection` and `GetAttachmentsFromSelection` read it to find the slot an attach action targets (`P:\scripts\4_world\classes\basebuilding\constructionactiondata.c:469` and `:499`; on 1.29 `constructionactiondata.c:250` to `:336`). On 1.29 `DropNonUsableMaterialsServer` also read a `platform_support` key (1.29 `construction.c:788` to `:908`). No script on `P:\` reads it now; `DropNonUsableMaterialsServer` is at `constructionbase.c:1221` to `:1276`.
 
 ## Tool masks
 
-A tool joins in by declaring `build_action_type` and `dismantle_action_type` in its own `CfgVehicles` class. `CanUseToolToBuildPart` reads the tool's `build_action_type` and allows the build when it shares a bit with the part's mask (`constructionbase.c:1404` to `:1441`). The bits are `EConstructionTools` (`P:\scripts\4_world\classes\basebuilding\constructionconstants.c:14` to `:26`), which must match the config values:
+A tool joins in by declaring `build_action_type` and `dismantle_action_type` in its own `CfgVehicles` class. `CanUseToolToBuildPart` reads the tool's `build_action_type` and allows the build when it shares a bit with the part's mask (`constructionbase.c:1404` to `:1441`; on 1.29 `construction.c:966` for build and `:989` for dismantle). The bits are `EConstructionTools` (`P:\scripts\4_world\classes\basebuilding\constructionconstants.c:14` to `:26`), which must match the config values:
 
 | Bit | Name |
 |---|---|
@@ -77,9 +79,9 @@ A tool joins in by declaring `build_action_type` and `dismantle_action_type` in 
 | 32 | `TOOL_EXCAVATION` |
 | 64 | `TOOL_WOODWORK` |
 | 128 | `TOOL_HANDS` |
-| 256 | `TOOL_BRICKLAYING` |
+| 256 | `TOOL_BRICKLAYING`, new in 1.30 |
 
-Shovel, Pickaxe, Pliers and SledgeHammer also switch the player's animation, and `BrickTrowel` uses `CMD_ACTIONFB_BRICKTROWEL` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionbuildpart.c:248` to `:262`).
+Shovel, Pickaxe, Pliers and SledgeHammer also switch the player's animation, and `BrickTrowel` uses `CMD_ACTIONFB_BRICKTROWEL` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionbuildpart.c:248` to `:262`; on 1.29 `actionbuildpart.c:161` to `:181`).
 
 ## Damage zones and part names
 

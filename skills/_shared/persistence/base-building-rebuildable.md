@@ -44,7 +44,7 @@ Never write the ten int block from a `BaseBuildingBase` subclass, and never appl
 
 ## Structural support
 
-Parts on a rebuildable building can hold each other up. `ConstructionPartStaticsSupportData` parses a `StaticsSupportData` class with `SupportProviders` and `SupportRequirements` (`P:\scripts\4_world\classes\rebuilding\constructionstatics.c:1` to `:26`). `ConstructionBase.SupportRemovalCheck` returns true by default (`P:\scripts\4_world\classes\constructionbase.c:786` to `:789`) and `Rebuilding` overrides it, so `required_parts[]` is not the only thing that decides whether a part can be removed.
+Parts on a rebuildable building can hold each other up. `ConstructionPartStaticsSupportData` parses a `StaticsSupportData` class with `SupportProviders` and `SupportRequirements` (`P:\scripts\4_world\classes\rebuilding\constructionstatics.c:1` to `:26`). `ConstructionBase.SupportRemovalCheck` returns true by default (`P:\scripts\4_world\classes\constructionbase.c:884` to `:887`) and `Rebuilding` overrides it, so `required_parts[]` is not the only thing that decides whether a part can be removed.
 
 ## Config keys the rebuild parts read
 

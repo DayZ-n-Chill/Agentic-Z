@@ -45,7 +45,7 @@ The PM73 jam clip `P:\DZ\anims\anm\player\reloads\pm73\p_erc_jam_pm73_ras.anm` k
 
 ## Axes in the plugin's `.txa` export
 
-- The axis fix `mtxFix` turns 90 degrees about Z and swaps Blender's X and Y. The matrix `[[0,1,0],[-1,0,0],[0,0,1]]` (row major, as `mathutils` reads it) maps +X to −Y, a −90 degree turn; the exporter applies `mtxFix.inverted()`, the +90 degree turn. The plugin applies it the same way in `ImportTxa.py:141`, `ExportTxa.py:194` and `:228`, and in `ExportTxo.py`.
+- The axis fix `mtxFix` turns 90 degrees about Z and swaps Blender's X and Y. The matrix `[[0,1,0],[-1,0,0],[0,0,1]]` (row major, as `mathutils` reads it) maps +X to −Y, a −90 degree turn; the exporter applies `mtxFix.inverted()`, the +90 degree turn `[[0,-1,0],[1,0,0],[0,0,1]]`. The plugin applies it the same way in `ImportTxa.py:141`, `ExportTxa.py:194` and `:228`, and in `ExportTxo.py`.
 - The component swap in the `.txa` text is a separate step; do not merge it with the axis fix. Translation and scale are written X Z Y, the quaternion as `(x, z, y, −w)`, and a final `FQuaternion(−w, −x, −y, −z)` is applied on export (`Txa.py:480` to `:496` and `:550` to `:566`, `DayzAnimUtils.py:35` to `:39`, `ExportTxa.py:250`).
 - A calibration pair confirms it: `rot_txa = mtxFix · viewer_local · mtxFixᵀ`, written as `(x, z, y, −w)`. The root frame is why the plugin must do the export: the plugin rig has `EntityPosition` over `Pelvis`, while the `.txa` has `Scene_Root` over both.
 - `fUnitScale` defaults to 1.0; assume 1.0 (not tested otherwise).

@@ -34,7 +34,7 @@ These two shaders cover the `.emat` files a `.ptc` may name. Weather effects als
 - The sandstorm material opens with the shader `SnowEffect` (`P:\graphics\materials\postprocess\sandstorm.emat:1`) and sets its tint with `ParticlesColor 0.69 0.49 0.29 1` (`P:\graphics\materials\postprocess\sandstorm.emat:29`).
 - The Nasdara rain material opens with the shader `RainEffect` (`P:\graphics\materials\postprocess\rainnasdara.emat:1`).
 
-Do not put either file on the `Material` line of a `.ptc`. Both are present on `P:\` in 1.30; that they are new in 1.30 is not yet checked on `P:\`, which holds only 1.30. See `dayz-1-30-particles.md`.
+Do not put either file on the `Material` line of a `.ptc`. Both are present on `P:\` in 1.30; that they are new in 1.30 is not yet checked on `P:\`, which holds only 1.30. See `dayz-1-30-world-particles.md`.
 
 ---
 

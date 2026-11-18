@@ -35,7 +35,7 @@ An attribute is a class; the square brackets before a declaration call its const
 | `[Obsolete("Use X instead")]` | A compile time warning wherever the method is used; the call still runs. Vanilla tags methods and classes this way with the version (`[Obsolete("1.30: No replacement")]`). | `P:\scripts\1_core\proto\enscript.c:344`, `P:\scripts\3_game\entities\entityai.c:74` |
 | `[NonSerialized()]` | The serializer skips this field. | `P:\scripts\1_core\proto\serializer.c:8`, `:16`, `P:\scripts\3_game\client\syncplayer.c:7` |
 | `[Attribute("default", "widget", "description", "range")]` | Exposes a field to the Workbench editor. | `P:\scripts\1_core\proto\enentity.c:825`, `P:\scripts\2_gamelib\entities\rendertarget.c:13` |
-| `[WorkbenchPluginAttribute(...)]`, `[ButtonAttribute(...)]` | Workbench plugins and their buttons. | `P:\scripts\1_core\workbenchapi.c:137`, `:117`, `P:\scripts\editor\plugins\dayztools.c:46` |
+| `[WorkbenchPluginAttribute(...)]`, `[ButtonAttribute(...)]` | Workbench plugins and their buttons. | `P:\scripts\1_core\workbenchapi.c:63`, `:42`, `P:\scripts\editor\plugins\dayztools.c:46` |
 | `[Test("Suite")]`, `[Step(...)]` | The script testing framework. | `P:\scripts\2_gamelib\tests\testingframework.c:96`, `:125`, `:30` |
 
 `JsonSerializer` derives from `Serializer` (`P:\scripts\3_game\gameplay.c:49`) and `JsonFileLoader` uses it (`P:\scripts\3_game\tools\jsonfileloader.c:5`). Test that a `[NonSerialized()]` field stays out of your JSON before you rely on it.

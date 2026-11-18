@@ -37,7 +37,7 @@ UI and input:
 
 Config:
 
-- When overriding a vanilla `inventorySlot`, use `=` where vanilla defines a string and `+=` only where it defines an array. Measured in game with `ConfigGetTextArray`: `+=` appends to the class's own current list, not the parent's, and patches from several mods stack in load order, so add only the new values. A class that redefines the array does not inherit a patch on its base (70 of 139 `Edible_Base` descendants do), so write one patch per class with its exact parent.
+- When overriding a vanilla `inventorySlot`, use `=` where vanilla defines a string and `+=` only where it defines an array. Measured in game with `ConfigGetTextArray`: `+=` appends to the class's own current list, not the parent's, and patches from several mods stack in load order, so add only the new values. In that test one mod re-listed `Shoulder`, `Melee` and six rack slots and a second added three slots of its own: `Rifle_Base` then read `Shoulder`, `Melee`, the three slots, `Shoulder`, `Melee` again and the six rack slots, while `Pot`, patched by a third mod, kept `CookingEquipment`. A class that redefines the array does not inherit a patch on its base (70 of 139 `Edible_Base` descendants do), so write one patch per class with its exact parent.
 
 Areas to check against `P:\scripts\` on every project: entity identity, the lifecycle order, the return of object and inventory creation, config path format, maths and string helpers that differ between versions, and which target a reply RPC uses.
 
@@ -80,7 +80,7 @@ Areas to check against `P:\scripts\` on every project: entity identity, the life
 | Placed item still drags | Only `IsTakeable()` overridden | Also remove the take actions and return false from `CanPutInCargo()` |
 | `SetObjectTexture` has no effect | `hiddenSelections[]` missing, or names differ from the model (case sensitive) | Match them; read back with `GetHiddenSelectionsTextures()` (`P:\scripts\3_game\hiddenselectionsdata.c:28`, override at `P:\scripts\3_game\entities\entityai.c:2796`). There is no `GetObjectTextures()` |
 | `SetObjectTexture` changes the wrong part | Wrong index | The index is the position in `hiddenSelections[]`, from 0 |
-| Texture path read back differs from config | Reported: the engine drops the leading backslash | Read with `GetObjectTexture(int index)` (`entityai.c:2882`; `GetObjectMaterial(int)` at `:2885`) and restore from the getter |
+| Texture path read back differs from config | Reported: the engine drops the leading backslash | Read with `proto native owned string GetObjectTexture(int index);` (`entityai.c:2882`; `GetObjectMaterial(int)` at `:2885`) and restore from the getter |
 | Custom barrel lacks vanilla behaviour | Script extends `ItemBase` | Extend `Barrel_ColorBase`, the script class matching the config parent, and require its addon (`DZ_Gear_Containers`) |
 | A procedural texture is ignored | Unverified which kinds DayZ supports | Read the RPT: "unknown procedural" means stripped. `color()` is the safe one; test `text()`, `r2t()`, `ui()` and `extension()` first |
 | `SetObjectTextureGlobal` does not compile | No vanilla script declares it | Use `SetObjectTexture` and check sync in multiplayer |

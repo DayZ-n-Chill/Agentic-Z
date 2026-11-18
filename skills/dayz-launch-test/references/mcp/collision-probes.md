@@ -31,7 +31,7 @@ This is the set the `dayz-p3d-audit` absolute winding check fires (`dayz-p3d-aud
 Fire the same rays, in the same run, at two controls:
 
 - an object from the same PBO and load path, which separates the model from the build and the loading;
-- a vanilla object of the same physics layer. `WoodenCrate` sets no `physLayer` (`P:\DZ\gear\camping\config.cpp:10157`) and takes `item_small` from `Inventory_Base` (`P:\DZ\data\config.cpp:3169`). For a static, use `Land_Container_1Aoh` below.
+- a vanilla object of the same physics layer. `WoodenCrate` sets no `physLayer` (`P:\DZ\gear\camping\config.cpp:10167`) and takes `item_small` from `Inventory_Base` (`P:\DZ\data\config.cpp:3169`). For a static, use `Land_Container_1Aoh` below.
 
 In one measured run a test box took 0 of 27 rays while the second box from the same PBO and `WoodenCrate` took 21 of 21 each. The rays locate a miss; they do not name the cause. When the suspect is the winding, only a pair of builds that changes the winding alone decides it. A pair that also changes the Visual LOD and the normals supports the cause without deciding it.
 
@@ -62,7 +62,7 @@ Teleport the player 4 m from the object's centre, call `player_move(to=<4 m past
 - Blocked: `arrived:false` and the player stopped just before the face after the full hold (about 0.36 m before it on 2 m boxes). `released_by:"hold"` only says the hold ran out, and `arrived:false` anywhere else is `INCONCLUSIVE`.
 - Free: `arrived:true` (7.5 m in about 5 s). Walk the same distance and bearing on open ground as the free reference.
 - The measured walks all went nearly straight ahead (`applied_angle_deg` 0, and 0.04 once), so steering angle and its sign were not tested.
-- A walk-through alone does not prove missing collision geometry. A vanilla `WoodenCrate` (`item_small`, low) took every ray and did not stop the player, while a `HescoBox` (`physLayer="item_large"`, `P:\DZ\gear\camping\config.cpp:11336`) stopped it. Layer and height were not separated.
+- A walk-through alone does not prove missing collision geometry. A vanilla `WoodenCrate` (`item_small`, low) took every ray and did not stop the player, while a `HescoBox` (`physLayer="item_large"`, `P:\DZ\gear\camping\config.cpp:11346`) stopped it. Layer and height were not separated.
 
 ## Standing on top: move the player before you read its height
 

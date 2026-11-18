@@ -74,7 +74,7 @@ class DamageSystem
 
 ## Sound set keys
 
-Vanilla's rifle shot base set shows the keys (`Rifle_Shot_Base_SoundSet`, `P:\DZ\sounds\hpp\config.cpp:323687`):
+Vanilla's rifle shot base set shows the keys (`Rifle_Shot_Base_SoundSet`, `P:\DZ\sounds\hpp\config.cpp:324357`):
 
 | Key | Meaning | Vanilla examples |
 |---|---|---|

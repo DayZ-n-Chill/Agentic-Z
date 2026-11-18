@@ -6,7 +6,7 @@ The symptom-first get-in checks are in `invariants-get-in-and-seats.md` and in `
 
 ## The get-in condition, link by link
 
-`ActionGetInTransport.ActionCondition` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:26` to `:69`) offers a seat only when every link passes, in this order:
+`ActionGetInTransport.ActionCondition` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:26` to `:69`; on 1.29 it ran from `:26` to `:80` of that build) offers a seat only when every link passes, in this order:
 
 | Step | Check | Source |
 |---|---|---|
@@ -33,7 +33,7 @@ A custom `ActionInteractBase` offered while the player looks at a vehicle needs 
 1. Its typename added in a `modded class ActionConstructor` override of `RegisterActions(TTypenameArray actions)`, after `super` (`P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:27`; vanilla inserts `ActionGetInTransport` at `:302`).
 2. `AddAction(MyMod_Action)` in the vehicle script class's `SetActions()` override, after `super`.
 
-The cursor reads the target's own action list. `ActionInteractBase.GetInputType` returns `InteractActionInput` (`P:\scripts\4_world\classes\useractionscomponent\actions\actioninteractbase.c:61`), which inherits `ContinuousInteractActionInput` (`P:\scripts\4_world\classes\useractionscomponent\actioninput.c:558`), and that sets `m_DetectFromTarget = true` (`:552`), so the actions of `target.GetObject()` and its parent are collected (`:382` to `:386`). Vanilla relies on it: `CarScript.SetActions` adds `ActionOpenCarDoorsOutside`, `ActionCloseCarDoorsOutside` and `ActionGetInTransport` (`carscript.c:2315` to `:2317`), and none of them is in `PlayerBase.SetActions`.
+The cursor reads the target's own action list. `ActionInteractBase.GetInputType` returns `InteractActionInput` (`P:\scripts\4_world\classes\useractionscomponent\actions\actioninteractbase.c:61`), which inherits `ContinuousInteractActionInput` (`P:\scripts\4_world\classes\useractionscomponent\actioninput.c:558`), and that sets `m_DetectFromTarget = true` (`:552`), so `UpdatePossibleActions` (`:354`) collects the actions of `target.GetObject()` and its parent (`:382` to `:386`). Vanilla relies on it: `CarScript.SetActions` adds `ActionOpenCarDoorsOutside`, `ActionCloseCarDoorsOutside` and `ActionGetInTransport` (`carscript.c:2315` to `:2317`), and none of them is in `PlayerBase.SetActions`.
 
 `PlayerBase.SetActions` (`P:\scripts\4_world\entities\manbase\playerbase.c:1695` to `:1745`) is where actions with no cursor target go, such as those offered to a seated player: start and stop engine with their boat and motorbike variants (`:1707` to `:1712`), `ActionSwitchSeats` (`:1713`), the inside door actions (`:1714`, `:1715`) and `ActionGetOutTransport` (`:1728`). That case is in `seated-actions-and-get-in-faults.md`, section "An action for a seated player needs two registrations".
 

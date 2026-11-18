@@ -62,7 +62,7 @@ Two ways to make a motorbike, as for a car:
 | Doors | None. `IsAreaAtDoorFree` returns `true`; `CrewCanGetThrough`, `CanReachSeatFromSeat` and `CanReachDoorsFromSeat` return `true`; `CanReachSeatFromDoors` returns `true` only when the player stands within `pDistance` of the seat memory point (height ignored). | `P:\scripts\3_game\vehicles\motorbike.c:60` to `:68`; the reach checks at `motorbikescript.c:469` to `:504` |
 | Radiator and coolant | Not vital: `IsVitalRadiator()` returns `false`. | `P:\scripts\4_world\entities\vehicles\motorbikescript.c:321` to `:324` |
 | Fluids | Capacities for fuel, oil, coolant and brake fluid are declared (`fuelCapacity`, `oilCapacity`, `coolantCapacity`, `brakeFluidCapacity`), but the script only uses `MotorbikeFluid.FUEL`. | `P:\DZ\vehicles\singletrack\config.cpp:30` to `:33` |
-| Battery | Depends on the override. `NeedElectricitySourceDevice()` returns `true` by default and `MotorbikeScript` does not change it; both vanilla bikes return `false`. | `P:\scripts\3_game\vehicles\transport.c:821` to `:824`; `motorbike_01.c:33` to `:36`, `motorbike_02.c:34` to `:37` |
+| Battery | Depends on the override. `NeedElectricitySourceDevice()` returns `true` by default and `MotorbikeScript` does not change it; both vanilla bikes return `false`. | `P:\scripts\3_game\vehicles\transport.c:830` to `:833`; `motorbike_01.c:33` to `:36`, `motorbike_02.c:34` to `:37` |
 | Brakes | Two channels. `SetBrake` is the rear brake and `SetHandbrake` the front brake; config binds `Front` to `input=1` and `Rear` to `input=0`. There is no parking brake. | `P:\scripts\3_game\vehicles\motorbike.c:129` to `:139`; `config.cpp:292`, `:301` |
 | Steering | Lean and tip-over curves in `class Steering` (`tipoverAngle`, `maxLeanAngle[]`, `maxSteeringAngle[]`), read by the native simulation. | `P:\DZ\vehicles\singletrack\config.cpp:266` to `:278` |
 | Standing still | A kickstand, deployed in the constructor with `SetKickstand(1)`. | `P:\scripts\4_world\entities\vehicles\motorbikescript.c:141` |
@@ -80,7 +80,7 @@ Two ways to make a motorbike, as for a car:
 | `int GetAnimInstance()` | `VehicleAnimInstances.MOTO1` (10) or `MOTO2` (11) | `motorbike_01.c:48` to `:51` | `Error("GetAnimInstance() not implemented")` (`P:\scripts\3_game\vehicles\transport.c:662` to `:665`) |
 | `bool HasDirectionalInOutAction()` | `true` | `motorbike_01.c:53` to `:56` | `Transport` version at `transport.c:677` |
 | `int GetSeatAnimationTypeDirectional(int posIdx, int directionIndex)` | `0` from the left, `1` from the right, for the driver | `motorbike_01.c:58` to `:69` | `Error("GetSeatAnimationTypeDirectional() not implemented")` (`P:\scripts\3_game\vehicles\transport.c:690` to `:693`) |
-| `bool NeedElectricitySourceDevice()` | `false` (no battery) | `motorbike_01.c:33` to `:36` | `true` (`transport.c:821` to `:824`) |
+| `bool NeedElectricitySourceDevice()` | `false` (no battery) | `motorbike_01.c:33` to `:36` | `true` (`transport.c:830` to `:833`) |
 | `float GetTransportCameraDistance()` | `2.5` | `motorbike_01.c:38` to `:41` | `Transport` version at `transport.c:649` |
 | `vector GetTransportCameraOffset()` | `"0 1.3 -0.25"` | `motorbike_01.c:43` to `:46` | `Transport` version at `transport.c:657` |
 

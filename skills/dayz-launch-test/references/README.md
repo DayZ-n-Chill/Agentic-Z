@@ -57,10 +57,9 @@ Most files here are results measured in test sessions with third-party mods and 
 | How do I verify a mod in game through dayz-mcp (spawn, capture, collision, vehicle acceptance steps, report)? | `mcp/README.md`, which indexes the files in `mcp/` |
 | Which skill runs each step from scope to Workshop, which pack do I read for a request, and how do I port a mod to 1.30? | `mod-loop.md` |
 | How do I run the fast DayZDiag script loop, when do I stop iterating, and which debug tools does vanilla offer? | `test-loop.md` |
-| The feature does not work and the log is clean: in what order do I look, how do I place probes, how do I bisect? | `debug-protocol.md` |
+| The feature does not work and the log is clean: in what order do I look, how do I place probes, how do I bisect? Is it a crash, a VM exception or corruption, and which missing engine minimum crashes? | `debug-protocol.md` |
 | Which mistakes keep coming back (E01 to E35), and what is the correct form of each? | `error-catalog.md` |
 | How do I read numbers from a test session without fooling myself (clock offsets, ranges, defect rates)? | `measurement-discipline.md` |
-| How do I label the severity of an audit finding or of something missing, and keep parallel auditors independent? | `audit-escalation.md` |
 
 ## Scripts and assets
 

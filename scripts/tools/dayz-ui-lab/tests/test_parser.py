@@ -157,7 +157,7 @@ FrameWidgetClass Other {
         )
 
 class ContinuationTests(unittest.TestCase):
-    # Measured in DayZDiag 1.29.163451 through the LF_UIProbe fixture:
+    # Measured in DayZDiag 1.29.163451 through the AZ_UIProbe fixture:
     # ButtonWidget.GetText returned Length()==10 for both the LF and the CRLF
     # source, and the RPT rendered the join as CRLF in a file whose 49768 bytes
     # contain zero bare LF and zero lone CR. Ten characters is "Alpha" + one +

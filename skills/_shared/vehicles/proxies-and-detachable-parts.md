@@ -69,7 +69,7 @@ A vanilla car draws a door proxy only while the door is attached; that is the be
 
 ### The part is missing on every debug or admin spawn
 
-`CreateObject`, admin tools and test tool spawns do not fill attachment slots, which is why a vanilla car spawned that way has no wheels. Fill them in `OnDebugSpawn()` (`P:\scripts\3_game\entities\entityai.c:3955`; `OnDebugSpawnEx` calls it at `entityai.c:3937` to `:3939`):
+`CreateObject`, admin tools and test tool spawns do not fill attachment slots, which is why a vanilla car spawned that way has no wheels. Fill them in `OnDebugSpawn()` (`P:\scripts\3_game\entities\entityai.c:3955`; `OnDebugSpawnEx(DebugSpawnParams params)` calls it at `entityai.c:3937` to `:3939`):
 
 - One `CreateAttachment` per part, as a quad bike mod does:
 

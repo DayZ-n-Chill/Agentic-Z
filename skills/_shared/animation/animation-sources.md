@@ -21,7 +21,7 @@ class AnimationSources
 | Key | Meaning | Vanilla values |
 |---|---|---|
 | `source` | `"user"` means script sets the phase. | `"user"` in every vanilla source below |
-| `initPhase` | Phase when the object spawns. | `Lid` 0 and `Lid2` 1 (`P:\DZ\gear\containers\config.cpp:104`, `:110`); `AnimSourceHidden` 1 (`P:\DZ\gear\camping\config.cpp:4430`) |
+| `initPhase` | Phase when the object spawns. | `Lid` 0 and `Lid2` 1 (`P:\DZ\gear\containers\config.cpp:104`, `:110`); `AnimSourceHidden` 1 (`P:\DZ\gear\camping\config.cpp:4440`) |
 | `animPeriod` | How long the move takes. | 0.01 for the barrel lids (near instant); 0.018 for the fence gate (`P:\DZ\gear\camping\config.cpp:4435`) |
 
 The class name is the source name: the `model.cfg` animation uses it as `source`, or as the animation's own name when the model source is `user` (fence), and script passes it to `SetAnimationPhase` (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:148` uses `"Lid"`, declared at `P:\DZ\gear\containers\config.cpp:101`).
@@ -32,7 +32,7 @@ Sources can inherit to share settings: fence declares `class AnimRotate` once an
 
 `animPeriod` is one value for both directions. A part that must go out and come back at different speeds cannot do it through `animPeriod` alone.
 
-A hide source that should start hidden uses `initPhase = 1`: the flag declares `folded` with `initPhase=0` and `unfolded` with `initPhase=1` (`P:\DZ\gear\camping\config.cpp:13052` to `:13066`), and its script swaps the two when it is attached (see `items-in-hands.md`).
+A hide source that should start hidden uses `initPhase = 1`: the flag declares `folded` with `initPhase=0` and `unfolded` with `initPhase=1` (`P:\DZ\gear\camping\config.cpp:13052` to `:13066`), and its script swaps the two when it is attached (see `attach-state-parts.md`).
 
 ## Vehicles: which sources are declared and which the engine supplies
 

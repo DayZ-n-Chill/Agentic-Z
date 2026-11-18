@@ -87,7 +87,7 @@ Do not write the ten int block from a `BaseBuildingBase` subclass, and do not ap
 | Lock | Saved values | Source |
 |---|---|---|
 | `CombinationLock` | `m_Combination`, `m_CombinationLocked`, `m_CombinationInside`; the inside combination only from version 143, and an old field read and discarded before 105 | `P:\scripts\4_world\entities\itembase\combinationlock.c:128` to `:178` |
-| `DigitalCodeLock` | Passes the stream to its `CodeLockComponent`, which writes `m_LockPIN`, `m_IsLocked`, `m_DoorIndex` | `P:\scripts\4_world\entities\itembase\codelock.c:484` and `:491`; `P:\scripts\4_world\classes\codelockcomponent.c:257` and `:264` |
+| `DigitalCodeLock` | Passes the stream to its `CodeLockComponent`, which writes `m_LockPIN`, `m_IsLocked`, `m_DoorIndex` | `P:\scripts\4_world\entities\itembase\codelock.c:505` and `:512`; `P:\scripts\4_world\classes\codelockcomponent.c:257` and `:264` |
 
 The digital lock is a good model for a mod safe with a code: keep the lock logic in a helper object, and have the owner call the helper's save and load in its own place in the chain. A PIN of 4 to 6 digits is the vanilla rule (`codelockcomponent.c:23` and `:24`).
 

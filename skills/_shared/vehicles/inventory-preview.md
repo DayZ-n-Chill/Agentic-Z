@@ -17,7 +17,7 @@ Left-hand doors take `rotationFlags=8` and right-hand doors take `4` (`P:\DZ\veh
 | `HatchbackDoors_Driver` against `HatchbackDoors_CoDriver` | `8` and `4` | `:919`, `:1039` |
 | `CivSedanDoors_Driver` against `CivSedanDoors_CoDriver` and `CivSedanDoors_BackRight` | `8` and `4` | `:4813`, `:4936`, `:4957` |
 | `Hatchback_02_Door_1_1` and `_1_2` against `_2_1` and `_2_2` | `8` and `4` | `:9029`, `:9164`, `:9153`, `:9288` |
-| `Truck_01_Door_2_1`, which inherits the left-hand door and overrides the value | `4` | `:18348` |
+| `Truck_01_Door_2_1`, which inherits the left-hand `Truck_01_Door_1_1` and overrides the value | `4` | `:18348` |
 
 Two families do not override it. `Sedan_02_Door_2_1` and `Sedan_02_Door_2_2` set no `rotationFlags` and inherit `8` from `Sedan_02_Door_1_1` (`:13566`, `:13695`, `:13455`). `Offroad_02_Door_2_1` and `Offroad_02_Door_2_2` inherit `8` from `Offroad_02_Door_1_1` (`:20723`, `:20743`, `:20586`).
 

@@ -39,7 +39,7 @@ Text color on a `TextWidget` is plain `SetColor`.
 
 ## Text calls on controls
 
-`TextWidget` and `UIWidget` are siblings under `Widget`, and each has its own text calls. `UIWidget` (`P:\scripts\1_core\proto\enwidgets.c:323` to `:338`) is the base of buttons, edit boxes, check boxes, sliders, combo boxes and list boxes.
+`TextWidget` and `UIWidget` are siblings under `Widget`, and each has its own text calls. `UIWidget` (`P:\scripts\1_core\proto\enwidgets.c:323` to `:339`) is the base of buttons, edit boxes, check boxes, sliders, combo boxes and list boxes.
 
 | Need | On a TextWidget | On a control (UIWidget) |
 |---|---|---|
@@ -70,7 +70,7 @@ proto native void SetMaskTransitionWidth(float value);    // 0 to 1, edge softne
 
 `SetColor` multiplies the texture, so author art that you will tint in white or grey.
 
-A procedural texture string from script, `img.LoadImageFile(0, "#(argb,8,8,3)color(1,1,1,1,CO)")`, fails on 1.29 with "Bad texture name" and "LoadImageFile can't load" in the RPT and leaves the widget with no texture (measured in game, not repeated on 1.30). Vanilla builds such strings only for item materials (`P:\scripts\4_world\static\miscgameplayfunctions.c:243`). Use a 1x1 white `.edds`, or a style whose `Center` is `WhitePixel` (`styles-format.md`). The same string as `image0` in a layout logs no error; whether it draws is not confirmed.
+A procedural texture string from script, `img.LoadImageFile(0, "#(argb,8,8,3)color(1,1,1,1,CO)")`, fails on 1.29 with "Bad texture name" and "LoadImageFile can't load" in the RPT and leaves the widget with no texture (measured in game, not repeated on 1.30). Vanilla builds such strings only for item materials: `string.Format("#(argb,8,8,3)color(%1,CO)", ...)` (`P:\scripts\4_world\static\miscgameplayfunctions.c:243`). Use a 1x1 white `.edds`, or a style whose `Center` is `WhitePixel` (`styles-format.md`). The same string as `image0` in a layout logs no error; whether it draws is not confirmed.
 
 ## Buttons and inputs
 
@@ -115,13 +115,13 @@ proto native void VScrollToWidget(Widget child);
 
 A scroll widget needs `"Scrollbar V" 1` and a spacer child with `"Size To Content V" 1`; with no spacer child it does not scroll (`templates/scroll_list.layout`).
 
-`SpacerBaseWidget` (`:460`) has `AddChildAfter(Widget child, Widget after, bool immedUpdate = true)`. `SpacerWidget` (`:465`) adds `GetContentAlignmentH`, `SetContentAlignmentH(WidgetAlignment)` and the same pair for V. `enum WidgetAlignment` (`:88` to `:95`) is `WA_LEFT` 0, `WA_RIGHT` 1, `WA_CENTER` 2, `WA_TOP` 0, `WA_BOTTOM` 1. `GridSpacerWidget` (`:473`) and `WrapSpacerWidget` (`:477`) take `Columns`, `Rows`, `Padding`, `Margin` and the two `"Size To Content"` keys in the layout; the wrap spacer moves children to the next row by itself.
+`SpacerBaseWidget` (`:460`) has `AddChildAfter(Widget child, Widget after, bool immedUpdate = true)`. `SpacerWidget` (`:465`) adds `GetContentAlignmentH`, `SetContentAlignmentH(WidgetAlignment)`, `GetContentAlignmentV` and `SetContentAlignmentV(WidgetAlignment)`. `enum WidgetAlignment` (`:88` to `:95`) is `WA_LEFT` 0, `WA_RIGHT` 1, `WA_CENTER` 2, `WA_TOP` 0, `WA_BOTTOM` 1. `GridSpacerWidget` (`:473`) and `WrapSpacerWidget` (`:477`) take `Columns`, `Rows`, `Padding`, `Margin`, `"Size To Content H" 1` and `"Size To Content V" 1` in the layout; the wrap spacer moves children to the next row by itself.
 
 ## CanvasWidget and VideoWidget
 
 `class CanvasWidget` (`:341`): `DrawLine(float x1, float y1, float x2, float y2, float width, int color)` and `Clear()`. Lines alone are enough to draw a QR code.
 
-`class VideoWidget` (`:543`): `Load(string name, bool looping = false, int startTime = 0)`, `Unload`, `Play`, `Pause`, `Stop`, `SetTime(int time, bool preload)`, `GetTime`, `GetTotalTime`, `SetLooping(bool)`, `IsPlaying`, `GetState`, `DisableSubtitles(bool)` and `SetCallback(VideoCallback cb, func fn)`.
+`class VideoWidget` (`:543`): `Load(string name, bool looping = false, int startTime = 0)`, `Unload`, `Play`, `Pause`, `Stop`, `SetTime(int time, bool preload)`, `GetTime`, `GetTotalTime`, `SetLooping(bool)`, `IsPlaying`, `GetState` (returns a `VideoState`, `:577`), `DisableSubtitles(bool)` and `SetCallback(VideoCallback cb, func fn)`.
 
 ## Reading text back
 

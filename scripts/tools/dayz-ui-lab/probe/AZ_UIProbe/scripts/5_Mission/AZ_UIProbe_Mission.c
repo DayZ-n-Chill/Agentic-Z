@@ -1,5 +1,5 @@
 // ============================================================================
-// LF_UIProbe - source-only client probe for two layout questions: does a leaf
+// AZ_UIProbe - source-only client probe for two layout questions: does a leaf
 // widget with no child block load, and what text does a line continuation
 // between two quoted strings produce.
 //
@@ -14,11 +14,11 @@
 // drops the entire module.
 // ============================================================================
 
-class LF_UIProbe
+class AZ_UIProbe
 {
-	protected static const string LAYOUT_LEAF = "LF_UIProbe/gui/layouts/leaf-without-child-block.layout";
-	protected static const string LAYOUT_LF = "LF_UIProbe/gui/layouts/continuation-lf.layout";
-	protected static const string LAYOUT_CRLF = "LF_UIProbe/gui/layouts/continuation-crlf.layout";
+	protected static const string LAYOUT_LEAF = "AZ_UIProbe/gui/layouts/leaf-without-child-block.layout";
+	protected static const string LAYOUT_LF = "AZ_UIProbe/gui/layouts/continuation-lf.layout";
+	protected static const string LAYOUT_CRLF = "AZ_UIProbe/gui/layouts/continuation-crlf.layout";
 
 	protected static bool s_Ran;
 	protected static Widget s_LeafRoot;
@@ -31,11 +31,11 @@ class LF_UIProbe
 			return;
 
 		s_Ran = true;
-		Log("[LF_UI_PROBE_BEGIN]|schema=dayz-ui-probe-v1");
+		Log("[AZ_UI_PROBE_BEGIN]|schema=dayz-ui-probe-v1");
 		s_LeafRoot = ProbeLeaf();
 		s_LfRoot = ProbeContinuation("continuation-lf", LAYOUT_LF);
 		s_CrlfRoot = ProbeContinuation("continuation-crlf", LAYOUT_CRLF);
-		Log("[LF_UI_PROBE_END]|schema=dayz-ui-probe-v1");
+		Log("[AZ_UI_PROBE_END]|schema=dayz-ui-probe-v1");
 	}
 
 	protected static Widget ProbeLeaf()
@@ -43,18 +43,18 @@ class LF_UIProbe
 		Widget root = GetGame().GetWorkspace().CreateWidgets(LAYOUT_LEAF);
 		if (!root)
 		{
-			Log("[LF_UI_PROBE_RESULT]|case=leaf-without-child-block|status=load_failed");
+			Log("[AZ_UI_PROBE_RESULT]|case=leaf-without-child-block|status=load_failed");
 			return null;
 		}
 
 		Widget leaf = root.FindAnyWidget("LeafButton");
 		if (!leaf)
 		{
-			Log("[LF_UI_PROBE_RESULT]|case=leaf-without-child-block|status=widget_missing");
+			Log("[AZ_UI_PROBE_RESULT]|case=leaf-without-child-block|status=widget_missing");
 			return root;
 		}
 
-		Log("[LF_UI_PROBE_RESULT]|case=leaf-without-child-block|status=loaded|name=" + leaf.GetName() + "|type=" + leaf.GetTypeName());
+		Log("[AZ_UI_PROBE_RESULT]|case=leaf-without-child-block|status=loaded|name=" + leaf.GetName() + "|type=" + leaf.GetTypeName());
 		return root;
 	}
 
@@ -63,7 +63,7 @@ class LF_UIProbe
 		Widget root = GetGame().GetWorkspace().CreateWidgets(layoutPath);
 		if (!root)
 		{
-			Log("[LF_UI_PROBE_RESULT]|case=" + caseId + "|status=load_failed");
+			Log("[AZ_UI_PROBE_RESULT]|case=" + caseId + "|status=load_failed");
 			return null;
 		}
 
@@ -71,7 +71,7 @@ class LF_UIProbe
 		ButtonWidget button = ButtonWidget.Cast(candidate);
 		if (!button)
 		{
-			Log("[LF_UI_PROBE_RESULT]|case=" + caseId + "|status=widget_missing");
+			Log("[AZ_UI_PROBE_RESULT]|case=" + caseId + "|status=widget_missing");
 			return root;
 		}
 
@@ -80,7 +80,7 @@ class LF_UIProbe
 		button.GetText(value);
 		// The delimiters bound the observed value: an empty or whitespace-only
 		// result is otherwise indistinguishable from a missing field.
-		Log("[LF_UI_PROBE_RESULT]|case=" + caseId + "|status=loaded|len=" + value.Length().ToString() + "|value=<" + value + ">");
+		Log("[AZ_UI_PROBE_RESULT]|case=" + caseId + "|status=loaded|len=" + value.Length().ToString() + "|value=<" + value + ">");
 		return root;
 	}
 
@@ -117,14 +117,14 @@ modded class MissionGameplay
 		super.OnInit();
 
 		#ifndef SERVER
-		LF_UIProbe.Run();
+		AZ_UIProbe.Run();
 		#endif
 	}
 
 	override void OnMissionFinish()
 	{
 		#ifndef SERVER
-		LF_UIProbe.Cleanup();
+		AZ_UIProbe.Cleanup();
 		#endif
 
 		super.OnMissionFinish();

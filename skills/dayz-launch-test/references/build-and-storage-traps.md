@@ -49,7 +49,7 @@ Before every boot meant for measurement (test cells, tuning runs, telemetry), ro
 
 An experiment that measures entity state (health, wetness, quantity, temperature) cannot trust the spawn loadout. A character came back wearing a garment at `wetlevel=4 hplevel=2`, exactly where the previous run left it, so the control started past the threshold it was meant to cross and would have reported "control does not fire".
 
-Normalize the subject before measuring (`SetWet(0)`, `P:\scripts\4_world\entities\itembase.c:3688`; `SetHealthLevel(0)`, `P:\scripts\3_game\entities\object.c:1087`; whatever applies) and log it. If a client part depends on that state, wait for the condition, not a timer: normalizing is itself a state change that can clobber what you were about to measure.
+Normalize the subject before measuring (`SetWet(0)`, `P:\scripts\4_world\entities\itembase.c:3692`; `SetHealthLevel(0)`, `P:\scripts\3_game\entities\object.c:1087`; whatever applies) and log it. If a client part depends on that state, wait for the condition, not a timer: normalizing is itself a state change that can clobber what you were about to measure.
 
 ## Backups packed into the PBO
 

@@ -4,9 +4,9 @@ Which DayZ build the `P:\` extraction is, which build a cited line belongs to, a
 
 ## Which build `P:\` is
 
-The extraction on `P:\` is a 1.30 build older than the first 1.30 patch. It still declares `vector Cross(vector v)` (`P:\scripts\1_core\proto\enconvert.c:239`), which the first patch removed, and it holds the Workbench API as one file, `P:\scripts\1_core\workbenchapi.c`, where the first patch has a `1_core\workbenchapi\` folder (`workbench_api.md`).
+The extraction on `P:\` is a patched 1.30 build. It has no `vector Cross(vector v)` in `P:\scripts\1_core\proto\enconvert.c`, which the first patch removed, and it holds the Workbench API in the `P:\scripts\1_core\workbenchapi\` folder (13 files) that the first patch added (`workbench_api.md`). The game installed next to it reports 1.30.164289, the second 1.30 patch.
 
-So a fact that a pack marks as changed in the first or second 1.30 patch shows its old form on `P:\`. Check those facts again once `P:\` is extracted from a newer build.
+Until `P:\` was extracted again on 2026-11-17 it held a 1.30 build older than the first 1.30 patch, which still declared `vector Cross(vector v)` (`scripts\1_core\proto\enconvert.c:239` of that build) and held the Workbench API as one file, `scripts\1_core\workbenchapi.c`. The re-extraction moved lines in many script and config files, so a citation checked before that date can give the old line: find the symbol by name before deciding the fact is wrong. A fact that a pack marks as changed in the first or second 1.30 patch now shows its new form on `P:\`.
 
 ## The builds
 

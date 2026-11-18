@@ -6,7 +6,7 @@ Measured in game with the third-party dayz-mcp server and its `@DayZ_MCP` mod on
 
 ## Driving and conditioning a car
 
-- `vehicle_control` does not shift an automatic gearbox. The bridge changes gear only when `GearboxGetType()` is manual (in `@DayZ_MCP`'s `MCP_CarScript.c`), so an automatic car stays in neutral with the throttle open. To drive one, test a copy of the build whose `Gearbox.type` is `GEARBOX_MANUAL` with every other entry byte identical, and say so in the verdict.
+- `vehicle_control` does not shift an automatic gearbox. The bridge changes gear only when `GearboxGetType()` is manual (`MCP_CarScript.c:790` to `:810` of the deployed `@DayZ_MCP`), so an automatic car stays in neutral with the throttle open. To drive one, test a copy of the build whose `Gearbox.type` is `GEARBOX_MANUAL` with every other entry byte identical, and say so in the verdict.
 - `vehicle_prepare_fixture` can answer `fixture_not_ready` with `fuel_fraction=0.0` right after `OnDebugSpawn()`, although `OnDebugSpawn()` fills the tank: the bridge reads the tank in the same tick as the `Fill()`. Seen in four runs on two machines; `telemetry_read object_at` then read `fuel_fraction=1` and the car started and drove. Read `telemetry_read` before calling it a failure.
 - `entities_query` returns the config class as `type` and the script class as `classname`. A mod wheel with no script class of its own reads `CarWheel`; its `_Ruined` twin, which has one, reads its own name. That is a cheap check that a mod's script class binds.
 - In-vehicle actions need `vehicle_get_in_client` as well as `vehicle_enter`. After `vehicle_enter` alone, `action_use ActionSwitchLights` (target `self`) answered `condition_failed`; after `vehicle_get_in_client` it started and the lights came on.

@@ -18,7 +18,7 @@ class CfgSkeletons
         {
             "drivewheel","", "mph","", "rpm","", "dial_rpm","", "dial_temp","", "fuel_1","",
             "doors_driver","", "doors_codriver","", "doors_hood","", "doors_trunk","",
-            "crewdriver","", "crewcodriver","", "crewcargo1","",
+            "crewdriver","", "crewcodriver","", "crewcargo1","",   // one CrewCargoN bone per cargo seat, up to CrewCargo6
             "engine","", "engine_rotate","engine",
             "wheel_1_1_damper","", "wheel_1_1_steering","wheel_1_1_damper", "wheel_1_1","wheel_1_1_steering",
             "wheel_2_1_damper","", "wheel_2_1_steering","wheel_2_1_damper", "wheel_2_1","wheel_2_1_steering",

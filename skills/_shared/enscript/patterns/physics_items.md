@@ -48,4 +48,4 @@ The `SetDynamicPhysicsLifeTime` call is **mandatory** — without it the engine 
 | `CreateDynamicPhysics`, `EnableDynamicCCD`, `SetDynamicPhysicsLifeTime` | `P:\scripts\3_game\entities\object.c:456-458` |
 | `PhxInteractionLayers` enum (`DYNAMICITEM`, `DYNAMICITEM_NOCHAR`, ...) | `P:\scripts\3_game\global\dayzphysics.c:1-43` |
 | `dBodyDynamic`, `dBodyEnableGravity`, `dBodyApplyImpulse` | `P:\scripts\1_core\proto\enphysics.c:64-69, 141` |
-| `StopItemDynamicPhysics` (sets lifetime to 0.01 to "park" the body) | `P:\scripts\4_world\entities\itembase.c:4530` |
+| `StopItemDynamicPhysics` (sets lifetime to 0.01 to "park" the body) | `P:\scripts\4_world\entities\itembase.c:4534` |

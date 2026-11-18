@@ -94,7 +94,7 @@ class MyMod_Vehicle: CarScript
 }
 ```
 
-`CleanupEffects` is declared on `Transport` (`P:\scripts\3_game\vehicles\transport.c:998`) and overridden in `CarScript` (`P:\scripts\4_world\entities\vehicles\carscript.c:390`).
+`CleanupEffects` is declared on `Transport` (`P:\scripts\3_game\vehicles\transport.c:1007`) and overridden in `CarScript` (`P:\scripts\4_world\entities\vehicles\carscript.c:390`).
 
 ## Water
 

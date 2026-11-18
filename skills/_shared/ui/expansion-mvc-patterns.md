@@ -90,7 +90,7 @@ ExpansionScriptViewMenuBase CreateSVMenu(string viewName)
         viewMenu.Show();
 ```
 
-It destroys any open instance of the same name first, so calling it twice is safe. `CloseAll(includeVanilla)` closes Expansion menus and vanilla `UIScriptedMenu`s separately, and the ID range `MENU_EXPANSION_MENU_START` to `MENU_EXPANSION_MENU_END` keeps Expansion's IDs clear of vanilla's.
+It destroys any open instance of the same name first, so calling it twice is safe. `CloseAll(includeVanilla)` closes Expansion's `ScriptViewMenus` and vanilla `UIScriptedMenu`s separately, and the ID range `MENU_EXPANSION_MENU_START` to `MENU_EXPANSION_MENU_END` keeps Expansion's IDs clear of vanilla's.
 
 Open a menu from module code on the client during gameplay, once the server has said yes: the Market calls `CreateSVMenu("ExpansionMarketMenu")` after `MoneyCheck()` passes (`ExpansionMarketModule.c:4587`). Never create a view or call `CreateSVMenu` from inside an RPC handler, where the workspace can be null.
 
@@ -115,7 +115,7 @@ ref ObservableCollection<ref ExpansionMarketMenuItem> MarketItems;
 
 Sources: `Scripts/5_Mission/DayZExpansion_Market/Market/ExpansionMarketMenuItem.c:13` and `:119` to `:126`; `ExpansionMarketMenuCategory.c:652`. This is the pattern most worth copying for a large menu.
 
-Filter and sort in the model before you touch a collection (`ExpansionMarketMenu.c:436` to `:452` and `:644` to `:663`). The Market sets an `m_ShowInMenu` flag per item, gathers the shown items into a temporary list, and only at the end calls `MarketCategories.InsertAt(...)`. The UI then receives finished, sorted rows and never redraws half a list.
+Filter and sort in the model before you touch a collection (`ExpansionMarketMenu.c:436` to `:452` and `:644` to `:663`). The Market skips an item when `!m_TraderMarket.ItemExists(currentItem.ClassName)` or `m_TraderMarket.IsAttachmentBuySell(...)`, sets an `m_ShowInMenu` flag on the rest, gathers the shown items into a temporary list with `TempInsertItem(displayName, currentItem, tempItems)`, and only at the end calls `MarketCategories.InsertAt(...)`. The UI then receives finished, sorted rows and never redraws half a list.
 
 Items that hold a reference back to their controller leak; null the back reference in the item's destructor.
 
@@ -153,6 +153,6 @@ A path such as `"Foo.Bar"` walks the object graph with `EnScript.GetClassVar`. `
 
 ## HUD panels driven by synced state
 
-Expansion's vehicles module registers extra HUD panels from a `modded class IngameHud`, keyed by a vehicle type enum (`DayZExpansion/Vehicles/Scripts/5_Mission/DayZExpansion_Vehicles/GUI/IngameHud.c:13`). Each panel is its own `ExpansionScriptView` that reads synced state (`m_IsSync`, `m_HaltPhysics`, `m_IsInvulnerable`) and sets widget visibility in `Expansion_Update()` (`expansionboathud.c:39` and `:169`; layout `DayZExpansion/Vehicles/GUI/layouts/hud/hud_boats.layout:170`). The same shape suits any overlay driven by server state.
+Expansion's vehicles module registers extra HUD panels from a `modded class IngameHud`, keyed by a vehicle type enum (`DayZExpansion/Vehicles/Scripts/5_Mission/DayZExpansion_Vehicles/GUI/IngameHud.c:13`). Each panel is its own `ExpansionScriptView` that reads synced net variables (`m_IsSync`, `m_HaltPhysics`, `m_IsInvulnerable`) and sets widget visibility in `Expansion_Update()` (`expansionboathud.c:39` and `:169`; layout `DayZExpansion/Vehicles/GUI/layouts/hud/hud_boats.layout:170`). The same shape suits any overlay driven by server state.
 
 An older and a newer HUD path sit side by side behind the `EXPANSION_VEHICLES_HUD_OLD` compile flag; check which one the build uses before you change the registration.

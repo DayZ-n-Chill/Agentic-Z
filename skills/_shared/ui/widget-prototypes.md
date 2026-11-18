@@ -17,7 +17,7 @@ proto native WidgetType GetTypeID();
 proto native void Show(bool show, bool immedUpdate = true);
 proto native void Enable(bool enable);
 proto native bool IsVisible();            // this widget only
-proto native bool IsVisibleHierarchy();   // true only when every parent is visible too
+proto native bool IsVisibleHierarchy();   // :139, true only when every parent is visible too
 
 // Flags
 proto native int GetFlags();
@@ -30,7 +30,7 @@ proto void GetPos(out float x, out float y);
 proto native void SetSize(float w, float h, bool immedUpdate = true);
 proto void GetSize(out float width, out float height);
 
-// Position and size on the screen, in pixels
+// Position and size on the screen, in pixels (setters :142 and :143, getters :153 and :154)
 proto native void SetScreenPos(float x, float y, bool immedUpdate = true);
 proto void GetScreenPos(out float x, out float y);
 proto native void SetScreenSize(float w, float h, bool immedUpdate = true);

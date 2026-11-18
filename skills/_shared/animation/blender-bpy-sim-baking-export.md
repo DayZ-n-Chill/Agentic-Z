@@ -26,7 +26,7 @@ The cache can go stale. Adding a rigid body to the world's collection after the 
 
 ## Turning the simulation into keys
 
-`bpy.ops.rigidbody.bake_to_keyframes(frame_start=1, frame_end=250, step=1)` fails headless even with selection and active object set:
+`bpy.ops.rigidbody.bake_to_keyframes(frame_start=1, frame_end=250, step=1)` (defined in Blender's startup scripts at `bl_operators\rigidbody.py:108`) fails headless even with selection and active object set:
 
 ```text
 RuntimeError: Operator bpy.ops.anim.keyframe_insert_by_name.poll() failed, context is incorrect
@@ -77,7 +77,7 @@ def get_fcurves(obj):
 
 ## FBX does not carry cloth
 
-In `bpy.ops.export_scene.fbx(...)`:
+In `bpy.ops.export_scene.fbx(...)` (defined in `addons_core/io_scene_fbx/__init__.py:604`):
 
 - `use_mesh_modifiers=True` (default) applies the modifier stack, cloth and soft body included, at the current frame only: one still shape. Its docstring warns "WARNING: prevents exporting shape keys".
 - `bake_anim`, `bake_anim_use_all_bones`, `bake_anim_use_nla_strips`, `bake_anim_use_all_actions`, `bake_anim_force_startend_keying`, `bake_anim_step` and `bake_anim_simplify_factor` bake armature and Action or NLA animation, never vertex deformation.
@@ -109,7 +109,7 @@ On a cloth plane whose vertices changed every frame, this wrote a real `.abc` wi
 
 `bpy.ops.wm.alembic_export` is missing from the MCP server's bundled reference (`get_python_api_docs` and `search_api_docs` find nothing, and the `bpy.ops.wm` listing leaves it out), yet it works. `hasattr` on `bpy.ops` proves nothing either. Treat the bundled reference as a hint and call the operator on the live process before deciding it is gone.
 
-Its options: `filepath`, `start`, `end`, `selected`, `global_scale`, `flatten`, `uvs`, `vcolors`, `normals`, `face_sets`, `subdiv_schema`, `apply_subdiv`, `curves_as_mesh`, `export_hair`, `export_particles`, `export_custom_properties`, `use_instancing`, `triangulate`, `quad_method`, `ngon_method`, `packuv`, `orcos`, `xsamples` (transform samples per frame), `gsamples` (geometry samples per frame), `sh_open` and `sh_close` (shutter), `sort_method`, `init_scene_frame_range`, `evaluation_mode`, `as_background_job`, `collection`, `display_type`, `check_existing` and `filemode`. `visible_objects_only` was removed from Alembic and USD export in 5.0.
+Its options, read from the operator's own RNA (`bpy.ops.wm.alembic_export.get_rna_type().properties`): `filepath`, `start`, `end`, `selected`, `global_scale`, `flatten`, `uvs`, `vcolors`, `normals`, `face_sets`, `subdiv_schema`, `apply_subdiv`, `curves_as_mesh`, `export_hair`, `export_particles`, `export_custom_properties`, `use_instancing`, `triangulate`, `quad_method`, `ngon_method`, `packuv`, `orcos`, `xsamples` (transform samples per frame), `gsamples` (geometry samples per frame), `sh_open` and `sh_close` (shutter), `sort_method`, `init_scene_frame_range`, `evaluation_mode`, `as_background_job`, `collection`, `display_type`, `check_existing` and `filemode`. `visible_objects_only` was removed from Alembic and USD export in 5.0.
 
 Since 4.2, collections can also carry exporters:
 

@@ -14,7 +14,7 @@ Vanilla sets the cap per slot in `CfgSlots`:
 | `Material_MetalSheets` | 20 | `config.cpp:2285` to `:2300` |
 | `Material_Nails` | 99 | `config.cpp:2277` to `:2284` |
 | `Material_MetalWire` (fence) | none | `config.cpp:2309` to `:2315`, used at `P:\DZ\gear\camping\config.cpp:3273` |
-| `Material_FPole_MetalWire` (flag pole) | none | `P:\scripts\config.cpp:2508` to `:2514`, used at `P:\DZ\gear\camping\config.cpp:12494` and `:12752` |
+| `Material_FPole_MetalWire` (flag pole) | none | `P:\scripts\config.cpp:2508` to `:2514`, used at `P:\DZ\gear\camping\config.cpp:12504` and `:12762` |
 
 `MetalWire` can be split (`canBeSplit=1`, `varQuantityMax=50`, `varStackMax=1`, `P:\DZ\gear\crafting\config.cpp:376` to `:381`). Its two slots set no `stackMax`, so the cap falls back to `varStackMax=1` (`itembase.c:3460` and `:3461`): one wire per slot, not 50.
 

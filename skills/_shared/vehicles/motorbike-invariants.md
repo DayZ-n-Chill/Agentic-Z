@@ -69,7 +69,15 @@ The constructor deploys it with `SetKickstand(1)` (`motorbikescript.c:141`); kee
 
 ### Lights, horn and particles
 
-In 1.30 each has its own component, created in the `MotorbikeScript` constructor: `m_LightsComponent` (`motorbikescript.c:113`), `m_HornComponent` (`:127`) and `m_VFXComponent` through `InitializeParticles()` (`:139`). A class on `MotorbikeScript` gets them from the base constructor; register the bike's own light profiles and sound sets on them. Without them, the light code reaches a component that does not exist, or the horn has no sound and no noise for infected (not measured).
+In 1.30 each has its own component, created in the `MotorbikeScript` constructor: `m_LightsComponent` (`motorbikescript.c:113`), `m_HornComponent` (`:127`) and `m_VFXComponent` through `InitializeParticles()` (`:139`). A class on `MotorbikeScript` gets them from the base constructor; register the bike's own light profiles and sound sets on them. The base constructor lines:
+
+```c
+m_LightsComponent = VehicleLightsComponent(this);
+m_HornComponent = VehicleHornComponent(this);
+InitializeParticles(); // creates m_VFXComponent
+```
+
+Without them, the light code reaches a component that does not exist, or the horn has no sound and no noise for infected (not measured).
 
 ### Light input
 

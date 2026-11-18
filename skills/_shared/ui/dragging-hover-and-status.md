@@ -6,7 +6,7 @@ The samples are patterns built on vanilla calls, not vanilla excerpts, and are n
 
 ## A window dragged by its header
 
-`ScriptedWidgetEventHandler` has no mouse move event; its full list runs from `OnClick` to `OnEvent` (`P:\scripts\1_core\proto\enwidgets.c:656` to `:686`). An `OnMouseMove` override is never called. Start the drag on button down, follow the mouse in `Update` with `GetMousePos` (`P:\scripts\1_core\proto\ensystem.c:329`), and stop on button up:
+`ScriptedWidgetEventHandler` has no mouse move event; its full list runs from `OnClick` to `OnEvent` (`P:\scripts\1_core\proto\enwidgets.c:656` to `:686`). An `OnMouseMove(Widget w, int x, int y, int oldx, int oldy)` override is never called. No name under `P:\scripts` on a patched 1.30 build contains `OnMouseMove`; the earlier 1.30 extraction had only the Workbench plugin hook `OnMouseMoveEvent(float x, float y)` (`scripts\1_core\workbenchapi.c:91` of that build), which is not a widget event. Start the drag on button down, follow the mouse in `Update` with `GetMousePos` (`P:\scripts\1_core\proto\ensystem.c:329`), and stop on button up:
 
 ```c
 class MyMod_WindowMenu extends UIScriptedMenu

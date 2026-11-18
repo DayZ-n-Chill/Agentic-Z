@@ -2,7 +2,7 @@
 
 What a custom infected class gets for behaviour by inheriting the vanilla chain, what its new model has to keep for the AI to work, why a bigger body does not reach further, and what 1.30 changed for infected.
 
-This file is the config and behaviour side. The mesh, rig, bake and export of a new body go to `dayz-animation-specialist` and the art team (`_shared/wearables/references/body-rigging.md`); how a creature class is tied to its graph is in `creature-animation.md`.
+Covers the config and behaviour side only. The mesh, rig, bake and export of a new body go to `dayz-animation-specialist` and the art team (`_shared/wearables/references/body-rigging.md`); how a creature class is tied to its graph is in `creature-animation.md`.
 
 ## Inherit the chain, never rebuild it
 

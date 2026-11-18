@@ -37,7 +37,7 @@ The field is `protected ref ConstructionBasic m_Construction` (`basebuildingbase
 A `ConstructionPart` instance now holds only changing state: `m_PartTypeData`, `m_LocalSyncBitMask` and `m_IsBuilt` (`P:\scripts\4_world\classes\basebuilding\constructionpart.c:9` to `:12`). The config fields live once per entity type in `ConstructionPartTypeData`, filled by `InitPartTypeData` (`P:\scripts\4_world\classes\basebuilding\typeconstructiondata\constructionparttyped.c:45` to `:70` and `:75` to `:107`). In 1.29 each instance read config itself in `UpdateConstructionParts`.
 
 - The old constructor `ConstructionPart(string name, string part_name, ..., array<string> required_parts)` still exists but its body is empty (`constructionpart.c:14` to `:16`). There is no constructor that takes the type data.
-- `UpdateConstructionParts` (`P:\scripts\4_world\classes\constructionbase.c:517` to `:548`) reads `GetConstructionDataHolderBasic()` from the entity type, spawns each part with `ToType().Spawn()`, then calls `SetPartTypeData` (`:531` to `:538`).
+- `UpdateConstructionParts` (`P:\scripts\4_world\classes\constructionbase.c:575` to `:606`) reads `GetConstructionDataHolderBasic()` from the entity type, spawns each part through `CreatePartInstanceObject` (`partTypename.Spawn()`, `:608` to `:611`) from the type's `GetCustomInstanceType()` or else `GetDefaultPartInstanceTypename()`, then calls `SetPartTypeData` (`:596` to `:599`).
 - `SetPartTypeData` refuses a second call with "cannot override m_PartTypeData during runtime!" (`constructionpart.c:395` to `:401`).
 - `ConstructionDataTypeHolderBasic` in `3_Game` is another empty shell (`P:\scripts\3_game\systems\constructiontypedata_basic.c:2` to `:5`); the real holder is `ConstructionDataTypeHolder` (`P:\scripts\4_world\classes\basebuilding\typeconstructiondata\constructionparttypedholder.c:2`).
 - `SetRequestBuiltState` is `[Obsolete("1.30: Use 'SetBuiltState' directly")]` and only sets the state in multiplayer (`constructionpart.c:505` to `:512`).
@@ -71,13 +71,14 @@ The trigger helpers are still there but marked `[Obsolete("no replacement")]`: `
 
 ## Masonry
 
-1.30 adds bricklaying to the tool masks. `EConstructionTools` gains `TOOL_BRICKLAYING = 256` (`P:\scripts\4_world\classes\basebuilding\constructionconstants.c:13` to `:26`); vanilla's comment over the enum says it "has to mirror tool defines in configs!".
+1.30 adds bricklaying to the tool masks. `EConstructionTools` gains `TOOL_BRICKLAYING = 256` (`P:\scripts\4_world\classes\basebuilding\constructionconstants.c:13` to `:26`, the new value at `:25`); vanilla's comment over the enum says it "has to mirror tool defines in configs!".
 
 | Item or action | What it does | Source |
 |---|---|---|
 | `BrickTrowel` | a `ToolBase` that adds `ActionBuildPart` and `ActionRepairPart`; builds with the `CMD_ACTIONFB_BRICKTROWEL` animation | `P:\scripts\4_world\entities\itembase\bricktrowel.c:1` to `:8`; `actionbuildpart.c:260` to `:262` |
 | `ActionPickUpBricks` | takes bricks from a `PileOfBricks`, `YIELD = 3` | `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionpickupbricks.c:16` to `:18` |
 | `MortarMix` | mixed at water or a well into `MortarMix_Opened` | `P:\scripts\4_world\entities\itembase\mortarmix.c:1` to `:8` |
+| `ActionMixMortarAtWell` | the well variant, allowed when the target's `IsWell()` is true; `MortarMix` adds both actions | `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionmixmortaratwell.c:2` and `:24`; `mortarmix.c:6` and `:7` |
 | `ActionMixMortarAtWater` | uses a `CCTLiquid` target | `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionmixmortaratwater.c:23` and `:47` to `:50` |
 | `MortarMix_Opened` | adds only `ActionAttachToConstruction` | `P:\scripts\4_world\entities\itembase\mortarmix_opened.c:1` to `:8` |
 | `CommonBrick` | adds the attach to construction action | `P:\scripts\4_world\entities\itembase\commonbrick.c:1` to `:8` |

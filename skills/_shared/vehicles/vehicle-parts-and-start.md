@@ -65,7 +65,7 @@ class CfgNonAIVehicles
 };
 ```
 
-Doors are `CarDoor` items with their own `model=`, `inventorySlot`, `hiddenSelections` and a `DamageZones` block with `Window` and `Doors` zones. The opening animation lives in `model.cfg` and `AnimationSources`, not on the item.
+Doors are `CarDoor` items (`class MyMod_Door: CarDoor`) with their own `model=` (the example 4x4 ships `Landrover_Driver_Door`, `Landrover_CoDriver_Door`, `Landrover_Hood` and `Landrover_Trunk`, each with `model="\Landrover\proxy\<Door>.p3d"`), `inventorySlot`, `hiddenSelections` and a `DamageZones` block with `Window` and `Doors` zones. The opening animation lives in `model.cfg` and `AnimationSources`, not on the item.
 
 ## Engine won't start
 
@@ -80,4 +80,4 @@ Doors are `CarDoor` items with their own `model=`, `inventorySlot`, `hiddenSelec
 
 Every simulation value can be watched live in the diag game: hold Win and Alt for the diag menu, then Game, Vehicles, Simulation.
 
-`OnDebugSpawn` must create parts by class name, not slot name. Vanilla wheel and door slots differ from their classes: `HatchbackWheel` fills `NivaWheel_1_1` (`P:\DZ\vehicles\wheeled\config.cpp:853` to `:862`), `HatchbackDoors_Driver` fills `NivaDriverDoors` (`:908` to `:917`); only engine parts such as `CarBattery` and `SparkPlug` share a name with their slot. Vanilla calls `GetInventory().CreateInInventory("HatchbackWheel")` (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroadhatchback.c:472` to `:475`) and fills fluids with `FillUpCarFluids()` (`carscript.c:2561`). `OnDebugSpawn` does not run when a headless test mission creates the car (measured in game), so attach parts by hand there, or "no wheels, won't start" is a false result.
+`OnDebugSpawn` must create parts by class name, not slot name. Vanilla wheel and door slots differ from their classes: `HatchbackWheel` fills `NivaWheel_1_1` (`P:\DZ\vehicles\wheeled\config.cpp:853` to `:862`), `HatchbackDoors_Driver` fills `NivaDriverDoors` (`:908` to `:917`); only engine parts such as `CarBattery` and `SparkPlug` share a name with their slot. Vanilla calls `GetInventory().CreateInInventory("HatchbackWheel")` (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroadhatchback.c:472` to `:475`) and fills fluids with `FillUpCarFluids()` (`carscript.c:2561`), which fills fuel, coolant and oil; call it, or add `Fill(CarFluid.FUEL, GetFluidCapacity(CarFluid.FUEL))` and `COOLANT` when `IsVitalRadiator()`. Pass the class (`MyMod_Wheel_Front`), never the slot (`MyMod_Wheel_1_1`). `OnDebugSpawn` does not run when a headless test mission creates the car (measured in game), so attach parts by hand there, or "no wheels, won't start" is a false result.

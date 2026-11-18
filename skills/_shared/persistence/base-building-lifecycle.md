@@ -8,7 +8,7 @@ Every step that changes state runs in a `*Server` method on the server; the clie
 
 1. A recipe such as `CraftFenceKit` (`P:\scripts\4_world\classes\recipes\recipes\craftfencekit.c:1`) uses up materials and gives a `KitBase` item (`P:\scripts\4_world\entities\itembase\kitbase.c:1`), whose `IsBasebuildingKit()` returns true (`:5`).
 2. The kit's `SetActions` adds `ActionTogglePlaceObject` and `ActionDeployObject` (`kitbase.c:146` to `:152`).
-3. `ActionDeployObject` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\deployactions\actiondeployobject.c:7`) uses a hologram (`ActionUsesHologram` returns true, `:15`). It checks the placement against the player's local and server hologram, `IsColliding()` and `item.CanBePlaced(...)` (`actiondeployobject.c:42` to `:75`). Kits turn on `DoPlacingHeightCheck()` and set `HeightCheckOverride()`: 2.54 for `FenceKit` (`P:\scripts\4_world\entities\itembase\fencekit.c:36` to `:44`) and 2.83 for `WatchtowerKit` (`P:\scripts\4_world\entities\itembase\watchtowerkit.c:32` to `:40`).
+3. `ActionDeployObject` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\deployactions\actiondeployobject.c:7`) uses a hologram (`ActionUsesHologram` returns true, `:15`). It checks the placement against `player.GetHologramLocal()` on the client and `GetHologramServer()` on the server, `IsColliding()` and `item.CanBePlaced(...)` (`actiondeployobject.c:42` to `:75`). Kits turn on `DoPlacingHeightCheck()` and set `HeightCheckOverride()`: 2.54 for `FenceKit` (`P:\scripts\4_world\entities\itembase\fencekit.c:36` to `:44`) and 2.83 for `WatchtowerKit` (`P:\scripts\4_world\entities\itembase\watchtowerkit.c:32` to `:40`).
 4. On finish the action calls `OnPlacementComplete` (`actiondeployobject.c:164`). The server part of `FenceKit.OnPlacementComplete` (`fencekit.c:19` to `:34`) creates the `Fence` with `g_Game.CreateObjectEx` and `ECE_PLACE_ON_SURFACE`, sets its position and orientation and calls `HideAllSelections()`.
 5. A placed kit deletes itself in `OnEndServer` (`actiondeployobject.c:230` to `:234`).
 
@@ -16,7 +16,7 @@ Every step that changes state runs in a `*Server` method on the server; the clie
 
 `EntityAI.ConstructionInit` (`P:\scripts\3_game\entities\entityai.c:3464` to `:3471`) calls `CreateConstructionComponent` (`:3474`). `BaseBuildingBase` overrides it to `m_Construction = new Construction(this)` (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:872` to `:876`), stored as `protected ref ConstructionBasic m_Construction` (`:15`) and reached with `GetConstruction()`, which is `Construction.Cast(m_Construction)` (`:883` to `:886`).
 
-`UpdateConstructionParts` (`P:\scripts\4_world\classes\constructionbase.c:517` to `:548`) fills the parts from the cached type data, not by walking the config on each instance. `BuildingBase` uses the same hook to install `Rebuilding` (`P:\scripts\4_world\entities\game\super\building.c:23` to `:51`); that path never goes through a kit (`base-building-rebuildable.md`).
+`UpdateConstructionParts` (`P:\scripts\4_world\classes\constructionbase.c:575` to `:606`) fills the parts from the cached type data, not by walking the config on each instance. `BuildingBase` uses the same hook to install `Rebuilding` (`P:\scripts\4_world\entities\game\super\building.c:23` to `:51`); that path never goes through a kit (`base-building-rebuildable.md`).
 
 ## The base part
 
@@ -31,13 +31,17 @@ A new object has no parts built. The player attaches the base material, for exam
 
 Override `BuildPartServerEx`; `BuildPartServer` is an obsolete wrapper (`base-building-1-30.md`).
 
+Each construction step prints a `[bsb]` line through `bsbDebugPrint` when `LogManager.IsBaseBuildingLogEnable()` is true (`P:\scripts\3_game\tools\debug.c:809`); the diag menu toggles it (`P:\scripts\4_world\plugins\pluginbase\plugindiagmenu\plugindiagmenuclient.c:1413`). Turn it on in a diag build to follow a build, dismantle or save in the log.
+
 ### What allows build, dismantle and destroy
 
 | Check | Passes when | Source |
 |---|---|---|
-| `CanBuildPart`, `CanBuildPartEx` | the part is not built, its required parts are, no conflicting part is, the materials are there and not ruined, and the tool matches when one is used; failure reasons are bits of `EConstructionInfoCategories` | `constructionbase.c:583` to `:610`; `P:\scripts\4_world\classes\basebuilding\constructionconstants.c:1` to `:11` |
-| `CanDismantlePart` | the part is built, no built part depends on it, `SupportRemovalCheck` passes and the tool matches | `constructionbase.c:739` to `:769` |
+| `CanBuildPart`, `CanBuildPartEx` | the part is not built, its required parts are, no conflicting part is, the materials are there and not ruined (`MaterialIsRuined`, `:627`), and the tool matches when one is used; failure reasons are bits of `EConstructionInfoCategories` | `constructionbase.c:583` to `:610`; `P:\scripts\4_world\classes\basebuilding\constructionconstants.c:1` to `:11` |
+| `CanDismantlePart` | the part is built, no built part depends on it, `SupportRemovalCheck` passes and the tool matches (`CanUseToolToDismantlePart`, `:1443`) | `constructionbase.c:739` to `:769` |
 | `CanDestroyPart` | the part is built, nothing depends on it and `SupportRemovalCheck` passes; no tool or material check, because damage triggers it | `constructionbase.c:1022` to `:1028` |
+
+On 1.29 these checks sat in `construction.c`: `CanBuildPart` at 1.29 `construction.c:296` to `:304`, `CanDismantlePart` at `:468` to `:476` and `CanDestroyPart` at `:566` to `:574`, with the damage trigger in 1.29 `basebuildingbase.c:510` to `:518`. `SupportRemovalCheck` is new in 1.30; 1.29 dismantled and destroyed without it.
 
 ## Upgrading
 
@@ -48,14 +52,14 @@ Several buildable parts under one selection give one action variant each. `Actio
 ## Dismantle, destroy and fold
 
 - Dismantle: `ActionDismantlePart` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actiondismantlepart.c:23`) calls `DismantlePartServerEx` (`constructionbase.c:190` to `:206`, overridden at `construction.c:77` to `:90`). It refunds materials through `ReceiveMaterialsServer` and `StaticConstructionMethods.SpawnConstructionMaterialPiles`, drops materials that cannot be reused and calls `OnPartDismantledServer`. It is blocked while a built part depends on this one (`HasDependentPart`, `constructionbase.c:772` to `:783`). Dismantling the base destroys the whole object (`basebuildingbase.c:615` to `:619`).
-- Destroy: when a damage zone reaches `STATE_RUINED`, `ConstructionBase.OnHealthLevelChanged` (`constructionbase.c:352` to `:368`) destroys that part and the parts that depend on it, with an exception for the gate.
+- Destroy: when a damage zone reaches `STATE_RUINED`, `ConstructionBase.OnHealthLevelChanged` (`constructionbase.c:352` to `:368`) calls `DestroyPartServer` on that part (`constructionbase.c:209`), which calls `DestroyConnectedParts` (`:223`) to destroy the parts that depend on it. A part is spared when `ExceptionCheck` returns true (`:371`); `Construction.ExceptionCheck` spares a gate while `wall_base_down` or `wall_base_up` is built (`construction.c:136` to `:148`).
 - Fold: with no base and no attachments (`CanFoldBaseBuildingObject`, `basebuildingbase.c:962` to `:970`), `ActionFoldBaseBuildingObject` calls `FoldBaseBuildingObject` (`:972` to `:978`), which turns the object back into a kit in the player's hands.
 
 ## Save and load
 
 - `OnStoreSave` (`basebuildingbase.c:420` to `:430`) writes `m_SyncParts01`, `02`, `03`, then `m_HasBase`. A subclass appends its own fields after `super`; the Fence adds `m_GateState` and `m_IsOpened` (`P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:246` to `:254`).
 - `OnStoreLoad` (`basebuildingbase.c:432` to `:464`) reads the three ints and `m_HasBase`, returning `false` on any failed read. A subclass reads after `super` in the same order (`fence.c:256` to `:289`).
-- `AfterStoreLoad` (`basebuildingbase.c:466` to `:474`) calls `SetPartsAfterStoreLoad` (`:476` to `:487`), which calls `SetPartsFromSyncData`: each part's built flag is set from the masks, the base state from the base part, and the result is synced. When `m_FixDamageSystemInit` is set, the same rebuild runs from `EEOnAfterLoad` half a second later instead (`:505` to `:513`).
+- `AfterStoreLoad` (`basebuildingbase.c:466` to `:474`) calls `SetPartsAfterStoreLoad` (`:476` to `:487`), which calls `SetPartsFromSyncData`: each part's built flag is set from the masks, the base state from the base part, and the result is synced. When `m_FixDamageSystemInit` is set, the same rebuild runs from `EEOnAfterLoad` through a 500 ms `CallLater` instead (`:505` to `:513`).
 - `SetPartFromSyncData` (`basebuildingbase.c:265` to `:304`) compares the saved bit with the built flag for each part, adds or removes it, shows or hides its physics, switches the `Deployed` proxy for the base and locks the attached materials again, which vanilla comments as a "failsafe for corrupted sync/storage data" (`:303`).
 
 ## Action ids and action classes

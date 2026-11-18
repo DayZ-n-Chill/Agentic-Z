@@ -6,7 +6,7 @@ Everything here was measured on cars built from rips, with the vanilla sedan, ot
 
 | Step | File |
 |---|---|
-| Folder, parts, dimensions, transform, physics data | This file |
+| Folder, parts, dimensions, transform, physics data | `rip-import.md` |
 | Structural LODs, body build, decimation, render crashes, first spawn faults, offline checks | `rip-structural-lods.md` |
 | Textures, paint colour, materials by type, glass, interior, one-sided faces | `rip-textures-and-materials.md` |
 | Wheels, rims, track width, doors, deploy transplant, interior in first person | `rip-wheels-and-doors.md` |

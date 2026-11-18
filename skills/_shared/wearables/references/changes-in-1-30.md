@@ -22,7 +22,7 @@ Before 1.30 an NBC base listed only its regular slot, for example `NBCHoodBase` 
 
 ## Values read on the item type
 
-`ItemBaseType` reads `headSelectionsToHide` and `hideSelectionsByinventorySlot` once per type (`P:\scripts\4_world\entities\itembasetype.c:105` to `:113`), next to `varWetMax` (`:71`), `temperaturePerQuantityWeight` (`:117`) and the `EnvironmentWetnessIncrements` maps (`:124` to `:137`). `ItemBase` reads them back from the type: `GetHeadHidingSelection` and `HidesSelectionBySlot` (`P:\scripts\4_world\entities\itembase.c:4518` and `:4523`), `GetWetMax` (`:3722`), and the starting wetness from `m_VarWetInit` (`:165`).
+`ItemBaseType` reads `headSelectionsToHide` and `hideSelectionsByinventorySlot` once per type (`P:\scripts\4_world\entities\itembasetype.c:105` to `:113`), next to `varWetMax` (`:71`), `temperaturePerQuantityWeight` (`:117`) and the `EnvironmentWetnessIncrements` maps (`:124` to `:137`). `ItemBase` reads them back from the type: `GetHeadHidingSelection` and `HidesSelectionBySlot` (`P:\scripts\4_world\entities\itembase.c:4522` and `:4523`), `GetWetMax` (`:3722`), and the starting wetness from `m_VarWetInit` (`:165`).
 
 The config keys are not new. In 1.29 `ItemBase` parsed `headSelectionsToHide` and `hideSelectionsByinventorySlot` on each item, and there was no `ItemBaseType` script file (1.29, not on `P:\`). A mod's config needs no change; script that read the old `ItemBase` members directly does.
 

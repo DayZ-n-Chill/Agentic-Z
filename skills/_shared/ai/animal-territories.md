@@ -62,6 +62,8 @@ A zone file has the root `<territory-type>`, one `<territory color="...">` per t
 | `env\wolf_territories.xml` | 24 | `Water` (`:4`), `Rest` (`:5`), `HuntingGround` (`:9`), repeated to `:326`; every zone has `smin`, `smax`, `dmin` and `dmax` at 0 | root `:2` to `:327` |
 | `env\bear_territories.xml` | 13 | `Graze` only (first at `:4`, for example `:12`, `:55`, `:92`) | root `:2` to `:100` |
 
+The first territory in each file opens at `:3`: `<territory color="4291611852">` in the wolf file and `<territory color="4294923520">` in the bear file.
+
 Never copy zone names from one species to another: wolves use `Water`, `Rest` and `HuntingGround`, bears use `Graze`. The other zone files are not covered here.
 
 ## Behaviour names and the templates they select

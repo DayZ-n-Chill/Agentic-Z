@@ -37,7 +37,7 @@ priority N         // draw order among siblings, higher on top
 ```
 
 - Give every background `ImageWidget` `ignorepointer 1`; without it the background takes the mouse events meant for the buttons on it. Never give an `EditBox` or a `Button` `ignorepointer 1`.
-- `visible 0` in a layout works: the widget starts hidden with no script.
+- `visible 0` in a layout works: the widget starts hidden with no script, and the engine tree reports `visible:0` and `visible_hierarchy:0`. For sections you switch between, stack identical roots in the same place, declare the active one `visible 1` and the rest `visible 0`, and let script toggle only the roots; this removes the gap that sections stacked one under another leave.
 - A tool that reads integer flags must not write `int(value or 1)`: in Python 0 is false, so every `visible 0` turns into 1. `attr_int` in `scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py` uses an explicit missing value.
 - `priority` is the layout side of `SetSort`, which sets the order outright (`P:\scripts\1_core\proto\enwidgets.c:130`).
 

@@ -1,6 +1,6 @@
 # Oil pits and custom effect areas
 
-How an oil pit works (its delay, its damage and what the client shows), how to place one, and how to write an effect area of your own on the 1.30 tick. The fire, smoke and light the client plays are in `dayz-particles/references/dayz-1-30-particles.md`, section "Oil pits"; how many particles a contaminated area asks for is in `dayz-particles/references/effect-area-particles.md`.
+How an oil pit works (its delay, its damage and what the client shows), how to place one, and how to write an effect area of your own on the 1.30 tick. The fire, smoke and light the client plays are in `dayz-particles/references/dayz-1-30-world-particles.md`, section "Oil pits"; how many particles a contaminated area asks for is in `dayz-particles/references/effect-area-particles.md`.
 
 ## The area and its delay
 

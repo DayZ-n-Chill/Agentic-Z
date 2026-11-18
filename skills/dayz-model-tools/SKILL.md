@@ -102,7 +102,7 @@ Outside an agent session: `scripts\dayz\check-winding.bat`.
 
 ### Clean UV atlas
 
-How-to: `tools-uv-atlas.md` (which method, the pipeline, the quality gate, the traps). The other UV files in the pack: `tools-uv-mesh-health.md`, `tools-uv-multi-lod-atlas.md`, `tools-uv-organic-photograph.md`, `tools-uv-mlod-audit.md`, `tools-uv-partuv.md`, `tools-uv-tool-survey.md`.
+How-to: `tools-uv-atlas.md` (which method, the pipeline, the quality gate) and `tools-uv-atlas-traps.md` (the traps). The other UV files in the pack: `tools-uv-mesh-health.md`, `tools-uv-multi-lod-atlas.md`, `tools-uv-organic-photograph.md`, `tools-uv-mlod-audit.md`, `tools-uv-partuv.md`, `tools-uv-tool-survey.md`.
 
 ```cmd
 blender -b in.blend -P "<skill-dir>\scripts\uv_clean_atlas.py" -- out.blend out_dir tag min_faces object_name

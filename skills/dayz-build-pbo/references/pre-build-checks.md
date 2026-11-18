@@ -8,7 +8,7 @@ The checks rest on vanilla files where a line cites `P:\`; the rest is measured 
 
 | Question | File |
 |---|---|
-| Is the folder laid out right, and what does `$PBOPREFIX$` hold? | This file |
+| Is the folder laid out right, and what does `$PBOPREFIX$` hold? | `pre-build-checks.md` |
 | Is `config.cpp` sound (braces, `CfgPatches`, `hiddenSelections`, duplicates), and does `model.cfg` match the models? | `config-and-model-checks.md` |
 | Do all texture and material paths resolve, are the LODs complete, and do the wheel slots of a vehicle simulate? | `asset-checks.md` |
 | Is every `#STR_` key in a `stringtable.csv` that DayZ reads, and do the scripts avoid what Enforce Script rejects? | `stringtable-and-script-checks.md` |

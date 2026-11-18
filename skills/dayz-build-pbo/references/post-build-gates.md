@@ -74,7 +74,7 @@ Before you trust a gate, run it against the build without the change and watch i
 
 Exit 0 and "Build Successful" are not enough. One build reported success with a 613-byte PBO because its sync to the temp folder copied no files (probably a clash with OneDrive), and the PBO that got measured was left over from an earlier build, because AddonBuilder names the PBO after the source folder.
 
-1. **Size.** A script mod is about 15 to 30 KB; about 600 bytes is a packed empty folder; a 2 KB PBO of a model mod means the model fell out.
+1. **Size.** A script mod is about 15 to 30 KB; about 600 bytes is a packed empty folder; a 2 KB PBO of a model mod means the model fell out. A size gate that fails a PBO under 4096 bytes catches an empty pack but not one that lost its models (item 5).
 2. **Content.** Grep the PBO for expected strings, the `.c` file names and a code literal from your latest change: `[Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($pbo)) -match "my_marker"`.
 3. **Name.** The PBO is `<SourceFolderName>.pbo`. When you build from a staging folder, name it exactly like the mod (`%TEMP%\<Mod>\`), or you deploy and measure the wrong file.
 4. **Local staging.** Keep the build source out of OneDrive: AddonBuilder's sync from OneDrive paths can copy no files and report no error.

@@ -18,7 +18,6 @@ CITING = [
     CATALOG,
     SKILLS_DIR / "dayz-launch-test" / "references" / "debug-protocol.md",
     SKILLS_DIR / "dayz-launch-test" / "references" / "test-loop.md",
-    SKILLS_DIR / "dayz-launch-test" / "references" / "audit-escalation.md",
     SKILLS_DIR / "dayz-build-pbo" / "references" / "file-checklists.md",
     SKILLS_DIR / "dayz-scope-mod" / "references" / "implementation-protocol.md",
     SKILLS_DIR / "dayz-scope-mod" / "references" / "questions-before-building.md",

@@ -46,7 +46,7 @@ override void OnWasDetached(EntityAI parent, int slot_id)
 }
 ```
 
-The two selections live in the `.p3d`, and `model.cfg` pairs them through an animation source. The model side is in `_shared/animation/items-in-hands.md`, section "Two models in one item: swap by attach state". The script calls are checked on `P:\`; the `model.cfg` wiring is not, so compare it with a vanilla item that has two models, such as the flag.
+The two selections live in the `.p3d`, and `model.cfg` pairs them through an animation source. The model side is in `_shared/animation/attach-state-parts.md`, section "Two models in one item: swap by attach state". The script calls are checked on `P:\`; the `model.cfg` wiring is not, so compare it with a vanilla item that has two models, such as the flag.
 
 ## Which slot list to read
 

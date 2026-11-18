@@ -16,9 +16,9 @@ What changed in the 1.30 action system: info only actions, action manager states
 
 ## Action manager states and starting
 
-`PerformAction(int user_action_id, ActionTarget target, ItemBase item, Param extraData = NULL)` is still inside `#ifdef BOT`, followed by `PerformActionStart` (`actionmanagerclient.c:796`). In single player `PerformActionStart` does nothing while an action is pending or running (`:806` to `:814`), and `GetActionState()` returns `UA_AM_INIT` while pending (`:822` to `:825`).
+`PerformAction(int user_action_id, ActionTarget target, ItemBase item, Param extraData = NULL)` is still inside `#ifdef BOT`, followed by `PerformActionStart` (`actionmanagerclient.c:796`). The lines moved: in 1.29 `PerformAction` was at `:756` inside the `#ifdef BOT` block at `:754` to `:760`, `PerformActionStart` at `:762` and `ActionBase.Can` at `:912`. In single player `PerformActionStart` does nothing while an action is pending or running (`:806` to `:814`), and `GetActionState()` returns `UA_AM_INIT` while pending (`:822` to `:825`).
 
-`UA_AM_INIT` is new and moved the values after it (`P:\scripts\3_game\constants.c:508`):
+`UA_AM_INIT` is new and moved the values after it (`P:\scripts\3_game\constants.c:508` to `:511`); in 1.29 `UA_AM_PENDING` was 14:
 
 | Constant | Value |
 |---|---|
@@ -43,7 +43,7 @@ m_ConditionTarget 	= new CCTLiquid(m_AllowedLiquidMask, UAMaxDistances.DEFAULT, 
 ## Target conditions
 
 - `CCTLiquid(int allowedLiquidSource, float maximalTargetDistance = UAMaxDistances.DEFAULT, float maxVerticalReach = UAMaxDistances.DEFAULT, SurfaceDetectionType surfaceDetectionType = SurfaceDetectionType.Roadway, bool allowSeaLevelCursorFallback = false)` (`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctliquid.c:37`) replaces `CCTWaterSurfaceEx` for fill and drink targets.
-- `CCTCursorInherited` accepts the cursor hit when it is in range of either the player's root or the head position (`cctcursorinherited.c:28`); `CCTCursor` does the same (`cctcursor.c:28` to `:33`).
+- `CCTCursorInherited` accepts the cursor hit, `target.GetCursorHitPos()`, when its squared distance to either the player's root or the head position is within `m_MaximalActionDistanceSq` (`cctcursorinherited.c:28`); `CCTCursor` does the same (`cctcursor.c:28` to `:33`).
 - `MiscGameplayFunctions.GetPlayerHeadPosition` returns a height from the stance, not the head bone (`P:\scripts\4_world\static\miscgameplayfunctions.c:776` to `:786`).
 
 ## Animation overrides

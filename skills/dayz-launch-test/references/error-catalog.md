@@ -1,6 +1,6 @@
 # Recurring errors (E01 to E35)
 
-Which mistakes keep coming back when a DayZ mod is written, each with its correct form. Check it while you write code, not only when something breaks. This file is the one list; nothing else keeps an index of it.
+Which mistakes keep coming back when a DayZ mod is written, each with its correct form. Check it while you write code, not only when something breaks. It is the one list; nothing else keeps an index of it.
 
 - **Seen in** names the kind of mod or file the mistake was caught in.
 - A `P:\` citation means the correct form was read in that vanilla file. A row with none rests on a measurement in a mod project and is not checked on `P:\`.

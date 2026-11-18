@@ -40,7 +40,7 @@ Text on a test screen tells the tester what to do, never what the result should 
 `python scripts/tools/dayz-layout-viewer/build_viewer.py <layout>` writes a `.preview.html` with views for 1080p, 1440p, 21:9 and 720p (`layout-html-preview.md`). From its code in `scripts/tools/dayz-layout-viewer/dayz_layout_viewer/html_template.py`:
 
 - It models text layout: size from `text_proportion` (`:110` to `:112`), wrapping (`:116`), `text halign` and `text valign` (`:104`, `:105`, `:115`), and clipping (`:117`).
-- It cannot tell whether your string fits. Its font is a browser stand in (Bahnschrift, Roboto Condensed or Arial Narrow, `:73`) where the game uses Metron atlases, and a `#STR_` key is drawn as the bracketed key, not the translation (`:107`). Shipped text is always keys.
+- It cannot tell whether your string fits. Its font is a browser stand in (Bahnschrift, Roboto Condensed or Arial Narrow, `:73`) where the game uses Metron atlases, and a `#STR_` key is drawn as the bracketed key, not the translation (`:107`): vanilla's `dialog_input_text.layout` shows `#STR_TextInputDialogRoot_MessageText0` (`P:\gui\layouts\dialog_input_text.layout:116`). Shipped text is always keys.
 - It lays exact units out as pixels at every view (`scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py:772` to `:775`), while the engine scales them with the screen height (`checklist-and-troubleshooting.md`, "Declare all four unit flags"). Trust a view other than 1080p only for widgets with no exact ancestor.
 - It defaults `wrap` to 1 (`:116`), so it wraps text the game clips on one line.
 

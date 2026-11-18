@@ -63,4 +63,4 @@ The stream changes are in `dayz-1-30-persistence.md`, the fence locks in `base-b
 
 ## Not covered here
 
-`TerritoryFlag: BaseBuildingBase` is declared at `P:\DZ\gear\camping\config.cpp:12470`. Its saved refresher fields are in `base-building.md`, section "Territory flag"; its radius and decay are not traced. No script on `P:\` reads the `show_on_init` config key.
+`TerritoryFlag: BaseBuildingBase` is declared at `P:\DZ\gear\camping\config.cpp:12480`. Its saved refresher fields are in `base-building.md`, section "Territory flag"; its radius and decay are not traced. No script on `P:\` reads the `show_on_init` config key.

@@ -2,13 +2,13 @@
 
 What a door needs inside the model, how the names line up with `model.cfg`, `config.cpp`, the player's door actions and script, and who writes each part.
 
-This file is the short version. `building-doors.md` and the files it indexes hold the depth: every `model.cfg` and `config.cpp` key (`door-config-and-locks.md`), the LOD layout (`door-lods.md`), three worked patterns (`door-patterns.md`), the 1.30 open check (`door-open-and-lock-code.md`) and locks on building doors (`building-door-locks.md`).
+A short overview; `building-doors.md` and the files it indexes hold the depth: every `model.cfg` and `config.cpp` key (`door-config-and-locks.md`), the LOD layout (`door-lods.md`), three worked patterns (`door-patterns.md`), the 1.30 open check (`door-open-and-lock-code.md`) and locks on building doors (`building-door-locks.md`).
 
 ## Who writes what
 
 | Part | Owner | Reference |
 |---|---|---|
-| Door selections in every LOD, View Geometry components, axis and action memory points, the skeleton class | `dayz-object-builder` | this file and `door-lods.md` |
+| Door selections in every LOD, View Geometry components, axis and action memory points, the skeleton class | `dayz-object-builder` | `doors.md` and `door-lods.md` |
 | `skeletonBones[]` entries for the door bones and the `class Animations` block | `dayz-animation-specialist` | `model-cfg-animations.md` |
 | `class Doors` for a building, or `class AnimationSources` for an item | `dayz-config-specialist`, from the names the animation specialist hands over | `_shared/animation/animation-sources.md` |
 | Script, only when the door must behave differently from vanilla, or for a door on an item | `dayz-script-specialist` | `_shared/animation/script-hooks.md` |
@@ -56,7 +56,7 @@ Worked patterns for a door with a handle, a door with a button, and a door with 
 - Every player has `ActionOpenDoors`, `ActionCloseDoors` and `ActionLockedDoors` (`P:\scripts\4_world\entities\manbase\playerbase.c:1697` to `:1699`). A lockpick adds `ActionLockDoors` and `ActionUnlockDoors` (`P:\scripts\4_world\entities\itembase\gear\tools\lockpick.c:18`, `:19`). A door can be lockpicked when its `lockCompatibilityBitMask` includes `1 << EBuildingLockType.LOCKPICK`, which is the default when the key is missing from its `class Doors` entry (`P:\scripts\3_game\entities\additionaldoorsinfo.c:29` to `:32`); both actions combine the lockpick's `GetKeyCompatibilityType` with the door's `GetLockCompatibilityType` with a bitwise and (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionunlockdoors.c:55`, `actionlockdoors.c:56`).
 - `ActionOpenDoors` works only on buildings: it checks `IsBuilding` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionopendoors.c:33`), which is true for `Building` (`P:\scripts\3_game\entities\building.c:267`) and false for other objects (`P:\scripts\3_game\entities\object.c:642`). A mod building inherits a house class such as `HouseNoDestruct` (`P:\DZ\data\config.cpp:3119`).
 - On the server it turns the aimed component into a door index and calls `OpenDoor` (`actionopendoors.c:67` to `:73`). A building with matching model names and `class Doors` needs no mod script.
-- A door that opens from one side only reads two memory point names from its `class Doors` entry, `interactPositionPoint` and `interactDirPoint` (`additionaldoorsinfo.c:35`, `:38`), checked by `DoorsDirectionalCheck` (`P:\scripts\4_world\entities\game\super\building.c:336`). No vanilla `config.cpp` under `P:\DZ\` sets them. Add both points to the Memory LOD only when the user wants this.
+- A door that opens from one side only reads two memory point names from its `class Doors` entry, `interactPositionPoint` and `interactDirPoint` (`additionaldoorsinfo.c:35`, `:38`), checked by `DoorsDirectionalCheck` (`P:\scripts\4_world\entities\game\super\building.c:441`). No vanilla `config.cpp` under `P:\DZ\` sets them. Add both points to the Memory LOD only when the user wants this.
 - In 1.30 the open check takes a parameter object. `ActionOpenDoors` builds a `DoorManipulationParams` (`m_DoorIndex`, `m_CheckIfLocked`, `m_Caller`; `P:\scripts\3_game\entities\building.c:5` to `:10`) and calls `CanDoorBeOpened(notnull DoorManipulationParams params)` (`P:\scripts\3_game\entities\building.c:141`). The older `CanDoorBeOpened(int doorIndex, bool checkIfLocked = false)` is only a wrapper around it (`P:\scripts\3_game\entities\building.c:160`), and the open action does not call it. A mod that changes when a door may open overrides the `DoorManipulationParams` form and calls `super`; an override of the `int` form alone is never reached by the vanilla action.
 - With empty or missing point names the one side check passes: `MemPointDirectionalCheck` returns true (`P:\scripts\4_world\static\miscgameplayfunctions.c:942` to `:967`).
 

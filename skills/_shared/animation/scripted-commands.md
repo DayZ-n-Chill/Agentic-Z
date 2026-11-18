@@ -24,7 +24,7 @@ int GetCurrentMovement()
 
 The movement values are `MOVEMENT_IDLE`, `MOVEMENT_WALK`, `MOVEMENT_RUN` and `MOVEMENT_SPRINT` (`P:\scripts\3_game\dayzplayer.c:645` to `:648`).
 
-Return the movement and also write `MovementSpeed` every `PreAnimUpdate`. Measured: on the sliding floor, returning `MOVEMENT_RUN` was enough to make the character run, where without it the locomotion of the previous command stayed. On the skateboard the override alone left the graph on the idle clip, and with `MovementSpeed` written as well the walk, run and sprint sources played. Those two builds differed in other writes too, so the `MovementSpeed` write is the likely cause, not an isolated one.
+Return the movement and also write `MovementSpeed` every `PreAnimUpdate`. Measured: on the sliding floor, returning `MOVEMENT_RUN` was enough to make the character run, where without it the locomotion of the previous command stayed. On the skateboard the override alone left the graph on the idle clip (the pelvis stayed inside the idle clip's band, 0.894 to 0.927 m, over 994 state lines, 292 of them moving at 1 m/s or more), and with `MovementSpeed` written as well the walk, run and sprint sources played. Those two builds differed in other writes too, so the `MovementSpeed` write is the likely cause, not an isolated one.
 
 ## Binding graph variables, commands and tags by name
 

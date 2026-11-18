@@ -6,7 +6,7 @@ The rules every `.layout` file and UI script follows, the checklist to run befor
 
 ### A leaf widget needs no child block
 
-An empty `{ }` child block on a leaf widget is a harmless habit, not a requirement. Vanilla leaves it out: `TextWidgetClass ActionListItem0` closes straight after its properties in the shipped HUD (`P:\gui\layouts\day_z_hud.layout:45`). Vanilla leaves the block out on 5,315 of 5,337 leaves and never writes an empty one; mods write it on about a fifth of their leaves. Both forms load, and a scan of 376 layouts from five production mods parsed every one without it. The UI lab keeps a fixture for this, a `ButtonWidgetClass` leaf with only properties (`scripts/tools/dayz-ui-lab/probe/LF_UIProbe/gui/layouts/leaf-without-child-block.layout`). Don't write a check that demands the block.
+An empty `{ }` child block on a leaf widget is a harmless habit, not a requirement. Vanilla leaves it out: `TextWidgetClass ActionListItem0` closes straight after its properties in the shipped HUD (`P:\gui\layouts\day_z_hud.layout:45`). Vanilla leaves the block out on 5,315 of 5,337 leaves and never writes an empty one; mods write it on about a fifth of their leaves. Both forms load, and a scan of 376 layouts from five production mods parsed every one without it. The UI lab keeps a fixture for this, a `ButtonWidgetClass` leaf with only properties (`scripts/tools/dayz-ui-lab/probe/AZ_UIProbe/gui/layouts/leaf-without-child-block.layout`). Don't write a check that demands the block.
 
 What does break loading:
 
@@ -20,7 +20,7 @@ The one real use of an anonymous block on a leaf is to hold `ScriptParamsClass`,
 A `FrameWidgetClass` is never visible. A `PanelWidgetClass` is visible only when its `style` gives it a 9-slice (`styles-format.md`).
 
 - For a plain background, use an `ImageWidgetClass` with `ignorepointer 1` and `stretch 1`.
-- Since DayZ 1.30 vanilla also uses styled containers: `style ActionWidget` (`P:\gui\looknfeel\dayzwidgets.styles:3700`) is set on `GridSpacerWidgetClass ActionTargetsCursorWidget` (`P:\gui\layouts\day_z_hud.layout:2287`), and the prompt rows inside it are plain `PanelWidgetClass` widgets (`PanelWidgetClass item`, `day_z_hud.layout:2294`). Before 1.30 those rows were image widgets with `linear_gradient.edds` or `card_drop.edds`.
+- Since DayZ 1.30 vanilla also uses styled containers: `style ActionWidget` (`P:\gui\looknfeel\dayzwidgets.styles:3700`) is set on `GridSpacerWidgetClass ActionTargetsCursorWidget` (`P:\gui\layouts\day_z_hud.layout:2400`), and the prompt rows inside it are plain `PanelWidgetClass` widgets (`PanelWidgetClass item`, `day_z_hud.layout:2424`). Before 1.30 those rows were image widgets with `linear_gradient.edds` or `card_drop.edds`.
 - Because those rows are panels, an `ImageWidget.Cast` of them is null on 1.30. The rule and its lines are in `conventions/ui.md`, "Layout and widget rules"; migration is in `ui-changes-1-30.md`.
 - A procedural texture from script, `LoadImageFile(0, "#(argb,8,8,3)color(1,1,1,1,CO)")` then `SetColor(...)`, fails with "Bad texture name" and "LoadImageFile can't load" and leaves the widget without a texture (measured in game on 1.29). Ship a 1x1 white `.edds`, or use a `Colorable` style with a `WhitePixel` center (`styles-format.md`). The same string as `image0` in a layout logs no error, but whether it draws is not confirmed (`verification.md`).
 

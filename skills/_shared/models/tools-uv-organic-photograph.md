@@ -23,7 +23,7 @@ In order:
 3. Split by normal sign: n+ is the skin or outside, n− the lining or inside. They are two elevations of the same asset and never share an island.
 4. Split left and right only when the shell's bounding box crosses the measured X mid plane. Keep both in the same elevation, as an archipelago at their real projected XY. If the exact check finds a collision on the midline, nudge a small gap in U (`du_each` of about 0.01 world units). Never put left and right in different frames.
 5. Use one photograph rotation, so that world up increases with V (head up). The spine sits at `u_proj = 0`.
-6. Pack the cropped frames as rectangles (the maxrects packer of the `out_g10` stage). Two frames side by side: lining, then skin. Align the pieces inside each layer, then the layers to each other. Never pack the islands tightly like puzzle pieces.
+6. Pack the cropped frames as rectangles with the maxrects packer (the cropped frame layout of `project_atlas.py`). Two frames side by side: lining, then skin. Align the pieces inside each layer, then the layers to each other. Never pack the islands tightly like puzzle pieces.
 7. Pass only on SAT = 0. If the user still sees overlap, it is occlusion inside one island of the photograph; peel pieces. Add no cameras beyond about two elevations unless the user asks.
 
 ### Peeling overlapping pieces
@@ -52,14 +52,14 @@ It is the projector as it ran on the quad bike body, so these parts must change 
 | `EXPECTED_FACE_COUNT` | 10,502 faces | The face count check fails |
 | `find_body_object()` | Looks for an object named `carroceria` (Spanish for bodywork) | Falls back to the mesh object with the most faces and logs a warning |
 | `CONTROL_A_SHELL`, `CONTROL_B_SHELL` | Shells `S06` and `S03`, with their expected overlap figures | The two controls read the wrong piece or raise a `KeyError` |
-| `G7_CROSSING_SHELLS`, `G7_MIRROR_PAIRS`, `G7_ATLAS_A_SHELLS`, `G8_FRONT_VIEW_ROTATIONS` | That body's shell ids | The `out_g7` to `out_g9` layouts place the wrong pieces |
+| `G7_CROSSING_SHELLS`, `G7_MIRROR_PAIRS`, `G7_ATLAS_A_SHELLS`, `G8_FRONT_VIEW_ROTATIONS` | That body's shell ids | The anatomical, two panel and archipelago layouts place the wrong pieces |
 | `SMOKE_ISLANDS_A`, `SMOKE_OVERLAP_A`, the `G3_*` figures | Earlier results on that body, used as baselines | The "not worse than baseline" comparisons mean nothing |
 
 Three more things to know:
 
-- The stage follows the name of `<outdir>`. `out_g7`, `out_g8`, `out_g9` and `out_g10` select the anatomical, two panel, archipelago and cropped frame layouts. Any other folder name runs the projection axis search and the older block packer. Each named stage reads `atlas_metrics.json` from the folder that holds the assignment file, so run the stages in order, each fed the previous stage's frozen assignment.
+- The layout follows the name of `<outdir>`: a folder named `out_g7`, `out_g8`, `out_g9` or `out_g10` selects the anatomical, two panel, archipelago or cropped frame layout. Any other folder name runs the projection axis search and the older block packer. Each layout reads `atlas_metrics.json` from the folder that holds the assignment file, so run them in that order, each fed the previous run's frozen assignment.
 - `SMOKE` in place of the assignment file derives a provisional split by shell size and shape and writes `assignment_SMOKE.json`. It checks the plumbing; it is not the paint classification.
-- `--placement-override` applies a JSON of rigid per island translations on top of the `out_g10` result (logged as G11). The file must have exactly the keys `source` (`"uv_arranger"`), `base` (`"out_g10"`), `atlas` (`"A"`), `uv_space` (`[0, 0, 1, 1]`) and `islands`, with one row per base island holding `id`, `placement_center_uv` and `delta_uv`; anything else is rejected. With an override the script then calls `render_atlas_pngs`, which runs `draw_atlas_fallback.ps1` through `powershell.exe`. That renderer is not shipped, so the step logs `PNG_RENDER_SKIPPED` after the metrics are written and the run ends normally; draw the PNG files from `atlas_a_islands.json` another way. Without an override it writes `REPORT_G10.md` next to `<outdir>` instead.
+- `--placement-override` applies a JSON of rigid per island translations on top of the cropped frame layout. The file must have exactly the keys `source` (`"uv_arranger"`), `base` (`"out_g10"`), `atlas` (`"A"`), `uv_space` (`[0, 0, 1, 1]`) and `islands`, with one row per base island holding `id`, `placement_center_uv` and `delta_uv`; anything else is rejected. With an override the script then calls `render_atlas_pngs`, which runs `draw_atlas_fallback.ps1` through `powershell.exe`. That renderer is not shipped, so the step logs `PNG_RENDER_SKIPPED` after the metrics are written and the run ends normally; draw the PNG files from `atlas_a_islands.json` another way. Without an override it writes `REPORT_G10.md` next to `<outdir>` instead.
 
 ## Worked example: the statue
 

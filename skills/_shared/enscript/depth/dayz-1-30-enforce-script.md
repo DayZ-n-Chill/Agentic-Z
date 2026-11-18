@@ -25,7 +25,7 @@ The citations are to the 1.30 scripts on `P:\`. A later 1.30 build can move a li
 
 ## Central economy tick
 
-`EntityAI.OnCEUpdate()` had no time arguments in 1.29. In 1.30 it is an empty `[Obsolete("1.30: Use OnCEIterate(float currentTime, float elapsedTime) instead")]` (`P:\scripts\3_game\entities\entityai.c:4924`), and the live tick is:
+`EntityAI.OnCEUpdate()` had no time arguments in 1.29 (1.29 `entityai.c:3860`, a build not on `P:\`). In 1.30 it is an empty `[Obsolete("1.30: Use OnCEIterate(float currentTime, float elapsedTime) instead")]` (`P:\scripts\3_game\entities\entityai.c:4924`), and the live tick is:
 
 ```c
 void OnCEIterate(float currentTime, float elapsedTime)   // P:\scripts\3_game\entities\entityai.c:3904
@@ -53,7 +53,7 @@ Both methods still exist. `GetNoiseReductionByWeather()` is `[Obsolete("Use Weat
 
 ## Vector, array and enum helpers
 
-`vector.Cross(vector v)` is on `P:\` (`P:\scripts\1_core\proto\enconvert.c:239` to `:246`), in the 1.30 experimental and early builds. No script of the 1.30 stable release declares it, and 1.29 never had it, so a call has nothing to bind to there. Write its body inline:
+`vector.Cross(vector v)` is in the 1.30 experimental and early builds (`scripts\1_core\proto\enconvert.c:239` to `:246` of the earlier 1.30 extraction on `P:\`); the patched 1.30 build now on `P:\` has no `Cross` in `P:\scripts\1_core\proto\enconvert.c`. No script of the 1.30 stable release declares it, and 1.29 never had it, so a call has nothing to bind to there. Write its body inline:
 
 ```c
 float x = a[1] * b[2] - a[2] * b[1];

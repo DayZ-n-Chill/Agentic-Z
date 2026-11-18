@@ -6,8 +6,8 @@ Which reference validators exist for a build pipeline outside this repo's own ga
 
 | Validator | State | Use in this repo instead |
 |---|---|---|
-| `config_cpp_validator.py` (`config-validator-script.md`) | Works; regex heuristics for braces, semicolons, `CfgPatches`, `hiddenSelections` and duplicates | `/dayz-lint` parses `config.cpp` and is the gate `/dayz-build-pbo` runs. |
-| `texture_path_checker.py` (`texture-path-checker-script.md`) | Works; resolves every quoted `.paa` and `.rvmat` from the work drive root and warns on capitalisation | `/dayz-lint` (missing files) and `/dayz-p3d-audit`. |
+| `config_cpp_validator.py` (notes in `config-validator-script.md`) | Works; regex heuristics for braces, semicolons, `CfgPatches`, `hiddenSelections` and duplicates | `/dayz-lint` parses `config.cpp` and is the gate `/dayz-build-pbo` runs. |
+| `texture_path_checker.py` (notes in `texture-path-checker-script.md`) | Works; resolves every quoted `.paa` and `.rvmat` from the work drive root and warns on capitalisation | `/dayz-lint` (missing files) and `/dayz-p3d-audit`. |
 | A stringtable validator | Not written for DayZ; the plan is below | None yet. |
 | A `.p3d` LOD checker | Not written; the plan is below | `/dayz-p3d-audit`. |
 

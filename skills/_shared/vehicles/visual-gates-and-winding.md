@@ -27,7 +27,7 @@ The most basic winding fault is a face wound against its own neighbours. Per sel
 Casting culled rays from many outside directions (a Fibonacci sphere) and flagging faces seen only from the minority side finds faces inverted against the outside without trusting normals, and runs headless. Its raw output is about 94% false: concave pieces such as suspension, trim, interior and underbody are rightly seen from inside (9152 of 9736 one-sided faces on one car; 584 were body). To make it useful:
 
 1. Keep body selections (`color`, `glass`) and drop `suspension`, `trim` and `interior`, mapping each face to its selection on the visual LOD the check indexes.
-2. Keep the full ray settings; cutting them undercounted 3.6 times.
+2. Keep the full ray settings; cutting them undercounted 3.6 times (settings of 60, 40 and 48 found 3127 faces where 260, 80 and 72 found 11262).
 3. Drop deliberate double-sided pairs: an exact coincident vertex triple, or centroids within 6 mm with opposite normals.
 4. Compare left with right. On symmetric geometry, one-sided body faces on one side and none on its mirror mean that side is inverted: a left tail lamp read 310 of 922 against 0 of 922 on the right. Flip it to match the good side.
 
@@ -39,7 +39,7 @@ Speckle of grey, black or blue triangles all over the body was the source assemb
 
 ## Bright triangles on paint
 
-Bright or dark triangles scattered over paint, catching sky light, are shading seams: a winding flip that also negated those faces' stored normals left them antiparallel to their neighbours. Winding, duplicate and material checks all pass. Weld the paint by position and count distinct stored normal directions at each shared point: a smooth surface has one, a seam two opposite ones. Fix it by writing stored normals as the smooth `+cross` of the final winding (the orientation rule above). Never recompute normals outward from the car's centre: a car body is not convex, so that matches only about 70% and inverts the rest. Keep any consistency fix to the area of the complaint: a headlight is a layered lens and reflector, and forcing it consistent can invert a real inner layer.
+Bright or dark triangles scattered over paint, catching sky light, are shading seams: a winding flip that also negated those faces' stored normals left them antiparallel to their neighbours. Winding, duplicate and material checks all pass. Weld the paint by position and count distinct stored normal directions at each shared point: a smooth surface has one, a seam two opposite ones. Fix it by writing stored normals as the smooth `+cross` of the final winding (the orientation rule above). When healing seams by flood fill on neighbour agreement (`dot(smean_a, smean_b)` of the mean stored normals), flip only the minority faces of each component and only clear seams, a dot below -0.5 (more than 120 degrees); real paint creases of 90 to 120 degrees are rare, and rounding one off looks worse than a faint triangle. Never recompute normals outward from the car's centre: a car body is not convex, so that matches only about 70% and inverts the rest. Keep any consistency fix to the area of the complaint: a headlight is a layered lens and reflector, and forcing it consistent can invert a real inner layer.
 
 ## Other faults found on imported cars
 

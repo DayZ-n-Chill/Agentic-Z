@@ -64,7 +64,7 @@ Result: the wheel in 29 islands (3,261 px/m at 2048) and the bodywork in 22 (857
 
 What is left: closed curved shells (a tire carcass, domed caps) keep small self overlaps after LSCM. Projecting them onto a plane folds them worse, because they are not developable, and more cuts fragment them. An artist relaxes them or adds one seam per shell in seconds; automatic zero overlap on a closed curved surface is a hard problem that even RizomUV's automatic seams only half solve.
 
-No script for this cut is shipped; `sat_gate.py` is the overlap check it relies on. Two limits apply (see "Known traps" in `tools-uv-atlas.md`): with seams this sparse, SLIM can collapse most triangles to zero UV area without a warning, and the view chart method in `uv_view_charts.py` is the default for vehicle panels instead.
+No script for this cut is shipped; `sat_gate.py` is the overlap check it relies on. Two limits apply (see "The unwrap" in `tools-uv-atlas-traps.md`): with seams this sparse, SLIM can collapse most triangles to zero UV area without a warning, and the view chart method in `uv_view_charts.py` is the default for vehicle panels instead.
 
 ## Repairing an existing layout
 

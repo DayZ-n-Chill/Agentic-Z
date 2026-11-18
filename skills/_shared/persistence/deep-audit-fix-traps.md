@@ -1,65 +1,52 @@
-# Traps when fixing and auditing again
+# Traps when fixing saved data code
 
-What goes wrong in steps 5 and 6: a hardened contract that misses a sibling call-site, a fix that trusts another actor's id, two correct fixes that break each other, a fix applied to generated output, and a corrective that is never audited itself. Open this before applying fixes and before the second audit pass.
+What goes wrong when fixes to a mod's save, load and recovery code are applied (steps 5 and 6 of `deep-audit.md`): a hardened contract that misses a sibling call site, a fix that trusts another process's id, two correct fixes that break each other, a fix applied to generated output, and a fix whose new design is never checked. Open it before applying fixes and before the second pass.
 
-These are process lessons from third-party projects and cite no vanilla code of their own. For the DayZ facts an audit assumes, see `deep-audit.md`, step 1; the base class data width is at `P:\scripts\3_game\entities\entityai.c:2912-2948`.
+These traps come from mod code, not vanilla. For the DayZ facts an audit assumes, see `deep-audit.md`, step 1; the base class save and load hooks and their data width are at `P:\scripts\3_game\entities\entityai.c:2912` to `:2948`.
 
-## Delta-contract propagation: a step 1 check when the trigger is "make it fail-closed"
+## A hardened contract must reach every sibling call site
 
-Case: the pre-release audit of a virtual storage mod. The change under review hardened durability contracts: a signature changed to return a bool with a gate on it, and "verify the sidecar before declaring the data persisted". Five of about nine real findings, including both release blockers, were not cases of the fix being wrong but of the fix missing at a sibling call-site. `HandleRestoreFailure` did not clear the flag and sidecar that its three sibling terminal paths cleared. `MigrateLegacyTmp` got the `isCanonicalTmp` filter but `PromoteOrphanTmp` did not. Retry and recover got the checked `ClearFor` gate but `reset` did not. The success branch of DropQueue was untracked but its two fail-closed branches were not. The eight structural angle auditors under-weight this, because each one reads its own layer's canonical path, while the whole point of a fail-closed delta is that it touches many sites.
+When a change makes a function return a bool with a gate on it, adds a "verify before durable" rule (check the sidecar before calling the data saved), or makes a path fail closed, the usual defect is not a wrong fix but a missed site. N-1 of N branches get the new contract and one does not: a restore failure handler that does not clear the flag and sidecar its sibling terminal paths clear, a migration that gets a file filter its orphan promotion lacks, a reset that skips the checked gate that retry and recover use.
 
-Add this to step 1 (mechanical pre-checks) whenever the delta changes a signature to return a bool, introduces a "verify before durable" contract, or propagates a fail-closed gate:
-- Grep every call-site of the changed symbol and of its sibling or opposite operation that should now share the contract: the success path, every failure or early-return branch, the sync or shutdown shortcut, the admin variant and the boot-reconcile variant.
-- For each one, confirm that it consumes the new contract: it checks the bool, clears the same flag and sidecar, or runs the same gate. The dominant failure mode is asymmetry: N-1 of N branches are updated and one is missed. Enumerate the branches mechanically; do not eyeball them.
-- This is a delta check (it enumerates the fan-out of the changed symbol) and complements the five structural checks. Run it first when the audit trigger is "someone hardened contracts".
+Add this to the mechanical checks whenever a change hardens a contract:
 
-Corollary (resolving a contradiction): when two auditors disagree about whether an orphaned on-disk artifact (a stale sidecar or marker) is dangerous or inert, the decisive question is whether the boot or recovery scan enumerates it. A sidecar whose primary enumerator glob (for example `*.lfv`) is gone is inert even though it survives on disk, so check the enumerator before rating severity.
+- Grep every call site of the changed symbol and of its sibling or opposite operation: the success path, every failure or early return branch, the synchronous or shutdown shortcut, the admin variant and the boot reconcile variant.
+- Confirm each one consumes the new contract: it checks the bool, clears the same flag and sidecar, or runs the same gate. List the branches mechanically; do not judge them by eye.
 
-Caveat when applying the propagation (step 5): if the missing call-site moves to a terminal or admin-blocking state (QUARANTINE, quarantine-orphaned) and its failure branch contains a hard gate (preservation of a marker or payload that prevents data loss), do not reorder the flow to gate the durable write on the newly checked contract. A reorder can route the failure path into a branch that deletes the marker or purges the payload, and so create a worse data loss than the one you were closing. Prefer to consume and retry the contract while keeping the durable write in its original position. Verify the whole `else` or failure branch of the site you touch, not just the happy path. Case: a reorder of a degraded-partial handler introduced a path that deleted the `.lfv` file at the maximum failure count; the adversarial reviewer caught it in the round after the "fix", and the first apply attempt did not. Corollary: after a propagation fix, re-run the adversarial verify pass (steps 3 and 4) on the changed handler, because an apply can introduce a regression worse than the finding.
+A leftover file on disk (a stale sidecar or marker) is dangerous only if the boot or recovery scan lists it. A sidecar whose enumerating glob no longer matches it is inert, so check the enumerator before rating the finding.
 
-## Two things the audit must check that no single angle covers
+When the missed site moves to a terminal or admin blocking state (quarantine) and its failure branch protects a marker or payload against loss, do not reorder the flow to gate the durable write on the newly checked contract. A reorder can route the failure path into a branch that deletes the marker or purges the payload, a worse loss than the one being closed. Consume and retry the contract and keep the durable write where it was. Read the whole failure branch of the site you touch, and check the changed handler again after the fix.
 
-Case: an admin tool mod (a dual cross-family review plus this procedure). The code entered with two independent UNSOUND verdicts and emerged with 19 fixes. The two most severe findings of the day **were not in the code being audited**: they were in the fixes written that very day. None of the 8 angles would have found them, because all 8 angles look at the system, not the patch.
+## An id from another process: check its lifetime, not only its value
 
-### Check a reused identifier by its lifecycle, not by its equality
+When a fix uses an id issued by another process as the key for a destructive operation, proving that two ids are equal today is not enough. Answer each of these with a cited line first:
 
-The first check is that the symbol exists. The second is the meaning of a helper you reuse. The missing third check is the one that bites in two-process systems: when a fix uses an identifier issued by another actor, verifying that the equality holds is not enough; you must also verify how long that equality lives and who resets the counter.
+- Who issues the id, and from which counter?
+- Does that counter reset (per process, session, mission or restart)?
+- Who keeps the map that resolves it, and when is that map cleared?
+- Can the two lifetimes drift apart, and what happens when the id no longer means what it meant?
 
-Real case: to delete an orphaned entity, a fix reused the `command_id` returned by enqueue, after verifying in the server code that `object_id == command.id`. That was true and cited with `path:line`. What was not verified: the issuer of those IDs resets its counter on every startup (`self._next_id = 1`) and reaps itself after 30 minutes idle, while the map that indexes them on the other side is never cleared as long as the host process lives. With recycled IDs, the "compensating" deletion points to an entity from another session. A fix meant to leave no garbage could destroy work in progress.
+An issuer that restarts its counter at 1 on every start, paired with a map on the other side that lives as long as the host process, makes a "compensating" delete hit an entity from another session. If any answer lacks a citation, do not run the destructive operation: log and report it. A test fixture never assigns ownership fields directly; a test gets an owner only through the product operation with a real lease.
 
-**Mandatory questions before accepting a foreign ID as the key for a destructive operation**: who generates it and with which counter; whether that counter resets (per process, session, mission or reboot); who maintains the map that resolves it and when that map is cleared; whether those two lifecycles can drift apart; and what happens if the ID no longer means what it meant. If any of these lacks a cited answer, **do not perform the destructive operation**: log and report it, and never delete blindly. A fixture never assigns ownership fields: a grep for assignments to `owner_*` in test helpers must find nothing, and the only way a test gets an owner is through the product operation with a real lease.
+Check the order on the other process too. A spawn that is always queued while a delete without a spawn is dispatched at once lets the compensation run before the spawn it undoes, and creates the orphan it was meant to prevent.
 
-A corollary from the same case: also verify the execution order on the other actor. There, a `spawn` was always deferred to a queue while a `delete` of a batch without a spawn was dispatched immediately, so the compensation could run before the spawn it was meant to undo and create the permanent orphan it was meant to prevent.
+## Check pairs of fixes, not only each fix
 
-### Look for interactions between fixes in step 6, not just defects in each fix
+Two fixes that are each right can fail together. A dry run that stops calling sweep is right, and a startup step that adds a trailing newline to a ledger is right; but if the only repair of a broken ledger tail lives inside sweep, the newline closes the broken line without discarding it, the next append lands after it, `replay()` always raises, and the ledger stays unreadable for good.
 
-Step 6 says "re-run the angles whose code changed most". That is not enough: it invites re-auditing each fix on its own, while the defect appears in the combination of two correct fixes.
+In the second pass, for each pair of fixes ask whether one disables a path the other depends on, above all when one adds a guard (`if not X: ...`) and the other touches the resource the guarded path repaired or cleaned. Above four fixes, list the pairs mechanically.
 
-Real case, with two fixes that were both correct and both had a proven failing test: (a) "in dry-run, do not call sweep", which was correct because sweep changed the world in a mode advertised as safe; (b) "on startup, guarantee a trailing newline on the ledger", which was correct because a merged append had broken the contract for a live entity. Together they failed: the only repair of a broken tail lived inside sweep, which fix (a) had just disabled in dry-run, and fix (b) closed the broken line without discarding it, so the next append landed after it and that line was no longer the last. The result: `replay()` always raised and the ledger stayed **permanently unreadable**. No later startup could even run sweep.
+## Generated output is not the place to fix
 
-**Add this to step 6 explicitly**: for each pair of fixes in the batch, ask whether one **disables a path that the other depends on**, especially when one fix adds a guard (`if not X: ...`) and another touches the resource that the guarded path repaired or cleaned. Enumerate the pairs mechanically if the batch has more than four fixes; the guilty pair is rarely the one you suspect.
+First decide whether the tree under audit was produced by a tool (a transformer, code generator, build or migration) with a manifest, a contract or pinned hashes. Look for `*-receipt.json`, `contract*.json` or `*manifest*.json` next to it, and a `--verify` option on the tool. If they are there:
 
-## When the audited tree is the output of a generator, step 5 does not edit the tree
+1. Apply the fix to the generator's source, then regenerate the contract and its hash, run the tool again from a clean tree, and repack the PBO. Keep the previous artifact apart as evidence.
+2. Never loosen a gate so the fix passes. Tighten it instead (two exact counts of 1 rather than one count of 2), add a check for anything the fix removes, and prove each touched gate can fail: break the source, run the tool, require a non-zero exit with the expected message, restore the source, and confirm the restore is byte-identical.
+3. Tell the user the full cost before they approve which fixes to make: the contract, the hash, the rerun, the repack and possibly a new measurement. The cost changes which findings are worth fixing.
+4. A finding whose fix would touch a hash-pinned region is not fixed in code. Document it, or close it with a line in the test procedure.
 
-Case: a power grid mod. The audit produced 3 fixes of 3 lines within a delta of 24, and applying them seemed trivial. It was not: the candidate tree was the output of a fail-closed transformer, with a tree manifest and a contract pinned by SHA-256, and the lines to change were the transformer's Python literals, gated by exact counts (`count('"key"') != 2 -> fail`). Editing the tree would have broken the manifest and made the fix impossible to reproduce.
+## A fix that adds design is checked like new code
 
-**Add this to step 1 (mechanical pre-checks) as question zero**: first determine whether the audited tree is the output of a tool (a transformer, code generator, build or migration) with a manifest, a contract or pinned hashes. Look for `*-receipt.json`, `contract*.json` or `*manifest*.json` next to the tree, and for a `--verify` option in the tool that produced it. If they are present, the tree is not the surface to edit.
+A fix that patches existing lines gets the mechanical checks and the two angles whose code changed most. A fix that adds design (a new flow, state, recovery or cleanup path) is the exception `deep-audit.md` step 6 names: run every angle that applies over its new code, within the same two-round budget. Its defects sit in the design, such as a clear after reapply that breaks another path's guarantee, or an alias in a buy, withdraw and restart flow that leaves an in-game terminal blocked for good, and a check of the changed lines cannot see them.
 
-**Consequences, in order**:
-
-1. **The fix is applied to the generator's literal**, not to the artifact. Then regenerate the contract and its SHA, re-run `analyze -> apply -> verify` from a clean tree, and re-seal the artifact (PBO or package). Keep the previous artifact separately as evidence.
-2. **Re-anchoring gates is the failure mode this procedure exists to prevent.** A gate changed so that it accepts your fix is a loosened gate. Rule: always re-anchor more strictly (two exact counts of 1 instead of one count of 2), add a non-regression gate for each check the fix removes, and **turn every touched gate red on the same day**: tamper with the literal, run the tool, require an exit code other than 0 with the expected token, restore the literal, and verify that the restore is byte-identical.
-3. **State the cost before the user approves the scope of the fixes.** The real cost is not "editing N lines": it is the contract, the SHA, the re-run, the re-sealing and possibly a new measurement. It changes which findings are worth fixing. In the original case, two of the four approved fixes changed shape once the cost was known, and one could not be applied at all.
-4. **A finding whose fix would require touching a hash-pinned region of the contract is not fixed.** It is documented, or turned into a procedural note. In the original case, the relocated body was byte-identical by design and pinned, so the finding "a debug hook was left duplicated in two files and a tester may edit the one that does not compile" was closed with a line in the test procedure, not with code.
-
-## A corrective is unaudited input: audit its new code again, never only the delta
-
-**For a fix that patches existing code, step 6 re-runs the mechanical checks and the two most-changed angles. A corrective that adds new design (a new flow, state or recovery path) is the exception `deep-audit.md` step 6 names: its new code is audited as if it were a fresh round, within the same two-round budget.**
-
-**Evidence.** A corrective bundle passed its receiver, a crash-recovery walk and the compile gate, and closed the findings of six review lanes. Re-running the multi-angle audit against **its own new code** then found two new criticals and one blocker, all of them **defects in the corrective's design rather than its implementation**: a clear-after-reapply that broke the guarantee of an alternate path, and an alias in the canonical buy/withdraw/restart flow that left the in-game ATM permanently blocked. Four of five independently re-launched auditors converged on the same alias without contact. It was the fourth instance of the same shape in one campaign, which is what makes it a rule rather than an anecdote.
-
-**Apply in step 6:**
-
-1. **Re-launch every applicable angle over the new code** of a corrective that adds design, rather than only checking that the fixes landed. The round-two findings were in the corrective's design, so a delta-only check could not have seen them. Resumed agents work here and cost roughly 30% of a fresh run, provided they are told explicitly that their cached content is stale.
-2. **The corrective's prompt carries its own counter-scenarios** -- the scenarios that would refute its design -- and the implementer verifies and documents them as part of RED->GREEN. Treat the arbitration's design as unaudited input. In the case above, the counter-scenarios that were embedded got verified; the one that was not embedded is the one the re-audit had to catch.
-3. **Use the single loop budget established before review.** Follow the stop rule of step 6: executable product criteria, bounded rounds and an explicit escalation outcome. Do not substitute a zero-new-findings requirement.
+Write down, with such a fix, the scenarios that would prove its design wrong, and check each one before calling it done. Keep the stop rule of step 6: runnable criteria, bounded rounds and a stated way to hand back what is left; never "no new findings" as the bar.

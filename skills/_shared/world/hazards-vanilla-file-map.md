@@ -85,8 +85,8 @@ Nothing in the vanilla data shows these, so treat them as unverified:
 | The area enum is `EEffectAreaType` | `P:\scripts\4_world\classes\contaminatedarea\effectarea.c:10` |
 | The hazard modifiers have no fixed numbers; the enum numbers nothing after `MDF_TEMPERATURE = 1`, so use the names | `P:\scripts\4_world\classes\playermodifiers\emodifiers.c:3` |
 | The `AGT_AIRBOURNE_SOLID` case of the transmission plugin | `P:\scripts\4_world\plugins\pluginbase\plugintransmissionagents.c:414` |
-| `PlayerBase` saves the thermal bias handler with `m_ThermalBiasHandler.OnStoreSave(ctx)` | `P:\scripts\4_world\entities\manbase\playerbase.c:7395` |
-| Motorbike and boat wind is decided in `DetermineHeatcomfortBehavior` | `P:\scripts\4_world\classes\environment\environment.c:575` |
+| `PlayerBase` saves the thermal bias handler with `m_ThermalBiasHandler.OnStoreSave(ctx)`, far from line 941; the code near line 911 is `OnUpdateEffectAreaServer`, the server update while the player stands in an effect area | `P:\scripts\4_world\entities\manbase\playerbase.c:7395`; `:911` |
+| Motorbike and boat wind is decided in `DetermineHeatcomfortBehavior`; line 889 of the same file is `GetWetDelta`, not wind | `P:\scripts\4_world\classes\environment\environment.c:575`; `:889` |
 | Motorbike dust weight is 0.5 (`Motorbike_01_ColorBase`) and 0.75 (`Motorbike_02_ColorBase`), never 0.25 | `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:1` and `:87` (`return 0.5` at `:89`); `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_02.c:1` and `:77` (`return 0.75` at `:79`) |
 | A mask stops the storm cough only when its breath protection covers the storm's intensity, because `coughIntensity` is intensity minus protection | `P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\sandstormexposure.c:143` |
 | Nasdara's skinning yields are in its `basicDefines.hpp`, not in the data config, which ends near line 60 | not on `P:\` |

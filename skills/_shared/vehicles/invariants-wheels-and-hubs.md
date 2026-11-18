@@ -6,7 +6,7 @@ The `CarScript` base names each wheel's hub with `wheelHub="wheel_1_1_damper_lan
 
 ## Hubs belong in the Geometry LOD
 
-`wheelHub` resolves against the Geometry LOD (resolution `1e13`, a hub box of about 0.20 m) and the Memory LOD (`1e15`, one point), not against the visual `wheel_X_Y` selection. A port that leaves the hubs anywhere else does not spawn:
+`wheelHub` resolves against the Geometry LOD (resolution `1e13`, a hub box of about 0.20 m) and the Memory LOD (`1e15`, one point), not against the visual `wheel_X_Y` selection. A config line such as `class Wheels { class Left { wheelHub="wheel_1_1_damper_land"; } }` resolves to a selection there. A port that leaves the hubs anywhere else does not spawn:
 
 ```text
 ENTITY       : Load entity type '<Class>'
@@ -64,6 +64,6 @@ Measure the axle in the `.p3d` before setting the sign of a wheel's `angle1`; an
 
 A derived class that redeclares `class Axles: Axles` and lists one axle loses the other entirely, not just its values. Three drivetrain variants that declared only `class Rear: Rear` reported 2 wheels against 4 on the control in game, sat nose down (pitch -7 to -10 degrees against -0.3) and would not move; the player saw "the front wheels are buried and they do not turn". Add `class Front: Front {};` to each.
 
-In the same override, `Clutch`, `Engine`, `Gearbox` and `Steering` were inherited without being declared, and those variants kept them. Inheritance works for children the engine looks up by name; it does not for children it enumerates, whose names are free, such as the axles under `Axles`. Vanilla lists both `Front` and `Rear` in every override, for example the `RearDrive` template (`config.cpp:494` to `:510`) and `OffroadHatchback` (`:1431` to `:1466`), so copying vanilla hides the gap.
+In the same override, `Clutch`, `Engine`, `Gearbox` and `Steering` were inherited without being declared, and those variants kept them. Inheritance works for children the engine looks up by name; it does not for children it enumerates, whose names are free, such as the axles under `Axles`. Vanilla lists both `Front` and `Rear` in every override, for example the `RearDrive` template (`config.cpp:494` to `:530`) and `OffroadHatchback` (`:1431` to `:1466`), so copying vanilla hides the gap.
 
-Nothing offline catches it: `CfgConvert` parses the config without complaint and the script linter says nothing. Count what should be there in the engine, the wheel count of the spawned test vehicle, before handing a build to a person; a test setup that reports "fixture not ready" usually means exactly this.
+Nothing offline catches it: `CfgConvert` parses the config without complaint and the script linter says nothing. Count what should be there in the engine, the wheel count of the spawned test vehicle (`telemetry_read(mode="object_at").wheel_count` on the prepared fixture, see `skills/dayz-launch-test/references/mcp/actions-ui-and-inventory.md`), before handing a build to a person; a test setup that reports "fixture not ready" usually means exactly this.

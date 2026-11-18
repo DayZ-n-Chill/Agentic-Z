@@ -41,7 +41,7 @@ Since DayZ 1.30 the shared fluid enum is `ETransportFluid` (`transport.c:52` to 
 
 `Car` adds the native wheel calls (`WheelCount`, `WheelCountPresent`, `WheelGetAngularVelocity`, `WheelHasContact`, `WheelGetSurface`, `WheelGetWaterState`, `WheelGetEntity`, `WheelIsLocked`, `car.c:272` to `:348`; `CarWheelWaterState` at `:67` to `:72`), brakes and handbrake (`GetBrake`, `SetBrake`, `GetHandbrake`, `SetHandbrake`, `SetBrakesActivateWithoutDriver`, `:200` to `:212`), `GetSpeedometer` (`:102`) and flip detection by wheel contact (`DetectFlippedUsingWheels`, `:157` to `:178`). A boat has no brake calls. Since DayZ 1.30 `Boat` also has `GetSpeedometer()` and `GetSpeedometerAbsolute()` (`boat.c:42` to `:56`).
 
-`CarScript.SetActions()` adds `ActionOpenCarDoorsOutside`, `ActionCloseCarDoorsOutside`, `ActionGetInTransport`, `ActionSwitchLights`, the horn actions and `ActionPushCar` (`carscript.c:2313` to `:2321`). Since DayZ 1.30 the horn actions are `ActionVehicleHornShort` and `ActionVehicleHornLong`; the old `ActionCarHornShort` and `Long` are marked obsolete, and `CarHornShortActionInput` is an empty alias of `VehicleHornShortActionInput` (`dayz-1-30-vehicles.md`).
+`CarScript.SetActions()` adds `ActionOpenCarDoorsOutside`, `ActionCloseCarDoorsOutside`, `ActionGetInTransport`, `ActionSwitchLights`, the horn actions and `ActionPushCar` (`carscript.c:2313` to `:2321`; on 1.29 `carscript.c:2871` to `:2880`). Since DayZ 1.30 the horn actions are `ActionVehicleHornShort` and `ActionVehicleHornLong`; the old `ActionCarHornShort` and `Long` are marked obsolete, and `CarHornShortActionInput` is an empty alias of `VehicleHornShortActionInput` (`dayz-1-30-vehicles.md`).
 
 ## Boats
 
@@ -51,7 +51,7 @@ Author a boat like a car up to the shared layer, then diverge. Do not copy a car
 |---|---|---|
 | Propulsion | Native propeller: `PropellerGetPosition()`, `PropellerGetAngularVelocity()` | `boat.c:125` to `:128` |
 | Brakes | None | |
-| Steering | `GetSteering`, `SetSteering(float)`; the car's `SetSteering` has an extra `bool` | `boat.c:59` to `:62`; `car.c:185` |
+| Steering | `GetSteering`, `SetSteering(float)`; the car's `SetSteering` has an extra `bool unused0 = false` | `boat.c:59` to `:62`; `car.c:185` |
 | Sound controllers | `BoatSoundCtrl` holds engine, speed and player only, no rpm or doors | `boat.c:2` to `:10` |
 | Get-in | `CrewCanGetThrough`, `CanReachSeatFromSeat` and the others return `true` | `boatscript.c:205` to `:223` |
 | Animation set | `VehicleAnimInstances.ZODIAC` | `boatscript.c:195` to `:198` |
@@ -88,7 +88,7 @@ class Propeller
 At run time (`boatscript.c`):
 
 - The engine stops when the propeller leaves the water, `GetWaterDepth(pos) < -0.2` then `EngineStop()` in `EOnSimulate` (`:393` to `:407`), and when fuel runs out (`:361` to `:371`).
-- An empty boat decays: a server timer every 10 seconds, four times faster when flipped (`:44` to `:47`, `:110` and `:111`, `:534` to `:548`).
+- An empty boat decays: a server timer runs `DecayHealthTick` every 10 seconds, four times faster when flipped (`:44` to `:47`, `:110` and `:111`, `:534` to `:548`).
 - Four water effects sit on memory points `ptcFxFront`, `ptcFxBack`, `ptcFxSide1`, `ptcFxSide2` (`:129` to `:144`); the classes are `EffectBoatWaterFront`, `Back` and `Side` (`P:\scripts\4_world\entities\effects\boatwatereffects.c:10`, `:116`, `:199`), and the back effect reads `PropellerGetAngularVelocity` (`:183`).
 - A spark plug is the one vital part for starting (`CheckOperationalRequirements`, `:278` to `:286`); a car defaults to demanding both plugs (`invariants-engine-fluids-and-handling.md`).
 - Flips are detected by the water-aware surface check, not wheels (`:490` to `:495`).
@@ -97,7 +97,7 @@ At run time (`boatscript.c`):
 Boat actions, under `P:\scripts\4_world\classes\useractionscomponent\actions\`:
 
 - `ActionStartEngineBoat` (continuous) and `ActionStopEngineBoat` (single use) cast the target to `BoatScript`, require `CrewDriver() == player`, and skip server execution when the move strategy is `PHYSICS` (`actionstartengineboat.c:9` to `:70`, `actionstopengineboat.c:1` to `:52`). Start calls `OnIgnition()` in `OnExecute` and `EngineStart()` in `OnFinishProgress` (`actionstartengineboat.c:58`, `:69`); stop calls `EngineStop()` (`actionstopengineboat.c:51`).
-- `ActionPushBoat extends ActionPushObject`, full body, syncing its push sound on start and end (`actionpushboat.c:17` to `:46`).
+- `ActionPushBoat extends ActionPushObject`, full body, calling `SyncSoundPushBoat(true)` on start and `SyncSoundPushBoat(false)` on end on the server (`actionpushboat.c:17` to `:46`, the calls at `:35` and `:44`).
 - `ActionRepairBoatChassis` and `ActionRepairBoatEngine` extend `ActionRepairVehiclePartBase`. The chassis action repairs any zone but `Engine` between worn and ruined (`actionrepairboatchassis.c:33` to `:37`); the engine action repairs only `Engine` in that band, with the engine off and a charged blowtorch (`actionrepairboatengine.c:26` to `:48`).
 
 ## Trucks
@@ -114,7 +114,7 @@ Boat actions, under `P:\scripts\4_world\classes\useractionscomponent\actions\`:
 | Cargo | `itemsCargoSize[]={10,40}` | `:18674` to `:18677` |
 | Fuel | `fuelCapacity=120`, `fuelConsumption=30` | `:18506` and `:18507` |
 
-One attachment class per rear hub covers both physical tyres through the `Truck_01_WheelDouble.p3d` model; there are not two wheel entities per hub. The rear axles reference it by `inventorySlot` (`:18598` to `:18668`), and each middle and rear wheel declares `wheelHub`, `animDamper`, `animTurn` and `animRotation`. Two `Truck_01_Wheel` ingredients craft into a double wheel and a crowbar or lug wrench takes it apart (`P:\scripts\4_world\classes\recipes\recipes\crafttruck01doublewheel.c:27` to `:46`; `decrafttruck01doublewheel.c:36`, `:48` to `:60`).
+One attachment class per rear hub covers both physical tyres through the `Truck_01_WheelDouble.p3d` model; there are not two wheel entities per hub. The rear axles reference it by `inventorySlot` (`:18598` to `:18668`), and each middle and rear wheel declares `wheelHub="wheel_X_Y_damper_land"` (for example `wheel_1_2_damper_land`, `:18625`), `animDamper`, `animTurn` and `animRotation`. Two `Truck_01_Wheel` ingredients craft into a `Truck_01_WheelDouble`, and a `Crowbar` or `LugWrench` takes it apart into two wheels (`P:\scripts\4_world\classes\recipes\recipes\crafttruck01doublewheel.c:27` to `:46`; `decrafttruck01doublewheel.c:36`, `:48` to `:60`).
 
 So a truck's structure is a car's (`vehicle-structural-parity.md`) with six hubs instead of four, the rear four each resolving to one double wheel class, three axle blocks with a locked centre differential, and the base's two-seat crew. Get-in, damage zones and the vital igniter rules do not change.
 

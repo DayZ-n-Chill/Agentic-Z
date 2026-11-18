@@ -4,7 +4,7 @@ Covers how warm a wearable keeps the player, how wet it gets, how much damage it
 
 ## Insulation: `heatIsolation`
 
-`heatIsolation` is read into the item type at `P:\scripts\4_world\entities\itembasetype.c:84`. `MiscGameplayFunctions.GetCurrentItemHeatIsolation` (`P:\scripts\4_world\static\miscgameplayfunctions.c:1355`) multiplies it by a wetness factor and a health factor.
+`heatIsolation` is read into the item type at `P:\scripts\4_world\entities\itembasetype.c:84`. `MiscGameplayFunctions.GetCurrentItemHeatIsolation` (`P:\scripts\4_world\static\miscgameplayfunctions.c:1363`) multiplies it by a wetness factor and a health factor.
 
 | Wetness (`GetWet()`) | Factor | Where |
 |---|---|---|
@@ -32,7 +32,7 @@ Vanilla values to compare with: `TShirt_ColorBase` 0.1 (`P:\DZ\characters\tops\c
 
 `varWetMax` is the most wetness the item can reach (`P:\scripts\4_world\entities\itembasetype.c:71`). A T-shirt uses 1 (`P:\DZ\characters\tops\config.cpp:2262`). The plate carrier uses 0.49 (`P:\DZ\characters\vests\config.cpp:51`), which keeps it below the soaking wet state at 0.5, so its wetness factor never drops below 0.5.
 
-The item type reads `varWetInit`, `varWetMin` and `varWetMax` together (`P:\scripts\4_world\entities\itembasetype.c:69` to `:71`). `ItemBase.GetWetMax` returns the type's value (`P:\scripts\4_world\entities\itembase.c:3722`), and a new item starts at `m_VarWetInit` (`P:\scripts\4_world\entities\itembase.c:165`).
+The item type reads `varWetInit`, `varWetMin` and `varWetMax` together (`P:\scripts\4_world\entities\itembasetype.c:69` to `:71`). `ItemBase.GetWetMax` returns the type's value (`P:\scripts\4_world\entities\itembase.c:3726`), and a new item starts at `m_VarWetInit` (`P:\scripts\4_world\entities\itembase.c:165`).
 
 ### How fast it soaks and dries: `EnvironmentWetnessIncrements`
 

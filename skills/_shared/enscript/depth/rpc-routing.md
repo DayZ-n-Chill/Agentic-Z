@@ -29,6 +29,8 @@ When replies are dispatched through `OnRPC` of a `modded class PlayerBase`, a re
 | `null` | `sender` | `PlayerBase.OnRPC` never fires: `DayZGame.OnRPC` calls `target.OnRPC` only when a target is set, and a null target reaches only `Event_OnRPC` and the game's own `switch` (`P:\scripts\3_game\dayzgame.c:3144` to `:3155`) |
 | `null` | `null` | A broadcast with no handler. Avoid |
 
+A dispatcher usually hands the server handler `(PlayerBase player, PlayerIdentity sender, ...)`; pass that `player` as the reply's target:
+
 ```c
 rpc.Send(player, MYMOD_RPC_CHANNEL, true, sender);
 ```
@@ -67,7 +69,7 @@ In this order, before acting on a request:
 6. Check the distance between the player and the target.
 7. Apply a per player cooldown.
 
-Compare identities by their stable ID, never by `PlayerIdentity` instance. Read `GetId()` on both sides and compare the strings; an instance comparison such as `sender != GetIdentity()` rejects a valid sender. When several ways of sending fail the same way while a probe shows the RPC arriving, check the shared guards and player lookup before changing transport (measured in game).
+Compare identities by their stable ID, never by `PlayerIdentity` instance. Read `GetId()` on both sides and compare the strings; an instance comparison such as `sender != GetIdentity()` on the receiver, or `GetIdentity() == stored identity` in a player lookup, rejects a valid sender. When several ways of sending fail the same way while a probe shows the RPC arriving, check the shared guards and player lookup before changing transport (measured in game).
 
 Find targets by network ID, not by a mod-made device ID or a cached reference:
 
@@ -85,7 +87,7 @@ Keep each mod's IDs in its own block of constants, for example 20100 to 20199, a
 
 ## Reading `Event_OnRPC` safely
 
-`DayZGame.Event_OnRPC` (`P:\scripts\3_game\dayzgame.c:991`) fires for every RPC type on both processes: it is invoked at `:3144`, before the `if (target)` at `:3148` and outside the `#ifndef SERVER` and `#ifndef NO_GUI` that guard vanilla's `switch` (`:3157` and `:3158`). `ParamsReadContext` is a `Serializer` (`P:\scripts\3_game\gameplay.c:15`), and a read consumes the stream even when the type is wrong, with no rewind (`P:\scripts\1_core\proto\serializer.c:55` to `:65`). Measured in game: a `Param1<int>` read over another type's payload returned true, and the correct read after it returned false.
+`DayZGame.Event_OnRPC` (`P:\scripts\3_game\dayzgame.c:991`) fires for every RPC type on both processes: it is invoked at `:3144`, before the `if (target)` at `:3148` and outside the `#ifndef SERVER` and `#ifndef NO_GUI` that guard vanilla's `switch` (`:3157` and `:3158`). `ParamsReadContext` is a `Serializer` (`P:\scripts\3_game\gameplay.c:15`), and a read consumes the stream even when the type is wrong, with no rewind (`P:\scripts\1_core\proto\serializer.c:55` to `:65`). Measured in game: a `Param1<int>` read over a `Param1<T>` payload of another type returned true (value 3), and the correct read after it returned false.
 
 So a subscriber that reads before checking its own `rpc_type` eats another handler's data, and the symptom shows elsewhere: cfggameplay never arrives, stamina or lighting glitches. Filter the type and the side before the first read, as vanilla does (`P:\scripts\3_game\syncevents.c:13`):
 

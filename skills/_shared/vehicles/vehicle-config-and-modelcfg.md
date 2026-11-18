@@ -23,7 +23,7 @@ Mass is not a config key (`vehicle-geometry-and-mass.md`). The model structure i
 
 ## The class tree
 
-A drivable car extends `CarScript`: a `scope=0` base that holds the physics, then `scope=2` variants.
+A drivable car extends `CarScript`: a `scope=0` base that holds the physics (with `model=""` or the real model), then `scope=2` variants.
 
 ```cpp
 class CarScript;

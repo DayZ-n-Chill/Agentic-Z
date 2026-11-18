@@ -34,7 +34,7 @@
         "re:(0\\.9\\s*[x*×·]\\s*[-−]?0\\.15|[-−]?0\\.15\\s*[x*×·]\\s*0\\.9\\b|multipl\\w*\\s+(it\\s+|0\\.9\\s+|(the\\s+)?heatIsolation\\s+)?by\\s+[-−]?0\\.15|multiplier\\s+of\\s+[-−]?0\\.15)"
       ],
       "cite": "miscgameplayfunctions.c",
-      "verified": "P:/scripts/4_world/static/miscgameplayfunctions.c:1381 to :1383 (in GetCurrentItemHeatIsolation, declared at :1355, the STATE_DRENCHED branch returns ENVIRO_ISOLATION_WETFACTOR_DRENCHED outright) and P:/scripts/3_game/constants.c:825 (value -0.15)"
+      "verified": "P:/scripts/4_world/static/miscgameplayfunctions.c:1389 to :1391 (in GetCurrentItemHeatIsolation, declared at :1363, the STATE_DRENCHED branch returns ENVIRO_ISOLATION_WETFACTOR_DRENCHED outright) and P:/scripts/3_game/constants.c:825 (value -0.15)"
     },
     {
       "id": "survivor-scope",

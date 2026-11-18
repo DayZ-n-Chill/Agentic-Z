@@ -46,17 +46,20 @@ Reverse every visual face only for a source that was measured to need it: an in-
 
 ## Collision LODs
 
-Every non proxy face of every `ComponentNN` in Geometry, View Geometry and Fire Geometry must have its cross product pointing into its component. Decide it per component, never by matching the visual LOD.
+Every non proxy face of every `ComponentNN` in Geometry, View Geometry and Fire Geometry must have its cross product pointing into its component. Decide it per component, never by matching the visual LOD. Comparing the cross product with the stored normal (the audit's Check A) is not this check: it returns `UNIFORM_NON_FLIPPED` whenever the two agree, right or wrong.
 
 - **Before you check.** Every non proxy face belongs to a `ComponentNN` selection, every component is closed and convex, and no face is degenerate. Short of that the check proves nothing.
 - **The check.** For each face, `outward = face_centroid - component_centroid` and `n = normalize(cross(v1-v0, v2-v0))`. `dot(outward, n) < 0` is right. A face above zero is wound outward; the engine's view and fire raycasts treat it as a back face and miss it. Read every face, not most.
 - **Signed volume** gives the same answer per closed component: `sum(dot(v0, cross(v1, v2))) / 6` is negative in DayZ's convention. A generator that writes a box should measure it and stop unless the volume is negative.
-- **The fix.** Reverse only the faces that read outward, set their stored normals as `p3d-killers.md` section 1 says, and leave every healthy component, the proxy triangles and the visual LOD alone. Reversing a whole LOD moves the fault onto its healthy components.
+- **The fix.** Reverse only the faces that read outward (`face.vertices.reverse()`, `proxy:*` faces excluded), set their stored normals as `p3d-killers.md` section 1 says, and leave every healthy component, the proxy triangles and the visual LOD alone. A component wound outward reads outward on every face and is reversed whole. Reversing a whole LOD moves the fault onto its healthy components (measured offline on 2 m test boxes with one healthy and one outward component).
+- **What runs it.** Not `audit_p3d.py`. `check_face_winding` in `py3d-shape-checks.md` compares winding with stored normals on `model.lods[0]` only, which is Check A's question; on a model whose first LOD is Memory it finds nothing. The loop under "When to reverse faces" in `py3d-axis-map.md` reverses every face of every LOD, which is right only to undo a reversal of the whole model.
 - **Symptoms**, all at once: bullets pass through, a hologram drops to the ground when stacking, nothing can be placed on top, and the action cursor does not find the object. Walking through does not point at winding: 2 m boxes wound outward still stopped the player, the same box with no `ComponentNN` selection let the player through, and a 0.49 m kit let the player through with either winding.
 
 `/dayz-p3d-audit` passes on py3d's `ERR_WINDING_INVERTED` when a collision LOD and the visual LOD are uniform and opposite. Treat it as a reason to run the per component check, not as a verdict: it also fires on healthy collision LODs under an inside out visual LOD, or under a room meant to be seen from inside.
 
 ## Visual LODs
+
+The visual LOD has its own test, apart from the collision LODs, because its stored normals drive lighting while its winding drives culling. Never reverse a collision LOD to match it (`dayz-p3d-audit/references/winding-absolute-check.md`).
 
 - A per face census of `dot(cross(v1-v0, v2-v0), mean_stored_normal)` says whether the stored normals agree with the winding, not which side renders. A reflection export stores both inward and reads about 100% agreement; one shell reversed together with its normals still reads 100%.
 - Take the direction from the signed volume of each closed shell, never from the sum over the LOD: negative for a solid seen from outside, positive for a room seen from inside. Open sheets and double sided parts need a visibility test instead (below).

@@ -53,7 +53,7 @@ So a mod that changes when a door may open overrides the params form and calls `
 
 ## Doors that open from one side
 
-`DoorsDirectionalCheck` (`P:\scripts\4_world\entities\game\super\building.c:336`) reads the door's `m_InteractLimitingPositionPoint` and `m_InteractLimitingDirPoint` and passes them to `MiscGameplayFunctions.MemPointDirectionalCheck` (`P:\scripts\4_world\static\miscgameplayfunctions.c:942`). The vanilla comment says: "some doors can only be operated from one side".
+`DoorsDirectionalCheck` (`P:\scripts\4_world\entities\game\super\building.c:441`) reads the door's `m_InteractLimitingPositionPoint` and `m_InteractLimitingDirPoint` and passes them to `MiscGameplayFunctions.MemPointDirectionalCheck` (`P:\scripts\4_world\static\miscgameplayfunctions.c:942`). The vanilla comment says: "some doors can only be operated from one side".
 
 The helper compares the direction from the player's head to the start point with the direction from the start point to the end point, within a default tolerance of `Math.PI_HALF`. It only runs that test when both names are set and both points exist in the model; otherwise it returns true (`:944` to `:967`). The vanilla comment above it says so: "Intentionally returns true (no restriction) when the check cannot be performed" (`:940`). So a door with no points opens from both sides, and a typo in a point name silently does the same.
 
@@ -61,7 +61,7 @@ The helper compares the direction from the player's head to the start point with
 
 `EBuildingLockType` lists only engine lock keys (`P:\scripts\3_game\enums\ebuildinglocktypes.c:7`): `NONE` (the vanilla comment says "unlockable only via script"), `LOCKPICK`, and `SHIP_CONTAINER_0` to `SHIP_CONTAINER_4`. There is no combination lock or code lock value.
 
-Combination locks and code locks are inventory items whose `IsExternalLockType()` returns true (`P:\scripts\4_world\entities\itembase\codelock.c:542`; `P:\scripts\4_world\entities\itembase\combinationlock.c:779`; the base method at `P:\scripts\4_world\entities\itembase.c:4848`).
+Combination locks and code locks are inventory items whose `IsExternalLockType()` returns true (`P:\scripts\4_world\entities\itembase\codelock.c:563`; `P:\scripts\4_world\entities\itembase\combinationlock.c:779`; the base method at `P:\scripts\4_world\entities\itembase.c:4852`).
 
 `GetLockCompatibilityType` returns the door's `m_LockCompatibilityBitMask` (`P:\scripts\3_game\entities\building.c:193` to `:196`). `ActionLockDoors` still tests that mask against the tool's `GetKeyCompatibilityType()`, but first returns false when any related slot already holds an external lock item (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionlockdoors.c:40` to `:57`).
 

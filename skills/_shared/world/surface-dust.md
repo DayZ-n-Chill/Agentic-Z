@@ -1,6 +1,6 @@
 # Surface dust
 
-Where a world's dust effects come from: dust falling from ceilings, ambient ground and cloud dust driven by wind, kickup dust, and dust behind vehicles scaled by their weight. The `SurfaceInfo` particle getters and the `ParticleList` constants are in `dayz-particles/references/dayz-1-30-particles.md`; writing `.ptc` and `.emat` files is `/dayz-particles`.
+Where a world's dust effects come from: dust falling from ceilings, ambient ground and cloud dust driven by wind, kickup dust, and dust behind vehicles scaled by their weight. The `SurfaceInfo` particle getters are in `dayz-particles/references/dayz-1-30-particles.md` and the new `ParticleList` constants in `dayz-particles/references/dayz-1-30-world-particles.md`; writing `.ptc` and `.emat` files is `/dayz-particles`.
 
 ## The surface decides
 

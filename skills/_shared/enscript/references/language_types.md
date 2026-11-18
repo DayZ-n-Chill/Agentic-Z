@@ -79,7 +79,7 @@ A cast between two classes where neither derives from the other is a compile err
 ## Parameters
 
 - `out` fills a variable for the caller: `GetPlayers(out array<Man> players)` (`P:\scripts\3_game\global\game.c:945`).
-- `inout` reads and writes it: `SanitizeMinsMaxs(inout vector min, inout vector max)` (`P:\scripts\1_core\proto\enconvert.c:542`).
+- `inout` reads and writes it: `SanitizeMinsMaxs(inout vector min, inout vector max)` (`P:\scripts\1_core\proto\enconvert.c:521`).
 - `notnull` makes passing `null` an error: `HasEntityInInventory(notnull EntityAI item)` (`P:\scripts\3_game\systems\inventory\inventory.c:118`).
 - Default values work: `CreateObject(string type, vector pos, bool create_local = false, ...)` (`P:\scripts\3_game\global\game.c:691`).
 

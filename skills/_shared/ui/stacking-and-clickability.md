@@ -7,7 +7,7 @@ The script samples are patterns built on vanilla calls, not vanilla excerpts, an
 ## What the layout system gives you
 
 - Outside spacer widgets, positions are fixed; there is no flexbox. `WrapSpacerWidgetClass` and `GridSpacerWidgetClass` place their own children.
-- Siblings draw in tree order, so later siblings sit on top and catch clicks first. `SetSort(int sort)` (`P:\scripts\1_core\proto\enwidgets.c:130`) changes that; a higher value draws on top.
+- Siblings draw in tree order, so later siblings sit on top and catch clicks first. `SetSort(int sort)` (`P:\scripts\1_core\proto\enwidgets.c:130`) changes that; a higher value draws on top. It takes a plain `int`: there is no `SortOrderEnum`.
 - A widget with `ignorepointer 1` takes no mouse events itself, but its children still do: the pause menu's `continuebtn` (`P:\gui\layouts\day_z_ingamemenu.layout:122`) is clickable inside `WrapSpacerWidgetClass bottom`, which sets `ignorepointer 1` (`:99` to `:101`).
 - Enforce Script has no ternary operator, and a local has method scope, not block scope: declare a name once at the top of the method, not in two `if` blocks (`checklist-and-troubleshooting.md`, "Enforce Script limits"; `skills/_shared/enscript/references/language_compile.md`, "Compiler traps").
 

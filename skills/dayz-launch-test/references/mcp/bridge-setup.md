@@ -53,10 +53,10 @@ The symptom is not always `version_blocked` or a null age. With a stale key the 
 
 Two checks before blaming anything:
 
-- Compare the key of each `dayz_mcp.json` the run will use against the key file. There are two paths and `$profile:` wins over `$mission:` (in `MCPBridge.c` and `MCPClientBridge.c`); if the profile's key is missing, the bridge falls back to the mission's, which is usually the stale one. Equal length (43) is no proof: compare the bytes.
+- Compare the key of each `dayz_mcp.json` the run will use against the key file. There are two paths and `$profile:` wins over `$mission:` (`MCPBridge.c:145` to `:149`, `MCPClientBridge.c:234` to `:237`); if the profile's key is missing, the bridge falls back to the mission's, which is usually the stale one. Equal length (43) is no proof: compare the bytes.
 - `Invoke-WebRequest "http://127.0.0.1:8765/poll?key=<key file content>"` answering 200 with `{"commands":[]}` proves the daemon and the live key are fine and puts the fault in the run's JSON.
 
-The fix needs no server restart: `ReloadKeyAfterFailure` in `MCPBridge.c` reads the key again when the backoff reaches its ceiling. Fix the JSON, wait about 20 seconds, `[MCP-POC] poll key reloaded` appears, and the peer returns to a `last_poll_age_s` around 0.2. That saves the boot.
+The fix needs no server restart: `ReloadKeyAfterFailure` (`MCPBridge.c:373` to `:398`) reads the key again when the backoff reaches its ceiling. Fix the JSON, wait about 20 seconds, `[MCP-POC] poll key reloaded` appears, and the peer returns to a `last_poll_age_s` around 0.2. That saves the boot.
 
 ## Troubleshooting
 

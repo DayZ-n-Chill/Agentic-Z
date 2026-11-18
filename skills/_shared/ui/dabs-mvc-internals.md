@@ -15,6 +15,8 @@ Dabs Framework is a third party mod. Everything here is checked against the fram
 | `ScriptViewMenu` | `ScriptView` | Cursor, input excludes, the vanilla `UIManager` stack |
 | `QuickView<T>` | `ScriptView` | One widget of type `T` made from script, no layout file |
 
+In the framework's repository (`production` branch, `DabsFramework/Scripts/3_Game/DabsFramework/MVC/`), `class ScriptView : ScriptedViewBase` is at `ScriptView.c:39` and `class ViewBinding : ScriptedViewBase` at `ViewBinding.c:1`; the lines below are the Workshop copy's and can differ slightly (the constructor is `:45` to `:98` in the repository).
+
 `ScriptViewTemplate<Class T>` and `ScriptViewMenuTemplate<Class T>` are the typed versions: `GetControllerType()` returns `T` and `GetTemplateController()` returns the controller already cast.
 
 ## What constructing a ScriptView does
@@ -57,18 +59,18 @@ A shipped mod saw `FindAnyWidget` return the wrong widget for children inside a 
 
 ## Bindings
 
-`ViewController.OnWidgetScriptInit` (`MVC\ViewController.c:58` to `:70`) installs the event handler on the root, then walks the tree. For each widget whose `scriptclass` is `ViewBinding` it sets the binding's parent, adds it to `m_ViewBindingHashMap` (`map<Widget, ViewBinding>`) and to `m_DataBindingHashMap` (property name to bindings), loads its `RelayCommand` when one is named, and calls `NotifyPropertyChanged(binding_name, false)` once to show the starting value. The walk stops at a widget whose script is another `ViewController` (that subtree belongs to the child, which gets `SetParent`) and never reaches the root's siblings; remember both when a binding is "not found".
+`ViewController.OnWidgetScriptInit` (`MVC\ViewController.c:58` to `:70`) installs the event handler on the root, then loads the data bindings (`LoadDataBindings`) by walking the tree. For each widget whose `scriptclass` is `ViewBinding` it sets the binding's parent, adds it to `m_ViewBindingHashMap` (`map<Widget, ViewBinding>`) and to `m_DataBindingHashMap` (property name to bindings), loads its `RelayCommand` when one is named, and calls `NotifyPropertyChanged(binding_name, false)` once to show the starting value. The walk stops at a widget whose script is another `ViewController` (that subtree belongs to the child, which gets `SetParent`) and never reaches the root's siblings; remember both when a binding is "not found".
 
-`map<Widget, T>` works: `ViewBindingHashMap` is `typedef map<Widget, ViewBinding>` (`MVC\Types\Types.c`).
+`map<Widget, T>` works: `ViewBindingHashMap` is `typedef map<Widget, ViewBinding>` (`MVC\Types\Types.c:24`), used throughout the controller (`MVC\ViewController.c:319`).
 
 `NotifyPropertyChanged(string property_name = "", bool notify_controller = true)` (`MVC\ViewController.c:84` to `:117`):
 
-- With a name it calls `UpdateView` only on the bindings whose `Binding_Name` is that name.
-- With an empty name it updates every binding; the source logs that this "is NOT recommended as it is performance intensive".
-- `notify_controller = false` skips the `PropertyChanged` callback. Pass it when you set properties inside `PropertyChanged`, or the two call each other forever.
+- With a name it calls `UpdateView` only on the bindings whose `Binding_Name` is that name (`:106` to `:112`).
+- With an empty name it updates every binding (`:91` to `:103`); the source logs that this "is NOT recommended as it is performance intensive".
+- `notify_controller = false` skips the `PropertyChanged` callback (`:84`, `:114`). Pass it when you set properties inside `PropertyChanged`, or the two call each other forever.
 - `NotifyPropertiesChanged(array<string>)` (`:126` to `:131`) updates several names.
 
-A binding is not reactive: changing a field shows nothing until you call `NotifyPropertyChanged` for it. Dot names such as `"m_MyObj.value"` work through `PropertyInfo.GetSubScope` (`MVC\Types\PropertyInfo.c:35`, used at `MVC\ViewController.c:243`).
+A binding is not reactive: changing a field shows nothing until you call `NotifyPropertyChanged` for it. Dot names such as `"m_MyObj.value"` work through `PropertyInfo.GetSubScope` (`MVC\Types\PropertyInfo.c:35`, used at `MVC\ViewController.c:243`; Dabs's own sample binds one at `SampleMVC.c:185`).
 
 A `ViewBinding` reads these from the layout's `ScriptParamsClass` (`MVC\ViewBinding.c:4` to `:13`):
 

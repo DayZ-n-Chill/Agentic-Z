@@ -161,4 +161,4 @@ static void MyMod_PlayUIClick()
 }
 ```
 
-`SEffectManager.PlaySound(string sound_set, vector position, ...)` is at `P:\scripts\3_game\effectmanager.c:178`. `pickUpBackPack_Plastic_Light_SoundSet` is at `P:\DZ\sounds\hpp\config.cpp:323140`; `pickUpBackPack_Metal_SoundSet` (`:323114`) is louder. Play them on clicks and confirmations, not on hover or tab changes.
+`SEffectManager.PlaySound(string sound_set, vector position, ...)` is at `P:\scripts\3_game\effectmanager.c:178`. `pickUpBackPack_Plastic_Light_SoundSet` is at `P:\DZ\sounds\hpp\config.cpp:323810`; `pickUpBackPack_Metal_SoundSet` (`:323784`) is louder. Play them on clicks and confirmations, not on hover or tab changes.

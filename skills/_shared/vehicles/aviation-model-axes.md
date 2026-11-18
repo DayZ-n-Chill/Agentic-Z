@@ -12,7 +12,7 @@ Every offline check agreed with every other, which is why it is easy to miss. In
 
 ## The engine decides
 
-Engine forward is `+Z`: yaw 0 points along `+Z`. The vanilla example for `AnglesToVector` turns yaw 45 into `<0.707107,0,0.707107>` (`P:\scripts\1_core\proto\enconvert.c:380` to `:389`). In game, `GetDirection()` (`P:\scripts\3_game\entities\object.c:314`) returned `<-0.005, -0.019, +0.9998>` with the aircraft pointing where the pilot calls forward, and `ModelToWorld("0 0 5")` landed 5 m towards the nose.
+Engine forward is `+Z`: yaw 0 points along `+Z`. The vanilla example for `AnglesToVector` turns yaw 45 into `<0.707107,0,0.707107>` (`P:\scripts\1_core\proto\enconvert.c:359` to `:368`). In game, `GetDirection()` (`P:\scripts\3_game\entities\object.c:314`) returned `<-0.005, -0.019, +0.9998>` with the aircraft pointing where the pilot calls forward, and `ModelToWorld("0 0 5")` landed 5 m towards the nose.
 
 ## Rules
 

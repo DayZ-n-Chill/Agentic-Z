@@ -1,6 +1,6 @@
 # Debugging a feature that does not work
 
-How to find out why a DayZ mod feature does nothing after it was built and the log is clean: six layers checked from the top down, how to measure before guessing again, how to place probes, and how to bisect by component when the layers do not find the cause. The implementation protocol (`skills/dayz-scope-mod/references/implementation-protocol.md`, "Debug and fix") points here.
+How to find out why a DayZ mod feature does nothing after it was built and the log is clean: six layers checked from the top down, how to measure before guessing again, how to place probes, how to bisect by component when the layers do not find the cause, how to name what a fault actually does, and which engine minimums crash when they are missing. The implementation protocol (`skills/dayz-scope-mod/references/implementation-protocol.md`, "Debug and fix") points here.
 
 Start from the logs when there are any. `/dayz-gate` and `/dayz-logwatch` triage every error line: a known line already carries its fix and owner, and a new one goes to `dayz-mod-debugger`. This file is for what is left, the feature that fails with a clean log. For an RPT, script log or crash log line, use `error-catalog.md` and `_shared/enscript/depth/runtime-traps.md` instead.
 
@@ -62,3 +62,31 @@ Do not vary parameters of the suspect component first ("what if the mass is not 
 A quad vehicle's `.p3d` spawned with a centre of mass of (0,0,0) once binarized. Everything pointed at the Geometry LOD, and five trial binarizations ruled out material, mass distribution, topology, skeleton and writer. Two bisection binarizations (a working vehicle with the quad's Geometry LOD, and the quad without its Fire Geometry LOD) found it: a stray all-zero mass tag in the Fire Geometry LOD, which binarize took over the Geometry LOD's mass.
 
 Use a control before the bug, too. For a new path or pipeline (the first skinned export, the first proxy convention, the first crew selection, a fire mode in a new `CfgWeapons` class), pass a known good control through it before the first try with your own asset. If vanilla already does it, read the vanilla config on `P:\` first, and pass a model you know works through your exporter; vanilla `.p3d` files stay closed (`/dayz-import-mod` and `skills/dayz-import-mod/references/study-a-packed-mod.md` cover studying another mod's packed model, and `/dayz-p3d-audit` reads source models only). If the control fails too, the bug is in the pipeline, not your asset. Two cases this would have cut short: a `Mode_FullAuto` whose scope was shadowed by the vanilla class, visible by reading the vanilla config; and a mesh mirrored left to right, found only after comparing the skeleton with a vanilla one.
+
+## Name what the fault actually does
+
+A log message is not a behaviour. `String CORRUPTED` in a mod's log is not a crash when the server keeps running after a recoverable VM exception, and a server that boots and throws an error has still booted. Before you report a fault:
+
+1. Reproduce it on a local server (`/dayz-launch-test`).
+2. Log one whole cycle of the bug: load, run, autosave, reload.
+3. Name it with one of these terms, never "crash" as a catch-all:
+
+| Term | What happens |
+|---|---|
+| crash | The process dies, the server drops, a restart is needed. |
+| VM exception | An Enforce Script VM exception, log spam, execution goes on. |
+| corruption | Bad data persists and the code runs with it. |
+| degradation | The feature works worse but runs. |
+| cosmetic | Visual only, no effect on function. |
+
+`/dayz-gate` already separates these in its reports: a `crash*.log` or a process exit is a crash, and a script error line is triaged on its own.
+
+## Engine minimums to check early
+
+Something missing is graded by what its absence does: whether it crashes or stops loading, or only leaves a feature unfinished. An engine minimum deferred as a later feature can be a hidden crash. Check these apart from the feature list, and put any that is deferred in the plan as its own item ahead of the full feature:
+
+| Subsystem | Minimum | Without it | Read |
+|---|---|---|---|
+| Vehicle (`CarScript`) | `class DamageSystem { class GlobalHealth { class Health { hitpoints; healthLevels[]; }; }; }`. Vanilla `OffroadHatchback` declares `GlobalHealth` first and `DamageZones` after it (`P:\DZ\vehicles\wheeled\config.cpp:1540` to `:1577`). Check custom wheel classes too. | The game logs `[Object::GetMaxHealth] No DamageSystemData` and crashes as soon as anything touches health: admin tools, damage, collision, sync (measured in game; `error-catalog.md`, E35). Full `DamageZones` are a feature; `GlobalHealth` is the floor. | `_shared/vehicles/damage.md` |
+| Vehicle | A constructor that sets the engine sound strings (`m_EngineStart*`). | Broken audio, and possibly an exception from an empty sound set name. | `_shared/vehicles/` |
+| Model `.p3d` | A Geometry LOD with convex components and mass, and the action selections (`seat_*`, `refill`, doors) in the LOD the cursor resolves (View Geometry for actions, measured in game). | The object does not simulate; actions never show. | `_shared/models/lods.md`, `_shared/physics/collision-lods.md`, `/dayz-p3d-audit` |

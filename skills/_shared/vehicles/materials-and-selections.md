@@ -34,6 +34,6 @@ When one dead animation shows a static proxy, list every `Animations` class boun
 
 ## One writer for the dashboard light
 
-Vanilla registers index 8, `SELECTION_ID_DASHBOARD_LIGHT` (`P:\scripts\4_world\entities\vehicles\carscript.c:182`), for both `DashboardOn` with `dashboardMatOn` and `DashboardOff` with `dashboardMatOff` (`carscript.c:230` and `:231`). `UpdateLightsServer` (`carscript.c:1974`) sets `DashboardOn` or `DashboardOff` each time it runs, which includes braking, gear changes and each sync.
+Vanilla registers index 8, `SELECTION_ID_DASHBOARD_LIGHT` (`P:\scripts\4_world\entities\vehicles\carscript.c:182`), for both `DashboardOn` with `dashboardMatOn` and `DashboardOff` with `dashboardMatOff` (`carscript.c:230` and `:231`). `UpdateLightsServer` (`carscript.c:1974`) sets `DashboardOn` when `LightIsOn()` is true (`:1993`) and `DashboardOff` whenever it is false (`:2022`) each time it runs, which includes braking, gear changes and each sync.
 
 A script that must set the dashboard material again after a sync goes through that same method. A timer that writes a fixed `dashboardMatOn` fights it, and the index flickers between the two materials (measured in game).

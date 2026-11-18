@@ -4,7 +4,7 @@ How DayZ 1.30 runs inventory commands, where a mod can still watch item moves, h
 
 ## Retail no longer calls `ProcessInputData`
 
-In 1.29 one `ProcessInputData(ParamsReadContext ctx, bool is_juncture, bool is_remote)` ran every inventory command. In 1.30 it still exists (`P:\scripts\4_world\systems\inventory\dayzplayerinventory.c:3319`), but its callers sit inside `#ifdef DIAG_DEVELOPER` and also need `PluginInventoryDebug.IsOldProcessInputDataEnable()` (`:669`). Retail runs these instead:
+In 1.29 one `ProcessInputData(ParamsReadContext ctx, bool is_juncture, bool is_remote)` ran every inventory command. In 1.30 it still exists (`P:\scripts\4_world\systems\inventory\dayzplayerinventory.c:3319`), but its callers sit inside `#ifdef DIAG_DEVELOPER` and also need `PluginInventoryDebug.IsOldProcessInputDataEnable()` (`:669` to `:687`); outside diag that block reduces to `ExecuteInventoryCommandServer(ctx)` on the server and `ExecuteInventoryCommandClient(ctx)` on the client. Retail runs these instead:
 
 | Method | Role | Source |
 |---|---|---|
@@ -64,7 +64,7 @@ The return value still does not prove success; test `FindAttachment(slot) == ite
 
 ## Hand guards
 
-In 1.29 `HandGuardCanMove`, `HandGuardCanSwap` and `HandGuardCanForceSwap` passed on `e.m_IsJuncture || e.m_IsRemote`. In 1.30 only `e.m_IsRemote` passes; otherwise they ask `GameInventory.LocationCanMoveEntity`, `CanSwapEntitiesEx` or `CanForceSwapEntitiesEx` (`P:\scripts\3_game\systems\inventory\hand_guards.c:299`, `:325`, `:351`).
+In 1.29 `HandGuardCanMove`, `HandGuardCanSwap` and `HandGuardCanForceSwap` passed on `e.m_IsJuncture || e.m_IsRemote`. In 1.30 only `e.m_IsRemote` passes; otherwise they ask `GameInventory.LocationCanMoveEntity(es.GetSrc(), es.GetDst())`, `CanSwapEntitiesEx` or `CanForceSwapEntitiesEx` (`P:\scripts\3_game\systems\inventory\hand_guards.c:299`, `:325`, `:351`).
 
 The new `HandGuardIsNotSurrendered` (`:405`) returns `!m_Player.IsSurrendered()` (`:412`), so hand events on a surrendered player fail.
 

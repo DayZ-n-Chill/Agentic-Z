@@ -176,7 +176,7 @@ class MyMod_Sprinkler extends MyMod_DeviceBase
 ```
 
 `ItemBase` already overrides `EEDelete` (`P:\scripts\4_world\entities\itembase.c:1268`)
-and `OnVariablesSynchronized` (`P:\scripts\4_world\entities\itembase.c:3254`),
+and `OnVariablesSynchronized` (`P:\scripts\4_world\entities\itembase.c:3258`),
 so always call `super`.
 
 ---

@@ -16,13 +16,13 @@ Why a car's lights do not switch, in the order to check it: material paths, whic
 
 The selection names are free; their order in `hiddenSelections[]` is not. Index 9 and above has no light meaning in `CarScript` and needs the mod's own script.
 
-`VehicleLightsComponent` applies each material with `SetObjectMaterial` (`P:\scripts\4_world\entities\vehicles\components\vehiclelightscomponent.c:79`). `SetObjectMaterial` and `GetObjectMaterial` are native (`P:\scripts\3_game\entities\entityai.c:2884` and `:2885`). `UpdateLights` runs `UpdateLightsClient` inside `#ifndef SERVER` and `UpdateLightsServer` on both sides (`carscript.c:1853` to `:1858`), so the material call also runs on the client and replication never explains a light material that does not apply.
+`VehicleLightsComponent.SetSelectionMaterial` (`P:\scripts\4_world\entities\vehicles\components\vehiclelightscomponent.c:66`) applies each material with `SetObjectMaterial` (`vehiclelightscomponent.c:79`). `SetObjectMaterial` and `GetObjectMaterial` are native (`P:\scripts\3_game\entities\entityai.c:2884` and `:2885`). `UpdateLights` runs `UpdateLightsClient` inside `#ifndef SERVER` and `UpdateLightsServer` on both sides (`carscript.c:1853` to `:1858`), so the material call also runs on the client and replication never explains a light material that does not apply.
 
 The key that switches vehicle lights is `UAToggleVehicleLights` (`P:\scripts\4_world\classes\useractionscomponent\actioninput.c:855`); `UAToggleHeadlight` is the head torch (`actioninput.c:782`).
 
 ## Where the beams attach
 
-With both headlight bulbs in place (`CarHeadlightBulbsState.BOTH`), one combined front light attaches at the midpoint of the two headlight memory points (`carscript.c:1891` to `:1896`), so a `*_dir` point does not steer the beam. Measure that midpoint against the body surface on the centre line; a point inside the shell traps the light. Check the reverse light point the same way: the rear light attaches at `m_ReverseLightPoint` (`carscript.c:1934`).
+With both headlight bulbs in place (`CarHeadlightBulbsState.BOTH`), one combined front light attaches at the midpoint of the two headlight memory points (`carscript.c:1891` to `:1896`), so a `*_dir` point does not steer the beam. Measure that midpoint against the body surface on the centre line; a point inside the shell traps the light. The front light is handled in `carscript.c:1874` to `:1908`: with one bulb it attaches on that headlight's own point in `VehicleLightMode.SEGREGATED`; with both it uses `AttachLightOnObject` at the midpoint in `VehicleLightMode.AGGREGATED`. Check the reverse light point the same way: the rear light attaches at `m_ReverseLightPoint` (`carscript.c:1934`).
 
 ## Check the selections before the materials
 
@@ -60,18 +60,18 @@ A face claimed by two hidden selections gets a material slot for only one of the
 - An overlap with an animation selection is fine and must stay: the same 12 faces are in `drivewheel`, the handlebar bone, so the bulb turns with the bars. Only hidden selections compete for a material slot.
 - Being in `model.cfg` `sections[]` is needed but not enough; `light_dashboard` was listed there throughout.
 - Fix it by removing the faces from the other hidden selection. Drop a vertex from that selection only when none of its remaining faces uses it, so shared border vertices survive.
-- What did not fix it: giving the faces their own material, and the View Pilot LOD, where every light selection is empty, the working ones included.
+- What did not fix it: giving the faces their own material, and the View Pilot LOD, where every light selection is empty, the working ones included. The engine does not renumber indices by real sections either: `hiddenSelections[]` and `sections[]` agree on indices 0 to 8 and only differ at 9.
 - To confirm the fix without the light working: with the lights off, the bulb switches from the body material to the lights material, which proves index 8 now reaches those faces.
 
 ## Bulbs must be mounted
 
-`m_HeadlightsState` comes from the bulbs in the `Reflector_1_1` and `Reflector_2_1` slots and stays `NONE` without them (`carscript.c:522` to `:543`). The rear light is attached only when it is not `NONE` (`carscript.c:1929`). Testing brake lights on a car whose bulbs sit in cargo gives a confident false fail.
+`m_HeadlightsState` comes from the bulbs in the `Reflector_1_1` and `Reflector_2_1` slots and stays `NONE` without them (`UpdateHeadlightState`, `carscript.c:522` to `:543`; `BOTH` is set at `carscript.c:529`). A ruined bulb counts as missing. The rear light is attached only when it is not `NONE` (`carscript.c:1929`). Testing brake lights on a car whose bulbs sit in cargo gives a confident false fail.
 
 `SpawnUniversalParts` adds the four `HeadlightH7` bulbs with `CreateInInventory` (`carscript.c:2500` to `:2506`), which may put a part in cargo rather than its slot (`P:\scripts\3_game\systems\inventory\inventory.c:876` to `:893`). Use `CreateAttachment` in your own `OnDebugSpawn` so a test does not start with one bulb missing.
 
 ## When the driver gets out
 
-The engine side is script. `CarScript.OnDriverExit` calls `EngineStop` when the gear is not neutral (`carscript.c:940` to `:948`), and `Transport.OnDriverExit` is empty (`P:\scripts\3_game\vehicles\transport.c:224`), so an override that skips `super` loses nothing there. Add `ShiftTo(GetNeutralGear())` (`P:\scripts\3_game\vehicles\car.c:260`, `:251`), or a running engine with `Brake.driverless` makes the car creep. Measured in game: the engine stays on, on client and server.
+The engine side is script. `CarScript.OnDriverExit` calls `EngineStop` when the gear is not neutral (`carscript.c:940` to `:948`), and `Transport.OnDriverExit` is empty (`P:\scripts\3_game\vehicles\transport.c:224`), so an override that skips `super` loses nothing there. Add `ShiftTo(GetNeutralGear())` (`ShiftTo` at `P:\scripts\3_game\vehicles\car.c:260`, `GetNeutralGear` at `car.c:251`, both native), or a running engine with `Brake.driverless` makes the car creep. Measured in game: the engine stays on, on client and server.
 
 The lights side depends on the version. On DayZ 1.30, `LightIsOn()` stays true on server and client when the driver gets out with the lights on (measured in game), so there is nothing to fix. `ForceUpdateLightsStart` and `ForceUpdateLightsEnd` are empty obsolete declarations (`carscript.c:2805` to `:2809`), and `carscript.c` has no `ToggleHeadlights`. On DayZ 1.29 the native cleared `LightIsOn()` on the client when the driver seat emptied (not checked on `P:\`, which holds 1.30). The 1.29 workaround kept its own beam: a net-synced `bool` for the driver's intent, its own `CarLightBase` created and destroyed at the headlight midpoint from an `UpdateLightsClient` override, a `ToggleHeadlights` override to record the intent, and cleanup in `EEDelete`. It is not needed on 1.30, and its `ToggleHeadlights` override no longer compiles. See `dayz-1-30-vehicles.md` for the version changes.
 

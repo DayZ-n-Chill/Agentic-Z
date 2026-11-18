@@ -181,7 +181,8 @@ Front index: `_shared/animation/README.md`. Used by `dayz-animation-specialist`.
 | `_shared/animation/rtm-and-character-animation.md` | Where vanilla uses `.rtm`, how character animation differs, and what the graph layer allows without replacing it (a per-item clip through a child `.asi`); editing the player or infected graph stays out of scope. |
 | `_shared/animation/blender-handoff.md` | Naming and export notes for parts modelled in Blender. |
 | `_shared/animation/anim-graphs.md` | What the animation graph that drives characters and creatures holds: where its files are, the `CMD_` commands the engine, AI and script send, the variables that steer blending, terrain alignment, tags, and which mod changes collide. |
-| `_shared/animation/items-in-hands.md` | How the game picks the pose of a held item, how a mod registers its own items, and the vanilla ways to show, hide or swap model parts with attach state. |
+| `_shared/animation/items-in-hands.md` | How the game picks the pose of a held item, how a mod registers its own items, and how script switches the player's animation instance. |
+| `_shared/animation/attach-state-parts.md` | The vanilla ways to show, hide or swap model parts with attach state: a host part that follows a slot, and an item with two models. |
 | `_shared/animation/rider-poses.md` | How the vanilla graph poses a player on a vehicle, what that means for a mod vehicle of another shape, and the one way to change the pose for a single vehicle class. |
 | `_shared/animation/building-doors.md` | Doors, hatches and lids on buildings and static props, the buttons or levers that drive them, the LOD contract and the 1.30 lock rules; the entry point for door work. |
 | `_shared/animation/door-config-and-locks.md` | Part checked: which classes and keys a building door needs in `model.cfg` and `config.cpp`, what each one does, and which values the three worked patterns use. |
@@ -251,6 +252,7 @@ Front index: `_shared/models/README.md`. Written for `dayz-object-builder`.
 | `_shared/models/tools-uv-partuv.md` | Tool behaviour: installing and running PartUV, what went wrong, and how it scored on the same meshes. |
 | `_shared/models/tools-uv-tool-survey.md` | Tool research: which automatic or AI unwrap tools were considered and why each was chosen, shortlisted or discarded. |
 | `_shared/models/tools-uv-atlas.md` | Measured, not checked on `P:\`: turning a hard-surface mesh into a readable UV atlas with the clean atlas scripts of `dayz-model-tools`. |
+| `_shared/models/tools-uv-atlas-traps.md` | Measured, not checked on `P:\`: the Blender, SLIM, fold guard, smoothing and Windows traps that silently break the clean UV atlas pipeline. |
 | `_shared/models/blender-assembly.md` | How to build a hard surface model in Blender through a Blender MCP server without exploded parts, wrong sizes, broken booleans or bare boxes: planning the joints and the detail, the geometry rules, and the normal bake. |
 | `_shared/models/blender-detail-scan.md` | A planning method: scanning a reference zone by zone for the detail list, and where each texture-side detail lands in the DayZ texture set. |
 | `_shared/models/blender-visual-review.md` | How to check a model in Blender by looking at it: render it from fixed angles, read the images against a checklist, fix one thing, render the same angles again, and stop when the stop rule says so. |
@@ -623,7 +625,8 @@ A skill's own pack. The front index of each folder is the table in that skill's 
 | `dayz-particles/references/script-api-reference.md` | Playing, stopping and tuning particles from script. |
 | `dayz-particles/references/integration-patterns.md` | Wiring particles into a device. |
 | `dayz-particles/references/vanilla-particle-catalog.md` | Every vanilla particle in `ParticleList`. |
-| `dayz-particles/references/dayz-1-30-particles.md` | What DayZ 1.30 changed for particles: the client check, effects spawned by the server, surface particle IDs, vehicle effect overrides, effect areas, the sandstorm, oil pits. |
+| `dayz-particles/references/dayz-1-30-particles.md` | What DayZ 1.30 changed in the particle script API: the client check, effects spawned by the server, surface particle IDs, vehicle effect overrides, and the migration checklist. |
+| `dayz-particles/references/dayz-1-30-world-particles.md` | What DayZ 1.30 changed for effect areas, the sandstorm, oil pits and dust kickup, and the `ParticleList` constants it added. |
 | `dayz-particles/references/effect-area-particles.md` | How many emitters a contaminated area in `cfgeffectarea.json` asks for, the hard cap, and why an area can hurt players where no gas is drawn. |
 | `dayz-particles/references/playonobject-client-guard.md` | The usual mod pattern for attaching a looping particle to a placed object, compared with the vanilla wrecks it copies. |
 | `dayz-particles/references/layered-effects.md` | How a large effect (an explosion, an impact, a fireball) is built from several emitters, which properties matter when you layer them, and how the `Mast` curves shape the whole effect over time. |
@@ -661,10 +664,9 @@ A skill's own pack. The front index of each folder is the table in that skill's 
 | `dayz-launch-test/references/linux-headless-client.md` | Not yet checked on `P:\`: testing the client side on Linux with the retail client under Proton and a self-reporting test mod. |
 | `dayz-launch-test/references/mod-loop.md` | The mod loop on 1.30 or later from scope to Workshop: which skill runs each step, the rules every mod task needs, where to look an API up, which pack to read, porting to 1.30. |
 | `dayz-launch-test/references/test-loop.md` | The fast script-only test loop with DayZDiag and file patching, when to stop iterating, and the debugging tools the vanilla scripts offer. |
-| `dayz-launch-test/references/debug-protocol.md` | Diagnosing a feature that "doesn't work" after it was implemented: six layers checked top down, rules for probes, component bisection. |
+| `dayz-launch-test/references/debug-protocol.md` | Diagnosing a feature that "doesn't work" after it was implemented: six layers checked top down, rules for probes, component bisection, naming what a fault does, and the engine minimums that crash when missing. |
 | `dayz-launch-test/references/error-catalog.md` | Mistakes made more than once while implementing DayZ mods (E01 to E35), each with the correct form. |
 | `dayz-launch-test/references/measurement-discipline.md` | Part checked: reading numbers out of a test session without fooling yourself: aligning client and server series and three statistical traps. Method and measured results; only the script calls are checked on `P:`. |
-| `dayz-launch-test/references/audit-escalation.md` | Labelling the severity of an audit finding and of something missing, and keeping parallel auditors independent. |
 | `dayz-launch-test/references/dayz-1-30-server-measured.md` | Measured on the native Linux server, not yet checked on `P:\`: what was observed by booting test mods on a 1.30 dedicated server that a source file cannot show. |
 | `dayz-launch-test/references/mcp` | Verification through the third-party dayz-mcp bridge. Front index: `dayz-launch-test/references/mcp/README.md`. Tool behaviour throughout: not yet checked on `P:\`; vanilla facts cite their file. |
 | `dayz-launch-test/references/client-startup-failures.md` | How to tell an environment failure from a mod failure when a DayZ client or build dies before it writes a useful log: the work drive missing after a reboot, a Steam registry key that points at a dead process, the wrong Steam account, quoting, and a diag that never writes logs. |

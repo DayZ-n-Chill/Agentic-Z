@@ -68,7 +68,7 @@ Health lives in zones and types. An empty zone means the global zone and an empt
 | `GetHealth()` and `SetHealth(value)` without zone | Same as `("", "")`. `:1062`, `:1077` |
 | `IsAlive()` | `!IsDamageDestroyed()`. `:517` |
 
-Players use the types `"Health"`, `"Blood"` and `"Shock"`: `m_Player.GetHealth("","Blood")` and `player.GetHealth("", "Shock")` (`P:\scripts\4_world\classes\debugmonitorvalues.c:140`, `P:\scripts\4_world\classes\playermodifiers\modifiers\diseases\heatstroke.c:369`). Change health only on the server.
+Players use the types `"Health"`, `"Blood"` and `"Shock"`: `m_Player.GetHealth("","Blood")` and `player.GetHealth("", "Shock")` (`P:\scripts\4_world\classes\debugmonitorvalues.c:140`, `P:\scripts\4_world\classes\playermodifiers\modifiers\diseases\heatstroke.c:376`). Change health only on the server.
 
 ## Stats
 

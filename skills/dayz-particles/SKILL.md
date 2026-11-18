@@ -23,7 +23,8 @@ Follow `skills/_shared/dayz-conventions.md`. This skill is reference only; it ru
 | Check the layout of a `.ptc`, the vanilla emitter shapes, or convert an old `CfgCloudlets` particle | `references/ptc-layout-and-cloudlets.md` |
 | Register a mod's own effects, play them, or switch single emitters from script | `references/effects-from-script.md` |
 | Size a contaminated area in `cfgeffectarea.json`: emitter budget, the 1,000 cap, the vertical band, safe positions | `references/effect-area-particles.md` |
-| Move a mod to DayZ 1.30: the headless client check, `CreateParticleServer`, `SurfaceInfo` particle IDs, `ParticleParamsOverrideData`, vehicle effects, sandstorm, oil pits | `references/dayz-1-30-particles.md` |
+| Move a mod to DayZ 1.30: the headless client check, `CreateParticleServer`, `SurfaceInfo` particle IDs, `ParticleParamsOverrideData`, vehicle effects | `references/dayz-1-30-particles.md` |
+| What 1.30 changed for effect areas, the sandstorm, oil pits and dust kickup, and which `ParticleList` constants it added | `references/dayz-1-30-world-particles.md` |
 | See a full `PlayOnObject` example for a custom wreck, checked against the vanilla wrecks | `references/playonobject-client-guard.md` |
 
 ## File layers
@@ -134,7 +135,7 @@ Before choosing the radius of a contaminated area in `cfgeffectarea.json`, read 
 
 ## DayZ 1.30
 
-Full detail, with the vanilla lines: `references/dayz-1-30-particles.md`. In short:
+Full detail, with the vanilla lines: `references/dayz-1-30-particles.md` and `references/dayz-1-30-world-particles.md`. In short:
 
 - The client check for particles is `!g_Game.IsHeadlessOrDedicatedServer()` (most wrecks, `FireplaceBase`, `ParticleManager`).
 - Ceiling dust is spawned from the server with `SEffectManager.CreateParticleServer` and a `ParticleEffecterParameters("CeilingDustEffecter", ...)`.

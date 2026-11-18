@@ -36,7 +36,7 @@ The Tigermoth uses `ClCoef3=-0.00038`, `ClCoef2=0.00055`, `ClCoef1=0.095`, `ClCo
 |---|---|
 | Air density | `StandardPlaneAtmosphere.GetDensityRatio(altitude)` times 1.225 |
 | Dynamic pressure | `0.5 * density * speed * speed`, capped at 7500 so forces cannot run away at extreme speed |
-| Lift | Dynamic pressure times wing area times lift coefficient times a lift scale, along `(velocityNorm * up) * velocityNorm`, which is square to the velocity in the plane of velocity and up |
+| Lift | Dynamic pressure times wing area times lift coefficient times `GetLiftForceScale()`, along `(velocityNorm * up) * velocityNorm`, which is square to the velocity in the plane of velocity and up |
 | Thrust | `GetEngineMaxPower()` times throttle squared, times the altitude performance factor, propeller efficiency and a low speed boost, along the forward axis |
 | Apply | `SafeApplyForce(totalForce)` and `SafeApplyTorque(totalTorque)` (see below) |
 
@@ -87,7 +87,7 @@ protected void SafeApplyForce(vector force)
 }
 ```
 
-The helpers around it: `SanitizeFloat(value, fallback, min, max)` returns the fallback for a non-finite value and clamps the rest; `SanitizeVector` checks each component; `ClampVectorMagnitude` scales a vector down to a maximum length. `CheckPhysicsSanity` counts frames with NaN and, at `NAN_HARD_THRESHOLD`, calls `ForcePhysicsReset()` to zero linear and angular velocity.
+The helpers around it: `SanitizeFloat(value, fallback, min, max)` returns the fallback when the mod's own `IsFloatFinite(value)` check fails (there is no such helper in vanilla script) and clamps the rest; `SanitizeVector` checks each component; `ClampVectorMagnitude` scales a vector down to a maximum length. `CheckPhysicsSanity` counts frames with NaN and, at `NAN_HARD_THRESHOLD`, calls `ForcePhysicsReset()` to zero linear and angular velocity.
 
 | Constant | Value |
 |---|---|
@@ -106,7 +106,7 @@ Each axis levels itself only while the pilot gives no input on it, inside a dead
 
 | Axis | Behaviour |
 |---|---|
-| Roll | Deadband 3 degrees; `rollCmd = -bankErr * Kp - rollRate * Kd`, with `Kp` and `Kd` lerped from 40 percent to full by control effectiveness |
+| Roll | Deadband `GetRollDeadbandDeg()`, 3 degrees; `rollCmd = -bankErr * Kp - rollRate * Kd`, with `Kp` and `Kd` lerped from 40 percent to full of `GetRollLevelKp()` and `GetRollLevelKd()` by control effectiveness |
 | Yaw | Same pattern; `Kp=0.22`, `Kd=0.25`, deadband 2 degrees |
 | Pitch | Level flight hold above `GetLevelFlightSpeedKmph()` (185); fades with speed margin and pitch input |
 | Turn | Automatic rudder of `bankSign * turnNeed * 0.30` plus a sideslip correction while banked |

@@ -10,7 +10,7 @@ What a mod needs to extend three vanilla systems: crafting recipes (`RecipeBase`
 | Ingredients are added with `InsertIngredient(index, classname)`. There is no `AddIngredient` and no `SetIsCacheable` anywhere under `P:\scripts` | `recipebase.c:159` |
 | Recipes are registered in `RegisterRecipies()`. Vanilla spells it with `ies`; keep that spelling | `P:\scripts\4_world\classes\recipes\recipes\pluginrecipesmanagerbase.c:14` |
 | The base `CanDo()` returns false when either ingredient has attachments | `recipebase.c:551` to `:560` |
-| `m_ResultToInventory = -1` puts the result in the player's inventory. The branch for 0 and up (swap with an ingredient) has its body commented out, so it does nothing | `recipebase.c:232` to `:251` |
+| `m_ResultToInventory = -1` puts the result in the player's inventory. The branch for 0 and up (swap with an ingredient) has its body commented out, so it does nothing. Both branches are in `SpawnItems` (`recipebase.c:215`) | `recipebase.c:232` to `:251` |
 | The result doesn't take the ingredient's health: `TransferItemProperties(ingr, res, true, true, false, false)` passes `false` for `transfer_health` (signature at `P:\scripts\4_world\static\miscgameplayfunctions.c:269`). Up to 1.29 it did, which could overwrite the health set by `m_ResultInheritsHealth` | `recipebase.c:353` |
 | `PluginRecipesManager.GetRecipeClassName(int recipe_id)` is new in 1.30 | `P:\scripts\4_world\plugins\pluginbase\pluginrecipesmanager.c:84` |
 
@@ -44,11 +44,11 @@ The events to override are empty methods on `EntityAI`: `OnWorkStart()`, `OnWork
 
 | Fact | Source |
 |---|---|
-| `ProcessDirectDamage(damageType, source, componentName, ammoName, modelPos, damageCoef = 1.0, flags = 0)`: `componentName` is the damage zone, not a model component. `damageCoef` multiplies the damage of the `CfgAmmo` class named by `ammoName` | `P:\scripts\3_game\entities\object.c:1138` |
+| `ProcessDirectDamage(damageType, source, componentName, ammoName, modelPos, damageCoef = 1.0, flags = 0)`: `componentName` is the damage zone, not a model component; the vanilla comment says "which 'DamageZone' was hit (NOT a component name, actually!)" (`:1128` to `:1137`). `damageCoef` multiplies the damage of the `CfgAmmo` class named by `ammoName` | `P:\scripts\3_game\entities\object.c:1138` |
 | A vehicle hit is one such call: `RegisterTransportHit` passes the ammo `"TransportHit"` with the hit speed in m/s (`m_TransportHitVelocity.Length()`) as the coefficient | `P:\scripts\3_game\entities\entityai.c:4134` to `:4153` |
 | `EEHitBy` runs on the server. `EEHitByRemote` runs only on the client that caused the hit | `entityai.c:1143` and `:1153` |
 | Damage in a radius is `DamageSystem.ExplosionDamage(source, directHitObject, ammoTypeName, worldPos, damageType)`, for example `(source, null, ammo, pos, DamageType.EXPLOSION)`. There is no `ProcessIndirectDamage` in script | `P:\scripts\3_game\damagesystem.c:25` |
-| `GetProtectionLevel(type, ...)` covers four hazard types only: `DEF_BIOLOGICAL`, `DEF_CHEMICAL`, `DEF_DUST_PARTICLE_BREATH`, `DEF_DUST_PARTICLE_EYES` (`P:\scripts\3_game\constants.c:547` to `:550`). Ballistic protection of clothing is config and engine work with no script call | `P:\scripts\4_world\entities\itembase.c:4073` |
+| `GetProtectionLevel(type, ...)` covers four hazard types only: `DEF_BIOLOGICAL`, `DEF_CHEMICAL`, `DEF_DUST_PARTICLE_BREATH`, `DEF_DUST_PARTICLE_EYES` (`P:\scripts\3_game\constants.c:547` to `:550`). Ballistic protection of clothing is config and engine work with no script call | `P:\scripts\4_world\entities\itembase.c:4077` |
 
 `DecreaseHealth` changes health directly and skips this path, so no `EEHitBy`, hit animation or bleeding follows it (measured in game; the call is in `api_player.md`, section "Health").
 

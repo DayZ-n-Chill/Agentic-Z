@@ -41,7 +41,7 @@ class MyMod_Plane_Engine_Ext_Rpm2_SoundSet: MyMod_Engine_EXT_SoundSet
 };
 ```
 
-LM_Planes names its base `baseEngine_EXT_SoundSet`, which redeclares a vanilla class of that name (`P:\DZ\sounds\hpp\config.cpp:379546`). Give a new mod's base its own prefixed name, as above.
+LM_Planes names its base `baseEngine_EXT_SoundSet`, which redeclares a vanilla class of that name (`P:\DZ\sounds\hpp\config.cpp:381379`). Give a new mod's base its own prefixed name, as above.
 
 ## The RPM band crossfade
 
@@ -60,7 +60,7 @@ The volume chains two `factor [low, high]` terms per band, each a 0 to 1 ramp: o
 //     * ((rpm_remapped) factor [(upper_mid + 2.5*spread), (upper_mid - spread)])
 ```
 
-The bands overlap smoothly, with no click at the edges. This is the vanilla car engine formula with other numbers: vanilla's `Offroad_Engine_Ext_Rpm1_SoundShader` uses the same `thrust factor[0.1,0.45]`, `speed factor [10,60]`, `engineOn` and `doors` terms (`P:\DZ\sounds\hpp\config.cpp:310700`).
+The bands overlap smoothly, with no click at the edges. This is the vanilla car engine formula with other numbers: vanilla's `Offroad_Engine_Ext_Rpm1_SoundShader` uses the same `thrust factor[0.1,0.45]`, `speed factor [10,60]`, `engineOn` and `doors` terms (`P:\DZ\sounds\hpp\config.cpp:311368`).
 
 ## Shaping the volume
 

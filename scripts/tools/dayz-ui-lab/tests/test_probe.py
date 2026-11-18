@@ -17,7 +17,7 @@ SPEC.loader.exec_module(prepare_probe)
 class ProbePreparationTests(unittest.TestCase):
     def test_build_probe_generates_byte_equivalent_lf_and_crlf_layouts(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
-            destination = Path(temp_dir) / "LF_UIProbe"
+            destination = Path(temp_dir) / "AZ_UIProbe"
             prepare_probe.build_probe(destination)
 
             layouts = destination / "gui" / "layouts"
@@ -32,7 +32,7 @@ class ProbePreparationTests(unittest.TestCase):
 
     def test_probe_is_vanilla_first_and_keeps_engine_expectation_open(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
-            destination = Path(temp_dir) / "LF_UIProbe"
+            destination = Path(temp_dir) / "AZ_UIProbe"
             prepare_probe.build_probe(destination)
 
             config = (destination / "config.cpp").read_text(encoding="utf-8")
@@ -40,7 +40,7 @@ class ProbePreparationTests(unittest.TestCase):
                 destination
                 / "scripts"
                 / "5_Mission"
-                / "LF_UIProbe_Mission.c"
+                / "AZ_UIProbe_Mission.c"
             ).read_text(encoding="utf-8")
 
             self.assertNotIn("Dabs", config)
@@ -57,11 +57,11 @@ class ProbePreparationTests(unittest.TestCase):
         # and left the probe unable to report anything. A line left open on '('
         # or ',' is the shape that produces it.
         with tempfile.TemporaryDirectory() as temp_dir:
-            destination = Path(temp_dir) / "LF_UIProbe"
+            destination = Path(temp_dir) / "AZ_UIProbe"
             prepare_probe.build_probe(destination)
 
             mission_path = (
-                destination / "scripts" / "5_Mission" / "LF_UIProbe_Mission.c"
+                destination / "scripts" / "5_Mission" / "AZ_UIProbe_Mission.c"
             )
             offenders = []
             for number, raw in enumerate(
@@ -78,11 +78,11 @@ class ProbePreparationTests(unittest.TestCase):
         # unless the value is bounded, and the continuation behaviour cannot be
         # settled from an ambiguous observation.
         with tempfile.TemporaryDirectory() as temp_dir:
-            destination = Path(temp_dir) / "LF_UIProbe"
+            destination = Path(temp_dir) / "AZ_UIProbe"
             prepare_probe.build_probe(destination)
 
             mission = (
-                destination / "scripts" / "5_Mission" / "LF_UIProbe_Mission.c"
+                destination / "scripts" / "5_Mission" / "AZ_UIProbe_Mission.c"
             ).read_text(encoding="utf-8")
 
             self.assertIn('|value=<" + value + ">', mission)
@@ -90,7 +90,7 @@ class ProbePreparationTests(unittest.TestCase):
 
     def test_build_probe_refuses_to_merge_into_nonempty_destination(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
-            destination = Path(temp_dir) / "LF_UIProbe"
+            destination = Path(temp_dir) / "AZ_UIProbe"
             destination.mkdir()
             (destination / "keep.txt").write_text("user data", encoding="utf-8")
 

@@ -50,7 +50,7 @@ Since 1.30 a surface can also name the sound that goes with its particle: `Surfa
 
 ## Weather sounds
 
-Weather sounds are config only; script does not start them. The weather class `Sandstorm` names three sound sets in `soundSets[]`: `SandStorm_Debris_SoundSet`, `SandStorm_Close_SoundSet` and `SandStorm_Dist_SoundSet` (`P:\DZ\data\config.cpp:1534` to `:1539`), next to its `particlePath` (`P:\DZ\data\config.cpp:1540`). The engine plays them with the weather. The visual side is in `dayz-particles/references/dayz-1-30-particles.md`, "Sandstorm", and what the sandstorm does to AI hearing is in `noise-for-ai.md`.
+Weather sounds are config only; script does not start them. The weather class `Sandstorm` names three sound sets in `soundSets[]`: `SandStorm_Debris_SoundSet`, `SandStorm_Close_SoundSet` and `SandStorm_Dist_SoundSet` (`P:\DZ\data\config.cpp:1534` to `:1539`), next to its `particlePath` (`P:\DZ\data\config.cpp:1540`). The engine plays them with the weather. The visual side is in `dayz-particles/references/dayz-1-30-world-particles.md`, "Sandstorm", and what the sandstorm does to AI hearing is in `noise-for-ai.md`.
 
 ## Config hooks: sounds and particles without script
 

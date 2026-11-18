@@ -7,6 +7,7 @@ What the DayZ MCP bridge's UI calls return and where they stop working: Dabs vie
 On a panel built as a Dabs `ScriptView`, not a `UIScriptedMenu`, with a healthy bridge:
 
 - `ui_tree` with an empty path returns `no_menu`: it walks the active scripted menu, and a `ScriptView` is not one.
+- `ui_click` is not a mouse click: it finds the handler through `GetScript` or `GetUserData` and calls `OnClick(target, 0, 0, mouseButton)` with the coordinates fixed at zero, so it skips hit testing, draw order and `IGNOREPOINTER` (`P:\scripts\1_core\proto\enwidgets.c:78`).
 - `ui_click` returns `not_handled` on buttons that exist and are on screen. Why a generic handler search misses a Dabs view is in `dabs-mvc-internals.md`, "How a click reaches the handler".
 
 `not_handled` on a button with a permission check is ambiguous: the bridge may not reach the handler, or the handler may refuse as designed. Always click a widget with no check as well. Here the always allowed close button also returned `not_handled` and a capture showed the panel still open, so the click did nothing at all.
@@ -30,6 +31,7 @@ Both return the resolver's decision:
 
 - `@N` is the index among siblings, so `MyMod_PanelRoot@1` means at least two roots exist: the clue to a name collision (`widget-name-collisions.md`).
 - An ambiguous name returns `ambiguous_path` instead of a guess, and a missing one `widget_not_found`. A `root` must be unique in the whole workspace; `path` is then resolved inside it.
+- Positions in the result are relative to the parent: a child at `position 110 110` inside a parent at `position 100 100` reports `screen_x` and `screen_y` of 210.
 
 ## ui_reload_layout
 
@@ -37,7 +39,7 @@ Both return the resolver's decision:
 |---|---|
 | `reload` with `$profile:<file>.layout` | Loads from disk with no PBO and returns the engine's rects for the whole tree |
 | `reload` twice | Replaces the tree; one copy, no `ambiguous_path` |
-| `close` | Unlinks the tree; the widget is then `widget_not_found` |
+| `close` | Unlinks the tree (`ui.nodes: []`); the widget is then `widget_not_found` |
 | `reload` with a missing file | `layout_not_found`, and the client stays alive |
 
 A manual `CreateWidgets` called twice does leave the first root in place; the bridge call unlinks before it loads. The preview root reports the engine's viewport (1920x1080), not the window size. A `TextWidget` reports `text: ""` and `text_readable: 0`, because it has no getter.

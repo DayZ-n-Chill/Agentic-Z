@@ -36,7 +36,7 @@ Measured on `HudFrameWidget` at 1920x1080, exact position rows only, so the numb
 | `VoiceLevelsPanel` | `bottom_ref` | 80 | -80 |
 | `TemperatureValueBottom` | `bottom_ref` | -12 | +12 |
 
-The two negative offsets settle it: a widget declared at `-4` is drawn 4 px outside its parent's right edge, which only the subtracting rule predicts. `BadgesPanel` is declared at `P:\gui\layouts\day_z_hud.layout:514`.
+The two negative offsets settle it: a widget declared at `-4` is drawn 4 px outside its parent's right edge, which only the subtracting rule predicts. `BadgesPanel` is declared at `P:\gui\layouts\day_z_hud.layout:552`.
 
 ## Children of a spacer
 

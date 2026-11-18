@@ -30,7 +30,7 @@ The class tree, the `Motorbike` sibling and the `CarScript` component split are 
 | Get-in | `IsAreaAtDoorFree` | `CanGetIn()` first, then `IsAreaAtDoorFreeDiag` | `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:36` and `:54`; `transport.c:672` to `:675` |
 | Effect scale | None | `GetWeightCoef()`, default 1.0 | `transport.c:475` to `:478` |
 | Ganged rear bulbs | None | `HasGangedTailAndBrakeLights()`, default `false` | `carscript.c:468` to `:471` |
-| High speed geometry | In the change notes only | Config `speedGeomActivation` and `speedGeoms[]` | `P:\DZ\vehicles\singletrack\config.cpp:258` and `:259` |
+| High speed geometry | In the change notes only | Config `speedGeomActivation` and `speedGeoms[]` | `P:\DZ\vehicles\singletrack\config.cpp:262` and `:263` |
 | Motorbike third person camera | None | `DAYZCAMERA_3RD_VEHICLE_MOTORBIKE = 32` | `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameras.c:20`; `motorbike-rider-animation.md` |
 
 ## Vanilla models are ODOL version 56

@@ -28,7 +28,7 @@ protected void SetNavLightsVisible(bool visible)
 }
 ```
 
-The vanilla pieces: `PointLightBase` (`P:\scripts\4_world\entities\scriptedlightbase\pointlightbase.c:1`), `CreateLight` (`P:\scripts\4_world\entities\scriptedlightbase.c:227`) and `AttachOnObject` (`:127`). DayZ 1.30 did not change any of them.
+The vanilla pieces: `PointLightBase` (`P:\scripts\4_world\entities\scriptedlightbase\pointlightbase.c:1`), `CreateLight` (`P:\scripts\4_world\entities\scriptedlightbase.c:227`) and `AttachOnObject` (`:127`). DayZ 1.30 did not change any of them. In LM_Planes the three classes are `LlamaPlaneScript_NavLightLeft`, `LlamaPlaneScript_NavLightRight` and `LlamaPlaneScript_NavLightTail`; search for those names to read the original.
 
 ## Headlights
 

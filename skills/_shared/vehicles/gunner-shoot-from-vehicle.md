@@ -56,7 +56,7 @@ The mod overrides `PlayerBase.IsInVehicle()` to return `false` while the rider i
 
 6. Leash: every frame, measure `vector.Distance(player, trans.ModelToWorld(anchor))`; past the slot's `distance`, a server RPC snaps the rider back. This catches physics drift that input locks cannot.
 
-7. Camera and stance: force first or third person per slot, block the view toggle while the weapon is raised, and block prone and crouch changes that would push the rider through the vehicle.
+7. Camera and stance: the mod overrides three vanilla hooks. `CameraHandler` (`P:\scripts\4_world\entities\dayzplayerimplement.c:2845`) forces `m_Camera3rdPerson` per slot; `HandleView` (`:2018`), which toggles the view when the native `CameraViewChanged()` reports a change (`P:\scripts\3_game\human.c:40`), blocks the toggle while the weapon is raised; `CanChangeStance` (`P:\scripts\4_world\entities\manbase\playerbase.c:4475`) blocks prone and crouch changes that would push the rider through the vehicle.
 
 ## Seated and attached gunners
 

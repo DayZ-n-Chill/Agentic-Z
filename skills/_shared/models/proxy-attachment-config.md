@@ -6,7 +6,7 @@ Without this class the attachment is in the inventory but invisible on the model
 
 ## The class
 
-Vanilla declares `class ProxyAttachment;` (`P:\DZ\gear\camping\config.cpp:13386`) and maps the plank slots to their model in `Proxysingle_plank` (`:13405`). A mod writes the same shape:
+Vanilla declares `class ProxyAttachment;` (`P:\DZ\gear\camping\config.cpp:13396`) and maps the plank slots to their model in `Proxysingle_plank` (`:13415`). A mod writes the same shape:
 
 ```cpp
 class CfgNonAIVehicles
@@ -54,7 +54,7 @@ On an item, a slot added to the vanilla `ProxyBattery_Car` drew nothing. Measure
 - The item was an `ItemBase` flag whose slot `PM_FlagBattery` held a `CarBattery`. The slot was added with `inventorySlot[] +=` to `ProxyBattery_Car`, the class of the vanilla proxy `\dz\vehicles\parts\battery_car.001`.
 - That class derives from `ProxyPart`, a vehicle part class (`ProxyBattery_Car` at `P:\DZ\vehicles\parts\config.cpp:1145`; `ProxyPart`, with `simulation="ProxyInventory"` and `reversed=1`, at `:1125` to `:1135`).
 - It never drew the battery in three layouts, each adding to the one before: the proxy in LOD 0; the proxy inside a named selection called like the slot, which the slot's `CfgSlots` `selection` names, as `civiliansedan` holds `battery_car.001` inside its `battery` selection; and copies of the proxy in the Geometry, View and Fire Geometry LODs, the only LODs where `battery_charger.p3d` carries it.
-- A class of the item's own drew it: `class ProxyPM_FlagBattery: ProxyAttachment` with `inventorySlot[] = {"PM_FlagBattery"}`, its own minimal proxy model `PM_FlagBattery.p3d` at `model`, and the proxy triangle in LOD 0. That is how the vanilla flag does it, with `ProxyDZ_Flag: ProxyAttachment` (`P:\DZ\gear\camping\config.cpp:13595`). In a build with both proxies 0.35 m apart, the battery appeared at the item's own.
+- A class of the item's own drew it: `class ProxyPM_FlagBattery: ProxyAttachment` with `inventorySlot[] = {"PM_FlagBattery"}`, its own minimal proxy model `PM_FlagBattery.p3d` at `model`, and the proxy triangle in LOD 0. That is how the vanilla flag does it, with `ProxyDZ_Flag: ProxyAttachment` (`P:\DZ\gear\camping\config.cpp:13605`). In a build with both proxies 0.35 m apart, the battery appeared at the item's own.
 
 So for an item, write a `ProxyAttachment` class of your own as above. Not measured: whether a `ProxyAttachment` proxy orients the item the way a vehicle part's `reversed=1` does.
 

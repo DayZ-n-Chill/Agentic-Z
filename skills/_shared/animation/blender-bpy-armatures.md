@@ -2,7 +2,7 @@
 
 How a script reads and sets bone poses in Blender: which matrix lives in which space, the three ways to set a pose, the space names, and how to choose rotation modes. Keyframes, Actions and cycles are in `blender-bpy-keyframes-and-actions.md`; IK, baking and context overrides in `blender-bpy-ik-and-baking.md`.
 
-This is Blender behaviour, run against Blender 5.1 or taken from the Blender 5.1 API reference and manual, so nothing here cites `P:\`. The DayZ side is in `blender-txa-export.md`. When a signature is in doubt, the Blender MCP server serves the reference and manual of the connected install (`get_python_api_docs`, `search_api_docs`, `search_manual_docs`).
+This is Blender behaviour, run against Blender 5.1 or taken from the Blender 5.1 API reference and manual, so nothing here cites `P:\`. The DayZ side is in `blender-txa-export.md`. When a signature is in doubt, the Blender MCP server serves the reference and manual of the connected install (`get_python_api_docs`, `search_api_docs`, `search_manual_docs`); the online page for an identifier is `https://docs.blender.org/api/<version>/<identifier>.html`.
 
 ## The matrices
 

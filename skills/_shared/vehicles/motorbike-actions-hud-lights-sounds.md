@@ -8,7 +8,7 @@ The action files are under `P:\scripts\4_world\classes\useractionscomponent\acti
 
 | Action | Kind | Condition | Registered |
 |---|---|---|---|
-| `ActionStartEngineMotorbike` (`continuous\vehicles\actionstartenginemotorbike.c:9`) | Continuous, `CAContinuousTime(UATimeSpent.START_ENGINE)` | Player in `HumanCommandVehicle` (`:28`), bike is a `MotorbikeScript` with the engine off (`:33`), player is the driver (`:36`) | `P:\scripts\4_world\entities\manbase\playerbase.c:1709`; `actionconstructor.c:223` |
+| `ActionStartEngineMotorbike` (`continuous\vehicles\actionstartenginemotorbike.c:9`) | Continuous, callback `ActionStartEngineMotorbikeCB` (`:1`) with `CAContinuousTime(UATimeSpent.START_ENGINE)` | Player in `HumanCommandVehicle` (`:28`), bike is a `MotorbikeScript` with the engine off (`:33`), player is the driver (`:36`) | `P:\scripts\4_world\entities\manbase\playerbase.c:1709`; `actionconstructor.c:223` |
 | `ActionStopEngineMotorbike` (`singleuse\vehicles\actionstopenginemotorbike.c:1`) | Single use | Driver, engine running, and speed at most 8 km/h (`:29`), so the engine cannot be switched off at speed | `playerbase.c:1712`; `actionconstructor.c:76` |
 | `ActionPickUpMotorbike` (`interact\vehicles\actionpickupmotorbike.c:1`) | Interact, instant | Target is a `Motorbike`, no heavy item in hands, the cursor is not on a seat (`CrewPositionIndex(componentIndex) < 0`), and `CanPickUp()` (`:64`); runs `PickUp()` (`:74`) | `motorbikescript.c:367`; the side fairings `Motorbike_02_ShieldLeft_ColorBase` and `Motorbike_02_ShieldRight_ColorBase` (`P:\scripts\4_world\entities\core\inherited\inventoryitem.c:499`, `:511`, `:539`, `:551`); `actionconstructor.c:348` |
 | `ActionAnimateMotorbikeSeat` (`interact\vehicles\actionanimatemotorbikeseat.c:1`) | `ActionAnimateSeats` | No driver, player within 1 m, selection belongs to the `SeatDriver` source | `motorbike_01.c:104`; `actionconstructor.c:313` |
@@ -30,7 +30,7 @@ How to repair with hand tools is in `motorbike-invariants.md`.
 
 ## The HUD
 
-`MotorbikeHud : VehicleHudBase` (`P:\scripts\5_mission\gui\vehicles\motorbikehud.c`) reuses the car layout `gui/layouts/day_z_hud_cars.layout` (`:36`). `MotorbikeScript.GetVehicleType()` returns `"VehicleTypeMotorbike"` (`motorbikescript.c:316` to `:319`), and the in-game HUD maps that name to the bike HUD (`P:\scripts\5_mission\gui\ingamehud.c:183`).
+`MotorbikeHud : VehicleHudBase` (`P:\scripts\5_mission\gui\vehicles\motorbikehud.c`) reuses the car layout `gui/layouts/day_z_hud_cars.layout` (`:36`). `MotorbikeScript.GetVehicleType()` returns `"VehicleTypeMotorbike"` (`motorbikescript.c:316` to `:319`), and the in-game HUD maps that name to the bike HUD with `m_VehicleHudMap.Insert("VehicleTypeMotorbike", motorbikeHud)` (`P:\scripts\5_mission\gui\ingamehud.c:183`).
 
 | Gauge | How `RefreshVehicleHud` drives it | Line in `motorbikehud.c` |
 |---|---|---|
@@ -54,7 +54,12 @@ m_LightsComponent.RegisterSelection("BrakeOn", {new VehicleLightSelectionData(1,
 
 - Each vanilla bike registers `BrakeOn` and `BrakeOff` again on index 2 (`motorbike_01.c:19` and `:20`, `motorbike_02.c:20` and `:21`). A later 1.30 stable build also registers `FrontOn` and `FrontOff` on each bike's own index (`Motorbike_01` front 3 and brake 2, `Motorbike_02` front 4 and brake 6); not yet checked on `P:\`.
 - With the lights off, the `else` branch sets `"BrakeOff"` only when `HasGangedTailAndBrakeLights()` is `false` (`motorbikescript.c:1236` to `:1240`). The base returns `false` (`:169` to `:172`) and both vanilla bikes return `true` (`motorbike_01.c:28` to `:31`, `motorbike_02.c:29` to `:32`). The `default` case of the same switch asks for `"BrakesOff"`, which nothing registers (`motorbikescript.c:1231` to `:1233`). A later 1.30 stable build drops both overrides and names the key `"BrakeOff"`; not yet checked on `P:\`.
-- The front light attaches to the `drivewheel` bone so it turns with the bars (`motorbikescript.c:1107` to `:1109`).
+- The front light attaches to the `drivewheel` bone so it turns with the bars (`motorbikescript.c:1107` to `:1109`):
+
+```c
+int driveWheelIndex = GetBoneIndex("drivewheel");
+m_LightsComponent.AttachLightOnObject("Front", GetMemoryPointPos(m_HeadLightPoint), vector.Zero, VehicleLightMode.SEGREGATED, driveWheelIndex);
+```
 
 The light profiles are classes on `VehicleLightProfileFront` and `VehicleLightProfileBrakeAndReverse` in `P:\scripts\4_world\entities\scriptedlightbase\spotlightbase\vehiclelightprofiles\motorbike_01.c` and `motorbike_02.c`:
 
@@ -70,7 +75,7 @@ The light switch uses the vehicle lights input, not the head torch. `ActionSwitc
 
 ## Horn and particles
 
-`VehicleHornComponent` (`P:\scripts\4_world\entities\vehicles\components\vehiclehorncomponent.c`) has the modes `OFF`, `SHORT` and `LONG`, syncs `m_Mode` over the network, and on the server makes noise for infected from the bike's `NoiseCarHorn` class (`:86`), which sets `strength=30` (`config.cpp:148` to `:152`). `CarHornShortActionInput : VehicleHornShortActionInput {}` (`actioninput.c:757` and `:758`) is an empty shell kept for 1.29 mods; register `ActionVehicleHornShort` and `ActionVehicleHornLong` (`actionconstructor.c:340` and `:341`).
+`VehicleHornComponent` (`P:\scripts\4_world\entities\vehicles\components\vehiclehorncomponent.c`) has the modes `OFF`, `SHORT` and `LONG`, syncs `m_Mode` over the network, and on the server makes noise for infected in `GenerateHornAINoise` (`:95`), which loads the bike's `NoiseCarHorn` class (`:86`), which sets `strength=30` (`config.cpp:148` to `:152`). `CarHornShortActionInput : VehicleHornShortActionInput {}` (`actioninput.c:757` and `:758`) is an empty shell kept for 1.29 mods; register `ActionVehicleHornShort` and `ActionVehicleHornLong` (`actionconstructor.c:340` and `:341`).
 
 `VehicleVFXComponent` (`P:\scripts\4_world\entities\vehicles\components\vehiclevfxcomponent.c`) gets its effects in `motorbikescript.c:174` to `:205`:
 
@@ -81,7 +86,7 @@ The light switch uses the vehicle lights input, not the head torch. `ActionSwitc
 | `EXHAUST_SMOKE` | `EffExhaustSmoke` | Between `ptcExhaust_start` and `ptcExhaust_end` | `:201` |
 | `WHEEL_SMOKE`, `WHEEL_CONTACT` | `EffWheelSmoke`, `EffWheelContact` | Per wheel, 5.0 s cooldown (third `VehicleVFXDataParams` argument) | `:203`, `:204` |
 
-The `engine` memory point is read for the drowning check (`motorbikescript.c:181`). A later 1.30 stable build lowers the wheel cooldown to 2.0 s; not yet checked on `P:\`.
+`VehicleVFXDataParams` takes a position, an orientation and the cooldown in seconds, which defaults to 0 (`vehiclevfxcomponent.c:82` to `:94`). The `engine` memory point is read for the drowning check (`motorbikescript.c:181`). A later 1.30 stable build lowers the wheel cooldown to 2.0 s; not yet checked on `P:\`.
 
 ## Sound classes
 

@@ -108,7 +108,7 @@ Declare inputs in an XML file and point `CfgMods` at it with `inputs = "MyMod/sc
 | `<exclude>` | A group of inputs switched off while the exclude is active (`UAInputAPI.ActivateExclude`, `P:\scripts\3_game\inputapi\uainput.c:239`) |
 | `<preset>` | Default keys, one or more `<btn>` per input |
 
-Input names start with `UA`. Keyboard keys start with `k` (`kSpace`, `kLShift`, `kLControl`, `kLMenu`, `kW`); controller buttons start with `x1` (`x1A`, `x1B`, `x1ShoulderLeft`, `x1TriggerLeft`, `x1LeftThumbUp`, `x1ThumbLeft` for a stick click). An exclude that reaches `inventory` kills mouse look; see `action-and-input-rules.md`, section "Excludes that kill mouse look".
+Input names start with `UA`, for User Action. Keyboard keys start with `k` (`kSpace`, `kLShift`, `kLControl`, `kLMenu`, `kW`); controller buttons start with `x1`: `x1A`, `x1B`, `x1ShoulderLeft` and `Right`, `x1TriggerLeft` and `Right`, `x1LeftThumbUp`, `Down`, `Left` and `Right`, the same four for `x1RightThumb`, and `x1ThumbLeft` and `Right` for a stick click (all in `P:\bin\*.xml` presets). An exclude that reaches `inventory` kills mouse look; see `action-and-input-rules.md`, section "Excludes that kill mouse look".
 
 ## Keys to leave alone
 

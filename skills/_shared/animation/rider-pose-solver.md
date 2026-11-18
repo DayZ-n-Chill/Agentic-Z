@@ -73,7 +73,7 @@ Plan this from the start; there is no way round it. The rule holds for DayZATool
 5. Bind the clips, through a child instance file for one vehicle class (`rider-poses.md`, "Changing the pose for one vehicle class") or by replacing the graph. The vehicle subgraph is `P:\DZ\anims\workspaces\player\player_main\vehicles.agf`; the motorbike state machine `MotorBikeSTM` runs from `:1582`, and the vanilla rider sets are the template columns `Jawa_05` and `Jawa_Bitrak` (`P:\DZ\anims\workspaces\player\player_main\player_main.ast:1119` and `:1120`) with lines in the base instance (`Vehicle.Jawa_05.AccelerationSpine` at `P:\DZ\anims\workspaces\player\player_main\player_main.asi:5088`). Editing an `.agf` by hand and having the engine accept it is untried; the Workbench animation editor is the known way. Any edited graph sits at vanilla paths, so shipping it makes the mod a graph replacement.
 6. Test in game: no bone name errors in the RPT; look at the pose in first person from the seat and from outside on both sides.
 
-Config driven parts around the rider, such as handlebars that turn or accessories that hide when attached, are not character animation and never meet the graph limit (`handlebar-and-steering.md`, `items-in-hands.md`).
+Config driven parts around the rider, such as handlebars that turn or accessories that hide when attached, are not character animation and never meet the graph limit (`handlebar-and-steering.md`, `attach-state-parts.md`).
 
 ## One angle for the part and the hands
 

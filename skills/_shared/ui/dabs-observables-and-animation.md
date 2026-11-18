@@ -15,7 +15,7 @@ Pass the `ViewController`. The element type must be a class. Storage is `ref arr
 Every one of these updates the UI: `Insert`, `InsertAt`, `InsertAll`, `Remove(int index)`, `Remove(TValue value)`, `RemoveOrdered`, `RemoveRange(start, end)`, `Set(index, value)`, `MoveIndex(index, moveIndex)`, `SwapItems(a, b)` and `Clear`. `Get`, `Count`, `Find` and `GetArray` read.
 
 - The layout binding's `Binding_Name` equals the name of the controller field that holds the collection. `NotifyCollectionChanged` finds the field by looking the instance up in reverse and logs "could not find variable" otherwise.
-- For a collection of views, the element type is a `ScriptView` subclass that overrides `GetLayoutFile()`. Each item builds its own tree, and `Insert` moves its root into the bound spacer with `AddChild`.
+- For a collection of views, the element type is a `ScriptView` subclass that overrides `GetLayoutFile()`. Each item builds its own tree, and `Insert` moves its root into the bound spacer with `AddChild`. `TypeConversionScriptView.GetWidget()` returns the item view's layout root.
 - Bind the collection to a `WrapSpacerWidget`, `GridSpacerWidget` or `ScrollWidget`.
 - `Clear()` empties the storage with `m_Data.Clear()` (`MVC\Observables\ObservableCollection.c:138` to `:142`), and the spacer's controller removes each child by walking `GetChildren` and `GetSibling` and calling `RemoveChild` (`SpacerBaseWidgetController.c:88` to `:95`).
 - An item that holds a `ref` back to its controller leaks: nothing breaks the cycle. Null the back reference in the item's destructor.
@@ -51,12 +51,12 @@ From `CanTwoWayBind()` in each file under `MVC\WidgetController\`:
 | `ButtonWidget` | yes | `SetState(bool)` | `GetState` |
 | `CheckBoxWidget` | yes | `SetChecked` | `IsChecked` |
 | `SliderWidget` | yes | `SetCurrent` | `GetCurrent` |
-| `ProgressBarWidget`, `XComboBoxWidget`, `TextListboxWidget` | yes | see each controller file | |
+| `ProgressBarWidget`, `XComboBoxWidget`, `TextListboxWidget` | yes | see `ProgressBarController.c`, `XComboBoxWidgetController.c` and `TextListboxController.c` | |
 | `SpacerBaseWidget`, `WrapSpacerWidget`, `GridSpacerWidget`, `ScrollWidget` | yes | `AddChild` | `GetFocus` (the selection) |
 | `TextWidget`, `MultilineTextWidget`, `RichTextWidget` | no | `SetText` | |
 | `ImageWidget` | no | `LoadImageFile` | |
 
-On a button, `Binding_Name` maps to the pressed state, and `Selected_Item` binds its label text through `SetText` and `GetText`.
+On a button (`ButtonWidgetController`), `Binding_Name` maps to the pressed state, and `Selected_Item` binds its label text through `SetText` and `GetText`.
 
 ## WidgetAnimator
 

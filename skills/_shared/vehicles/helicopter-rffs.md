@@ -14,7 +14,7 @@ RFFS is the kinematic reference. Nothing is locked or missing, unlike SIB (`heli
 | `RFFSHeli_base : CarScript` | The whole flight model, all tuning values, sync variables, the ground fallback (four `NivaWheel` wheels, axles, steering, gearbox), aviation slots, rotor and gauge `AnimationSources` | `Core.c:2`; `Core_config.cpp:517` to `:873` |
 | `RFFSHeli_S76 : RFFSHeli_base` | Per-model values (fuel, airspeed, altitude), doors, seats and crew, the model's gauge needle logic, wreck class | `RFFSHeli_S76.c:1`; `S76_config.cpp:116` to `:734` |
 
-`RFFSHeli_base` declares a full ground `SimulationModule` (`drive="DRIVE_AWD"`, torque curve, gearbox, four axles and wheels, `Core_config.cpp:525` to `:664`) used only for taxiing, and sets `vehicleClass = "Expansion_Helicopter"` (`:523`). Vanilla `CarScript` registers only `POSTSIMULATE` and `POSTFRAME` (`P:\scripts\4_world\entities\vehicles\carscript.c:207`, `:208`), so the helicopter adds `SetEventMask(EntityEvent.SIMULATE)` and `SetEventMask(EntityEvent.FRAME)` (`Core.c:180`, `:181`) and flies itself from `EOnSimulate` (`Core.c:1027`).
+The base is declared `class RFFSHeli_base: CarScript` (`Core.c:2`). It declares a full ground `SimulationModule` (`drive="DRIVE_AWD"`, torque curve, gearbox, four axles and wheels, `Core_config.cpp:525` to `:664`) used only for taxiing, and sets `vehicleClass = "Expansion_Helicopter"` (`:523`). Vanilla `CarScript` registers only `POSTSIMULATE` and `POSTFRAME` (`P:\scripts\4_world\entities\vehicles\carscript.c:207`, `:208`), so the helicopter adds `SetEventMask(EntityEvent.SIMULATE)` and `SetEventMask(EntityEvent.FRAME)` (`Core.c:180`, `:181`) and flies itself from `EOnSimulate` (`Core.c:1027`).
 
 ## Controls
 
@@ -25,9 +25,9 @@ The server reads inputs in `KeyboardInput()` (`:510` to `:544`) from `CrewMember
 | Input | Writes | Meaning | Source |
 |---|---|---|---|
 | `UARFFSCyclicForward`, `Back` | `r_cyclic_ForwardBack` by `v * c_tilt_rate` | Cyclic pitch | `Core.c:549`, `:550` |
-| `UARFFSCyclicLeft`, `Right` | `r_cyclic_LeftRight` by `v * c_lateral_tilt_rate` | Cyclic roll | `:551`, `:552` |
-| `UARFFSPedalLeft`, `Right` | `r_pedal_LeftRight` by `v * c_rotation_rate` | Tail rotor yaw | `:553`, `:554` |
-| `UARFFSCollectiveUp`, `Down` | `m_collective_level`, clamped 0 to 20 | Collective in 20 steps | `:563` to `:583` |
+| `UARFFSCyclicLeft`, `Right` | `r_cyclic_LeftRight ∓= v * c_lateral_tilt_rate` | Cyclic roll | `:551`, `:552` |
+| `UARFFSPedalLeft`, `Right` | `r_pedal_LeftRight ∓= v * c_rotation_rate` | Tail rotor yaw | `:553`, `:554` |
+| `UARFFSCollectiveUp`, `Down` | `m_collective_level = Clamp(±1, 0, 20)` | Collective in 20 steps | `:563` to `:583` |
 | `UARFFSToggleHUD` | `m_show_hud_*`, 3-tick debounce | HUD on and off | `:661` to `:668` |
 | `UARFFSToggleCommand` | `m_pilot_in_command` | Hand control between pilot and co-pilot | `:683` to `:690` |
 | `UARFFSRecover` | `m_flight_recovery_*` | Recovery mode | `:637` to `:657` |
@@ -38,7 +38,7 @@ The collective is a lever of 20 steps of 5 percent each (`:105`), stepped with a
 
 The normal branch (`Core.c:1895` to `:2126`), in order:
 
-1. Ceiling: above `c_max_altitude_m`, clamp Y with `SetPosition` (`:1774` to `:1780`). Default 1,219.2 m (`:38`); the S76 uses 1,250 m (`RFFSHeli_S76.c:45`).
+1. Ceiling: when `GetPosition()[1] > c_max_altitude_m`, clamp Y with `SetPosition` (`:1774` to `:1780`). Default 1,219.2 m (`:38`); the S76 uses 1,250 m (`RFFSHeli_S76.c:45`).
 2. Damage: a damaged or ruined `TailRotor` adds growing uncommanded pedal (`:1783` to `:1801`); a damaged `Engine` or `MainRotor` multiplies collective power by 0.85 (`:1804` to `:1817`).
 3. Angular momentum: cyclic and pedal feed `m_angular_moment`, which decays each tick by `c_tilt_drag_rate * m_cyclic_modifier`, is clamped to `c_angular_moment_limit` and snaps to 0 near zero (`:1898` to `:1931`). Orientation is composed with `YawPitchRollMatrix` and `Math3D.MatrixMultiply3` (`:1954` to `:1961`), a real 3D compose. Cyclic recentres through `c_cyclic_retard` when released (`:1947` to `:1952`).
 4. Lift vector: the scalar collective is rotated into world space by pitch, roll and yaw (`:1993` to `:1996`), so tilting the disc turns lift into travel:
@@ -61,7 +61,7 @@ The normal branch (`Core.c:1895` to `:2126`), in order:
 
 `SetVelocityAdjusted` and `GetVelocityAdjusted` (`:2465` to `:2487`) wrap `SetVelocity` and `GetVelocity(this)` with a horizontal scale per model (`c_speed_adjustement_factor`, `c_speed_factor`), a speed fudge from DayZ 1.21 and 1.28 (`:82` to `:84`; the S76 sets `SpeedFactor=195`, `RFFSHeli_S76.c:49`). `dBodyApplyImpulse` appears only commented out (`Core.c:272`).
 
-Recovery mode: with `UARFFSRecover` held and `c_allow_recovery` set, the branch at `:1819` to `:1894` zeroes the inputs, sets the collective to 10 (50 percent), counters gravity (`heli_velocity[1] += 0.245`), bleeds speed and eases the attitude level relative to the velocity. It is not a PID, and there is no auto hover.
+Recovery mode: with `UARFFSRecover` held and `c_allow_recovery` set, the branch at `:1819` to `:1894` zeroes the inputs, sets `m_collective_level = 10` (50 percent), counters gravity (`heli_velocity[1] += 0.245`), bleeds speed and eases the attitude level relative to the velocity. It is not a PID, and there is no auto hover.
 
 ## Config
 
@@ -89,11 +89,11 @@ Memory points from config and script: `dmgZone_chassis`, `avionics`, `engine`, `
 
 Crew (`S76_config.cpp:125` to `:171`): driver, co-driver and four cargo seats, each with `actionSel`, `proxyPos`, `getInPos`, `getInDir`. Both front seats have `isDriver=0`; script decides who flies through `m_pilot_in_command`, which is how pilot and co-pilot both get control with a hand-off.
 
-Damage zones (`S76_config.cpp:546` to `:677`): `Chassis`, `Avionics`, `Engine`, `Hydraulics`, `FuelTank`, `MainRotor`, `TailRotor`, `Reflector_1_1` (landing light), each with hitpoints, transfers (engine to hydraulics 0.5; tail rotor to chassis 0.75 and engine 0.2) and `inventorySlots` tying part health to attachment health. Global `hitpoints=8000`. Collisions go through `m_ContactCache` and `ChassisImpactDamage()`: a skid landing harder than 1,500 ft/min damages `Chassis` (`Core.c:752` to `:768`).
+Damage zones (`S76_config.cpp:546` to `:677`): `Chassis`, `Avionics`, `Engine`, `Hydraulics`, `FuelTank`, `MainRotor`, `TailRotor`, `Reflector_1_1` (landing light), each with hitpoints, transfers (engine to hydraulics 0.5; tail rotor to chassis 0.75 and engine 0.2) and `inventorySlots` tying part health to attachment health. Global `hitpoints=8000`. Collisions go through `m_ContactCache` and `ChassisImpactDamage()`: a skid landing harder than 1,500 ft/min calls `DecreaseHealth("Chassis")` (`Core.c:752` to `:768`).
 
 ## Actions, parts and HUD
 
-- `ActionStartHelicopter` (`ActionStartHelicopter.c:9` to `:205`): in vehicle, pilot or co-pilot in command only, blocked when `c_grounded` or the engine is ruined. It checks battery (energy over 5), igniter, hydraulic hoses if fitted, wiring and fuel, sets `m_heli_state = 1` and calls `OnBeforeEngineStart`. `ActionStopHelicopter` (`ActionStopHelicopter.c:1` to `:101`) needs airspeed under 8 km/h and sets state 3. Vanilla `ActionStartEngine` and `ActionStopEngine` are modded to return `false` on `RFFSHeli_base` (`ActionStartHelicopter.c:209` to `:232`, `ActionStopHelicopter.c:104` to `:127`), and `SetActions()` removes the horn and engine start (`Core.c:2456` to `:2463`).
+- `ActionStartHelicopter` (`ActionStartHelicopter.c:9` to `:205`): in vehicle, pilot or co-pilot in command only, blocked when `c_grounded` or the engine is ruined. It checks battery (energy over 5), igniter, hydraulic hoses if fitted, wiring and fuel, sets `m_heli_state = 1` and calls `OnBeforeEngineStart`. `ActionStopHelicopter` (`ActionStopHelicopter.c:1` to `:101`) needs airspeed under 8 km/h and sets `m_heli_state=3`. Vanilla `ActionStartEngine` and `ActionStopEngine` are modded to return `false` on `RFFSHeli_base` (`ActionStartHelicopter.c:209` to `:232`, `ActionStopHelicopter.c:104` to `:127`), and `SetActions()` removes the horn and engine start (`Core.c:2456` to `:2463`).
 - Repair actions `ActionRepairHelicopterMainRotor`, `TailRotor`, `Engine`, `Chassis`, `Hydraulics`, `Avionics`, `FuelTank` and `ActionReplaceHelicopterAvionics` each raise one zone one health level with a repair item, chosen through a per-player `RepairHelicopterActionData`.
 - Aviation parts replace the car parts: `AviationBattery`, `AviationIgniterPlug`, `AviationHydraulicHoses`, `AviationWiringHarness`, with their own `CfgSlots` and items (`Core_config.cpp:159` to `:505`, `:875` to `:908`). The helicopter overrides the vanilla checks such as `IsVitalCarBattery` (`P:\scripts\4_world\entities\vehicles\carscript.c:2812`) to return `false` and its own `IsVitalAviationBattery` to return `true` (`Core.c:2227` to `:2260`); `GetBattery()` returns the aviation battery (`:2268` to `:2271`). Fuel is `CarFluid.FUEL` and hydraulic fluid `CarFluid.OIL` (`:1135`, `:1136`).
 - HUD: a `modded class IngameHud` (`headsUpDisplay.c:1`) creates `RFFSHeli_Core/GUI/RFFSHelicopterGUI.layout` under the vanilla `LeftHUDPanel` (`:66` to `:71`). Each frame it casts `GetCommand_Vehicle().GetTransport()` to `RFFSHeli_base` and shows the panel only for the pilot in command with the HUD on and, optionally, a pilot helmet (`:150` to `:165`). It reads the synced fields (`m_airspeed_kph`, `m_altitude_m`, `m_fuel_level`, `m_hydraulic_level`, `m_collective_level`) and `GetHealthLevel(...)` for warning lights (`:202` to `:490`). A badly damaged or ruined `Avionics` zone distorts or blanks the HUD (`:167` to `:187`). Metric and imperial units are honoured.

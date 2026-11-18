@@ -36,7 +36,7 @@ Rear seats need, on top of the front pair:
 - `seat_cargo1` and `seat_cargo2` boxes tagged into their exact `componentNN` in Geometry and View Geometry.
 - `crewcargo1` and `crewcargo2` proxies in View Geometry and Fire Geometry, on one `crew_cargo` path with distinct instance numbers (below).
 - `Crew` `Cargo1` and `Cargo2` entries with `actionSel`, `proxyPos`, `getInPos` and `getInDir`; `CivilianSedan` declares them with `proxyPos` `crewCargo1` and `crewCargo2` (`P:\DZ\vehicles\wheeled\config.cpp:5221` to `:5234`).
-- The two passenger cases in both `GetSeatAnimationType` (`VEHICLESEAT_PASSENGER_L`, `VEHICLESEAT_PASSENGER_R`) and `CrewCanGetThrough`, as `CivilianSedan` does (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:119`, `:226`).
+- The two passenger cases in both `GetSeatAnimationType` (`VEHICLESEAT_PASSENGER_L`, `VEHICLESEAT_PASSENGER_R`) and `CrewCanGetThrough`, as `CivilianSedan` does (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:119`; `CrewCanGetThrough` at `:226` to `:256`).
 
 `CarScript` already maps `seat_driver`, `seat_codriver`, `seat_cargo1` and `seat_cargo2` to `seat_con_1_1`, `seat_con_2_1`, `seat_con_1_2` and `seat_con_2_2` (`P:\scripts\4_world\entities\vehicles\carscript.c:2141` to `:2156`), so an override of `GetDoorConditionPointFromSelection` that repeats that table is dead code.
 
@@ -80,7 +80,7 @@ Seat checks written as a literal front pair go blind when a car gets a rear row,
 
 ## Parts with their own actions
 
-The outside door action casts its target to `CarDoor` and reads `GetActionComponentNameList` from the door item itself (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actioncardoorsoutside.c:34`), then asks the car for `GetAnimSourceFromSelection` (`:43`). The selection names come from the attached door's own `.p3d`, not the shell. If the door model does not carry `doors_<role>`, every component returns `""` and open or close never appears from outside, with no error.
+The outside door action does `CarDoor.Cast(target.GetObject())` and then `carDoor.GetActionComponentNameList(...)` on the door item itself (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actioncardoorsoutside.c:34` and `:37`, inside the outside branch that starts at `:30`), then asks the car for `GetAnimSourceFromSelection` (`:43`). The selection names come from the attached door's own `.p3d`, not the shell. If the door model does not carry `doors_<role>`, every component returns `""` and open or close never appears from outside, with no error.
 
 So an attached part with its own actions (door, hood, trunk) needs, in its own model:
 

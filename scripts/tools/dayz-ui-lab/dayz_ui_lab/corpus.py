@@ -35,7 +35,7 @@ LOCAL_ROOTS_FILE = f"{LOCAL_ROOTS_DIR}/local-roots.json"
 # elsewhere in the repository (skill templates, other tools' fixtures) are not
 # this tool's to place, so the audit checks them by content only.
 TOOL_PATH = "scripts/tools/dayz-ui-lab"
-FIRST_PARTY_LAYOUT_DIR = f"{TOOL_PATH}/probe/LF_UIProbe/gui/layouts"
+FIRST_PARTY_LAYOUT_DIR = f"{TOOL_PATH}/probe/AZ_UIProbe/gui/layouts"
 FIRST_PARTY_LAYOUT_DIRS = (
     FIRST_PARTY_LAYOUT_DIR,
     f"{TOOL_PATH}/fixtures/scenarios",

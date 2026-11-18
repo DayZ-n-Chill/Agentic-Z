@@ -2,7 +2,7 @@
 
 How to make an animation look physically believable and prove it, from the first contract to the in game test. Open it for motion on the player, hands and weapons, reloads and unjams, locomotion, creatures, vehicle occupants and props, and above all for clipping, crossed fingers, overextended joints, a hand that misses its grip, a held object that does not follow, stutter, bad loops, or a clip that looks right in Blender and wrong in game.
 
-This file sets the acceptance; the Blender and DayZ files keep the technical facts (`motion-authority-and-routing.md`). The checker scripts `sample_blender_motion.py`, `validate_motion_contract.py` and `run_regression_tests.py` are in `skills/dayz-animation-pipeline/scripts/`, and `skills/dayz-animation-pipeline/SKILL.md` says how to run them.
+It sets the acceptance; the Blender and DayZ files keep the technical facts (`motion-authority-and-routing.md`). The checker scripts `sample_blender_motion.py`, `validate_motion_contract.py` and `run_regression_tests.py` are in `skills/dayz-animation-pipeline/scripts/`, and `skills/dayz-animation-pipeline/SKILL.md` says how to run them.
 
 ## Before you start
 
