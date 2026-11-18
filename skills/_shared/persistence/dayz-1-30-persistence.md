@@ -65,7 +65,7 @@ if (!m_ThermalBiasHandler.OnStoreLoad(ctx, version))
 
 The handler saves one float, `m_TemporaryResistanceTime`, and returns `false` when the read fails (`P:\scripts\4_world\classes\thermalbiashandler.c:67` to `:78`).
 
-A 1.29 player record in `storage_1/players.db` ends after the arrow manager (`arrowManager.Save`, 1.29 `4_world\entities\manbase\playerbase.c:7073` to `:7075`), with no float. A 1.30 multiplayer server always reads it, so the load fails with `failed to load ThermalBiasHandler`; nothing fills in a default. A mod that overrides `PlayerBase.OnStoreSave` or `OnStoreLoad` must keep calling `super` in the same place. Fields put before `super`, or after a copied 1.29 ending without the float, load the rest of the record wrong. Do not add your own version check around the thermal value unless you also stop writing it.
+A 1.29 player record in `storage_1/players.db` ends after the arrow manager, with no float (the 1.30 save writes the arrow manager at `playerbase.c:7392` and `:7393`, then the float). A 1.30 multiplayer server always reads it, so the load fails with `failed to load ThermalBiasHandler`; nothing fills in a default. A mod that overrides `PlayerBase.OnStoreSave` or `OnStoreLoad` must keep calling `super` in the same place. Fields put before `super`, or after a copied 1.29 ending without the float, load the rest of the record wrong. Do not add your own version check around the thermal value unless you also stop writing it.
 
 ## The combination lock's third value
 
@@ -94,7 +94,7 @@ Vanilla sets defaults such as `m_Combination = 0` before returning `false` on a 
 
 ## Base building and rebuilt houses
 
-`BaseBuildingBase.OnStoreSave` still writes `super`, `m_SyncParts01`, `m_SyncParts02`, `m_SyncParts03` and `m_HasBase` (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:420` to `:430`). Its construction block is empty, so the 93 part packing lives in those three ints.
+`BaseBuildingBase.OnStoreSave` still writes `super`, `m_SyncParts01`, `m_SyncParts02`, `m_SyncParts03` and `m_HasBase` (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:419` to `:429`). Its construction block is empty, so the 93 part packing lives in those three ints.
 
 `Rebuilding`, on map houses, writes through the `EntityAI` block: `REBUILDING_STORAGE_VERSION` (1), then `m_SyncParts1` to `m_SyncParts10` (`P:\scripts\4_world\classes\rebuilding\rebuilding.c:3` and `:501` to `:514`). `DeserializeConstructionData` rejects a stored version below the current one but accepts one above it (`rebuilding.c:518` to `:524`), the opposite of the "future version" case in `migration-matrix.md`. Do not copy it: an extra int written after the ten by a later build would be read as energy data, and the rest of the house would load wrong. The full layout is in `base-building-rebuildable.md`.
 
@@ -111,7 +111,7 @@ There is no version header. `FileSerializer.Read` returns `bool` (`P:\scripts\1_
 
 Treat this file as a vanilla exception, not a template. A mod that keeps similar state writes a version header, checks every `Read`, and saves under `$profile:` or `$saves:`, where backup, delete and copy work. Never describe a `$mission:` `FileSerializer` overwrite as atomic.
 
-`JsonFileLoader<T>.LoadFile` and the deprecated `JsonLoadFile` are at `P:\scripts\3_game\tools\jsonfileloader.c:7` to `:40` and `:99` to `:131`. No 1.30 change to CF ModStorage is checked (`cf-modstorage.md`).
+`JsonFileLoader<T>.LoadFile` and the deprecated `JsonLoadFile` are at `P:\scripts\3_game\tools\jsonfileloader.c:7` to `:40` and `:104` to `:131`. No 1.30 change to CF ModStorage is checked (`cf-modstorage.md`).
 
 ## What breaks in a 1.29 mod
 

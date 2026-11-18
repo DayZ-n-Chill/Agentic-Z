@@ -65,7 +65,7 @@ The wrong pair doesn't throw. On `CivilianSedan`, which attaches to nothing, `Ge
 
 There is no `GetObjectTextures()`. The run time getters are singular and take an index: `GetObjectTexture(int)` and `GetObjectMaterial(int)` (`P:\scripts\3_game\entities\entityai.c:2882` to `:2885`). For every hidden selection, loop from 0 to `GetHiddenSelections().Count() - 1`.
 
-The config getters are `GetHiddenSelectionsTextures()` and `GetHiddenSelectionsMaterials()` (`P:\scripts\3_game\entities\object.c:125` to `:140`). For the material list embedded in a model, use `GetObjectMaterials(vobject object, string materials[])` (`P:\scripts\1_core\proto\envisual.c:6` to `:27`). A call to a getter that doesn't exist stops the whole script module compiling.
+The config getters are `GetHiddenSelectionsTextures()` and `GetHiddenSelectionsMaterials()` (`P:\scripts\3_game\entities\object.c:132` and `:138`; `GetHiddenSelections()` at `:126`). For the material list embedded in a model, use `GetObjectMaterials(vobject object, string materials[])` (`P:\scripts\1_core\proto\envisual.c:6` to `:27`). A call to a getter that doesn't exist stops the whole script module compiling.
 
 ## Type checks and transforms
 
@@ -102,11 +102,11 @@ The config getters are `GetHiddenSelectionsTextures()` and `GetHiddenSelectionsM
 | `CreateInInventory(string)` | `:876` |
 | `TakeEntityToInventory(InventoryMode mode, FindInventoryLocationType flags, EntityAI item)` | `:1013` |
 
-- `InventoryMode` is `PREDICTIVE`, `LOCAL`, `JUNCTURE` or `SERVER` (`inventory.c:21` to `:27`); use `SERVER` only in code that runs on the server alone. `FindInventoryLocationType` is `ATTACHMENT`, `CARGO`, `HANDS`, `PROXYCARGO`, `ANY_CARGO`, `ANY` and `NO_SLOT_AUTO_ASSIGN` (`P:\scripts\3_game\systems\inventory\inventorylocation.c:17` to `:26`).
+- `InventoryMode` is `PREDICTIVE`, `LOCAL`, `JUNCTURE` or `SERVER` (`inventory.c:21` to `:27`); use `SERVER` only in code that runs on the server alone, and never `PREDICTIVE` on a multiplayer server: the vanilla comment says "PREDICTIVE is not to be used at all in multiplayer" (`:20`). `JUNCTURE` is the mode for a move two players could race for, such as picking the same item off the ground (`:25`). `FindInventoryLocationType` is `ATTACHMENT`, `CARGO`, `HANDS`, `PROXYCARGO`, `ANY_CARGO`, `ANY` and `NO_SLOT_AUTO_ASSIGN` (`P:\scripts\3_game\systems\inventory\inventorylocation.c:17` to `:26`).
 - `HumanInventory.CreateInHands(string)` (`P:\scripts\3_game\systems\inventory\humaninventory.c:44`); `InventoryLocation.SetCargo(EntityAI parent, EntityAI e, int idx, int row, int col, bool flip)` (`inventorylocation.c:152`).
 - Player moves on `Man` (`P:\scripts\3_game\entities\man.c`): `PredictiveTakeEntityToHands(EntityAI)` `:178`, `PredictiveTakeEntityToInventory(FindInventoryLocationType, EntityAI)` `:381`, `ServerTakeEntityToInventory(FindInventoryLocationType, EntityAI)` `:402`, `PredictiveTakeToDst(InventoryLocation src, InventoryLocation dst)` `:738`.
-- Item hooks: `ItemBase.OnInventoryEnter(Man)` and `OnInventoryExit(Man)` (`P:\scripts\4_world\entities\itembase.c:3902` and `:3914`).
-- Quantity on `ItemBase`: `SetQuantity(...)` `:3315`, `AddQuantity(...)` `:3389`, `GetQuantityMax()` `:3435`, `GetQuantity()` `:3486` (`itembase.c`). Rounds in a magazine: `Magazine.GetAmmoCount()` (`P:\scripts\4_world\entities\itembase\magazine\magazine.c:68`).
+- Item hooks: `ItemBase.OnInventoryEnter(Man)` and `OnInventoryExit(Man)` (`P:\scripts\4_world\entities\itembase.c:3906` and `:3918`).
+- Quantity on `ItemBase`: `SetQuantity(...)` `:3319`, `AddQuantity(...)` `:3393`, `GetQuantityMax()` `:3439`, `GetQuantity()` `:3490` (`itembase.c`). Rounds in a magazine: `Magazine.GetAmmoCount()` (`P:\scripts\4_world\entities\itembase\magazine\magazine.c:68`).
 
 ## What 1.30 renamed
 
@@ -115,4 +115,4 @@ The config getters are `GetHiddenSelectionsTextures()` and `GetHiddenSelectionsM
 | `TakeEntityToCargo`, `TakeEntityToCargoEx`, `TakeEntityAsAttachment`, `TakeEntityAsAttachmentEx` | `TakeEntityToTargetCargo` `:1077`, `TakeEntityToTargetCargoEx` `:1084`, `TakeEntityAsTargetAttachmentEx` `:1100`, `TakeEntityAsTargetAttachment` `:1142` | `P:\scripts\3_game\systems\inventory\inventory.c:1345` to `:1386` |
 | `OnCEUpdate()` | `OnCEIterate(float currentTime, float elapsedTime)` | `P:\scripts\3_game\entities\entityai.c:3904`, `:4924` and `:4925` |
 
-New in 1.30: `DayZPlayer.IsFirstRenderFrame()`, true on the first tick of a render frame (`P:\scripts\3_game\dayzplayer.c:1186` to `:1189`), and `Entity.DisableSimulation(bool)` with `GetIsSimulationDisabled()` (`P:\scripts\3_game\entities\entity.c:3` to `:6`).
+New in 1.30: `DayZPlayer.IsFirstRenderFrame()`, true on the first tick of a render frame (`P:\scripts\3_game\dayzplayer.c:1186` to `:1189`). `Entity.DisableSimulation(bool)` and `GetIsSimulationDisabled()` (`P:\scripts\3_game\entities\entity.c:3` to `:6`) are not new; `dayz-1-30-enforce-script.md` records them in 1.29 too (`P:\` holds only 1.30, so that part is not checked on `P:\`).

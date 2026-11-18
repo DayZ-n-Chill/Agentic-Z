@@ -82,7 +82,7 @@ For a mod asset:
 
 ## Vehicle light material pairs
 
-Vehicles name an on and an off material for each lit part. The vanilla sedan sets `dashboardMatOn`, `dashboardMatOff`, `frontReflectorMatOn` and `frontReflectorMatOff` (`P:\DZ\vehicles\wheeled\config.cpp:14045` to `:14048`):
+Vehicles name an on and an off material for each lit part. The vanilla `Sedan_02` sets `dashboardMatOn`, `dashboardMatOff`, `frontReflectorMatOn` and `frontReflectorMatOff` (`P:\DZ\vehicles\wheeled\config.cpp:14045` to `:14048`):
 
 ```cpp
 dashboardMatOn="dz\vehicles\wheeled\sedan_02\data\sedan_02_int2e.rvmat";
@@ -94,6 +94,18 @@ frontReflectorMatOff="dz\vehicles\wheeled\sedan_02\data\sedan_02_chrome.rvmat";
 - These are vehicle keys; don't expect them to work on another class.
 - Start from the nearest vanilla vehicle family.
 - Keep each on and off path together and check every path against the packed files.
+
+Script reads each key by name and writes the material with `SetObjectMaterial` to a fixed index of `hiddenSelections[]`, not to a selection found by name; a key that is missing or empty is skipped (`P:\scripts\4_world\entities\vehicles\components\vehiclelightscomponent.c:77` to `:79`). On a `CarScript` the indexes are constants, `SELECTION_ID_FRONT_LIGHT_L` onwards (`P:\scripts\4_world\entities\vehicles\carscript.c:174` to `:182`), so the first nine names in `hiddenSelections[]` must be the light parts in this order, as the offroad hatchback lists them (`P:\DZ\vehicles\wheeled\config.cpp:1274` to `:1282`):
+
+| Index | Selection on `OffroadHatchback` | Keys |
+|---|---|---|
+| 0 and 1 | `light_left`, `light_right` | `frontReflectorMatOn`, `frontReflectorMatOff` |
+| 2 and 3 | `light_brake_1_2`, `light_brake_2_2` | `brakeReflectorMatOn`, `brakeReflectorMatOff` |
+| 4 and 5 | `light_reverse_1_2`, `light_reverse_2_2` | `ReverseReflectorMatOn`, `ReverseReflectorMatOff` |
+| 6 and 7 | `light_1_2`, `light_2_2` | `TailReflectorMatOn`, `TailReflectorMatOff` |
+| 8 | `light_dashboard` | `dashboardMatOn`, `dashboardMatOff` |
+
+The hatchback sets all ten keys (`config.cpp:1336` to `:1345`). A `MotorbikeScript` registers four indexes with `RegisterSelection` instead: 0 front, 1 brake, 2 tail and 3 dashboard (`P:\scripts\4_world\entities\vehicles\motorbikescript.c:114` to `:122`). A car whose light selections sit elsewhere in the list gets its lit material painted on whatever part holds those indexes. `UpdateLights` runs the swap on every machine, not only on the server (`carscript.c:1853` to `:1859`).
 
 ## Swaps from script
 

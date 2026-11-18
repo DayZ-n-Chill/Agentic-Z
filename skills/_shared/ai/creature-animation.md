@@ -36,6 +36,9 @@ Each graph is a master `.agr` (variables and commands), one or more `.agf` sub g
 | Hen, hare, fox | `P:\DZ\animals\animations\!graph_files\ambientlife\` |
 | Bear | `P:\DZ\animals_bliss\animations\!graph_files\bear\` |
 | Infected | `P:\DZ\anims\workspaces\infected\infected_main\` |
+| Dobermann, German shepherd, mouflon, monitor lizard | Instances only, in `P:\DZ\animals_takistan\animations\!graph_files\` (`dogs\`, `herbivores\`, `ambientlife\`) |
+
+The Nasdara animals show how a new species joins without a graph of its own: each points `graphname` at a vanilla graph and `defaultinstance` at its own `.asi`. The dobermann uses `Wolf_Graph.agr` with `Dobermann_AnimInstance.asi` (`P:\DZ\animals_takistan\canis_familiaris_dobermann\config.cpp:264` and `:265`), the mouflon `Herbivores_Graph.agr` with `startnode="Master_GoatAndSheep_SM"` (`P:\DZ\animals_takistan\ovis_gmelini\config.cpp:270` to `:272`), and the monitor lizard `AmbientLife_Graph.agr` (`P:\DZ\animals_takistan\varanus_griseus\config.cpp:130`). Each keeps its own `meshObject` and `skeletonName`.
 
 ## Two bones the engine uses
 

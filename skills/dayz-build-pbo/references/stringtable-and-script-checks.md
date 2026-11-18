@@ -15,7 +15,7 @@ The format, as shipping mods carry it: a header row, then one row per key. The k
 
 An unresolved stringtable is a header problem, not an addon size problem. Measured in game: a three-file addon (`$PBOPREFIX$`, a minimal `config.cpp` and `stringtable.csv`) with two data rows resolves its keys, provided the CSV carries the seven-column header above. With a four-column header, without `german`, `russian` and `chinesesimp`, every key stays unresolved at any size, although the PBO mounts and serves files and the client's own language column holds text. Fill untranslated columns with the English text. The full rule is in `skills/_shared/ui/localization.md`.
 
-Vanilla's own header starts with `"Language","original","english"` and has 15 language columns, those four among them (`P:\languagecore\stringtable.csv:1`).
+Vanilla's own header starts with `"Language","original","english"` and has 15 columns: the key column, `original` and 13 languages, all seven columns of the header above among them (`P:\languagecore\stringtable.csv:1`).
 
 ## Stringtable checks
 

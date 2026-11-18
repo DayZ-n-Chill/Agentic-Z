@@ -1,6 +1,6 @@
 # Closing first-person gaps in the View Pilot
 
-How to close gaps in a fairing or cockpit through which the seated rider sees the ground: black membranes that only the View Pilot LOD (resolution 1100) carries, placed behind everything the steering sweeps, and tested with the bars turned. Measured in game and offline on a motorbike mod derived from `Motorbike_02_ColorBase` (`P:\DZ\vehicles\singletrack\config.cpp:1401`). How the View Pilot is assembled is in `view-pilot-assembly.md`.
+How to close gaps in a fairing or cockpit through which the seated rider sees the ground: black membranes that only the View Pilot LOD (resolution 1100) carries, placed behind everything the steering sweeps, and tested with the bars turned. Measured in game and offline on a motorbike mod derived from `Motorbike_02_ColorBase` (`P:\DZ\vehicles\singletrack\config.cpp:1404`). How the View Pilot is assembled is in `view-pilot-assembly.md`.
 
 ## Where the closures go
 

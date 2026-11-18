@@ -4,7 +4,7 @@ What the vanilla scripts declare for Enfusion entity components (`GenericCompone
 
 ## Not in a DayZ game build
 
-All of `P:\scripts\2_gamelib\components\gamelibcomponents.c` sits inside `#ifdef COMPONENT_SYSTEM` (`:1` to `:276`). `GenericEntity` is under the same guard (`P:\scripts\2_gamelib\entities\gamelibentities.c:3` to `:141`), and so is the `IEntity(IEntitySource src, IEntity parent)` constructor (`P:\scripts\1_core\proto\enentity.c:768` to `:771`). The table of static defines lists `COMPONENT_SYSTEM` as not defined for DayZ builds and defined for Workbench builds (`P:\scripts\staticdefinesdoc.c:15`).
+All of `P:\scripts\2_gamelib\components\gamelibcomponents.c` sits inside `#ifdef COMPONENT_SYSTEM` (`:1` to `:276`). `GenericEntity` is under the same guard (`P:\scripts\2_gamelib\entities\gamelibentities.c:3` to `:140`), and so is the `IEntity(IEntitySource src, IEntity parent)` constructor (`P:\scripts\1_core\proto\enentity.c:768` to `:771`). The table of static defines lists `COMPONENT_SYSTEM` as not defined for DayZ builds and defined for Workbench builds (`P:\scripts\staticdefinesdoc.c:15`).
 
 So a mod's game scripts can't use these classes; they matter for Workbench tooling. Whether any shipped DayZ build defines the flag is unverified.
 

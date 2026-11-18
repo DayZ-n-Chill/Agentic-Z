@@ -30,7 +30,7 @@ vector screen = GetGame().GetScreenPos(nose);
 
 Two measurement traps:
 
-- A camera offset that reads the same across two boots does not prove a fixed engine offset when the probe fires once: it can just record when the probe fires (the same walk up, the same inherited camera yaw). Settle camera geometry from the vanilla code first. `DayZPlayerCamera3rdPersonVehicle` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:18`) pivots at the vehicle origin plus `GetTransportCameraOffset` (`:49`), which by default returns `"0 1.3 0"` (`P:\scripts\3_game\vehicles\transport.c:657` to `:659`).
+- A camera offset that reads the same across two boots does not prove a fixed engine offset when the probe fires once: it can just record when the probe fires (the same walk up, the same inherited camera yaw). Settle camera geometry from the vanilla code first. `DayZPlayerCamera3rdPersonVehicle` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:18`) pivots at the vehicle origin plus `GetTransportCameraOffset` (`:50`), which by default returns `"0 1.3 0"` (`P:\scripts\3_game\vehicles\transport.c:660` to `:663`).
 - A named selection can hold points no face uses: the test helicopter's glass held 357 such points on one side. Count only points that faces reference when comparing sides, or the comparison lies.
 
 ## Check a ripped part before rebuilding it

@@ -76,6 +76,6 @@ Vanilla builds the path with no trailing space: `ConfigIsExisting(CFG_VEHICLESPA
 | `typename.EnumFlagsToString` and `EnumTools.EnumFlagsToString` | `P:\scripts\1_core\proto\enconvert.c:593` and `:683` |
 | `class DoOnce`, to run a method by name once per key | `P:\scripts\3_game\doonce.c:1` |
 | `GAME_STORAGE_VERSION = 144`; 1.29 had `142` on the same line | `P:\scripts\3_game\global\game.c:5` |
-| `vector.Cross(vector v)` existed in 1.30 Experimental and the 1.30 release, and the first 1.30 patch removed it. `P:\` still shows it because its extraction is older (`../references/game_builds.md`). Write the cross product out instead of calling `Cross` | `enconvert.c:239` to `:246` |
+| `vector.Cross(vector v)` was declared in early 1.30 builds (reported; those builds are not on `P:\`) and is gone from the current one. Write the cross product out instead of calling `Cross` (`dayz-1-30-enforce-script.md` has the three lines) | Absent from `class vector` in the 1.30 build on `P:\` (`P:\scripts\1_core\proto\enconvert.c`) |
 
 The full 1.30 changes are in `dayz-1-30-enforce-script.md`.

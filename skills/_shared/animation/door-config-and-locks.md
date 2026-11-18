@@ -12,7 +12,7 @@ What moves: the named selection in the `.p3d`, then a `CfgSkeletons` bone of the
 
 The chains can share a name (`door1` in the simple door) or split (`selection = "door1"` with `source = "door1_open"` in the button door).
 
-In vanilla the `Doors` subclass name, its `component` and the animation source are always one name: all 1,373 `class Doors` entries in the configs under `P:\DZ` have a class name equal to their `component` apart from letter case, for example `class Doors5` with `component="Doors5"` (`P:\DZ\structures\residential\config.cpp:7385`). So vanilla cannot show which of the two the engine binds the source to. Keep all three the same in a new door and the question never comes up.
+In vanilla the `Doors` subclass name, its `component` and the animation source are almost always one name: of the 2,651 `class Doors` entries in the configs under `P:\DZ`, 2,640 have a class name equal to their `component` apart from letter case, for example `class Doors5` with `component="Doors5"` (`P:\DZ\structures\residential\config.cpp:7385`). Two set no `component`, and the Badlands `tandoor1` entry (nine copies) uses `component="tandoor1_door"` (`P:\DZ\structures_takistan\Residential\config.cpp:10159` to `:10162`). Which of the two names that model's source carries is inside the packed `.p3d`, so it is not checked on `P:\`. Keep all three the same in a new door and the question never comes up.
 
 ## Skeleton
 
@@ -83,11 +83,11 @@ One source can drive several animations. The simple door moves `Door1` and `hand
 | `interactPositionPoint`, `interactDirPoint` (1.30) | Memory points for a door that opens from one side, read into `m_InteractLimitingPositionPoint` and `m_InteractLimitingDirPoint`. | `additionaldoorsinfo.c:34` to `:38` |
 | `doorConstructionPart`, `doorConstructionPhysicsSource` (1.30) | For a house door that can be rebuilt: the construction part, and the `AnimationSources` name that switches the door's physics. | `additionaldoorsinfo.c:40` to `:44` |
 
-Door sounds are defined in `P:\DZ\sounds\hpp\config.cpp`, for example `class doorMetalSmallOpen` (`:519064`). Check a name exists there before using it.
+Door sounds are defined in `P:\DZ\sounds\hpp\config.cpp`, for example `class doorMetalSmallOpen` (`:520946`). Check a name exists there before using it.
 
-`initPhase` is the phase (0 to 1) at spawn, not a delay; 0.0 spawns closed. `initOpened` is a spawn probability: the door spawns open when a random number is below it, so 0 never and 0.5 about half the time. Both are engine behaviour, not visible on `P:\`. Vanilla houses use values such as 0.3 and 0.7 (`initOpened=0.69999999`, `P:\DZ\structures\residential\config.cpp:7392`).
+`initPhase` is the phase (0 to 1) at spawn, not a delay; 0.0 spawns closed. `initOpened` is a spawn probability: the door spawns open when a random number is below it, so 0 never and 0.5 about half the time. Both are engine behaviour, not visible on `P:\`. Vanilla houses use values such as 0.3 and 0.7 (`initOpened=0.69999999`, `P:\DZ\structures\residential\config.cpp:7392`). The Badlands houses that can be rebuilt use `initOpened=2` on 566 doors (`P:\DZ\structures_takistan\Residential\config.cpp:32`); what a value above 1 does is not visible on `P:\`. One vanilla entry has the broken value `initOpened="0..7"` (`P:\DZ\structures\residential\config.cpp:18622`); do not copy it.
 
-No `config.cpp` under `P:\DZ` sets `relatedInventorySlots[]`, `lockCompatibilityBitMask`, `interactPositionPoint`, `interactDirPoint`, `doorConstructionPart` or `doorConstructionPhysicsSource`. The parser and the scripts that use them are on `P:\`, but no vanilla `class Doors` block uses them, because the Badlands structures that would carry them are not unpacked. Vanilla does show the fence listing `Att_CombinationLock` and `Att_CodeLock` in its entity `attachments[]` (`class Fence`, `P:\DZ\gear\camping\config.cpp:4362` to `:4368`).
+The 1.30 keys are set only by the Badlands houses that can be rebuilt, all in `P:\DZ\structures_takistan\Residential\config.cpp`: `relatedInventorySlots[]` and `lockCompatibilityBitMask=0` on doors (`:37` to `:42`), `interactPositionPoint` and `interactDirPoint` on windows (`:80`, `:81`), and `doorConstructionPart` and `doorConstructionPhysicsSource` on both (`:43`, `:44`). `building-door-locks.md` walks through that house. Vanilla also shows the fence listing `Att_CombinationLock` and `Att_CodeLock` in its entity `attachments[]` (`class Fence`, `P:\DZ\gear\camping\config.cpp:4362` to `:4368`).
 
 ## One source, one Doors entry
 

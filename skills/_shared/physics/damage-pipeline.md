@@ -37,7 +37,7 @@ These skip the ammo system, so no `EEHitBy`, hit animation or bleeding follows. 
 | `SetHealth01`, `SetHealthMax`, `SetHealthLevel` | `:1100`, `:1105`, `:1087` | Script helpers over `SetHealth` |
 | `GetHealthLevel(zone)` | `:1171` | 0 pristine to 4 ruined (`STATE_PRISTINE` to `STATE_RUINED`, `P:\scripts\3_game\constants.c:909` to `:913`) |
 
-The health types are `"Health"`, `"Blood"` and `"Shock"`. Vanilla reads a player's global blood from the zone `"GlobalHealth"` (`P:\scripts\4_world\entities\manbase\playerbase.c:5599`). `MiscGameplayFunctions.DealAbsoluteDmg(item, dmg)` is a helper that calls `DecreaseHealth(dmg, false)` for tools that wear with use (`P:\scripts\4_world\static\miscgameplayfunctions.c:1730` to `:1732`).
+The health types are `"Health"`, `"Blood"` and `"Shock"`. Vanilla reads a player's global blood from the zone `"GlobalHealth"` (`P:\scripts\4_world\entities\manbase\playerbase.c:5599`). `MiscGameplayFunctions.DealAbsoluteDmg(item, dmg)` is a helper that calls `DecreaseHealth(dmg, false)` for tools that wear with use (`P:\scripts\4_world\static\miscgameplayfunctions.c:1674` to `:1677`).
 
 ## The callbacks, in order
 
@@ -45,7 +45,7 @@ The health types are `"Health"`, `"Blood"` and `"Shock"`. Vanilla reads a player
 |---|---|---|
 | `EEHitBy(TotalDamageResult damageResult, int damageType, EntityAI source, int component, string dmgZone, string ammo, vector modelPos, float speedCoef)` | On the server, after the engine applied the damage | `P:\scripts\3_game\entities\entityai.c:1143` |
 | `EEHitByRemote(damageType, source, component, dmgZone, ammo, modelPos)` | "called only on the client who caused the hit"; no damage result | `P:\scripts\3_game\entities\entityai.c:1152` to `:1153` |
-| `EEHealthLevelChanged(oldLevel, newLevel, zone)` | When a zone changes health level; ruined on the global zone calls `OnDamageDestroyed(oldLevel)`, then `AttemptDestructionBehaviour` | `P:\scripts\3_game\entities\entityai.c:1043`, `:1058`, `:1066` |
+| `EEHealthLevelChanged(oldLevel, newLevel, zone)` | When a zone changes health level. Any zone reaching ruined tells the parent (`OnAttachmentRuined`) and calls `AttemptDestructionBehaviour`; only the global zone also calls `OnDamageDestroyed(oldLevel)` first | `P:\scripts\3_game\entities\entityai.c:1043` to `:1058`, `:1066` |
 | `EEKilled(Object killer)` | On the server at death; fires `m_OnKilledInvoker` | `P:\scripts\3_game\entities\entityai.c:1104` to `:1107` |
 | `EEDelete(EntityAI parent)` | When the entity leaves the world | `P:\scripts\3_game\entities\entityai.c:946` |
 
@@ -59,13 +59,13 @@ For a player, each override calls `super` first, so the bodies run in this order
 
 Items take their own branch: `ItemBase.EEHitBy` damages a random cargo item or attachment of clothing, containers and tents (`P:\scripts\4_world\entities\itembase.c:1450` to `:1455`).
 
-A ruined plastic explosive does not go off. `ExplosivesBase.EEKilled` calls `InitiateExplosion()` (`P:\scripts\4_world\entities\explosivesbase.c:72` to `:77`), but `Plastic_Explosive.EEKilled` overrides it without `super`, with the comment "do not call super from ExplosivesBase" (`P:\scripts\4_world\entities\explosivesbase\plastic_explosive.c:27` to `:32`). It explodes only from `OnActivatedByItem`, when armed and triggered by its paired remote detonator, and that path returns early once the charge is already ruined (`:236` to `:258`). `InitiateExplosion()` is `protected` (`P:\scripts\4_world\entities\explosivesbase.c:172`), so a mod that wants a shot charge to blow reaches it from a `modded class Plastic_Explosive`, for example in its own `EEKilled`. No `Detonate` method exists in the scripts.
+A ruined plastic explosive does not go off. `ExplosivesBase.EEKilled` calls `InitiateExplosion()` (`P:\scripts\4_world\entities\explosivesbase.c:72` to `:77`), but `Plastic_Explosive.EEKilled` overrides it without `super`, with the comment "do not call super from ExplosivesBase" (`P:\scripts\4_world\entities\explosivesbase\plastic_explosive.c:27` to `:32`). It explodes only from `OnActivatedByItem` on the server, when activated by itself or, while armed, by its paired remote detonator, and that path returns early once the charge is already ruined (`:236` to `:261`). `InitiateExplosion()` is `protected` (`P:\scripts\4_world\entities\explosivesbase.c:172`), so a mod that wants a shot charge to blow reaches it from a `modded class Plastic_Explosive`, for example in its own `EEKilled`. No `Detonate` method exists in the scripts.
 
 ## Hit zones
 
-- A zone is a class under `DamageSystem` `DamageZones` in config. Its `componentNames[]` lists the model selections it covers, and `transferToZonesNames[]`, `transferToZonesCoefs[]` and `Health` `transferToGlobalCoef` pass damage on. Script reads only `transferToGlobalCoef`, in a repair helper marked "hack; mirrors current config setup" (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionrepairtent.c:155`, `:167`). How a model's selections must match `componentNames[]` is in `collision-lods.md`.
+- A zone is a class under `DamageSystem` `DamageZones` in config. Its `componentNames[]` lists the model selections it covers, and `transferToZonesNames[]`, `transferToZonesCoefs[]` and `Health` `transferToGlobalCoef` pass damage on. Script reads only `transferToGlobalCoef`, in a repair helper marked "hack; mirrors current config setup" (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionrepairtent.c:155`, read at `:167`). How a model's selections must match `componentNames[]` is in `collision-lods.md`.
 - The player's zones are `Head`, `Brain`, `Torso`, the arms, hands, legs and feet (`class DamageZones`, `P:\DZ\characters\data\config.cpp:421`; `Brain` at `:501`, `Torso` at `:572`). `Head` lists `"dmgZone_head"` (`:488` to `:491`).
-- `fatalInjuryCoef` is set per zone, 0.1 on `Head` and 1 on `Brain` (`P:\DZ\characters\data\config.cpp:492`, `:570`). No script reads it; what the engine does with it is not visible.
+- `fatalInjuryCoef` is set per zone, 0.1 on `Head`, 1 on `Brain` and -1 on the other zones (`P:\DZ\characters\data\config.cpp:492`, `:570`, `:615`). No script reads it; what the engine does with it is not visible.
 - Script names zones in a few places: `"Brain"` marks a headshot kill (`P:\scripts\4_world\entities\dayzplayerimplement.c:1592`), `"Torso"` and `"Head"` allow the full body hit animation (`:1512`), and the arms are the upper bleeding sources in `m_BleedingSourcesUp` (`P:\scripts\4_world\entities\manbase\playerbase.c:545`, `:549`).
 
 ## Bleeding and shock

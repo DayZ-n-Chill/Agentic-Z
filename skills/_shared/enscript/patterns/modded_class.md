@@ -4,7 +4,7 @@
 
 ## Contents
 
-- [NEVER use `extends` on `modded class`](#-never-use-extends-on-modded-class)
+- [Never use `extends` on `modded class`](#never-use-extends-on-modded-class)
 - [Basic Extension](#basic-extension)
 - [Mod Stack Ordering](#mod-stack-ordering)
 - [Server-only overrides need a stub in the base class](#server-only-overrides-need-a-stub-in-the-base-class)
@@ -19,7 +19,7 @@
 
 ---
 
-## ⚠️ NEVER use `extends` on `modded class`
+## Never use `extends` on `modded class`
 
 ```c
 // WRONG: silent no-op, your override never runs
@@ -89,7 +89,7 @@ More on which code goes in which module: `skills/_shared/enscript/depth/script-l
 
 ## Server-only overrides need a stub in the base class
 
-A mod can keep its heavy server logic out of the client by declaring a class with empty methods for both sides and overriding them in a `modded class` wrapped in `#ifdef SERVER`. `SERVER` is defined only on a dedicated server (`P:\scripts\1_core\defines.c:106`), so the client never compiles the second file. The class names below are placeholders; `CF_ModuleWorld` is Community Framework's module base (`../integrations/community_framework.md`).
+A mod can keep its heavy server logic out of the client by declaring a class with empty methods for both sides and overriding them in a `modded class` wrapped in `#ifdef SERVER`. `SERVER` is defined only on a dedicated server (`P:\scripts\1_core\defines.c:115`, under the note at `:106`), so the client never compiles the second file. The class names below are placeholders; `CF_ModuleWorld` is Community Framework's module base (`../integrations/community_framework.md`).
 
 ```c
 // Scripts/4_World/MyMod_Module.c: compiled on client and server

@@ -127,7 +127,7 @@ Calibrate suspension to mass (`vehicle-geometry-and-mass.md`). For comparison th
 | `proxyPos` | Proxy selection in View Geometry where the player sits; it needs a bone in the skeleton |
 | `getInPos` | Point the player gets in and out at |
 | `getInDir` | Second point giving the direction from the first |
-| `isDriver` | Marks the driver; at most one (`1` and `true` are the same) |
+| `isDriver` | Marks a driver seat. Vanilla cars set it on one seat (`P:\DZ\vehicles\wheeled\config.cpp:273`), but both motorbike seats set it (`P:\DZ\vehicles\singletrack\config.cpp:60` and `:68`) |
 
 ```cpp
 class Crew
@@ -156,7 +156,7 @@ ReverseReflectorMatOn="MyMod\data\reverse_lights_on.rvmat"; ReverseReflectorMatO
 dashboardMatOn="MyMod\data\dashboard_lights_on.rvmat";      dashboardMatOff="MyMod\data\body.rvmat";
 ```
 
-The `_on` material is emissive (`emissive-led-materials.md`; `_shared/models/model-material-file.md`, "Glowing parts"); the `_off` one is the plain body material. Vanilla keeps the light selections at fixed indices (`vehicle-structural-parity.md`). Light switching faults are in `lights.md`.
+The `_on` material is emissive (`emissive-led-materials.md`; `_shared/models/model-material-file.md`, "Glowing parts"); the `_off` one is the plain body material. `CarScript` swaps them by index, not by name: `hiddenSelections[]` slots 0 to 8 must be front left, front right, brake left, brake right, reverse left, reverse right, tail left, tail right and dashboard (`SELECTION_ID_FRONT_LIGHT_L` onwards, `P:\scripts\4_world\entities\vehicles\carscript.c:174` to `:182`, registered with the material keys at `:230` to `:263`); the example's order above matches (`vehicle-structural-parity.md`). Light switching faults are in `lights.md`.
 
 ## Sounds
 
@@ -214,4 +214,4 @@ Unknown config keys are ignored without a log, so check a key exists before tuni
 - No `torqueMax`, `torqueRpm`, `powerMax`, `powerRpm` or `rpmMax` in the vanilla wheeled config; the engine is the `torqueCurve[]` table.
 - No `reflectors[]` (an Arma 3 lights feature) in the vanilla wheeled config.
 - `CentralDifferential` keys seen are `ratio` and `type` only.
-- Offroad Hatchback door slots are exactly `NivaDriverDoors`, `NivaCoDriverDoors`, `NivaHood` and `NivaTrunk` (`offroadhatchback.c:209` to `:219`; `NivaHood` also at `:146` and `:160`, `NivaTrunk` at `:189`). Slot lookups and sound set names are case sensitive; a mismatch returns nothing without a clear message.
+- Offroad Hatchback door slots are exactly `NivaDriverDoors`, `NivaCoDriverDoors`, `NivaHood` and `NivaTrunk` (`P:\scripts_world\entitiesehicles\inheritedcars\offroadhatchback.c:209` to `:219`; `NivaHood` also at `:146` and `:160`, `NivaTrunk` at `:189`). Slot lookups and sound set names are case sensitive; a mismatch returns nothing without a clear message.

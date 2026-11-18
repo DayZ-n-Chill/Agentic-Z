@@ -120,8 +120,8 @@ Reported, not checked; treat them as limits until a test shows otherwise.
 ## What vanilla ships
 
 - `.emat` files are plain text, and textures in them use the same `{` hex `}` plus path form. The pond material opens with `MatWaterPool {` (`P:\DZ\water_bliss\ponds\data\enoch_pond.emat:1`) and names its normal map as `NormalMap "{126A7892740C80E0}DZ/water_bliss/ponds/data/enoch_pond_nohq.edds"` (`:4`).
-- The stub pairing is vanilla too. Beside that file sits `enoch_pond.rvmat`, two lines long: `PixelShaderID="CalmWater"` and `VertexShaderID="CalmWater"` (`P:\DZ\water_bliss\ponds\data\enoch_pond.rvmat:1` and `:2`). Fourteen `.rvmat` files under `P:\DZ` use that pair, all water, and eight have an `.emat` of the same name beside them. The lake stub is the same two lines (`P:\DZ\water\ponds\data\water_lake.rvmat:1` and `:2`), with its `.emat` under `P:\graphics\materials\water\`.
-- `P:\DZ` holds 11 `.emat` files: eight `MatWaterPool` and three `MatOceanOld` (`P:\DZ\worlds\sakhal\data\sakhal_sea.emat:1`). None holds a `MatPBR` block.
+- The stub pairing is vanilla too. Beside that file sits `enoch_pond.rvmat`, two lines long: `PixelShaderID="CalmWater"` and `VertexShaderID="CalmWater"` (`P:\DZ\water_bliss\ponds\data\enoch_pond.rvmat:1` and `:2`). Seventeen `.rvmat` files under `P:\DZ` use that pair, all water surfaces plus `P:\DZ\data\data\antiwater.rvmat`, and nine have an `.emat` of the same name beside them. The lake stub is the same two lines (`P:\DZ\water\ponds\data\water_lake.rvmat:1` and `:2`), with its `.emat` under `P:\graphics\materials\water\`.
+- `P:\DZ` holds 13 `.emat` files: ten `MatWaterPool` and three `MatOceanOld` (`P:\DZ\worlds\sakhal\data\sakhal_sea.emat:1`). None holds a `MatPBR` block.
 - The Workbench data has a class with PBR in its name, `MatPBRBasic {`, with `AlphaTest` and `BlendMode` keys (`P:\system\wbdata\previewwindow\transparentmat.emat:1` to `:4`). No vanilla `.emat` uses a class named plain `MatPBR`, so the block shape above rests on the two example files alone.
 - Particle and postprocess `.emat` files use the same format for something else; the particle classes are in `/dayz-particles`.
 

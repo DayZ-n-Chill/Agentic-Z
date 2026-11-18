@@ -10,8 +10,8 @@ How to read and write fields by name, call methods by name, create a class from 
 | `EnScript.SetClassVar(inst, "name", index, value)` | Write a field by name. Returns 1 on success | `enscript.c:211` |
 | `g_Game.GameScript.CallFunction(inst, "Method", out ret, param)` | Call a method by name with one parameter | `enscript.c:146` |
 | `g_Game.GameScript.CallFunctionParams(inst, "Method", out ret, new Param1<string>(s))` | The same, with a `Param` holding the arguments | `enscript.c:147` |
-| `inst.Type()`, then `GetVariableCount()`, `GetVariableName(i)`, `GetVariableType(i)` | Walk the fields of a class | `P:\scripts\1_core\proto\enconvert.c:586` to `:588` |
-| `"MyClass".ToType()`, then `Spawn()` | Create an instance from a class name. Test the `typename` before `Spawn()` | `P:\scripts\1_core\proto\enstring.c:95`; `enconvert.c:565` |
+| `inst.Type()`, then `GetVariableCount()`, `GetVariableName(i)`, `GetVariableType(i)` | Walk the fields of a class | `P:\scripts\1_core\proto\enconvert.c:565` to `:567` |
+| `"MyClass".ToType()`, then `Spawn()` | Create an instance from a class name. Test the `typename` before `Spawn()` | `P:\scripts\1_core\proto\enstring.c:95`; `Spawn` at `P:\scripts\1_core\proto\enconvert.c:544` |
 | `ScriptCaller.Create(fn)`, then `Invoke()` | Keep a function reference to call later | `P:\scripts\2_gamelib\tools.c:160` and `:165` |
 | `DoOnce.Run(key, target, "Method", params)` | New in 1.30: run a method by name once per key for the whole process, with `HasRun(key)` and `Clear(key)`. Meant for one time setup, not for debouncing each frame | `P:\scripts\3_game\doonce.c:12`, `:30`, `:37` |
 
@@ -68,7 +68,7 @@ A high count from `GetAllocationsPerClass` in a tick path means the tick allocat
 | `ErrorEx(string err, ErrorExSeverity severity = ErrorExSeverity.ERROR)` | An error line prefixed with class and method. The enum is `INFO`, `WARNING`, `ERROR` (`:61`) | `endebug.c:83` |
 | `PrintFormat(fmt, ...)` | `Print` with `%1`, `%2` placeholders | `endebug.c:108` |
 | `TickCount(int prev)` | A cheap stopwatch: `int start = TickCount(0);`, later `TickCount(start)`. The vanilla comment says it returns "number of CPU ticks", so treat the value as relative | `P:\scripts\1_core\proto\ensystem.c:106` |
-| `GetCLIParam("name", out value)`, `IsCLIParam("name")` | Read a launch parameter; vanilla's comments there carry examples | `ensystem.c:125` and `:135` |
+| `GetCLIParam("name", out value)`, `IsCLIParam("name")` | Read a launch parameter; vanilla's comments there carry examples | `ensystem.c:128` and `:141`, with examples at `:125` and `:135` |
 | `GetScreenSize(out x, out y)`, `GetMousePos(out x, out y)` | Screen size and mouse position in pixels | `ensystem.c:331` and `:329` |
 | `GetWidgetUnderCursor()`, `GetFocus()` | The widget under the mouse and the focused widget | `P:\scripts\1_core\proto\enwidgets.c:184` and `:702` |
 

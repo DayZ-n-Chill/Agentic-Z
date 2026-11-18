@@ -4,7 +4,7 @@ Which script overrides a drivable vehicle needs and which traps hit it at run ti
 
 ## The driver's seated pose
 
-`Transport.GetAnimInstance()` picks the seated driver pose and returns a `VehicleAnimInstances` value (`P:\scripts\4_world\entities\vehicles\vehicleaniminstances.c:1`). The base method calls `Error("GetAnimInstance() not implemented")` (`P:\scripts\3_game\vehicles\transport.c:662` to `:670`), so every drivable vehicle must override it.
+`Transport.GetAnimInstance()` picks the seated driver pose and returns a `VehicleAnimInstances` value (`P:\scripts\4_world\entities\vehicles\vehicleaniminstances.c:1`). The base method calls `Error("GetAnimInstance() not implemented")` (`P:\scripts\3_game\vehicles\transport.c:665` to `:668`), so every drivable vehicle must override it.
 
 The values are `CIVVAN` 0, `V3S` 1, `SEDAN` 2, `HATCHBACK` 3, `BUS` 4, `S120` 5, `MULTICAR` 6, `GOLF` 7, `HMMWV` 8, `ZODIAC` 9, and in 1.30 also `MOTO1` 10 and `MOTO2` 11. Vanilla has no quad pose; a quad can reuse `V3S`.
 
@@ -25,7 +25,7 @@ This compiles without the other mod and picks the pose from the server's mod set
 
 ## Getting in from both sides
 
-The seat comes from the component the player looks at (`Transport.CrewPositionIndex(componentIndex)`, `P:\scripts\3_game\vehicles\transport.c:179`). The action is allowed by `CanReachSeatFromDoors(selection, fromPos)`, tried over several door selections (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:45` to `:68`). Each seat has one get in position (`pos_driver`) and a one sided get in animation.
+The seat comes from the component the player looks at (`Transport.CrewPositionIndex(componentIndex)`, `P:\scripts\3_game\vehicles\transport.c:182`). The action is allowed by `CanReachSeatFromDoors(selection, playerPosition, 1.0)`, tried over every door selection of the component in `ActionCondition` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:26` to `:69`, the loop at `:62` to `:66`). Each seat has one get in position (`pos_driver`) and a one sided get in animation.
 
 To enter from either side, give the seat two entry components or door selections that map to the same crew index; the action is then reachable from both sides. A truly mirrored mount still needs a mirrored get in animation.
 
@@ -33,17 +33,17 @@ Before you change a value that native code reads, list which arguments you have 
 
 ## Vital parts decide engine start
 
-A drivable vehicle decides which parts it needs through its `IsVital*()` methods, which all return `true` in the base classes: `IsVitalSparkPlug`, `IsVitalGlowPlug` and `IsVitalFuelTank` on `Transport` (`P:\scripts\3_game\vehicles\transport.c:404` to `:416`), and `IsVitalRadiator` on `CarScript` (`P:\scripts\4_world\entities\vehicles\carscript.c:2206`).
+A drivable vehicle decides which parts it needs through its `IsVital*()` methods, which all return `true` in the base classes: `IsVitalSparkPlug`, `IsVitalGlowPlug` and `IsVitalFuelTank` on `Transport` (`P:\scripts\3_game\vehicles\transport.c:407` to `:420`), and `IsVitalRadiator` on `CarScript` (`P:\scripts\4_world\entities\vehicles\carscript.c:2206`).
 
 | Check | What happens | Source |
 |---|---|---|
 | `IsVitalGlowPlug()` true with no glow plug | The start check sets `NO_IGNITER` and the engine doesn't start | `carscript.c:1776` to `:1788` (about `:2011` to `:2015` in 1.29) |
-| `IsVitalRadiator()` true with no radiator | The running engine damages itself every tick, with no coolant | `carscript.c:2206` |
+| `IsVitalRadiator()` true with no radiator | With coolant below half, the server takes `Engine` health every fluids tick, and the steam effect plays | `carscript.c:2206`; damage at `:913` to `:923`, steam at `:693` |
 | `IsVitalEngineBelt` | Declared and overridden by the trucks, but no vanilla script calls it in 1.30, so overriding it changes nothing | `carscript.c:2201` |
 | `IsVitalCarBattery`, `IsVitalTruckBattery` | `[Obsolete("1.30: use Transport.NeedElectricitySourceDevice")]` and never called, so overriding them does nothing | `carscript.c:2811` to `:2821` |
-| Battery | `NO_BATTERY` is set when `NeedElectricitySourceDevice()` returns true (default `true`) and `GetBattery()`, which casts `GetElectricitySourceDevice()` (default `null`), finds no charged battery | `P:\scripts\3_game\vehicles\transport.c:830` and `:826`; `carscript.c:1768` to `:1774`, `:2437` to `:2440` |
+| Battery | `NO_BATTERY` is set when `NeedElectricitySourceDevice()` returns true (default `true`) and `GetBattery()`, which casts `GetElectricitySourceDevice()` (default `null`), finds no charged battery | `P:\scripts\3_game\vehicles\transport.c:830` and `:835`; `carscript.c:1768` to `:1774`, `:2437` to `:2440` |
 
-For the battery, override `NeedElectricitySourceDevice()`, `GetElectricitySourceDevice()` and `GetElectricitySourceDeviceType()`, as `offroadhatchback.c:61` to `:76` does with `CarBattery`.
+For the battery, override `NeedElectricitySourceDevice()`, `GetElectricitySourceDevice()` and `GetElectricitySourceDeviceType()`, as `P:\scripts\4_world\entities\vehicles\inheritedcars\offroadhatchback.c:61` to `:76` does with `CarBattery`.
 
 A vehicle with a car battery and a spark plug, the common case, must override the checks for the parts it doesn't have, or it never starts. `OffroadHatchback` overrides `IsVitalGlowPlug()` to return `false` (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroadhatchback.c:394`), its only `IsVital*` override. A quad with no radiator also overrides `IsVitalRadiator()` to return `false`.
 
@@ -51,7 +51,7 @@ A vehicle with a car battery and a spark plug, the common case, must override th
 
 Measured in game on 1.29, on a helicopter whose parts are created by script:
 
-- `CheckVitalItem` stops a healthy engine on the owner. In 1.29, `CarScript.EOnPostSimulate` (1.29 `carscript.c:986` to `:997`) calls `CheckVitalItem` (1.29 `:2513` to `:2524`) when `IsServerOrOwner()`, every `CARS_FLUIDS_TICK` of 1 s. On the owner it reads the local copy of the inventory and calls `EngineStop()` if the vital item is missing. With parts created by script after the spawn, a late copy stops a healthy engine about 1 s after the driver sits down. Override it as `override protected void CheckVitalItem(bool isVital, int slotId)` and do nothing outside the server. In 1.30 the tick calls `CheckVitalItemCallback(..., this, "EngineStop")` on `Transport` instead (`P:\scripts\4_world\entities\vehicles\carscript.c:839` to `:854`; `P:\scripts\3_game\vehicles\transport.c:420` to `:438`), and `CheckVitalItem` is `[Obsolete]` and never called (`carscript.c:2951` to `:2974`). Override `CheckVitalItemCallback` the same way; it is `protected void CheckVitalItemCallback(bool isVital, int slotId, Object caller = null, string callbackMethodName = "", Param params = null)` (`transport.c:420`); this is read in the 1.30 source and not yet measured in game.
+- `CheckVitalItem` stops a healthy engine on the owner. In 1.29, `CarScript.EOnPostSimulate` (1.29 `carscript.c:986` to `:997`) calls `CheckVitalItem` (1.29 `:2513` to `:2524`) when `IsServerOrOwner()`, every `CARS_FLUIDS_TICK`, which is `VEHICLE_FLUIDS_TICK`, 1 s (`P:\scripts\3_game\constants.c:866` and `:877`). On the owner it reads the local copy of the inventory and calls `EngineStop()` if the vital item is missing. With parts created by script after the spawn, a late copy stops a healthy engine about 1 s after the driver sits down. Override it as `override protected void CheckVitalItem(bool isVital, int slotId)` and do nothing outside the server. In 1.30 the tick calls `CheckVitalItemCallback(..., this, "EngineStop")` on `Transport` instead (`P:\scripts\4_world\entities\vehicles\carscript.c:839` to `:854`; `P:\scripts\3_game\vehicles\transport.c:423` to `:438`), and `CheckVitalItem` is `[Obsolete]` and never called (`carscript.c:2951` to `:2974`). Override `CheckVitalItemCallback` the same way; it is `protected void CheckVitalItemCallback(bool isVital, int slotId, Object caller = null, string callbackMethodName = "", Param params = null)` (`transport.c:423`); this is read in the 1.30 source and not yet measured in game.
 - `SetPosition` on a client copy of a pawn with physics is not applied, not even for one frame. The former owner's copy stays at the last snapshot from before possession; a 10 cm move on the server had still not arrived after 25 s. Fix it on the server with an empty crew: `GetGame().RemoteObjectTreeDelete(obj)`, then `GetGame().RemoteObjectTreeCreate(obj)` (`P:\scripts\3_game\global\game.c:708` and `:710`; vanilla does it in `P:\scripts\3_game\systems\inventory\replaceitemwithnewlambdabase.c:117` to `:123`). Every client rebuilds its copy in the server's pose. The client's script instance is destroyed, and its `CallLater` calls die with it.
 - `GetHealth01(zone, type)` on `Object` (`P:\scripts\3_game\entities\object.c:1001`) can't be called on a client. It throws `Virtual Machine Exception ... cannot be called on client`, which isn't fatal, and returns 0.
 - The script log cuts every `Print` line at 255 characters, not only `DumpStackString(out string)` (`P:\scripts\1_core\proto\endebug.c:50`). Write diagnostics as several short lines that share an event tag, clip fields of variable length, and print stacks line by line.

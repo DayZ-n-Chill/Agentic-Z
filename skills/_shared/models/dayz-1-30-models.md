@@ -28,7 +28,7 @@ Since 1.30, `-cacheP3D=0/1` writes `.p3dcache` files next to `.p3d` files so lat
 
 ## `disableSimulation` on houses
 
-Since 1.30, house based entities take a `disableSimulation` config parameter that stops needless ticking on client and server (changelog only). No vanilla `config.cpp` sets `disableSimulation = 1;`, so the key is not checked on `P:\`. The script side is on `Entity` (`P:\scripts\3_game\entities\entity.c:1` to `:6`):
+Since 1.30, house based entities take a `disableSimulation` config parameter that stops needless ticking on client and server (the changelog states what it does). The Takistan houses and props set it on the `Land_` class, next to `model`: `Land_House_1M2: HouseNoDestruct` (`P:\DZ\structures_takistan\Residential\config.cpp:1297`) and the well `Land_WaterWell_Brick: HouseDestructible` (`P:\DZ\structures_takistan\Props\config.cpp:22`). No vanilla config outside `P:\DZ\structures_takistan\` sets it (37 classes there). The script side is on `Entity` (`P:\scripts\3_game\entities\entity.c:1` to `:6`):
 
 ```c
 class Entity extends ObjectTyped
@@ -39,7 +39,7 @@ class Entity extends ObjectTyped
 	proto native bool GetIsSimulationDisabled();
 ```
 
-Prefer the config parameter on static `House` classes that never need a tick; call `DisableSimulation(true)` only to switch it at run time.
+Prefer the config parameter, `disableSimulation=1;`, on static `House` classes that never need a tick, as the Takistan classes do; call `DisableSimulation(true)` only to switch it at run time.
 
 ## `liquid_source` on a well
 
@@ -53,9 +53,9 @@ The liquid actions on a well object (not a pond surface) look for the View Geome
 | Fill bottle | `actionfillbottlebase.c:62` |
 | Wet clothing | `actionwetclothinginhandswell.c:30` |
 
-The selection narrows the action; it is not required. `CCTLiquid` (`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctliquid.c:1`) accepts any component of a well when the model has no such selection. `GetActionComponentsForSelectionName` fills the list of selection components, and the aimed component is checked only when that list is not empty (`cctliquid.c:89` to `:92`). `ActionWashHandsWell` refuses only when the list is not empty and the aimed component is not in it (`actionwashhandswell.c:39`). No vanilla model under `P:\DZ\` stores the name (scan of all 8,256 `.p3d` files), so vanilla wells use the fallback.
+The selection narrows the action; it is not required. `CCTLiquid` (`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctliquid.c:1`) accepts any component of a well when the model has no such selection. `GetActionComponentsForSelectionName` fills the list of selection components, and the aimed component is checked only when that list is not empty (`cctliquid.c:89` to `:92`). `ActionWashHandsWell` refuses only when the list is not empty and the aimed component is not in it (`actionwashhandswell.c:39`). A scan of the 10,626 `.p3d` files under `P:\DZ\` finds the name in three Takistan models, all with a `Well` script class: the brick well `P:\DZ\structures_takistan\Props\misc\waterwell_brick.p3d` (`Land_WaterWell_Brick : Well`, `P:\scripts\4_world\entities\building\land_waterwell_brick.c:1`) and the two cistern truck wrecks `wreck_truck01_aban1_cistern.p3d` and `wreck_truck01_aban2_cistern.p3d` under `P:\DZ\structures_takistan\Wrecks\wheeled\` (`P:\scripts\4_world\entities\building\wrecks\wreck_truck01_aban1_cistern.c:1`). Every other vanilla well uses the fallback.
 
-Give a custom well or pump `liquid_source` on the View Geometry components of the spout when only that part should take wash, drink and fill; leave it out and the whole well takes them. A memory point of that name does nothing. Pond and sea surfaces go through `CCTLiquid` without it. The selection list of a well is in `building-selections.md`.
+Give a custom well or pump `liquid_source` on the View Geometry components of the spout when only that part should take wash, drink and fill, as the cistern wrecks do; leave it out and the whole well takes them. `CCTLiquid` reads the selection only when `IsWell()` is true, that is when `GetWaterSourceObjectType()` returns `EWaterSourceObjectType.WELL` (`P:\scripts\3_game\entities\object.c:664` to `:667`). Extending `Well` gives that and adds the well actions (`P:\scripts\4_world\entities\building\well.c:1`, `:8` to `:11` and `:23` to `:30`). A memory point of that name does nothing. Pond and sea surfaces go through `CCTLiquid` without it. The selection list of a well is in `building-selections.md`.
 
 ## Vegetation step sounds per object
 
@@ -69,23 +69,28 @@ protected void LoadCustomStepSounds()
 		return;
 ```
 
-The only vanilla `class VegetationSounds` is on the survivor, not in `CfgNonAIVehicles` (`P:\DZ\characters\data\config.cpp:348`):
+The Takistan cactus bushes use it. From `P:\DZ\plants_takistan\config.cpp:14` to `:28`:
 
 ```cpp
-class VegetationSounds
+class CfgNonAIVehicles
 {
-	class bush_walkErc
+	class BushHard;
+	class BushHard_b_OpuntiaFicusIndica_1s: BushHard
 	{
-		soundSet="bush_walkErc_SoundSet";
-		animEventIds[]={1,2,23,24,51,52};
-	};
+		class VegetationSounds
+		{
+			class bush_walkErc
+			{
+				soundSet="cactus_walkErc_SoundSet";
+				animEventIds[]={1,2,23,24,51,52};
+			};
 ```
 
-No shipped bush or tree shows the `CfgNonAIVehicles` form, so it is not checked on `P:\` beyond the loader. The sound sets are audio work for `dayz-audio-fx-specialist`.
+The class names and `animEventIds` match the survivor's generic set, its `VegetationSounds` class (`P:\DZ\characters\data\config.cpp:348`). The player looks up the plant's own sound for the step event first and falls back to the survivor's set when the plant has none (`P:\scripts\4_world\entities\dayzplayerimplement.c:3405` to `:3415`), so a mod plant only lists the events it wants to change. The sound sets are audio work for `dayz-audio-fx-specialist`.
 
 ## Animation graphs
 
-Since 1.30, player and infected animation graph files use the Enfusion config format (`.agr` to `.agf`), the 250 bone global limit is gone, and `skeletons.anim.xml` is unused except its `lod` attribute (changelog only). None of this touches object animation in `model.cfg` (`CfgSkeletons`, `CfgModels`; `_shared/animation/device-model-cfg.md`). Never convert an object's `model.cfg` to `.agf`. Character and infected graphs are in `_shared/animation/rtm-and-character-animation.md`.
+Since 1.30, player and infected animation graph files use the Enfusion config format (`.agr` to `.agf`), the 250 bone global limit is gone, and `skeletons.anim.xml` is unused except its `lod` attribute (the changelog states the bone limit and the `.xml` change). On `P:\` the graph sheets now come as Enfusion `AnimSrcGraphFile` files (`P:\DZ\anims\workspaces\infected\infected_main\combat.agf`), with the old `$AnimGraph` sheets of the same name still beside them; the main graph keeps its `.agr` name, as an `AnimSrcGraph` file, and config still points at it (`graphname`, `P:\DZ\characters\zombies\config.cpp:74`). None of this touches object animation in `model.cfg` (`CfgSkeletons`, `CfgModels`; `_shared/animation/device-model-cfg.md`). Never convert an object's `model.cfg` to `.agf`. Character and infected graphs are in `_shared/animation/rtm-and-character-animation.md`.
 
 ## Unpacked mods
 
@@ -93,7 +98,7 @@ Since 1.30, `-mod` may point at a plain folder, configs are read unpacked, and e
 
 ## Binarized models are ODOL v56
 
-With DayZ Tools for 1.30, Binarize writes mod models as ODOL v56, the version of the 1.30 vanilla models; earlier DayZ Tools wrote v55. The version is in bytes 4 to 7 of the file. Of the 8,256 vanilla models under `P:\DZ\`, 8,253 are v56 (for example `P:\DZ\gear\camping\wooden_case.p3d`) and three are still v54: `P:\DZ\vehicles\wheeled\offroad_02\proxy\offroad_02_body.p3d` and the two `wreck_offroad02_medic_tk_proxy` models under `P:\DZ\structures\wrecks\vehicles\proxy\`.
+With DayZ Tools for 1.30, Binarize writes mod models as ODOL v56, the version of the 1.30 vanilla models; earlier DayZ Tools wrote v55. The version is in bytes 4 to 7 of the file. Of the 10,626 vanilla models under `P:\DZ\`, 10,623 are v56 (for example `P:\DZ\gear\camping\wooden_case.p3d`) and three are still v54: `P:\DZ\vehicles\wheeled\offroad_02\proxy\offroad_02_body.p3d` and the two `wreck_offroad02_medic_tk_proxy` models under `P:\DZ\structures\wrecks\vehicles\proxy\`.
 
 Read the version from the header before you open a model with an ODOL reader: a v54 reader fails on vanilla v56 with `ValueError: subsection not found`, and a v55 reader fails on your own v56 models.
 

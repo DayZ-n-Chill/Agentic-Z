@@ -9,7 +9,7 @@ What to check in `config.cpp` and `model.cfg` before packing: syntax, `CfgPatche
 | Brace balance | Count `{` and `}` to find an unclosed class. |
 | Semicolons | Every property and array ends with `;`, and every class closes with `};`. |
 | `CfgPatches` | Exists, with at least one patch class. |
-| Patch members | Vanilla patches carry `units[]`, `weapons[]`, `requiredVersion` and `requiredAddons[]` (`CfgPatches` at `P:\DZ\gear\tools\config.cpp:1`), but the engine accepts a patch without them: vanilla `DZ_data_aiconfigs` has an empty body (`P:\DZ\data\aiconfigs\config.cpp:3`). `/dayz-lint` warns on a missing `units[]` or `weapons[]`, fails on a missing `requiredAddons[]` (without it the load order after the vanilla classes the mod changes is not guaranteed), and does not check `requiredVersion`. |
+| Patch members | Vanilla patches carry `units[]`, `weapons[]`, `requiredVersion` and `requiredAddons[]` (`CfgPatches` at `P:\DZ\gear\tools\config.cpp:1`, the four members at `:5` to `:8`), but the engine accepts a patch without them: vanilla `DZ_data_aiconfigs` has an empty body (`P:\DZ\data\aiconfigs\config.cpp:3`). `/dayz-lint` warns on a missing `units[]` or `weapons[]`, fails on a missing `requiredAddons[]` (without it the load order after the vanilla classes the mod changes is not guaranteed), and does not check `requiredVersion`. |
 | Inheritance | The parent class exists, such as `Inventory_Base`, `Container_Base` or `Land_Stone_*`. Warn when the parent is not a known DayZ base. |
 | `AnimationSources` | Every source defined here is used in `model.cfg`, when there is one. |
 | Duplicate class names | The same class is not defined twice. |

@@ -73,7 +73,7 @@ Match the request and read that pack or skill first; read more than one when the
 1. Boot it unchanged on a server of the target build and read `script_*.log` for `(E)` and `(W)` lines. The first error matters; the rest are often a cascade.
 2. Walk the 1.30 files of every pack the mod touches (each `dayz-1-30-*.md`) and `dayz-1-30-server-measured.md`. Quick greps over the mod's scripts: `ProcessVariables`, `OnCEUpdate`, `m_ElapsedSinceLastUpdate`, `CreateFrontLight`, `ToggleHeadlights`, `TakeEntityToCargo`, `TakeEntityAsAttachment`, `CombinationLock`, `GetSupportProvided`, `Is3rdPersonDisabled`, `CCTWaterSurface`, raw `ERPCs` integers, `files[]` with backslashes, `Workbench.` outside `#ifdef WORKBENCH`, `FindFileEx`, `GetMissionFolderPath`, `$storage:` before the first `OnUpdate`.
 3. Report each finding with `file:line` and its replacement, then fix, rebuild and boot again until the log is clean and every script module the mod adds files to counts above the vanilla baseline.
-4. Back up `storage_1` before a server's first boot on a new release; older servers cannot read it back. The storage version is `GAME_STORAGE_VERSION` (`P:\scripts\3_game\global\game.c:5`).
+4. Back up `storage_1` before a server's first boot on a new release; older servers cannot read it back. The storage version is `GAME_STORAGE_VERSION`, 144 on DayZ 1.30 (`P:\scripts\3_game\global\game.c:5`).
 
 `/dayz-upgrade-guard` snapshots the vanilla classes before and after a DayZ update and lists the mod classes whose vanilla parents changed; run it alongside these steps.
 

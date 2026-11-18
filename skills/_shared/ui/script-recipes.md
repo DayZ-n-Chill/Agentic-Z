@@ -34,7 +34,7 @@ bool MyMod_ConnectWidgets(Class instance, Widget layoutRoot, TStringArray ignore
 }
 ```
 
-It uses reflection: `GetVariableCount`, `GetVariableName` and `GetVariableType` on `typename` (`P:\scripts\1_core\proto\enconvert.c:586` to `:588`) and `EnScript.SetClassVar` (`P:\scripts\1_core\proto\enscript.c:211`). `renames` is a flat list of pairs, a member name then the widget name. Because member and widget names must match, pass a rename list to keep the `m_` prefix on your members. Dabs Framework does the same job with `LoadWidgetsAsVariables` (`dabs-mvc-internals.md`).
+It uses reflection: `GetVariableCount`, `GetVariableName` and `GetVariableType` on `typename` (`P:\scripts\1_core\proto\enconvert.c:565` to `:567`) and `EnScript.SetClassVar` (`P:\scripts\1_core\proto\enscript.c:211`). `renames` is a flat list of pairs, a member name then the widget name. Because member and widget names must match, pass a rename list to keep the `m_` prefix on your members. Dabs Framework does the same job with `LoadWidgetsAsVariables` (`dabs-mvc-internals.md`).
 
 ## Event signatures
 
@@ -83,7 +83,7 @@ hic.SetDisabled(true);                              // blocks player actions, ke
 
 `ChangeGameFocus(int add, int input_device = -1)` is at `P:\scripts\3_game\tools\input.c:20`, `ShowUICursor(bool visible)` at `P:\scripts\3_game\tools\uimanager.c:244` and `HumanInputController.SetDisabled(bool pState)` at `P:\scripts\3_game\human.c:22`.
 
-ESC: `LocalPress` on `UAUIBack` is reported not to fire while `ChangeGameFocus` is active (not checked in game). Catch the key in `MissionGameplay.OnKeyPress(int key)` (`P:\scripts\5_mission\mission\missiongameplay.c:742`) and compare with `KeyCode.KC_ESCAPE` (`P:\scripts\1_core\proto\ensystem.c:158`), by name, not by number.
+ESC: inside a `UIScriptedMenu`, vanilla polls `GetUApi().GetInputByID(UAUIBack).LocalPress()` in `Update` and calls `Close()` (`P:\scripts\5_mission\gui\notemenu.c:130` to `:137`), while the menu's `LockControls` holds game focus, so the input arrives there. Outside a menu, `LocalPress` on `UAUIBack` is reported not to fire while `ChangeGameFocus` is active (not checked in game). There, catch the key in `MissionGameplay.OnKeyPress(int key)` (`P:\scripts\5_mission\mission\missiongameplay.c:742`) and compare with `KeyCode.KC_ESCAPE` (`P:\scripts\1_core\proto\ensystem.c:158`), by name, not by number.
 
 The group mod also blocks input at mission level:
 
@@ -96,7 +96,7 @@ mission.RemoveActiveInputRestriction(EInputRestrictors.INVENTORY);
 mission.RefreshExcludes();
 ```
 
-These are declared on `Mission` (`P:\scripts\3_game\gameplay.c:795` to `:802`); `PlayerControlEnable` there carries `//!deprecated` (`:795`). `EInputRestrictors` (`INVENTORY`, `MAP`, `SURRENDER_TRANSITION`) is at `P:\scripts\3_game\constants.c:116` to `:121`. The exclude names are the `<exclude>` groups of `bin/specific.xml`.
+These are declared on `Mission` (`P:\scripts\3_game\gameplay.c:798` to `:802`); `PlayerControlEnable` and `PlayerControlDisable` just above carry `//!deprecated` (`:795` and `:796`). `EInputRestrictors` (`INVENTORY`, `MAP`, `SURRENDER_TRANSITION`) is at `P:\scripts\3_game\constants.c:116` to `:121`. The exclude names are the `<exclude>` groups of `bin/specific.xml`.
 
 `UIManager` calls a menu often needs: `IsCursorVisible()` (`P:\scripts\3_game\tools\uimanager.c:48`), `GetMenu()` (`:59`) and `CloseAll()` (`:78`).
 

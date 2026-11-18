@@ -81,11 +81,12 @@ Fill in this table before writing any feature that involves entity state, action
 
 Rules it must meet:
 
-- Sync variable types are `Bool`, `BoolSignal`, `Int`, `Float` and `Object` only (`RegisterNetSyncVariableBool` starts the list at `P:\scripts\3_game\entities\entityai.c:2832`). There is no `RegisterNetSyncVariableString`. Pattern file: `skills/_shared/enscript/patterns/netsync.md`.
+- Sync variable types are `Bool`, `BoolSignal`, `Int`, `Float` and `Object` only (`RegisterNetSyncVariableBool` to `RegisterNetSyncVariableObject`, `P:\scripts\3_game\entities\entityai.c:2832` to `:2869`). There is no `RegisterNetSyncVariableString`. `Int` takes an optional minimum and maximum, `Float` a minimum, maximum and precision (`:2850` and `:2861`). Pattern file: `skills/_shared/enscript/patterns/netsync.md`.
+- A changed sync variable reaches clients only after the server calls `SetSynchDirty()`, which works only on the server in multiplayer (`entityai.c:3064`). Clients react in `OnVariablesSynchronized()` (`:3069`); override it and call `super`.
 - Client and server register the same variables in the same order. A mismatch corrupts all synced data with no error (E17; not checked on `P:\`, because the stream layout is native).
 - `ActionCondition()` runs on both sides: on the client to list the action, and on the server as the start check (`skills/_shared/conventions/scripts.md`, "What the server must validate"). So it may read only data both sides have; a client-only cache passes the menu and the server then rejects the start silently.
-- Since 1.30 the widget can still show an action whose `CanBeStarted()` is false, and the client then never calls `ActionStart` (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:336`). Info actions return false on purpose (E22).
-- `OnStart`, `OnFinish` and `OnUpdate` with the `Server` suffix run on the server. Use server-only data there.
+- Since 1.30 the widget can still show an action whose `CanBeStarted()` is false, and the client then never calls `ActionStart` (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:336` and `:337`). Info actions such as `ActionPartInfo` return false on purpose (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionpartinfo.c:18` to `:21`; E22).
+- The hooks with the `Server` suffix run on the server: `OnStartServer`, `OnUpdateServer` and `OnEndServer` (`P:\scripts\4_world\classes\useractionscomponent\actionbase.c:1391`, `:1372` and `:1409`), and `OnFinishProgressServer` on continuous actions (`actions\actioncontinuousbase.c:289`). Use server-only data there.
 - A string needed on the client: fill a client cache with a `ScriptRPC`, or encode it as an integer and send it through a sync variable. For data read inside `ActionCondition`, the sync variable is the only safe route, because both sides must read it (E11).
 - If you are not sure the data is on the client, treat it as not there.
 

@@ -54,7 +54,7 @@ A dressable static object, such as a mannequin or an armour rack, copies that pa
 
 ## Crew proxies
 
-A seat is a proxy too. Vanilla has two crew proxy classes, `ProxyCrew_Driver` at `P:\DZ\vehicles\wheeled\config.cpp:23890` and `ProxyCrew_Cargo` at `:23895`. `P:\DZ\vehicles\wheeled\offroadhatchback\offroadhatchback.p3d` stores `proxy:\dz\vehicles\wheeled\proxies\crew_driver.001` once and `crew_cargo.001` to `.003` for its other three seats (byte scan); `P:\DZ\vehicles\singletrack\motorbike_02\motorbike_02.p3d` stores `crew_driver.001` and `.002`. Config names a seat's proxy with `proxyPos`, for example `proxyPos="crewDriver"` (`P:\DZ\vehicles\wheeled\config.cpp:270`), and script reads the seat transform with `CrewTransform` (`P:\scripts\3_game\vehicles\transport.c:200`). The config and script side of seats is in `_shared/vehicles/attachments-and-crew.md`.
+A seat is a proxy too. Vanilla has two crew proxy classes, `ProxyCrew_Driver` at `P:\DZ\vehicles\wheeled\config.cpp:23890` and `ProxyCrew_Cargo` at `:23895`. `P:\DZ\vehicles\wheeled\offroadhatchback\offroadhatchback.p3d` stores `proxy:\dz\vehicles\wheeled\proxies\crew_driver.001` once and `crew_cargo.001` to `.003` for its other three seats (byte scan); `P:\DZ\vehicles\singletrack\motorbike_02\motorbike_02.p3d` stores `crew_driver.001` and `.002`. Config names a seat's proxy with `proxyPos`, for example `proxyPos="crewDriver"` (`P:\DZ\vehicles\wheeled\config.cpp:270`), and script reads the seat transform with `CrewTransform` (`P:\scripts\3_game\vehicles\transport.c:203`). The config and script side of seats is in `_shared/vehicles/attachments-and-crew.md`.
 
 Measured in game on a mod quad, not checked on `P:\`:
 
@@ -92,7 +92,7 @@ From the same tests:
 
 ## Weapon attachment proxies
 
-A weapon's proxies place its attachments the same way. `P:\DZ\weapons\pistols\fnx45\fnp45.p3d` stores `proxy:\dz\weapons\attachments\magazine\magazine_fnp45.001`, `proxy:\dz\weapons\attachments\optics\optic_fnp45_mrds.001` and `proxy:dz\weapons\attachments\muzzle\suppressor_45acp.001` (byte scan; the last one is stored without the leading backslash). Each attachment model has its config class: `ProxySuppressor_45ACP` at `P:\DZ\weapons\attachments\muzzle\config.cpp:1750`, `ProxyOptic_FNP45_MRDS` at `P:\DZ\weapons\attachments\optics\config.cpp:3122`, `ProxyMagazine_FNP45` at `P:\DZ\weapons\attachments\magazine\config.cpp:9383`. Slots and config are in `_shared/weapons/attachments.md`.
+A weapon's proxies place its attachments the same way. `P:\DZ\weapons\pistols\fnx45\fnp45.p3d` stores `proxy:\dz\weapons\attachments\magazine\magazine_fnp45.001`, `proxy:\dz\weapons\attachments\optics\optic_fnp45_mrds.001` and `proxy:dz\weapons\attachments\muzzle\suppressor_45acp.001` (byte scan; the suppressor, and a second copy of the optic, are stored without the leading backslash, so the engine accepts both forms). Each attachment model has its config class: `ProxySuppressor_45ACP` at `P:\DZ\weapons\attachments\muzzle\config.cpp:1750`, `ProxyOptic_FNP45_MRDS` at `P:\DZ\weapons\attachments\optics\config.cpp:3122`, `ProxyMagazine_FNP45` at `P:\DZ\weapons\attachments\magazine\config.cpp:9383`. Slots and config are in `_shared/weapons/attachments.md`.
 
 Measured in game on a mod weapon with a compensator, a rail mount and an optic, not checked on `P:\`:
 

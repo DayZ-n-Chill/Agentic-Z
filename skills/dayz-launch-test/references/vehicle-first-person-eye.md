@@ -6,7 +6,7 @@ The camera binding is read in the vanilla scripts. The eye positions were measur
 
 ## How the camera is placed
 
-The vehicle first-person camera, `DayZPlayerCamera1stPersonVehicle` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:4`), keeps its parent's placement. It is bound by position to the character's `Head` bone (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercamera1stperson.c:15`) with an offset of `"0.04 0.04 0"` (`:21`, bound at `:53` and `:54`). The binding fields `m_iDirectBone` and `m_iDirectBoneMode` are at `P:\scripts\3_game\dayzplayer.c:23` and `:24`. The vehicle import notes rely on this (`skills/_shared/vehicles/rip-wheels-and-doors.md`).
+The vehicle first-person camera, `DayZPlayerCamera1stPersonVehicle` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:4`), keeps its parent's placement: its `OnUpdate` calls `super`, then only sets `m_fUseHeading` to 0 and updates every frame when physics extrapolation is on (`:8` to `:11`). It is bound by position to the character's `Head` bone (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercamera1stperson.c:15`) with an offset of `"0.04 0.04 0"` (`:21`, bound at `:53` and `:54`). The binding fields `m_iDirectBone` and `m_iDirectBoneMode` are at `P:\scripts\3_game\dayzplayer.c:23` and `:24`. The vehicle import notes rely on this (`skills/_shared/vehicles/rip-wheels-and-doors.md`).
 
 ## The eye moves with the head
 

@@ -8,7 +8,7 @@ Experimental, like the retarget itself: the matching engine in `bone_matching.py
 
 Mixamo names its bones in one fixed style (`mixamorig:Hips`, `mixamorig:LeftArm`); other rigs use `LeftArm`, `left_arm`, `arm.L` and more. A wrong entry gives twisted limbs, flipped rotations or a limb driven by the wrong bone.
 
-The DayZ survivor skeleton uses the same PascalCase style as Mixamo (`Pelvis` at `P:\DZ\anims\cfg\skeletons.anim.xml:120`, `LeftArm` at `:130`, `LeftForeArm` at `:141`), but its root is `Pelvis`, not `Hips`, and it has a twist bone at every limb joint (`LeftArmRoll` at `:140`). Mixamo has no twist bones, so those stay unmapped; see `player-skeleton.md` for what that does to the hands.
+The DayZ survivor skeleton uses the same PascalCase style as Mixamo (`Pelvis` at `P:\DZ\anims\cfg\skeletons.anim.xml:120`, `LeftArm` at `:130`, `LeftForeArm` at `:141`), but the bone Mixamo calls `Hips` is `Pelvis`, the list starts with helper bones such as `Scene_Root` and `EntityPosition` that Mixamo lacks (`:112`, `:113`), and it has a twist bone at every limb joint (`LeftArmRoll` at `:140`). Mixamo has no twist bones, so those stay unmapped; see `player-skeleton.md` for what that does to the hands.
 
 ## Three ways to get a map
 

@@ -23,7 +23,7 @@ Everything a player needs beyond auto hover is yours to write in the mod's own c
 | Need | Where it comes from |
 |---|---|
 | Seats and get in | `class Crew` in config as for cars (`attachments-and-crew.md`), plus `GetAnimInstance`, `GetSeatAnimationType`, `CrewCanGetThrough` and `CanReachSeatFromDoors` overrides. `Transport` errors or returns `false` without them (`class-hierarchy.md`). `VehicleAnimInstances` has no helicopter entry (`P:\scripts\4_world\entities\vehicles\vehicleaniminstances.c:1`); reuse an existing one. |
-| Camera | `Get3rdPersonCameraType()` errors in `Transport` (`P:\scripts\3_game\vehicles\transport.c:698`) and `HelicopterScript` does not override it. Return `DayZPlayerCameras.DAYZCAMERA_3RD_VEHICLE` as `CarScript` does (`carscript.c:2232`). |
+| Camera | `Get3rdPersonCameraType()` errors in `Transport` (`P:\scripts\3_game\vehicles\transport.c:701` to `:704`) and `HelicopterScript` does not override it. Return `DayZPlayerCameras.DAYZCAMERA_3RD_VEHICLE` as `CarScript` does (`carscript.c:2232`). |
 | Engine rules | Override `OnBeforeEngineStart` for fuel, battery or parts checks. `HelicopterScript` has no fluid or part logic. |
 | Flight input | Script calls `AutohoverOn()` and `AutohoverOff()`; any control beyond the native simulation is new script, which goes to dayz-script-specialist through the config lead. |
 | Actions | `HelicopterScript` registers no actions. Add `ActionGetInTransport` the way `CarScript.SetActions` does (`carscript.c:2313` to `:2322`, get in at `:2317`). Get out needs no registration on the vehicle: `ActionGetOutTransport` is registered once in `PlayerBase.SetActions` (`playerbase.c:1728`). |
@@ -73,7 +73,7 @@ Unverified until tested in game: that the `helicopter` simulation on this config
 
 ## The second route: CarScript as the base
 
-The native route above is unproven in game. The script side of it is empty in 1.29 and in 1.30: the `HelicopterScript` constructor sets only the `POSTSIMULATE` mask (`P:\scripts\4_world\entities\vehicles\helicopterscript.c:8`) and its `EOnPostSimulate` and engine hooks have no body, so whatever flies would have to come from the native `helicopter` simulation, which nothing in vanilla exercises.
+The native route above is unproven in game. The script side of it is empty: the `HelicopterScript` constructor sets only the `POSTSIMULATE` mask (`P:\scripts\4_world\entities\vehicles\helicopterscript.c:8`) and its `EOnPostSimulate` and engine hooks have no body, so whatever flies would have to come from the native `helicopter` simulation, which nothing in vanilla exercises.
 
 Every shipped community helicopter examined takes another route: it inherits `CarScript` (config parent `class CarScript: Car`, `P:\DZ\vehicles\wheeled\config.cpp:236`), keeps a complete ground `SimulationModule` with wheels, axles and a gearbox as the taxi fallback, and flies entirely in script. Planes do the same. The facts in the rest of this file are third-party mod behaviour, not vanilla, and are not checked on `P:\`.
 

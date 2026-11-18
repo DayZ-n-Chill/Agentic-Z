@@ -53,7 +53,7 @@ Both methods still exist. `GetNoiseReductionByWeather()` is `[Obsolete("Use Weat
 
 ## Vector, array and enum helpers
 
-`vector.Cross(vector v)` is in the 1.30 experimental and early builds (`scripts\1_core\proto\enconvert.c:239` to `:246` of the earlier 1.30 extraction on `P:\`); the patched 1.30 build now on `P:\` has no `Cross` in `P:\scripts\1_core\proto\enconvert.c`. No script of the 1.30 stable release declares it, and 1.29 never had it, so a call has nothing to bind to there. Write its body inline:
+`vector.Cross(vector v)` was declared in early 1.30 builds (reported; those builds are not on `P:\`). The 1.30 build on `P:\` has no `Cross` in `class vector` (`P:\scripts\1_core\proto\enconvert.c`), and 1.29 never had it, so a call has nothing to bind to. Write its body inline:
 
 ```c
 float x = a[1] * b[2] - a[2] * b[1];
@@ -63,7 +63,7 @@ vector cross = Vector(x, y, z);
 ```
 
 - `array<T> Slice(int from, int to)` (`P:\scripts\1_core\proto\enscript.c:720`) includes `to`: it loops while `i <= to && i < Count()`.
-- `typename.EnumFlagsToString` is at `enconvert.c:614`; `EnumTools.EnumFlagsToString` (`:704`) forwards to it.
+- `typename.EnumFlagsToString` is at `P:\scripts\1_core\proto\enconvert.c:593`; `EnumTools.EnumFlagsToString` (`:683` to `:685`) forwards to it.
 
 ## Run once, render frames and simulation
 

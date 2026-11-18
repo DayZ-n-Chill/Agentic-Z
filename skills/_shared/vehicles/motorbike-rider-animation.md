@@ -32,7 +32,7 @@ rot[0] = -lagYaw * CONST_YAW_LAG_REVERSE;
 
 ## The `vehicles.agf` graph
 
-The vehicle graph ships as text in `P:\DZ\anims\workspaces\player\player_main\vehicles.agf` (3,655 lines). The DayZ 1.29 data had no `.agf`; its graphs were text `.agr` files in the older `$AnimGraph 7` format, declared `VehicleType` with a range up to 10 and had no `Jawa_*` column, so the motorbike rider is new in 1.30. The 1.29 files are not on `P:\`, so that comparison is not checked there.
+The vehicle graph ships as text in `P:\DZ\anims\workspaces\player\player_main\vehicles.agf` (3,655 lines). The motorbike branch and the `Jawa_*` rider sets are reported as new in 1.30; `P:\` holds 1.30 only, so that is not checked there.
 
 The node that picks the bike branch (`vehicles.agf:1564` to `:1576`):
 

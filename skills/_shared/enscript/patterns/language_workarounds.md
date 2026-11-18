@@ -23,17 +23,17 @@ A "not supported" claim below means no vanilla script under `P:\scripts\` uses t
 No vanilla script uses `cond ? a : b`; vanilla writes an `if`/`else`.
 
 ```c
-// ✗ Does NOT compile
+// Wrong: does not compile
 string label = count > 0 ? "items" : "empty";
 
-// ✓ Use if/else
+// Right: use if/else
 string label;
 if (count > 0)
     label = "items";
 else
     label = "empty";
 
-// ✓ Or a helper function:
+// Right: or a helper function
 string StringIf(bool cond, string a, string b)
 {
     if (cond) return a;
@@ -46,7 +46,7 @@ string label = StringIf(count > 0, "items", "empty");
 
 ## `auto` infers a local's type
 
-`auto` declares a local whose type comes from the value. Vanilla uses it, for example `auto vehicle = CarScript.Cast(vehCommand.GetTransport());` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\vehicles\actionstartengine.c:32`). The owning qualifier is `autoptr`, a different keyword (`references/language_memory.md`).
+`auto` declares a local whose type comes from the value. Vanilla uses it, for example `auto vehicle = CarScript.Cast(vehCommand.GetTransport());` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\vehicles\actionstartengine.c:32`). The owning qualifier is `autoptr`, a different keyword (`../references/language_memory.md`).
 
 ```c
 // Legal, as in vanilla
@@ -65,13 +65,13 @@ string s = "hello";
 There are no template strings. Vanilla builds text with `string.Format`, whose placeholders start at `%1` and take up to nine values (`static proto string Format(string fmt, void param1 = NULL, ...)`, `P:\scripts\1_core\proto\enstring.c:526`).
 
 ```c
-// ✗ Template strings do not exist
+// Wrong: template strings do not exist
 string msg = $"Player {name} has {hp} HP";
 
-// ✓ string.Format with %N placeholders (1-indexed)
+// Right: string.Format with %N placeholders (1-indexed)
 string msg = string.Format("Player %1 has %2 HP", name, hp);
 
-// ✓ Concatenation (verbose but works)
+// Right: concatenation (longer, but it works)
 string msg2 = "Player " + name + " has " + hp.ToString() + " HP";
 ```
 
@@ -82,13 +82,13 @@ string msg2 = "Player " + name + " has " + hp.ToString() + " HP";
 There are no anonymous functions. Pass a named method instead: `ScriptCaller` holds one (`static proto ScriptCaller Create(func fn)`, `P:\scripts\2_gamelib\tools.c:165`, used at :195) and `ScriptInvoker` holds many (`Insert`, `Remove` and `Invoke`, `tools.c:115-123`).
 
 ```c
-// ✗ Anonymous functions / closures do not exist
+// Wrong: anonymous functions and closures do not exist
 
-// ✓ ScriptCaller for a single function pointer
+// Right: ScriptCaller for a single function pointer
 ScriptCaller caller = ScriptCaller.Create(MyTopLevelFunction);
 caller.Invoke(sender, eventArgs);
 
-// ✓ ScriptInvoker for a multicast delegate (many listeners)
+// Right: ScriptInvoker for a multicast delegate (many listeners)
 ref ScriptInvoker m_OnDeath = new ScriptInvoker();
 m_OnDeath.Insert(this.HandleDeath);     // subscribe
 m_OnDeath.Invoke(player, cause);        // fire all listeners
@@ -99,16 +99,16 @@ m_OnDeath.Remove(this.HandleDeath);     // unsubscribe
 
 ## No `null` for Primitives
 
-`int`, `float`, `bool`, `string` and `vector` are value types (`references/language_types.md`, "Built in types"), so they are never `null`.
+`int`, `float`, `bool`, `string` and `vector` are value types (`../references/language_types.md`, "Built in types"), so they are never `null`.
 
 ```c
-// int, float, bool, string are value types: they are NEVER null
+// int, float, bool, string are value types: they are never null
 // Default values: int=0, float=0.0, bool=false, string=""
 
-// ✗ This check is meaningless at best, compile error at worst
+// Wrong: this check means nothing at best and fails to compile at worst
 if (myInt == null) { }
 
-// ✓ Check objects only
+// Right: check objects only
 if (!myObject) { }          // preferred
 if (myObject == null) { }   // also valid for class instances
 ```
@@ -117,16 +117,16 @@ if (myObject == null) { }   // also valid for class instances
 
 ## Overloading works, but keep it simple
 
-Methods can share a name when their parameters differ. Vanilla does it: `Hud.ShowWalkieTalkie(bool show)` and `ShowWalkieTalkie(int fadeOutSeconds)` (`P:\scripts\3_game\gameplay.c:652-653`), and `Effect.SetParent(Object parent_obj, int pivot)` and `SetParent(Object parent_obj)` (`P:\scripts\3_game\effect.c:399` and `:411`). Default parameter values work too (`references/language_types.md`, "Parameters").
+Methods can share a name when their parameters differ. Vanilla does it: `Hud.ShowWalkieTalkie(bool show)` and `ShowWalkieTalkie(int fadeOutSeconds)` (`P:\scripts\3_game\gameplay.c:652-653`), and `Effect.SetParent(Object parent_obj, int pivot)` and `SetParent(Object parent_obj)` (`P:\scripts\3_game\effect.c:399` and `:411`). Default parameter values work too (`../references/language_types.md`, "Parameters").
 
 Overloads whose arguments convert into each other (such as `int` and `bool`, or `int` and `float`) make the call site hard to read. Prefer distinct names in mod code:
 
 ```c
-// ✓ Clear at the call site
+// Right: clear at the call site
 void DoThingInt(int x) { }
 void DoThingStr(string s) { }
 
-// ✓ Or one method with a default parameter
+// Right: or one method with a default parameter
 void DoThing(int x, bool verbose = false) { }
 ```
 
@@ -137,7 +137,7 @@ void DoThing(int x, bool verbose = false) { }
 There is no `try`/`catch`; no vanilla script uses either. Vanilla signals failure with a `bool` return and an `out` value, as `JsonFileLoader<T>.LoadFile(string filename, out T data, out string errorMessage)` does (`P:\scripts\3_game\tools\jsonfileloader.c:7`).
 
 ```c
-// ✓ Return bool / null for error signaling
+// Right: return a bool or null to signal an error
 bool TryParse(string input, out int result)
 {
     result = input.ToInt();   // enstring.c:20
@@ -162,13 +162,13 @@ if (!TryParse(rawInput, val))
 `foreach` gives the index (or a map's key) as an optional first variable: `foreach (int i, string s : tokens)` (`P:\scripts\1_core\proto\enstring.c:427`) and `foreach (int id, Effect eff : m_EffectsMap)` (`P:\scripts\3_game\effectmanager.c:556`). No manual counter is needed.
 
 ```c
-// ✓ Index and value
+// Right: index and value
 foreach (int i, int val : arr)
 {
     Print(string.Format("[%1] = %2", i, val));
 }
 
-// ✓ Or an indexed for-loop
+// Right: or an indexed for loop
 for (int j = 0; j < arr.Count(); j++)
 {
     int v = arr[j];

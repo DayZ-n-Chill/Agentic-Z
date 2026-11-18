@@ -46,7 +46,7 @@ mode blend
 "src alpha" 1
 ```
 
-Without them the image draws as an opaque black rectangle with the art inside it (an A/B test in game). Vanilla's `ProjectedCrossHair` declares both (`P:\gui\layouts\day_z_hud.layout:2263` and `:2264`). A strip its parent must clip needs `clipchildren 1` on the parent (`P:\gui\layouts\day_z_hud.layout:555`); there is no `clipping` attribute.
+Without them the image draws as an opaque black rectangle with the art inside it (an A/B test in game). Vanilla's `ProjectedCrossHair` declares both (`P:\gui\layouts\day_z_hud.layout:2392` and `:2393`). A strip its parent must clip needs `clipchildren 1` on the parent, as on the panel `BarHider_PBRadial1` (`P:\gui\layouts\day_z_hud.layout:2281`); there is no `clipping` attribute.
 
 ## Mockups: calibrate them, and never edit a layout from one
 

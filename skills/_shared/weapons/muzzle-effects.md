@@ -22,9 +22,10 @@ All read in `weaponparticles.c`:
 
 | Key | Meaning | Line |
 |---|---|---|
-| `overrideParticle` | Particle name as registered in `ParticleList`, such as `weapon_shot_cz527_01` (`P:\scripts\3_game\particles\particlelist.c:188`). Looked up with `ParticleList.GetParticleIDByName`. Required; a missing value logs an error. | `:116` to `:127` |
+| `overrideParticle` | Particle name as registered in `ParticleList`, such as `weapon_shot_cz527_01` (`P:\scripts\3_game\particles\particlelist.c:188`). Looked up with `ParticleList.GetParticleIDByName`. Required; a missing value logs an `INFO` level error and the entry gets no particle. | `:116` to `:127` |
 | `overridePoint` | Memory point to spawn at. Defaults to `Usti hlavne`, the muzzle. | `:109` to `:113` |
 | `overrideDirectionPoint` | Memory point the effect points toward. | `:132` |
+| `overrideDirectionVector` | A fixed direction vector, read only when `overrideDirectionPoint` is empty; a zero vector is ignored. | `:134` to `:142` |
 | `positionOffset[]` | Offset from the point. | `:147` |
 | `ignoreIfSuppressed` | Skip when a suppressor is fitted. | `:38` |
 | `illuminateWorld` | The flash lights the surroundings. | `:44` |

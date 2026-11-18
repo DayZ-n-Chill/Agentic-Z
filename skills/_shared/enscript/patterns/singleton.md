@@ -1,6 +1,6 @@
 # Pattern: Singleton Config
 
-A static, lazily-initialized configuration class loaded from a JSON file on the server profile directory. The singleton lives in `3_Game` (visible to every later layer) or `5_Mission`; neither is server-only, so guard server work with `GetGame().IsServer()`. Do not use `#ifdef SERVER` for it: `SERVER` is defined only on a dedicated server (`P:\scripts\1_core\defines.c:106`, `:112` to `:115`), so config code inside it does not exist in offline or single player testing (`../references/language_compile.md`).
+A static, lazily-initialized configuration class loaded from a JSON file on the server profile directory. The singleton lives in `3_Game` (visible to every later layer) or `5_Mission`; neither is server-only, so guard server work with `GetGame().IsServer()`. Do not use `#ifdef SERVER` for it: `SERVER` is defined only on a dedicated server (`P:\scripts\1_core\defines.c:106` and `:115`), so config code inside it does not exist in offline or single player testing (`../references/language_compile.md`).
 
 It loads with `JsonFileLoader<T>.LoadFile(path, data, errorMessage)` and saves with `SaveFile(path, data, errorMessage)`, which return `bool` and say what went wrong (`P:\scripts\3_game\tools\jsonfileloader.c:7` and `:42`). Do not use `JsonLoadFile` or `JsonSaveFile`: they return nothing, so a broken file is only an `ErrorEx` in the log, and vanilla marks them "use JsonFileLoader::LoadFile instead" (`jsonfileloader.c:104-105`).
 
@@ -9,7 +9,7 @@ It loads with `JsonFileLoader<T>.LoadFile(path, data, errorMessage)` and saves w
 - [Implementation](#implementation)
 - [Nested Sub-Config](#nested-sub-config)
 - [Rules](#rules)
-- [Static `ScriptInvoker` shutdown crash](#-static-scriptinvoker-shutdown-crash)
+- [Static `ScriptInvoker` shutdown crash](#static-scriptinvoker-shutdown-crash)
 
 ---
 
@@ -130,11 +130,12 @@ class MyMod_SpawnConfig
 | Nested objects must be `ref` | Reported, not checked on `P:\` (`JsonSerializer` is native): value-type nesting does not serialize correctly |
 | Extra JSON keys are ignored | Reported, not checked on `P:\` (`JsonSerializer` is native): safe to add new fields in config without breaking old saves |
 | Missing keys keep defaults | Reported, not checked on `P:\` (`JsonSerializer` is native): rename fields = default on next load; document field renames |
+| Keep a field out of the file with `[NonSerialized()]` | Put the attribute on the line above the field. `NonSerialized` is at `P:\scripts\1_core\proto\enscript.c:122`; the `Serializer` comment names it as the way to skip a member (`P:\scripts\1_core\proto\serializer.c:8` and `:16`), and `SyncPlayer` uses it (`P:\scripts\3_game\client\syncplayer.c:7`). `JsonSerializer` derives from `Serializer` (`P:\scripts\3_game\gameplay.c:49`) |
 | Arrays serialize as JSON arrays | Reported, not checked on `P:\` (`JsonSerializer` is native): `ref array<string>` works. `{}` and `new array<string>()` are both valid ways to create it |
 
 ---
 
-## ⚠️ Static `ScriptInvoker` shutdown crash
+## Static `ScriptInvoker` shutdown crash
 
 Reported, not checked on `P:\`: the teardown order of statics is engine behavior that script does not show. The report is that a common cleanup pattern null-derefs on shutdown because static invokers don't have a stable destructor order:
 

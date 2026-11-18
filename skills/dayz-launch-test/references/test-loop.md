@@ -16,7 +16,7 @@ Use the mission restart loop for script logic (fixes, prints, tuning), with a `/
 
 ## Stop after two cycles with no progress
 
-Two cycles of the same kind (patch, rebuild, test) with no measurable progress: stop, and do not launch a third. Before a third rebuild, either bisect pipeline against data offline (`debug-protocol.md`, "Component bisection"), or change approach: add `Print` lines, shapes or diag menu entries, or ask the user. Changing one guess per cycle feels like progress and costs a rebuild per guess; on one car mod, four patches went by without a clean test when two should have been the limit.
+Two cycles of the same kind (patch, rebuild, test) with no measurable progress: stop, and do not launch a third. Before a third rebuild, either bisect pipeline against data offline (`debug-protocol.md`, "Component bisection"), or change approach: add `Print` lines, shapes or diag menu entries, or ask the user. Changing one guess per cycle feels like progress and costs a rebuild per guess.
 
 ## A client stuck loading at about 148 MB
 
@@ -37,8 +37,18 @@ Rename the mission's `storage_1` folder (never delete it) and launch again; the 
 ## Logging
 
 - `Print` and `PrintFormat` go to the log and are cheap. `PrintToRPT` flushes the file on every call ("performance warning - each write means fflush!", `P:\scripts\1_core\proto\endebug.c:98` and `:99`); keep it for messages that must survive a crash.
-- `ErrorEx(string err, ErrorExSeverity severity = ErrorExSeverity.ERROR)` (`endebug.c:83`) prefixes the message with `[Class::Method] :: [SEVERITY]`.
+- `ErrorEx(string err, ErrorExSeverity severity = ErrorExSeverity.ERROR)` (`endebug.c:83`) prefixes the message with `[Class::Method] :: [SEVERITY]`. The vanilla comment adds that a severity above `INFO` "will show a messagebox" (`:69`); use `INFO` for plain trace lines.
 - The server admin log takes the `serverDZ.cfg` keys `adminLogPlayerHitsOnly`, `adminLogPlacement`, `adminLogBuildActions` and `adminLogPlayerList`, which script reads with `ServerConfigGetInt` (`P:\scripts\4_world\plugins\pluginbase\pluginadminlog.c:44` to `:47`), and from script `g_Game.AdminLog(text)` (`AdminLog`, `P:\scripts\3_game\global\game.c:669`).
+
+## The vanilla script test framework
+
+Vanilla ships a unit test framework and a client launch mode that runs it, separate from this repo's AutoTest mod (`../assets/autotest-mod/`).
+
+- Tests are written with attributes (`P:\scripts\2_gamelib\tests\testingframework.c`): `[Test("MySuite")]` on a `TestBase` subclass or on a free function returning `TestResultBase`, with optional `timeoutS`, `timeoutMs` and `sortOrder` (`:96` to `:111`); `[Step(EStage.Setup)]`, `[Step(EStage.Main)]` and `[Step(EStage.TearDown)]` on its methods (`:116` to `:133`); a result through `SetResult`. A commented example suite is in `P:\scripts\3_game\autotest\autotestrunner.c:106` to `:216`; its comment warns that an empty suite gives no error and runs nothing.
+- `-autotest=<config.json>` on the client command line takes priority over `-mission` in `DayZGame`'s launch switch (`P:\scripts\3_game\dayzgame.c:2135` to `:2137`). The JSON has one key, `TestSuites`, the list of suite names to run (`P:\scripts\3_game\autotest\autotestconfigjson.c:3`). `-mission` is still required: without it the game quits; a config that fails to load only logs and loads the mission without tests (`dayzgame.c:2364` to `:2380`).
+- `MissionGameplay.OnUpdate` starts `AutotestRunner`, runs it every frame and calls `RequestExit(0)` when it is done (`P:\scripts\5_mission\mission\missiongameplay.c:232` to `:243`). The runner enables only the named suites, then writes the `TestHarness` report, JUnit style XML, to `$mission:Autotest_<UTC time>.xml` (`autotestrunner.c:19` to `:74`; `P:\scripts\3_game\autotest\autotestfixture.c:3`). Its own messages go to the RPT prefixed `[Autotest]` (`autotestfixture.c:52`).
+
+It runs in `MissionGameplay`, so on a client or an offline mission, never in `MissionServer`. Whether the retail executables accept `-autotest` is not checked in game.
 
 ## Limits
 

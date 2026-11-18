@@ -74,7 +74,7 @@ The manager keeps a strong reference to every effect it registers (warning at li
 | 274 | `bool IsSoundPlaying()` | Whether the wave is playing. |
 | 847 | `float GetSoundWaveLength()` | Length of the wave. |
 
-A sound with a fade in starts silent in 1.30. When the wave starts and the fade in time is above zero, `Event_OnSoundWaveStarted` calls `SetSoundVolume(0)` (`P:\scripts\3_game\effects\effectsound.c:549`). 1.29 had no such line and a faded loop could play its first frame at full volume (1.29, not yet checked on `P:\`). If a mod's levels were tuned around that first frame, listen to them again.
+A sound with a fade in starts silent in 1.30. When the wave starts and the fade in time is above zero, `Event_OnSoundWaveStarted` calls `SetSoundVolume(0)` (`P:\scripts\3_game\effects\effectsound.c:554`). 1.29 had no such line and a faded loop could play its first frame at full volume (1.29, not yet checked on `P:\`). If a mod's levels were tuned around that first frame, listen to them again.
 
 `EffectSound` keeps its wave in a protected member, so the pitch of a sound started with these helpers cannot be changed from outside. To set the pitch or build a sound step by step, see `sound-engine-api.md`.
 
@@ -135,4 +135,4 @@ The server cannot play sounds. When the server decides a sound should play, send
 - For a state that lasts (running, stopped), sync a bool or int and start or stop the loop in `OnVariablesSynchronized()` when it changes. Pattern: `skills/_shared/enscript/patterns/netsync.md`.
 - For a sound that belongs to an item event (placed, deployed, opened, locked), use the vanilla item sound handler: link a `SoundConstants` ID to a sound set in `InitItemSounds()` and call `StartItemSoundServer(id)` on the server (`P:\scripts\4_world\entities\itembase.c:4455`). The steps and what 1.30 changed are in `item-and-player-sounds.md`. An impact sound fits this route: call `StartItemSoundServer` from the server's contact event (contact events are in `skills/_shared/physics/contact.md`).
 - When AI should notice the sound too, add a noise on the server; players do not hear it and AI does not hear the sound set. See `noise-for-ai.md`.
-- Energy devices are simpler: the energy manager's `DeviceUpdate` runs on clients too and calls `OnWorkStart` and `OnWorkStop` there; only the energy use is limited to the server (`P:\scripts\3_game\tools\component\componentenergymanager.c:1781` to `1840`). That is why the vanilla generator plays its sounds in those two events.
+- Energy devices are simpler: the energy manager's `DeviceUpdate` runs on clients too and calls `OnWorkStart` and `OnWorkStop` there; only the energy use is limited to the server (`P:\scripts\3_game\tools\component\componentenergymanager.c:1781` to `1841`). That is why the vanilla generator plays its sounds in those two events.

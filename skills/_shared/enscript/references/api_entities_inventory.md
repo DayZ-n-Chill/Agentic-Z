@@ -7,7 +7,7 @@ Spawning objects in the world or in an inventory, finding items, moving them and
 | Call | Use | Source |
 |---|---|---|
 | `GetGame().CreateObjectEx(type, pos, flags, rotation = RF_DEFAULT)` | The main spawn call. `flags` are `ECE_*` values. | `P:\scripts\3_game\global\game.c:703` |
-| `GetGame().CreateObject(type, pos, create_local = false, init_ai = false, create_physics = true)` | The older form with bool switches. | `:691` |
+| `GetGame().CreateObject(type, pos, create_local = false, init_ai = false, create_physics = true, objSpawner = false)` | The older form with bool switches. | `:691` |
 | `SpawnEntity(type, inventoryLocation, ECE_*, RF_*)` | Creates an entity at an `InventoryLocation`, ground or inventory. | `P:\scripts\3_game\gameplay.c:1526` |
 | `entity.SpawnEntityOnGroundPos(type, pos)` | Ground spawn with `ECE_PLACE_ON_SURFACE`. | `P:\scripts\3_game\entities\entityai.c:2138` |
 
@@ -17,7 +17,7 @@ Both `CreateObject` calls return `Object`; cast to what you need:
 ItemBase newItem = ItemBase.Cast(g_Game.CreateObjectEx(itemType, dropPos, ECE_PLACE_ON_SURFACE));
 ```
 
-Source: `P:\scripts\4_world\classes\constructionbase.c:1319`.
+Source: `P:\scripts\4_world\classes\constructionbase.c:1421`.
 
 ### Common `ECE_*` flags (`P:\scripts\3_game\ce\centraleconomy.c`)
 
@@ -63,7 +63,7 @@ Reported (measured on DayZDiag 1.29, not checked on `P:\`): an attachment made w
 
 | Call | Returns | Source (`3_game\systems\inventory\inventory.c`) |
 |---|---|---|
-| `GetInventory().EnumerateInventory(InventoryTraversalType.PREORDER, out items)` | Every item, recursively, in `items`. | `:127`; traversal types at `P:\scripts\3_game\gameplay.c:4` |
+| `GetInventory().EnumerateInventory(InventoryTraversalType.PREORDER, out items)` | Every item, recursively, in `items`. | `:127`; traversal types at `P:\scripts\3_game\gameplay.c:5` |
 | `GetInventory().CountInventory()` | The same count without the array. | `:134` |
 | `GetInventory().HasEntityInInventory(item)` | Whether `item` is anywhere inside. | `:118` |
 | `GetInventory().AttachmentCount()` / `GetAttachmentFromIndex(i)` | Attachments by index. The index is not a slot ID. | `:205`, `:220` |
@@ -90,7 +90,7 @@ To list the slots of a container or a vehicle, use the first pair. The second pa
 
 ## Moving items
 
-The inventory mode decides who runs the move (`P:\scripts\3_game\systems\inventory\inventory.c:20` to `:27`):
+The inventory mode decides who runs the move (`P:\scripts\3_game\systems\inventory\inventory.c:20` to `:26`):
 
 | Mode | Use |
 |---|---|
@@ -109,13 +109,13 @@ The `EntityAI` wrappers pick the mode for you. Since 1.30 vanilla comments mark 
 | `ServerDropEntity(item)` | `:2078` |
 | `PredictiveTakeEntityToTargetInventory(...)` uses `JUNCTURE` in multiplayer and `PREDICTIVE` offline | `:1972` to `:1978` |
 
-`FindInventoryLocationType` is `ATTACHMENT`, `CARGO`, `HANDS`, `PROXYCARGO`, `ANY_CARGO` or `ANY` (`P:\scripts\3_game\systems\inventory\inventorylocation.c:17`). An `InventoryLocation` names one exact place (ground, attachment slot, cargo cell or hands); `GetInventory().FindFreeLocationFor(item, flags, out loc)` finds one (`inventory.c:276`).
+`FindInventoryLocationType` is `ATTACHMENT`, `CARGO`, `HANDS`, `PROXYCARGO`, `ANY_CARGO` or `ANY` (`P:\scripts\3_game\systems\inventory\inventorylocation.c:17` to `:25`; a seventh value, `NO_SLOT_AUTO_ASSIGN`, skips the slot auto assign test). An `InventoryLocation` names one exact place (ground, attachment slot, cargo cell or hands); `GetInventory().FindFreeLocationFor(item, flags, out loc)` finds one (`inventory.c:276`).
 
 The return value of a take call is not proof that the item moved. When the target slot is already occupied, `TakeEntityAsTargetAttachmentEx` combines the items and returns `true` without attaching the new one: it reads the slot with `FindAttachment(slot)` first (`P:\scripts\3_game\systems\inventory\inventory.c:1106` to `:1118`). After a scripted attach, confirm with `FindAttachment(slot) == item`, comparing the entity and not its type. A trace of the local take path on a live player, which returns `true` in every case, is in `skills/_shared/enscript/depth/api-patterns.md`.
 
 ### Merging stacks in a loop: skip a stack that is already emptied
 
-`ItemBase.CombineItems` (`P:\scripts\4_world\entities\itembase.c:2243`) empties the donor through `SetQuantity`, and for an item with `varQuantityDestroyOnMin` that call ends in `this.Delete()` (`P:\scripts\4_world\entities\itembase.c:3333-3338`). `EntityAI.Delete()` only sets `m_PendingDelete` and the object is removed on the next frame (`P:\scripts\3_game\entities\entityai.c:779-782`). Until then the empty stack is still in the cargo, and `CanBeCombined` (`P:\scripts\4_world\entities\itembase.c:2141`) has no check for a pending delete, so a loop that merges several stacks in one call can pick the empty stack as its next target and pour live quantity into an object that is about to disappear. Three rag stacks of 2, 2 and 5 can end as 6 rags instead of 9. In such a loop skip, as target and as donor, any item for which `IsSetForDeletion()` is true (`P:\scripts\3_game\entities\entityai.c:812-814`), and any `Magazine` pile whose `GetAmmoCount()` is 0. This is a static trace through the vanilla scripts, not reproduced in game.
+`ItemBase.CombineItems` (`P:\scripts\4_world\entities\itembase.c:2247`) empties the donor through `SetQuantity`, and for an item with `varQuantityDestroyOnMin` that call ends in `this.Delete()` (`P:\scripts\4_world\entities\itembase.c:3333-3341`). `EntityAI.Delete()` only sets `m_PendingDelete` and the object is removed on the next frame (`P:\scripts\3_game\entities\entityai.c:779-782`). Until then the empty stack is still in the cargo, and `CanBeCombined` (`P:\scripts\4_world\entities\itembase.c:2141`) has no check for a pending delete, so a loop that merges several stacks in one call can pick the empty stack as its next target and pour live quantity into an object that is about to disappear. Three rag stacks of 2, 2 and 5 can end as 6 rags instead of 9. In such a loop skip, as target and as donor, any item for which `IsSetForDeletion()` is true (`P:\scripts\3_game\entities\entityai.c:812-814`), and any `Magazine` pile whose `GetAmmoCount()` is 0. This is a static trace through the vanilla scripts, not reproduced in game.
 
 ## Position and orientation
 

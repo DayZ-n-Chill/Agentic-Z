@@ -42,7 +42,7 @@ Most files here are results measured in test sessions with third-party mods and 
 | Why does a window grab mislead (retail brightness, hidden window, runs that never load textures)? | `window-capture-pitfalls.md` |
 | Where is the vehicle first person eye, and why must I log it every run? | `vehicle-first-person-eye.md` |
 | The run went green without testing my change: stale or locked PBO, backups packed in, a signature on the old PBO, storage from another mod set | `build-and-storage-traps.md` |
-| How do I set up a scripted test that boots the game and reads a verdict from the logs? What may a mission `init.c` do? Which diag defines exist? | `automated-cells.md` |
+| How do I set up a scripted test that boots the game and reads a verdict from the logs? What may a mission `init.c` do? Which diag defines exist? How does vanilla's own `-autotest` harness run test suites? | `automated-cells.md` |
 | How does a scripted test seat a player in a vehicle, and why will the test vehicle not drive? | `test-cell-vehicles.md` |
 | Can this gate fail at all? What order does teardown take? When does a run count as evidence, and does the `-mod=` line or window focus spoil it? | `test-cell-evidence.md` |
 | How do dayz-mcp's `dayz_test_run` and `dayz_test_stop`, its launcher allow-list, leases and request rules behave, and what are their traps? | `managed-launcher.md` |

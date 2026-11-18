@@ -2,7 +2,7 @@
 
 How to write a proxy triangle into a parent model with py3d, what the triangle is made of, and how to write the minimal proxy model the selection points at. The config class that completes the proxy is in `proxy-attachment-config.md`; the rules for names and indexes are in `proxies.md`, and how a triangle becomes a position and facing is in `proxy-frames.md`.
 
-Tool knowledge about the py3d in `scripts/tools/py3d`. Vanilla stores the name form written here: 17,744 of the 17,891 proxy names in the models under `P:\DZ\` have no `.p3d` before the index, for example `proxy:\dz\gear\consumables\single_plank.000` in `P:\DZ\gear\camping\fence.p3d` (`proxies.md`).
+Tool knowledge about the py3d in `scripts/tools/py3d`. Vanilla stores the name form written here: 28,628 of the 28,775 proxy names in the models under `P:\DZ\` have no `.p3d` before the index, for example `proxy:\dz\gear\consumables\single_plank.000` in `P:\DZ\gear\camping\fence.p3d` (`proxies.md`).
 
 ## How a proxy works
 

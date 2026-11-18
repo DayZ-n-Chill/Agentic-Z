@@ -81,7 +81,7 @@ DayZ preflight
 Preflight complete.
 [OK]    workspace\MyMod\ found
 [OK]    $PBOPREFIX$ matches MyMod
-[WARN]  lint config.cpp:9: requiredAddons lists DZ_Data twice in MyMod.
+[WARN]  lint workspace/MyMod/config.cpp:9: requiredAddons lists DZ_Data twice in MyMod.
 [OK]    /dayz-lint passed
 [OK]    P:\Mods junction valid
 [OK]    P:\MyMod junction valid

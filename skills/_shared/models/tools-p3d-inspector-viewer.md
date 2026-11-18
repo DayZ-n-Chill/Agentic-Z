@@ -2,7 +2,7 @@
 
 What the HTML page from `p3d_inspector_viewer.py` shows, how to work in it, and which build choices must stay when the script changes. How to run the three inspector scripts is in `tools-p3d-inspector.md`.
 
-This is tool behaviour, not game fact. Of the point names the page colours, only `ce_center`, `box_placing_min`, `box_placing_max` and the `_axis` names are vanilla (`memory-points.md`); vanilla script reads `ce_center` at `P:\scripts\3_game\entities\object.c:1363`. `pos center`, `actionPos`, `port_*` and `cable_*` are mod conventions.
+This is tool behaviour, not game fact. Of the point names the page colours, only `ce_center`, `box_placing_min`, `box_placing_max` and the `_axis` names are vanilla (`memory-points.md`); vanilla script reads `ce_center` at `P:\scripts\3_game\entities\object.c:1363`, and `box_placing_min` and `box_placing_max` at `P:\scripts\4_world\classes\hologram.c:1071` and `:1072`. `pos center`, `actionPos`, `port_*` and `cable_*` are mod conventions.
 
 ## Layers
 

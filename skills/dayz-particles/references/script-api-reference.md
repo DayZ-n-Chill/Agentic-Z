@@ -270,7 +270,7 @@ ps.GetEvents().Event_OnParticleEnd.Insert(MyCallback);
 
 ## FireplaceBase Pattern (recommended for placed devices)
 
-Vanilla FireplaceBase helper methods (`P:\scripts\4_World\entities\itembase\fireplacebase.c:1110` and `:1130`) — the gold standard for particle lifecycle:
+Vanilla FireplaceBase helper methods (`P:\scripts\4_world\entities\itembase\fireplacebase.c:1110` and `:1130`) — the gold standard for particle lifecycle:
 
 ```
 // Play: creates particle if not already playing, returns success

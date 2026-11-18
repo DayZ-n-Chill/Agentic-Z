@@ -20,7 +20,7 @@ class GlowPlug : Inventory_Base
     inventorySlot = "GlowPlug";
 };
 
-// Array form (DZ\gear\camping\config.cpp:10157-10173):
+// Array form (DZ\gear\camping\config.cpp:10167 to :10183):
 class WoodenCrate : Container_Base
 {
     inventorySlot[] = {"Truck_01_WoodenCrate1", "Truck_01_WoodenCrate2", "Truck_01_WoodenCrate3", "Truck_01_WoodenCrate4"};

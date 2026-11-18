@@ -68,7 +68,7 @@ Weather sounds are config only; script does not start them. The weather class `S
 
 ### Item animation events
 
-Items name sound sets for animation events under `class AnimEvents` and `class SoundWeapon`. `TShirt_ColorBase` (`P:\DZ\characters\tops\config.cpp:2244`) has `class AnimEvents` at line 2339 with `class pickUpItem { soundSet="Shirt_pickup_SoundSet"; id=797; };` (line 2345). The set is a normal sound set, `Shirt_pickup_SoundSet: baseCharacter_SoundSet` (`P:\DZ\sounds\hpp\config.cpp:321595`). To give a mod item its own pickup or drop sound, redeclare this block in its `CfgVehicles` class with the mod's own sound set, and keep the event class name and `id` as vanilla has them.
+Items name sound sets for animation events under `class AnimEvents` and `class SoundWeapon`. `TShirt_ColorBase` (`P:\DZ\characters\tops\config.cpp:2244`) has `class AnimEvents` at line 2339 with `class pickUpItem { soundSet="Shirt_pickup_SoundSet"; id=797; };` (line 2345). The set is a normal sound set, `Shirt_pickup_SoundSet: baseCharacter_SoundSet` (`P:\DZ\sounds\hpp\config.cpp:322265`). To give a mod item its own pickup or drop sound, redeclare this block in its `CfgVehicles` class with the mod's own sound set, and keep the event class name and `id` as vanilla has them.
 
 ## Hand to the in-game test
 

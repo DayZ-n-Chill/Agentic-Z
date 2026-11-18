@@ -48,7 +48,7 @@ Do not replace this with a check that the hubs sit outside the hull: it measures
 
 Two checks for any vehicle with a `Crew`. Both faults are silent in game, with no RPT error.
 
-- Seat components. In the View Geometry LOD, flag the model when `seat_driver` or `seat_codriver` is spread over more than one or two components. Each seat belongs in a component of its own, because the engine picks the seat from the component the get-in ray hits with `CrewPositionIndex` (`P:\scripts\3_game\vehicles\transport.c:179`). Seats smeared over the collision grid scramble the crew components, so get-in breaks or the co-driver seat never resolves.
+- Seat components. In the View Geometry LOD, flag the model when `seat_driver` or `seat_codriver` is spread over more than one or two components. Each seat belongs in a component of its own, because the engine picks the seat from the component the get-in ray hits with `CrewPositionIndex` (`P:\scripts\3_game\vehicles\transport.c:182`). Seats smeared over the collision grid scramble the crew components, so get-in breaks or the co-driver seat never resolves.
 - Proxy triangles. Flag a `crewdriver` or `crewcodriver` proxy that is an isosceles 90, 45, 45 triangle: the frame taken from sorting its angles is ambiguous, and the player sits sideways or turns on get-in. The triangle needs three different angles. `_shared/models/proxy-frames.md` (section "Crew proxies") gives the frame convention, +Y along the vehicle's forward direction, and the fix; the proxy editor of `skills/dayz-model-tools/` rewrites the triangle.
 
 ## A vertex limit check that counts corners

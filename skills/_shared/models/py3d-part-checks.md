@@ -33,7 +33,7 @@ def check_proxy_system(model):
     return issues
 ```
 
-It asks for the form without `.p3d`, which vanilla stores in 17,744 of its 17,891 proxy names (`proxies.md`, from the models under `P:\DZ\`; for example `proxy:\dz\gear\consumables\single_plank.000` in `P:\DZ\gear\camping\fence.p3d`) and which `add_proxy` writes. It does not check View Geometry, where an attachment proxy also belongs since 1.30 (`py3d-proxies.md`).
+It asks for the form without `.p3d`, which vanilla stores in 28,628 of its 28,775 proxy names (`proxies.md`, from the models under `P:\DZ\`; for example `proxy:\dz\gear\consumables\single_plank.000` in `P:\DZ\gear\camping\fence.p3d`) and which `add_proxy` writes. It does not check View Geometry, where an attachment proxy also belongs since 1.30 (`py3d-proxies.md`).
 
 ## Selections across LODs
 
@@ -95,7 +95,7 @@ def check_geometry_properties(model):
     return issues
 ```
 
-Two notes on what it asks for. The `class` property is for buildings and placed statics: 821 vanilla models store `class` = `house`, and most vanilla gear stores no `class` at all (`named-properties.md`), so on an item ignore that finding. The `autocenter` rule is this pipeline's default for a placed object, not something every vanilla model carries, so read it against `named-properties.md` on a kit or a handheld item. The mass check counts a point whose mass is `None`, py3d's default, as having none.
+Two notes on what it asks for. The `class` property is for buildings and placed statics: 1,250 of the 10,626 vanilla models under `P:\DZ\` store `class` = `house`, and most vanilla gear stores no `class` at all (`named-properties.md`), so on an item ignore that finding. The `autocenter` rule is this pipeline's default for a placed object, not something every vanilla model carries, so read it against `named-properties.md` on a kit or a handheld item. The mass check counts a point whose mass is `None`, py3d's default, as having none.
 
 ## Running every check
 

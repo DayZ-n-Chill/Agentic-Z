@@ -50,7 +50,7 @@ Handlers like this suit number or ID validators on an edit box, margins worked o
 
 ## Where ScriptParamsClass goes
 
-`ScriptParamsClass` always sits in a block of its own with no child widgets in it: the widget's only block on a leaf, or a second block after the block that holds the children. It holds its fields directly, with no inner braces. All 157 `ScriptParamsClass` blocks in a count over shipped third party layouts have this shape (not checked on `P:\`).
+`ScriptParamsClass` always sits in a block of its own with no child widgets in it: the widget's only block on a leaf, or a second block after the block that holds the children. It holds its fields directly, with no inner braces. All 50 `ScriptParamsClass` blocks in the vanilla layouts under `P:\gui\layouts` have this shape, for example a second block after the children holding `AlignChilds 1` and `Gap 2` (`P:\gui\layouts\day_z_hud.layout:309` to `:314`), and so do all 157 in a count over shipped third party layouts.
 
 ```text
 PanelWidgetClass GapPanel {

@@ -81,4 +81,4 @@ The static `LoadItemPreset(string presetName, string path)` reads one back. They
 
 ## Detecting Expansion without depending on it
 
-The Core patch class is `DayZExpansion_Core` (`DayZExpansion/Core/Stub/config.cpp:3`), so `g_Game.ConfigIsExisting("CfgPatches DayZExpansion_Core")` tells you at run time whether it is loaded. Each module's scripts patch is `DayZExpansion_<Module>_Scripts` (`DayZExpansion/Market/Scripts/config.cpp:3`).
+The Core patch class is `DayZExpansion_Core` (`DayZExpansion/Core/Stub/config.cpp:3`), so `g_Game.ConfigIsExisting("CfgPatches DayZExpansion_Core")` (vanilla `ConfigIsExisting(string path)`, `P:\scripts\3_game\global\game.c:612`) tells you at run time whether it is loaded. Each module's scripts patch is `DayZExpansion_<Module>_Scripts` (`DayZExpansion/Market/Scripts/config.cpp:3`).

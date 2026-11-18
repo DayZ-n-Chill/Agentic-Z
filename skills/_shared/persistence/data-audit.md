@@ -15,11 +15,11 @@ Run it on every release that touches a class with `OnStoreSave` or `OnStoreLoad`
    * The mod's own version is the first value written and the first read.
    * Same number of values, same types, same order.
    * Every `Read` checks its return.
-   * A write inside an `if` is matched by a read behind a saved flag, not behind a condition that may differ at load time. Vanilla writes a `bool` first and the optional value after it (`P:\scripts\4_world\entities\itembase.c:3194` to `:3206`, read at `:3103` to `:3121`).
+   * A write inside an `if` is matched by a read behind a saved flag, not behind a condition that may differ at load time. Vanilla writes a `bool` first and the optional value after it (`P:\scripts\4_world\entities\itembase.c:3194` to `:3210`, read at `:3107` to `:3122`).
 4. **Check the upgrade path.** For every version that was ever released, walk the load as if that version wrote the record: every field added later is skipped with a default, every field removed later is still read and thrown away, and no branch returns `false` for an old version.
 5. **Check modded vanilla classes.** Any `modded class` of a vanilla type that writes values is a risk on a server that already has saves, and again if the mod is ever removed (see `versioning-and-migration.md`, "Adding saved fields to a vanilla class"). Flag it in the report.
 6. **Check base building IDs.** Every part `id` is unique within its object, between 1 and 93, and unchanged from the last release (see `base-building.md`).
-7. **Check links.** Entities linked by persistent ID are looked up only in `EEOnAfterLoad` (`P:\scripts\3_game\entities\entityai.c:1393`).
+7. **Check links.** Entities linked by persistent ID are looked up only in `EEOnAfterLoad` (`P:\scripts\3_game\entities\entityai.c:1381`); vanilla's comment on `GetEntityByPersitentID` says "This function is available only in this event!" (`:1393`).
 8. **Check files.** Each saved JSON or binary file has a version field and a load path for every older version; files are written only on the server.
 9. **Record test evidence.** Note whether both paths were tested: a fresh object, and an object saved by the last release then loaded by this one. Say plainly when a path was not tested.
 10. **Count the inventory twice.** A list of saving classes built by one search is closed with a second, independent count before anyone reviews it: also grep for `ctx.Read` and `ctx.Write` themselves, and for helper methods that take the context from another class. A table built by one search can list far fewer files than actually contain `ctx.Read` or `ctx.Write`, and miss a whole family of helper hooks. Reviewers treat the table they are handed as complete.

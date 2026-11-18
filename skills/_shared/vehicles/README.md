@@ -2,7 +2,7 @@
 
 Reference for building cars, boats and helicopters: the class tree, simulation config, attachment slots, crew seats, fluids and damage. Every fact cites the vanilla file on `P:\` it came from. Line numbers match the vanilla data at the time of writing; when a line has moved, Grep for the class or key name.
 
-The pack also covers motorbikes and aircraft built on `CarScript`, and it holds field notes measured on real vehicle builds (imports, rips, gauges, lights, build and test gates). Each field-note file opens with a status note that says what was opened on `P:\` and what was measured in game on a mod test vehicle, which is mod behaviour and not vanilla. The numbered invariants those notes cite ("invariant N", "preflight #N") are indexed in `README.md`.
+The pack also covers motorbikes and aircraft built on `CarScript`, and it holds field notes measured on real vehicle builds (imports, rips, gauges, lights, build and test gates). Each field-note file says near its top what was opened on `P:\` and what was measured in game on a mod test vehicle, which is mod behaviour and not vanilla.
 
 Open only the file the current step needs.
 
@@ -29,7 +29,7 @@ Choose by where the asset came from and how it is built, not by its symptom.
 | What you have | Route |
 |---|---|
 | A car ripped from a racing game, split into proxies, with doors or other moving parts | `ripped-car-proxy-split.md` |
-| An asset already in flight with a frozen plan or runbook | That runbook; do not migrate it here |
+| A vehicle already being built from its own written plan | That plan; do not move it to this pack |
 | Any other vehicle: authored from scratch, an OBJ import, a port from another mod or game | The tables of this README |
 
 Before re-importing or re-assembling any piece, measure whether it is complete, face for face, against the model already packed: a mesh that looks rotten is usually complete and the defect lies elsewhere (`rip-panel-open-rim.md`). The offline vehicle checks (get-in anchors, seat selections, wheel axes, ODOL sections and bone bindings) are scripts of `/dayz-p3d-audit`.

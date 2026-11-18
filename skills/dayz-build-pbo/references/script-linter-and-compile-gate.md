@@ -53,7 +53,7 @@ A passing offline gate does not let you say "done" when it checks structure and 
 
 The behavioural gate stays mandatory on its own (`/dayz-gate ingame`, `behavior` and `visual`).
 
-The validator's tables in `scripts/tools/dayz-script-validator/scripts/shared/vanilla_reference.py` are small on purpose and cover only some rules. When a vanilla scripts tree is found (`--vanilla-root`, then `DAYZ_VANILLA_ROOT`, then `P:\scripts`), the validator also reads it for `ES-UNDEFINED-CLASS-REF`, `ES-UNDEFINED-BUILTIN-METHOD` and the 1.30 `RegisterConstructionSyncVariables` hook; without one those rules are reported as skipped, not as findings. Rules that rest on the small tables miss things by design, so green is not proof that a fault is absent.
+The validator's tables in `scripts/tools/dayz-script-validator/scripts/shared/vanilla_reference.py` are small on purpose and cover only some rules. When a vanilla scripts tree is found (`--vanilla-root`, then `DAYZ_VANILLA_ROOT`, then `P:\scripts`), the validator also reads it for `ES-UNDEFINED-CLASS-REF`, `ES-UNDEFINED-BUILTIN-METHOD` and the 1.30 `RegisterConstructionSyncVariables` hook (`P:\scripts\3_game\entities\entityai.c:3481`); without one those rules are reported as skipped, not as findings. Rules that rest on the small tables miss things by design, so green is not proof that a fault is absent.
 
 Before iterating on an offline number, ask whether it follows the behaviour you want or is a proxy the engine ignores. For a proxy with no shown link, run one behavioural test before polishing it further, and stop if it does not follow. Two cases:
 

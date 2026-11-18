@@ -6,7 +6,7 @@ Use it for buildings, walls and large static objects. A handheld item uses one S
 
 ## Where vanilla uses it
 
-A scan of the `.rvmat` files under `P:\DZ\` finds 1,960 with `PixelShaderID="Multi"` and `VertexShaderID="Multi"` (for example `P:\DZ\structures\residential\houseblocks\data\a1-1_multi1.rvmat:7`):
+A scan of the `.rvmat` files under `P:\DZ\` finds 2,680 with `PixelShaderID="Multi"` and `VertexShaderID="Multi"` (for example `P:\DZ\structures\residential\houseblocks\data\a1-1_multi1.rvmat:7` and `:8`):
 
 | Folder | Files |
 |---|---|
@@ -14,8 +14,9 @@ A scan of the `.rvmat` files under `P:\DZ\` finds 1,960 with `PixelShaderID="Mul
 | `vehicles` | 542 |
 | `rocks`, `rocks_bliss`, `rocks_sakhal` | 77 |
 | `water`, `water_sakhal` | 73 |
+| `structures_takistan`, `rocks_takistan` | 720 |
 
-None is under `P:\DZ\gear\`, `P:\DZ\weapons\` or `P:\DZ\characters\`.
+None is under `P:\DZ\gear\`, `P:\DZ\weapons\` or `P:\DZ\characters\`. The stage and texGen counts below are for the 1,960 files outside the Takistan folders; across all 2,680, `TexGen4` reads `tex1` in 2,087.
 
 ## The fifteen stages
 

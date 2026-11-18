@@ -60,7 +60,7 @@ class Stage7 { texture="dz\data\data\env_land_chrome_co.paa"; };
 - `specularPower=1320` is far above the mod's opaque materials, which sit around 50 to 200.
 - The normal, ambient shadow and `_smdi` stages hold procedural placeholders rather than real textures.
 - `Stage7` uses the chrome environment map, not `env_land_co.paa`, for a stronger reflection.
-- The `fresnel(1,0)` stage gives a softer edge fall-off than the mod's opaque materials, which use `fresnel(1.1,0.3)`. That value is rare in vanilla: 7 materials under `P:\DZ` use it, all vehicle wrecks, such as `P:\DZ\structures\wrecks\vehicles\data\wreck_mtvr_cargo.rvmat:71`.
+- The `fresnel(1,0)` stage gives a softer edge fall-off than the mod's opaque materials, which use `fresnel(1.1,0.3)`. That value is rare in vanilla: 25 materials under `P:\DZ` use it, all vehicle wrecks under `structures\wrecks` and `structures_takistan\Wrecks`, such as `P:\DZ\structures\wrecks\vehicles\data\wreck_mtvr_cargo.rvmat:71`.
 
 ## A damage variant with its own overlay
 

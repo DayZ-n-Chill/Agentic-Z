@@ -6,7 +6,7 @@ Every line cites the 1.30 scripts and config on `P:\` unless it is marked 1.29. 
 
 ## The _Ruined twin
 
-1.29 picked a ruined wheel's replacement with a `switch` over the vanilla wheel names (1.29 `InventoryItem.c:214` to `:248`), so a mod wheel stayed as it was and nothing was logged. 1.30 derives the name. When the first entity of a wheel type is created, `CarWheelType.SetReplacementTypes()` takes `<class>_Ruined` as its ruined type, or the intact name for a `_Ruined` class, and calls `ErrorEx` when that config class does not exist (`P:\scripts\4_world\entities\core\inherited\inventoryitemtype.c:17` to `:46`). `CarWheel.EEHealthLevelChanged()` then swaps a wheel that reaches `STATE_RUINED` for that class through `ReplaceWheelLambda` (`P:\scripts\4_world\entities\core\inherited\inventoryitem.c:220` to `:248`).
+1.29 picked a ruined wheel's replacement with a `switch` over the vanilla wheel names (1.29 `InventoryItem.c`, lines 214 to 248), so a mod wheel stayed as it was and nothing was logged. 1.30 derives the name. When the first entity of a wheel type is created, `CarWheelType.SetReplacementTypes()` takes `<class>_Ruined` as its ruined type, or the intact name for a `_Ruined` class, and calls `ErrorEx` when either config class does not exist (`P:\scripts\4_world\entities\core\inherited\inventoryitemtype.c:17` to `:46`). It skips only `CarWheel`, `CarWheel_Ruined`, `MotorbikeWheel` and `MotorbikeWheel_Ruined` (`:12` to `:15`), and it treats any class whose name contains `_Ruined` as the ruined twin, so keep `_Ruined` out of intact class names. `CarWheel.EEHealthLevelChanged()` then swaps a wheel that reaches `STATE_RUINED` for that class through `ReplaceWheelLambda` (`P:\scripts\4_world\entities\core\inherited\inventoryitem.c:220` to `:248`); when the twin is missing the name is empty and the wheel stays as it is (`:226` and `:227`).
 
 Give each wheel a config class that inherits the intact wheel, with the ruined tyre values:
 
@@ -38,7 +38,7 @@ On a 1.30 diag server and client, a test quad without the twins raised, for the 
 
 ## A 1.29 mod that already had twins
 
-A 1.29 mod that shipped `_Ruined` twins and returned them from overrides of `CarWheel.GetRuinedReplacement()` and `CarWheel_Ruined.GetReplacement()` still compiles on 1.30. Both methods remain and now return the names `SetReplacementTypes()` derived (`inventoryitem.c:215` to `:218` and `:342` to `:345`), which are the names those overrides return anyway.
+A 1.29 mod that shipped `_Ruined` twins and returned them from overrides of `CarWheel.GetRuinedReplacement()` and `CarWheel_Ruined.GetReplacement()` still compiles on 1.30. Both methods remain and now return the `m_RuinedType` and `m_NormalType` that `CarWheelType.SetReplacementTypes()` derived (`inventoryitem.c:215` to `:218` and `:342` to `:345`; `inventoryitemtype.c:3` and `:4`), which are the names those overrides return anyway.
 
 A second quad mod dropped its four overrides and kept empty script classes, as vanilla does. In game on a 1.30 diag build its four wheel classes reported their own script class in `entities_query`, no `SetReplacementTypes` error was logged, each ruined wheel fitted the two slots of its own axle and was refused by the other's, and the fitted ruined wheels showed their own torn tyre models through their proxies.
 
@@ -52,7 +52,7 @@ Every vanilla 1.30 car wheel declares `tyreType`, `tyreRoughness`, `tyreLongitud
 | Truck double wheel | | | 2.5 | 2.8 |
 | Ruined car wheels | | 0.2 | 0.25 or 0.35 | 4.95 |
 
-`HatchbackWheel` is an intact example (`P:\DZ\vehicles\wheeled\config.cpp:874` to `:880`), and its ruined twin drops to `0.35` and `4.95` (`:905` and `:906`); the truck's double wheel is at `:18147` and `:18148`. Motorbike wheels do not follow these ranges; their values are in `motorbike-damage-and-wheel-config.md`.
+`HatchbackWheel` (`P:\DZ\vehicles\wheeled\config.cpp:853`) is an intact example, its tyre fields at `:874` to `:880`, and its ruined twin `HatchbackWheel_Ruined` (`:882`) drops to `0.35` and `4.95` (`:905` and `:906`); the truck's double wheel is at `:18147` and `:18148`. Every ruined twin keeps `tyreType=0`. Motorbike wheels do not follow these ranges; their values are in `motorbike-damage-and-wheel-config.md`.
 
 Measured on two test quads, each with a manual gearbox and the `Offroad_02_Wheel` set (`0`, `1`, `1.5`, `1.8`), driven through the test bridge:
 

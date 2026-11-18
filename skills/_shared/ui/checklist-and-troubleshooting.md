@@ -6,7 +6,7 @@ The rules every `.layout` file and UI script follows, the checklist to run befor
 
 ### A leaf widget needs no child block
 
-An empty `{ }` child block on a leaf widget is a harmless habit, not a requirement. Vanilla leaves it out: `TextWidgetClass ActionListItem0` closes straight after its properties in the shipped HUD (`P:\gui\layouts\day_z_hud.layout:45`). Vanilla leaves the block out on 5,315 of 5,337 leaves and never writes an empty one; mods write it on about a fifth of their leaves. Both forms load, and a scan of 376 layouts from five production mods parsed every one without it. The UI lab keeps a fixture for this, a `ButtonWidgetClass` leaf with only properties (`scripts/tools/dayz-ui-lab/probe/AZ_UIProbe/gui/layouts/leaf-without-child-block.layout`). Don't write a check that demands the block.
+An empty `{ }` child block on a leaf widget is a harmless habit, not a requirement. Vanilla leaves it out: `TextWidgetClass ActionListItem0` closes straight after its properties in the shipped HUD (`P:\gui\layouts\day_z_hud.layout:48` to `:60`). Vanilla leaves the block out on 5,315 of 5,337 leaves and never writes an empty one; mods write it on about a fifth of their leaves. Both forms load, and a scan of 376 layouts from five production mods parsed every one without it. The UI lab keeps a fixture for this, a `ButtonWidgetClass` leaf with only properties (`scripts/tools/dayz-ui-lab/probe/AZ_UIProbe/gui/layouts/leaf-without-child-block.layout`). Don't write a check that demands the block.
 
 What does break loading:
 

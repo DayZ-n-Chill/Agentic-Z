@@ -49,7 +49,7 @@ The `*.rects.1920.json` and `*.rects.1280.json` files beside each template are t
 
 Two things look like defects and are the contract. In `hud_overlay` every widget has `ignore_pointer` 1, because a HUD must not take the aim; there, a zero size or an off screen rect is the real mistake. In `scroll_list`, `ScrollContent` has `ignore_pointer` 1 and height 0 because the engine grows it at runtime (`"Size To Content V" 1`); do not give it a height, or mistake 4 comes back. A zero size on `ScrollListPanel` is a real mistake.
 
-The vanilla lines the template comments cite: `BadgesPanel` at `P:\gui\layouts\day_z_hud.layout:514`, the `Wetness` badge icon at `:534`, and an `ignorepointer 1` example at `:446`.
+The vanilla lines the template comments cite: `BadgesPanel` at `P:\gui\layouts\day_z_hud.layout:551`, the `Wetness` badge icon at `:572`, and an `ignorepointer 1` example, `GameStatusIcons`, at `:450` and `:451`.
 
 ## The four construction mistakes
 

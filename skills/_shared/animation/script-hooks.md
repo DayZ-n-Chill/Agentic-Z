@@ -29,7 +29,18 @@ A phase that reads back as expected does not prove the part moved or that the so
 
 ## Buildings: the door API, no mod script needed
 
-`Building` has the door calls, indexed by door number (`P:\scripts\3_game\entities\building.c`): `GetDoorIndex(int componentIndex)` :28, `GetDoorCount()` :31, `IsDoorOpen(int index)` :34, `OpenDoor(int index)` :61, `CloseDoor(int index)` :64, `LockDoor(int index, bool force = false)` :67, `UnlockDoor(int index, bool animate = true)` :70. `Building` also has override hooks such as `OnDoorOpenStart` :102 and `OnDoorCloseFinish` :127. Mod buildings script against `BuildingBase` (`P:\scripts\4_world\entities\game\super\building.c:8`), which the door action casts to.
+`Building` has the door calls, indexed by door number (`P:\scripts\3_game\entities\building.c`): `GetDoorIndex(int componentIndex)` :28, `GetDoorCount()` :31, `IsDoorOpen(int index)` :34, `OpenDoor(int index)` :61, `CloseDoor(int index)` :64, `LockDoor(int index, bool force = false)` :67, `UnlockDoor(int index, bool animate = true)` :70. Mod buildings script against `BuildingBase` (`P:\scripts\4_world\entities\game\super\building.c:8`), which the door action casts to.
+
+`Building` also has eight empty door events to override, each with a param object whose `param1` is the door index (typedefs at `building.c:1` to `:3`):
+
+| Event | Param | Line |
+|---|---|---|
+| `OnDoorOpenStart`, `OnDoorOpenFinish` | `DoorStartParams` (`Param1<int>`), `DoorFinishParams` (`Param2<int, bool>`) | :102, :107 |
+| `OnDoorOpenAjarStart`, `OnDoorOpenAjarFinish` | the same two; the vanilla comment says ajar opening usually follows an unlock | :112, :117 |
+| `OnDoorCloseStart`, `OnDoorCloseFinish` | the same two | :122, :127 |
+| `OnDoorLocked`, `OnDoorUnlocked` | `DoorLockParams` (`Param1<int>`) | :132, :137 |
+
+Vanilla's bunker starts an auto close timer in `OnDoorOpenStart` and locks its code lock in `OnDoorCloseStart`, checking `params.param1` first (`P:\scripts\4_world\entities\building\bunker.c:73` to `:90`). Which machines the engine raises these events on is not checked on `P:\`; test that on a dedicated server before relying on one.
 
 `PlayerBase` registers `ActionOpenDoors` for every player (`P:\scripts\4_world\entities\manbase\playerbase.c:1697`). On the server it finds the door from the aimed component and calls `OpenDoor` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionopendoors.c:59` to `:75`). So a mod building with a correct `class Doors` and matching `model.cfg` needs no script. Write script only to change behavior, for example a keypad lock that calls `LockDoor`.
 
@@ -45,13 +56,13 @@ Use this when a moving part shows a state that clients must see and saves must k
 
 ## Items: pattern 2, server sets the phase (fence gate)
 
-`Fence.OpenFence` sets the phase only on the server and then syncs its own state (`P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:488` to `:513`). It polls `GetAnimationPhase("Wall_Gate_Rotate")` with `CallLater` until the gate reaches 100 (:577 to :585) before doing follow up work. Use this when other server logic must wait for the move to end.
+`Fence.OpenFence` sets the phase only on the server and then syncs its own state (`P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:502` to `:541`). It polls `GetAnimationPhase("Wall_Gate_Rotate")` with a repeating `CallLater` (:540) until `CheckFenceOpened` sees the gate at 100 (:591 to :599) before doing follow up work. Use this when other server logic must wait for the move to end.
 
 ## Which side
 
 - Change state on the server. The user action runs `OnExecuteServer` or `OnStartServer`.
 - Clients must end with the same phase. Pattern 1 does that by calling the same method in `OnVariablesSynchronized`.
-- Sounds tied to the move play on clients only (`fence.c:516`, `if (!g_Game.IsHeadlessOrDedicatedServer())`).
+- Sounds tied to the move play on clients only (`fence.c:530`, `if (!g_Game.IsHeadlessOrDedicatedServer())`).
 - Two writers of one source, the owning client locally and the server through sync, only coexist when they write the same target. For a part that follows a long action, let the server write the start and the end and the owning client the states between (measured in game on 1.30; method in `items-in-hands.md`).
 - A steering part is not a script job at all: use the engine's `steeringwheel` source in `model.cfg`. A steering visual set from the client through a `user` source snapped back to 0 in multiplayer (measured in game, not checked on `P:\`).
 
@@ -59,7 +70,7 @@ Use this when a moving part shows a state that clients must see and saves must k
 
 An action also plays a player animation through `m_CommandUID`, for example `DayZPlayerConstants.CMD_ACTIONMOD_OPENDOORFW` for doors (`actionopendoors.c:7`) and `CMD_ACTIONMOD_INTERACTONCE` for the barrel (`actionopenbarrel.c:5`). Pick an existing command; new player animations are out of scope (see `rtm-and-character-animation.md`).
 
-The command constants are in `DayZPlayerConstants` (`P:\scripts\3_game\dayzplayer.c`): the `CMD_ACTIONMOD_` group plays over the player's movement and the `CMD_ACTIONFB_` group takes the full body. 1.30 added, among others, `CMD_ACTIONMOD_COMBINATIONLOCK` (:766), `CMD_ACTIONFB_BRICKSTACK` (:892), `CMD_ACTIONFB_MIX_MORTAR` (:894) and `CMD_ACTIONFB_SHARPEN` (:896); the full list of additions is in `anim-graphs.md`.
+The command constants are in `DayZPlayerConstants` (`P:\scripts\3_game\dayzplayer.c`): the `CMD_ACTIONMOD_` group plays over the player's movement and the `CMD_ACTIONFB_` group takes the full body. Among the commands reported as new in 1.30 are `CMD_ACTIONMOD_COMBINATIONLOCK` (:766), `CMD_ACTIONFB_BRICKSTACK` (:892), `CMD_ACTIONFB_MIX_MORTAR` (:894) and `CMD_ACTIONFB_SHARPEN` (:896); that they are new is not checked on `P:\`, which holds 1.30 only. The full list is in `anim-graphs.md`.
 
 Since 1.30 script can also switch the player's whole animation instance without an item in the hands, with `SetAnimationInstanceByName` (`P:\scripts\3_game\human.c:1384`); see `items-in-hands.md`.
 

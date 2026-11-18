@@ -2,7 +2,7 @@
 
 What goes wrong when fixes to a mod's save, load and recovery code are applied (steps 5 and 6 of `deep-audit.md`): a hardened contract that misses a sibling call site, a fix that trusts another process's id, two correct fixes that break each other, a fix applied to generated output, and a fix whose new design is never checked. Open it before applying fixes and before the second pass.
 
-These traps come from mod code, not vanilla. For the DayZ facts an audit assumes, see `deep-audit.md`, step 1; the base class save and load hooks and their data width are at `P:\scripts\3_game\entities\entityai.c:2912` to `:2948`.
+These traps come from mod code, not vanilla. For the DayZ facts an audit assumes, see `deep-audit.md`, step 1; the base class save and load hooks and their data width are at `P:\scripts\3_game\entities\entityai.c:2910` to `:2952` (save) and `:2978` to `:3060` (load).
 
 ## A hardened contract must reach every sibling call site
 

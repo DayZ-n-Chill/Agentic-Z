@@ -66,4 +66,4 @@ class PlayerPreviewWidget: PreviewWidget
 
 ## Lighting
 
-Previews have their own brightness, `Widget.SetObjectLighting(float)` from 0 to 1, default 1 (`P:\scripts\1_core\proto\enwidgets.c:118`). It is separate from the HUD brightness that `SetLV` sets (`widget-prototypes.md`).
+Previews have their own brightness, `Widget.SetObjectLighting(float)` from 0 to 1, default 1 (`P:\scripts\1_core\proto\enwidgets.c:119`). It is separate from the HUD brightness that `SetLV` sets (`widget-prototypes.md`).

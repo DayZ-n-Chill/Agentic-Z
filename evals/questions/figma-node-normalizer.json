@@ -21,7 +21,7 @@
         "re:(?s)(\"sizing\".*){3}",
         "re:(?s)\"txt_title\".*?\"sizing\"\\s*:\\s*\\{\\s*\"width\"\\s*:\\s*\"fill\""
       ],
-      "verified": "agents/figma-node-normalizer.md JSON shape (sizing is required on every node) and skills/_shared/figma-to-dayz-rules.md section 10 (every node carries sizing)"
+      "verified": "agents/figma-node-normalizer.md JSON shape (sizing is required on every node) and skills/_shared/figma-to-dayz-worked-example.md (every node carries sizing)"
     },
     {
       "id": "children-source-order",
@@ -61,7 +61,7 @@
         "re:(?s)\"img_icon\".*?\"position\"\\s*:\\s*\\{\\s*\"x\"\\s*:\\s*200\\s*,\\s*\"y\"\\s*:\\s*10\\s*\\}",
         "re:(?s)\"txt_title\".*?\"position\"\\s*:\\s*\\{\\s*\"x\"\\s*:\\s*12\\s*,\\s*\"y\"\\s*:\\s*8\\s*\\}"
       ],
-      "verified": "agents/figma-node-normalizer.md JSON shape (position is required on every child of a layout: none parent, x and y relative to the parent) and skills/_shared/figma-to-dayz-rules.md section 10 (free-placed icon example)"
+      "verified": "agents/figma-node-normalizer.md JSON shape (position is required on every child of a layout: none parent, x and y relative to the parent) and skills/_shared/figma-to-dayz-worked-example.md (free-placed icon example)"
     },
     {
       "id": "position-under-centered-alignment",

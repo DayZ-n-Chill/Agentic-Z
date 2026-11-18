@@ -11,7 +11,7 @@ What a mod needs to extend three vanilla systems: crafting recipes (`RecipeBase`
 | Recipes are registered in `RegisterRecipies()`. Vanilla spells it with `ies`; keep that spelling | `P:\scripts\4_world\classes\recipes\recipes\pluginrecipesmanagerbase.c:14` |
 | The base `CanDo()` returns false when either ingredient has attachments | `recipebase.c:551` to `:560` |
 | `m_ResultToInventory = -1` puts the result in the player's inventory. The branch for 0 and up (swap with an ingredient) has its body commented out, so it does nothing. Both branches are in `SpawnItems` (`recipebase.c:215`) | `recipebase.c:232` to `:251` |
-| The result doesn't take the ingredient's health: `TransferItemProperties(ingr, res, true, true, false, false)` passes `false` for `transfer_health` (signature at `P:\scripts\4_world\static\miscgameplayfunctions.c:269`). Up to 1.29 it did, which could overwrite the health set by `m_ResultInheritsHealth` | `recipebase.c:353` |
+| The result doesn't take the ingredient's health: `TransferItemProperties(ingr, res, true, true, false, false)` passes `false` for `transfer_health` (signature at `P:\scripts\4_world\static\miscgameplayfunctions.c:271`). Up to 1.29 it did, which could overwrite the health set by `m_ResultInheritsHealth` | `recipebase.c:353` |
 | `PluginRecipesManager.GetRecipeClassName(int recipe_id)` is new in 1.30 | `P:\scripts\4_world\plugins\pluginbase\pluginrecipesmanager.c:84` |
 
 Register a recipe from a modded manager:

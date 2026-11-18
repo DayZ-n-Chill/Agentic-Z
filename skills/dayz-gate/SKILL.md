@@ -34,7 +34,7 @@ python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] [--threshold R] --a
 | `--timeout` | `ingame`, `behavior`, `visual`: seconds to wait for the client to reach the mission (default 300). |
 | `--settle` | `ingame` only: seconds to keep reading after that, to catch spawn-time errors (default 30). `visual` has no `--settle`: it reads until its last shot is taken. |
 | `--done-timeout` | `behavior` only: the most seconds to wait for the test mission's `DONE` line after the client joins (default 600). The gate stops as soon as that line appears. |
-| `--ready-pattern` | `ingame`, `behavior` and `visual` in-game runs: regex in the client script log that means the mission is running. Default `Creating Mission: mpmissions\__cur_mp.`, printed by vanilla `CreateMission()` (`P:\scripts\5_mission\somemission.c`) when the client joins. |
+| `--ready-pattern` | `ingame`, `behavior` and `visual` in-game runs: regex in the client script log that means the mission is running. Default `Creating Mission: mpmissions\__cur_mp.`, printed by vanilla `CreateMission()` (`P:\scripts\5_mission\somemission.c:3`) when the client joins. |
 | `--checks` | `behavior`: the checks file. Default `output/<ModName>-plan/behavior-checks.json`, which `dayz-mod-architect` writes with the plan. |
 | `--prepare-only` | `behavior`: write the instance copy and stop. The first line is `PREPARED` (exit 0), then the `/dayz-launch-test` command for the copy with the `--deps` mods ahead of the mod (`launch` in `--json`). A mod that needs `--deps` and got none is refused (exit 2) before the copy is written. |
 | `--logs` | `behavior`: judge the logs of a session that already ran instead of launching one. With no files it reads the copy's server script logs. |
@@ -54,7 +54,7 @@ The first line is the verdict: `PASS` (exit 0), `FAIL` (exit 1) or `ERROR` (exit
 {
   "verdict": "FAIL", "mode": "ingame", "mod": "MyVest",
   "steps": [{"step": "stop-session", "result": "no DayZDiag session running"}, {"step": "dayz-launch-test", "rc": 0}, ...],
-  "ready": {"file": "script_2026-10-20_12-00-31.log", "line": 214, "text": "SCRIPT : Creating Mission: mpmissions\\__cur_mp.chernarusplus\\mission.c"},
+  "ready": {"file": "script_<date>_<time>.log", "line": 214, "text": "SCRIPT : Creating Mission: mpmissions\\__cur_mp.chernarusplus\\mission.c"},
   "failures": [{
     "category": "null_pointer", "file": ".server\\!ClientDiagLogs\\script_...log", "line": 230,
     "text": "SCRIPT    (E): NULL pointer to instance", "context": ["Class: 'MyVest_Helper'", "Stack trace:", "MyVest/scripts/4_World/vest.c:42"],
@@ -167,7 +167,7 @@ The gate judges log lines; it cannot tell that the run itself was not a valid te
 - The behavior test mission only knows the five actions above. A feature that needs more (driving, firing, eating) has no check yet; say so in the plan.
 - The test player is stripped once before the checks and each check deletes what it made, so no check can prove two items work together on the player.
 - The test mission has not yet run in a live session. Every engine name the injected `AZ_BehaviorTest` class uses is checked against its vanilla declaration in `P:\scripts`, and `test_behavior.py` pins that list with the path and line of each, so an unchecked call fails the tests before it can reach a game. The injector and parser are tested on fixture missions and logs. If the mission still fails to start live (for example an Enforce compile error), the gate reports `ERROR` rather than failing the mod, unless the session also shows a mod error. After the first live run, look for `[AZ-BEHAVIOR] START` in `.server/<instance>-behavior/Profiles/script*.log`.
-- DayZ scripts cannot save the screenshot themselves: vanilla `MakeScreenshot` (`P:\scripts\1_core\proto\proto.c:142`) made the `ScreenShots` folder in live runs but never wrote a file, so the capture is taken from outside the game with `PrintWindow`. That works while the client window is covered by other windows, but not while it is minimized (a minimized window draws nothing): such a shot, or an all-black capture, is `MISSING`. Two live sessions on October 24, 2026 gave captures that differed by 0.33% of pixels, under the default 1% threshold.
+- DayZ scripts cannot save the screenshot themselves: vanilla `MakeScreenshot` (`P:\scripts\1_core\proto\proto.c:142`) made the `ScreenShots` folder in live runs but never wrote a file, so the capture is taken from outside the game with `PrintWindow`. That works while the client window is covered by other windows, but not while it is minimized (a minimized window draws nothing): such a shot, or an all-black capture, is `MISSING`. Two live sessions gave captures that differed by 0.33% of pixels, under the default 1% threshold.
 - A shot is taken at a time, not at a game event, and always shows the helper's fixed camera view without the HUD. Shots of the player, a menu or the HUD need the mod to put them there; screens that move on their own need a higher threshold or `ignore` areas.
 - The visual gate needs Pillow: `py -m pip install -r "<skill-dir>\requirements.txt"`.
 

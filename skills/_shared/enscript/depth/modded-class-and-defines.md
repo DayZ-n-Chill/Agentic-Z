@@ -30,7 +30,7 @@ modded class PlayerBase
 
 ## Where to spawn at startup
 
-Spawn where vanilla spawns the same kind of object. Vanilla's spawn that waits for the central economy lives in `GlobalsInit()` (`P:\scripts\3_game\dayzgame.c:1158`), opening with `if (GetCEApi())` (`:1160`) beside the comment "CE being initialized before spawning them", with the spawn at `:1173` and `:1174`; it is queued separately at `:1096`. The mission hook runs much earlier: `MissionServer.OnInit` (from `:85`) calls `CfgGameplayHandler.LoadData()` at `P:\scripts\5_mission\mission\missionserver.c:88`, so those `GlobalsInit` lines do not justify spawning from `OnGameplayDataHandlerLoad`.
+Spawn where vanilla spawns the same kind of object. Vanilla's spawn that waits for the central economy lives in `GlobalsInit()` (`P:\scripts\3_game\dayzgame.c:1158`): it reads the economy globals under `if (GetCEApi())` (`:1160`), then calls `ObjectSpawnerHandler.OnGameplayDataHandlerLoad()` (`:1174`) under the comment "CE being initialized before spawning them" (`:1173`). `GlobalsInit` is queued on its own with `GetCallQueue(CALL_CATEGORY_GAMEPLAY).Call(GlobalsInit)` (`:1096`). The mission hook runs much earlier: `MissionServer.OnInit` (from `:85`) calls `CfgGameplayHandler.LoadData()` at `P:\scripts\5_mission\mission\missionserver.c:88`, so those `GlobalsInit` lines do not justify spawning from `OnGameplayDataHandlerLoad`.
 
 Spawning early is still right for objects that do not touch the economy: vanilla spawns the underground trigger carriers in `OnInit` (`UndergroundAreaLoader.SpawnAllTriggerCarriers`, `missionserver.c:91`). Items with an economy lifetime go through the object spawner route.
 

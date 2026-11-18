@@ -21,7 +21,7 @@ Suspected causes: a regression in the DayZ 1.29 Tools binarizer, or bone weight 
 When auditing a misaligned clothing or accessory mod:
 
 1. Open the binarized `.p3d` through an outside ODOL to MLOD converter and compare the bone weights with the source. Agentic-Z ships no debinarizer.
-2. Try packing with an older DayZ Tools build. The experimental patch of 14 August is the one reported to try first; that detail is uncertain.
+2. Try packing with an older DayZ Tools build. Which build to try first is reported but not confirmed.
 3. Repack with Addon Builder (`/dayz-build-pbo`) if the mod was packed with another packer such as pboProject.
 
 ## Proxies of binarized models vanish
@@ -36,7 +36,7 @@ What did not fix it: a `proxy:` selection in the unbinarized model, or the door 
 
 The suspected cause is an engine limit on proxies that point at binarized models from an unbinarized parent, perhaps because the binarized child cannot rebuild its bounding and collision data inside that parent.
 
-Every model vanilla ships is binarized: a scan of all 8,256 `.p3d` files under `P:\DZ\` finds the `ODOL` signature in each one (for example `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d`). Any proxy that points at a vanilla model therefore points at a binarized one, so flag this fault whenever a mod with missing visual parts uses vanilla models as proxies.
+Every model vanilla ships is binarized: a scan of all 10,626 `.p3d` files under `P:\DZ\` finds the `ODOL` signature in each one (for example `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d`). Any proxy that points at a vanilla model therefore points at a binarized one, so flag this fault whenever a mod with missing visual parts uses vanilla models as proxies.
 
 ## Object Builder replacement for Maya
 

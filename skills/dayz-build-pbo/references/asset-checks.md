@@ -36,8 +36,8 @@ Check this when the addon has `.p3d` files and py3d is available.
 | Memory LOD | Present, for named selections and memory points. Required. |
 | Geometry mass | Every component has a mass above 0; the engine ignores a component with none. |
 | Degenerate faces | No zero-area faces. |
-| `ce_center` | The Memory LOD has it. It is the object's centre for actions and the vicinity list, not the centre of mass: `GetCenter` (`P:\scripts\3_game\entities\object.c:1361`) reads it (`:1363`). |
-| Collision points | None to check here: collision comes from the Geometry LOD, not from memory points. A byte scan of all 8,256 vanilla models under `P:\DZ` finds no `ce_geom` point. |
+| `ce_center` | Optional. It is the object's centre for actions and the vicinity list, not the centre of mass: `GetCenter` (`P:\scripts\3_game\entities\object.c:1361`) uses it when the point exists (`:1363`) and otherwise returns the object's position raised by 0.2 m (`:1371`); the action targets and the vicinity list name the point too (`P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:857`; `P:\scripts\5_mission\gui\inventorynew\vicinityitemmanager.c:11`). A byte scan finds it in 1,220 of the 10,626 vanilla models under `P:\DZ`. Add it when the model's middle is far from its origin, so actions aim at the item and not below it. Warn, never fail, when it is missing. |
+| Collision points | None to check here: collision comes from the Geometry LOD, not from memory points. A byte scan of all 10,626 vanilla models under `P:\DZ` finds no `ce_geom` point. |
 | Named selections | The same across LODs (a selection in LOD0 should exist in LOD2); warn on an unpaired name such as `Left_Arm` with no `Right_Arm`. |
 | Vertex budget for a small item | LOD0 up to about 3,000 vertices, LOD1 40 to 60% of LOD0, the far LOD 10 to 20%. Warn above it; the Geometry LOD of a small item should also stay under 3,000. |
 
@@ -46,7 +46,7 @@ Sample report lines:
 ```text
 [PASS] Resolution, Geometry and Memory LODs present
 [PASS] Geometry LOD mass valid (all components above 0)
-[FAIL] Memory LOD has no ce_center point
+[WARN] Memory LOD has no ce_center point (GetCenter falls back to the origin)
 [WARN] LOD0 has 4200 vertices (high for a small item)
 ```
 

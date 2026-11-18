@@ -2,11 +2,11 @@
 
 Covers the mission files that say where animals and ambient life live: `cfgenvironment.xml`, the `env\*_territories.xml` zone files it registers, the behaviour names it binds, and the group templates on `P:\` those names select.
 
-The server lead and `dayz-server-admin` own these files; the AI worker hands over the entries (`spawning-and-performance.md`). The mission files ship with DayZ Server in `mpmissions\dayzOffline.chernarusplus\`, and `/dayz-add-server` copies them into `.server/<instance>/mission/`. They are not on `P:\`, so a line number below without a `P:\` path is a line of the vanilla ChernarusPlus mission; Grep the element name when a server update moves it. Spawn rates in play, what each group decides at run time and how it uses the navmesh are engine behaviour and not covered here.
+The server lead and `dayz-server-admin` own these files; the AI worker hands over the entries (`spawning-and-performance.md`). The mission files ship with DayZ Server in `mpmissions\dayzOffline.chernarusplus\`, and `/dayz-add-server` copies them into `.server/<instance>/mission/`. Vanilla copies of each map's files are also on `P:\` under `P:\DZ\worlds\<map>\ce\` (`chernarusplus`, `enoch`, `sakhal`, `nasdara`). Lines below cite the ChernarusPlus copy, `P:\DZ\worlds\chernarusplus\ce\`; a short `cfgenvironment.xml:<line>` means `P:\DZ\worlds\chernarusplus\ce\cfgenvironment.xml`. Grep the element name when an update moves it. Spawn rates in play, what each group decides at run time and how it uses the navmesh are engine behaviour and not covered here.
 
 ## How `cfgenvironment.xml` is laid out
 
-The root is `<env>` (`cfgenvironment.xml:2`), and its only child in vanilla is `<territories>` (`:5` to `:114`).
+The root is `<env>` (`P:\DZ\worlds\chernarusplus\ce\cfgenvironment.xml:2`), and its only child in vanilla is `<territories>` (`:5` to `:114`).
 
 Inside `<territories>` the zone files come first, one empty `<file path="env/..."/>` per file: cattle, sheep and goat, red deer, roe deer, wild boar, pig, hen, wolf, hare, zombie, bear and fox (`:7` to `:19`). Vanilla registers `env/hare_territories.xml` twice, at `:15` and `:18`; nothing shows what the engine does with the duplicate.
 
@@ -18,7 +18,7 @@ Each territory binding then names a group kind, a display name and a behaviour, 
 </territory>
 ```
 
-That is `cfgenvironment.xml:21` to `:23`. The `usable` value is the file stem, not the `env/red_deer_territories.xml` path used to register it.
+That is `P:\DZ\worlds\chernarusplus\ce\cfgenvironment.xml:21` to `:23`. The `usable` value is the file stem, not the `env/red_deer_territories.xml` path used to register it.
 
 ## Herd, Ambient and the ZombieTest entry
 
@@ -51,7 +51,7 @@ An `Ambient` agent groups the classes one agent type can spawn. In `AmbientHen`:
 
 ## Zone files
 
-A zone file has the root `<territory-type>`, one `<territory color="...">` per territory, and one self closing zone per zone. The first wolf zone (`env\wolf_territories.xml:4`):
+A zone file has the root `<territory-type>`, one `<territory color="...">` per territory, and one self closing zone per zone. The first wolf zone (`P:\DZ\worlds\chernarusplus\ce\env\wolf_territories.xml:4`):
 
 ```xml
 <zone name="Water" smin="0" smax="0" dmin="0" dmax="0" x="10597.5" z="13432.5" r="60"/>
@@ -59,7 +59,7 @@ A zone file has the root `<territory-type>`, one `<territory color="...">` per t
 
 | File | Territories | Zone names | Lines |
 |---|---|---|---|
-| `env\wolf_territories.xml` | 24 | `Water` (`:4`), `Rest` (`:5`), `HuntingGround` (`:9`), repeated to `:326`; every zone has `smin`, `smax`, `dmin` and `dmax` at 0 | root `:2` to `:327` |
+| `env\wolf_territories.xml` | 24 | `Water` (`:4`), `Rest` (`:5`), `HuntingGround` (`:9`), repeated to `:325`; every zone has `smin`, `smax`, `dmin` and `dmax` at 0 | root `:2` to `:327` |
 | `env\bear_territories.xml` | 13 | `Graze` only (first at `:4`, for example `:12`, `:55`, `:92`) | root `:2` to `:100` |
 
 The first territory in each file opens at `:3`: `<territory color="4291611852">` in the wolf file and `<territory color="4294923520">` in the bear file.
@@ -83,11 +83,15 @@ The second column cites `cfgenvironment.xml`; the rest cite the template file. T
 
 The `zoneType` values in a template's life cycle (`class LifeCycleDayTime` at `P:\DZ\data\aiconfigs\config.cpp:121` for the wolf) are the same words as the zone names in that species' file: the bear template names only `Graze` and the bear file holds only `Graze`; the wolf template names `Rest` and `HuntingGround`, and the wolf file holds those plus `Water`. So a new territory file needs the zone names of the template it binds. That the engine matches them by name is what the two files show; it is not tested in game.
 
-The creature side of the link: an animal's behaviour template names its group template with `defaultGroupTemplateName` (`behaviour-config.md`), for example the bear at `P:\DZ\AI_bliss\config.cpp:20`. What a group behaviour does at run time is engine code, so never infer it from a territory's name. The 1.30 Nasdara group templates (`DZMouflonGroupBeh`, `DZDogGroupBeh`) are not on `P:\`; what is known of them is in `patrols-and-guards.md`.
+The creature side of the link: an animal's behaviour template names its group template with `defaultGroupTemplateName` (`behaviour-config.md`), for example the bear at `P:\DZ\AI_bliss\config.cpp:20`. What a group behaviour does at run time is engine code, so never infer it from a territory's name.
+
+## Nasdara
+
+The Nasdara mission registers its own zone files, among them `env/mouflon_territories.xml`, `env/monitor_territories.xml` and `env/dobermann_shepherd_territories.xml` (`P:\DZ\worlds\nasdara\ce\cfgenvironment.xml:9`, `:13` and `:15`). Its `Dog` herd binds `DZDogGroupBeh` (`:32`), and the monitor lizard is an `Ambient` territory, `AmbientLizard`, spawning `Animal_VaranusGriseus` (`:83` to `:90`). The `Mouflon` herd binds `DZSheepGroupBeh` (`:26`), not the `DZMouflonGroupBeh` its creature template names (`P:\DZ\AI_takistan\config.cpp:1342`). Which of the two the engine runs for a spawned mouflon is not checked on `P:\`; both name only `Graze` and `Rest` zones. Both Nasdara templates are in `P:\DZ\data_takistan\aiconfigs\config.cpp` (`patrols-and-guards.md`).
 
 ## The economy entry
 
-A `<spawn configName="Animal_...">` names a class, and the class also needs an entry in the mission's `db\types.xml`, which holds lifetimes and counts. Vanilla has one for each of the six `Animal_` classes the `Ambient` territories name, from `Animal_GallusGallusDomesticus` (`db\types.xml:1605`) to `Animal_VulpesVulpes` (`:1755`). The two `ZombieTest` classes have no `types.xml` entry, and their counts in `cfgenvironment.xml` are 0. More on the economy files: `spawning-and-performance.md` and `_shared/enscript/integrations/central_economy.md`.
+A `<spawn configName="Animal_...">` names a class, and the class also needs an entry in the mission's `db\types.xml`, which holds lifetimes and counts. Vanilla has one for each of the six `Animal_` classes the `Ambient` territories name, from `Animal_GallusGallusDomesticus` (`P:\DZ\worlds\chernarusplus\ce\db\types.xml:1605`) to `Animal_VulpesVulpes` (`:1755`). The two `ZombieTest` classes have no `types.xml` entry, and their counts in `cfgenvironment.xml` are 0. More on the economy files: `spawning-and-performance.md` and `_shared/enscript/integrations/central_economy.md`.
 
 ## Adding an animal territory to a mission
 

@@ -53,12 +53,12 @@ Use `JsonFileLoader<T>.LoadFile(string filename, out T data, out string errorMes
 
 ## Other file calls
 
-| Call | Use |
-|---|---|
-| `FileExist(path)` | Does the file exist |
-| `CopyFile(src, dst)` | Copy |
-| `DeleteFile(path)` | Delete |
-| `MakeDirectory(path)` | Create a folder |
+| Call | Use | Source |
+|---|---|---|
+| `FileExist(path)` | Does the file exist | `P:\scripts\1_core\proto\ensystem.c:397` |
+| `CopyFile(src, dst)` | Copy; returns `bool` | `ensystem.c:531` |
+| `DeleteFile(path)` | Delete; returns `bool` | `ensystem.c:528` |
+| `MakeDirectory(path)` | Create a folder; returns `bool` | `ensystem.c:525` |
 
 There is no `RenameFile`; no vanilla script under `P:\scripts\` names one. Copy, then delete.
 

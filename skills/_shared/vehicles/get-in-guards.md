@@ -10,7 +10,7 @@ The prompt passes ordered guards inside one function, and knowing the chain does
 
 `ActionGetInTransport.ActionCondition` has one path to `true`: the `return true` inside its `CanReachSeatFromDoors` loop (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:26` to `:69`).
 
-Before it looks at a seat, it rejects when the target is not a `Transport` (`:33`), when `CanGetIn` is false (`:36`), when the player holds a heavy item (`:39`) or when the player is already in a vehicle command (`:42`). Base `Transport.CanGetIn` returns `true` (`P:\scripts\3_game\vehicles\transport.c:672`), so on an unmodified car these four are rarely the cause.
+Before it looks at a seat, it rejects when the target is not a `Transport` (`:33`), when `CanGetIn` is false (`:36`), when the player holds a heavy item (`:39`) or when the player is already in a vehicle command (`:42`). Base `Transport.CanGetIn` returns `true` (`P:\scripts\3_game\vehicles\transport.c:675`), so on an unmodified car these four are rarely the cause.
 
 ## The five seat guards
 
@@ -18,10 +18,10 @@ They reject in this order:
 
 | Guard | Fails when | Source |
 |---|---|---|
-| `CrewPositionIndex` | It returns less than 0 for the component under the cursor. The native method maps an action component index to a crew position (`transport.c:179`). On test cars the cause was a View Geometry component not tagged as both its seat selection and `componentNN`, or a selection that is not the seat's `actionSel`. | `actiongetintransport.c:46` |
+| `CrewPositionIndex` | It returns less than 0 for the component under the cursor. The native method maps an action component index to a crew position (`transport.c:182`). On test cars the cause was a View Geometry component not tagged as both its seat selection and `componentNN`, or a selection that is not the seat's `actionSel`. | `actiongetintransport.c:46` |
 | `CrewMember` | It returns a player: the seat is taken. | `:50` |
-| `CrewCanGetThrough` | The door state or seat fold check says no. Base `Transport.CrewCanGetThrough` returns `false` (`transport.c:724`). | `:54` |
-| `IsAreaAtDoorFreeDiag` | The space at the door is blocked. It wraps `IsAreaAtDoorFree`, and a diag menu option can switch it off (`transport.c:909` to `:914`). | `:54` |
+| `CrewCanGetThrough` | The door state or seat fold check says no. Base `Transport.CrewCanGetThrough` returns `false` (`transport.c:727`). | `:54` |
+| `IsAreaAtDoorFreeDiag` | The space at the door is blocked. It wraps `IsAreaAtDoorFree`, and a diag menu option can switch it off (`transport.c:910` to `:924`). | `:54` |
 | `CanReachSeatFromDoors` | It returns `false` for every selection of the component, called with the player position and a distance of 1.0. | `:57` to `:66` |
 
 `OffroadHatchback` handles only `posIdx` 0 to 3 in its `CrewCanGetThrough` and returns `false` after that (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroadhatchback.c:225` to `:264`). A vehicle with more than four seats that inherits it must override the method, or seats 4 and up never open. A `true` on `posIdx` 4 or higher proves your override runs.

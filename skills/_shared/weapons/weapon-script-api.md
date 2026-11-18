@@ -55,6 +55,8 @@ The action classes are in `P:\scripts\4_world\classes\useractionscomponent\actio
 | `firearmactionmechanicmanipulate.c` | `FirearmActionMechanicManipulate` (`:1`) |
 | `firearmactionunjam.c` | `FirearmActionUnjam` (`:1`) |
 
+`Weapon_Base.SetActions` gives every firearm `FirearmActionUnjam`, `FirearmActionAttachMagazine`, `FirearmActionLoadBullet`, `FirearmActionMechanicManipulate`, the two weapon flashlight actions, `FirearmActionAttachMagazineQuick` and `FirearmActionLoadBulletQuick` (`P:\scripts\4_world\entities\firearms\weapon_base.c:2196` to `:2207`). A mechanism base changes that list in its own `SetActions` override with `RemoveAction` and `AddAction` after `super`, as `OpenBolt_Base` does below; a mod gun does the same rather than rebuilding the list.
+
 Changes in 1.30:
 
 - The quick attach action used for quick reload, `FirearmActionAttachMagazineQuick` (`P:\scripts\4_world\classes\useractionscomponent\actions\weapons\firearmactionattachmagazine.c:225`), requires `weapon.TestAttachMagazine(weapon.GetCurrentMuzzle(), mag, false, true)` in its condition (`:256`). A mod that overrides `TestAttachMagazine` and gets this case wrong stops the quick reload from starting. The plain `FirearmActionAttachMagazine` condition checks `WeaponManager.CanAttachMagazine` or `CanSwapMagazine` instead (`:26` to `:35`).

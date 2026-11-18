@@ -28,7 +28,7 @@ class CfgVehicles
 | `source = "user"` | Script drives it with `SetAnimationPhase`. |
 | `initPhase` | The phase at spawn. |
 | `animPeriod` | Seconds per unit of phase. With a 0 to 1 range it is the time from 0 to 1; vanilla's fence gate runs 0 to 100 with `animPeriod = 0.018`, about 1.8 seconds a swing (`animation-sources.md`). |
-| `sound` | Seen in mod configs, not found in vanilla sources; unverified. |
+| `sound` | Seen in mod configs, never in vanilla: across every `AnimationSources` block in the configs under `P:\DZ` the only keys are `source`, `initPhase`, `animPeriod`, `hitpoint` and `raw`. Whether the engine reads `sound` is not checked. |
 
 ## Setting the phase from script
 

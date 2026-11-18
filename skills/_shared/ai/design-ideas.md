@@ -6,7 +6,7 @@ These are design ideas in our own words, of the kind large community AI mods use
 
 ## State machine
 
-- **One state owns each switch.** To put a far unit to sleep, let a sleeping state do it on enter and undo it on exit, instead of scattering the call through other code. Leaving the state then always wakes the unit. Enter it only when the unit is not fighting, no player is in range, no route is pending and the unit is not moving. The vanilla call for a creature is `AIAgent.SetKeepInIdle(bool enable)` (`P:\scripts\3_game\ai\aiagent.c:6`), which vanilla itself uses only around a stealth kill (`spawning-and-performance.md`).
+- **One state owns each switch.** To put a far unit to sleep, let a sleeping state do it on enter and undo it on exit, instead of scattering the call through other code. Leaving the state then always wakes the unit. Enter it only when the unit is not fighting, no player is in range, no route is pending and the unit is not moving. The vanilla call for a creature is `AIAgent.SetKeepInIdle(bool enable)` (`P:\scripts\3_game\ai\aiagent.c:6`), which vanilla itself uses only around a stealth kill and in the infected debug plugin (`spawning-and-performance.md`).
 - **Behaviour as data.** A state machine whose states and transitions come from a data file, built from smaller machines (moving, fighting, reloading), changes behaviour without a script change. It pays off only for a large brain; a guard with three states is clearer in plain script.
 - **Ask the state, not its internals.** Keep a flag such as "is fighting" in step with the state, so other systems ask the unit instead of reading the state machine.
 

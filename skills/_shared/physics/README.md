@@ -20,7 +20,7 @@ Every game fact here cites the vanilla file on `P:\` it came from. A line marked
 | The player's character controller, riding a moving platform, lifting or walking the player from script | `player-controller.md` |
 | The ragdoll calls, a ragdoll on a living player, waking from unconsciousness, the fall damage curve (1.30) | `ragdoll-and-fall-damage.md` |
 | What the engine sends to clients about a moving object, which machine simulates it, and what physics work can leave the server | `network-and-authority.md` |
-| Trigger volumes from script: `ScriptedEntity` shapes, who is told about entry and exit, the `TriggerEvents` hooks | `scripted-triggers.md` |
+| Trigger volumes from script: `ScriptedEntity` shapes, who is told about entry and exit, the `TriggerEvents` hooks, and the `Trigger` class that calls them | `scripted-triggers.md` |
 | What the water queries return over river pieces, ponds and a roadway water face of your own | `water-queries.md` |
 
 Related packs: `skills/_shared/wearables/references/ragdoll.md` (the `.ragdoll` file format and how a survivor binds it), `_shared/vehicles/` (the vehicle script API and vehicle networking), `_shared/enscript/patterns/physics_items.md` (making a spawned item physics active), `dayz-p3d-audit/references/p3d-killers.md` (model faults that break collision with no error) and the LOD resolution table in `_shared/conventions/assets.md`.
@@ -42,3 +42,4 @@ Related packs: `skills/_shared/wearables/references/ragdoll.md` (the `.ragdoll` 
 | Rolling or thrown object freezes after a few seconds | The drop physics lifetime ended, or the body went to sleep | `drop-and-throw.md`, `rigid-body-api.md` | dayz-script-specialist |
 | Object should hurt players on contact but does nothing | A player's `EOnContact` reacts only to a `Transport` | `contact.md` | dayz-script-specialist |
 | Custom unconscious wake buries the player under the terrain | The wake skips vanilla's 2 s and `PhysicsIsFalling` guards | `ragdoll-and-fall-damage.md` | dayz-script-specialist |
+| A trigger's enter, stay or leave hooks never run | The class extends `TriggerEvents` or `ScriptedEntity` instead of `Trigger`, or its size was set before `EOnInit` reset it | `scripted-triggers.md` | dayz-script-specialist |

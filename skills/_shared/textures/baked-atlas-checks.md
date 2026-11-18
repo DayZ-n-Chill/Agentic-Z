@@ -19,7 +19,7 @@ Copying a vanilla `.rvmat` also copies the maps baked for the vanilla model it b
 
 - Its Stage4 `_as` can paint that model's dark patches onto yours, which looks like broken lighting or broken normals. Its Stage5 `_smdi` carries the same risk.
 - Check which UV set each stage reads. The planks material reads its `_as` with `uvSource="tex1"` (`P:\DZ\gear\consumables\data\pile_of_planks.rvmat:47` and `:48`), a second UV set many mod models do not have. Measuring the map over your first UV set does not show what the shader samples. What the engine does when the second set is missing is not checked.
-- To drop the borrowed shadow, use the neutral stage vanilla itself writes, `texture="#(argb,8,8,3)color(1,1,1,1,AS)";`. It appears 4,388 times in the `.rvmat` files under `P:\DZ`, for example at `P:\DZ\vehicles\parts\data\aircraft_battery.rvmat:47`.
+- To drop the borrowed shadow, use the neutral stage vanilla itself writes, `texture="#(argb,8,8,3)color(1,1,1,1,AS)";`. It appears 4,779 times in the `.rvmat` files under `P:\DZ`, for example at `P:\DZ\vehicles\parts\data\aircraft_battery.rvmat:47`.
 - For real depth, bake an `_as` for your own mesh and read it with `uvSource="tex"`.
 - A preview renderer that skips Stage4 cannot show this fault. Before trusting a preview, make sure a material you know is bad shows up as bad in it. The test that settles it is in game, one change at a time: the borrowed `_as`, the neutral `_as`, then self shadowing off.
 

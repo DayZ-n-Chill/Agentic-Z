@@ -2,7 +2,7 @@
 
 How to read the winding findings `audit_p3d.py` prints from the DayZ fork of py3d (`ERR_WINDING_INVERTED`, `ERR_WINDING_VS_NORMALS`, `WARN_WINDING_NORMAL_MISMATCH`), why a clean py3d result is not proof of correct geometry, and how the winding sign changes between the MLOD and the binarized ODOL. The check methods are in `winding-methodology.md`; the state table and the fix procedure are in `winding-diagnostics.md`.
 
-Everything here was measured on mod models, in game on DayZ 1.29 or offline with py3d, and is not checked on `P:\`: vanilla models are binarized and py3d cannot read them. The vanilla lines that say which ray each consumer casts were opened: the action cursor casts `RaycastRVProxy` (`P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:255`), and hologram placement casts `RaycastRV` with `ObjIntersectFire` (`P:\scripts\4_world\classes\hologram.c:683`).
+Everything here was measured on mod models, in game or offline with py3d, and is not checked on `P:\`: vanilla models are binarized and py3d cannot read them. The vanilla lines that say which ray each consumer casts were opened: the action cursor casts `RaycastRVProxy` (`P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:255`), and hologram placement casts `RaycastRV` with `ObjIntersectFire` (`P:\scripts\4_world\classes\hologram.c:683`).
 
 The Blender to DayZ map and the per component winding check are the sections of those names in `_shared/models/generated-model-rules.md`. After the map, the cross product `cross(v1-v0, v2-v0)` and the stored normals both point away from the side meant to be seen; the per component check requires every face of a closed, convex collision component to read inward. The py3d README is in `scripts/tools/py3d/`.
 

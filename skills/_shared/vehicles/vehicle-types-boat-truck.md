@@ -23,25 +23,25 @@ A boat inherits nothing wheeled and a car nothing buoyant, which decides where e
 | Wheels, brakes, handbrake, `CarFluid` oil, brake fluid and coolant | `Car` only |
 | Propeller, buoyancy, `BoatFluid` | `Boat` only |
 
-Since DayZ 1.30 the shared fluid enum is `ETransportFluid` (`transport.c:52` to `:63`): `CarFluid` aliases it (`car.c:18`), as do `BoatFluid : ETransportFluid {}` (`boat.c:13`) and `MotorbikeFluid` (`P:\scripts\3_game\vehicles\motorbike.c:14`). `BoatScript` still uses only fuel. On DayZ 1.29 `BoatFluid` held fuel alone and `CarFluid` declared its own values.
+Since DayZ 1.30 the shared fluid enum is `ETransportFluid` (`transport.c:52` to `:63`): `CarFluid` aliases it (`car.c:18`), as do `BoatFluid : ETransportFluid {}` (`boat.c:13`) and `MotorbikeFluid` (`P:\scripts\3_game\vehicles\motorbike.c:14`). It reserves `USER1` to `USER4` "for user / modding support" (`transport.c:59` to `:62`). `BoatScript` still uses only fuel. On DayZ 1.29 `BoatFluid` held fuel alone and `CarFluid` declared its own values.
 
 ## What `Transport` provides
 
 | Feature | Source |
 |---|---|
-| Native crew: `CrewSize`, `CrewMemberIndex`, `CrewMember`, `CrewDriver`, `CrewEntry`, `CrewEntryWS`, `CrewTransform`, `CrewGetIn`, `CrewGetOut`, `CrewDeath` | `transport.c:175` to `:212` |
-| `OnDriverEnter`, `OnDriverExit` | `:218` to `:224` |
-| `LightIsOn`, `LightOn`, `LightOff`, `LightToggle`, `OnBeforeLightOn`, `UpdateLights` | `:227` to `:255`, `:362` |
-| Fuel position from the memory point `refill`, `GetRefillPointPosWS` | `:112` to `:115`, `:459` to `:472` |
-| Flip detection: `DetectFlipped`, `IsFlipped`, water-aware `DetectFlippedUsingSurface` | `:522` to `:619` |
-| `ApplyForce`, `ApplyTorque`, `ApplyImpulseAt` and the other physics helpers | `:260` to `:275` |
-| `IsAreaAtDoorFree` | `:844` to `:899` |
-| `GetVehicleType()`, `"VehicleTypeUndefined"` on the base | `:454` to `:457` |
+| Native crew: `CrewSize`, `CrewMemberIndex`, `CrewMember`, `CrewDriver`, `CrewEntry`, `CrewEntryWS`, `CrewTransform`, `CrewGetIn`, `CrewGetOut`, `CrewDeath` | `transport.c:175` to `:215` |
+| `OnDriverEnter`, `OnDriverExit` | `:221` and `:227` |
+| `LightIsOn`, `LightOn`, `LightOff`, `LightToggle`, `OnBeforeLightOn`, `UpdateLights` | `:230` to `:258`, `:365` |
+| Fuel position from the memory point `refill`, `GetRefillPointPosWS` | `:112` and `:113`, `:462` to `:475` |
+| Flip detection: `DetectFlipped`, `IsFlipped`, water-aware `DetectFlippedUsingSurface` | `:525` to `:622` |
+| `ApplyForce`, `ApplyTorque`, `ApplyImpulseAt` and the other physics helpers | `:262` to `:278` |
+| `IsAreaAtDoorFree` | `:853` to `:908` |
+| `GetVehicleType()`, `"VehicleTypeUndefined"` on the base | `:457` to `:460` |
 | Buoyancy state on the owner: `SetBuoyancySubmerged`, `GetBuoyancySubmerged` | `:22` and `:23` |
 
 `Car` adds the native wheel calls (`WheelCount`, `WheelCountPresent`, `WheelGetAngularVelocity`, `WheelHasContact`, `WheelGetSurface`, `WheelGetWaterState`, `WheelGetEntity`, `WheelIsLocked`, `car.c:272` to `:348`; `CarWheelWaterState` at `:67` to `:72`), brakes and handbrake (`GetBrake`, `SetBrake`, `GetHandbrake`, `SetHandbrake`, `SetBrakesActivateWithoutDriver`, `:200` to `:212`), `GetSpeedometer` (`:102`) and flip detection by wheel contact (`DetectFlippedUsingWheels`, `:157` to `:178`). A boat has no brake calls. Since DayZ 1.30 `Boat` also has `GetSpeedometer()` and `GetSpeedometerAbsolute()` (`boat.c:42` to `:56`).
 
-`CarScript.SetActions()` adds `ActionOpenCarDoorsOutside`, `ActionCloseCarDoorsOutside`, `ActionGetInTransport`, `ActionSwitchLights`, the horn actions and `ActionPushCar` (`carscript.c:2313` to `:2321`; on 1.29 `carscript.c:2871` to `:2880`). Since DayZ 1.30 the horn actions are `ActionVehicleHornShort` and `ActionVehicleHornLong`; the old `ActionCarHornShort` and `Long` are marked obsolete, and `CarHornShortActionInput` is an empty alias of `VehicleHornShortActionInput` (`dayz-1-30-vehicles.md`).
+`CarScript.SetActions()` adds `ActionOpenCarDoorsOutside`, `ActionCloseCarDoorsOutside`, `ActionGetInTransport`, `ActionSwitchLights`, the horn actions and `ActionPushCar` (`carscript.c:2313` to `:2321`). Since DayZ 1.30 the horn actions are `ActionVehicleHornShort` and `ActionVehicleHornLong`; the old `ActionCarHornShort` and `Long` are marked obsolete, and `CarHornShortActionInput` is an empty alias of `VehicleHornShortActionInput` (`dayz-1-30-vehicles.md`).
 
 ## Boats
 
@@ -60,13 +60,13 @@ Author a boat like a car up to the shared layer, then diverge. Do not copy a car
 
 Get-in is always open on a boat. A bare `CarScript` inherits a `CrewCanGetThrough` that returns `false` and loses its get-in prompt (`crew-get-in-geometry.md`); `BoatScript` overrides it to return `true` because the cockpit is open and has no doors.
 
-Water physics is config. The boat base has `class Buoyancy` where a car has axles (`P:\DZ\vehicles\water\config.cpp:32` to `:40`):
+Water physics is config. The boat base `BoatScript` has `class Buoyancy` where a car has axles (`P:\DZ\vehicles\water\config.cpp:32` to `:40`):
 
 ```cpp
 class Buoyancy
 {
-    linearDampeningCoefficient;
-    angularDampeningCoefficient;
+    linearDampeningCoefficient = 0;
+    angularDampeningCoefficient = 0;
     linearDragCoefficient = 0.2;
     quadraticDragCoefficient = 0.2;
     falloffPower = 0.8;
@@ -74,7 +74,7 @@ class Buoyancy
 };
 ```
 
-Its `SimulationModule` (`:124` to `:180`) has no `Axles`, wheels or brakes, and carries `class Propeller` (`:167` to `:179`) beside the usual engine, clutch, gearbox, throttle and steering:
+The `SimulationModule` of `Boat_01_ColorBase` (`:124` to `:180`) has no `Axles`, wheels or brakes, and carries `class Propeller` (`:167` to `:179`) beside the usual engine, clutch, gearbox, throttle and steering:
 
 ```cpp
 class Propeller
@@ -88,7 +88,7 @@ class Propeller
 At run time (`boatscript.c`):
 
 - The engine stops when the propeller leaves the water, `GetWaterDepth(pos) < -0.2` then `EngineStop()` in `EOnSimulate` (`:393` to `:407`), and when fuel runs out (`:361` to `:371`).
-- An empty boat decays: a server timer runs `DecayHealthTick` every 10 seconds, four times faster when flipped (`:44` to `:47`, `:110` and `:111`, `:534` to `:548`).
+- A boat decays when no player is within 300 m: a server timer runs `DecayHealthTick` every 10 seconds and takes 0.017 from the `Engine` zone, times the `cfggameplay.json` boat decay multiplier (0 turns decay off), four times as much when flipped and 0.3 times near a territory flag (`:43` to `:47`, `:110` and `:111`, `:534` to `:548`).
 - Four water effects sit on memory points `ptcFxFront`, `ptcFxBack`, `ptcFxSide1`, `ptcFxSide2` (`:129` to `:144`); the classes are `EffectBoatWaterFront`, `Back` and `Side` (`P:\scripts\4_world\entities\effects\boatwatereffects.c:10`, `:116`, `:199`), and the back effect reads `PropellerGetAngularVelocity` (`:183`).
 - A spark plug is the one vital part for starting (`CheckOperationalRequirements`, `:278` to `:286`); a car defaults to demanding both plugs (`invariants-engine-fluids-and-handling.md`).
 - Flips are detected by the water-aware surface check, not wheels (`:490` to `:495`).
@@ -96,7 +96,7 @@ At run time (`boatscript.c`):
 
 Boat actions, under `P:\scripts\4_world\classes\useractionscomponent\actions\`:
 
-- `ActionStartEngineBoat` (continuous) and `ActionStopEngineBoat` (single use) cast the target to `BoatScript`, require `CrewDriver() == player`, and skip server execution when the move strategy is `PHYSICS` (`actionstartengineboat.c:9` to `:70`, `actionstopengineboat.c:1` to `:52`). Start calls `OnIgnition()` in `OnExecute` and `EngineStart()` in `OnFinishProgress` (`actionstartengineboat.c:58`, `:69`); stop calls `EngineStop()` (`actionstopengineboat.c:51`).
+- `ActionStartEngineBoat` (continuous) and `ActionStopEngineBoat` (single use) cast the target to `BoatScript`, require `CrewDriver() == player`, and skip server execution when the move strategy is `PHYSICS` (`actionstartengineboat.c:9` to `:70`, `actionstopengineboat.c:1` to `:52`). Start calls `OnIgnition()` in `OnExecute` and `EngineStart()` in `OnFinishProgress` (`actionstartengineboat.c:69`, `:58`); stop calls `EngineStop()` (`actionstopengineboat.c:51`).
 - `ActionPushBoat extends ActionPushObject`, full body, calling `SyncSoundPushBoat(true)` on start and `SyncSoundPushBoat(false)` on end on the server (`actionpushboat.c:17` to `:46`, the calls at `:35` and `:44`).
 - `ActionRepairBoatChassis` and `ActionRepairBoatEngine` extend `ActionRepairVehiclePartBase`. The chassis action repairs any zone but `Engine` between worn and ruined (`actionrepairboatchassis.c:33` to `:37`); the engine action repairs only `Engine` in that band, with the engine off and a charged blowtorch (`actionrepairboatengine.c:26` to `:48`).
 
@@ -122,8 +122,8 @@ Since DayZ 1.30 the abandoned cistern wrecks `Land_Wreck_Truck01_Aban1_Cistern` 
 
 ## Quads
 
-Vanilla has no quad. Mod quads are plain `CarScript` cars with their slots grouped under `Chassis` instead of `Body` (third-party mod practice, not checked on `P:\`). Everything else follows the car files; the test quad behind many of this pack's measurements is built exactly that way.
+Vanilla has no quad. Mod quads are plain `CarScript` cars with their slots grouped under `Chassis` instead of `Body` (third-party mod practice, not checked on `P:\`). Everything else follows the car files; several in-game measurements in this pack were taken on a test vehicle built that way.
 
 ## Motorbikes
 
-Since DayZ 1.30 the game ships `class Motorbike: Transport`, `MotorbikeScript` (not a `CarScript`), two bikes (`Motorbike_01` and `Motorbike_02` in `vehicles_singletrack.pbo`) and a two-wheel `SimulationModule` with `Wheels{Front,Rear}` instead of `Axles`, `Steering.maxLeanAngle[]` and `tipoverAngle`, and `Brakes{Front input=1, Rear input=0}` (`P:\DZ\vehicles\singletrack\config.cpp:263` to `:378`, `Motorbike_01_ColorBase`). Never derive a bike's lean and balance from the four-wheel `Axles` blocks. The full contract is in `motorbikes.md` and the other motorbike files.
+Since DayZ 1.30 the game ships `class Motorbike: Transport`, `MotorbikeScript` (not a `CarScript`), two bikes (`Motorbike_01` and `Motorbike_02` in `vehicles_singletrack.pbo`) and a two-wheel `SimulationModule` with `Wheels{Front,Rear}` instead of `Axles`, `Steering.maxLeanAngle[]` and `tipoverAngle`, and `Brakes{Front input=1, Rear input=0}` (`P:\DZ\vehicles\singletrack\config.cpp:267` to `:382`, `Motorbike_01_ColorBase`). Never derive a bike's lean and balance from the four-wheel `Axles` blocks. The full contract is in `motorbikes.md` and the other motorbike files.

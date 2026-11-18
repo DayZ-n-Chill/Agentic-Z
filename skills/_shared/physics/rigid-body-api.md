@@ -22,7 +22,7 @@ For an item that only has to fall or be thrown, use the native path in `drop-and
 | `dBodyCreateGhostEx(ent, geoms)` | Ghost body from your own geometries (vanilla does not say more about what a ghost does) | `P:\scripts\1_core\proto\enphysics.c:39` |
 | `dBodyCreateDynamicEx(ent, centerOfMass, mass, geoms)` | Dynamic body from your own geometries | `P:\scripts\1_core\proto\enphysics.c:51` |
 | `Physics.CreateDynamic(ent, mass, layerMask)` | Dynamic body "from geometry embedded in attached VObject", that is from the model; false when the model has none | `P:\scripts\1_core\physics\physics.c:184` to `:189` |
-| `Physics.CreateStatic(ent, layerMask)` | Static body from the model's geometry | `P:\scripts\1_core\physics\physics.c:170` |
+| `Physics.CreateStatic(ent, layerMask)` | Static body from the model's geometry; `layerMask` is ANDed with the layers in the model, so `0xffffffff` keeps them | `P:\scripts\1_core\physics\physics.c:166` to `:170` |
 | `Physics.CreateGhostEx(ent, geoms)` | Ghost body from your own geometries | `P:\scripts\1_core\physics\physics.c:210` |
 | `dBodyDestroy(ent)` | Removes the body | `P:\scripts\1_core\proto\enphysics.c:54` |
 
@@ -112,5 +112,5 @@ Two more that are often assumed: an `EOnSimulate` override on `CarScript` (there
 ## Debugging a body
 
 - Count and list the world's dynamic bodies with `dGetNumDynamicBodies(worldEnt)` and `dGetDynamicBody(worldEnt, index)` (`P:\scripts\1_core\proto\enphysics.c:9` to `:10`).
-- Draw a shape where you think the body is: `Shape.CreateSphere(color, flags, origin, radius)` (`P:\scripts\1_core\proto\endebug.c:169`), with `ShapeFlags.ONCE` for a shape redrawn each frame (`:132`). Do not keep a pointer to a `ONCE` shape.
+- Draw a shape where you think the body is: `Shape.CreateSphere(color, flags, origin, radius)` (`P:\scripts\1_core\proto\endebug.c:170`), with `ShapeFlags.ONCE` for a shape redrawn each frame (`:132`). Do not keep a pointer to a `ONCE` shape.
 - The body state queries (`dBodyIsSet`, `dBodyIsDynamic`, `dBodyIsActive`) are in `drop-and-throw.md`.

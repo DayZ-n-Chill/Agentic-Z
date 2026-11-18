@@ -8,21 +8,20 @@ What DayZ 1.30 changed in the config and script around wearables, what that brea
 
 | Change | Read |
 |---|---|
-| NBC clothing lists a second slot (`NBCHead`, `NBCTop`, `NBCPants`, `NBCBoots`, `NBCGloves`) | `slots-and-cargo.md`, section "NBC slots" |
-| Nine backpack bases take the NBC pack in the new `NBCBag` slot | `slots-and-cargo.md`, section "`NBCBag` on backpacks" |
-| GP5 and Airborne mask protection moved to the filter | `protection-and-insulation.md`, section "Masks with a filter slot" |
+| NBC clothing lists a second slot (`NBCHead`, `NBCTop`, `NBCPants`, `NBCBoots`, `NBCGloves`) so the NBC pack can hold it | `slots-and-cargo.md`, section "NBC slots" |
+| Nine backpack bases take the NBC pack in the new `NBCBag` slot | `slots-and-cargo.md`, section "`NBCBag` on backpacks" || GP5 and Airborne mask protection moved to the filter | `protection-and-insulation.md`, section "Masks with a filter slot" |
 | Head hiding and wetness values are read on the item type | Below, and `models-and-proxies.md`, section "An item that fits two slots" |
 | Wash head and wet clothing actions | `protection-and-insulation.md`, section "Wetting clothes on purpose" |
 | Shoes take less inventory space | Below |
 | `WaterPouch_*` config classes renamed `Waterskin_*` | Below |
 | An armband from a flag no longer needs an empty flag | Below |
-| Regional clothing scripts with no config | Below |
+| Regional clothing in the `Nasdara` addons | Below |
 
 Before 1.30 an NBC base listed only its regular slot, for example `NBCHoodBase` with `{"Headgear"}`, and `TaloonBag_ColorBase` listed `{"Chemlight","WalkieTalkie","Backpack_1"}` (1.29, not on `P:\`).
 
 ## Values read on the item type
 
-`ItemBaseType` reads `headSelectionsToHide` and `hideSelectionsByinventorySlot` once per type (`P:\scripts\4_world\entities\itembasetype.c:105` to `:113`), next to `varWetMax` (`:71`), `temperaturePerQuantityWeight` (`:117`) and the `EnvironmentWetnessIncrements` maps (`:124` to `:137`). `ItemBase` reads them back from the type: `GetHeadHidingSelection` and `HidesSelectionBySlot` (`P:\scripts\4_world\entities\itembase.c:4522` and `:4523`), `GetWetMax` (`:3722`), and the starting wetness from `m_VarWetInit` (`:165`).
+`ItemBaseType` reads `headSelectionsToHide` and `hideSelectionsByinventorySlot` once per type (`P:\scripts\4_world\entities\itembasetype.c:105` to `:113`), next to `varWetMax` (`:71`), `temperaturePerQuantityWeight` (`:117`) and the `EnvironmentWetnessIncrements` maps (`:124` to `:137`). `ItemBase` reads them back from the type: `GetHeadHidingSelection` and `HidesSelectionBySlot` (`P:\scripts\4_world\entities\itembase.c:4522` and `:4527`), `GetWetMax` (`:3726`), and the starting wetness from `m_VarWetInit` (`:165`).
 
 The config keys are not new. In 1.29 `ItemBase` parsed `headSelectionsToHide` and `hideSelectionsByinventorySlot` on each item, and there was no `ItemBaseType` script file (1.29, not on `P:\`). A mod's config needs no change; script that read the old `ItemBase` members directly does.
 
@@ -73,28 +72,28 @@ class WaterPouch_Natural: Waterskin_Natural { scope = 1; };
 
 `CraftArmbandFlag.CanDo` now only refuses a flag that is attached to something: `return !ingredients[0].GetInventory().IsAttachment();` (`P:\scripts\4_world\classes\recipes\recipes\craftarmbandflag.c:103` to `:105`). In 1.29 it was `return ingredients[0].IsEmpty();` (1.29, not on `P:\`). The tools also include `Jambiya`, `Scimitar`, `DonerKnife` and `Akinaka` (`:42` and `:59` to `:61`). A mod that overrides this recipe must not assume the flag is empty.
 
-## Regional clothing scripts with no config
+## Regional clothing in the `Nasdara` addons
 
-Script classes under `P:\scripts\4_world\entities\itembase\clothing\` exist for a set of garments (the Nasdara set: kameez, shalwar, pakol, dust goggles and others) that have no class in any `config.cpp` under `P:\DZ`:
+A set of regional garments (kameez, shalwar, pakol, turban, keffiyeh, dust goggles and others) has its config under `P:\DZ\characters_takistan\`, one `DZ_Characters_Nasdara_*` addon per folder, and its script classes under `P:\scripts\4_world\entities\itembase\clothing\`. Every config base inherits `Clothing`.
 
-| Script class | Parent | File |
+| Class | Script parent | Config |
 |---|---|---|
-| `DustGoggles_ColorBase` | `Glasses_Base` | `dustgoggles_colorbase.c` |
-| `FNOJacket` | `Top_Base` | `fnojacket.c` |
-| `FNOPants` | `Pants_Base` | `fnopants.c` |
-| `KameezShirt_ColorBase` | `Top_Base` | `kameez_colorbase.c` |
-| `LeatherHipPack_ColorBase` | `Belt_Base` | `leatherhippack_colorbase.c` |
-| `LinenVest_ColorBase` | `Vest_Base` | `linenvest_colorbase.c` |
-| `PakolHat_ColorBase` | `HeadGear_Base` | `pakolhat_colorbase.c` |
-| `PoliceShortSleeveShirt_ColorBase` | `Top_Base` | `policeshortsleeveshirt_colorbase.c` |
-| `RobeVest_ColorBase` | `Vest_Base` | `robevest_colorbase.c` |
-| `SandalsShoes_ColorBase` | `Shoes_Base` | `sandals_colorbase.c` |
-| `MensShalwarPants_ColorBase` | `Pants_Base` | `mensshalwarpants_colorbase.c` |
-| `WomensShalwarPants_ColorBase` | `Pants_Base` | `womensshalwarpants_colorbase.c` |
-| `ShortSleeveShirt_ColorBase` | `Top_Base` | `shortsleeveshirt_colorbase.c` |
-| `TurbanHat_ColorBase` | `HeadGear_Base` | the turban hat file |
+| `DustGoggles_ColorBase` | `Glasses_Base` | `glasses\config.cpp:25` |
+| `FNOJacket` | `Top_Base` | `tops\config.cpp:1503` |
+| `FNOPants` | `Pants_Base` | `pants\config.cpp:1388` |
+| `KameezShirt_ColorBase` | `Top_Base` | `tops\config.cpp:651` |
+| `LeatherHipPack_ColorBase` | `Belt_Base` | `belts\config.cpp:175`, spelled `LeatherHipPack_Colorbase` there |
+| `LinenVest_ColorBase` | `Vest_Base` | `vests\config.cpp:205` |
+| `PakolHat_ColorBase` | `HeadGear_Base` | `headgear\config.cpp:22` |
+| `PoliceShortSleeveShirt_ColorBase` | `Top_Base` | `tops\config.cpp:1168` |
+| `RobeVest_ColorBase` | `Vest_Base` | `vests\config.cpp:410` |
+| `SandalsShoes_ColorBase` | `Shoes_Base` | `shoes\config.cpp:786` |
+| `MensShalwarPants_ColorBase` | `Pants_Base` | `pants\config.cpp:788` |
+| `WomensShalwarPants_ColorBase` | `Pants_Base` | `pants\config.cpp:1008` |
+| `ShortSleeveShirt_ColorBase` | `Top_Base` | `tops\config.cpp:929` |
+| `TurbanHat_ColorBase` | `HeadGear_Base` | `headgear\config.cpp:182` |
 
-Their insulation, cargo, `ClothingTypes` paths and models are not in the vanilla data on `P:\`, so do not state them. Treat them as content of a DLC or regional release until a config appears, and never inherit from them in a mod that must load on the base game.
+The same addons also hold `Keffiyeh_ColorBase` and `OBRCap_ColorBase` (`headgear\config.cpp:418` and `:689`), `OBRJacket_ColorBase` (`tops\config.cpp:1319`), `OBRPants_ColorBase` (`pants\config.cpp:1217`), `ChestRigVest_ColorBase` (`vests\config.cpp:27`) and `TraditionalSandalShoes_ColorBase` (`shoes\config.cpp:932`), plus desert colors of vanilla backpacks such as `CoyoteBag_Desert` (`backpacks\config.cpp:26`). All paths are under `P:\DZ\characters_takistan\`. A mod that inherits one of these names its `DZ_Characters_Nasdara_*` addon in `requiredAddons[]` (`classes-and-parents.md`). Whether these items are tied to a DLC is not checked on `P:\`.
 
 `LeatherHipPack_ColorBase` goes into cargo only while it is empty, and takes attachments only while it is not itself in cargo (`P:\scripts\4_world\entities\itembase\clothing\leatherhippack_colorbase.c:3` to `:20`).
 
@@ -102,7 +101,7 @@ Their insulation, cargo, `ClothingTypes` paths and models are not in the vanilla
 
 | Breaks | Fix |
 |---|---|
-| NBC clothing that lists only the regular slot cannot be layered with regular headgear, tops, pants, shoes or gloves | Add the matching `NBC*` slot to `inventorySlot[]` |
+| NBC clothing that lists only the regular slot cannot be stored on the NBC pack | Add the matching `NBC*` slot to `inventorySlot[]`, after the regular one |
 | A custom backpack cannot take the NBC pack | Add `"NBCBag"` to `attachments[]` |
 | A GP5 or Airborne copy that hardcodes `biological` on the mask, or leaves out the filter slot, does not match 1.30 | `attachments[] = {"GasMaskFilter"}`; biological protection comes from `GasMask_Filter`, not the mask's `Protection` class |
 | `CreateObject("WaterPouch_Natural")` and recipes naming `WaterPouch_*` fail | Use `Waterskin_*`; add the alias above only if an old world needs it |

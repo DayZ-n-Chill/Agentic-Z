@@ -8,7 +8,7 @@ The selection, the script swap and the scene light are in `emissive-leds-and-dyn
 
 The `emmisive[]` array is read by the normal lighting formula whatever shader runs; there is no emission-only shader. Any lit shader (`Super`, `Normal`, `Multi`, `Glass`, `NonTL`, `SuperExt`, the `NormalMap` family) uses it. The shader choice decides which texture stages you get, not whether emission works.
 
-Vanilla shows both ends. The remote detonator LED glows with `emmisive[]={10,0.5,...}` on `PixelShaderID="Super"` with procedural stages (`P:\DZ\gear\tools\data\remotedetonator_led.rvmat:4` and `:7`). The muzzle flash glows on `PixelShaderID="Normal"` with the `Basic` vertex shader (`P:\DZ\data\data\zasleh.rvmat:11`).
+Vanilla shows both ends. The remote detonator LED glows with `emmisive[]={10,0.5,...}` on `PixelShaderID="Super"` with procedural stages (`P:\DZ\gear\tools\data\remotedetonator_led.rvmat:4` and `:7`). The muzzle flash glows on `PixelShaderID="Normal"` with the `Basic` vertex shader (`P:\DZ\data\data\zasleh.rvmat:11` and `:12`).
 
 ## Which pattern to use
 
@@ -89,7 +89,7 @@ These values are a starting point for a custom LED and are not checked on `P:\`.
 
 ## Spelling
 
-Vanilla spells the key `emmisive`, two m's (`P:\DZ\vehicles\wheeled\offroadhatchback\data\engine_niva.rvmat:4`, a material on `PixelShaderID="Super"` at `:7`); keep that spelling. Every vanilla material under `P:\DZ` that sets it spells it that way and none uses `emissive[]`. That the engine ignores `emissive[]` is not checked on `P:\`.
+Vanilla spells the key `emmisive`, two m's (`P:\DZ\vehicles\wheeled\offroadhatchback\data\engine_niva.rvmat:4`, a material on `PixelShaderID="Super"` at `:7`); keep that spelling. A scan of the `.rvmat` files under `P:\DZ` finds 44,505 that set `emmisive[]` and none that set `emissive[]`. That the engine ignores `emissive[]` is not checked on `P:\`.
 
 ## An LED that renders black
 

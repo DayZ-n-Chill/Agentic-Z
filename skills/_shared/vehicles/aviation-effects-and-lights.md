@@ -54,7 +54,7 @@ class MyMod_PlaneFrontLight extends CarLightBase
 }
 ```
 
-That is the pre 1.30 pattern. Since 1.30 a vanilla headlight is a `VehicleLightBase` (`P:\scripts\4_world\entities\scriptedlightbase\spotlightbase\vehiclelightbase.c:1`), set up by a `VehicleLightProfileBase` child and registered with `m_LightsComponent.RegisterLight(...)`. The old per car classes are marked obsolete: `CivilianSedanFrontLight` carries `[Obsolete("use VehicleLightBase and VehicleLightProfileBase instead")]` (`P:\scripts\4_world\entities\scriptedlightbase\spotlightbase\carlightbase\civiliansedanfrontlight.c:1`). Keep the `CarLightBase` version in a mod that already ships it and write new work the 1.30 way; the steps are in `aviation-dayz-1-30.md`.
+That is the pre 1.30 pattern. Since 1.30 a vanilla headlight is a `VehicleLightBase` (`P:\scripts\4_world\entities\scriptedlightbase\spotlightbase\vehiclelightbase.c:1`), set up by a `VehicleLightProfileBase` child and registered with `m_LightsComponent.RegisterLight(...)`. The old per car classes are marked obsolete: `CivilianSedanFrontLight` carries `[Obsolete("use VehicleLightBase and VehicleLightProfileBase instead")]` (`P:\scripts\4_world\entities\scriptedlightbase\spotlightbase\carlightbase\civiliansedanfrontlight.c:1`). On 1.30 no vanilla script calls `CreateFrontLight` any more, so a `CarLightBase` headlight returned from it never lights; port it to a profile. The steps are in `aviation-dayz-1-30.md`.
 
 ## Seaplane spray
 

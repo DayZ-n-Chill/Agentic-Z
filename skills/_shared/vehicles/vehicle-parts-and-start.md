@@ -67,13 +67,15 @@ class CfgNonAIVehicles
 
 Doors are `CarDoor` items (`class MyMod_Door: CarDoor`) with their own `model=` (the example 4x4 ships `Landrover_Driver_Door`, `Landrover_CoDriver_Door`, `Landrover_Hood` and `Landrover_Trunk`, each with `model="\Landrover\proxy\<Door>.p3d"`), `inventorySlot`, `hiddenSelections` and a `DamageZones` block with `Window` and `Doors` zones. The opening animation lives in `model.cfg` and `AnimationSources`, not on the item.
 
+Script every wheel class on `CarWheel` (on `MotorbikeWheel` for a bike). The server's `cfggameplay.json` switches `canDetachAttachedCarWheels` and `canDamageAttachedCarWheels`, both `true` by default (`P:\scripts\3_game\cfggameplaydatajson.c:414` to `:418`), are checked in `CarWheel.CanDetachAttachment` and `EEOnDamageCalculated`, and only when the wheel's parent or root is a `CarScript` (`P:\scripts\4_world\entities\core\inherited\inventoryitem.c:271` to `:288`). `MotorbikeWheel` does the same for a `MotorbikeScript` with `canDetachAttachedBikeWheels` and `canDamageAttachedBikeWheels` (`:381` to `:398`). A wheel on a vehicle that is not a `CarScript` or `MotorbikeScript` ignores these settings.
+
 ## Engine won't start
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Engine cranks but never runs | Battery or plug slot missing or empty | `CarBattery` and `SparkPlug` (often `CarRadiator`) in `attachments[]` and fitted in game |
-| Won't start even with a spark plug | Every `IsVital*` defaults to true (`P:\scripts\3_game\vehicles\transport.c:404` to `:417` for plugs and fuel tank; `P:\scripts\4_world\entities\vehicles\carscript.c:2201` to `:2209` for belt and radiator), so a bare `CarScript` also demands a glow plug (`carscript.c:1783`) | Petrol: return false from `IsVitalGlowPlug()` (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:370`). Diesel: return false from `IsVitalSparkPlug()` (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroad_02.c:415`). Declare only the plug you use. |
-| Engine drowns at spawn | No `drown_engine` memory point, so it sits at 0,0,0 | Add it at the engine |
+| Engine cranks but never runs | Battery or plug slot missing or empty | `CarBattery` and `SparkPlug` (often `CarRadiator`) in `attachments[]` and fitted in game. Since DayZ 1.30 the battery check runs only when `NeedElectricitySourceDevice()` is `true` (`P:\scripts\4_world\entities\vehicles\carscript.c:1768` to `:1774`); `IsVitalCarBattery` and `IsVitalTruckBattery` are obsolete (`:2811` to `:2821`). |
+| Won't start even with a spark plug | Every `IsVital*` defaults to true (`P:\scripts\3_game\vehicles\transport.c:407` to `:420` for plugs and fuel tank; `P:\scripts\4_world\entities\vehicles\carscript.c:2201` to `:2209` for belt and radiator), so a bare `CarScript` also demands a glow plug (`carscript.c:1783`) | Petrol: return false from `IsVitalGlowPlug()` (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:370`). Diesel: return false from `IsVitalSparkPlug()` (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroad_02.c:415`). Declare only the plug you use. |
+| Engine drowns at spawn | No `drown_engine` memory point (`carscript.c:170`, read at `:368`), so it sits at 0,0,0 | Add it at the engine |
 | `unknown animation source damper` | Damper source missing | Add all four (`vehicle-config-and-modelcfg.md`, section "`AnimationSources`") |
 | Revs with no torque or stalls oddly | `torqueCurve[]` does not start and end at 0 Nm, or rpm bands out of order | Start and end the curve at 0; keep `rpmIdle < rpmMin < rpmClutch < rpmRedline` |
 | Steers but wheels do not spin | `animRotation` not wired in `model.cfg`, or no `wheel_X_Y_axis` | `vehicle-modelcfg-animations.md` |

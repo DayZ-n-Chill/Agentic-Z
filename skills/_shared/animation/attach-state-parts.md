@@ -52,7 +52,7 @@ override void EEItemDetached(EntityAI item, string slot_name)
 
 The item carries two selections, a detailed one for the ground and a lighter one for when it is attached, and shows one of them. The item drives it from its own hooks, not the host. Vanilla does exactly this with the flag:
 
-- Config: two `user` sources named after the selections, `folded` with `initPhase = 0` (shown) and `unfolded` with `initPhase = 1` (hidden) (`P:\DZ\gear\camping\config.cpp:13052` to `:13066`).
+- Config: two `user` sources named after the selections, `folded` with `initPhase = 0` (shown) and `unfolded` with `initPhase = 1` (hidden) (`P:\DZ\gear\camping\config.cpp:13062` to `:13076`).
 - Script: the constructor shows `folded` and hides `unfolded`, `OnWasAttached` swaps them and `OnWasDetached` swaps back (`P:\scripts\4_world\entities\itembase\flag_base.c:7`, `:25`, `:33`).
 
 ```c

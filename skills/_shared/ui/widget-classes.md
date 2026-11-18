@@ -70,7 +70,7 @@ proto native void SetMaskTransitionWidth(float value);    // 0 to 1, edge softne
 
 `SetColor` multiplies the texture, so author art that you will tint in white or grey.
 
-A procedural texture string from script, `img.LoadImageFile(0, "#(argb,8,8,3)color(1,1,1,1,CO)")`, fails on 1.29 with "Bad texture name" and "LoadImageFile can't load" in the RPT and leaves the widget with no texture (measured in game, not repeated on 1.30). Vanilla builds such strings only for item materials: `string.Format("#(argb,8,8,3)color(%1,CO)", ...)` (`P:\scripts\4_world\static\miscgameplayfunctions.c:243`). Use a 1x1 white `.edds`, or a style whose `Center` is `WhitePixel` (`styles-format.md`). The same string as `image0` in a layout logs no error; whether it draws is not confirmed.
+A procedural texture string from script, `img.LoadImageFile(0, "#(argb,8,8,3)color(1,1,1,1,CO)")`, fails on 1.29 with "Bad texture name" and "LoadImageFile can't load" in the RPT and leaves the widget with no texture (measured in game, not repeated on 1.30). Vanilla builds such strings only for item materials: `string.Format("#(argb,8,8,3)color(%1,CO)", ...)` (`P:\scripts\4_world\static\miscgameplayfunctions.c:245`). Use a 1x1 white `.edds`, or a style whose `Center` is `WhitePixel` (`styles-format.md`). The same string as `image0` in a layout logs no error; whether it draws is not confirmed.
 
 ## Buttons and inputs
 
@@ -87,9 +87,9 @@ Other controls, in short:
 |---|---|
 | `XComboBoxWidget` | `AddItem`, `ClearAll`, `GetCurrentItem`, `SetCurrentItem`, `GetNumItems` |
 | `TextListboxWidget` | `AddItem(text, userData, column, row = -1)` returns the row, `SetItem`, `GetItemText(row, col, out text)`, `SetItemColor(row, col, color)`, `RemoveRow`, `GetSelectedRow`, `SelectRow`, `GetNumItems`, `GetItemData`, `EnsureVisible`, `ClearItems` |
-| `ProgressBarWidget` | Extends `SimpleProgressBarWidget`; `SetCurrent(float)`; `GetMin` and `GetMax` only read, so the range comes from the layout or style. Vanilla is said to drive it from 0 to 100 (not checked on `P:\`) |
+| `ProgressBarWidget` | Extends `SimpleProgressBarWidget` (`P:\scripts\1_core\proto\enwidgets.c:369` to `:379`); `SetCurrent(float)`; `GetMin` and `GetMax` only read, so the range comes from the layout or style. Vanilla drives the stamina bar from 0 to 100: `m_Stamina.SetCurrent((value / range) * 100)` (`P:\scripts\5_mission\gui\ingamehud.c:690`) |
 | `PasswordEditBoxWidget` | An edit box plus `SetHideText(bool)` |
-| `MapWidget` | `ScreenToMap`, `MapToScreen`, `SetMapPos`, `GetMapPos`, `SetScale`, `GetScale`, `AddUserMark`, `ClearUserMarks` (`P:\scripts\3_game\gameplay.c:322`; `map-and-markers.md`) |
+| `MapWidget` | `ScreenToMap`, `MapToScreen`, `SetMapPos`, `GetMapPos`, `SetScale`, `GetScale`, `AddUserMark`, `ClearUserMarks` (`P:\scripts\3_game\gameplay.c:321`; `map-and-markers.md`) |
 
 Dabs Framework binds both ways (`Two_Way_Binding`) to edit boxes, multiline edit boxes, password edit boxes, check boxes, sliders, combo boxes, text list boxes, progress bars, buttons, and to scroll and spacer widgets that hold a collection; text, rich text, image and preview widgets bind one way only (`dabs-mvc-internals.md`).
 

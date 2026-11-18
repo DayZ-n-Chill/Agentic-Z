@@ -4,7 +4,7 @@ How the vanilla `Motorbike_01_ColorBase` lays out its `DamageSystem`, which mate
 
 ## Global health
 
-The `DamageSystem` runs from `P:\DZ\vehicles\singletrack\config.cpp:400` to `:989`. `GlobalHealth` has `hitpoints = 1000` and empty `healthLevels[]` at 1.0, 0.7, 0.5, 0.3 and 0.0.
+The `DamageSystem` runs from `P:\DZ\vehicles\singletrack\config.cpp:404` to `:993`. `GlobalHealth` has `hitpoints = 1000` and empty `healthLevels[]` at 1.0, 0.7, 0.5, 0.3 and 0.0.
 
 ## Damage zones
 
@@ -39,7 +39,7 @@ healthLevels[] = {{1.0,{"dz\vehicles\singletrack\motorbike_01\data\motorbike_01_
 
 ## Inventory groups
 
-`GUIInventoryAttachmentsProps` (`config.cpp:955` to `:988`) sorts the slots into three groups:
+`GUIInventoryAttachmentsProps` (`config.cpp:959` to `:992`, nested inside `DamageSystem`) sorts the slots into three groups:
 
 | Group | `name` | `icon` | `attachmentSlots[]` |
 |---|---|---|---|
@@ -114,4 +114,4 @@ class Motorbike_01_Wheel_2_Ruined: Motorbike_01_Wheel_2
 };
 ```
 
-The rear wheel is more than twice as wide as the front (0.14 m against 0.06 m) and has twice the lateral friction (6.0 against 3.0). Each wheel model also needs a proxy class in `CfgNonAIVehicles` (`config.cpp:2316` to `:2350`); see `motorbike-forward-contract.md`.
+The rear wheel is more than twice as wide as the front (0.14 m against 0.06 m) and has twice the lateral friction (6.0 against 3.0). Each wheel model also needs a proxy class in `CfgNonAIVehicles` (`config.cpp:2323` to `:2357`); see `motorbike-forward-contract.md`.

@@ -29,11 +29,11 @@ python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove [--dry-run]
 | `--dry-run` | Works in every mode. Reports the change and the name warnings, then writes nothing (no backup either). Use it to preview an edit before it touches the file. |
 | `--nominal N` | Target spawn count. Default for new entries: 1. |
 | `--min N` | Minimum spawn count. Default for new entries: 0. |
-| `--lifetime S` | Despawn timeout in seconds. Default for new entries: 14400 (4 hours, the usual vanilla loot lifetime; storage items such as barrels use 3888000). |
+| `--lifetime S` | Despawn timeout in seconds. Default for new entries: 14400 (4 hours, the most common vanilla value: 1293 of the 2382 chernarusplus entries; storage items such as barrels use 3888000, as `BarrelHoles_Blue` at `P:\DZ\worlds\chernarusplus\ce\db\types.xml:3158`). |
 | `--restock S` | Restock interval in seconds. Default for new entries: 0. |
 | `--cost N` | Spawn cost / weight. Default for new entries: 100. |
 | `--quantmin N` | Lowest spawn quantity in percent, for a quantity item (magazine, bottle, battery): `-1` (not a quantity item) or 0 to 100. Default for new entries: -1. Vanilla example: AKM has `<quantmin>30</quantmin>` (`P:\DZ\worlds\chernarusplus\ce\db\types.xml:129`). |
-| `--quantmax N` | Highest spawn quantity in percent: `-1` or 0 to 100. Default for new entries: -1 (AKM: 80, same file line 130). Pass both `--quantmin` and `--quantmax` when turning an entry into a quantity item or back: every vanilla entry has both at -1 or both set (all 2382, 2391 and 2404 entries in the chernarusplus, enoch and sakhal `types.xml`). An edit that leaves exactly one of them at -1 prints `[WARN] <ClassName>: quantmin is 50 but quantmax is -1; ...` and still goes ahead. |
+| `--quantmax N` | Highest spawn quantity in percent: `-1` or 0 to 100. Default for new entries: -1 (AKM: 80, `types.xml:130`). Pass both `--quantmin` and `--quantmax` when turning an entry into a quantity item or back: every vanilla entry has both at -1 or both set (all 2382, 2391, 2404 and 2411 entries in the chernarusplus, enoch, sakhal and nasdara `types.xml` under `P:\DZ\worlds\`). An edit that leaves exactly one of them at -1 prints `[WARN] <ClassName>: quantmin is 50 but quantmax is -1; ...` and still goes ahead. |
 | `--category CAT` | Sets `<category name="CAT"/>`. Single value (replaces any existing). |
 | `--usage TAG` | Set the entry's usages to exactly the `<usage name="TAG"/>` tags given. Repeatable. Every usage not passed is removed, so to add one, pass the existing usages too. The change line names what was removed. |
 | `--value TAG` | Set the entry's values to exactly the `<value name="TAG"/>` tags given. Repeatable. Every value not passed is removed. |
@@ -45,9 +45,9 @@ python "<skill-dir>\types_edit.py" <types.xml> <ClassName> --remove [--dry-run]
 2. Read and parse `<types.xml>` (comments are kept). Locate the `<type name="<ClassName>">` block. Names match ignoring case, because DayZ class names are case-insensitive: vanilla `P:\DZ\worlds\chernarusplus\ce\db\types.xml:3036` lists `Bandana_Blackpattern` for the config class `Bandana_BlackPattern` (`P:\DZ\characters\headgear\config.cpp:3084`). So `akm` updates or removes the existing `AKM` block instead of adding a second one, and the file keeps its own spelling.
 3. Upsert mode (default):
    - If the block exists, update only the fields passed. Untouched fields stay as-is.
-   - If the block doesn't exist, create one. Fields not passed get the defaults above, plus the vanilla standard flags (`count_in_map=1`, everything else 0). Children are written in vanilla order: `nominal`, `lifetime`, `restock`, `min`, `quantmin`, `quantmax`, `cost`, `flags`, then `category`, `tag`, `usage`, `value`. An edit that adds a name puts it in the same place among the existing children.
+   - If the block doesn't exist, create one. Fields not passed get the defaults above, plus the vanilla standard flags (`count_in_map=1`, everything else 0, as on the AKM at `types.xml:132`). Children are written in vanilla order: `nominal`, `lifetime`, `restock`, `min`, `quantmin`, `quantmax`, `cost`, `flags`, then `category`, `tag`, `usage`, `value`. An edit that adds a name puts it in the same place among the existing children.
 4. Remove mode (`--remove`): delete the block.
-5. Name check (upsert mode): the entry's `<category>`, `<usage>`, `<value>` and `<tag>` names are checked against the mission's `cfglimitsdefinition.xml`, found next to `db/` (`<types.xml>\..\..\`). A `user=` group is checked against `cfglimitsdefinitionuser.xml` when it exists; without that file `user=` groups are not checked. Each name the file does not define prints `[WARN] usage name "Militar" is not defined in cfglimitsdefinition.xml`, because the Central Economy ignores or rejects it. The edit still goes ahead. When `cfglimitsdefinition.xml` is not there (a types file kept in a mod folder), the check is skipped with a note.
+5. Name check (upsert mode): the entry's `<category>`, `<usage>`, `<value>` and `<tag>` names are checked against the mission's `cfglimitsdefinition.xml`, found next to `db/` (`<types.xml>\..\..\`), the same place vanilla keeps it (`P:\DZ\worlds\chernarusplus\ce\cfglimitsdefinition.xml`, with `categories`, `tags`, `usageflags` and `valueflags` at `:3`, `:13`, `:18` and `:37`). A `user=` group is checked against `cfglimitsdefinitionuser.xml` when it exists (vanilla defines groups such as `TownVillage` and `Tier12` there, `P:\DZ\worlds\chernarusplus\ce\cfglimitsdefinitionuser.xml:4` and `:17`); without that file `user=` groups are not checked. Each name the file does not define prints `[WARN] usage name "Militar" is not defined in cfglimitsdefinition.xml`, because the Central Economy ignores or rejects it (what the server does with it is not checked on `P:\`; read the server RPT). The edit still goes ahead. When `cfglimitsdefinition.xml` is not there (a types file kept in a mod folder), the check is skipped with a note.
 6. If nothing changed (entry already matches, or the entry to remove is absent), or `--dry-run` was passed, stop: no backup, no write.
 7. Otherwise copy the file to `<types.xml>.<YYYYMMDD-HHMMSS>.bak` (a new backup every run; a `-2`, `-3` counter is added within the same second) and write back only the `<type>` blocks that changed. If the file cannot be written (read-only, open in another program, disk full), the run stops with `[FAIL] Could not write <types.xml>: <reason>` and exit 1. When the file is still unchanged, the backup this run made is removed; when the write got partway, the backup is kept and the message names it so you can restore from it.
 
@@ -129,6 +129,12 @@ Nothing to do:
 ```
 [OK]    <type name="MyMod_Vest"> already matches; no change
 ```
+
+## Before an entry can spawn
+
+- The Central Economy handles only classes under one of the root classes in `cfgeconomycore.xml`: `DefaultWeapon`, `DefaultMagazine`, `Inventory_Base`, `HouseNoDestruct`, `SurvivorBase`, `DZ_LightAI`, `CarScript`, `BoatScript`, `MotorbikeScript` and `HouseDestructible` (`P:\DZ\worlds\chernarusplus\ce\cfgeconomycore.xml:9` to `:18`). A mod item whose config class does not inherit from one of them gets no spawns from its `types.xml` entry.
+- `nominal 0` keeps an entry from spawning as loot; vanilla gives it to items players make, such as `BarrelHoles_Blue` (`types.xml:3157`), the result of the poke holes recipe, whose `AddResult("BarrelHoles_")` takes the barrel's colour into the class name (`P:\scripts\4_world\classes\recipes\recipes\pokeholesbarrel.c:70` and `:76`).
+- To see why an entry does not spawn, set `log_ce_lootspawn` to `true` in the mission's `cfgeconomycore.xml`; vanilla ships it `false` (`cfgeconomycore.xml:29`).
 
 ## Do not
 

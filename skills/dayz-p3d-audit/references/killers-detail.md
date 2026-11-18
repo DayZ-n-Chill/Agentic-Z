@@ -114,7 +114,7 @@ Count the union of all `ComponentNN` selections, never `Component01` alone. A he
 
 **`autocenter=0`** (rule and audit in `p3d-killers.md`). The property does not have to sit on every collision LOD. Vanilla holds the `autocenter` property exactly once in each of `P:\DZ\gear\camping\wooden_case.p3d`, `sea_chest.p3d`, `watchtower.p3d`, `territory_flag.p3d` and `P:\DZ\gear\containers\55galdrum.p3d`, while `P:\DZ\gear\camping\fence.p3d` holds it seven times. So the Geometry LOD is where it is needed, and more LODs may carry it. The audit checks the Geometry LOD only. In py3d: `lod.properties['autocenter'] = '0'`.
 
-**Memory and Geometry LODs.** A LandContact LOD (`2e15`, the ground contact points) is also worth adding to an object that rests on the ground; 980 vanilla models carry one (`_shared/models/lods.md`). Some online guides give `7e13` for View Geometry and `3e13` for Fire Geometry; in DayZ those are `6e15` and `7e15`. Other `e13` values do exist: `P:\DZ\vehicles\water\boat_01\boat_01.p3d` has a `2e13` LOD in its header (its buoyancy geometry), and eight vanilla models carry a `4e13` GeoPhys LOD (`_shared/conventions/assets.md`).
+**Memory and Geometry LODs.** A LandContact LOD (`2e15`, the ground contact points) is also worth adding to an object that rests on the ground; 1,129 of the 10,626 models under `P:\DZ` carry one (read from the ODOL headers; `_shared/models/lods.md`). Some online guides give `7e13` for View Geometry and `3e13` for Fire Geometry; in DayZ those are `6e15` and `7e15`. Other `e13` values do exist: 25 models carry a `2e13` LOD, `P:\DZ\vehicles\water\boat_01\boat_01.p3d` and 24 shipping containers under `P:\DZ\structures_takistan\Industrial\containers\` (what the engine reads from it is not checked), and 12 carry a `4e13` GeoPhys LOD (`_shared/conventions/assets.md`).
 
 **Animation selections and axes.** A rig may bind an axis and a selection under different names, tied together only in `model.cfg`. A wheel rig cloned from the vanilla style has the selection `wheelfrontleft` and the axis `wheel_1_1_axis`:
 
@@ -128,8 +128,22 @@ A check that expects `wheel_1_1_axis` to need a selection named `wheel_1_1` repo
 - The DayZ fork of py3d still guesses from names in `validate()` (`ERR_AXIS_SELECTION_MISSING`, `WARN_AXIS_SELECTION_EMPTY`). The audit drops those two findings when it read a `model.cfg`, and without one prints them only as WARNING, with a note to pass `--model-cfg`.
 - Without a `model.cfg`, confirm by hand that both names of each animation exist in the `.p3d`: the axis as a two point Memory selection, the `selection=` in the Visual LOD.
 
-**`box_placing_min` and `box_placing_max`.** `GetProjectionCollisionBox` uses them only when `GetCollisionBox` fails (`P:\scripts\4_world\classes\hologram.c:1069`). The vanilla deployables `wooden_case.p3d`, `sea_chest.p3d` and `55galdrum.p3d` hold `boundingbox_min` and no `box_placing_min` string.
+**`box_placing_min` and `box_placing_max`.** `GetProjectionCollisionBox` uses them only when `GetCollisionBox` fails and the model has `box_placing_min` (`P:\scripts\4_world\classes\hologram.c:1069`). The vanilla deployables `wooden_case.p3d`, `sea_chest.p3d` and `55galdrum.p3d` hold `boundingbox_min` and no `box_placing_min` string; only the 8 `*placing.p3d` hologram models under `P:\DZ\gear\camping\` hold the pair.
 
 **Closed collision mesh.** A closed component is also a prerequisite of the per component winding check: an open component leaves that check unresolved.
 
 **Collision materials.** View Geometry is not among the LODs whose faces must carry a penetration material; `p3d-killers.md` keeps a material-less View Geometry face as a WARNING, because the vanilla files show that a model carries a penetration material, not which LOD uses it. The penetration materials named there appear as strings in `P:\DZ\gear\camping\wooden_case.p3d`, `sea_chest.p3d` (`wood_desk.rvmat`) and `P:\DZ\gear\containers\55galdrum.p3d` (`metalplate.rvmat`). `audit_p3d.py` checks collision materials on every model, not only vehicle models, and fails the run on Geometry, GeoPhys and Fire Geometry.
+
+## What vanilla script reads from the collision LODs
+
+Which LOD each vanilla consumer asks for, so you know which LOD a fault in one consumer points at. Paths are under `P:\scripts\4_world\classes\` unless given in full.
+
+| Consumer | What it reads | Source |
+|---|---|---|
+| Action cursor ray | A ray from the camera, 5 m long, through `RaycastRVProxy` with `CollisionFlags.ALLOBJECTS`, in View Geometry (the `RaycastRVParams` default `ObjIntersectView`). A hit more than 3 m from the player is out of reach. | `useractionscomponent\actiontargets.c:245` to `:255`, `:493`, `:843`, `:844`; `P:\scripts\3_game\global\dayzphysics.c:88` |
+| Cone search | Only while the camera pitch is -45 or lower: entities in a 30 degree cone, 3 m long, from 0.5 m below to 2 m above the player. It needs no LOD hit, so a target found this way says nothing about the collision LODs. | `actiontargets.c:324`, `:325`, `:846` to `:848` |
+| Placement footprint | The Geometry LOD box from `GetCollisionBox`; `box_placing_min` and `box_placing_max` only when that fails. The base corners come from the same box. | `hologram.c:1067` to `:1075`, `:1089` to `:1095` |
+| Placement overlap | That box, lifted 0.05 m, tested against other objects' Fire Geometry and Geometry (`IsBoxCollidingGeometry`), then against their View Geometry and Geometry proxies (`IsBoxCollidingGeometryProxy`). | `hologram.c:540`, `:547`, `:566`, `:589`, `:614`, `:615` |
+| Placement base | Four rays straight down from the box's bottom corners, in Fire Geometry (`IsBaseViable`). On a multiplayer server this check returns `true` at once, so it runs on the client only. | `hologram.c:638` to `:642`, `:683` to `:695` |
+
+A Geometry LOD larger than the visible object therefore blocks placement against everything its box touches. A server can switch the two overlap tests off with `disableIsCollidingBBoxCheck` and the base test with `disableIsBaseViableCheck`, both under `BaseBuildingData`, `HologramData` in `cfggameplay.json` (`P:\scripts\3_game\cfggameplaydatajson.c:242`, `:245`; `P:\scripts\3_game\cfggameplayhandler.c:287` to `:290`, `:302` to `:305`).

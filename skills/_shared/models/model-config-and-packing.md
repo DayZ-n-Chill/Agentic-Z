@@ -98,7 +98,7 @@ What the vanilla files show about the keys above:
 - `componentNames[]` in a damage zone lists Fire Geometry selections (`lods.md`, "Fire Geometry").
 - Vanilla door sounds are plain sound names such as `soundOpen="doorWoodTwinOpen"` (`P:\DZ\structures\residential\config.cpp:7367`). Reuse a vanilla name until the mod has sounds of its own.
 - `bounding` is a real key, but vanilla gear sets it to `"BSphere"` (`P:\DZ\gear\camping\config.cpp:44`). No vanilla file read here gives it a memory selection name, or shows a volume that makes ray casts follow an open door, so `bounding = "<selection>"` from modelling guides is unverified.
-- Since 1.30 (official changelog) a house class may set `disableSimulation = 1;` so the building does not tick. The script side is `DisableSimulation` and `GetIsSimulationDisabled` on `Entity` (`P:\scripts\3_game\entities\entity.c:3` to `:6`). The key itself is in no vanilla 1.30 config, so it is unverified; see `dayz-1-30-models.md`.
+- Since 1.30 a house class may set `disableSimulation=1;` so the building does not tick. The Takistan buildings set it beside `model` (`Land_House_1M2`, `P:\DZ\structures_takistan\Residential\config.cpp:1297`). The script side is `DisableSimulation` and `GetIsSimulationDisabled` on `Entity` (`P:\scripts\3_game\entities\entity.c:3` to `:6`); see `dayz-1-30-models.md`.
 
 ## A building
 

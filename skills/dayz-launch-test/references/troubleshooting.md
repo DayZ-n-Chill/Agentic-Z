@@ -33,10 +33,10 @@ Each DayZDiag mission start logs a `SCRIPT (E)` block once per peer: the `-- Sta
 
 | Vanilla line | What it does |
 |---|---|
-| `P:\scripts\4_world\plugins\pluginmanager.c:76` | Registers `PluginItemDiagnostic` with `RegisterPluginDiag`, kept under `DIAG_DEVELOPER`, which DayZDiag defines. |
-| `pluginmanager.c:88` and `:216` | Registers `PluginConfigDebugProfile` with `RegisterPluginDebug`, kept only when `g_Game.IsDebug()`, an internal build. |
+| `P:\scripts\4_world\plugins\pluginmanager.c:77` | Registers `PluginItemDiagnostic` with `RegisterPluginDiag`, kept under `DIAG_DEVELOPER` (`:249` to `:251`), which DayZDiag defines. |
+| `pluginmanager.c:89` and `:217` | Registers `PluginConfigDebugProfile` with `RegisterPluginDebug`, kept only when `g_Game.IsDebug()`, an internal build. |
 | `P:\scripts\4_world\plugins\pluginbase\pluginitemdiagnostic.c:94` | `OnInit` asks for `GetPlugin(PluginConfigDebugProfile)`. |
-| `pluginmanager.c:339` and `:340` | Under `#ifdef DIAG_DEVELOPER`, prints `Module ... is not Registred in PluginManager.c!` and dumps the stack. The caller checks for null, so the run goes on. |
+| `pluginmanager.c:340` and `:341` | Under `#ifdef DIAG_DEVELOPER`, prints `Module ... is not Registred in PluginManager.c!` and dumps the stack. The caller checks for null, so the run goes on. |
 
 The `Module PluginConfigDebugProfile is not Registred` line comes before the stack in the DayZDiag 1.30 RPTs measured without `@DayZ_MCP`, but it can be missing: none of the RPTs measured with `@DayZ_MCP` carry it, and neither does a 1.29 client RPT without it. The stack itself shows on 1.29 too. With `@DayZ_MCP` loaded there is one more frame, `PluginsInit() DayZ_MCP/scripts/4_World/mcp_diagplugins.c : 30`: its modded `PluginsInit` calls `super` and then prints one `[DayZ_MCP] diag PluginInventoryDebug registered=` line.
 

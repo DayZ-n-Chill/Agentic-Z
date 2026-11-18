@@ -79,7 +79,7 @@ modded class MissionGameplay
 
 | Call | What to know | Source |
 |---|---|---|
-| `OverrideRaise` | Declared on `HumanInputController`. | `P:\scripts\3_game\human.c:268` |
+| `OverrideRaise` | Declared on `HumanInputController` (class at `:17`). The same block forces movement speed and angle, aim change on X and Y, melee evade, the third person shoulder and free look, which is how to pose the player for a capture with no input verb. | `P:\scripts\3_game\human.c:268`; the block `:253` to `:274` |
 | `HumanInputControllerOverrideType` | `ENABLED` is "Permenantly active until DISABLED is passed" (vanilla spelling); `ONE_FRAME` applies once. | `human.c:7` to `:12` |
 | `IsRaised()` | The third person aim pose starts when `m_MovementState.IsRaised()` is true, so a sustained raise is enough. | `P:\scripts\4_world\entities\dayzplayerimplement.c:1742` |
 | `SetIronsights()` | Do not call it: it forces the ironsight camera, which fights the free camera, and called on the server it left the weapon untextured. | `dayzplayerimplement.c:363` |

@@ -6,7 +6,7 @@ The vanilla file is `P:\gui\looknfeel\dayzwidgets.styles`: 28 widget types and m
 
 ## How a layout picks a style
 
-- `style NAME` is always unquoted and one token. Vanilla layouts use it 3,134 times and never quote it.
+- `style NAME` is always unquoted and one token. Vanilla layouts use it 3,482 times and never quote it.
 - The layout class maps to the `<Widget Name>` of the styles file by dropping the `Class` suffix: `TextWidgetClass` reads `<Widget Name="TextWidget">`. Under that rule every vanilla reference resolves.
 - Style names belong to their widget type. `TextWidget` has `Normal` and `Bold`, `MultilineTextWidget` and `RichTextWidget` use `DayZNormal` and `DayZBold`, and `HtmlWidget` has only `DayZNormal` (`P:\gui\looknfeel\dayzwidgets.styles:3883`). A style used on two widget types is declared under both.
 - A name borrowed from another type fails without a load error, a warning or a log line: the widget gets nothing to draw, so its `color` never paints and text floats over the world.
@@ -27,9 +27,9 @@ The vanilla file is `P:\gui\looknfeel\dayzwidgets.styles`: 28 widget types and m
 </WidgetStyles>
 ```
 
-- `Color` is a decimal packed 32 bit color; `4294967295` is `0xFFFFFFFF`, opaque white, on 105 of 128 vanilla styles. Every other vanilla value only changes transparency.
+- `Color` is a decimal packed 32 bit color; `4294967295` is `0xFFFFFFFF`, opaque white, on 109 of the 136 vanilla styles. The other 27 are `0` (22 styles), `16`, `17` or `20`, all with a zero alpha byte.
 - `Font` is a sized atlas (`gui/fonts/sdf_MetronLight24`) or a family with no size (`gui/fonts/MetronBook`), resolved through the `gui/fonts/<family>.xml` descriptors that list the baked sizes.
-- `ImageSet` and each `Image` are the imageset's registered name and an image name in it, never file paths. Vanilla styles use six sets, mostly `dayz_gui`, `rover_imageset`, `ccgui_enforce` and `empty`. A mod style may use a vanilla imageset.
+- `ImageSet` and each `Image` are the imageset's registered name and an image name in it, never file paths. Vanilla styles use five sets, mostly `dayz_gui` (88 styles), `rover_imageset` (18) and `ccgui_enforce` (14), plus `dayz_additional_gui_unique` and `toolbar`; 13 styles name none (`ImageSet=""`). A mod style may use a vanilla imageset.
 - An empty `Image=""` draws nothing for that slice and state.
 
 ## States
@@ -83,22 +83,22 @@ Measured in game: a button with a `color` and no `style` drew no fill, while a `
 
 ## Vanilla styles to pick from
 
-`ImageWidget` and `FrameWidget` have no styles. The most used are `PanelWidget/rover_sim_colorable`, `GridSpacerWidget/DayZDefaultPanel`, `PanelWidget/blank`, `TextWidget/Normal` and `ButtonWidget/Colorable`.
+`ImageWidget` and `FrameWidget` have no styles. The most used are `PanelWidget/rover_sim_colorable` (641 uses), `GridSpacerWidget/DayZDefaultPanel` (521), `PanelWidget/blank` (262), `TextWidget/Normal` (238), `PanelWidget/DayZDefaultPanel` (181) and `ButtonWidget/Colorable` (176).
 
-- `TextWidget`: `Normal`, `Bold`, `Light`, `None`.
-- `ButtonWidget` (22): `Default`, `Colorable`, `Empty`, `EmptyHighlight`, `MainMenu`, `MenuDefault`, `Editor`, `InventoryActionMenu`, `OldStyle`, the `DayZDefaultButton` family (`DayZDefaultButton`, `DayZDefaultButtonNoBorder`, `DayZDefaultButtonBottom`, `DayZDefaultButtonSides`, `DayZDefaultButtonTop`, `DayZDefaultButtonAll`, `DayZDefaultButton_DisabledState`) and the `DayZInventoryButton` family (`All`, `Top`, `Bottom`, `Right` and `Left` suffixes) (`P:\gui\looknfeel\dayzwidgets.styles:1996` to `:2794`).
-- `PanelWidget` (22): `rover_sim_colorable`, `blank`, `Outline`, `ColorablePanel`, `editor_quad`, `editor_quad_dark`, `dashed`, the `DayZDefaultPanel` family (`DayZDefaultPanel` and its `Left`, `Right`, `Top`, `Bottom` and `Sides` variants, `:3508` to `:3652`), `ToolbarWidget`, `UIDefaultPanel`, `rover_sim_black`, `rover_sim_black_2`, `InventoryPanel`, `EditorPanel`, `editor_selection` and, new in 1.30, `ActionWidget`.
+- `TextWidget`: `Normal`, `Bold`, `Light`, `None`, `Normal_SDF`, `Light_SDF` (`P:\gui\looknfeel\dayzwidgets.styles:3` to `:8`).
+- `ButtonWidget` (23): `Default`, `Colorable`, `Empty`, `EmptyHighlight`, `MainMenu`, `MenuDefault`, `Editor`, `InventoryActionMenu`, `OldStyle`, `ServerBrowserCollapse`, `DayZDigitButton`, the `DayZDefaultButton` family (`DayZDefaultButton`, `DayZDefaultButtonNoBorder`, `DayZDefaultButtonBottom`, `DayZDefaultButtonSides`, `DayZDefaultButtonTop`, `DayZDefaultButtonAll`, `DayZDefaultButton_DisabledState`) and the `DayZInventoryButton` family (`All`, `Top`, `Bottom`, `Right` and `Left` suffixes) (`P:\gui\looknfeel\dayzwidgets.styles:1597` to `:2851`).
+- `PanelWidget` (22): `rover_sim_colorable`, `blank`, `Outline`, `ColorablePanel`, `editor_quad`, `editor_quad_dark`, `dashed`, the `DayZDefaultPanel` family (`DayZDefaultPanel` and its `Left`, `Right`, `Top`, `Bottom` and `Sides` variants, `:3508` to `:3652`), `ToolbarWidget`, `UIDefaultPanel`, `rover_sim_black`, `rover_sim_black_2`, `rover_sim_blackbox`, `InventoryPanel`, `EditorPanel`, `editor_selection` and, new in 1.30, `ActionWidget`.
 - `WindowWidget` (6): `Default`, `rover_sim_black`, `rover_sim_black_2`, `Colorable`, `Simple`, `debugUI`.
 - `ProgressBarWidget`: `Default`, `DayZLoading`, `Stamina`, `Quantity`, `Loading`.
 - Seven types have styles and no vanilla layout uses them: the four graph widgets (`BasicGraphWidget`, `RingBufferGraphWidget`, `TimeBasedGraphWidget`, `TimeBasedGraphWithAxesWidget`, `:3905` to `:3950`), `GenericListboxWidget`, `UniversalListboxWidget` and `SimpleProgressBarWidget`.
 
-`ActionWidget` (`P:\gui\looknfeel\dayzwidgets.styles:3700` to `:3723`, `Font="gui/fonts/AmorSerifPro-Bold"`, `ImageSet="dayz_gui"`, `Color="0"`) builds a 9-slice gradient frame in its `Normal` and `Disabled` states: each slice uses the `dayz_gui` image of the same name with an `ActionWidgetGradient` prefix (`ActionWidgetGradientLeftTop`, `ActionWidgetGradientTop`, `ActionWidgetGradientRightTop`, `ActionWidgetGradientRight`, `ActionWidgetGradientRightBottom`, `ActionWidgetGradientBottom`, `ActionWidgetGradientLeftBottom`, `ActionWidgetGradientLeft` and `ActionWidgetGradientCenter`). It is declared again under `GridSpacerWidget` (`:4280`) and `WrapSpacerWidget` (`:4570`). The HUD sets it on the two action cursor containers, `ActionTargetsCursorWidget` (`P:\gui\layouts\day_z_hud.layout:2271`, style at `:2287`) and `ItemActions` (`:3844`, style at `:3859`); the prompt rows inside are `PanelWidgetClass` with no style of their own (`ui-changes-1-30.md`).
+`ActionWidget` (`P:\gui\looknfeel\dayzwidgets.styles:3700` to `:3723`, `Font="gui/fonts/AmorSerifPro-Bold"`, `ImageSet="dayz_gui"`, `Color="0"`) builds a 9-slice gradient frame in its `Normal` and `Disabled` states: each slice uses the `dayz_gui` image of the same name with an `ActionWidgetGradient` prefix (`ActionWidgetGradientLeftTop`, `ActionWidgetGradientTop`, `ActionWidgetGradientRightTop`, `ActionWidgetGradientRight`, `ActionWidgetGradientRightBottom`, `ActionWidgetGradientBottom`, `ActionWidgetGradientLeftBottom`, `ActionWidgetGradientLeft` and `ActionWidgetGradientCenter`). It is declared again under `GridSpacerWidget` (`:4280`) and `WrapSpacerWidget` (`:4570`). The HUD sets it on the two action cursor containers, `ActionTargetsCursorWidget` (`P:\gui\layouts\day_z_hud.layout:2400`, style at `:2417`) and `ItemActions` (`:4061`, style at `:4077`), both `GridSpacerWidgetClass`; the prompt rows inside are `PanelWidgetClass` with no style of their own (`ui-changes-1-30.md`).
 
 ## A mod's own styles
 
 A group mod's core library ships a working example; this recipe follows it.
 
-1. Write `MyMod/gui/styles/mymod.styles` with one `<Widget>` block per widget type the style is used on. A shipped core library declares its `My_Clean_outline` twice, under `PanelWidget` and under `GridSpacerWidget` (`my.styles:2` to `:27` and `:28` to `:53`). For an outline only frame, set the eight border slices to `Image="pixel"` and `Center=""`.
+1. Write `MyMod/gui/styles/mymod.styles` with one `<Widget>` block per widget type the style is used on. A shipped core library declares its `My_Clean_outline` twice, under `PanelWidget` and under `GridSpacerWidget` (read from that mod's own styles file, not on `P:\`). Vanilla does the same with `ActionWidget`, declared under `PanelWidget`, `GridSpacerWidget` and `WrapSpacerWidget` (`P:\gui\looknfeel\dayzwidgets.styles:3700`, `:4280` and `:4570`). For an outline only frame, set the eight border slices to `Image="pixel"` and `Center=""`.
 2. Register it in `config.cpp`, `CfgMods`, `class defs`: `class widgetStyles { files[] = {"MyMod/gui/styles/mymod.styles"}; };` (`script-recipes.md`). An unregistered file does nothing.
 3. Use it with `style MyMod_Outline` on widgets of a matching class. Registration is global: a mod that requires the one registering a style can use it without registering anything.
 4. A mod file adds styles to the vanilla widget types; shipped layouts mix mod and vanilla styles in one file. That is read from shipped mods, not measured. A shadow PBO of `dayzwidgets.styles` itself replaces the whole file (`layout-variants.md`).

@@ -24,21 +24,22 @@ and any texture/material path in config.cpp.
 **Exception**: Paths starting with `P:\` are valid ONLY during development on a
 workbench with P: drive mounted. They must be stripped for distribution/PBO packing.
 
-### Required Properties for Placed Objects
+### `autocenter` on placed objects
+
+Vanilla never sets `autocenter` in a `CfgVehicles` class. In vanilla `config.cpp` the key appears only on `CfgNonAIVehicles` proxy classes, such as `ProxyVehiclePart` (`P:\DZ\vehicles\wheeled\config.cpp:23905`). Vanilla placed objects and their kits carry it in the model instead, as the Geometry LOD named property `autocenter=0` (`p3d-killers.md`, killer 3). Some mods set `autocenter = 0;` in config against a buried mesh (measured on mod models; not checked on `P:\`). When a class does, the audit checks that the Geometry LOD carries the property too.
 
 ```cpp
-class MyPlacedObject: Inventory_Base
+class MyMod_PlacedObject: Inventory_Base
 {
-    autocenter = 0;        // MANDATORY: prevents visual mesh burial
-    model = "\ModName\data\model.p3d";  // Backslash prefix = addon root
-    // For kits (handheld items): do NOT set autocenter=0
+    model = "\MyMod\data\placed_object.p3d";  // backslash prefix: path from the game root
+    // autocenter=0 goes on the model's Geometry LOD as a named property
 };
 ```
 
 ### AnimationSources Must Match model.cfg
 
 If model.cfg defines animation `flag_mast` with `source = "flag_mast"`, config.cpp
-MUST have a matching AnimationSources entry:
+MUST have a matching AnimationSources entry. The vanilla territory flag's (`P:\DZ\gear\camping\config.cpp:12633` to `:12638`):
 
 ```cpp
 class AnimationSources
@@ -46,8 +47,8 @@ class AnimationSources
     class flag_mast
     {
         source = "user";    // "user" = script-controlled
-        animPeriod = 0.5;
-        initPhase = 1;      // 0=up, 1=down for vanilla flag convention
+        initPhase = 1;      // 1 = flag fully lowered, 0 = fully raised
+        animPeriod = 1;
     };
 };
 ```
@@ -93,4 +94,4 @@ use `PixelShaderID="Super"` / `VertexShaderID="Super"` with `Stage1` to `Stage7`
 Keep every stage, using the procedural placeholder when there is no texture,
 and copy the layout from a vanilla rvmat of a similar item rather than writing
 one from scratch. Only a minority of vanilla Super materials add a `Stage0`
-with the diffuse (330 of 5,841 under `P:\DZ`).
+with the diffuse (379 of the 6,612 `.rvmat` files under `P:\DZ` whose `PixelShaderID` is `Super`).

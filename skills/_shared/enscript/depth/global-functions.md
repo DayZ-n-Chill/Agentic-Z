@@ -19,7 +19,7 @@ Vanilla handles `WindowsResizeEventTypeID` in `MissionGameplay.OnEvent` (`P:\scr
 
 ## Debugging and launch parameters
 
-`DumpStackString` (`P:\scripts\1_core\proto\endebug.c:50`); `TickCount` (`P:\scripts\1_core\proto\ensystem.c:106`); `GetCLIParam` and `IsCLIParam` (`ensystem.c:125` and `:135`), both with examples in the vanilla comments.
+`DumpStackString` (`P:\scripts\1_core\proto\endebug.c:50`); `TickCount` (`P:\scripts\1_core\proto\ensystem.c:106`); `GetCLIParam` and `IsCLIParam` (`ensystem.c:128` and `:141`), both with examples in the vanilla comments.
 
 ```c
 string stack;
@@ -152,7 +152,7 @@ GetUApi().GetInputByName("UAMyModAction").LocalPress();
 UAIDWrapper wrapper = GetUApi().GetInputByName("UAMyModAction").GetPersistentWrapper();   // store once
 // each frame: if (wrapper.InputP() && wrapper.InputP().LocalPress()) { ... }
 
-GetUApi().GetInputByName("UAMyModAction").Supress();    // hide the press from other handlers
+GetUApi().GetInputByName("UAMyModAction").Supress();    // vanilla: "supress press event for next frame" (uainput.c:84)
 
 UAInput input = GetUApi().GetInputByName("UAMyModAction");
 string keyName = GetUApi().GetButtonName(input.Binding(0));

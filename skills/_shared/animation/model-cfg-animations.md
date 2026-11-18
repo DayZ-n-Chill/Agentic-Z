@@ -114,7 +114,7 @@ What this shows:
 - **Angles are radians.** `angle1 = 90` turns the part 90 radians, which spins it many times. Write `1.5708` or `"rad 90"`. The number after `rad` is degrees: `"rad 0.39"` is 0.39 degrees, too small to see.
 - **Several entries can share one source.** The seat's two animations split the source's range into 0 to 0.5 and 0.5 to 1, so one source plays a slide and then a turn, and plays them back in reverse when it returns.
 - **Engine sources need no config class.** `steeringwheel`, `wheelfrontleft` and `turnfront` are not declared in any vehicle `AnimationSources`; the engine supplies them (see `animation-sources.md`). `DrivingWheel` is the animation's name, not a source.
-- **The value range is yours to choose.** Fence runs 0 to 100 so script can pass degrees: `fence.c:12` sets `GATE_ROTATION_ANGLE_DEG = 100` and `fence.c:498` calls `SetAnimationPhase("Wall_Gate_Rotate", 100)`. A phase is only meaningful inside `minValue` to `maxValue`.
+- **The value range is yours to choose.** Fence runs 0 to 100 so script can pass degrees: `fence.c:12` sets `GATE_ROTATION_ANGLE_DEG = 100` and `fence.c:512` calls `SetAnimationPhase("Wall_Gate_Rotate", 100)`. A phase is only meaningful inside `minValue` to `maxValue`.
 - **A negative angle opens the other way.** Mirror a door by changing the sign, not the bone.
 - **Hide works on a threshold.** The barrel lids hide at 0.6, so phase 1 hides and phase 0 shows; `Lid2` starts at phase 1 (hidden) in `P:\DZ\gear\containers\config.cpp:110`.
 - **Names are stored in lower case.** The model holds `lid` while `config.cpp` says `class Lid` (`P:\DZ\gear\containers\config.cpp:101`), so matching ignores case. Keep the case identical anyway so a reviewer can grep it.
@@ -154,7 +154,7 @@ Adding a missing selection or the two axis points to an MLOD `.p3d` is script wo
 
 Measured in game or tool behaviour; not checked on `P:\`.
 
-- **Which way a positive angle turns.** Right handed around the axis from its first memory point to its second, the points taken in index order (measured in game on DayZDiag 1.29). With the axis toward +Z, +X moves toward +Y.
+- **Which way a positive angle turns.** Right handed around the axis from its first memory point to its second, the points taken in index order (measured in game). With the axis toward +Z, +X moves toward +Y.
 - **A child rotation composes with its parent's.** A part that folds on another folding part works when it is a child bone of it. Checked with rays on a leaf that folds on a folding part: blade tips cut at x = ±3.15 m against ±3.21 m predicted.
 - **Chained segments.** Several entries with different `minValue` to `maxValue` segments over one clamped source play as one sequence, and play back in reverse when the source returns.
 - **A sub-piece of a proxy cannot be animated in place.** Animations move whole selections and whole proxies. Split the moving piece into its own proxy or selection.

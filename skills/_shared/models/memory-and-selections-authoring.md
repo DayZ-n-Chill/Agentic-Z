@@ -17,7 +17,7 @@ A named selection is a set of the points and faces of one LOD. Who reads each ki
 | Memory | yes | The axis points |
 | Shadow volume | when the model has one | The shadow follows the part |
 
-Give the selection the same name in every LOD it is in. Matching ignores letter case (the barrel model stores `lid` and its config says `class Lid`, `P:\DZ\gear\containers\config.cpp:101`), but spell a name the way the config or script that uses it does.
+Give the selection the same name in every LOD it is in. Matching ignores letter case (the barrel model `P:\DZ\gear\containers\55galdrum.p3d` stores `lid` and its config says `class Lid`, `P:\DZ\gear\containers\config.cpp:101`), but spell a name the way the config or script that uses it does.
 
 A collision LOD needs the selection only where its collision should move with the part. A fixed collision box under a moving lever does not.
 
@@ -65,7 +65,7 @@ Binarize does not merge the proxied model into the parent. Binarizing and conver
 
 A proxy selection is named `proxy:<addon path>\<proxy model>.NNN`.
 
-- Write the path without `.p3d`. Vanilla stores both spellings but almost always the one without: 147 of 17,891 proxy names under `P:\DZ\` keep `.p3d`. On a mod vehicle in game, a proxy whose name kept `.p3d` was silently absent (`proxies.md`), so check this first when a proxy does not show. The power grid mod's own name, `proxy:PowerMod\data\battery_adapter\PM_BatterySlot.p3d.001`, keeps it. py3d refuses it: `LOD.add_proxy` raises "proxy path must omit the .p3d suffix".
+- Write the path without `.p3d`. Vanilla stores both spellings but almost always the one without: 147 of 28,775 proxy names under `P:\DZ\` keep `.p3d`. On a mod vehicle in game, a proxy whose name kept `.p3d` was silently absent (`proxies.md`), so check this first when a proxy does not show. The power grid mod's own name, `proxy:PowerMod\data\battery_adapter\PM_BatterySlot.p3d.001`, keeps it. py3d refuses it: `LOD.add_proxy` raises "proxy path must omit the .p3d suffix".
 - `.NNN` is a three digit index. Vanilla starts at `001` or `000` (`P:\DZ\gear\camping\fence.p3d` uses both).
 - The index does not pick an entry of `inventorySlot[]`. `P:\DZ\gear\camping\territory_flag.p3d` stores `proxy:\dz\gear\consumables\stone.001` for the stones of the flag pole, which is the second slot of `ProxyStone` (`P:\DZ\gear\consumables\config.cpp:4573`, slots `Stones` and `Material_FPole_Stones`). A class with several slots is tied to each through the selection that slot's `CfgSlots` entry names (`selection="Material_FPole_Stones"`, `P:\scripts\config.cpp:2496`).
 - The config class is `Proxy` plus the model's file name: `ProxyPM_BatterySlot` for the power grid example (`proxy-attachment-config.md`).

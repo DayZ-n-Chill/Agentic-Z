@@ -70,4 +70,4 @@ The script validator in `scripts/tools/dayz-script-validator/` reads a mod's scr
 
 ## On Linux
 
-The Proton setup, unpacking the vanilla scripts and the local script API index are in `../../linux-proton.md` and `../../scripts/README.md`; the platform defines are in `../references/language_compile.md`. DayZDiag and the client under Proton define `PLATFORM_WINDOWS`, while the native Linux server defines `PLATFORM_LINUX` and `SERVER_FOR_WINDOWS`, so never use either define to mean "the host runs Windows".
+The Proton setup, unpacking the vanilla scripts and the local script API index are in `../../linux-proton.md` and `scripts/tools/dayz-linux/README.md`; the platform defines are in `../references/language_compile.md`. DayZDiag and the client under Proton define `PLATFORM_WINDOWS`, while the native Linux server defines `PLATFORM_LINUX` and `SERVER_FOR_WINDOWS`, so never use either define to mean "the host runs Windows".

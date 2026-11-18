@@ -64,7 +64,7 @@ Debug in the same order: config loads, entity spawns, action appears in the righ
 - [ ] `CfgPatches` `requiredAddons[]` includes `"DZ_Data"`.
 - [ ] The object inherits from `HouseNoDestruct`.
 - [ ] `class Doors` maps each source through `component`.
-- [ ] For a door that takes a padlock or code lock (1.30): the entity's `attachments[]` list `Att_CombinationLock`, `Att_CodeLock` or both; the `class Doors` entry sets `relatedInventorySlots[]`; Memory has `att_combinationlock` and `att_codelock`, and the `interactPositionPoint` and `interactDirPoint` pair when used.
+- [ ] For a door that takes a padlock or code lock (1.30): the entity's `attachments[]` list `Att_CombinationLock`, `Att_CodeLock` or both; the entity has a `class Construction`; the `class Doors` entry sets `relatedInventorySlots[]`; Memory has `att_combinationlock` and `att_codelock`, and the `interactPositionPoint` and `interactDirPoint` pair when used.
 - [ ] For 1.30, a script override of the open rules targets `CanDoorBeOpened(notnull DoorManipulationParams params)`, not only the `int` wrapper.
 - [ ] The door sound names exist in `P:\DZ\sounds\hpp\config.cpp`.
 - [ ] `DamageSystem` has `GlobalHealth`, `GlobalArmor` and fitting `DamageZones`.
@@ -84,7 +84,7 @@ Debug in the same order: config loads, entity spawns, action appears in the righ
 
 ## Furniture inside vanilla houses
 
-Vanilla house furniture is proxy geometry inside the building's model, not a placed object. `StaticObj_Furniture_fridge: HouseNoDestruct` exists with `scope=1` and no `Doors` subclass (`P:\DZ\structures\furniture\config.cpp:547` to `:551`), but the fridges inside houses are not instances of it. The fridge model is a proxy inside about 25 house models under `DZ\structures`, and the Chernarus `mapgrouppos.xml` has at least 1,546 `kitchen\fridge\fridge` placements (both counts not rechecked on `P:\`). So neither a `modded` override of `StaticObj_Furniture_fridge` nor Community Framework's `CF_ObjectManager.HideMapObject` reaches them.
+Vanilla house furniture is proxy geometry inside the building's model, not a placed object. `StaticObj_Furniture_fridge: HouseNoDestruct` exists with `scope=1` and no `Doors` subclass (`P:\DZ\structures\furniture\config.cpp:547` to `:551`), but the fridges inside houses are not instances of it. The fridge model is a proxy inside 25 house models under `P:\DZ\structures` (a byte search of the `.p3d` files for `kitchen\fridge\fridge`). The copy of the Chernarus `mapgrouppos.xml` on `P:\` lists only buildings and has no fridge entry (`P:\DZ\worlds\chernarusplus\ce\mapgrouppos.xml`); a count of 1,546 fridge placements reported from a server's own file is not checked. So neither a `modded` override of `StaticObj_Furniture_fridge` nor Community Framework's `CF_ObjectManager.HideMapObject` reaches them.
 
 Before designing doors for furniture, search the extracted house models for the furniture's model path as a proxy and count its placements. In the search pattern write `.` where the path has `\`: in shell tools an escaped backslash collapses, and then even a search that should match finds nothing.
 
@@ -108,7 +108,7 @@ Building `class Doors` on a vehicle produces no working action, even though both
 
 What 1.30 changed for building doors, what breaks in a 1.29 door mod and the migration checklist are in `building-door-locks.md`; the open check itself is in `door-open-and-lock-code.md`.
 
-`Entity` has the natives `DisableSimulation` and `GetIsSimulationDisabled` (`P:\scripts\3_game\entities\entity.c:3` to `:6`). The 1.30 changelog also adds a `disableSimulation` config key for houses and fixes inventory attachments on buildings created at load time; neither is checked on `P:\`, and no vanilla config sets the key. A static house that must not tick can set `disableSimulation = 1`.
+`Entity` has the natives `DisableSimulation` and `GetIsSimulationDisabled` (`P:\scripts\3_game\entities\entity.c:3` to `:6`). The 1.30 changelog also adds a `disableSimulation` config key for houses and fixes inventory attachments on buildings created at load time. Vanilla sets `disableSimulation=1` on 30 Badlands buildings, the lockable houses among them (`P:\DZ\structures_takistan\Residential\config.cpp:21`); no script reads the key, so the engine handles it, and the attachment fix is not checked on `P:\`. A static house that must not tick can set `disableSimulation = 1`, as those houses do even though their doors open.
 
 ## On Linux
 

@@ -8,7 +8,7 @@ Results marked measured in game were seen on a running game and can't be checked
 
 - A player is moved by a character controller, driven through calls on `Human` (`class Human`, `P:\scripts\3_game\human.c:1359`), not by a body that `dBody` calls steer.
 - The controller is simulated on the player's own client, so a body that exists only on the server never blocks a player: that client has nothing to collide with. No layer setting changes this. To block or carry a player, the object's collision must exist on the client too: a model's Geometry LOD (`collision-lods.md`), or the native throw path, which vanilla runs on the server and the owner client (`drop-and-throw.md`).
-- The controller interacts as the `CHARACTER` layer: vanilla asks `dGetInteractionLayer(this, PhxInteractionLayers.CHARACTER, layer)` to decide what blocks a player (`P:\scripts\3_game\vehicles\transport.c:788`).
+- The controller interacts as the `CHARACTER` layer: vanilla asks `dGetInteractionLayer(this, PhxInteractionLayers.CHARACTER, layer)` to decide what blocks a player (`P:\scripts\3_game\vehicles\transport.c:791`).
 
 ## Controller calls
 

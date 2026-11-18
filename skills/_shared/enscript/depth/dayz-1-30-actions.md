@@ -43,8 +43,8 @@ m_ConditionTarget 	= new CCTLiquid(m_AllowedLiquidMask, UAMaxDistances.DEFAULT, 
 ## Target conditions
 
 - `CCTLiquid(int allowedLiquidSource, float maximalTargetDistance = UAMaxDistances.DEFAULT, float maxVerticalReach = UAMaxDistances.DEFAULT, SurfaceDetectionType surfaceDetectionType = SurfaceDetectionType.Roadway, bool allowSeaLevelCursorFallback = false)` (`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctliquid.c:37`) replaces `CCTWaterSurfaceEx` for fill and drink targets.
-- `CCTCursorInherited` accepts the cursor hit, `target.GetCursorHitPos()`, when its squared distance to either the player's root or the head position is within `m_MaximalActionDistanceSq` (`cctcursorinherited.c:28`); `CCTCursor` does the same (`cctcursor.c:28` to `:33`).
-- `MiscGameplayFunctions.GetPlayerHeadPosition` returns a height from the stance, not the head bone (`P:\scripts\4_world\static\miscgameplayfunctions.c:776` to `:786`).
+- `CCTCursorInherited` accepts the cursor hit, `target.GetCursorHitPos()`, when its squared distance to either the player's root or the head position is within `m_MaximalActionDistanceSq` (`cctcursorinherited.c:28` to `:32`). `CCTCursor` does the same on the client (`cctcursor.c:35` to `:43`); on the server it ignores the cursor and compares the target's `GetPosition()` with the player's, allowing the distance plus the target's `GetCollisionRadius()` (`:28` to `:33`).
+- `MiscGameplayFunctions.GetPlayerHeadPosition` returns a height from the stance, not the head bone (`P:\scripts\4_world\static\miscgameplayfunctions.c:778` to `:789`, with the heights from `GetPlayerHeadHeight` at `:761` to `:771`).
 
 ## Animation overrides
 
@@ -52,7 +52,7 @@ Overrides moved from `ItemBase.m_ItemActionOverrides`, which no longer exists, t
 
 ## New inputs
 
-`P:\bin\constants.xml` adds `UAToggleVehicleLights` beside `UAToggleHeadlight`, both with `loc="TOGGLE_LIGHT_HEAD"` (`:90`). Bind vehicle lights to `UAToggleVehicleLights`. Also new: `UABuldLinkCamToTerrain`, `UABuldCopyTileCoord`, `UABuldMarkUnderground`, `UABuldRemoveUnderground` (`:282` to `:285`; vanilla spells them `Buld`) and `UAUICodeLockLeft`, `Right`, `Up`, `Down` (`:308` to `:311`). `UACarHorn` is unchanged (`:203`).
+`P:\bin\constants.xml` adds `UAToggleVehicleLights` beside `UAToggleHeadlight`, both with `loc="TOGGLE_LIGHT_HEAD"` (`:90` and `:91`). Bind vehicle lights to `UAToggleVehicleLights`. Also new: `UABuldLinkCamToTerrain`, `UABuldCopyTileCoord`, `UABuldMarkUnderground`, `UABuldRemoveUnderground` (`:282` to `:285`; vanilla spells them `Buld`) and `UAUICodeLockLeft`, `Right`, `Up`, `Down` (`:308` to `:311`). `UACarHorn` is unchanged (`:203`).
 
 ## Recipes keep the result's health
 
@@ -62,7 +62,7 @@ In 1.29 a recipe with `m_ResultReplacesIngredient` called `TransferItemPropertie
 MiscGameplayFunctions.TransferItemProperties(ingr, res, true, true, false, false);   // P:\scripts\4_world\classes\recipes\recipebase.c:353
 ```
 
-In `TransferItemProperties`, `transfer_health` still defaults to true (`P:\scripts\4_world\static\miscgameplayfunctions.c:269`). Set `m_ResultInheritsHealth` when the result should keep the ingredient's health. `GetRecipeClassName(int recipe_id)` is at `P:\scripts\4_world\plugins\pluginbase\pluginrecipesmanager.c:84`.
+In `TransferItemProperties`, `transfer_health` still defaults to true (`P:\scripts\4_world\static\miscgameplayfunctions.c:271`). Set `m_ResultInheritsHealth` when the result should keep the ingredient's health. `GetRecipeClassName(int recipe_id)` is at `P:\scripts\4_world\plugins\pluginbase\pluginrecipesmanager.c:84`.
 
 ## The targets cursor update
 

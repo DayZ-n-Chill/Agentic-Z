@@ -129,7 +129,7 @@ A label is selected when its screen position falls inside `x`, `y`, `x + w`, `y 
 | `Widget` | `SetSort(sort)` (higher draws in front), `SetRotation(roll, pitch, yaw)` in degrees, `Update()` to recalculate the layout now | `enwidgets.c:130`, `:146`, `:164` |
 | Global | `GetWidgetUnderCursor()`, `CancelWidgetDragging()`, `GetDragWidget()` | `enwidgets.c:184` to `:186` |
 | Global | `SetFocus(Widget w)`, `null` clears focus | `enwidgets.c:698` |
-| Global | `GetMouseState(MouseState index)`; test the raw button with `GetMouseState(MouseState.LEFT) & MB_PRESSED_MASK` | `P:\scripts\1_core\proto\ensystem.c:326` |
+| Global | `GetMouseState(MouseState index)`; test the raw button with `GetMouseState(MouseState.LEFT) & MB_PRESSED_MASK`, as the vanilla comment shows (`:324`). No script declares `MB_PRESSED_MASK`; its declaration is commented out (`:319`), so whether the engine provides it is not checked on `P:\` | `P:\scripts\1_core\proto\ensystem.c:326` |
 | `PlayerPreviewWidget` | `SetPlayer`, `UpdateItemInHands`, `GetDummyPlayer`, `Refresh` | `P:\scripts\3_game\gameplay.c:305` to `:313` |
 
 ## A numpad menu

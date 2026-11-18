@@ -68,7 +68,7 @@ All player weapon reload, fire, jam, state and IK pose clips run at 30 frames pe
 
 ## The `ikpose_` keys
 
-`ikpose_chainoffset`, `ikpose_weaponoffset`, `ikpose_secchainoffset`, `ikpose_chainmiddledir`, `ikpose_chainmiddlediro`, `ikpose_secchainmiddledir` and `ikpose_secchainmiddlediro` are settings of the weapon IK node in the graph (`AnimSrcNodeWeaponIk`, `P:\DZ\anims\workspaces\player\player_main\combat.agf:5`, the keys at `:29` to `:35`). They are not in the template, the workspace, `config.cpp` or `model.cfg`. They say which bone plays which IK role, for example `ikpose_weaponoffset = RightHand_Dummy` and `ikpose_secchainoffset = LeftHandIKTarget`. Community guides leave out the two `...diro` keys. In the 1.29 graph files the block occurs 14 times across six files, the same each time (not checked on a 1.30 unpack).
+`ikpose_chainoffset`, `ikpose_weaponoffset`, `ikpose_secchainoffset`, `ikpose_chainmiddledir`, `ikpose_chainmiddlediro`, `ikpose_secchainmiddledir` and `ikpose_secchainmiddlediro` are settings of the weapon IK node in the graph (`AnimSrcNodeWeaponIk`, `P:\DZ\anims\workspaces\player\player_main\combat.agf:5`, the keys at `:29` to `:35`). They are not in the template, the workspace, `config.cpp` or `model.cfg`. They say which bone plays which IK role, for example `ikpose_weaponoffset = RightHand_Dummy` and `ikpose_secchainoffset = LeftHandIKTarget`. Community guides leave out the two `...diro` keys. In the 1.30 player graph the block occurs 14 times across six sub-graphs (`actions.agf`, `combat.agf`, `gestures.agf`, `locomotion.agf`, `master.agf`, `vehicles.agf` in `P:\DZ\anims\workspaces\player\player_main\`), the same seven lines each time.
 
 ## Template files (`.ast`): every group is named
 

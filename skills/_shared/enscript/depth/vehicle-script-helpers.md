@@ -120,7 +120,7 @@ protected string MyMod_ResolveZone(Object hitObj, int componentIdx)
 }
 ```
 
-Call `ProcessDirectDamage(DamageType.FIRE_ARM, this, zone, ammoType, hitPos, damage, ProcessDirectDamageFlags.ALL_TRANSFER)` only when the zone is not empty.
+Call `ProcessDirectDamage(DamageType.FIRE_ARM, this, zone, ammoType, hitObj.WorldToModel(hitPos), damageCoef, ProcessDirectDamageFlags.ALL_TRANSFER)` only when the zone is not empty. The declaration is `ProcessDirectDamage(int damageType, EntityAI source, string componentName, string ammoName, vector modelPos, float damageCoef = 1.0, int flags = 0)` (`P:\scripts\3_game\entities\object.c:1138`): the position is in the target's model space (`WorldToModel` at `:874`), and the sixth argument scales the ammo's damage, it is not a damage amount.
 
 ## Camera shake for the local player
 
@@ -147,11 +147,11 @@ private bool MyMod_IsLocalDriver()
 }
 ```
 
-Seat 0 is the driver or pilot (`CrewMemberIndex`, `P:\scripts\3_game\vehicles\transport.c:183`). Use it to gate driver-only weapons and actions.
+Seat 0 is the driver or pilot (`CrewMemberIndex`, `P:\scripts\3_game\vehicles\transport.c:186`). Use it to gate driver-only weapons and actions.
 
 ## Seat animation set
 
-Override `GetAnimInstance()`, which `Transport` declares (`P:\scripts\3_game\vehicles\transport.c:662`), to return a vanilla `VehicleAnimInstances` value that matches the cockpit, and no custom animations are needed:
+Override `GetAnimInstance()`, which `Transport` declares (`P:\scripts\3_game\vehicles\transport.c:665`), to return a vanilla `VehicleAnimInstances` value that matches the cockpit, and no custom animations are needed:
 
 | Value | Fits |
 |---|---|

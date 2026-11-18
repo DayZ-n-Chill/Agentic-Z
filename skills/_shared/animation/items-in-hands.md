@@ -58,7 +58,7 @@ Limits: the instance file is fixed by the item's weight class, so start from the
 
 ### Turn the model, not the IK pose
 
-Measured in game on a tray item on 1.29, not checked on `P:\`. When a vanilla IK pose already gives a natural grip and only the direction the item points is wrong, turn the item's geometry about its vertical, keeping its origin, and leave the pose alone. For the tray, turn it 90 degrees when the `.p3d` is assembled so its 43 cm length lay along X, then register it in `RegisterTwoHanded` with no pose of its own:
+Measured in game on a tray item, not checked on `P:\`. When a vanilla IK pose already gives a natural grip and only the direction the item points is wrong, turn the item's geometry about its vertical, keeping its origin, and leave the pose alone. For the tray, turn it 90 degrees when the `.p3d` is assembled so its 43 cm length lay along X, then register it in `RegisterTwoHanded` with no pose of its own:
 
 ```c
 pType.AddItemInHandsProfileIK("MyMod_Tray", "dz/anims/workspaces/player/player_main/props/player_main_2h_pot.asi", pBehavior, "dz/anims/anm/player/ik/vehicles/BatteryTruck.anm");
@@ -118,7 +118,7 @@ State is set with `SetSurrenderState(bool newState)` (`playerbase.c:2116`) and r
 
 ## Syncing an object's pose to a continuous action
 
-Measured in game on 1.30 Experimental on a pot emptying action, over seven runs with client and server within ±3 ms. Not checked on `P:\` beyond the calls named.
+Measured in game on 1.30 on a pot emptying action, over seven runs with client and server within ±3 ms. Not checked on `P:\` beyond the calls named.
 
 1. Probe first. Add a test `modded class` of the action that logs the `OnStart` and loop events, every change of `HumanCommandActionCallback.GetState()` (states at `P:\scripts\3_game\human.c:369` to `:380`, `GetState` at `:383`), and one sample every 0.1 s from `OnUpdateClient` and `OnUpdateServer` (both run every frame, `P:\scripts\4_world\classes\useractionscomponent\actionbase.c:1356`, `:1372`), each sample with the object's `GetAnimationPhase`.
 2. A `user` source has one `animPeriod` for both directions. If out and back take different times, drive the return with targets set every frame on the client.

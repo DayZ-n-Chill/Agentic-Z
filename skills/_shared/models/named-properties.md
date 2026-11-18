@@ -22,7 +22,7 @@ A scan of the 572 models under `P:\DZ\gear\` for known keys stored with their va
 
 ## What vanilla buildings and props set
 
-The same scan over all 8,256 models under `P:\DZ\`, for the keys buildings and placed props use. A model is counted once per key and value.
+The same scan over the 8,256 models under `P:\DZ\` outside the Takistan folders (`structures_takistan`, `plants_takistan` and the other `*_takistan` folders, 2,370 more models that were not counted), for the keys buildings and placed props use. A model is counted once per key and value.
 
 | Key | Models | Values seen (models) | Example |
 |---|---|---|---|
@@ -40,6 +40,7 @@ Which LOD carries what, read from the order the values sit in the file:
 - **Visual LODs:** `lodnoshadow` = `1`, one copy per visual LOD (`barn_wood1.p3d` has five visual LODs and five copies).
 - **View Geometry LOD** (by a reading of models converted back to MLOD; the file order alone only shows it is not the Geometry LOD): `canocclude`. Only four vanilla models set it to `1`, the climbable ladder props among them (`ladder.p3d`, `P:\DZ\structures\residential\offices\proxy\ladderlong.p3d`); 353 set it to `0`. Do not add `canocclude` = `1` to a model by habit.
 - **Loose props and building part proxies:** `autocenter` = `0`, often with `drawimportance` (`ladder_a_wood.p3d` stores `0.02`; `P:\DZ\structures\Proxy_BuildingParts\ladders\ladder_long_proxy.p3d` stores `autocenter` alone).
+- **Ladder sound, Geometry LOD:** `laddertype` is the one named property vanilla script reads. `ActionEnterLadder` looks it up on the Geometry LOD and defaults to `metal`; only `wood` changes the climbing sound (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionenterladder.c:137` to `:149`; `P:\scripts\4_world\entities\dayzplayerimplement.c:3643`). The deer stands store `wood` (`P:\DZ\structures\residential\misc\misc_deerstand1.p3d`).
 
 ## Mass is not a named property
 
@@ -59,9 +60,9 @@ A placed object needs all three:
 
 The rule above comes from mod debugging. What the vanilla files show, so a reviewer can weigh it:
 
-- 2,730 of the 8,256 models under `P:\DZ\` store an `autocenter` property, 2,723 of them with the value `0`. That includes 509 of the 572 gear models, handheld items among them (`P:\DZ\gear\books\book_kniga.p3d`).
+- 2,730 of those 8,256 models store an `autocenter` property, 2,723 of them with the value `0`. That includes 509 of the 572 gear models, handheld items among them (`P:\DZ\gear\books\book_kniga.p3d`).
 - 2,169 of those models store it exactly once. In `P:\DZ\gear\camping\wooden_case.p3d` and `book_kniga.p3d` the one copy sits in the Geometry LOD, next to the `mass` property on the wooden case, and not in the View or Fire Geometry LOD. 561 models store it more than once; `P:\DZ\gear\camping\fence.p3d` stores it seven times, once for each of its seven LODs.
-- In vanilla `config.cpp` files the key `autocenter=0` appears only in proxy classes under `CfgNonAIVehicles`, such as `ProxyPart` (`P:\DZ\gear\camping\config.cpp:13396`), never in an item's `CfgVehicles` class.
+- In vanilla `config.cpp` files the key `autocenter=0` appears only in proxy classes under `CfgNonAIVehicles`, such as `ProxyPart` (`P:\DZ\gear\camping\config.cpp:13397`, key at `:13406`) and `ProxyVehiclePart` (`P:\DZ\vehicles\wheeled\config.cpp:23905`), never in an item's `CfgVehicles` class. The only other value is `autocenter=1` on four projectile proxies: `ProxyArrow_Composite` and three single round proxies such as `ProxyShotgunShell_pellets` (`P:\DZ\weapons\attachments\magazine\config.cpp:9454` and `:9570` to `:9586`).
 
 So the named property on the Geometry LOD is common in vanilla, handheld items included. The float on drop recorded in `p3d-killers.md` was seen on a kit whose config class set `autocenter = 0`, a key no vanilla item class sets. One measured case where the property on every LOD plus the config line made a placed item float at knee height is in `skills/_shared/vehicles/placement-and-autocenter.md`; that note also covers where `autocenter=0` sits on a vehicle.
 

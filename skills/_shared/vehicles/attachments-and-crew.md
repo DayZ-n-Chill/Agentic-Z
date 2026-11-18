@@ -50,12 +50,12 @@ Cargo space is `class Cargo` with `itemsCargoSize[]`, `allowOwnedCargoManipulati
 ## Rules for taking parts off
 
 - `CarScript.CanReleaseAttachment` refuses any part while the engine runs and the car moves (`P:\scripts\4_world\entities\vehicles\carscript.c:638`).
-- Vanilla cars add their own rule: no battery, radiator or plug removal while the hood is closed or the engine runs (`offroadhatchback.c:139`; `offroad_02.c:155`).
-- The spare wheel uses `CanManipulateSpareWheel`, which returns `false` in `CarScript` (`carscript.c:670`). Override it, as vanilla does for an open trunk or hood (`offroadhatchback.c:158`), or the spare can never be fitted or removed by hand. The check runs for slots whose selection is `wheel_spare_1` or `wheel_spare_2` (`carscript.c:609` to `:636`).
+- Vanilla cars add their own rule: no battery, radiator or plug removal while the hood is closed or the engine runs (`offroadhatchback.c:139`; `P:\scripts\4_world\entities\vehicles\inheritedcars\offroad_02.c:155`).
+- The spare wheel uses `CanManipulateSpareWheel`, which returns `false` in `CarScript` (`carscript.c:670`). Override it, as vanilla does for an open trunk or hood (`offroadhatchback.c:158`), or the spare can never be fitted or removed by hand. The check runs for slots whose selection is `wheel_spare_1` or `wheel_spare_2`, both when a wheel goes in (`CanReceiveAttachment`, `carscript.c:628` and `:629`) and when it comes out (`CanReleaseAttachment`, `:660` and `:661`).
 
 ## Crew and seats
 
-`class Crew` lists the seats. The base is in `CarScript` (`P:\DZ\vehicles\wheeled\config.cpp:265` to `:282`):
+`class Crew` lists the seats. The base is in `CarScript` (`P:\DZ\vehicles\wheeled\config.cpp:236`), its `class Crew` at `:265` to `:282`:
 
 | Key | Driver value | Meaning |
 |---|---|---|
@@ -101,11 +101,11 @@ Hand this list to the art lead. Each name comes from a vanilla config key or scr
 
 The usual causes, each checked on `P:\`; the field notes behind them are in `invariants-get-in-and-seats.md`.
 
-- **No script class.** `CrewCanGetThrough` returns `false` in `Transport` (`P:\scripts\3_game\vehicles\transport.c:724`), so a config class with no script class of the same name can never be entered.
-- **The base door table is left-hand drive.** `GetDoorConditionPointFromSelection` pairs `seat_driver` with `seat_con_1_1` and `seat_codriver` with `seat_con_2_1` (`P:\scripts\4_world\entities\vehicles\carscript.c:2141-2156`). On a right-hand-drive model whose points are named by physical side, override it and cross the sides, as vanilla does for its own layouts (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroadhatchback.c:364`, `P:\scripts\4_world\entities\vehicles\inheritedcars\van_01.c:269`).
-- **The door action reads the door item, not the car.** `ActionCarDoorsOutside` casts its target to `CarDoor` and takes the selection names from that item with `GetActionComponentNameList` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actioncardoorsoutside.c:34-37`), so the door's own model must carry the `doors_*` selection that `GetAnimSourceFromSelection` maps.
-- **Compare against `DOORS_CLOSED`.** `CivilianSedan` refuses a seat only when its door is `DOORS_CLOSED` (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:226-232`). Writing the test as "not `DOORS_OPEN`" makes a car with a missing door unenterable.
-- **Rear seats share one crew model.** Vanilla ships only `crew_driver.p3d` and `crew_cargo.p3d` (`P:\DZ\vehicles\wheeled\proxies\crew_cargo.p3d`); the seat comes from the proxy's instance index. `CivilianSedan` names its rear seats `crewCargo1` and `crewCargo2` in `class Crew` (`P:\DZ\vehicles\wheeled\config.cpp:5221-5234`).
-- **Donor choice.** `Sedan_02` is rear-engined: its battery and spark plug sit behind `Sedan_02_Trunk` and its radiator behind `Sedan_02_Hood` (`P:\scripts\4_world\entities\vehicles\inheritedcars\sedan_02.c:142`, `P:\scripts\4_world\entities\vehicles\inheritedcars\sedan_02.c:156`). For a front-engined four-seater copy `CivilianSedan`.
+- No script class. `CrewCanGetThrough` returns `false` in `Transport` (`P:\scripts\3_game\vehicles\transport.c:727`), so a config class with no script class of the same name can never be entered.
+- The base door table is left-hand drive. `GetDoorConditionPointFromSelection` pairs `seat_driver` with `seat_con_1_1` and `seat_codriver` with `seat_con_2_1` (`P:\scripts\4_world\entities\vehicles\carscript.c:2141` to `:2156`). On a right-hand-drive model whose points are named by physical side, override it and cross the sides, as vanilla does for its own layouts (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroadhatchback.c:364`, `P:\scripts\4_world\entities\vehicles\inheritedcars\van_01.c:269`).
+- The door action reads the door item, not the car. `ActionCarDoorsOutside` casts its target to `CarDoor` and takes the selection names from that item with `GetActionComponentNameList` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actioncardoorsoutside.c:34` to `:37`), so the door's own model must carry the `doors_*` selection that `GetAnimSourceFromSelection` maps.
+- Compare against `DOORS_CLOSED`. `CivilianSedan` refuses a seat only when its door is `DOORS_CLOSED` (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:226` to `:232`). Writing the test as "not `DOORS_OPEN`" makes a car with a missing door unenterable.
+- Rear seats share one crew model. Vanilla ships only `crew_driver.p3d` and `crew_cargo.p3d` (`P:\DZ\vehicles\wheeled\proxies\crew_cargo.p3d`); the seat comes from the proxy's instance index. `CivilianSedan` names its rear seats `crewCargo1` and `crewCargo2` in `class Crew` (`P:\DZ\vehicles\wheeled\config.cpp:5221` to `:5234`).
+- Which car to copy. `Sedan_02` is rear-engined: its battery and spark plug sit behind `Sedan_02_Trunk` and its radiator behind `Sedan_02_Hood` (`P:\scripts\4_world\entities\vehicles\inheritedcars\sedan_02.c:142`, `P:\scripts\4_world\entities\vehicles\inheritedcars\sedan_02.c:156`). For a front-engined four-seater copy `CivilianSedan`.
 
 To check the model side offline, run `audit_getin_wheels.py` of `/dayz-p3d-audit` on the source `.p3d`: it lists the get-in memory points, the seat selections per LOD and the wheel axes.

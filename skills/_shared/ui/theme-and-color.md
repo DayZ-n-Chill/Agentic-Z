@@ -48,8 +48,8 @@ These are third party mods, and this repo has not checked their source, so all o
 
 ## The color system
 
-- HUD brightness. Never call `Widget.SetLV()` or `Widget.SetTextLV()` from a mod (Tier 2, "Layout and widget rules"). Both take -15 to 0, default 0, lower is darker (`P:\scripts\1_core\proto\enwidgets.c:114`), and vanilla feeds them the player's `EDayZProfilesOptions.HUD_BRIGHTNESS` (`P:\scripts\3_game\dayzgame.c:3910` to `:3919`). Colors darker than their hex values are that setting doing its job: pick colors that survive it and check them at a brightness below zero. Saturated colors barely change; greys and pastels darken most. `color-test-harness.md` is a panel for checking this.
-- 3D previews have their own knob, `Widget.SetObjectLighting(float)`, 0 to 1, default 1 (`P:\scripts\1_core\proto\enwidgets.c:118`), separate from `SetLV`.
+- HUD brightness. Never call `Widget.SetLV()` or `Widget.SetTextLV()` from a mod (Tier 2, "Layout and widget rules"). Both take -15 to 0, default 0, lower is darker (`P:\scripts\1_core\proto\enwidgets.c:114` to `:117`), and vanilla feeds them the player's `EDayZProfilesOptions.HUD_BRIGHTNESS`: `SetHudBrightness` calls both with the same value and `GetHUDBrightnessSetting` reads the option (`P:\scripts\3_game\dayzgame.c:3910` to `:3919`). Colors darker than their hex values are that setting doing its job: pick colors that survive it and check them at a brightness below zero. Saturated colors barely change; greys and pastels darken most. `color-test-harness.md` is a panel for checking this.
+- 3D previews have their own knob, `Widget.SetObjectLighting(float)`, 0 to 1, default 1 (`P:\scripts\1_core\proto\enwidgets.c:119`), separate from `SetLV`.
 - Low alpha draws nothing. Measured in game: `0x12` (18) was invisible and `0x26` (38) visible. Keep anything that must be seen at `0x30` (48) or more; `0x13` to `0x2F` is untested.
 - A layout writes colors as floats from 0 to 1; script `ARGB()` takes integers from 0 to 255.
 - `ImageWidget.SetColor()` multiplies the texture, so a colored image gets darker, not recolored. Author art you will tint in white or grey (not checked on `P:\`).

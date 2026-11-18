@@ -22,21 +22,21 @@ class AnimationSources
 |---|---|---|
 | `source` | `"user"` means script sets the phase. | `"user"` in every vanilla source below |
 | `initPhase` | Phase when the object spawns. | `Lid` 0 and `Lid2` 1 (`P:\DZ\gear\containers\config.cpp:104`, `:110`); `AnimSourceHidden` 1 (`P:\DZ\gear\camping\config.cpp:4440`) |
-| `animPeriod` | How long the move takes. | 0.01 for the barrel lids (near instant); 0.018 for the fence gate (`P:\DZ\gear\camping\config.cpp:4435`) |
+| `animPeriod` | How long the move takes. | 0.01 for the barrel lids (near instant); 0.018 for the fence gate (`P:\DZ\gear\camping\config.cpp:4445`) |
 
 The class name is the source name: the `model.cfg` animation uses it as `source`, or as the animation's own name when the model source is `user` (fence), and script passes it to `SetAnimationPhase` (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:148` uses `"Lid"`, declared at `P:\DZ\gear\containers\config.cpp:101`).
 
 `animPeriod` is time per unit of phase. The fence gate runs 0 to 100 with `animPeriod = 0.018`, so a full swing takes about 1.8 seconds, and script expects it to finish in about 2000 ms (`P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:13`, `GATE_ROTATION_TIME_APPROX`). With a 0 to 1 range, `animPeriod` is simply the duration in seconds.
 
-Sources can inherit to share settings: fence declares `class AnimRotate` once and every gate part inherits it (`P:\DZ\gear\camping\config.cpp:4432` to `:4452`).
+Sources can inherit to share settings: fence declares `class AnimRotate` once and every gate part inherits it (`P:\DZ\gear\camping\config.cpp:4442` to `:4480`).
 
 `animPeriod` is one value for both directions. A part that must go out and come back at different speeds cannot do it through `animPeriod` alone.
 
-A hide source that should start hidden uses `initPhase = 1`: the flag declares `folded` with `initPhase=0` and `unfolded` with `initPhase=1` (`P:\DZ\gear\camping\config.cpp:13052` to `:13066`), and its script swaps the two when it is attached (see `attach-state-parts.md`).
+A hide source that should start hidden uses `initPhase = 1`: the flag declares `folded` with `initPhase=0` and `unfolded` with `initPhase=1` (`P:\DZ\gear\camping\config.cpp:13062` to `:13076`), and its script swaps the two when it is attached (see `attach-state-parts.md`).
 
 ## Vehicles: which sources are declared and which the engine supplies
 
-A car declares its doors, seats and suspension as `user` sources. `CarScript` also declares the `user` sources `HideDestroyed_1_1` to `HideDestroyed_2_2`, and damage sources with `source="Hit"` plus a `hitpoint` key: `AnimHitWheel_1_1` to `AnimHitWheel_2_2` and `HitDoorsHood`, `HitDoorsTrunk`, `HitDoorsDrivers`, `HitDoorsCoDrivers`, `HitDoorsCargo` (`P:\DZ\vehicles\wheeled\config.cpp:368` to `:429`). A `Hit` source follows the named hit point's damage, not script:
+A car declares its doors, seats and suspension as `user` sources. `CarScript` also declares the `user` sources `HideDestroyed_1_1` to `HideDestroyed_2_2`, and damage sources with `source="Hit"` plus a `hitpoint` key: `AnimHitWheel_1_1` to `AnimHitWheel_2_2` and `HitDoorsHood`, `HitDoorsTrunk`, `HitDoorsDrivers`, `HitDoorsCoDrivers`, `HitDoorsCargo` (`P:\DZ\vehicles\wheeled\config.cpp:368` to `:429`). The motorbike's `AnimHitWheel_1` adds `raw=1` to its `Hit` source (`P:\DZ\vehicles\singletrack\config.cpp:137` to `:142`), the only vanilla use of that key; what it changes is not visible on `P:\`. A `Hit` source follows the named hit point's damage, not script:
 
 | Declared in `AnimationSources` | Where | Driven by |
 |---|---|---|
@@ -80,7 +80,7 @@ class Doors
 };
 ```
 
-Taken from `Land_HouseBlock_3F_Corner1`, `P:\DZ\structures\residential\config.cpp:7385`.
+Taken from `Land_HouseBlock_3F_Corner1` (`P:\DZ\structures\residential\config.cpp:7341`), entry at `:7385`.
 
 | Key | Must match |
 |---|---|
@@ -88,7 +88,7 @@ Taken from `Land_HouseBlock_3F_Corner1`, `P:\DZ\structures\residential\config.cp
 | `component` | The door's named component in the View Geometry LOD, so the player can aim at it (`Building.GetDoorIndex(componentIndex)` works from the view geometry component index, `P:\scripts\3_game\entities\building.c:27` to `:28`). |
 | `soundPos` | A Memory LOD point; the shipped model has `doors5_action`. |
 | `animPeriod` | Seconds to open, with the usual 0 to 1 range. |
-| `initOpened` | The common vanilla values are 0.3 and 0.7; 0, 0.1 and 0.5 also occur (`P:\DZ\structures_sakhal\config.cpp:3088`, `:3702`, `P:\DZ\structures\wrecks\config.cpp:95`). The name suggests the chance the door spawns open; script does not show it, so treat that as unconfirmed. |
+| `initOpened` | The common vanilla values are 0.3 (1,051 entries) and 0.7 (935); the Badlands houses that can be rebuilt use 2 (566, `P:\DZ\structures_takistan\Residential\config.cpp:32`), and 0.5, 0, 1 and 0.1 also occur (`P:\DZ\structures_sakhal\config.cpp:3088`, `:3702`, `P:\DZ\structures\wrecks\config.cpp:95`). The name suggests the chance the door spawns open; no script reads the key, so treat that as unconfirmed. |
 
 Reuse the vanilla sound names until the mod has its own sounds; new sounds are audio work, not animation work.
 

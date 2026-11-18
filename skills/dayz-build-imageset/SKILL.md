@@ -100,9 +100,18 @@ ImageSetClass {
 }
 ```
 
-This matches the vanilla layout: `P:\gui\imagesets\playstation_buttons2.imageset:1-24` has the same `Name` / `RefSize` / `Textures` / `Images` / `Groups` blocks and per-sprite `Name` / `Pos` / `Size` / `Flags 0` fields.
+This matches the vanilla layout: `P:\gui\imagesets\playstation_buttons2.imageset` (`:1` to `:24`) has the same `Name` / `RefSize` / `Textures` / `Images` / `Groups` blocks and per-sprite `Name` / `Pos` / `Size` / `Flags 0` fields.
 
 `Pos` is the sprite's top-left in atlas pixels (after gutter); `Size` is the sprite's own dimensions (gutter is NOT included in `Size`). In the vanilla file above, `DPAD_all_directions` has `Pos 1 1` and `Size 44 44` inside a `RefSize 64 64` atlas, so `Size` is the sprite alone.
+
+The vanilla file also lists a second texture, `mpix 1` with an `@2x` atlas, beside the `mpix 0` one (`playstation_buttons2.imageset:5` to `:12`). The generated file has only `mpix 0`, so the game uses that one atlas at every resolution.
+
+## Using the set in a layout
+
+- A layout names a sprite as `set:<Name> image:<sprite>`, where `<Name>` is the imageset's `Name` (`image0 "set:dayz_gui image:Close"` at `P:\gui\layouts\day_z_book.layout:141`).
+- The game must load the `.imageset` before a layout can use it. Mods list it in `config.cpp` under `CfgMods`, `class defs`, `class imageSets`; no vanilla config does this, so that route is not checked on `P:\` (`skills/_shared/enscript/references/widget_api.md`, "Imagesets in layouts and script"). Script can load one at run time with `LoadWidgetImageSet(string filename)` (`P:\scripts\1_core\proto\enwidgets.c:692`).
+- Workbench shows the set only when the mod's `dayz.gproj` lists it in its `imageSets` block (`skills/_shared/ui/plan-to-implementation.md`).
+- A blank icon in game usually means one of three things: the set is not registered, the set `Name` in the layout does not match the folder name, or the sprite name does not match the `.png` stem.
 
 ## Refuses to run if
 

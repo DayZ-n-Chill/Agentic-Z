@@ -11,7 +11,7 @@ Quick examples. Every method below was checked against its declaration on `P:\sc
 - [set\<T\>](#sett)
 - [vector API](#vector-api)
 - [Math API (Math class)](#math-api-math-class)
-- [⚠️ `string.ToLower()` / `ToUpper()` mutate in place](#-stringtolower--toupper-mutate-in-place)
+- [`string.ToLower()` / `ToUpper()` mutate in place](#stringtolower--toupper-mutate-in-place)
 - [Existence — these vanilla helpers DO exist](#existence--these-vanilla-helpers-do-exist)
 - [Reported: `int.MIN` comparison quirk](#reported-intmin-comparison-quirk)
 
@@ -142,12 +142,11 @@ float distSq = vector.DistanceSq(pos1, pos2);   // cheaper, no sqrt
 vector dir   = vector.Direction(from, to);       // not normalized
 vector norm  = dir.Normalized();
 float dot    = vector.Dot(a, b);
-vector cross = a.Cross(b);                       // instance method
 float len    = pos.Length();
 float yaw    = dir.VectorToYaw();
 ```
 
-`class vector` is `P:\scripts\1_core\proto\enconvert.c:118`: `Normalized` `:156`, `Length` `:169`, `Distance` `:196`, `DistanceSq` `:210`, `Cross` `:239` (an instance method), `Direction` `:254`, `Dot` `:305`, `VectorToYaw` `:345`.
+`class vector` is `P:\scripts\1_core\proto\enconvert.c:118`: `Normalized` `:156`, `Length` `:169`, `Distance` `:196`, `DistanceSq` `:210`, `Direction` `:233`, `Dot` `:284`, `VectorToYaw` `:324`. The current 1.30 build has no `Cross`: the first 1.30 patch removed it, and a call stops the server with `Undefined function 'vector.Cross'` (`game_builds.md`). Write the cross product out by components if you need it.
 
 ---
 
@@ -173,7 +172,7 @@ Declared in `P:\scripts\1_core\proto\enmath.c`: `PI` `:12`, `DEG2RAD` `:17`, `Ra
 
 ---
 
-## ⚠️ `string.ToLower()` / `ToUpper()` mutate in place
+## `string.ToLower()` / `ToUpper()` mutate in place
 
 They change the string in place and return its new length (`P:\scripts\1_core\proto\enstring.c:171`, `:186`). Always copy first if you need to preserve the original:
 
@@ -211,7 +210,7 @@ More of the same kind, each opened on `P:\`:
 |---|---|---|
 | `float.MIN` / `FLT_MIN` | The smallest positive float (measured `1.17549e-38`), not the most negative one. Start a maximum search from `float.LOWEST`, which is `-FLT_MAX`. | `P:\scripts\1_core\proto\enconvert.c:111-113` |
 | `array<T>.Slice(int from, int to)` | In 1.30 (reported as new in that version). `to` is included. | `P:\scripts\1_core\proto\enscript.c:720-727` |
-| `typename.EnumFlagsToString(enumType, value)` | In 1.30 (reported as new in that version); `EnumTools.EnumFlagsToString` wraps it. | `P:\scripts\1_core\proto\enconvert.c:614`, `:704` |
+| `typename.EnumFlagsToString(enumType, value)` | In 1.30 (reported as new in that version); `EnumTools.EnumFlagsToString` wraps it. | `P:\scripts\1_core\proto\enconvert.c:593`, `:683` |
 | `TStringStringMap`, `TStringMap` | Both are `map<string, string>`. | `P:\scripts\1_core\proto\enscript.c:1004`, `P:\scripts\3_game\tools\tools.c:988` |
 | A `map` keyed by `Widget` | Valid; vanilla has `map<Widget, float> m_RadialItemCards`. | `P:\scripts\3_game\gui\effects\radialmenu.c:17` |
 

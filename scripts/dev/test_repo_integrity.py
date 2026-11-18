@@ -1033,17 +1033,11 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
     "_shared/animation/README.md": {
         r"P:\scripts\4_world\entities\itembase\barrel_colorbase.c:144",
     },
-    "_shared/animation/animation-sources.md": {
-        r"P:\DZ\structures\residential\config.cpp:7385",
-    },
     "_shared/audio-fx/sound-script.md": {
         r"P:\scripts\3_game\effect.c:336",
     },
     "_shared/container-base.md": {
         r"P:\DZ\gear\camping\config.cpp:10261-10266",
-    },
-    "_shared/enscript/patterns/actions.md": {
-        r"P:\scripts\4_world\entities\building\underground\powergeneratorstatic.c:143",
     },
     "_shared/enscript/references/api_game.md": {
         r"P:\scripts\3_game\global\game.c:5",
@@ -1065,9 +1059,8 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
     "_shared/enscript/references/language_types.md": {
         r"P:\scripts\1_core\proto\enconvert.c:109",
         r"P:\scripts\1_core\proto\enconvert.c:22",
-    },
-    "_shared/persistence/data-audit.md": {
-        r"P:\scripts\3_game\entities\entityai.c:1393",
+        # enconvert.c:535 is "class typename"; typename is a generic word the check ignores.
+        r"P:\scripts\1_core\proto\enconvert.c:535",
     },
     "_shared/persistence/save-load-contract.md": {
         r"P:\scripts\3_game\entities\entityai.c:3041",
@@ -1082,9 +1075,6 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
     },
     "_shared/physics/drop-and-throw.md": {
         r"P:\scripts\4_world\entities\dayzplayerimplementthrowing.c:187",
-    },
-    "_shared/textures/surface-recipes.md": {
-        r"P:\DZ\characters\glasses\config.cpp:598",
     },
     # particlelist.c:316 registers "contaminated_area_gas_around_tiny"; the citing line backticks only that effect's .ptc path.
     "dayz-particles/SKILL.md": {
@@ -1103,12 +1093,9 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
         r"P:\DZ\characters\vests\config.cpp:578",
     },
     "_shared/wearables/references/protection-and-insulation.md": {
-        r"P:\DZ\characters\tops\config.cpp:2263",
-        r"P:\DZ\characters\vests\config.cpp:892",
         r"P:\DZ\gear\consumables\config.cpp:259",
         r"P:\DZ\gear\tools\config.cpp:1016",
         r"P:\DZ\gear\tools\config.cpp:5365",
-        r"P:\scripts\3_game\constants.c:821",
         r"P:\scripts\4_world\entities\itembase\clothing\gp5gasmask.c:13",
     },
 }

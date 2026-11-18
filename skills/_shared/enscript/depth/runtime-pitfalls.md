@@ -11,7 +11,7 @@ Which code compiles and then crashes, loses items or slows the server: array ele
 
 ## Hologram previews are real entities
 
-The hologram creates a real entity of the `ProjectionBasedOnParent()` class for the preview, on the server and as a local object on the client (`CreateObjectEx` at `P:\scripts\4_world\classes\hologram.c:113` and `:120`; vanilla `PlaceEntity` is at `:1044`). Reported, not checked on `P:\`: without a `PlaceEntity()` override that returns the entity it was given, ghost entities pile up.
+The hologram creates a real entity of the `ProjectionBasedOnParent()` class for the preview, on the server and as a local object on the client (`CreateObjectEx` at `P:\scripts\4_world\classes\hologram.c:114` and `:121`; vanilla `PlaceEntity` is at `:1044`). Reported, not checked on `P:\`: without a `PlaceEntity()` override that returns the entity it was given, ghost entities pile up.
 
 ```c
 override EntityAI PlaceEntity(EntityAI entity_for_placing)
@@ -54,7 +54,7 @@ These are `proto native` calls on `CGame`; that they are slow is reported, not m
 | `SurfaceIsSea`, `SurfaceIsPond` | `:1196`, `:1197` | `g_Game.GetWaterDepth(pos) > 0` (`:1198`) |
 | `SurfaceRoadY` | `:1177` | `Vector(x, g_Game.SurfaceY(x, z), z)` for a plain ground point |
 
-Vanilla uses both water checks: `SurfaceIsSea` or `SurfaceIsPond` in the hologram (`P:\scripts\4_world\classes\hologram.c:1128`), and `GetWaterDepth` for transport (`P:\scripts\3_game\vehicles\transport.c:537`) and the player (`P:\scripts\4_world\entities\manbase\playerbase.c:7138`). Over rivers and streams see `_shared/physics/water-queries.md`: on vanilla Chernarus, `SurfaceIsPond` reads false at the centre of most river and stream pieces above 50 m.
+Vanilla uses both water checks: `SurfaceIsSea` or `SurfaceIsPond` in the hologram (`P:\scripts\4_world\classes\hologram.c:1128`), and `GetWaterDepth` for transport (`P:\scripts\3_game\vehicles\transport.c:540`) and the player (`P:\scripts\4_world\entities\manbase\playerbase.c:7138`). Over rivers and streams see `_shared/physics/water-queries.md`: on vanilla Chernarus, `SurfaceIsPond` reads false at the centre of most river and stream pieces above 50 m.
 
 Reported, cause not checked on `P:\`: a `foreach` straight over a getter's return value misbehaves. Copy it to a local, or loop over a member directly.
 

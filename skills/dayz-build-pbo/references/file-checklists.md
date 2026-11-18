@@ -32,9 +32,9 @@ The usual split:
   - Community Framework: `"JM_CF_Scripts"` (not `"CommunityFramework"`). Third-party fact (CF).
   - Dabs Framework: `"DF_Scripts"` or `"DF_GUI"` (not `"DabsFramework"`). Third-party fact (Dabs).
   - Expansion: `"DayZExpansion_Core"` for Core; a module's scripts patch is `"DayZExpansion_<Module>_Scripts"` (`_Market_Scripts`, `_AI_Scripts`, `_Quests_Scripts`, `_Vehicles_Scripts`, `_BaseBuilding_Scripts`), not `"DayZExpansion_<Module>"`. Third-party fact (DayZ Expansion: its `DayZExpansion/Core/Stub/config.cpp:3` and `DayZExpansion/Market/Scripts/config.cpp:3`).
-  - Vanilla: `"DZ_Data"`, `"DZ_Scripts"`.
+  - Vanilla: `"DZ_Data"` (`P:\DZ\data\config.cpp:3`), `"DZ_Scripts"` (`P:\scripts\config.cpp:3`).
 - [ ] The `hiddenSelections[]` count matches the `hiddenSelectionsTextures[]` count.
-- [ ] `scope = 2` exposes the class in public lists and tools that filter on scope 2; `scope = 1` is protected, and script can still create it (vanilla `LargeTentClutterCutter` has `scope=1`, `P:\DZ\gear\camping\config.cpp:1454-1456`); `scope = 0` is abstract.
+- [ ] `scope = 2` exposes the class in public lists and tools that filter on scope 2; `scope = 1` is protected, and script can still create it (vanilla `LargeTentClutterCutter` has `scope=1`, `P:\DZ\gear\camping\config.cpp:1454` to `:1456`); `scope = 0` is abstract.
 - [ ] Inheritance: the parent exists, or its addon is in `requiredAddons`.
 - [ ] A vehicle nested-class override (`class SimulationModule: SimulationModule`, `class Axles: Axles`, `class Front: Front`, `class Rear: Rear`, `class DamageZones: DamageZones`): the base named after the colon is forward-declared as `class X;` at the root of this `CfgVehicles`. Each `config.cpp` is parsed with its own scope; a child mod does not inherit forward declarations from the parent PBO's config. Without them CfgConvert stops with `Undefined base class 'X'`. Nested classes with no `: parent` merge implicitly and need none. See E28 and E33 (measured on a vehicle child mod).
 - [ ] `attachments[]` on a class whose parent is in another PBO is written out in full with `=`, never appended with `+=` (E32).
@@ -54,7 +54,7 @@ The full rules are in `skills/_shared/enscript-style.md` (the style guide, which
 - [ ] `m_` prefix on every member field.
 - [ ] No `new` inside a periodic tick: keep a member and call `.Clear()`.
 - [ ] A complex expression inside an array assignment can segfault: put it in a local first.
-- [ ] `ProcessDirectDamage` takes `DamageType.FIRE_ARM` (the enum in `P:\scripts\3_game\damagesystem.c:10-13`), not `DT_FIRE_ARM` (E29).
+- [ ] `ProcessDirectDamage` takes the damage type as an `int` (`P:\scripts\3_game\entities\object.c:1138`). Vanilla passes the engine constant `DT_CUSTOM` (`P:\scripts\3_game\entities\entityai.c:4153`), and the method comment lists `DT_CLOSE_COMBAT`, `DT_FIRE_ARM`, `DT_EXPLOSION` and `DT_CUSTOM` (`object.c:1130`). The script enum `DamageType` (`P:\scripts\3_game\damagesystem.c:10` to `:13`, where `FIRE_ARM` is 1) is marked "exposed from C++". Either form names a damage type; whether a `DT_` name fails to compile in a mod (E29) is not checked on `P:\`.
 - [ ] A `modded` or derived class does not declare a member its base already has (E30), and an override copies the base signature, parameter names included (E31).
 - [ ] `CreateAttachment` and `CreateInInventory` get the item's class name, not a slot name (E34).
 
@@ -62,8 +62,8 @@ The full rules are in `skills/_shared/enscript-style.md` (the style guide, which
 
 Pattern file: `skills/_shared/enscript/patterns/netsync.md`. Who owns what: `skills/_shared/conventions/scripts.md`.
 
-- [ ] `RegisterNetSyncVariable*` is called while the entity is built: in the constructor, or in an `InitItemVariables()` override. `ItemBase` has no `Init()` to override; `PlayerBase` does, and registers there (`netsync.md`, "Registration").
-- [ ] Types: `Bool`, `BoolSignal`, `Int`, `Float`, `Object` (`RegisterNetSyncVariableBool` to `RegisterNetSyncVariableObject`, `P:\scripts\3_game\entities\entityai.c:2832-2869`). There is no string variant.
+- [ ] `RegisterNetSyncVariable*` is called while the entity is built: in the constructor, or in an `InitItemVariables()` override. `ItemBase` has no `Init()` to override and registers in `InitItemVariables()` (`P:\scripts\4_world\entities\itembase.c:158`); `PlayerBase` has `Init()` and registers there (`P:\scripts\4_world\entities\manbase\playerbase.c:364`; `netsync.md`, "Registration").
+- [ ] Types: `Bool`, `BoolSignal`, `Int`, `Float`, `Object` (`RegisterNetSyncVariableBool` to `RegisterNetSyncVariableObject`, `P:\scripts\3_game\entities\entityai.c:2832` to `:2869`). There is no string variant.
 - [ ] The same variables in the same order on client and server (E17).
 - [ ] `OnVariablesSynchronized` (`P:\scripts\3_game\entities\entityai.c:3069`) is overridden and reacts to every registered variable, and calls `super`.
 - [ ] Side guards: `IsDedicatedServer()` in early init and to skip client-only work, `IsServer()` for authority work after load (E18).
@@ -85,7 +85,7 @@ Read `skills/_shared/conventions/ui.md` first; depth is in `skills/_shared/ui/`.
 
 Pattern file: `skills/_shared/enscript/patterns/actions.md` (registering the action class, condition components, stopping pickup).
 
-The order of checks in `ActionBase.Can` (`P:\scripts\4_world\classes\useractionscomponent\actionbase.c:929-966`):
+The order of checks in `ActionBase.Can` (`P:\scripts\4_world\classes\useractionscomponent\actionbase.c:929` to `:966`):
 
 ```text
 1. Condition mask    bitwise: in vehicle, on ladder, swimming, restrained, raised ...   (:931)
@@ -100,7 +100,7 @@ The order of checks in `ActionBase.Can` (`P:\scripts\4_world\classes\useractions
 The server runs the same `Can` before it accepts a client's action (`pickedAction.Can(...)`, `P:\scripts\4_world\classes\useractionscomponent\actionmanagerserver.c:168`). Until 1.29 these seven steps were treated as the whole client start gate (not yet checked on `P:\`, which holds no 1.29 data). Since 1.30, after the widget lists the action, `CanBeStarted()` must also be true or the client never calls `ActionStart` (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:336`).
 
 - [ ] `CreateConditionComponents` is overridden with the right target and item conditions.
-- [ ] (since 1.30) `CanBeStarted()` returns true for an action the player can perform; info-only actions return false.
+- [ ] (since 1.30) `CanBeStarted()` returns true for an action the player can perform; info-only actions return false. The base returns true, and its comment names "pure info" actions as the reason to override it (`actionbase.c:287` and `:288`).
 - [ ] (since 1.30) Water, wash and fill on sea or pond use `CCTLiquid` (as `ActionWashHandsWater` does, `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionwashhandswater.c:28`) unless you mean to differ.
 - [ ] `ActionCondition` reads only data both client and server have (the data map in `skills/dayz-scope-mod/references/implementation-protocol.md`).
 - [ ] Target type: `GetType()` for an exact class, `IsKindOf()` to include subclasses.

@@ -14,10 +14,10 @@ A hole only removes terrain; it creates no space. What happens to something that
 
 ## The `Holes` class
 
-Of the vanilla maps readable on `P:\`, only Livonia has holes: seven cells in two groups, beside the two entrances of the Dambog bunker. Chernarus has none (`P:\DZ\worlds\chernarusplus\world\config.cpp` has neither `Holes` nor `tiles`), and the Sakhal world is in an encrypted `.ebo`.
+Of the vanilla world configs on `P:\`, only Livonia has holes: seven cells in two groups, beside the two entrances of the Dambog bunker. Chernarus has none (`P:\DZ\worlds\chernarusplus\world\config.cpp` has neither `Holes` nor `tiles`). Sakhal and Nasdara have only their `ce`, `data` and `navmesh` folders on `P:\`, with no world config. The game ships their worlds in encrypted `.ebo` files (not checked on `P:\`).
 
 ```cpp
-// P:\DZ\worlds\enoch\world\config.cpp:303 (inside CfgWorlds > Enoch)
+// P:\DZ\worlds\enoch\world\config.cpp:303 (inside CfgWorlds > class Enoch: CAWorld, which opens at :115)
 class Holes
 {
 	class Dambog            // one group is one subclass; the name is free
@@ -32,7 +32,7 @@ class Holes
 ```
 
 - Each entry of `tiles[]` is `{x, z}`: cell indexes of the height map, not meters.
-- The engine checks the range: the code that reads `tiles` carries the messages `x (%d) out of range <0, %d)` and `y (%d) ...` (strings in the game executable, not on `P:\`; see `terrain-holes-storage.md`).
+- The engine checks the range: the code that reads `tiles` carries the messages `x (%d) out of range <0, %d)` and `y (%d) ...` (strings in the game executable, not checked on `P:\`; see `terrain-holes-storage.md`).
 - Each group is a subclass, so a mod could add its own group without overriding the vanilla one. Unverified: whether a mod's config patch on `CfgWorlds >> ChernarusPlus` opens holes. Measure that first.
 
 ## The unit is a height map cell
@@ -47,7 +47,7 @@ The 6.25 m size comes from that fit, not from the `.wrp` header, and the cell si
 ## Reading holes from script
 
 ```c
-// P:\scripts\3_game\global\game.c:1203
+// P:\scripts\3_game\global\game.c:1203 and :1204
 	//! Returns whether tile at provided world coordinates is a hole.
 	proto native bool		SurfaceIsHole(float x, float z);
 ```
@@ -61,9 +61,9 @@ Holes live in the world config, not in the `.wrp` (`terrain-holes-storage.md`).
 ## Marking holes as a terrain author
 
 - Buldozer has four inputs for this: `UABuldLinkCamToTerrain`, `UABuldCopyTileCoord`, `UABuldMarkUnderground` and `UABuldRemoveUnderground` (`P:\bin\constants.xml:282` to `:285`).
-- From the 1.30 release notes, not on `P:\`: Terrain Builder can unlink the Buldozer camera from the terrain height to edit below the surface (key 8 by default), the same toggle affects objects, and each object has an "underground" flag that stops a static object below the terrain from being hidden by occlusion when it should be visible.
+- From the 1.30 release notes, not checked on `P:\`: Terrain Builder can unlink the Buldozer camera from the terrain height to edit below the surface (key 8 by default), the same toggle affects objects, and each object has an "underground" flag that stops a static object below the terrain from being hidden by occlusion when it should be visible.
 - That flag belongs to Terrain Builder. Script has nothing like it for objects created by Object Spawner or `CreateObject`, and whether those objects are occluded below the terrain is unverified.
-- The stable DayZ Tools release that shipped alongside 1.30 has none of the hole or flag strings (not on `P:\`), so a later Terrain Builder is needed.
+- The stable DayZ Tools release that shipped alongside 1.30 has none of the hole or flag strings (not checked on `P:\`), so a later Terrain Builder is needed.
 - A third party terrain tool describes this workflow; it ships as binaries only and has not been run, so none of it is verified:
   - it marks cells of the height field grid and writes `holes.cfg` next to `layers.cfg`, one class per group, for Terrain Builder and Buldozer to read;
   - it adds the `#include` to the terrain's `config.cpp`;
@@ -84,7 +84,7 @@ Holes live in the world config, not in the `.wrp` (`terrain-holes-storage.md`).
 | `holes.cfg` next to `layers.cfg`, and the reload on alt-tab | unverified (third party tool behaviour) |
 | What `ECE_OBJECT_SPAWNER` does to an object under a hole | unverified |
 
-The cell size of any map other than Livonia is unknown, and Sakhal cannot be read because its world is in an encrypted `.ebo`.
+The cell size of any map other than Livonia is unknown, and the Sakhal and Nasdara world configs are not on `P:\`.
 
 ## Checks to run before designing with holes
 

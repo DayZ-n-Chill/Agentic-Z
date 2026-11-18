@@ -30,7 +30,7 @@ Probing one LOD of one model is in `collision-lods.md`.
 
 Switching off `CHARACTER` against `DYNAMICITEM` with `dSetInteractionLayer` changes it for every dynamic item on the server. To let one player pass through one object, use the pair block.
 
-To check at run time whether two layers interact, use the query vanilla uses to decide whether an object can block a vehicle door (`dGetInteractionLayer`, `P:\scripts\3_game\vehicles\transport.c:787` to `:788`):
+To check at run time whether two layers interact, use the query vanilla uses to decide whether an object can block a vehicle door (`dGetInteractionLayer`, `P:\scripts\3_game\vehicles\transport.c:790`, `:791`):
 
 ```c
 int layer = dBodyGetInteractionLayer(obj);
@@ -49,7 +49,7 @@ They look at different things. Choosing the wrong one is a common cause of "my r
 - `RaycastRVParams` defaults to `ObjIntersectView` (`P:\scripts\3_game\global\dayzphysics.c:88`). The `ObjIntersect` values are engine constants; the numbers to trust are the ones in that comment (`:66` to `:71`).
 - A `RaycastRVProxy` hit comes back as `RaycastRVResult` (`P:\scripts\3_game\global\dayzphysics.c:98` to `:113`): `obj`, which is the proxy object when `hierLevel` is above 0, and `parent`, its top parent; `pos` and `dir`; `component`, the component index in the LOD that was hit; `surface`; and `entry` and `exit`, false when the start or end point was inside. Vanilla finds proxy hits with `hierLevel > 0` (`P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:271`).
 - An overlap test reports through `CollisionOverlapCallback.OnContact(IEntity other, Contact contact)` (`P:\scripts\3_game\global\dayzphysics.c:115` to `:121`).
-- `CollisionFlags` is FIRSTCONTACT, NEARESTCONTACT, ONLYSTATIC, ONLYDYNAMIC, ONLYWATER, ALLOBJECTS (`P:\scripts\1_core\proto\endebug.c:140` to `:148`). Pass the names, never numbers: a game version that adds `NONE = 0` at the front shifts every value by one (reported, not checked on `P:\`, whose copy has no `NONE`).
+- `CollisionFlags` is NONE (0, "All colliding objects"), FIRSTCONTACT, NEARESTCONTACT, ONLYSTATIC, ONLYDYNAMIC, ONLYWATER, ALLOBJECTS (`P:\scripts\1_core\proto\endebug.c:140` to `:149`). `NONE = 0` sits at the front, so FIRSTCONTACT is 1 and every later value is one higher than in a copy without it. Pass the names, never numbers.
 - There is no Roadway choice in `ObjIntersect` (`P:\scripts\3_game\constants.c:31` to `:38`), so `RaycastRV` cannot probe a Roadway LOD; see `collision-lods.md` for why that matters for lifts.
 
 Vanilla examples of each family:
@@ -69,8 +69,8 @@ Vanilla examples of each family:
 
 - The cursor's first pass is `RaycastRVProxy` with the default `ObjIntersectView` (above). A model with no View Geometry LOD gets no action prompt, whatever physics body it has. No layer change fixes that; the fix is in the model (`collision-lods.md`).
 - The physics world is asked only for the ground under the cursor (the `RayCastBullet` fallback above).
-- At a camera pitch of -45 degrees or lower the cursor also collects entities in a cone in front of the player (`GetEntitiesInCone`, `P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:324` to `:325`) with `c_MaxTargetDistance = 3.0` and `c_ConeAngle = 30.0` (`:841`, `:843`), and scores them by distance to the cursor ray (`DistSqrPoint2Line`, `:528`). So an item on the ground can be picked up without any View Geometry hit. Picking an item up proves nothing about its collision.
-- Since 1.30 a liquid surface with no object is a target too, at utility 0.01 (the `LIQUID_NONE` test, `P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:532` to `:534`). The `ActionTarget` constructor takes `surfaceName` (`:125`) and `GetSurfaceLiquidType()` reads it back (`:184` to `:187`).
+- At a camera pitch of -45 degrees or lower the cursor also collects entities in a cone in front of the player (`GetEntitiesInCone`, `P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:324` to `:325`) with `c_MaxTargetDistance = 3.0` and `c_ConeAngle = 30.0` (`:844`, `:846`), and scores them by distance to the cursor ray (`DistSqrPoint2Line`, `:531`). So an item on the ground can be picked up without any View Geometry hit. Picking an item up proves nothing about its collision.
+- Since 1.30 a liquid surface with no object is a target too, at utility 0.01 (the `LIQUID_NONE` test, `P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:536`, `:537`). The `ActionTarget` constructor takes `surfaceName` and stores its liquid type (`:125` to `:139`), and `GetSurfaceLiquidType()` reads it back (`:184` to `:187`).
 
 ## Surface under a point
 

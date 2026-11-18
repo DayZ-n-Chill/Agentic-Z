@@ -13,18 +13,19 @@ What each key and stage of a DayZ `.rvmat` does, for the two shaders mod items u
 
 ## Which shader
 
-`PixelShaderID` and `VertexShaderID` name the shader. A scan of the 34,899 `.rvmat` files under `P:\DZ` finds:
+`PixelShaderID` and `VertexShaderID` name the shader. A scan of the 44,580 `.rvmat` files under `P:\DZ` (DayZ 1.30) finds:
 
 | Shader pair | Files | Used for |
 |---|---|---|
-| `Super` / `Super` | 5,838 | Every item, weapon, piece of clothing, vehicle part and most building parts |
+| `Super` / `Super` | 6,612 | Every item, weapon, piece of clothing, vehicle part and most building parts |
 | `Skin` / `Skin` | 244 | Character bodies and heads under `P:\DZ\characters\heads\data\` |
-| `SuperHair` / `Super` | 128 | Hair and fur |
-| `Multi` / `Multi` | 1,960 | Building surfaces that blend several layers |
-| `TerrainX` / `Terrain` | 25,030 | Terrain layers, made by Terrain Builder |
-| `NormalMapSpecularMap` / `NormalMap` | 87 | Tiled surfaces with a constant base color: roads, ruins, decals |
-| `Normal` / `Basic` | 76 | The flat shader with no stages, used by the penetration materials on collision faces |
-| `CalmWater` / `CalmWater` | 14 | Water. The `.rvmat` is two lines and the look is in an `.emat` |
+| `SuperHair` / `Super` | 178 | Hair and fur |
+| `Multi` / `Multi` | 2,680 | Building surfaces that blend several layers |
+| `TerrainX` / `Terrain` | 27,325 | Terrain layers, made by Terrain Builder |
+| `TerrainSNX` / `Terrain` | 5,635 | Terrain layers of the map under `P:\DZ\worlds\nasdara` |
+| `NormalMapSpecularMap` / `NormalMap` | 117 | Tiled surfaces with a constant base color: roads, ruins, decals |
+| `Normal` / `Basic` | 82 | The flat shader with no stages: the penetration materials on collision faces, plus flash, light beam and default materials in `P:\DZ\data\data\` and a few props |
+| `CalmWater` / `CalmWater` | 17 | Water. The `.rvmat` is two lines and the look is in an `.emat` |
 
 A mod item uses Super. Use Skin only for a new character body or head, and copy a vanilla head material when you do. The other shaders belong to map and building work, not to this pack.
 
@@ -61,7 +62,7 @@ VertexShaderID="Super";
 More on two of these keys:
 
 - A light that switches on and off is two materials that differ in the last number of `emmisive[]`: the sedan's lit lights have `emmisive[]={1,1,1,120}` (`P:\DZ\vehicles\wheeled\sedan_02\data\sedan_02_lights_e.rvmat:4`) and the unlit ones `emmisive[]={1,1,1,0}` (`P:\DZ\vehicles\wheeled\sedan_02\data\sedan_02_lights.rvmat:4`). The vehicle config names the pair.
-- Of all the Super materials under `P:\DZ`, damage and destruct variants included, 154 set `renderFlags[]` to `"nozwrite"` alone and 25 to `"addblend"` with `"nozwrite"`. A decal with alpha that lies on paint uses it, as the offroad's stickers do (`P:\DZ\vehicles\wheeled\offroad_02\data\offroad_02_decals.rvmat:7-12`). A window does not need it: `P:\DZ\vehicles\wheeled\data\auta_skla.rvmat` has no `renderFlags[]`.
+- Of all the Super materials under `P:\DZ`, damage and destruct variants included, 200 set `renderFlags[]` to `"nozwrite"` alone and 28 to `"addblend"` with `"nozwrite"`. A decal with alpha that lies on paint uses it, as the offroad's stickers do (`P:\DZ\vehicles\wheeled\offroad_02\data\offroad_02_decals.rvmat:7-12`). A window does not need it: `P:\DZ\vehicles\wheeled\data\auta_skla.rvmat` has no `renderFlags[]`.
 
 ## Super stages
 
@@ -94,9 +95,9 @@ class Stage1
 | `Stage7` | Environment (reflection) map | `dz\data\data\env_land_co.paa`, or `#(argb,8,8,3)color(0,0,0,1,CO)` for none |
 | `StageTI` | Thermal texture `_ti_ca` (optional) | leave the stage out |
 
-Stage6 is written two ways in vanilla Super materials (counted over all of them, damage and destruct variants included): with `uvSource="none"` and no `uvTransform` in 2,091 of them (`P:\DZ\characters\tops\data\bomberjacket.rvmat:72`), and with `uvSource="tex"` and a `uvTransform` in 3,601 (`P:\DZ\vehicles\parts\data\aircraft_battery.rvmat:72`). Both load; copy the form of the vanilla material you started from.
+Stage6 is written two ways in vanilla Super materials (counted over all of them, damage and destruct variants included): with `uvSource="none"` and no `uvTransform` in 2,326 of them (`P:\DZ\characters\tops\data\bomberjacket.rvmat:72`), and with `uvSource="tex"` and a `uvTransform` in 4,149 (`P:\DZ\vehicles\parts\data\aircraft_battery.rvmat:72`). Both load; copy the form of the vanilla material you started from.
 
-`dir[]` has no single identity value. Across all vanilla Super materials, damage and destruct variants included, vanilla writes `dir[]={0,0,0}` 29,166 times, as in the block above (`P:\DZ\vehicles\parts\data\aircraft_battery.rvmat:17`), and `dir[]={0,0,1}` 8,889 times (`P:\DZ\vehicles\wheeled\van_01\data\van_01_wheel.rvmat:17`). A review that checks whether a texture samples one to one looks at `aside[]`, `up[]` and `pos[]`, where `{1,0,0}`, `{0,1,0}` and `{0,0,0}` are the identity and other values are tiling factors.
+`dir[]` has no single identity value. Across all vanilla Super materials, damage and destruct variants included, vanilla writes `dir[]={0,0,0}` 33,692 times, as in the block above (`P:\DZ\vehicles\parts\data\aircraft_battery.rvmat:17`), and `dir[]={0,0,1}` 9,413 times (`P:\DZ\vehicles\wheeled\van_01\data\van_01_wheel.rvmat:17`). A review that checks whether a texture samples one to one looks at `aside[]`, `up[]` and `pos[]`, where `{1,0,0}`, `{0,1,0}` and `{0,0,0}` are the identity and other values are tiling factors.
 
 Keep all seven numbered stages, even when most hold placeholders. In the clothing, weapon, tool and glasses folders every vanilla Super material has Stage1 to Stage7. A `Stage0` with the color texture appears only on some glass, glowing and vehicle parts (for example `riothelmet_glass.rvmat` and `P:\DZ\gear\tools\data\flashlight_glass.rvmat`); ordinary gear does not need it.
 
@@ -119,13 +120,13 @@ The `ambient`, `diffuse`, `forcedDiffuse` and `emmisive` values of a Skin materi
 
 ## Damage and destruct materials
 
-Vanilla items swap material as they lose health. The config lists one material set per health level in `healthLevels[]`, for example `class TacticalGoggles` at `P:\DZ\characters\glasses\config.cpp:598`:
+Vanilla items swap material as they lose health. The config lists one material set per health level in `healthLevels[]`, for example `class TacticalGoggles` (`P:\DZ\characters\glasses\config.cpp:598`), whose list sits at `:625` to `:672` and names the frame and the glass at every level:
 
-| Health level | Material |
+| Health level | Materials |
 |---|---|
-| `1` and `0.7` | `TacGoggles.rvmat` (pristine and worn) |
-| `0.5` and `0.3` | `TacGoggles_damage.rvmat` (damaged and badly damaged) |
-| `0` | `TacGoggles_destruct.rvmat` (ruined) |
+| `1` and `0.7` | `TacGoggles.rvmat` and `TacGoggles_glass.rvmat` (pristine and worn) |
+| `0.5` and `0.3` | `TacGoggles_damage.rvmat` and `TacGoggles_glass_damage.rvmat` (damaged and badly damaged) |
+| `0` | `TacGoggles_destruct.rvmat` and `TacGoggles_glass_destruct.rvmat` (ruined) |
 
 Write three materials per surface: `<name>.rvmat`, `<name>_damage.rvmat` and `<name>_destruct.rvmat`. Comparing `P:\DZ\characters\tops\data\bomberjacket.rvmat` with its `_damage` and `_destruct` files shows what changes:
 

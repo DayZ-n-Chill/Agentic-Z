@@ -13,7 +13,7 @@ Finding players, telling them apart, the connect hooks in `MissionServer`, and r
 | `GetGame().GetPlayer()` | The player this machine controls. A dedicated server controls none. | `P:\scripts\3_game\global\game.c:944` |
 | `GetGame().GetPlayers(out array<Man> players)` | Every player. | `:945` |
 | `GetGame().GetPlayerByIndex(i)` | One player from that list, or `null`. | `:946` to `:952` |
-| `identity.GetPlayer()` | The player of a `PlayerIdentity`. | `P:\scripts\3_game\gameplay.c:374` |
+| `identity.GetPlayer()` | The player of a `PlayerIdentity`. | `P:\scripts\3_game\gameplay.c:375` |
 | `player.GetIdentity()` | The player's `PlayerIdentity`. | `P:\scripts\3_game\entities\man.c:21` |
 
 To show a player a short line of text, call `player.MessageStatus(text)` (`P:\scripts\4_world\entities\manbase\playerbase.c:6924`), not `GetGame().Chat()`: it does not depend on a chat mod.
@@ -22,11 +22,11 @@ To show a player a short line of text, call `player.MessageStatus(text)` (`P:\sc
 
 | Method | Value | Source (`3_game\gameplay.c`) |
 |---|---|---|
-| `GetId()` | Hashed unique ID. Vanilla says it "can be used in database or logs". | `:367` |
-| `GetPlainId()` | Plain ID, such as the Steam ID. Vanilla says it "cannot be used in database or logs". | `:369` |
-| `GetName()` / `GetPlainName()` / `GetFullName()` | Display names. | `:361`, `:363`, `:365` |
-| `GetPlayerId()` | Session number, reused after the player leaves. Never store it. | `:371` |
-| `GetPingAvg()` and the other ping and bandwidth calls | Connection stats. | `:341` to `:357` |
+| `GetId()` | Hashed unique ID. Vanilla says it "can be used in database or logs". | `:368` |
+| `GetPlainId()` | Plain ID, such as the Steam ID. Vanilla says it "cannot be used in database or logs". | `:370` |
+| `GetName()` / `GetPlainName()` / `GetFullName()` | Display names. | `:362`, `:364`, `:366` |
+| `GetPlayerId()` | Session number, reused after the player leaves. Never store it. | `:372` |
+| `GetPingAvg()` and the other ping and bandwidth calls | Connection stats. | `:341` to `:359` |
 
 The engine owns identities (`P:\scripts\3_game\gameplay.c:382`): hold them without `ref` and null check them. `PlayerIdentity` is the moddable class (`:387` to `:388`).
 
@@ -72,7 +72,7 @@ Players use the types `"Health"`, `"Blood"` and `"Shock"`: `m_Player.GetHealth("
 
 ## Stats
 
-`PlayerBase` returns typed stats such as `GetStatWater()` and `GetStatEnergy()` (`P:\scripts\4_world\entities\manbase\playerbase.c:8197`, `:8215`). Each is a `PlayerStat<float>` with `Get()`, `Set(value)`, `Add(value)`, `GetMin()`, `GetMax()` and `GetNormalized()` (`P:\scripts\4_world\classes\playerstats\playerstatbase.c:32`, `:85`, `:129`, `:134`). Vanilla drains energy with `m_Player.GetStatEnergy().Add(-1 * ENERGY_DRAIN_FROM_VOMIT);` (`P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\poisoning.c:88`).
+`PlayerBase` returns typed stats such as `GetStatWater()` and `GetStatEnergy()` (`P:\scripts\4_world\entities\manbase\playerbase.c:8197`, `:8215`). Each is a `PlayerStat<float>` with `Get()`, `Set(value)`, `Add(value)`, `GetMin()`, `GetMax()` and `GetNormalized()` (`P:\scripts\4_world\classes\playerstats\playerstatbase.c:32`; `Set` at `:85`, `Add` at `:129`, `Get` at `:134`, `GetMax`, `GetMin` and `GetNormalized` at `:144` to `:154`). Vanilla drains energy with `m_Player.GetStatEnergy().Add(-1 * ENERGY_DRAIN_FROM_VOMIT);` (`P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\poisoning.c:88`).
 
 Three limits on adding your own player state, all read on `P:\`:
 

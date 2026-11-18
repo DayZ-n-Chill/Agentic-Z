@@ -86,7 +86,7 @@ proto static string TranslateString(string stringId);
 
 Calls that are easy to get wrong:
 
-- Never call `SetLV` or `SetTextLV` from a mod. Vanilla `SetHudBrightness` is exactly those two calls (`P:\scripts\3_game\dayzgame.c:3910` to `:3914`), fed from the player's HUD brightness option, so a mod that calls them overwrites that setting for every widget in the game. The engine gives both a range of -15 to 0, default 0 (`P:\scripts\1_core\proto\enwidgets.c:114`). `SetObjectLighting` (0 to 1, default 1, `:118`) lights 3D previews and is separate.
+- Never call `SetLV` or `SetTextLV` from a mod. Vanilla `SetHudBrightness` is exactly those two calls (`P:\scripts\3_game\dayzgame.c:3910` to `:3914`), fed from the player's HUD brightness option, so a mod that calls them overwrites that setting for every widget in the game. The engine gives both a range of -15 to 0, default 0 (`P:\scripts\1_core\proto\enwidgets.c:114` to `:117`). `SetObjectLighting` (0 to 1, default 1, `:118` and `:119`) lights 3D previews and is separate.
 - `SetSort` sets the order outright, and a higher value draws on top. Only `SetFlags` adds and only `ClearFlags` takes away (`P:\scripts\1_core\proto\enwidgets.c:128` to `:131`). In a `.layout` the order is the `priority` attribute.
 - `CreateWidget(type, left, top, width, height, flags, color, sort, parent)` is a `WorkspaceWidget` method, so call it on `GetGame().GetWorkspace()` (`P:\scripts\1_core\proto\enwidgets.c:176` to `:179`). Building from a `.layout` with `CreateWidgets` (`:181`) is the usual way.
 - `SetRefresh(period, offset)` and `SetResolutionScale` exist only on `RenderTargetWidget` (`P:\scripts\1_core\proto\enwidgets.c:236` to `:240`).

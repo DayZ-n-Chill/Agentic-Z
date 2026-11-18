@@ -17,7 +17,8 @@ Follow `skills/_shared/dayz-conventions.md`. This skill is reference only; it ru
 | Write or edit a `.ptc` (emitters, curves, every property) | `references/ptc-format-reference.md` |
 | Write or edit an `.emat`, pick a vanilla material or sprite GUID | `references/emat-format-reference.md` |
 | Play, stop or tune particles from script | `references/script-api-reference.md` |
-| Wire particles into a device (toggle, one-shot, cleanup), or bring older device code up to date | `references/integration-patterns.md` |
+| Wire particles into a device (toggle, one-shot, cleanup) | `references/integration-patterns.md` |
+| Pick a vanilla particle for a device, tune one at runtime, or bring older device code up to date | `references/device-particle-choices.md` |
 | Find a vanilla particle to reuse | `references/vanilla-particle-catalog.md` |
 | Build a layered effect (explosion, impact, fireball), pick vanilla materials, use `Mast` curves | `references/layered-effects.md` |
 | Check the layout of a `.ptc`, the vanilla emitter shapes, or convert an old `CfgCloudlets` particle | `references/ptc-layout-and-cloudlets.md` |
@@ -89,7 +90,7 @@ More evidence that the path, not the GUID, is what resolves: vanilla names the m
 
 - `Particle` (legacy): `Particle.PlayOnObject(id, parent, localPos, localOri, forceWorldRot)`, `Particle.PlayInWorld(id, worldPos)`. Non-looping particles delete themselves.
 - `ParticleSource` extends `Particle`: native-backed, auto-destroy flags (`ON_END`, `ON_STOP`, `ALL`, `NONE`), `DisableAutoDestroy()`, `ResetParticle()`.
-- `ParticleManager.GetInstance()`: global pool of 10000 `ParticleSource` objects, created only when not on a headless or dedicated server, so it returns null there (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:25` and `:63-65`). Null-check it.
+- `ParticleManager.GetInstance()`: global pool of 10000 `ParticleSource` objects, created only when not on a headless or dedicated server, so it returns null there (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:25` and `:63` to `:65`). Null-check it.
 - `SEffectManager.PlayOnObject(effect, parent, pos, ori)` for particle plus sound; clean up only with `SEffectManager.DestroyEffect(effect)`.
 - Control: `StopParticle(flags)` fades out by default (`StopParticleFlags.IMMEDIATE` removes at once, `PAUSE` freezes), `SetParameter(emitter, EmitorParam.X, value)` with `-1` for all emitters, `ScaleParticleParamFromOriginal(EmitorParam.SIZE, 0.5)`.
 - More instance calls: `PlayParticle(optionalNewId)`, `IsParticlePlaying()`, `RestartParticle()` (reset and play), `SetWiggle(randomAngle, randomInterval)` and `StopWiggle()`. All signatures are in `references/script-api-reference.md`.

@@ -9,7 +9,8 @@ The query declarations are on `P:\`. Every number below was measured in game on 
 | Query | Declared at |
 |---|---|
 | `GetWaterDepth(vector posWS)` | `P:\scripts\3_game\global\game.c:1198` |
-| `GetWaterSurfaceHeightNoFakeWave(vector posWS)` | `game.c:1200` |
+| `GetWaterSurfaceHeightNoFakeWave(vector posWS)`: "the nearest water or object surface under a point, ignoring land", without the fake wave; `GetWaterSurfaceHeightWithFakeWave` adds it | `game.c:1199`, `:1200`, `:1202` |
+| `SurfaceIsSea(float x, float z)` | `game.c:1196` |
 | `SurfaceIsPond(float x, float z)` | `game.c:1197` |
 | `SurfaceRoadY3D(float x, float y, float z, RoadSurfaceDetection rsd)` | `game.c:1178` |
 | `GetObjectsAtPosition(vector pos, float radius, out array<Object> objects, out array<CargoBase> proxyCargos)` | `game.c:923` |

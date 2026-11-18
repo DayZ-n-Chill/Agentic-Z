@@ -118,7 +118,7 @@ ScrollWidgetClass RulesScroll {
 }
 ```
 
-A scroll widget with no spacer child does not scroll. The spacer starts at height 0 and grows at runtime; do not give it a height. Vanilla's own pair is at `P:\gui\layouts\new_ui\options\keybindings_selectors\keybinding_container.layout:35`.
+A scroll widget with no spacer child does not scroll. The spacer starts at height 0 and grows at runtime; do not give it a height. Vanilla's own pair is `group_scroll` and its spacer `group_content`, with `"Size To Content V" 1` and `Columns 1` (`P:\gui\layouts\new_ui\options\keybindings_selectors\keybinding_container.layout:26` to `:53`).
 
 ## A full screen click blocker
 
@@ -143,4 +143,4 @@ Keep `ignorepointer 1`: the blocker is visual only. `ChangeGameFocus(1)` and `Hu
 - The player's HUD brightness darkens every widget. Author honest colors, check them at a dimmed HUD, and never call `SetLV` (`theme-and-color.md`).
 - An alpha of `0x12` drew nothing and `0x26` drew (measured in game). Keep anything that must be seen at `0x30` or more.
 - `SetSort` replaces the order; only `SetFlags` adds and `ClearFlags` takes away (`P:\scripts\1_core\proto\enwidgets.c:128` to `:131`).
-- Unverified (not checked on `P:\`): a JSON file over 64 KB read through the game's file calls comes back cut short. Split large data across files.
+- Load JSON with `JsonFileLoader<T>.LoadFile(filename, data, errorMessage)`: it reads the whole file with `ReadFile` up to `READ_FILE_LENGTH`, 100,000,000 bytes (`P:\scripts\3_game\tools\jsonfileloader.c:3`, `:7` and `:19`). The older `JsonLoadFile` builds the text line by line with `FGets` and is marked "use JsonFileLoader::LoadFile instead" (`:104` to `:119`). A JSON file cut short at about 64 KB is reported for the older line by line route; the limit itself is not checked on `P:\`.

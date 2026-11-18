@@ -1,6 +1,6 @@
 # Motorbike_01 model anatomy
 
-What the binarized model of the vanilla `Motorbike_01` holds: model info, LODs, skeleton, every animation with its source, memory points, proxies and selections. `Motorbike_01_ColorBase` loads it from `P:\DZ\vehicles\singletrack\Motorbike_01\Motorbike_01.p3d` (`P:\DZ\vehicles\singletrack\config.cpp:224`). The numbers were read with a binarized model reader and are not checked on `P:\`; how to read them, and what was checked, is in `motorbike-vanilla-p3d-anatomy.md`.
+What the binarized model of the vanilla `Motorbike_01` holds: model info, LODs, skeleton, every animation with its source, memory points, proxies and selections. `Motorbike_01_ColorBase` loads it from `P:\DZ\vehicles\singletrack\Motorbike_01\Motorbike_01.p3d` (`P:\DZ\vehicles\singletrack\config.cpp:224`). The numbers were read with a binarized model reader and are not checked on `P:\`; how to read them, and what was checked, is in `motorbike-vanilla-p3d-anatomy.md`. The model file now on `P:\` is larger than the copy these tables were read from, so read it again before relying on a number.
 
 ## Model info
 

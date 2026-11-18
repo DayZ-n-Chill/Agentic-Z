@@ -6,7 +6,7 @@ The guards the action runs, in order, are in `get-in-guards.md`; the seat and do
 
 ## The seat comes from the component under the cursor
 
-`Transport.CrewPositionIndex(componentIdx)` (`P:\scripts\3_game\vehicles\transport.c:179`) picks the seat from the collision component the cursor ray hits in View Geometry; the default intersection type is `ObjIntersectView` (`P:\scripts\3_game\global\dayzphysics.c:88`), and the get-in condition reads the result (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:45` and `:46`). Memory point distance and `GetCrewIndex` play no part, and neither does the door system: the driver prompt worked on two test vehicles without either.
+`Transport.CrewPositionIndex(componentIdx)` (`P:\scripts\3_game\vehicles\transport.c:182`) picks the seat from the collision component the cursor ray hits in View Geometry; the default intersection type is `ObjIntersectView` (`P:\scripts\3_game\global\dayzphysics.c:88`), and the get-in condition reads the result (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:45` and `:46`). Memory point distance and `GetCrewIndex` play no part, and neither does the door system: the driver prompt worked on two test vehicles without either.
 
 So each seat needs its own clean, closed convex component:
 
@@ -38,7 +38,7 @@ Builders that create crew proxies with `add_proxy(..., scale=0.1)` and paint sea
 
 ## A script class, not bare `CarScript`
 
-A car declared `class MyMod_Car: CarScript` with no script class runs as bare `CarScript`, and get-in never appears however perfect the model. `CarScript` and `Car` do not override `CrewCanGetThrough`; only concrete vanilla cars do. The base `Transport.CrewCanGetThrough` returns `false` in a normal build (`#ifndef CFGMODS_DEFINE_TEST`, `transport.c:724` to `:731`). The base `GetAnimInstance` and `GetSeatAnimationType` raise "not implemented" errors (`:662` to `:670`, `:682` to `:687`). Telemetry shows the class name as `CarScript` instead of yours.
+A car declared `class MyMod_Car: CarScript` with no script class runs as bare `CarScript`, and get-in never appears however perfect the model. `CarScript` and `Car` do not override `CrewCanGetThrough`; only concrete vanilla cars do. The base `Transport.CrewCanGetThrough` returns `false` in a normal build (`#ifndef CFGMODS_DEFINE_TEST`, `transport.c:727` to `:734`). The base `GetAnimInstance` and `GetSeatAnimationType` raise "not implemented" errors (`:665` to `:673`, `:685` to `:690`). Telemetry shows the class name as `CarScript` instead of yours.
 
 A thin base class fixes it, with signatures as on the sedan (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:109` and `:119`):
 

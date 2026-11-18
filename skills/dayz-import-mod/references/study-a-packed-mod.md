@@ -46,7 +46,7 @@ Do this first, and change the plan the same day if it contradicts what you expec
 - `-LB`: listing only.
 - `-R`: do not convert binarised param files. Required when the listing shows `config.bin` and a packaged `config.cpp` in the same folder: without `-R` the converter writes a `.cpp` from the `.bin`, collides with the packaged one, and extraction aborts at the first collision (exit 11, "already exists. Will not overwrite it."). Measured with ExtractPbo 2.35 and DePbo DLL 10.13.
 - Keep `<workdir>` short and shallow (a folder near a drive root): nested PBO folders under a long destination exceed MAX_PATH and abort with "cannot make folder" (exit 11).
-- ExtractPbo writes the files under `<destination>\<prefix path>\`, where the prefix path is the PBO's prefix, not its file name: `ai.pbo` has the prefix `DZ\AI`, so its files land in `<destination>\DZ\AI\`.
+- ExtractPbo writes the files under `<destination>\<prefix path>\`, where the prefix path is the PBO's prefix, not its file name: `ai.pbo` has the prefix `DZ\AI` (`prefix=DZ\AI\` at `P:\DZ\ai.txt:1`, the prefix file beside the extracted folder), so its files land in `<destination>\DZ\AI\`.
 - ExtractPbo prints to stderr. Windows PowerShell 5.1 shows that as `NativeCommandError`, which is a wrapper artifact and not a failure. Do not redirect stderr with `2>&1`.
 - Extract to a scratch folder, never beside a read-only Workshop source or under `P:\Mods\`, and prove the payload was decoded before reading it (`extraction-pitfalls.md`).
 

@@ -35,7 +35,7 @@ Giving all three the same name also works (a storage mod and a gun rack mod use 
 
 ## Blocking a seat while something is attached
 
-To make a seat unusable while a part is mounted, override the check `ActionGetInTransport` already makes rather than adding a parallel one. `CrewCanGetThrough` is on `Transport` (`P:\scripts\3_game\vehicles\transport.c:724`), and the get-in action checks it (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:54`):
+To make a seat unusable while a part is mounted, override the check `ActionGetInTransport` already makes rather than adding a parallel one. `CrewCanGetThrough` is on `Transport` (`P:\scripts\3_game\vehicles\transport.c:727`), and the get-in action checks it (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:54`):
 
 ```c
 if (!transport.CrewCanGetThrough(crewIndex) || !transport.IsAreaAtDoorFreeDiag(crewIndex))

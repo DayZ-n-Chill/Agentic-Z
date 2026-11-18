@@ -2,7 +2,7 @@
 
 What to check when code overrides an engine event or relies on a `modded class` hook: what the event really delivers, whether each caller passes the parameters the override uses, and whether every class between the leaf and the modded base calls `super`. Use it in step 1 of `deep-audit.md` and in every review angle that touches hooks.
 
-An override runs its parent only when it calls `super`, as `BaseBuildingBase.OnStoreLoad` does (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:434`). The cases below come from third-party mods; the vanilla lines they rest on are cited.
+An override runs its parent only when it calls `super`, as `BaseBuildingBase.OnStoreLoad` does (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:433`). The cases below come from third-party mods; the vanilla lines they rest on are cited.
 
 ## Check what the event means, not only its signature
 

@@ -29,6 +29,23 @@ Distances come from `UAMaxDistances` (`P:\scripts\4_world\classes\useractionscom
 | `OnExecuteServer`, `OnExecuteClient` | `P:\scripts\4_world\classes\useractionscomponent\animatedactionbase.c:179` and `:183` |
 | `OnFinishProgressServer`, `OnFinishProgressClient`, for continuous actions | `P:\scripts\4_world\classes\useractionscomponent\actions\actioncontinuousbase.c:289` and `:293` |
 
+## Input type and behaviour flags
+
+`GetInputType()` decides which key and press style starts the action, and each base class picks a different one. An action that overrides it with the wrong input class is filed under another input and does not show where you expect.
+
+| Base or override | Default | Source |
+|---|---|---|
+| `ActionBase.GetInputType()` | `DefaultActionInput` | `actionbase.c:230` |
+| `ActionSingleUseBase` | `DefaultActionInput` | `actionsingleusebase.c:37` |
+| `ActionContinuousBase` | `ContinuousDefaultActionInput` (hold) | `actioncontinuousbase.c:179` |
+| `ActionInteractBase` | `InteractActionInput` | `actioninteractbase.c:61` |
+| `HasTarget()` | `true`: the target is synced to the server and the cursor shows the floating widget | `actionbase.c:259` |
+| `HasProgress()` | `true`: shows the progress bar | `actionbase.c:265` |
+| `IsLocal()` | `false`: when true the action is not synchronised to the server | `actionbase.c:271` |
+| `IsInstant()` | `false`: when true the action runs at once in `OnStart`, with no animation or callback | `actionbase.c:294` |
+
+The input classes are declared in `P:\scripts\4_world\classes\useractionscomponent\actioninput.c` (`InteractActionInput` at `:558`, `ContinuousDefaultActionInput` at `:627`, `DefaultActionInput` at `:654`).
+
 ## A continuous action needs a callback class
 
 The callback class sets the progress component. Vanilla does it in `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionactivatetrap.c:1` to `:34`: a `class MyMod_ActionCB : ActionContinuousBaseCB` overrides `CreateActionComponent()` with `m_ActionData.m_ActionComponent = new CAContinuousTime(seconds);`, and the action's constructor sets `m_CallbackClass = MyMod_ActionCB;`. The base default is the plain `ActionContinuousBaseCB` (`actioncontinuousbase.c:126`).

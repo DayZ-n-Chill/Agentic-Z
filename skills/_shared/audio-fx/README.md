@@ -11,7 +11,7 @@ Facts here were checked in the vanilla files on `P:\`, except where a line says 
 | Write a `CfgSoundShaders` or `CfgSoundSets` entry: samples, volume, range, curves, looping, the `CfgPatches` it needs | `sound-config.md` |
 | Play, loop, stop or fade a sound set from script, and clean it up | `sound-script.md` |
 | Put a sound and a particle on one device, start them from the server, or hook sounds and particles through config (weapons, item events) | `effects-wiring.md` |
-| Use the handlers vanilla already runs: item sounds the server starts on every client, player sound handlers, step sounds, player sound events | `item-and-player-sounds.md` |
+| Use the handlers vanilla already runs: item sounds the server starts on every client, attach, detach and impact sounds set in config, player sound handlers, step sounds, player sound events | `item-and-player-sounds.md` |
 | Build or tune a sound by hand: `SoundParams`, `SoundObjectBuilder`, `AbstractWave`, pitch of a playing sound, mixer category (`WaveKind`), environment sound controllers, legacy calls | `sound-engine-api.md` |
 | Make a noise that infected and animals hear to go with a sound, and the 1.30 weather damping | `noise-for-ai.md` |
 | Add a music zone or the music of a custom world, and the 1.30 radio static on the bunker frequency | `music-and-radio.md` |

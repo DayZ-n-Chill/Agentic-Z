@@ -10,13 +10,13 @@ Heights of the vanilla heat source anchors, measured on the vanilla models after
 
 | Heat source | Anchor | Height |
 |---|---|---|
-| Gas stove | `cookingpot.001` | 0.084 m |
+| Gas stove (`PortableGasStove`, `P:\DZ\gear\cooking\config.cpp:1457`) | `cookingpot.001` | 0.084 m |
 | Fireplace, over the stone oven | `direct_cooking_a`, `direct_cooking_b`, `direct_cooking_c` | 0.624 m |
 | Fireplace, tripod pot | | 0.607 m |
-| `FireplaceIndoor` | | 0.343 m |
-| `OvenIndoor` | | 0.844 m |
+| `FireplaceIndoor` (`config.cpp:358`) | | 0.343 m |
+| `OvenIndoor` (`config.cpp:507`) | | 0.844 m |
 
-The three direct cooking proxies are config classes of the fireplace, for example `Proxydirect_cooking_a: ProxyAttachment` (`P:\DZ\gear\cooking\config.cpp:2011`).
+The three direct cooking proxies are config classes of the fireplace, for example `Proxydirect_cooking_a: ProxyAttachment` (`P:\DZ\gear\cooking\config.cpp:2011`, with `_b` and `_c` at `:2020` and `:2029`); the pot on the gas stove is `ProxyCookingPot` (`:1993`).
 
 ## A cable segment drawn on the client
 

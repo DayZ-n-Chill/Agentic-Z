@@ -41,7 +41,7 @@ Fire Geometry thickness matters as well: glass that is too thick becomes bulletp
 
 Measured on mod models: without `autocenter=0` on Fire Geometry, View Geometry, Roadway, Hitpoints or LandContact, the engine recentres that LOD on its bounding box and moves it away from the visual mesh by half its height, typically 20 to 25 cm in Y. Bullets pass through, a stacking hologram falls to the ground, and the action cursor misses the object. Find it with `lod.properties.get("autocenter") != "0"` on any collision LOD; fix it with `lod.properties["autocenter"] = "0"` on all of them and write the file back.
 
-Vanilla does not need it everywhere. 2,730 of the 8,256 models under `P:\DZ\` store an `autocenter` property (value `0` in 2,723), and 2,169 store it once: in `P:\DZ\gear\camping\wooden_case.p3d` and `P:\DZ\gear\books\book_kniga.p3d` that copy is in Geometry only, while `P:\DZ\gear\camping\fence.p3d` stores it once per LOD, seven times. Setting it on every collision LOD is this pipeline's safe default for placed objects, not an engine rule. Which models need the property at all (placed objects, not kits) is in `named-properties.md`; follow that file where the two differ.
+Vanilla does not need it everywhere. 2,730 of the 8,256 models under `P:\DZ\` outside the Takistan folders store an `autocenter` property (value `0` in 2,723), and 2,169 store it once: in `P:\DZ\gear\camping\wooden_case.p3d` and `P:\DZ\gear\books\book_kniga.p3d` that copy is in Geometry only, while `P:\DZ\gear\camping\fence.p3d` stores it once per LOD, seven times. Setting it on every collision LOD is this pipeline's safe default for placed objects, not an engine rule. Which models need the property at all (placed objects, not kits) is in `named-properties.md`; follow that file where the two differ.
 
 ### A penetration material on every collision face
 
@@ -53,7 +53,7 @@ After export, check every collision component for faces wound outward, per compo
 
 ## Visual LODs, memory and selections
 
-- **Shadow LOD.** It must be slightly smaller than the visual LOD, or the object looks fully shaded. No vanilla model has one (no resolution from 10000 to 19999 in the headers of the 8,256 models under `P:\DZ\`), so add one only when the user asks (`lods.md`).
+- **Shadow LOD.** It must be slightly smaller than the visual LOD, or the object looks fully shaded. No vanilla model has one (no resolution from 10000 to 19999 in the headers of the 10,626 models under `P:\DZ\`), so add one only when the user asks (`lods.md`).
 - **Memory points** are single vertices, never edges or faces. An animation axis is exactly two points.
 - **Named selections match across LODs**: the same name in the visual, Geometry, Fire Geometry and View Geometry LODs wherever the part must move or be found.
 - **Texture paths end in `.paa`**, never `.png` or `.tga`. Generate `.png`, then convert with `/dayz-pack-texture`.
@@ -73,7 +73,7 @@ An attached item shows only when all three exist: a proxy face and selection in 
 
 ### Proxy names
 
-A proxy selection is `proxy:<path to the proxy model>.NNN`, with a three digit index; its face sets the attached model's position and facing. Write the path without `.p3d` (`memory-and-selections-authoring.md`). Vanilla stores both forms: of 17,891 proxy names in the models under `P:\DZ\`, 147 keep `.p3d` (for example in `P:\DZ\structures\military\airfield\mil_aircraftshelter.p3d`). Index `001` is the most common and `000` appears 529 times; `P:\DZ\gear\camping\fence.p3d` uses both.
+A proxy selection is `proxy:<path to the proxy model>.NNN`, with a three digit index; its face sets the attached model's position and facing. Write the path without `.p3d` (`memory-and-selections-authoring.md`). Vanilla stores both forms: of 28,775 proxy names in the models under `P:\DZ\`, 147 keep `.p3d` (for example in `P:\DZ\structures\military\airfield\mil_aircraftshelter.p3d`). Index `001` is the most common and `000` appears 607 times; `P:\DZ\gear\camping\fence.p3d` uses both.
 
 ## Wheels
 

@@ -46,7 +46,7 @@ First hit wins. A `*_PATH` env var whose value fails its check is skipped, the n
 | **DayZ Server** | `DAYZ_SERVER_PATH` env var, then `DayZServer` in each Steam library (must contain `DayZServer_x64.exe`). |
 | **DayZ game** (for `!Workshop`) | `DAYZ_GAME_PATH` env var, then `DayZ` in each Steam library (must contain `DayZ_x64.exe`). |
 | **Vanilla data** | `DAYZ_VANILLA_DATA_PATH` env var, then `P:\dz` (case-insensitive, so `P:\DZ` matches). Must exist and be non-empty. |
-| **Vanilla scripts** | `P:\scripts` (vanilla `DZ_Scripts`, unpacked beside `P:\DZ`). Must exist and be non-empty; warns otherwise. |
+| **Vanilla scripts** | `P:\scripts` (vanilla `DZ_Scripts`, `P:\scripts\config.cpp:3`, unpacked beside `P:\DZ`). Must exist and be non-empty; warns otherwise. |
 | **`P:\` and `P:\Mods\`** | Fixed by DayZ convention, not configurable. |
 
 Steam libraries come from the Steam root in the registry (or the default `C:\Program Files (x86)\Steam` and `C:\Program Files\Steam`) plus every library listed in its `steamapps\libraryfolders.vdf`, so installs on other drives are found.

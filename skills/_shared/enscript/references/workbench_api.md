@@ -2,18 +2,13 @@
 
 What Enforce Script offers for extending Workbench itself: the `Workbench` entry points, the `ResourceManager` and `ScriptEditor` modules, plugin events, the progress dialog, `MetaFile`, `GeneratedResources`, and the `#ifdef WORKBENCH` guard. For writing Workbench plugins, not game scripts.
 
-## Two versions of the API
+## Where the API lives
 
-The API exists in two shapes, and they differ.
-
-- On `P:\`: one file, `P:\scripts\1_core\workbenchapi.c` (160 lines). `class Workbench` opens at `:6`, is not `sealed` and has no `#ifdef WORKBENCH` line above it. `GetModule` takes a string: `static proto native WBModuleDef GetModule(string type)` (`:8`). `SearchResources(string filter, func callback)` is at `:13` and `RunCmd(string command, bool wait = false)` at `:14`. `class WorkbenchPlugin : Managed` is at `:106` and `WorkbenchPluginAttribute` at `:137`.
-- From the first 1.30 patch on: the API is a `1_core\workbenchapi\` folder of 13 files (`game_builds.md`). The rest of this file describes that shape, read from a newer script tree. Its file names and lines can't be opened on the older `P:\` extraction, so they are unverified here.
-
-Open the Workbench API files of the build you target before you use a signature from either list.
+The current 1.30 build keeps the API in the folder `P:\scripts\1_core\workbenchapi\` (13 files, added by the first 1.30 patch, see `game_builds.md`); the paths below are relative to it. The file `P:\scripts\1_core\workbenchapi.c` next to it now holds only `ResourceName`, `DateTimeUtcAsInt`, `ButtonAttribute`, `WorkbenchPluginAttribute` and `WorkbenchToolAttribute`. Before that patch `Workbench` sat in `workbenchapi.c` and `GetModule` took a string; a plugin written for that shape stops compiling on 1.30, so open the files of the build you target before you copy a signature.
 
 ## The guard
 
-`Workbench` and the module, dialog, metafile, generated resources, build context and attribute classes sit inside `#ifdef WORKBENCH` (`workbenchapi\workbench.c:1` to `:63`, `workbenchapi.c:6` to `:93`). `WorkbenchPlugin` (`plugins\workbenchplugin.c:2`) has no guard.
+`Workbench` and the module, dialog, metafile, generated resources, build context and attribute classes sit inside `#ifdef WORKBENCH` (`workbench.c:1` to `:63`; `P:\scripts\1_core\workbenchapi.c:6` to `:93`). `WorkbenchPlugin` (`plugins\workbenchplugin.c:2`) has no guard.
 
 Keep the plugin class unguarded if the file must also compile in game modules. Wrap every call into `Workbench`, `ResourceManager`, `ScriptEditor`, `WBProgressDialog`, `MetaFile` or `GeneratedResources`, and every `[WorkbenchPluginAttribute]` or `WBModuleDef`, in `#ifdef WORKBENCH`. An unguarded call is a compile error in the game module, not a `null` at run time.
 
@@ -67,6 +62,12 @@ A plugin extends `WorkbenchPlugin` and overrides its events; Workbench creates i
 `ResourceManagerPlugin : WorkbenchPlugin` (`plugins\resourcemanagerplugin.c:14` to `:23`, inside the guard) has the events `OnRegisterResource`, `OnBuildResource` (returns a `BuildResourceContext`), `OnRenameResource`, `OnGetMaterialGenerateDir`, `OnGetMaterialClassName` and `OnMaterialCreated`. There is no rebuild event; rebuilding is a `ResourceManager` call.
 
 Return the `BuildResourceContext` from `OnBuildResource` and let Workbench poll its only member, `event bool IsWorking()` (`buildresourcecontext.c:5`). Don't block inside the event.
+
+## Registering a plugin
+
+Workbench lists a plugin only when its class carries `[WorkbenchPluginAttribute(...)]`. The constructor is `WorkbenchPluginAttribute(string name, string description = "", string shortcut = "", string icon = "", array<string> wbModules = null, string category = "", int awesomeFontCode = 0, array<string> resourceTypes = null)` (`P:\scripts\1_core\workbenchapi.c:75`). `wbModules` names the modules whose Script Tools menu shows the plugin (null or empty means every module), and `resourceTypes` the file types whose context menu offers it.
+
+A field marked `[Attribute(...)]` appears in the dialog that `Workbench.ScriptDialog(caption, text, this)` opens, and a method marked `[ButtonAttribute("OK")]` becomes a button on it (`ButtonAttribute` at `workbenchapi.c:42`). The vanilla Re-Save tool shows the whole shape: attribute line, `Attribute` field, `ScriptDialog` in `Run`, `GetCmdLine` in `RunCommandline` and a `ButtonAttribute` method (`P:\scripts\editor\workbench\resavetool.c:1` to `:41`).
 
 ## Progress dialog, `MetaFile` and `GeneratedResources`
 

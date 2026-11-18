@@ -12,7 +12,7 @@ Built state is not stored per part. It is packed into `m_SyncParts01`, `m_SyncPa
 | 32 to 62 | `m_SyncParts02` |
 | 63 to 93 | `m_SyncParts03` |
 
-`RegisterPartForSync` does the bit work (`basebuildingbase.c:137` to `:164`).
+`RegisterPartForSync` does the bit work (`basebuildingbase.c:136` to `:163`).
 
 ## The 93 part cap
 
@@ -20,21 +20,21 @@ Three ints of 31 used bits give at most 93 parts per `BaseBuildingBase` object. 
 
 ## Save order
 
-- `OnStoreSave` (`basebuildingbase.c:420` to `:430`) writes `m_SyncParts01`, `m_SyncParts02`, `m_SyncParts03`, then `m_HasBase`.
-- `OnStoreLoad` (`basebuildingbase.c:432` to `:464`) reads them in that order and returns `false` on any failed read.
+- `OnStoreSave` (`basebuildingbase.c:419` to `:429`) writes `m_SyncParts01`, `m_SyncParts02`, `m_SyncParts03`, then `m_HasBase`.
+- `OnStoreLoad` (`basebuildingbase.c:431` to `:463`) reads them in that order and returns `false` on any failed read.
 
-A subclass writes and reads its own fields after `super`, in the same order both ways. The Fence appends `m_GateState` and `m_IsOpened` (`P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:246` to `:254` save, `:256` to `:289` load). Reorder either side, or write before `super`, and every saved base loads wrong.
+A subclass writes and reads its own fields after `super`, in the same order both ways. The Fence appends `m_GateState` and `m_IsOpened` (`P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:255` to `:263` save, `:265` to `:298` load). Reorder either side, or write before `super`, and every saved base loads wrong.
 
 ## What the load rebuilds
 
-`AfterStoreLoad` (`basebuildingbase.c:466` to `:474`) calls `SetPartsAfterStoreLoad` (`:476` to `:487`), which rebuilds the parts from the masks, sets the base state and syncs. When `m_FixDamageSystemInit` is set, the rebuild runs from `EEOnAfterLoad` half a second later instead (`:505` to `:513`). `SetPartFromSyncData` (`:265` to `:304`) also locks attached materials again, as a "failsafe for corrupted sync/storage data" (`:303`). The full call chain is in `base-building-lifecycle.md`.
+`AfterStoreLoad` (`basebuildingbase.c:465` to `:473`) calls `SetPartsAfterStoreLoad` (`:475` to `:486`), which rebuilds the parts from the masks, sets the base state and syncs. When `m_FixDamageSystemInit` is set, the rebuild runs from `EEOnAfterLoad` half a second later instead (`:504` to `:512`). `OnCreatePhysics` runs the same rebuild again (`:488` to `:494`). `SetPartFromSyncData` (`:264` to `:304`) also locks attached materials again, as a "failsafe for corrupted sync/storage data" (`:302`). The full call chain is in `base-building-lifecycle.md`.
 
 ## Versions
 
 Two version numbers appear here, and both belong to the game:
 
-- `GetDamageSystemVersionChange()` returns `111` (`basebuildingbase.c:1133` to `:1136`).
-- `Fence.OnStoreLoad` reads and throws away one `bool` for a save older than storage version 110, then the gate fields (`fence.c:256` to `:289`).
+- `GetDamageSystemVersionChange()` returns `111` (`basebuildingbase.c:1132` to `:1135`).
+- `Fence.OnStoreLoad` reads and throws away one `bool` for a save older than storage version 110, then the gate fields (`fence.c:265` to `:298`).
 
 A mod cannot raise either. When you add a saved field, write your mod's own version first, raise it, and branch on it so old saves load with the old layout. Never branch on the game's `version` (`versioning-and-migration.md`).
 
@@ -56,7 +56,7 @@ The stream changes are in `dayz-1-30-persistence.md`, the fence locks in `base-b
 3. Every subclass writes and reads its fields after `super`, in the same order both ways.
 4. A new saved field raises the mod's own version, written first, and adds a branch on it for old saves; it does not branch on the game's `version`.
 5. Kill the server between each read and write of the save and load, step by step, and check whether the next boot gets the base back or loses parts.
-6. The material relock in `SetPartFromSyncData` (`basebuildingbase.c:303`) still runs.
+6. The material relock in `SetPartFromSyncData` (`basebuildingbase.c:302`) still runs.
 7. The class is either a `BaseBuildingBase` (3 ints, 1 bit, ids 1 to 93) or uses `Rebuilding` (10 ints, 2 bits), never both.
 8. An object that takes a `CombinationLock` handles storage version 143 in `OnStoreLoad`.
 9. In game: build parts, restart the server, and confirm every part and the base come back. Some lost base bugs show only on a real restart.

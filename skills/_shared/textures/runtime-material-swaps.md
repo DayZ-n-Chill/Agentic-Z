@@ -23,6 +23,7 @@ Two families of calls exist, and each indexes a different config array.
 | `SetSimpleHiddenSelectionState`, `IsSimpleHiddenSelectionVisible` | `simpleHiddenSelections[]` | `entityai.c:2877` ("Simple hidden selection state; 0 == hidden") |
 
 - `GetHiddenSelectionIndex` returns an index into `hiddenSelections[]` only; its own comment says so (`P:\scripts\3_game\entities\entityai.c:2778`). Use it for the texture and material calls.
+- `GetHiddenSelectionIndex`, `GetHiddenSelectionsTextures` and `GetHiddenSelectionsMaterials` read a copy of the config arrays that the `EntityAI` constructor builds once (`P:\scripts\3_game\entities\entityai.c:238`), and only from `CfgVehicles <type>` (`P:\scripts\3_game\hiddenselectionsdata.c:11` to `:13`). They return the config values, never what a script set since. A class under `CfgWeapons` or `CfgMagazines` finds nothing under that path, so the index is -1; read its arrays with `ConfigGetTextArray` on the entity, as `Weapon_Base` does below.
 - For the simple calls, read the other array and search it by name. Vanilla does both steps, the guard and the lookup, with `ConfigIsExisting("simpleHiddenSelections")` and `ConfigGetTextArray` (`P:\scripts\4_world\entities\firearms\weapon_base.c:94` to `:99`). The member it fills carries the comment "index in simpleHiddenSelections cfg array" beside `m_weaponHideBarrelIdx` (`weapon_base.c:62`).
 - The head class does the same lookup with `ConfigGetTextArray` (`P:\scripts\4_world\entities\manbase\bodyparts\head.c:20`), and the binoculars action has the guard alone, `ConfigIsExisting("simpleHiddenSelections")` in `EnterOptics` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionviewbinoculars.c:35`).
 - Vanilla never feeds one space into the other. Of the 32 lines in `P:\scripts` that call the simple pair (two more are commented out), none passes `GetHiddenSelectionIndex`. They use fixed numbers such as `SIMPLE_SELECTION_MELEE_RIFLE` (`P:\scripts\3_game\dayzplayer.c:1173`), stored members such as `m_magazineSimpleSelectionIndex` (`P:\scripts\4_world\entities\firearms\weapon_base.c:2136`), or a getter such as `GetHairIndex` (`P:\scripts\4_world\entities\manbase\playerbase.c:9407`).
@@ -45,7 +46,7 @@ An image a mod must show reaches the client as a file and is loaded into an `Ima
 
 ## Health levels swap materials in the engine
 
-`healthLevels[]` in an item's `DamageSystem` maps health thresholds to materials. For `TShirt_ColorBase` it sits at `P:\DZ\characters\tops\config.cpp:2283` to `:2330`: `1` and `0.7` give `tshirt.rvmat`, `0.5` and `0.3` give `tshirt_damage.rvmat`, and `0` gives `tshirt_destruct.rvmat`.
+`healthLevels[]` in an item's `DamageSystem` maps health thresholds to materials. For `TShirt_ColorBase` it sits at `P:\DZ\characters\tops\config.cpp:2283` to `:2330`, with two materials per level, one for the worn model and one for the ground model: `1` and `0.7` give `tshirt.rvmat` and `tshirt_ground.rvmat`, `0.5` and `0.3` their `_damage` files, and `0` their `_destruct` files.
 
 - The engine applies the swap, not script. `GetHealthLevel` is `proto native` (`P:\scripts\3_game\entities\object.c:1171`), and the only lines in `P:\scripts` that name the config array are three comments in that file. Searching the scripts for whatever writes the material finds nothing, and that does not mean nothing writes it.
 - `EEHealthLevelChanged` runs on the client: the vanilla body in `Clothing_Base` is guarded by `IsHeadlessOrDedicatedServer` and does only client work (`P:\scripts\4_world\entities\itembase\clothing_base.c:111` to `:125`).
@@ -116,9 +117,9 @@ Within one run the getter was wrong in both directions (**measured in game**):
 
 An empty string in `hiddenSelectionsTextures[]` hides that selection. A script material applied to it then succeeds and still nothing renders.
 
-- Vanilla uses the empty string to hide on purpose: `HideOnItem` clears the materials and textures of the light selections with `""` (`P:\scripts\4_world\entities\itembase\xmaslights.c:94` to `:103`), and the blowtorch hides its flame with `SetObjectTexture(0, "")` (`P:\scripts\4_world\entities\itembase\blowtorch.c:50`).
-- A selection whose material a script swaps must name its real texture in config. `BatteryCharger` does: every entry of its `hiddenSelectionsTextures[]` is `battery_charger_co.paa` (`P:\DZ\gear\camping\config.cpp:11118` to `:11126`).
-- Unverified (not tested in game): switching the selection to a bright procedural color, `#(argb,8,8,3)color(r,g,b,1,CO)`, to keep a glowing part visible over a dark area of the `_co`.
+- Vanilla uses the empty string to hide on purpose: `HideOnItem` clears the materials and textures of the light selections with `""` (`P:\scripts\4_world\entities\itembase\xmaslights.c:94` to `:103`), and the blowtorch hides its flame with `SetObjectTexture(0, "")` (`P:\scripts\4_world\entities\itembase\blowtorch.c:50`). The armband shows one set of camo selections by writing back its config texture and hides the other with `""` (`P:\scripts\4_world\entities\itembase\clothing\armband_colorbase.c:81` and `:87`).
+- A selection whose material a script swaps must name its real texture in config. `BatteryCharger` does: every entry of its `hiddenSelectionsTextures[]` is `battery_charger_co.paa` (`P:\DZ\gear\camping\config.cpp:11128` to `:11136`).
+- A procedural color is a valid `SetObjectTexture` argument: vanilla dyes an item by writing `#(argb,8,8,3)color(r,g,b,a,CO)` to its `personality` selection (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:603`; the string is built at `P:\scripts\4_world\static\miscgameplayfunctions.c:245`). Unverified (not tested in game): that a bright one keeps a glowing part visible over a dark area of the `_co`.
 
 ## A material cannot move a texture that a script assigns
 

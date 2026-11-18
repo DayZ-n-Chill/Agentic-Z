@@ -8,7 +8,7 @@ The bridge is dayz-mcp, a third-party MCP server that this repo does not ship. I
 
 | Action | Condition | Source |
 |---|---|---|
-| `ActionGetOutTransport` | A vehicle command that is not `IsTransitioning`, a crew index of 0 or more, then `CrewCanGetThrough` and `IsAreaAtDoorFreeDiag` for that index. Its target condition is `CCTNone`, so the target plays no part. DayZ 1.29 had no transition check and called `IsAreaAtDoorFree` directly (lines 68 to 77 of the same file in that build, not on `P:\`). | `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetouttransport.c:57`, `:70` to `:79` |
+| `ActionGetOutTransport` | A vehicle command that is not `IsTransitioning`, a crew index of 0 or more, then `CrewCanGetThrough` and `IsAreaAtDoorFreeDiag` for that index. Its target condition is `CCTNone`, so the target plays no part. DayZ 1.29 had no transition check and called `IsAreaAtDoorFree` directly (not on `P:\`). | `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetouttransport.c:57`, `:70` to `:79` |
 | `ActionSwitchLights` | The player sits at `VEHICLESEAT_DRIVER`, checked on the server. | `P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actionswitchlights.c:34` |
 | Door state | A door reads closed at or below phase 0.5 in `TranslateAnimationPhaseToCarDoorState`; the door action moves it with `SetAnimationPhase`. | `P:\scripts\4_world\entities\vehicles\carscript.c:2248` to `:2258`; `P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actioncardoors.c:91` |
 | Sedan driver door | `CrewCanGetThrough` for seat 0 returns `false` while `CivSedanDriverDoors` is closed. | `P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:226` to `:234` |

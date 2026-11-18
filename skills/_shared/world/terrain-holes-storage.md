@@ -6,7 +6,7 @@ Which file holds a world's holes, why one cell is 6.25 m in Livonia, which engin
 
 `class Holes` sits inside `CfgWorlds` `Enoch`, between `OutsideTerrain` and `Grid` (`P:\DZ\worlds\enoch\world\config.cpp:303`); the block itself is quoted in `terrain-holes.md`. The same world class also has `hasOcean=0` (`P:\DZ\worlds\enoch\world\config.cpp:409`).
 
-The 1.29 config of Livonia has no `Holes` class, and Livonia's `cfgundergroundtriggers.json` is byte for byte the same in 1.29 and 1.30 (not on `P:\`). Holes therefore did not come with new triggers; they open ground over triggers that already existed.
+The 1.29 config of Livonia has no `Holes` class, and Livonia's `cfgundergroundtriggers.json` is byte for byte the same in 1.29 and 1.30 (not checked on `P:\`). Holes therefore did not come with new triggers; they open ground over triggers that already existed.
 
 ## Why a Livonia cell is 6.25 m
 
@@ -26,7 +26,7 @@ With 5 m or 10 m, neither group falls inside the triggers. Two independent group
 
 ## Engine strings that load holes
 
-The 1.30 diag executable has four related strings that the 1.29 executable lacks (not on `P:\`). Other occurrences of "hole" belong to the navmesh generator and are older.
+The 1.30 diag executable has four related strings that the 1.29 executable lacks (not checked on `P:\`). Other occurrences of "hole" belong to the navmesh generator and are older.
 
 | String | Strings referenced from the same function |
 |---|---|
@@ -53,7 +53,7 @@ Repeat this whenever a game update may have changed holes:
 
 ## The `.wrp` format changed on every map
 
-| Map | 1.29 (not on `P:\`) | 1.30 | Growth | Has `Holes` |
+| Map | 1.29 (not checked on `P:\`) | 1.30 | Growth | Has `Holes` |
 |---|---|---|---|---|
 | ChernarusPlus | OPRW v29 | OPRW v32 (`P:\DZ\worlds\chernarusplus\world\chernarusplus.wrp`) | 5.1 % | no |
 | Enoch (Livonia) | OPRW v29 | OPRW v32 (`P:\DZ\worlds\enoch\world\enoch.wrp`) | 5.0 % | yes |

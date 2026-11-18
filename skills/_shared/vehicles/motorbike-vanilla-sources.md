@@ -11,12 +11,12 @@ Which vanilla files the motorbike files of this pack cite, with each path on `P:
 
 ## Where the motorbike sounds are
 
-`P:\DZ\sounds\vehicles\config.cpp` (`:1` to `:10`) holds only the `CfgPatches` class `DZ_Sounds_Vehicles` and defines no sound class. The motorbike sound classes are in `P:\DZ\sounds\hpp\config.cpp` (523,051 lines):
+`P:\DZ\sounds\vehicles\config.cpp` (`:1` to `:10`) holds only the `CfgPatches` class `DZ_Sounds_Vehicles` and defines no sound class. The motorbike sound classes are in `P:\DZ\sounds\hpp\config.cpp` (524,933 lines):
 
 | Block | Block spans | `Motorbike_0*` classes | What they cover |
 |---|---|---|---|
-| `CfgSoundShaders` | `:3072` to `:318378` | `:316513` to `:318260` | Engine rpm, overrun, brake, dampers, tyres on each surface, crash |
-| `CfgSoundSets` | `:318379` to `:385077` | `:383946` to `:385036` | Gear shift, kickstart, lights, getting on and off, short, long and looping horn, rpm sets |
+| `CfgSoundShaders` | `:3072` to `:319048` | `:317170` to `:318910` | Engine rpm, overrun, brake, dampers, tyres on each surface, crash |
+| `CfgSoundSets` | `:319049` to `:386918` | `:385779` to `:386870` | Gear shift, kickstart, lights, getting on and off, short, long and looping horn, rpm sets |
 
 ## Engine and base scripts (3_Game)
 
@@ -24,7 +24,7 @@ Which vanilla files the motorbike files of this pack cite, with each path on `P:
 |---|---|---|
 | `P:\bin\config.cpp` | 11105 | `class Motorbike: Transport`, `simulation = "motorbike"` |
 | `P:\scripts\3_game\vehicles\motorbike.c` | 370 | Motorbike `proto native` signatures, `MotorbikeOwnerState`, `MotorbikeMove`, sound and stability callbacks |
-| `P:\scripts\3_game\vehicles\transport.c` | 1205 | `ETransportFluid`, `NeedElectricitySourceDevice`, `IsAnyCrewPresent`, `OnContact`, `m_ContactCache`, `VehicleContactData` |
+| `P:\scripts\3_game\vehicles\transport.c` | 1214 | `ETransportFluid`, `NeedElectricitySourceDevice`, `IsAnyCrewPresent`, `OnContact`, `m_ContactCache`, `VehicleContactData` |
 | `P:\scripts\3_game\vehicles\car.c` | 507 | `enum CarFluid : ETransportFluid` |
 | `P:\scripts\3_game\vehicles\boat.c` | 207 | `enum BoatFluid : ETransportFluid` |
 | `P:\scripts\3_game\constants.c` | 1168 | `MOTORBIKES_CONTACT_DMG_*`, `ENVIRO_HEATCOMFORT_MOTORBIKE_*` |
@@ -38,11 +38,11 @@ Which vanilla files the motorbike files of this pack cite, with each path on `P:
 
 | File on `P:\` | Lines | Symbols read |
 |---|---|---|
-| `P:\scripts\4_world\entities\vehicles\motorbikescript.c` | 1765 | Lifecycle, kickstand, starting, `drivewheel` lights, damage, network sync |
+| `P:\scripts\4_world\entities\vehicles\motorbikescript.c` | 1780 | Lifecycle, kickstand, starting, `drivewheel` lights, damage, network sync |
 | `P:\scripts\4_world\entities\vehicles\carscript.c` | 2981 | 1.30 refactor, component delegation, deprecated methods marked with `[Obsolete]` |
 | `P:\scripts\4_world\entities\vehicles\vehicleaniminstances.c` | 15 | `MOTO1 = 10`, `MOTO2 = 11` |
-| `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c` | 171 | `Motorbike_01_ColorBase`, `SeatDriver`, `ActionAnimateMotorbikeSeat`, SoundSets |
-| `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_02.c` | 142 | `Motorbike_02_ColorBase`, `ShieldFront`, `ShieldLeft` and `ShieldRight` fairings, thermal comfort |
+| `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c` | 168 | `Motorbike_01_ColorBase`, `SeatDriver`, `ActionAnimateMotorbikeSeat`, SoundSets |
+| `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_02.c` | 139 | `Motorbike_02_ColorBase`, `ShieldFront`, `ShieldLeft` and `ShieldRight` fairings, thermal comfort |
 | `P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c` | 497 | Lights and horn migration to components |
 | `P:\scripts\4_world\entities\vehicles\inheritedcars\offroad_02.c` | 475 | `HasGangedTailAndBrakeLights`, shared lights |
 | `P:\scripts\4_world\entities\vehicles\components\vehiclehorncomponent.c` | 111 | Horn modes, AI noise, `NoiseCarHorn` integration |
@@ -55,9 +55,9 @@ Which vanilla files the motorbike files of this pack cite, with each path on `P:
 | `P:\scripts\4_world\entities\dayzplayerimplement.c` | 4131 | Crash ejection (`CrewShouldEject` / `eModifiers.MDF_UNCONSCIOUSNESS`), bike death (`FallOver`) |
 | `P:\scripts\4_world\entities\dayzplayerimplementfalldamage.c` | 378 | `CurveExp` exponential curve and new thresholds |
 | `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameras.c` | 173 | Registration of `DAYZCAMERA_3RD_VEHICLE_MOTORBIKE = 32` |
-| `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c` | 470 | Implementation of `DayZPlayerCamera3rdPersonVehicleMotorbike` with spring lag |
+| `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c` | 473 | Implementation of `DayZPlayerCamera3rdPersonVehicleMotorbike` with spring lag |
 | `P:\scripts\4_world\entities\manbase\playerbase.c` | 10144 | Engine start and stop actions registration |
-| `P:\scripts\4_world\entities\itembase\blowtorch.c` | 146 | The only place the chassis, engine and part repair actions for bikes are added |
+| `P:\scripts\4_world\entities\itembase\blowtorch.c` | 146 | The only place the chassis, engine and part repair actions for bikes are added (`:109`, `:111`, `:113`) |
 | `P:\scripts\4_world\entities\core\inherited\inventoryitem.c` | 1377 | `ActionPickUpMotorbike` on the `Motorbike_02` side fairings |
 | `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c` | 1658 | `AddItemInHandsProfileIK` registrations, `DayZPlayerTypeRegisterItems`, animation instance preload |
 
@@ -95,28 +95,18 @@ Which vanilla files the motorbike files of this pack cite, with each path on `P:
 
 | File on `P:\` | Lines | Symbols read |
 |---|---|---|
-| `P:\DZ\vehicles\singletrack\config.cpp` | 2375 | Every vanilla motorbike class (`MotorbikeScript`, `Motorbike_01`, `Motorbike_02`, wheels, proxies) |
+| `P:\DZ\vehicles\singletrack\config.cpp` | 2382 | Every vanilla motorbike class (`MotorbikeScript`, `Motorbike_01`, `Motorbike_02`, wheels, proxies) |
 | `P:\DZ\vehicles\wheeled\config.cpp` | 24369 | Vanilla car config, new wheel parameters (`tyreRoughness`, `tyreLongitudinalFriction`, `tyreLateralFriction`) |
 | `P:\DZ\anims\workspaces\player\player_main\vehicles.agf` | 3655 | The vehicle animation graph as text, `MotorBikeB` node, `MotorBikeSTM` state machine |
 | `P:\DZ\anims\workspaces\player\player_main\player_main.ast` | 1268 | `"Jawa_05"` and `"Jawa_Bitrak"` animation columns |
 | `P:\DZ\anims\workspaces\player\player_main\player_main.asi` | 6679 | `.anm` clip mapping for motorbike riding poses |
 | `P:\DZ\anims\workspaces\player\player_main\player_main_surrender.asi` | 296 | Header of a child `.asi` (`Template`, `ParentTemplates`) |
 | `P:\bin\constants.xml` | 938 | Input names `UAToggleHeadlight` and `UAToggleVehicleLights` |
-| `P:\DZ\sounds\hpp\config.cpp` | 523051 | The motorbike `CfgSoundShaders` and `CfgSoundSets` |
+| `P:\DZ\sounds\hpp\config.cpp` | 524933 | The motorbike `CfgSoundShaders` and `CfgSoundSets` |
 | `P:\DZ\sounds\vehicles\config.cpp` | 10 | Only `CfgPatches`, no sound classes |
 
-## Changes on a later 1.30 build
+## What changed from 1.29
 
 Comparing a DayZ 1.29 and a 1.30 extraction is the source of what this pack says changed from 1.29 to 1.30. DayZ 1.29 is not on `P:\`, so those statements are not checked there. The `vehicles_singletrack` addon is new in 1.30 and has no 1.29 counterpart.
 
-A later 1.30 stable build changes the length of only these cited files (not checked on `P:\`):
-
-| File | Lines on `P:\` | Lines on the later build |
-|---|---|---|
-| `transport.c` | 1205 | 1214 |
-| `motorbikescript.c` | 1765 | 1780 |
-| `inheritedmotorbikes\motorbike_01.c` | 171 | 168 |
-| `inheritedmotorbikes\motorbike_02.c` | 142 | 139 |
-| `dayzplayercameravehicles.c` | 470 | 473 |
-
-On that build `P:\DZ\vehicles\singletrack\config.cpp` and `P:\DZ\sounds\hpp\config.cpp` grow by 7 and 812 lines when unpacked with each array on one line, which is not the layout on `P:\`. Each `Motorbike_0*` sound group has one class more, because `Motorbike_02_Engine_Ext_Broken` became `Motorbike_02_Engine_Ext_Broken_High` and `Motorbike_02_Engine_Ext_Broken_Low`. A build after that changed none of the cited script files and no data file's text. The behaviour changes are noted where they apply: light registrations, light profiles and particle cooldown in `motorbike-actions-hud-lights-sounds.md`, and the state of 1.30 in `motorbike-invariants.md`.
+The 1.30 data on `P:\` splits the broken engine sound of `Motorbike_02` into two classes, `Motorbike_02_Engine_Ext_Broken_High_SoundShader` and `Motorbike_02_Engine_Ext_Broken_Low_SoundShader` (`P:\DZ\sounds\hpp\config.cpp:318210` and `:318223`), each with its own sound set (`:386435` and `:386443`). The behaviour changes are noted where they apply: light registrations, light profiles and particle cooldown in `motorbike-actions-hud-lights-sounds.md`, and the state of 1.30 in `motorbike-invariants.md`.

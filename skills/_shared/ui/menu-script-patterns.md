@@ -4,7 +4,7 @@ Script patterns that polished mod menus share: imageset icons, tabs, lists built
 
 ## Icons from a vanilla imageset
 
-Vanilla ships icon imagesets (`dayz_gui`, `dayz_inventory`, `dayz_crosshairs`), so a mod needs no texture of its own for common icons.
+Vanilla ships icon imagesets (`dayz_gui`, `dayz_inventory`, `dayz_crosshairs`, each a `.imageset` under `P:\gui\imagesets`), so a mod needs no texture of its own for common icons. `icon_pin` is one of the `dayz_gui` images (`P:\gui\imagesets\dayz_gui.imageset:597`).
 
 ```c
 ImageWidget icon = ImageWidget.Cast(m_Root.FindAnyWidget("MyIcon"));

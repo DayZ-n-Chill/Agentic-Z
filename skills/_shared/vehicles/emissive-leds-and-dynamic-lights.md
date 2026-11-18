@@ -57,7 +57,7 @@ class MyMod_LedBox extends ItemBase
 
 A material with a high `emmisive[]` glows on screen, but it lights nothing: in a dark room the walls and the player stay dark. To make the LED light the scene, create a dynamic light from script and attach it to a memory point so it follows the object.
 
-`CreateLight` is a static method of `ScriptedLightBase` (`P:\scripts\4_world\entities\scriptedlightbase.c:227`), `AttachOnMemoryPoint` is at `:165`, and `PointLightBase` extends `ScriptedLightBase` (`P:\scripts\4_world\entities\scriptedlightbase\pointlightbase.c:1`).
+`CreateLight` is a static method of `ScriptedLightBase` (`P:\scripts\4_world\entities\scriptedlightbase.c:227`), `AttachOnMemoryPoint` is at `:165`, and `PointLightBase` extends `ScriptedLightBase` (`P:\scripts\4_world\entities\scriptedlightbase\pointlightbase.c:1`). `CreateLight` creates the light only on a client or in single player and returns `null` on a dedicated server (`scriptedlightbase.c:231` to `:245`), so call the code below on the client only, for example under `if (!g_Game.IsDedicatedServer())`, or the server dereferences `null`.
 
 ```c
 PointLightBase m_LedLight;

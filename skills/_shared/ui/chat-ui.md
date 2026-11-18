@@ -25,11 +25,11 @@ class MyMod_TextMeasure
 }
 ```
 
-Split a message into words and add words to a line until the measured width passes the maximum, then start the next line. Or use a `MultilineTextWidget` with `wrap 1`.
+Split a message into words and add words to a line until the measured width passes the maximum, then start the next line. Or use a `MultilineTextWidget` with `wrap 1`. Vanilla doesn't measure at all: `Chat.Add` cuts a message by character count, `ChatMaxUserLength` for players and `ChatMaxSystemLength` for system and BattlEye messages, and adds each piece as its own line (`P:\scripts\5_mission\gui\chat\chat.c:68` to `:125`). It also drops a message when the player turned off that channel group in the game options (`:76` to `:98`).
 
 ## A ring of reused lines
 
-The group mod creates 100 chat line widgets once and reuses them, showing 12. A new message takes the next slot and every line moves to its place:
+Vanilla already works this way: `Chat` creates `LINE_COUNT = 12` `ChatLine` objects in `Init` and `AddInternal` reuses them in a ring (`P:\scripts\5_mission\gui\chat\chat.c:16`, `:47` and `:127` to `:144`). Each `ChatLine` loads `day_z_chat_item.layout`, fades out after `FADE_TIMEOUT = 30` seconds over `FADE_OUT_DURATION = 3` (`P:\scripts\5_mission\gui\chat\chatline.c:4`, `:5` and `:25`). The group mod raises the pool to 100 widgets created once, showing 12. A new message takes the next slot and every line moves to its place:
 
 ```c
 const int LINE_COUNT = 100;
@@ -49,7 +49,7 @@ void AddInternal(ChatMessageEventParams params)
 }
 ```
 
-While the chat input is open, pause every line's fade and timeout timers and show them all; resume the timers when it closes:
+While the chat input is open, pause every line's fade and timeout timers and show them all; resume the timers when it closes. In vanilla `ChatLine` both timers are `private` (`chatline.c:20` and `:21`), so this needs the mod's own line class:
 
 ```c
 void OnChatMenuOpened()
@@ -113,12 +113,19 @@ modded class ChatInputMenu
         m_edit_box = EditBoxWidget.Cast(layoutRoot.FindAnyWidget("InputEditBoxWidget"));
         return layoutRoot;
     }
+
+    EditBoxWidget GetEditBox()
+    {
+        return m_edit_box;
+    }
 }
 ```
 
+`m_edit_box` is `private` in vanilla (`P:\scripts\5_mission\gui\chat\chatinputmenu.c:3`) and vanilla has no `GetEditBox()`; the getter above is the mod's own. That a modded class can read the private field is not checked on `P:\`; no vanilla script shows it.
+
 `super.Init()` has to run because it sets fields the menu needs later, such as `m_BackInputWrapper` (`P:\scripts\5_mission\gui\chat\chatinputmenu.c:5`, set at `:15`); skip it and the menu hits a null reference.
 
-An edit box sends its events only to a handler set on it:
+The vanilla menu gets `OnChange` from its own edit box without `SetHandler`, because a `UIScriptedMenu` receives the events of its layout; it sends on `finished` (`chatinputmenu.c:29` to `:40`). A separate handler object gets the events only after `SetHandler` on the edit box:
 
 ```c
 class MyMod_ChatEventHandler : ScriptedWidgetEventHandler
@@ -143,7 +150,7 @@ class MyMod_ChatEventHandler : ScriptedWidgetEventHandler
 }
 ```
 
-`finished` is true when the player presses Enter and false on every other key.
+`finished` is true when the player presses Enter and false on every other key; vanilla returns early on `!finished` (`chatinputmenu.c:33`), and the Enter part is not checked on `P:\`.
 
 ## Moving the chat
 

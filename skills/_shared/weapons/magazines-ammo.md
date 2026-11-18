@@ -39,7 +39,7 @@ A magazine that players fill by hand needs the `MagazineStorage` script class, w
 
 The same keys on a 30 round magazine, `Mag_AKM_30Rnd` (`P:\DZ\weapons\attachments\magazine\config.cpp:3436`): `count=30` (`:3457`), `ammo="Bullet_762x39"` (`:3458`), `ammoItems[]` (`:3459`) and `tracersEvery=0` (`:3464`).
 
-A magazine script class can do more than store rounds. `Mag_MP18_Drum32Rnd` (`P:\scripts\4_world\entities\itembase\magazine\magazines.c:67`) overrides `UpdateAnimation` to turn the animation source `drum` as rounds leave, stops at 12 rounds (`m_AmmoOffset`), plays `wpn_mp18_drum_mag_SoundSet` at the memory point `drum_sound` on clients, and saves `m_LastAnimPhase`, reading it back only from save version 144 on (`:79` to `:121`). The vanilla data on `P:\` has the script but no `CfgMagazines` class for this magazine (see `weapon-classes.md`, "Script classes with no model or config class").
+A magazine script class can do more than store rounds. `Mag_MP18_Drum32Rnd` (`P:\scripts\4_world\entities\itembase\magazine\magazines.c:67`) overrides `UpdateAnimation` to turn the animation source `drum` as rounds leave, stops at 12 rounds (`m_AmmoOffset`), plays `wpn_mp18_drum_mag_SoundSet` at the memory point `drum_sound` on clients, and saves `m_LastAnimPhase`, reading it back only from save version 144 on (`:79` to `:121`). Its config class declares the source as `class drum` with `source="user"` under `AnimationSources` (`P:\DZ\weapons_takistan\attachments\magazine\config.cpp:158`, `:240` to `:248`); a mod drum that copies the script needs the same source in its own config and model.
 
 ## Bullet keys
 

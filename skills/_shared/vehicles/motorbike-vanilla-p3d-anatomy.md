@@ -4,9 +4,9 @@ What the binarized models of the two vanilla motorbikes hold, at a glance, and h
 
 ## Where the numbers come from
 
-The models are `P:\DZ\vehicles\singletrack\motorbike_01\motorbike_01.p3d` and `P:\DZ\vehicles\singletrack\motorbike_02\motorbike_02.p3d`, loaded by `Motorbike_01_ColorBase` and `Motorbike_02_ColorBase` (`P:\DZ\vehicles\singletrack\config.cpp:220`, `:1401`). The tables were generated from a reader for binarized (ODOL version 56) models, with no hand-typed numbers. That reader is not in this repo, so the tables are tool output, not checked on `P:\`; treat them as leads.
+The models are `P:\DZ\vehicles\singletrack\motorbike_01\motorbike_01.p3d` and `P:\DZ\vehicles\singletrack\motorbike_02\motorbike_02.p3d`, loaded by `Motorbike_01_ColorBase` and `Motorbike_02_ColorBase` (`P:\DZ\vehicles\singletrack\config.cpp:220`, `:1404`). The tables were generated from a reader for binarized (ODOL version 56) models, with no hand-typed numbers. That reader is not in this repo, so the tables are tool output, not checked on `P:\`; treat them as leads.
 
-What is checked on `P:\`: the two files are 2,302,438 and 1,895,327 bytes, both start with the `ODOL` signature and version 56, and `motorbike_01.p3d` contains the names `drivewheel`, `damper_1`, `kickstand`, `geotohide`, `pos_driver`, `light_1_1` and `refill` as text. Nothing here is checked in game or against a source `model.cfg`, which vanilla does not ship. Version 56 adds two model info fields whose meaning is unknown; both are 0 in both models.
+What is checked on `P:\`: both files start with the `ODOL` signature and version 56, and `motorbike_01.p3d` contains the names `drivewheel`, `damper_1`, `kickstand`, `geotohide`, `pos_driver`, `light_1_1` and `refill` as text. Nothing here is checked in game or against a source `model.cfg`, which vanilla does not ship. Version 56 adds two model info fields whose meaning is unknown; both are 0 in both models. The two files now on `P:\` (2,305,737 and 1,904,905 bytes) are larger than the copies the tables were read from (2,302,438 and 1,895,327 bytes), so the models have changed since; read them again before relying on a number.
 
 ## How to read the tables
 

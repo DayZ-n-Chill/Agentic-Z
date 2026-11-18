@@ -103,7 +103,7 @@ color 0.0863 0.0863 0.0863 0.902   // dark panel background
 | `TextListboxWidgetClass` | `TextListboxWidget` (`:439`) | Scrollable list with columns | `day_z_assignments.layout:35` |
 | `CheckBoxWidgetClass` | `CheckBoxWidget` (`:418`) | Checkbox | `day_z_server_browser_item.layout:24` |
 | `SliderWidgetClass` | `SliderWidget` (`:358`) | Horizontal slider | `day_z_server_browser_new.layout:336` |
-| `ProgressBarWidgetClass` | `ProgressBarWidget` (`:377`) | Read-only progress bar | `day_z_hud.layout:2389` |
+| `ProgressBarWidgetClass` | `ProgressBarWidget` (`:377`) | Read-only progress bar | `day_z_hud.layout:2525` |
 | `ScrollWidgetClass` | `ScrollWidget` (`:481`) | Scroll container | `camera_tools/camera_tools.layout:268` |
 | `ItemPreviewWidgetClass` | `ItemPreviewWidget` (`P:\scripts\3_game\gameplay.c:286`) | Live 3D item render | `debug/debug_item.layout:42` |
 | `PlayerPreviewWidgetClass` | `PlayerPreviewWidget` (`P:\scripts\3_game\gameplay.c:305`) | Live 3D player render | `inventory_new/medium/day_z_inventory_new.layout:204` |
@@ -119,7 +119,7 @@ color 0.0863 0.0863 0.0863 0.902   // dark panel background
 
 Script type lines without a file are in `P:\scripts\1_core\proto\enwidgets.c`; layout files are under `P:\gui\layouts\`.
 
-Four more classes appear in vanilla layouts but belong to the game's own screens, so a mod has no use for them: `HtmlWidgetClass` (`HtmlWidget`, `P:\scripts\3_game\gameplay.c:316`; the book and note pages, `day_z_book.layout:62`), `ServerBrowserWidgetClass` (`day_z_server_browser_new.layout:118`), `SmartPanelWidgetClass` (`xbox/day_z_title_screen.layout:13`) and `ContentWidgetClass` (`day_z_hud.layout:2345`).
+Four more classes appear in vanilla layouts but belong to the game's own screens, so a mod has no use for them: `HtmlWidgetClass` (`HtmlWidget`, `P:\scripts\3_game\gameplay.c:316`; the book and note pages, `day_z_book.layout:62`), `ServerBrowserWidgetClass` (`day_z_server_browser_new.layout:118`), `SmartPanelWidgetClass` (`xbox/day_z_title_screen.layout:13`) and `ContentWidgetClass` (`day_z_hud.layout:2478`).
 
 ---
 

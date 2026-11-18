@@ -25,8 +25,8 @@ Vanilla sound classes are in two files, so search both: `P:\DZ\sounds\hpp\config
 | `CfgDistanceFilters` | 2422 | Low pass filters that dull a sound with distance. |
 | `CfgSound3DProcessors` | 2587 | How a sound is placed in 3D (`panner`, `emitter`, `surround_panner`). |
 | `CfgSoundShaders` | 3072 | Shaders: samples, volume, range. |
-| `CfgSoundSets` | 318379 | Sets: which shaders play and how. |
-| `CfgSoundTables` | 385078 | Surface and event lookup tables (footsteps, impacts). |
+| `CfgSoundSets` | 319049 | Sets: which shaders play and how. |
+| `CfgSoundTables` | 386919 | Surface and event lookup tables (footsteps, impacts). |
 
 The `CfgPatches` class in that file is `DZ_Sounds_Effects` (line 3).
 
@@ -82,7 +82,7 @@ Always name a curve that exists. The vanilla generator shaders name `Animals_new
 
 ## Sound set (`CfgSoundSets`)
 
-The vanilla generator loop set, lines 319400 to 319413:
+The vanilla generator loop set, lines 320070 to 320083:
 
 ```cpp
 class powerGeneratorLoop_SoundSet
@@ -103,25 +103,25 @@ class powerGeneratorLoop_SoundSet
 
 | Key | Meaning | Vanilla evidence |
 |---|---|---|
-| `soundShaders[]` | The shaders this set plays, by class name. | Line 319402. |
-| `volumeFactor` | Multiplies the shader volume. Can be a number or a string expression (`"0.251 * 1"`). | Line 319406; `P:\DZ\sounds_bliss\config.cpp:13036`. |
-| `volumeCurve` | A `CfgSoundCurves` class for volume over distance. | Line 319410. |
-| `spatial` | `1` plays the sound in 3D at its source; `0` plays it flat. | Line 319407. |
-| `doppler` | `1` turns on pitch shift for moving sources. | Line 319408. |
-| `loop` | `1` loops the set. Script can loop a set whatever this says (see `sound-script.md`). | Line 319409. |
-| `sound3DProcessingType` | A `CfgSound3DProcessors` class. There is no root class named `CfgSound3DProcessingTypes`; the key points into `CfgSound3DProcessors`. | Line 319411; the class is at line 3029. |
-| `distanceFilter` | A `CfgDistanceFilters` class that cuts high frequencies with distance. | `baseCharacterLoud_SoundSet`, line 318393. |
-| `startDelay` | Seconds before the set starts. | Line 319412. |
+| `soundShaders[]` | The shaders this set plays, by class name. | Line 320072. |
+| `volumeFactor` | Multiplies the shader volume. Can be a number or a string expression (`"0.251 * 1"`). | Line 320076; `P:\DZ\sounds_bliss\config.cpp:13036`. |
+| `volumeCurve` | A `CfgSoundCurves` class for volume over distance. | Line 320080. |
+| `spatial` | `1` plays the sound in 3D at its source; `0` plays it flat. | Line 320077. |
+| `doppler` | `1` turns on pitch shift for moving sources. | Line 320078. |
+| `loop` | `1` loops the set. Script can loop a set whatever this says (see `sound-script.md`). | Line 320079. |
+| `sound3DProcessingType` | A `CfgSound3DProcessors` class. There is no root class named `CfgSound3DProcessingTypes`; the key points into `CfgSound3DProcessors`. | Line 320081; the class is at line 3029. |
+| `distanceFilter` | A `CfgDistanceFilters` class that cuts high frequencies with distance. | `baseCharacterLoud_SoundSet`, line 319063. |
+| `startDelay` | Seconds before the set starts. | Line 320082. |
 | `frequencyFactor`, `frequencyRandomizer`, `volumeRandomizer` | Pitch factor and random spread of pitch and volume on each play. | `P:\DZ\sounds_bliss\config.cpp:13038` to `13040`. |
-| `soundShadersLimit`, `soundObjectsLimit` | Caps on how many shaders and sound instances of this set play at once. | `Rifle_Shot_Interior_Base_SoundSet`, lines 323701 to 323714. |
-| `occlusionFactor`, `obstructionFactor` | Seen on weapon sets (`0.6`). Vanilla does not document the scale. | Lines 323707 and 323708. |
-| `positionOffset[]` | A `{x,y,z}` offset for the sound position. | Line 339640. |
+| `soundShadersLimit`, `soundObjectsLimit` | Caps on how many shaders and sound instances of this set play at once. | `Rifle_Shot_Interior_Base_SoundSet`, lines 324371 to 324384. |
+| `occlusionFactor`, `obstructionFactor` | Seen on weapon sets (`0.6`). Vanilla does not document the scale. | Lines 324377 and 324378. |
+| `positionOffset[]` | A `{x,y,z}` offset for the sound position. | Line 340310. |
 
-Vanilla also writes some of these in lower case (`volumefactor`, `soundshaders[]`) and with `"true"` and `"false"` strings (`P:\DZ\sounds_bliss\config.cpp:13041`). Write them the way the main table shows.
+Vanilla also writes some of these in lower case (`volumefactor` at line 357902, `soundshaders[]` at `P:\DZ\sounds_bliss\config.cpp:13096`) and with `"true"` and `"false"` strings (`P:\DZ\sounds_bliss\config.cpp:13041`). Write them the way the main table shows.
 
 ### Class names are not case sensitive
 
-`powerGeneratorLoop_SoundSet` names `"powerGeneratorLoop_SoundShader"` (line 319404), but the class is declared as `powerGeneratorLoop_Soundshader` (line 5764), and the generator plays. Lookup ignores case. Still match the case exactly in your own mod so a search finds both ends.
+`powerGeneratorLoop_SoundSet` names `"powerGeneratorLoop_SoundShader"` (line 320074), but the class is declared as `powerGeneratorLoop_Soundshader` (line 5764), and the generator plays. Lookup ignores case. Still match the case exactly in your own mod so a search finds both ends.
 
 ### 3D processors and filters
 
@@ -136,7 +136,7 @@ Reuse the vanilla processors, filters and curves by name. Write your own only wh
 A shader or set can inherit a vanilla one and change only what differs. Declare the vanilla parent by name first, then inherit from it. Weapon mods do this for shot sounds, because the vanilla bases carry the range, curve, 3D processing, filter and limits that make a shot sit right in the mix:
 
 - `base_closeShot_SoundShader` sets `volume=1`, `range=3000` and `rangeCurve="closeShotAttenuationCurve"` (line 17117).
-- `Rifle_Shot_Base_SoundSet` sets `volumeFactor`, `volumeCurve="RifleShotCurve"`, `sound3DProcessingType="WeaponMediumShot3DProcessingType"`, `distanceFilter`, `occlusionFactor`, `obstructionFactor`, `spatial=1`, `doppler=0`, `loop=0`, `soundShadersLimit=2` and `soundObjectsLimit=2` (line 323687).
+- `Rifle_Shot_Base_SoundSet` sets `volumeFactor`, `volumeCurve="RifleShotCurve"`, `sound3DProcessingType="WeaponMediumShot3DProcessingType"`, `distanceFilter`, `occlusionFactor`, `obstructionFactor`, `spatial=1`, `doppler=0`, `loop=0`, `soundShadersLimit=2` and `soundObjectsLimit=2` (line 324357).
 
 Check the parent's name on the build you target: DayZ 1.29 renamed the VSS and AmphibianS silenced sounds, `VSS_Vintorez_*` to `VSS_silencer_*` (`class VSS_silencerCloseShot_SoundShader` at `P:\DZ\sounds\hpp\config.cpp:79480`) and `AmphibianS_InteriorTail` to `AmphibianS_silencerInteriorTail` (`class AmphibianS_silencerInteriorTail_SoundSet` at `P:\DZ\sounds\hpp\config.cpp:327522`). A mod that inherits the old name breaks; a mod's own sets in its own PBO need no alias.
 

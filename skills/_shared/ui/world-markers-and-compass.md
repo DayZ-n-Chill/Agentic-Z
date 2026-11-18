@@ -6,7 +6,7 @@ The patterns come from a large production group and map mod; `My*` names are its
 
 ## A widget pinned to a world point
 
-`GetScreenPos(vector world_pos)` (`P:\scripts\3_game\global\game.c:963`) returns screen x and y, and in index 2 a depth that is zero or less when the point is behind the camera:
+`GetScreenPos(vector world_pos)` (`P:\scripts\3_game\global\game.c:963`) returns screen x and y in pixels, and in index 2 what the engine comment calls the "distance between camera and world_pos" (`:962`). The group mod treats a value of zero or less as behind the camera; the comment does not say so, so that sign is not checked on `P:\`. `GetScreenPosRelative(vector world_pos)` (`:965`) returns x and y as 0 to 1 instead, which suits a marker placed by fraction in a full screen parent.
 
 ```c
 vector screenPos = GetGame().GetScreenPos(worldPosition);
@@ -26,7 +26,7 @@ widget.SetPos(x, y);
 widget.Show(true);
 ```
 
-The group mod centers ping and player markers on the point.
+The group mod centers ping and player markers on the point. `SetPos` takes layout units, so pixel values land in the right place only when the widget's position is exact and the screen is 1080 high; with pixels from `GetScreenPos` use `SetScreenPos(x, y)` (`P:\scripts\1_core\proto\enwidgets.c:142`) instead.
 
 ## A compass strip
 

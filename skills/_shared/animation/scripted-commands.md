@@ -1,12 +1,28 @@
 # Scripted player commands on the vanilla graph
 
-What a `HumanCommandScript` can make the vanilla player graph do: report a stance and a movement, bind graph variables, commands and tags by name, start the jump machine, play the walk, run and sprint sources, and what breaks on the way (missing foot events, the raised idle, the weapon lift check, a command class in `4_World`).
+What a `HumanCommandScript` can make the vanilla player graph do: how it is started and ended, report a stance and a movement, bind graph variables, commands and tags by name, start the jump machine, play the walk, run and sprint sources, and what breaks on the way (missing foot events, the raised idle, the weapon lift check, a command class in `4_World`).
 
 The API and graph lines are checked on `P:\`. The behaviour was measured in game on 1.30 with two test mods, a sliding floor and a skateboard, with a server and one client on one machine; treat measured lines as evidence for that setup.
 
+## Starting, running and ending the command
+
+The class takes the `Human` as the first constructor parameter (`P:\scripts\3_game\human.c:1239`). Start it with `StartCommand_ScriptInst(typename)` or `StartCommand_Script(instance)` and read it back with `GetCommand_Script()` (`:1623`, `:1624`, `:1627`). The vanilla comment says the object is not managed: once started the engine owns it, an instance made but never started must be deleted by hand, and deleting one that is running crashes (`:1230` to `:1234`). Prefer `StartCommand_ScriptInst`, which leaves no instance to own.
+
+| Step | Hook | What it may do | Line |
+|---|---|---|---|
+| Start | `OnActivate()` | Bind names, first `PreAnim_` writes. | `:1243` |
+| Before the graph | `PreAnimUpdate(float pDt)` | Write graph variables and commands; `SetHeading` works here and in `PrePhysUpdate` only. | `:1288`, `:1261` |
+| After the graph | `PrePhysUpdate(float pDt)` | Read events and tags, change the root motion in local space (`PrePhys_SetTranslation`). | `:1306`, `:1313` |
+| After physics | `PostPhysUpdate(float pDt)` | Final world position (`PostPhys_SetPosition`). Return false to end the command. | `:1322`, `:1327` |
+| End | `OnDeactivate()` | Clean up. | `:1246` |
+
+`SetFlagFinished(true)` also ends it, and the player's `CommandHandler` then sees `pCurrentCommandFinished` true (`:1253`). While it runs, the current command id is `COMMANDID_SCRIPT` (`P:\scripts\3_game\dayzplayer.c:708`).
+
+Start and stop the command from the player's command handler. `DayZPlayerImplement.CommandHandler` calls three empty hooks meant for mods, `ModCommandHandlerBefore`, `ModCommandHandlerInside` and `ModCommandHandlerAfter` (`P:\scripts\4_world\entities\dayzplayerimplement.c:2266` to `:2279`), at the start, the middle and the end of its work (`:2297`, `:2430`, `:2688`). Returning true from one skips the rest of the vanilla handler for that frame, so return true only while your command owns the player.
+
 ## Reporting stance and movement
 
-`HumanCommandScript` (`P:\scripts\3_game\human.c:1236`) has two overrides that no vanilla script calls. The engine reads them, and the graph plays the locomotion they report while the command runs (`:1264` to `:1274`):
+`HumanCommandScript` (`P:\scripts\3_game\human.c:1236`) has two overrides that no vanilla script calls. The engine reads them, and the graph plays the locomotion they report while the command runs (`:1264` to `:1274`). A third, `GetCurrentLeaning`, returns the lean from -1 to 1 (`:1277`). The first two as vanilla declares them:
 
 ```c
 //! Override this to return the current stance of the human.
@@ -63,7 +79,7 @@ The master graph names its sync table (`AnimSyncTable`, `player_main.agr:3`), wh
 | `Walk` | `RFootDown` 0.25, `LFootUp` 0.31, `LFootDown` 0.85, `RFootUp` 0.9 | `P:\DZ\anims\workspaces\player\player_synctable.asy:23` to `:42` |
 | `RunSprint` | `LFootUp` 0.15, `RFootDown` 0.4, `RFootUp` 0.6, `LFootDown` 0.9 | `player_synctable.asy:43` to `:62` |
 
-Vanilla clips carry these as events inside the `.anm`. Read from a 1.29 unpack, not reread on 1.30: `p_erc_walkF.anm` has `RFootDown`, `LFootUp`, `LFootDown` and `RFootUp` at frames 8, 12, 24 and 27; `p_erc_runF.anm` has `LFootUp`, `RFootDown`, `RFootUp` and `LFootDown` at frames 5, 9, 15 and 19; both also have `Step` and `SoundAttachment` events; `p_erc_idle.anm` has none. The base instance maps them at `Locomotion.Erc.WalkF`, `Locomotion.Erc.RunF` and `Locomotion.Erc.Idle` (`P:\DZ\anims\workspaces\player\player_main\player_main.asi:3333`, `:3273`, `:3237`).
+Vanilla clips carry these as events inside the `.anm`, in its `EVNT` chunk, where each event's frame and name are readable without a tool. In `P:\DZ\anims\anm\player\moves\unarmed\p_erc_walkf.anm` the first cycle has `RFootDown`, `LFootUp`, `LFootDown` and `RFootUp` at frames 8, 12, 24 and 27; in `p_erc_runf.anm` it has `LFootUp`, `RFootDown`, `RFootUp` and `LFootDown` at frames 5, 9, 15 and 19; each clip holds three cycles, 24 events in all, with `Step` and `SoundAttachment` events between the foot events; `p_erc_idle.anm` has no `EVNT` chunk. The base instance maps them at `Locomotion.Erc.WalkF`, `Locomotion.Erc.RunF` and `Locomotion.Erc.Idle` (`P:\DZ\anims\workspaces\player\player_main\player_main.asi:3333`, `:3273`, `:3237`).
 
 Measured: with replacement clips generated without events, the logged pelvis stayed at the same model space position on 50 of 53 samples while the board rolled, pushed and turned at 0.5 to 6.5 m/s, and the front foot sat 8 to 9 cm under the deck; a clip held still fits those numbers. With the line's four events added, and nothing else changed but a gravity switch for the flight, the pelvis moved between 0.86 and 1.17 m over 153 samples and the front foot sat on the deck. The idle, which has no events, animated in both.
 

@@ -35,9 +35,9 @@ Some guns build their own state machine on a plain base: the SKS on `Rifle_Base`
 
 The script tree is not one line under `Rifle_Base`. `RifleBoltFree_Base`, `RifleBoltLock_Base`, `OpenBolt_Base`, `ChamberFirst_InnerMagazine_SemiAutomatic_Base`, `RifleSingleShot_Base` and `DoubleBarrel_Base` extend `Rifle_Base`, but `BoltActionRifle_Base` (`boltactionrifle_base.c:5`) and `Pistol_Base` (`pistol_base.c:149`) extend `Weapon_Base` directly, and the two bolt action bases in the table extend `BoltActionRifle_Base`. Code that tests `IsInherited(Rifle_Base)` (`P:\scripts\1_core\proto\enscript.c:23`), which follows the script tree, misses every bolt action rifle and every pistol, while `IsKindOf("Rifle_Base")`, which checks the config class (`P:\scripts\3_game\entities\object.c:511`), follows the config tree, where bolt actions do sit under `Rifle_Base`.
 
-### Script classes with no model or config class (since 1.30)
+### Script classes for the 1.30 weapons
 
-DayZ 1.30 added four firearm script classes whose weapons are not in the vanilla data on `P:\`:
+DayZ 1.30 added four firearm script classes:
 
 | Script class | Parent | Defined at |
 |---|---|---|
@@ -48,7 +48,7 @@ DayZ 1.30 added four firearm script classes whose weapons are not in the vanilla
 
 Each has its hand animation profile registered with `AddItemInHandsProfileIK`: `Luger_Base` at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:395`, `MP18_Base` at `:432`, `SCARL_Base` at `:445` and `LeeEnfield_Base` at `:446`.
 
-But there is no folder for any of them under `P:\DZ\weapons\firearms\` or `P:\DZ\weapons\pistols\`, and no `CfgWeapons` class. A script class is therefore no proof that a weapon can be spawned or that its model can be used as a reference: check the config on `P:\` first, and build on a weapon that ships there (the SCAR-H at `P:\DZ\weapons\firearms\scarh\config.cpp:26` for a rifle like the SCAR-L). DayZ 1.30 ships these weapons in `weapons_nasdara.pbo` with config parents that differ from the script parents (`SCARL_Base: Rifle_Base`, `MP18_Base: Rifle_Base`); not yet checked on `P:\`. Details, and the reference weapon to use for each: `dayz-1-30-migration.md`.
+Their config classes are not under `P:\DZ\weapons\` but under `P:\DZ\weapons_takistan\`, and two config parents differ from the script parents: `SCARL_Base: Rifle_Base` (`P:\DZ\weapons_takistan\firearms\scarl\config.cpp:26`) and `MP18_Base: Rifle_Base` (`P:\DZ\weapons_takistan\firearms\mp18\config.cpp:26`). A script class alone is no proof that a weapon can be spawned: check that the config class exists in the data the server runs. Classes, addons and models: `dayz-1-30-migration.md`.
 
 ## Config base classes
 

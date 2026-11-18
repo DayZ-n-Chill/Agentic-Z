@@ -6,14 +6,14 @@ The symptom-first get-in checks are in `invariants-get-in-and-seats.md` and in `
 
 ## The get-in condition, link by link
 
-`ActionGetInTransport.ActionCondition` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:26` to `:69`; on 1.29 it ran from `:26` to `:80` of that build) offers a seat only when every link passes, in this order:
+`ActionGetInTransport.ActionCondition` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:26` to `:69`) offers a seat only when every link passes, in this order:
 
 | Step | Check | Source |
 |---|---|---|
-| 1 | `CanGetIn()` on the vehicle; `Transport` returns `true`, and `Motorbike_01_ColorBase` overrides it | `actiongetintransport.c:36`; `P:\scripts\3_game\vehicles\transport.c:672`; `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:92` |
-| 2 | The ViewGeometry component under the cursor maps to a crew index through `CrewPositionIndex(componentIndex)` | `transport.c:179` |
-| 3 | `CrewCanGetThrough(crewIndex)` is true; `Transport` returns `false` unless `CFGMODS_DEFINE_TEST` is defined, so a custom vehicle's script class must override it | `actiongetintransport.c:54`; `transport.c:724` to `:731` |
-| 4 | `IsAreaAtDoorFreeDiag`, the collision box check around the `CrewEntry` transform | `actiongetintransport.c:54`; overloads of `IsAreaAtDoorFree` at `transport.c:844` to `:899`, default extents at `:889` |
+| 1 | `CanGetIn()` on the vehicle; `Transport` returns `true`, and `Motorbike_01_ColorBase` overrides it | `actiongetintransport.c:36`; `P:\scripts\3_game\vehicles\transport.c:675`; `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:89` to `:95` |
+| 2 | The ViewGeometry component under the cursor maps to a crew index through `CrewPositionIndex(componentIndex)` | `transport.c:182` |
+| 3 | `CrewCanGetThrough(crewIndex)` is true; `Transport` returns `false` unless `CFGMODS_DEFINE_TEST` is defined, so a custom vehicle's script class must override it | `actiongetintransport.c:54`; `transport.c:727` to `:734` |
+| 4 | `IsAreaAtDoorFreeDiag`, the collision box check around the `CrewEntry` transform | `actiongetintransport.c:54`; overloads of `IsAreaAtDoorFree` at `transport.c:853` to `:908`, default extents (0.5 m wide, 1.7 m tall) at `:898` to `:907`; the diag menu option `TRANSPORT_FREESPACE_DISABLED` skips it (`:910` to `:924`) |
 | 5 | At least one seat selection passes `CanReachSeatFromDoors` | `actiongetintransport.c:64`; `P:\scripts\4_world\entities\vehicles\carscript.c:2177` to `:2199` |
 
 For step 5, `GetDoorConditionPointFromSelection` maps `seat_driver`, `seat_codriver`, `seat_cargo1` and `seat_cargo2` to `seat_con_1_1`, `seat_con_2_1`, `seat_con_1_2` and `seat_con_2_2` (`carscript.c:2141` to `:2160`). `CanReachSeatFromDoors` needs that memory point to exist, ignores height and allows 1 m horizontally: vanilla script calls it with `1.0` as `pDistance` and the player's position as `pFromPos` (`actiongetintransport.c:64`), and `1.0` is also the signature's default (`carscript.c:2177`). The motorbike `SeatDriver` check inside `CanGetIn()` is in `motorbike-invariants.md`.

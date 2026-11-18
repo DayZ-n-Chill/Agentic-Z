@@ -1,6 +1,6 @@
 # Motorbike_02 model anatomy
 
-What the binarized model of the vanilla `Motorbike_02` holds: model info, LODs, skeleton, every animation with its source, memory points, proxies and selections. `Motorbike_02_ColorBase` loads it from `P:\DZ\vehicles\singletrack\Motorbike_02\Motorbike_02.p3d` (`P:\DZ\vehicles\singletrack\config.cpp:1405`). The numbers were read with a binarized model reader and are not checked on `P:\`; how to read them, and what was checked, is in `motorbike-vanilla-p3d-anatomy.md`.
+What the binarized model of the vanilla `Motorbike_02` holds: model info, LODs, skeleton, every animation with its source, memory points, proxies and selections. `Motorbike_02_ColorBase` loads it from `P:\DZ\vehicles\singletrack\Motorbike_02\Motorbike_02.p3d` (`P:\DZ\vehicles\singletrack\config.cpp:1408`). The numbers were read with a binarized model reader and are not checked on `P:\`; how to read them, and what was checked, is in `motorbike-vanilla-p3d-anatomy.md`. The model file now on `P:\` is larger than the copy these tables were read from, so read it again before relying on a number.
 
 Its rear suspension is a linkage: `damperback` drives `damper_2`, the swingarm, and in steps of the damper phase the `rocker_link`, `rocker`, `shock_bottoms` and `shock_tops` bones, each with eight animations that cover one band of the phase. The handlebar sweep is split over `drivewheel_0` to `drivewheel_9`, which turn from 4.5 up to 81 degrees at full lock while `drivewheel` itself turns 90.
 

@@ -18,17 +18,17 @@ The class tree, the `Motorbike` sibling and the `CarScript` component split are 
 |---|---|---|---|
 | `Transport` children | `Car` and `Boat` | A third sibling, `Motorbike`, with `simulation="motorbike"` | `P:\bin\config.cpp:1481` to `:1486`; `P:\scripts\3_game\vehicles\motorbike.c:30` |
 | Headlights | A `CarLightBase` child and `CreateFrontLight`, `CreateRearLight` | A `VehicleLightBase` and a `VehicleLightProfileBase` child registered on `m_LightsComponent` | `P:\scripts\4_world\entities\scriptedlightbase\spotlightbase\vehiclelightbase.c:1`; `P:\scripts\4_world\entities\vehicles\inheritedcars\offroad_02.c:21` and `:22` |
-| Battery | `IsVitalCarBattery`, `IsVitalTruckBattery` | `NeedElectricitySourceDevice`, `GetElectricitySourceDevice`, `GetElectricitySourceDeviceType` | `P:\scripts\3_game\vehicles\transport.c:821` to `:834`; `P:\scripts\4_world\entities\vehicles\carscript.c:2811` to `:2817` |
+| Battery | `IsVitalCarBattery`, `IsVitalTruckBattery` | `NeedElectricitySourceDevice`, `GetElectricitySourceDevice`, `GetElectricitySourceDeviceType` | `P:\scripts\3_game\vehicles\transport.c:830` to `:843`; `P:\scripts\4_world\entities\vehicles\carscript.c:2811` to `:2817` |
 | Horn actions | `ActionCarHornShort`, `ActionCarHornLong` | `ActionVehicleHornShort`, `ActionVehicleHornLong`; the old input classes `CarHornShortActionInput` and `CarHornLongActionInput` are empty aliases | `carscript.c:2319` and `:2320`; `P:\scripts\4_world\classes\useractionscomponent\actioninput.c:757` to `:774` |
-| Light toggle input | `UAToggleHeadlight` | `UAToggleVehicleLights` for vehicle lights | `actioninput.c:849` to `:855`; `P:\bin\constants.xml:90` and `:91` |
+| Light toggle input | `UAToggleHeadlight` | `UAToggleVehicleLights` for vehicle lights | `ToggleVehicleLightsActionInput`, `actioninput.c:849` to `:855`; `P:\bin\constants.xml:90` and `:91` |
 | Forced light refresh | `ForceUpdateLightsStart`, `ForceUpdateLightsEnd` | `[Obsolete("1.30: no replacement")]`; delete the calls | `carscript.c:2805` to `:2809` |
-| Headlight toggle | `CarScript.ToggleHeadlights()`, called by `ActionSwitchLights` | Deleted with no obsolete stub; the action calls the native `Transport.LightToggle()` | `transport.c:236`; `P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actionswitchlights.c:64` |
+| Headlight toggle | `CarScript.ToggleHeadlights()`, called by `ActionSwitchLights` | Deleted with no obsolete stub; the action calls the native `Transport.LightToggle()` | `transport.c:239`; `P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actionswitchlights.c:64` |
 | Script module path | Backslashes in `files[]` loaded | Backslashes loaded nothing; forward slashes load | Measured, below |
-| Ruined wheel swap | A `switch` over vanilla wheel names; a mod wheel was never swapped | Every wheel is swapped for `<class>_Ruined`, and a missing class raises an error | `P:\scripts\4_world\entities\core\inherited\inventoryitemtype.c:17` to `:46`; `dayz-1-30-wheels.md` |
+| Ruined wheel swap | A `switch` over vanilla wheel names; a mod wheel was never swapped | Every wheel is swapped for `<class>_Ruined`; a missing class raises an error and the wheel is not swapped | `P:\scripts\4_world\entities\core\inherited\inventoryitemtype.c:17` to `:46`; `dayz-1-30-wheels.md` |
 | Fluids | `CarFluid`, a separate `BoatFluid` | `enum ETransportFluid`; `BoatFluid : ETransportFluid {}` | `transport.c:52` to `:63`; `P:\scripts\3_game\vehicles\boat.c:13` |
 | Boat speedometer | Car only | `Boat.GetSpeedometer` and `GetSpeedometerAbsolute` | `boat.c:42` to `:56` |
-| Get-in | `IsAreaAtDoorFree` | `CanGetIn()` first, then `IsAreaAtDoorFreeDiag` | `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:36` and `:54`; `transport.c:672` to `:675` |
-| Effect scale | None | `GetWeightCoef()`, default 1.0 | `transport.c:475` to `:478` |
+| Get-in | `IsAreaAtDoorFree` | `CanGetIn()` first, then `IsAreaAtDoorFreeDiag` | `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:36` and `:54`; `transport.c:675` to `:678` |
+| Effect scale | None | `GetWeightCoef()`, default 1.0 | `transport.c:478` to `:481` |
 | Ganged rear bulbs | None | `HasGangedTailAndBrakeLights()`, default `false` | `carscript.c:468` to `:471` |
 | High speed geometry | In the change notes only | Config `speedGeomActivation` and `speedGeoms[]` | `P:\DZ\vehicles\singletrack\config.cpp:262` and `:263` |
 | Motorbike third person camera | None | `DAYZCAMERA_3RD_VEHICLE_MOTORBIKE = 32` | `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameras.c:20`; `motorbike-rider-animation.md` |
@@ -39,7 +39,7 @@ Vanilla models on 1.30 are ODOL version 56; on 1.29 they were version 54. `P:\DZ
 
 ## ToggleHeadlights was deleted, not deprecated
 
-`CarScript.ToggleHeadlights()` is the one light member 1.30 removed instead of marking `[Obsolete]`. 1.29 declared it at `CarScript.c:2088` and called it from `ActionSwitchLights.c:75` and `CarScript.c:834` and `:3061`. No file under `P:\scripts` declares or calls it; the switch action toggles the native state with `Transport.LightToggle()` (`P:\scripts\3_game\vehicles\transport.c:236`; `actionswitchlights.c:64`).
+`CarScript.ToggleHeadlights()` is the one light member 1.30 removed instead of marking `[Obsolete]`. 1.29 declared it in `CarScript.c` (line 2088) and called it from `ActionSwitchLights.c` (line 75) and from `CarScript.c` (lines 834 and 3061). No file under `P:\scripts` declares or calls it; the switch action toggles the native state with `Transport.LightToggle()` (`P:\scripts\3_game\vehicles\transport.c:239`; `actionswitchlights.c:64`).
 
 So a 1.29 car whose script says `override void ToggleHeadlights()` overrides a method that no longer exists, and Enforce refuses it: the `4_World` module fails and the game or server does not start with the mod. On a 1.30 diag server, a test quad's 1.29 scripts, with only their module path fixed, gave `Function 'ToggleHeadlights' is marked as override, but there is no function with this name in the base class`, then `Can't compile "World" script module!` and `ENGINE (F): Crashed`. The `[Obsolete]` members are the opposite case: they compile and are never called. Resolve every `override` against the target build before you ship.
 
@@ -51,13 +51,13 @@ Write module paths with forward slashes, and compare the script log's `Module: W
 
 ## Lines a 1.29 note still cites
 
-| Symbol | 1.29 line | 1.30 line |
+| Symbol | 1.29 line in `carscript.c` | 1.30 line |
 |---|---|---|
-| `SetEventMask` calls in the `CarScript` constructor | `carscript.c:325` and `:326` | `P:\scripts\4_world\entities\vehicles\carscript.c:207` and `:208` |
-| `CarScript.EOnPostSimulate` | `carscript.c:948` | `carscript.c:807` |
-| `CarScript.OnDriverExit` and its gear check | `carscript.c:1207` to `:1215` | `carscript.c:940` to `:948` |
-| Empty `Transport.OnDriverExit` | `transport.c:161` | `P:\scripts\3_game\vehicles\transport.c:224` |
-| `ForceUpdateLightsStart` and `ForceUpdateLightsEnd` | `carscript.c:535` and `:536`, `:2981` and `:2990` | Obsolete at `carscript.c:2805` to `:2809` |
+| `SetEventMask` calls in the `CarScript` constructor | 325 and 326 | `P:\scripts\4_world\entities\vehicles\carscript.c:207` and `:208` |
+| `CarScript.EOnPostSimulate` | 948 | `carscript.c:807` |
+| `CarScript.OnDriverExit` and its gear check | 1207 to 1215 | `carscript.c:940` to `:948` |
+| Empty `Transport.OnDriverExit` | 161 in `transport.c` | `P:\scripts\3_game\vehicles\transport.c:227` |
+| `ForceUpdateLightsStart` and `ForceUpdateLightsEnd` | 535 and 536, 2981 and 2990 | Obsolete at `carscript.c:2805` to `:2809` |
 
 ## Offroad_02 in 1.30
 

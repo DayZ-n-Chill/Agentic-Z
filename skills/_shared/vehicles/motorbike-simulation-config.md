@@ -4,7 +4,7 @@ What the vanilla `SimulationModule` and `AnimationSources` of `Motorbike_01_Colo
 
 ## `SimulationModule`
 
-From `P:\DZ\vehicles\singletrack\config.cpp:263` to `:378`. There is no `Axles` block: `Wheels` holds `Front` and `Rear` directly, and the front brake sits on the handbrake channel (`input = 1`).
+From `P:\DZ\vehicles\singletrack\config.cpp:267` to `:382`. There is no `Axles` block: `Wheels` holds `Front` and `Rear` directly, and the front brake sits on the handbrake channel (`input = 1`).
 
 ```cpp
 class SimulationModule: SimulationModule
@@ -127,7 +127,7 @@ class SimulationModule: SimulationModule
 
 ## `AnimationSources`
 
-From `config.cpp:379` to `:399`. `SeatDriver` drives the flip-up seat that `CanGetIn` checks.
+From `config.cpp:383` to `:403`. `SeatDriver` drives the flip-up seat: `Motorbike_01_ColorBase.CanGetIn()` refuses entry unless its phase is 0 (`P:\scripts_world\entitiesehicles\inheritedmotorbikes\motorbike_01.c:89` to `:95`), so a bike that copies the source but never closes the seat cannot be mounted.
 
 ```cpp
 class AnimationSources: AnimationSources
@@ -153,4 +153,4 @@ class AnimationSources: AnimationSources
 };
 ```
 
-`Motorbike_02_ColorBase` (`config.cpp:1569` to `:1589`) declares the same two dampers with `initPhase` `0.64` and `0.607`, and a `coolant` source (`source = "user"`, `initPhase = 0`, `animPeriod = 1`) in place of `SeatDriver`.
+`Motorbike_02_ColorBase` (`config.cpp:1576` to `:1596`) declares the same two dampers with `initPhase` `0.64` and `0.607`, and a `coolant` source (`source = "user"`, `initPhase = 0`, `animPeriod = 1`) in place of `SeatDriver`.

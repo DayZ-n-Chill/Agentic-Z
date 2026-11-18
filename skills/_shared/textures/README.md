@@ -2,7 +2,7 @@
 
 Tier 3 cookbook for DayZ textures (`.paa`) and materials (`.rvmat`): suffixes, sizes, shaders, stages and recipes for cloth, metal, glass and skin. Written for `dayz-asset-specialist`; any DayZ worker may load one file of it when a task needs it. Tier 1 and Tier 2 (`_shared/conventions/assets.md`) still apply on top.
 
-Every game fact here cites the vanilla file on `P:\` it came from, or `<DayZ Tools>\Bin\ImageToPAA\TexConvert.cfg` for how ImageToPAA packs a suffix. Counts come from a scan of the unpacked vanilla data under `P:\DZ`; damage and destruct variants are left out of them unless a line says otherwise. A line marked **tool knowledge** comes from Object Builder or Bohemia's shader notes, not from a vanilla text file, so confirm it on the screen. A block marked **measured in game** records a test run with no vanilla file behind it; repeat the test before a design depends on it.
+Every game fact here cites the vanilla file on `P:\` it came from, or `<DayZ Tools>\Bin\ImageToPAA\TexConvert.cfg` for how ImageToPAA packs a suffix. Counts come from a scan of the unpacked DayZ 1.30 data under `P:\DZ`; damage and destruct variants are left out of them unless a line says otherwise. Line numbers match that data; if a line has moved, Grep the class or key name in the same file. A line marked **tool knowledge** comes from Object Builder or Bohemia's shader notes, not from a vanilla text file, so confirm it on the screen. A block marked **measured in game** records a test run with no vanilla file behind it; repeat the test before a design depends on it.
 
 ## Which file to open
 

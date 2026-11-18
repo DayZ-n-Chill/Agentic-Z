@@ -2,7 +2,7 @@
 
 How production mods use Enforce Script reflection for data binding, registration at load time and calling by name, with worked examples and the limits that make a reflection based test unsafe. The declarations are listed in `../references/api_reflection_profiler.md`.
 
-The vanilla declarations: `EnScript.GetClassVar` (`P:\scripts\1_core\proto\enscript.c:188`) and `SetClassVar` (`:211`); `CallFunction` and `CallFunctionParams` (`:146` and `:147`); `GetVariableCount`, `GetVariableName` and `GetVariableType` (`P:\scripts\1_core\proto\enconvert.c:586` to `:588`); `Spawn` (`enconvert.c:565`); `ToType` (`P:\scripts\1_core\proto\enstring.c:95`); `ScriptCaller` (`P:\scripts\2_gamelib\tools.c:160`) with `Create` (`:165`).
+The vanilla declarations: `EnScript.GetClassVar` (`P:\scripts\1_core\proto\enscript.c:188`) and `SetClassVar` (`:211`); `CallFunction` and `CallFunctionParams` (`:146` and `:147`); `GetVariableCount`, `GetVariableName` and `GetVariableType` on `typename` (`P:\scripts\1_core\proto\enconvert.c:565` to `:567`); `Spawn` (`enconvert.c:544`); `ToType` (`P:\scripts\1_core\proto\enstring.c:95`); `ScriptCaller` (`P:\scripts\2_gamelib\tools.c:160`) with `Create` (`:165`).
 
 ## Fields by name
 

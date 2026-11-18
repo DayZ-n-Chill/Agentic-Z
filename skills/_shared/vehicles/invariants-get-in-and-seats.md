@@ -6,7 +6,7 @@ The get-in condition link by link, and which anchor places the occupant, are in 
 
 ## The car needs a script class
 
-A config class with no script class of its own runs as bare `CarScript`, which inherits `Transport.CrewCanGetThrough()`. That returns `false` unless `CFGMODS_DEFINE_TEST` is defined (`P:\scripts\3_game\vehicles\transport.c:724` to `:727`), so the get-in action is filtered out and never appears; no bone, proxy or component fix helps. Write `MyMod_Base extends CarScript` overriding `CrewCanGetThrough`, `GetAnimInstance` and `GetSeatAnimationType`, and register the script module in `CfgMods`. Confirmed in game on three mod vehicles. See also `crew-get-in-geometry.md`.
+A config class with no script class of its own runs as bare `CarScript`, which inherits `Transport.CrewCanGetThrough()`. That returns `false` unless `CFGMODS_DEFINE_TEST` is defined (`P:\scripts\3_game\vehicles\transport.c:727` to `:730`), so the get-in action is filtered out and never appears; no bone, proxy or component fix helps. Write `MyMod_Base extends CarScript` overriding `CrewCanGetThrough`, `GetAnimInstance` and `GetSeatAnimationType`, and register the script module in `CfgMods`. Confirmed in game on three mod vehicles. See also `crew-get-in-geometry.md`.
 
 The script module must actually load, or the class never binds and nothing reports it. `CfgMods` `files[]` with the wrong slashes, or a path that resolves to `*.p3d.p3d`, leaves the module unloaded: no get-in, no error. The binding notes are in `crew-get-in-geometry.md`, section "The script module must load".
 
@@ -16,7 +16,7 @@ If the config says `class MyMod_Car: OffroadHatchback` but the script class is `
 
 | Method | Default in `Transport` | Effect |
 |---|---|---|
-| `CrewCanGetThrough` | `false` (`transport.c:724`) | No get-in |
+| `CrewCanGetThrough` | `false` (`transport.c:727`) | No get-in |
 | `IsVitalGlowPlug` | `true` (`:409` to `:412`) | A petrol car will not start (`invariants-engine-fluids-and-handling.md`) |
 | `GetAnimInstance` | `Error()` (`:665`) | No seat animation |
 | `GetSeatAnimationType` | `Error()` (`:685`) | No seat animation |

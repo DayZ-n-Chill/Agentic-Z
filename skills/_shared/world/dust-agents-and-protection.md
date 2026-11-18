@@ -7,7 +7,7 @@ Covers the two agents a sandstorm puts on a player, silicosis and eye irritation
 The agent IDs and the defence types:
 
 ```c
-// P:\scripts\3_game\enums\eagents.c:14
+// P:\scripts\3_game\enums\eagents.c:14 and :15
 	SILICOSIS 		= 512,
 	EYES_IRRITATION	= 1024,
 ```
@@ -26,7 +26,7 @@ The modifiers are `MDF_SANDSTORM_EXPOSURE_STATIC`, `MDF_SANDSTORM_EXPOSURE_DYNAM
 
 ## How a storm passes the agents on
 
-`SandstormExposureMdfrBase.TransmitAgents` sends each agent through `AGT_AIRBOURNE_SOLID` and sends nothing to an unconscious player (`P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\sandstormexposure.c:45` to `:51`). The base dose is 1.0 agent per second for each agent (`SILICOSIS_AGENTS_PER_SEC`, `sandstormexposure.c:16` and `:17`).
+`SandstormExposureMdfrBase.TransmitAgents` sends each agent through `AGT_AIRBOURNE_SOLID` and sends nothing to an unconscious player (`P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\sandstormexposure.c:45` to `:51`). The base dose is 1.0 agent per second for each agent (`SILICOSIS_AGENTS_PER_SEC` and `EYES_IRRITATION_AGENTS_PER_SEC`, `sandstormexposure.c:16` and `:17`). `OnActivate` also sends one of each at once (`:36` and `:37`).
 
 | Modifier | Active when | Dose |
 |---|---|---|
@@ -66,10 +66,22 @@ From `P:\scripts\4_world\plugins\pluginbase\plugintransmissionagents.c:414`:
 - Only an item in the `MASK` category with `DEF_DUST_PARTICLE_BREATH` stops silicosis. Glasses do nothing against it.
 - `DEF_DUST_PARTICLE_EYES` on glasses, a mask or night vision goggles stops eye irritation.
 - `GetProtectionLevelCachedEquipment` looks at attachments down to depth 2 and adds up `GetProtectionLevel(type)` of every match (`plugintransmissionagents.c:577` to `:592`).
+- The dose that gets through is `(1 - protection) * m_TransferabilityIn * dose` (`CalculateAgentsToTransmit`, `plugintransmissionagents.c:614` to `:638`), and nothing is inserted when that is 0 or less (`:523` to `:533`). Protection 1 blocks the agent fully, and two items that add up past 1 block it too.
 
 ## Giving an item protection
 
-`ItemBase.GetProtectionLevel` reads the item's `class Protection` in `CfgVehicles`: `DEF_DUST_PARTICLE_BREATH` reads `dust_particle_breath` and `DEF_DUST_PARTICLE_EYES` reads `dust_particle_eyes` (`P:\scripts\4_world\entities\itembase.c:4088` to `:4092`; the path is built at `:4099`).
+`ItemBase.GetProtectionLevel` reads the item's `class Protection` in `CfgVehicles`: `DEF_DUST_PARTICLE_BREATH` reads `dust_particle_breath` and `DEF_DUST_PARTICLE_EYES` reads `dust_particle_eyes` (`P:\scripts\4_world\entities\itembase.c:4092` to `:4096`; the path is built at `:4103`). It returns 0 for a ruined item and for an item with a quantity of 0 or less (`itembase.c:4079` and `:4080`).
+
+The config value alone is not enough. Every check here finds items through the cached equipment, which files an item by its script `GetCachedEquipmentCategory()`. The `EntityAI` default is `NONE` (`P:\scripts\3_game\entities\entityai.c:322` to `:325`), and an item with `NONE` is never cached (`P:\scripts\4_world\entities\cachedequipmentstorage.c:184` and `:185`). A category matches a query when any bit overlaps, `category & query.m_Category` (`P:\scripts\3_game\entities\cachedequipmentstoragebase.c:76`).
+
+| Script parent | Category | Source |
+|---|---|---|
+| `Mask_Base`, and `MaskBase` for the gas masks | `MASK` | `P:\scripts\4_world\entities\itembase\clothing_base.c:184` and `:198`; `P:\scripts\4_world\entities\itembase\clothing\maskbase.c:8` |
+| `Glasses_Base` | `EYEWEAR` | `clothing_base.c:166` and `:178` |
+| `NVGoggles` | `NVG` and `EYEWEAR` | `P:\scripts\4_world\entities\itembase\nvgoggles.c:13` |
+| `AirborneMask` | `MASK` and `EYEWEAR` | `P:\scripts\4_world\entities\itembase\clothing\airbornemask.c:5` |
+
+A custom mask whose script class extends `Clothing` directly protects nothing, whatever its config says. Extend `Mask_Base` or `Glasses_Base`, or override `GetCachedEquipmentCategory`.
 
 Vanilla values to copy:
 
@@ -82,6 +94,10 @@ Vanilla values to copy:
 | `TacticalGoggles` | none | 1 | `P:\DZ\characters\glasses\config.cpp:598`, `:684` |
 | `SportGlasses_ColorBase` | none | 0.7 | `glasses\config.cpp:25`, `:117` |
 | `AviatorGlasses` | none | 0.4 | `glasses\config.cpp:176`, `:259` |
+| `SkiGoggles_ColorBase` | none | 1 | `glasses\config.cpp:1658`, `:1750` |
+| `GP5GasMask` | from its filter | 1 | `masks\config.cpp:845`, `:953` |
+
+`GP5GasMask.GetProtectionLevel` returns eye protection 1 and asks the filter in its `GasMaskFilter` slot for everything else; with no filter it falls back to its own config (`P:\scripts\4_world\entities\itembase\clothing\gp5gasmask.c:13` to `:28`). The filter, `GP5GasMask_Filter`, has `dust_particle_breath` 1 (`masks\config.cpp:1107`, `:1140`), and an empty filter gives 0 like any item with no quantity.
 
 The model, the slots and the rest of the clothing class are in `_shared/wearables/references/protection-and-insulation.md`.
 
@@ -103,7 +119,7 @@ Both return 0 from `GetDieOffSpeedEx` while the player is unconscious (`silicosi
 | above 0 | `HEAVY_BREATHING` sound events. The intensity is `Math.Remap(HEAVY_BREATH_TRESHOLD_MIN, 1000, 0.1, 1.0, agentsCount)` (`silicosis.c:90`), and `Remap` clamps by default (`P:\scripts\1_core\proto\enmath.c:740` to `:746`), so below 200 it stays at 0.1: a 10% chance about every 22.8 s, checked on the 5 s tick. |
 | from 200 (`HEAVY_BREATH_TRESHOLD_MIN`, `silicosis.c:15`) | the chance rises toward 1.0 and the interval falls toward 3 s at 1000 agents (`:16` and `:17`, `:91` to `:105`) |
 | 600 or more (`STAMINA_LIMIT_TRESHOLD`, `:3`) | stamina modifier `DISEASE_PNEUMONIA` (`:112` to `:115`) |
-| above 700 (`HEALTH_THRESHOLD`, `:4`) and still rising | `AddHealth` with a loss scaled from `HEALTH_LOSS` 2.0 (`:13`, `:133` to `:136`) |
+| above 700 (`HEALTH_THRESHOLD`, `:4`) and still rising | on each 5 s tick, `AddHealth` with a loss of up to `HEALTH_LOSS` 2.0, scaled from 0 at 700 to 2.0 at 800 agents (`:13`, `:133` to `:136`) |
 | above 800 (`UNCON_THRESHOLD`, `:5`) | the faint effect, then unconsciousness for 5 to 10 s every 60 to 120 s, with shock set to 25 (`:8` to `:11`; `RequestUnconsciousness`, `:202` to `:208`) |
 
 Vanilla spells the constants `TRESHOLD`; keep that spelling when you reference them.
@@ -112,8 +128,8 @@ Vanilla spells the constants `TRESHOLD`; keep that spelling when you reference t
 
 `IrritatedEyesMdfr` (`MDF_PARTICLES_EYES`) is active while `GetSingleAgentCount(eAgents.EYES_IRRITATION)` is above 0 (`P:\scripts\4_world\classes\playermodifiers\modifiers\diseases\irritatedeyes.c:19` to `:21`) and syncs through `MODIFIER_SYNC_PARTICLE_EYES` (`irritatedeyes.c:14`). The screen effect starts at 15 agents (`AGENTS_LIMIT`, `:79` to `:88`). Washing the head removes 10 agents, or 1.6 from a bottle (`heat-stroke.md`).
 
-- `SandstormExposureMdfrBase.OnActivate` queues `SYMPTOM_SQUINT` (`sandstormexposure.c:32` to `:34`). On the client, `SquintSymptom.OnUpdateClient` looks for `DEF_DUST_PARTICLE_EYES` on glasses or a mask, depth 2, and uses the first item with any protection (`P:\scripts\4_world\classes\playersymptoms\states\secondary\squintstate.c:25` to `:39`).
-- `HandleCoughing` looks for `DEF_DUST_PARTICLE_BREATH` on glasses or a mask, not on night vision goggles (`sandstormexposure.c:124` to `:141`). Cough strength is intensity minus protection, clamped to 0 to 1 (`coughIntensity`, `:143`), and the interval runs from `COUGH_INTERVAL_MAX` 25 s down to `COUGH_INTERVAL_MIN` 3 s (`:85` and `:86`). A mask stops the cough only when its protection covers the storm's intensity.
+- `SandstormExposureMdfrBase.OnActivate` queues `SYMPTOM_SQUINT` (`sandstormexposure.c:32` to `:34`). On the client, `SquintSymptom.OnUpdateClient` looks for `DEF_DUST_PARTICLE_EYES` on `EYEWEAR` or `MASK` items, depth 2, and uses the first item with any protection (`P:\scripts\4_world\classes\playersymptoms\states\secondary\squintstate.c:25` to `:39`).
+- `HandleCoughing` looks for `DEF_DUST_PARTICLE_BREATH` on `EYEWEAR` or `MASK` items, which includes night vision goggles because they are also `EYEWEAR` (`sandstormexposure.c:124` to `:141`). Cough strength is intensity minus protection, clamped to 0 to 1 (`coughIntensity`, `:143`), and the interval runs from `COUGH_INTERVAL_MAX` 25 s down to `COUGH_INTERVAL_MIN` 3 s (`:85` and `:86`). A mask stops the cough only when its protection covers the storm's intensity.
 
 Squint and cough take the first protecting item; agent transmission adds up every item. Expect the two to disagree when a player wears more than one piece.
 

@@ -18,7 +18,7 @@ typename wt = ItemBase.StaticType();   // class without an instance
 
 ### `IsKindOf` follows the config chain
 
-`GetGame().IsKindOf(string cfg_class_name, string cfg_parent_name)` walks the `CfgVehicles` parents of the class, then `CfgAmmo` (`P:\scripts\3_game\global\game.c:1436` to `:1444`). `Object.IsKindOf(string type)` asks the engine the same question for one object (`P:\scripts\3_game\entities\object.c:511` to `:513`). A class declared in script as `class X : Y` can have a different parent in `CfgVehicles` (`class X : Z`), and the check uses the config parent.
+`GetGame().IsKindOf(string cfg_class_name, string cfg_parent_name)` looks the class up in `CfgVehicles`, then `CfgAmmo`, `CfgMagazines`, `cfgWeapons` and `CfgNonAIVehicles`, and walks the parents of the first match (`P:\scripts\3_game\global\game.c:1436` to `:1460`). `Object.IsKindOf(string type)` asks the engine the same question for one object (`P:\scripts\3_game\entities\object.c:511` to `:513`). A class declared in script as `class X : Y` can have a different parent in `CfgVehicles` (`class X : Z`), and the check uses the config parent.
 
 This breaks compatibility layers that register "known base" class names, as Expansion and similar frameworks do. Register the script parent when the config parent differs, and no descendant matches: the layer stays in its safe no-op state, and with the log level at `ERROR` its warnings never show. A storage mod met this with `MyMod_Openable_Placeable_Base`, declared `: MyMod_Openable_Base` in script but `: MyMod_Storage_Base` in `CfgVehicles`, so its crates were never matched. Register every direct config base of the concrete classes, not only the script base.
 
@@ -35,7 +35,12 @@ World objects descend from `IEntity` (`P:\scripts\1_core\proto\enentity.c:164`) 
 | `SetActions()` | Registers player actions | `P:\scripts\4_world\entities\itembase.c:246` |
 | `OnStoreSave()`, `OnStoreLoad()` | Server persistence | `_shared/persistence/save-load-contract.md` |
 | `AfterStoreLoad()` | After the entity and its children loaded | `entityai.c:1419` |
-| `OnVariablesSynchronized()` | Client, after synced variables change | |
+| `OnVariablesSynchronized()` | Client, after synced variables change | `entityai.c:3069` |
+| `EEOnCECreate()` | Created new by the central economy or debug, not loaded from storage | `entityai.c:1413` and `:1414` |
+| `EEItemAttached(EntityAI item, string slot_name)`, `EEItemDetached(...)` | On the parent, when a slot fills or empties | `entityai.c:1159` and `:1199` |
+| `EEHealthLevelChanged(int oldLevel, int newLevel, string zone)` | A zone's health level changes | `entityai.c:1043` |
+| `EEHitBy(TotalDamageResult, int damageType, EntityAI source, int component, string dmgZone, string ammo, vector modelPos, float speedCoef)` | Damage was applied | `entityai.c:1143` |
+| `EEKilled(Object killer)` | Server, when the entity is killed | `entityai.c:1103` and `:1104` |
 | `EEDelete()` | The entity leaves the world | `entityai.c:946` |
 
 Call `RegisterNetSyncVariableInt`, `Bool` and `Float` in the constructor, not in `EEInit`. Reported, not checked on `P:\`: a registration made after construction is ignored. `patterns/netsync.md` lists the two other vanilla places, `InitItemVariables()` and `PlayerBase.Init()`.
@@ -63,7 +68,7 @@ Spawn with `GetGame().CreateObjectEx(type, pos, ECE_PLACE_ON_SURFACE|ECE_INITAI|
 
 With `ECE_PLACE_ON_SURFACE|ECE_INITAI|ECE_CREATEPHYSICS` (`3108`) an infected walks and attacks (measured in game; delete it as soon as the test ends). Surface placement of AI is deferred: `GetPosition()` right after creation returns the requested height, not the ground. Resolve `SurfaceY` before creating when you need the real coordinate.
 
-Never use the `CEApi` force spawn calls (`SpawnEntity`, `SpawnLoot`, `SpawnDE`, `SpawnSingleEntity`, `centraleconomy.c:336` to `:472`): vanilla marks them "DEVELOPER/DIAG ONLY", so a release server does not promise them. The same holds for `ExecuteEnforceScript` (`P:\scripts\3_game\global\game.c:777`). Spawning custom infected at runtime: `_shared/ai/spawning-and-performance.md`.
+Never use the `CEApi` force spawn calls (`SpawnEntity`, `SpawnLoot`, `SpawnDE`, `SpawnSingleEntity`, `centraleconomy.c:336` to `:468`): vanilla marks them "DEVELOPER/DIAG ONLY", so a release server does not promise them. The same holds for `ExecuteEnforceScript`, which vanilla marks "Delevoper only" (`P:\scripts\3_game\global\game.c:776` and `:777`). Spawning custom infected at runtime: `_shared/ai/spawning-and-performance.md`.
 
 ### Client-local previews with `ECE_LOCAL`
 
@@ -179,7 +184,7 @@ The vanilla menus split it the same way:
 - `InGameMenu.GameRespawn(bool random)` (`:345` to `:363`) calls `RespawnPlayer()` (`:348`), then `SimulateDeath(true)` (`:353`) and the dead screen (`:354`), then `SetPlayerRespawning(true)` (`:359`).
 - `SimulateDeath(true)` (`P:\scripts\4_world\entities\dayzplayerimplement.c:844` to `:881`) locks the controls (`:849`), fades the dead screen to black (`:868`) and mutes the sound (`:870` to `:874`).
 - The only `SetPlayerRespawning(false)` is in `PlayerBase.OnPlayerLoaded()` (`P:\scripts\4_world\entities\manbase\playerbase.c:2569`, at `:2595`) for the controlled player (`:2585`), and the mission's pause handling returns early while `IsPlayerRespawning()` (`P:\scripts\5_mission\mission\missiongameplay.c:1314`).
-- `disableRespawnInUnconsciousness` is read only by the two in-game menus (`ingamemenu.c:325`, `P:\scripts\5_mission\gui\ingamemenuxbox.c:599`), never by `OnClientRespawnEvent`.
+- `disableRespawnInUnconsciousness` reaches script through `CfgGameplayHandler.GetDisableRespawnInUnconsciousness()` (`P:\scripts\3_game\cfggameplayhandler.c:188`), and only the two in-game menus call it (`ingamemenu.c:325`, `P:\scripts\5_mission\gui\ingamemenuxbox.c:599`), never `OnClientRespawnEvent`.
 
 Signatures: `IsAlive()` on `Object` (`P:\scripts\3_game\entities\object.c:517`), `IsUnconscious()` on `Man` (`P:\scripts\3_game\entities\man.c:63`), `IsRestrained()` on `DayZPlayerImplement` (`dayzplayerimplement.c:3935`); `PlayerBase` overrides both (`playerbase.c:3925`, `:2219`).
 

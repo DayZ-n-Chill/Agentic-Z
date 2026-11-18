@@ -21,7 +21,7 @@ Vanilla gates its own fields on that number:
 |---|---|
 | `if (version >= 143 && constructionComponent)` | `P:\scripts\3_game\entities\entityai.c:2981` |
 | `if (version >= 140)` load variables | `P:\scripts\3_game\entities\entityai.c:3053` |
-| `if (version >= 114)` quick bar flag | `P:\scripts\4_world\entities\itembase.c:3103` |
+| `if (version >= 114)` quick bar flag | `P:\scripts\4_world\entities\itembase.c:3107` |
 | `if (version < 105)` read a removed field | `P:\scripts\4_world\entities\itembase\combinationlock.c:160` |
 | `if (version >= 143)` read a new field | `P:\scripts\4_world\entities\itembase\combinationlock.c:169` |
 | `if (version >= 140)` stomach temperature, in `PlayerStomach.OnStoreLoad` (`:471`) | `P:\scripts\4_world\classes\playerstomach.c:492` |
@@ -32,7 +32,7 @@ A mod must not change `GAME_STORAGE_VERSION`. It belongs to the game and moves w
 
 The number was 142 on DayZ 1.29 (the 1.29 scripts are not on `P:\`, so this is not checked here), so a record saved on 1.29 arrives with `version` 142 and skips the two `>= 143` gates above.
 
-Not every vanilla field is gated. `PlayerBase` writes a thermal value through `m_ThermalBiasHandler` after the arrow manager (`P:\scripts\4_world\entities\manbase\playerbase.c:7395`) and reads it back with no version check, failing the whole load when the read fails (`m_ThermalBiasHandler` at `P:\scripts\4_world\entities\manbase\playerbase.c:7520` to `:7524`; the value is the float `m_TemporaryResistanceTime`, `P:\scripts\4_world\classes\thermalbiashandler.c:72-77`). A player record from 1.29 has no such value (the 1.29 scripts are not on `P:\`, so this is not checked here). Two lessons for mod code: gate every field you add, and a `modded class PlayerBase` that copies the old save tail instead of calling `super` breaks on the next game update. The 1.30 changes are listed with the vanilla code in `dayz-1-30-persistence.md`.
+Not every vanilla field is gated. `PlayerBase` writes a thermal value through `m_ThermalBiasHandler` after the arrow manager (`P:\scripts\4_world\entities\manbase\playerbase.c:7395`) and reads it back with no version check, failing the whole load when the read fails (`m_ThermalBiasHandler` at `P:\scripts\4_world\entities\manbase\playerbase.c:7520` to `:7524`; the value is the float `m_TemporaryResistanceTime`, `P:\scripts\4_world\classes\thermalbiashandler.c:72` to `:77`). A player record from 1.29 has no such value (the 1.29 scripts are not on `P:\`, so this is not checked here). Two lessons for mod code: gate every field you add, and a `modded class PlayerBase` that copies the old save tail instead of calling `super` breaks on the next game update. The 1.30 changes are listed with the vanilla code in `dayz-1-30-persistence.md`.
 
 ## Your own version, written first
 
@@ -123,7 +123,7 @@ A stream that matches byte for byte cannot keep an entity the engine no longer c
 
 ## Adding saved fields to a vanilla class
 
-A `modded class` on a vanilla parent (for example `modded class ItemBase`) puts your values in the middle of the chain: after `ItemBase` and before every subclass. `BaseBuildingBase`, for example, calls `super` and then reads its part masks (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:432` to `:440`), so its values come straight after yours.
+A `modded class` on a vanilla parent (for example `modded class ItemBase`) puts your values in the middle of the chain: after `ItemBase` and before every subclass. `BaseBuildingBase`, for example, calls `super` and then reads its part masks (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:431` to `:442`), so its values come straight after yours.
 
 That causes two kinds of data loss that no version number can catch:
 
@@ -142,7 +142,7 @@ The same holds for `modded class PlayerBase`. The player's chain also writes its
 
 ## Config changes that need a reset
 
-`ItemBase.GetDamageSystemVersionChange()` returns the storage version at which an item's config `DamageSystem` changed; the default `-1` does nothing (`P:\scripts\4_world\entities\itembase.c:651`). When the loaded version is older, the item re-inits its damage system after load (`:3092`, `:3218`). The barrel returns `110` (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:24`). It compares against the game's storage version, so it suits vanilla updates; for your own items, reset health from your own save version instead.
+`ItemBase.GetDamageSystemVersionChange()` returns the storage version at which an item's config `DamageSystem` changed; the default `-1` does nothing (`P:\scripts\4_world\entities\itembase.c:651`). When the loaded version is older, the item re-inits its damage system after load (`:3096` to `:3099`, `:3226` to `:3229`). The barrel returns `110` (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:24`). It compares against the game's storage version, so it suits vanilla updates; for your own items, reset health from your own save version instead.
 
 ## Data outside the object store
 

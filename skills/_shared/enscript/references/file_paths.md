@@ -23,7 +23,7 @@ string configPath = "$profile:\\MyMod\\config.json";
 
 ## File Existence and Directory Management
 
-`FileExist(string name)` (`:397`) and `MakeDirectory(string name)` (`:525`):
+`FileExist(string name)` (`:396`) and `MakeDirectory(string name)` (`:525`):
 
 ```c
 string folder = "$profile:\\MyMod\\";
@@ -91,7 +91,7 @@ if (!JsonFileLoader<MyMod_Config>.LoadFile("$profile:\\MyMod\\config.json", cfg,
     Print("[MyMod] load failed: " + err);
 ```
 
-Rules:
+Field rules, reported and not checked on `P:\` because `JsonSerializer` is native (`../patterns/singleton.md`, section "Rules"). A field marked `[NonSerialized()]` stays out of the file (`P:\scripts\1_core\proto\enscript.c:122`).
 - All serialized fields must be `public`
 - Nested `ref` objects serialize recursively
 - Extra keys in file are silently ignored (safe for forward-compatible formats)

@@ -105,7 +105,7 @@ When something is wrong in game, `MissionBase.DumpCurrentUILayout()` (`P:\script
 The full list is in `checklist-and-troubleshooting.md`.
 
 - Write layouts in brace format with balanced braces. An XML layout or a missing layout file crashes inside the native `CreateWidgets`, where no null check helps, and the parser drops every widget after the first syntax error.
-- A `FrameWidgetClass` never draws, and a `PanelWidgetClass` draws only with a style. On 1.30 the vanilla action prompt rows are panels (`P:\gui\layouts\day_z_hud.layout:2294`), so an `ImageWidget.Cast` of them is null.
+- A `FrameWidgetClass` never draws, and a `PanelWidgetClass` draws only with a style. On 1.30 the vanilla action prompt rows are panels (`PanelWidgetClass item`, `P:\gui\layouts\day_z_hud.layout:2424`), so an `ImageWidget.Cast` of them is null.
 - Declare all four unit flags. `0` is a fraction of the parent; `1` is exact units of 1/1080 of the screen height on both axes (measured in game). Don't rescale exact widgets from script.
 - Null check `GetGame()` in destructors, `GetWorkspace()` before `CreateWidgets`, and every `FindAnyWidget` and `Cast` result.
 - A plain handler needs `SetHandler(this)` (`P:\scripts\1_core\proto\enwidgets.c:172`). `OnMouseLeave` takes four parameters and `OnMouseEnter` three (`enwidgets.c:665` and `:666`).

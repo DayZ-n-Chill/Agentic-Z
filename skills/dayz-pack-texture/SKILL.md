@@ -9,7 +9,7 @@ argument-hint: "[--dry-run] <image_co.png|.tga> [<image2_nohq.png> ...] | script
 
 # /dayz-pack-texture
 
-Convert one or more PNG/TGA images to `.paa` (DayZ's texture format) using DayZ Tools' `ImageToPAA.exe`. Each input file must end in a texture-role suffix. ImageToPAA reads the suffix to pick the compression and color space (its rules are in `<DayZ Tools>\Bin\ImageToPAA\TexConvert.cfg`). The skill accepts every suffix that has a rule there and is used by vanilla textures under `P:\DZ`:
+Convert one or more PNG/TGA images to `.paa` (DayZ's texture format) using DayZ Tools' `ImageToPAA.exe`. Each input file must end in a texture-role suffix. ImageToPAA reads the suffix to pick the compression and color space (its rules are in `<DayZ Tools>\Bin\ImageToPAA\TexConvert.cfg`). The skill accepts the suffixes below; each has a rule there and is used by vanilla textures under `P:\DZ`. A few rarer suffixes also have a rule and appear on a handful of vanilla `.paa` files, and the skill refuses them: `_can` (3 files), `_nofhq` (2), `_raw` (1) and the format suffixes `_dxt5` (25), `_dxt1` (1) and `_4444` (2) (a scan of the `.paa` file names under `P:\DZ`).
 
 | Suffixes | Role |
 |---|---|

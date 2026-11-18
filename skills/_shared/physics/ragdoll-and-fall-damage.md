@@ -37,6 +37,7 @@ In 1.30 `DayZPlayerImplementFallDamage` uses a curve with these heights:
 
 - The curve is `CurveExp(low, high, value, power)`: the height's position between low and high, clamped to 0 to 1, raised to the power (`P:\scripts\4_world\entities\dayzplayerimplementfalldamage.c:92` to `:97`).
 - The other `CurveExp` curves in `HandleFallDamage` use power 1.8 for bleeding hands and feet, 2.0 for bleeding legs, gloves, pants and the bleeding chance, and 2.2 for shoes (`:116` to `:139`).
-- `Randomize` returns a coefficient of 1 unchanged, so a lethal fall is not rolled back down (`:160` to `:163`).
+- `Randomize` returns a coefficient of 1 unchanged, so a lethal fall is not rolled back down (`:160` to `:163`). It is applied to health, broken legs and gear damage, not to shock (`:105`, `:112`).
+- All damage is dealt on the server only. Broken legs go through `DamageAllLegs`, bleeding through `AttachBleedingToZonesByHeight`, and worn gloves, shoes and pants through `DamageAttachedGear` (`:144` to `:152`). Fall damage on a client is never dealt.
 - The damage is dealt with `ProcessDirectDamage` and the ammo `FallDamageHealth` and `FallDamageShock` (`FALL_DAMAGE_AMMO_HEALTH` and `FALL_DAMAGE_AMMO_SHOCK`, `:20` and `:21`; applied at `:155` and `:156`), both defined in `P:\DZ\weapons\melee\config.cpp` (`FallDamageHealth` at `:2182`, `FallDamageShock` at `:2201`). The rest of the damage path is in `damage-pipeline.md`.
 - 1.29 used a straight line with health from 5 to 14 m, shock from 3 to 12 m and broken legs from 5 to 9 m (not on `P:\`, which holds 1.30). A `modded class` that copies those constants and `Math.InverseLerp` still compiles on 1.30 and quietly brings the weaker damage back.

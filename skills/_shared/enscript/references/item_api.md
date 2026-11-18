@@ -21,13 +21,13 @@
 
 | Call | What it does | Source |
 |---|---|---|
-| `GetQuantity()` | Current quantity, `float`. | `P:\scripts\4_world\entities\itembase.c:3486` |
-| `GetQuantityMin()`, `GetQuantityMax()` | Limits from config, `int`. | `:3470`, `:3435` |
-| `GetQuantityNormalized()` | Quantity scaled to 0..1. | `:3416` |
-| `HasQuantity()` | Whether the item uses quantity at all. | `:3481` |
-| `SetQuantity(value, destroy_config = true, destroy_forced = false, allow_client = false, clamp_to_stack_max = true)` | Sets it; returns `bool`. Reaching 0 can delete the item, see the two `destroy` flags. | `:3315` |
-| `AddQuantity(value, destroy_config = true, destroy_forced = false)` | Adds (or with a negative value takes) quantity; returns `bool`. | `:3389` |
-| `GetLiquidType()`, `SetLiquidType(int value, bool allow_client = false)` | The liquid of a bottle or container, for example `LIQUID_WATER`. | `:3883`, `:3867` |
+| `GetQuantity()` | Current quantity, `float`. | `P:\scripts\4_world\entities\itembase.c:3490` |
+| `GetQuantityMin()`, `GetQuantityMax()` | Limits from config, `int`. | `:3474`, `:3439` |
+| `GetQuantityNormalized()` | Quantity scaled to 0..1. | `:3420` |
+| `HasQuantity()` | Whether the item uses quantity at all. | `:3485` |
+| `SetQuantity(value, destroy_config = true, destroy_forced = false, allow_client = false, clamp_to_stack_max = true)` | Sets it; returns `bool`. Reaching 0 can delete the item, see the two `destroy` flags. | `:3319` |
+| `AddQuantity(value, destroy_config = true, destroy_forced = false)` | Adds (or with a negative value takes) quantity; returns `bool`. | `:3393` |
+| `GetLiquidType()`, `SetLiquidType(int value, bool allow_client = false)` | The liquid of a bottle or container, for example `LIQUID_WATER`. | `:3887`, `:3871` |
 | `IsEmpty()` | No cargo and no attachments (declared on `EntityAI`), not "quantity is 0". | `P:\scripts\3_game\entities\entityai.c:646` |
 
 ```c
@@ -65,7 +65,7 @@ item.DecreaseHealth("", "", 10, false);
 
 | Call | Source |
 |---|---|
-| `GetWet()`, `SetWet(float value, bool allow_client = false)` | `P:\scripts\4_world\entities\itembase.c:3717`, `:3688` |
+| `GetWet()`, `SetWet(float value, bool allow_client = false)` | `P:\scripts\4_world\entities\itembase.c:3721`, `:3692` |
 | `CanHaveTemperature()` | `P:\scripts\3_game\entities\entityai.c:3883` |
 | `GetTemperature()` | `:2442` |
 | `SetTemperatureDirect(value, allow_client = false)` | `:2293` |

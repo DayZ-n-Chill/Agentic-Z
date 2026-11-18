@@ -6,7 +6,7 @@ Every line cites the 1.30 scripts on `P:\` unless it is marked 1.29. In-game res
 
 ## The get-in condition
 
-On 1.29 the condition checked `CrewCanGetThrough`, then `IsAreaAtDoorFree`, then the `CanReachSeatFromDoors` loop. On 1.30, `ActionGetInTransport.ActionCondition` also needs `transport.CanGetIn()` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:36`; default `true`, `P:\scripts\3_game\vehicles\transport.c:672` to `:675`) and uses `IsAreaAtDoorFreeDiag(crewIndex)` (`actiongetintransport.c:54`). The reach check runs in script. From `actiongetintransport.c:54` to `:66`:
+On 1.29 the condition checked `CrewCanGetThrough`, then `IsAreaAtDoorFree`, then the `CanReachSeatFromDoors` loop. On 1.30, `ActionGetInTransport.ActionCondition` also needs `transport.CanGetIn()` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:36`; default `true`, `P:\scripts\3_game\vehicles\transport.c:675` to `:678`) and uses `IsAreaAtDoorFreeDiag(crewIndex)` (`actiongetintransport.c:54`). The reach check runs in script. From `actiongetintransport.c:54` to `:66`:
 
 ```c
 		if (!transport.CrewCanGetThrough(crewIndex) || !transport.IsAreaAtDoorFreeDiag(crewIndex))
@@ -26,12 +26,12 @@ On 1.29 the condition checked `CrewCanGetThrough`, then `IsAreaAtDoorFree`, then
 
 The third argument, 1 m, is therefore visible to script (`actiongetintransport.c:64`). Treating the reach check as engine only is wrong on both builds.
 
-1.29 already ended with the same `CanReachSeatFromDoors(selections[i], player.GetPosition(), 1.0)` loop (1.29 `ActionGetInTransport.c:73`), and `CarScript.CanReachSeatFromDoors` reads the same on both builds. The condition gained only two things in 1.30:
+1.29 already ended with the same `CanReachSeatFromDoors(selections[i], player.GetPosition(), 1.0)` loop (1.29 `ActionGetInTransport.c`, line 73), and `CarScript.CanReachSeatFromDoors` reads the same on both builds. The condition gained only two things in 1.30:
 
-- `CanGetIn()`, default `true`.
-- The `IsAreaAtDoorFreeDiag` wrapper, which returns `IsAreaAtDoorFree` unless the DiagMenu toggle `TRANSPORT_FREESPACE_DISABLED` is on (`transport.c:909` to `:922`).
+- `CanGetIn()`, default `true`. `Motorbike_01` overrides it to refuse while its `SeatDriver` animation phase is not 0 (`P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:89` to `:95`); it is the hook for any state that should block every seat at once.
+- The `IsAreaAtDoorFreeDiag` wrapper, which returns `IsAreaAtDoorFree` unless the DiagMenu toggle `TRANSPORT_FREESPACE_DISABLED` is on (`transport.c:910` to `:924`).
 
-`Start` keeps its order: it runs `super.Start`, where `OnStartServer` and `OnStartClient` fire, before `StartCommand_Vehicle` (1.29 `ActionGetInTransport.c:82` to `:91`; `actiongetintransport.c:71` to `:104`). A mod that adjusts the player in those two hooks, such as boarding from both sides, sees the same order on both builds.
+`Start` keeps its order: it runs `super.Start`, where `OnStartServer` and `OnStartClient` fire, before `StartCommand_Vehicle` (1.29 `ActionGetInTransport.c`, lines 82 to 91; `actiongetintransport.c:71` to `:104`). A mod that adjusts the player in those two hooks, such as boarding from both sides, sees the same order on both builds. New in 1.30, `Start` asks `HasDirectionalInOutAction()` and, when it is true, picks the seat animation with `GetSeatAnimationTypeDirectional(crewIndex, direction)` from the side the player stands on (`:81` to `:102`); `class-hierarchy.md` has the override pair.
 
 ## Which side a rider can board from
 
@@ -73,7 +73,7 @@ Boats have a speedometer (`boat.c:42` to `:56`):
 
 ## speedGeoms: hiding parts at speed
 
-The 1.30 change notes, in their modding section, describe the pair: named components are hidden at speed so they do not snag on the ground. The first vanilla motorbike (`P:\DZ\vehicles\singletrack\config.cpp:258` to `:262`):
+The 1.30 change notes, in their modding section, describe the pair: named components are hidden at speed so they do not snag on the ground. The first vanilla motorbike (`P:\DZ\vehicles\singletrack\config.cpp:262` to `:266`):
 
 ```cpp
 		speedGeomActivation=0.28999999;
@@ -83,7 +83,7 @@ The 1.30 change notes, in their modding section, describe the pair: named compon
 		};
 ```
 
-`Motorbike_02` uses `0.27` (`:1448`). The filter itself is engine code, not Enforce, so how it works is unverified. No car, truck or boat declares the pair: neither `P:\DZ\vehicles\wheeled\config.cpp` nor `P:\DZ\vehicles\water\config.cpp` contains `speedGeom`. Copy the motorbike pattern only when a high speed snag is measured.
+`Motorbike_02` uses `0.27` (`:1455`). The filter itself is engine code, not Enforce, so how it works is unverified. No car, truck or boat declares the pair: neither `P:\DZ\vehicles\wheeled\config.cpp` nor `P:\DZ\vehicles\water\config.cpp` contains `speedGeom`. Copy the motorbike pattern only when a high speed snag is measured.
 
 ## Wreck cisterns are wells
 
@@ -94,7 +94,7 @@ class Land_Wreck_Truck01_Aban1_Cistern : Well {}
 class Land_Wreck_Truck01_Aban1_Cistern_DE : Land_Wreck_Truck01_Aban1_Cistern {}
 ```
 
-`Land_Wreck_Truck01_Aban2_Cistern` is the same (`wreck_truck01_aban2_cistern.c:1`). Players drink from them as wells; they are not vehicle wrecks. The Chinook and Mi24 wreck scripts are in `aviation-dayz-1-30.md`.
+`Land_Wreck_Truck01_Aban2_Cistern` is the same (`wreck_truck01_aban2_cistern.c:1`). Players drink from them as wells; they are not vehicle wrecks. The Chinook and Mi24 wrecks are in `aviation-dayz-1-30.md`.
 
 ## Motorbike camera
 

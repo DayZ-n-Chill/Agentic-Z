@@ -47,6 +47,19 @@ How common each name is, from a scan of the 572 models under `P:\DZ\gear\`: `ce_
 
 A wheel is its own `.p3d`, placed on the vehicle body as a proxy. There are 14 vanilla wheel models under `P:\DZ\vehicles\wheeled\` (not counting the `data\damagewheel\` models). Two of them, `P:\DZ\vehicles\wheeled\truck_02\proxy\truck_02_wheel.p3d` and `truck_02_wheel_spare.p3d`, have no Memory LOD at all (only visual, Geometry and Fire Geometry LODs). Of the 12 that have one, 11 hold the same five memory points: `ce_center`, `ce_radius`, `boundingbox_min`, `boundingbox_max` and `invview` (for example `P:\DZ\vehicles\wheeled\offroadhatchback\proxy\nivawheel.p3d`). `P:\DZ\vehicles\wheeled\civiliansedan\proxy\sedanwheel.p3d` holds only the last three. Give a new wheel all five. Seen on one custom quad, not checked on `P:\`: a wheel with only `ce_center` never touched the ground in the simulation (`dayz-p3d-audit/references/vehicle-checks.md`, killer 11).
 
+## Reading points and selections from script
+
+`GetMemoryPointPos` returns a position in model space; turn it into a world position with `ModelToWorld`, as `GetCenter` does with `ce_center` (`P:\scripts\3_game\entities\object.c:1361` to `:1366`). It gives one position per name, so a selection with several points needs the `Selection` and `LOD` classes instead (`P:\scripts\3_game\gameplay.c:179` to `:244`):
+
+| Call | What it gives |
+|---|---|
+| `GetLODByName(LOD.NAME_MEMORY)` | The Memory LOD; the other names are `geometry`, `view`, `fire` and `roadway` (`gameplay.c:206` to `:210`) |
+| `LOD.GetSelections`, `LOD.GetSelectionByName` | The LOD's named selections; `GetSelectionByName` compares in lower case (`:222` to `:239`) |
+| `Selection.GetVertexCount`, `Selection.GetVertexPosition(lod, i)` | Each point of a selection, in model space |
+| `LOD.GetPropertyCount`, `GetPropertyName`, `GetPropertyValue` | The LOD's named properties (`named-properties.md`) |
+
+Vanilla uses this for points that come in sets: the ladder entry reads every point of `ladderN_con` and picks the nearest (`building-selections.md`, "Ladders").
+
 ## Names the mod invents
 
 Points that only the mod's own script or config reads can have any name, for example `Fuse_Start` and `Fuse_End` on the fireworks launcher (`P:\scripts\4_world\entities\itembase\gear\tools\fireworkslauncher.c:520`, `:525`). Hand the exact names to whoever writes that script or config.

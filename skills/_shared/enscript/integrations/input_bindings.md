@@ -154,7 +154,7 @@ bool MyMod_ShouldProcessInput()
     if (ui.GetMenu())
         return false;
 
-    // Chat input open: IsMenuOpen(int id), uimanager.c:154; MENU_CHAT_INPUT = 17, constants.c:192
+    // Chat input open: IsMenuOpen(int id), uimanager.c:154; MENU_CHAT_INPUT = 17, P:\scripts\3_game\constants.c:192
     if (ui.IsMenuOpen(MENU_CHAT_INPUT))
         return false;
 
@@ -173,6 +173,10 @@ bool MyMod_ShouldProcessInput()
 ```
 
 `MENU_*` constants are in `P:\scripts\3_game\constants.c` (for example `MENU_INGAME = 9` at :184). There is no `MenuID` enum in vanilla.
+
+### Applying and removing an exclude group
+
+A client menu or view turns a group of inputs off through the mission: `AddActiveInputExcludes(array<string> excludes)` and `RemoveActiveInputExcludes(array<string> excludes, bool bForceSupress = false)` (`P:\scripts\3_game\gameplay.c:798` and `:800`). Vanilla adds `{"inventory"}` when the inventory opens (`P:\scripts\5_mission\mission\missiongameplay.c:412`) and removes it when it closes (`:852`). `MissionGameplay` keeps each group name once in a plain list, not a count (`:1001` to `:1017`, `:938` to `:952`), so if your menu and another one both add `menu`, the first one to remove it turns the inputs back on for both. Remove exactly the groups you added, when your menu closes.
 
 ### An exclude group that reaches `aiming` kills mouse look
 

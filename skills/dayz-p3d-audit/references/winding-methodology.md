@@ -114,19 +114,18 @@ compare the wrong things.
   based on a misunderstanding of the format: do not do it. If it was applied, the
   pool normals are wrongly negated; revert by negating them again.
 - **One field-verified crate model has mixed winding in its Visual LOD** (~38.6% bad
-  edges under Check B, 2026-04-25) yet **DayZ tolerates it in rendering** (verified in-game:
+  edges under Check B) yet **DayZ tolerates it in rendering** (verified in-game:
   visual, ballistics, cursor, and collision all OK). Its collision LODs
   (Geometry/LandContact/ViewGeo/FireGeo) are internally consistent. Treat such a
   Check B reading as a preventive signal even though the engine tolerated it in that
   particular case (where py3d's `validate()` reports it, the audit prints
   `WARN_WINDING_EDGE_INCOHERENT` as a WARNING). Do not re-flip such a model unless a concrete in-game
   symptom appears.
-- **`face.flags |= 0x20000` (`NoBackfaceCulling`) does not work.** It was once listed
-  here as a way round the problem in the Visual LOD. Measured since: the faces stayed
-  see-through in game, because binarize discards the MLOD per-face `flags` field (three
+- **`face.flags |= 0x20000` (`NoBackfaceCulling`) does not work** as a way round the problem in the Visual LOD. Measured in game: the faces stayed
+  see-through, because binarize discards the MLOD per-face `flags` field (three
   MLODs that differ only in `face.flags`, `0`, `0x00000020` and `0x00020000`, binarize to
   byte-identical models, while a moved point and a cleared texture on the same faces each
-  change it; round-trip 2026-08-24). No face-flag value reaches the game. The route
+  change it, measured by round trip). No face-flag value reaches the game. The route
   that works for a part seen from both sides is double-sided geometry, and fixing the
   winding in Geometry/GeoPhys/FireGeo/ViewGeo is mandatory either way
   (killer #1 in `p3d-killers.md`).

@@ -53,7 +53,7 @@ Normalize the subject before measuring (`SetWet(0)`, `P:\scripts\4_world\entitie
 
 ## Backups packed into the PBO
 
-A `<file>.c.bak_*` beside the `.c` it backs up is packed by any build that copies the tree as it is, such as `dayz-test.ps1 -Build -PackOnly`. Enforce compiles only `*.c`, so the game ignores it, but the PBO grows (827,593 bytes with 29 backups inside against 115,609 without, on a helicopter mod) and a text search of the PBO finds an old anchor in a backup instead of the active file. `/dayz-build-pbo` leaves `*.bak` out through `exclude.lst`. Keep backups outside the mod source, and when you check a PBO by text, count matches instead of testing for one.
+A `<file>.c.bak_*` beside the `.c` it backs up is packed by any build that copies the tree as it is, such as `dayz-test.ps1 -Build -PackOnly`. Enforce compiles only `*.c`, so the game ignores it, but the PBO grows (about seven times larger with 29 backups inside, on a helicopter mod) and a text search of the PBO finds an old anchor in a backup instead of the active file. `/dayz-build-pbo` leaves `*.bak` out through `exclude.lst`. Keep backups outside the mod source, and when you check a PBO by text, count matches instead of testing for one.
 
 ## A locked PBO is signed and reported as deployed
 

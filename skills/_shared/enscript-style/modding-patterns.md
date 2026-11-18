@@ -161,7 +161,7 @@ g_Game.GetPlayer();
 GetGame().GetPlayer();
 ```
 
-**Note:** While using getters is common in vanilla code, direct access is often clearer. Vanilla defines `GetGame()` in script as `DayZGame GetGame() { return g_Game; }` (`P:\scripts\3_game\gameplay.c:636`). **Unverified on `P:\`:** the style guide reports that this replaced an earlier `proto native CGame GetGame()` and that the script version is faster because native calls carry overhead. No older version or engine timing is on `P:\`, so treat the history and the speed claim as reports, not facts.
+**Note:** Vanilla itself uses the global directly almost everywhere: a grep of `P:\scripts` finds about 6,190 `g_Game.` calls against 120 `GetGame()` calls. Vanilla defines `GetGame()` in script as `DayZGame GetGame() { return g_Game; }` (`P:\scripts\3_game\gameplay.c:636`). **Unverified on `P:\`:** the style guide reports that this replaced an earlier `proto native CGame GetGame()` and that the script version is faster because native calls carry overhead. No older version or engine timing is on `P:\`, so treat the history and the speed claim as reports, not facts.
 
 ---
 
@@ -241,6 +241,8 @@ if (input.LocalPress("UAMyModOpenMenu", false) && !menuOpen)
     OpenSettingsMenu();
 }
 ```
+
+`Input.LocalPress(string action, bool check_focus = true)` is declared at `P:\scripts\3_game\tools\input.c:62`; vanilla passes `false` the same way, for example `input.LocalPress("UAUIBack", false)` (`P:\scripts\5_mission\gui\digitalcodelockui.c:375`).
 
 ---
 

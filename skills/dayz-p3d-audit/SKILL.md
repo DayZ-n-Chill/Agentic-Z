@@ -162,8 +162,10 @@ Use it when a section passes the gate above and still does not show: a vertex bo
    YES ↓
 
 2. Is the object buried/floating?
-   BURIED → Missing autocenter=0 in config.cpp AND/OR LOD property
-   FLOATING → autocenter=0 on a kit class (only placed objects need it)
+   BURIED → Missing autocenter=0 named property on the Geometry LOD
+            (vanilla sets it there, never in a CfgVehicles class)
+   FLOATING → autocenter=0 in a kit's config.cpp (measured on a mod;
+            vanilla kit models hold the LOD property and do not float)
    CORRECT ↓
 
 3. Does floating text (item name) appear near it?
@@ -234,7 +236,7 @@ Deep material lives in `<skill-dir>\references\`. Open only the file the questio
 | Question | Open |
 |---|---|
 | Which model faults break a `.p3d` with no engine error, and what does each finding mean? Blender export pitfalls and script-side gotchas. | `references/p3d-killers.md` |
-| What was measured in game for the winding, component and coverage killers, and what else is worth knowing about the other model killers? | `references/killers-detail.md` |
+| What was measured in game for the winding, component and coverage killers, and what else is worth knowing about the other model killers? Which LOD do the action cursor and hologram placement read? | `references/killers-detail.md` |
 | How are needle triangles detected and fixed, and what goes wrong in source meshes used for collision? | `references/collision-mesh-hygiene.md` |
 | Which config.cpp and .rvmat checks apply (`P:\` paths, placed-object properties, AnimationSources, hiddenSelections, the Super shader stage layout)? | `references/config-rvmat-checks.md` |
 | How do I verify face winding by hand (Check A, B, C), which heuristics mislead, and what is the Blender import checklist? | `references/winding-methodology.md` |

@@ -40,7 +40,7 @@ modded class IngameHud
 }
 ```
 
-On current builds `HUD_HIDE_FLAGS` is `HUD_DISABLE`, `HUD_HIDE`, `MENU_OPEN` and `UNCONSCIOUS` together (`P:\scripts\5_mission\gui\ingamehudvisibility.c:43`), and `IsContextFlagActive` is at `:120`.
+On current builds `HUD_HIDE_FLAGS` is `HUD_DISABLE`, `HUD_HIDE`, `MENU_OPEN` and `UNCONSCIOUS` together (`P:\scripts\5_mission\gui\ingamehudvisibility.c:43`), and `IsContextFlagActive` is at `:120`; `IngameHud.GetHudVisibility()` returns that object (`P:\scripts\5_mission\gui\ingamehud.c:876`). Never call `IsHudVisible()` on 1.30: it sits under the `//DEPRECATED` block and always returns false (`ingamehud.c:1303` and `:1313`), so an element gated on it never shows. The same block stubs `IsQuickbarVisible()` and `GetHudState()`.
 
 ## Positions the player can change
 
@@ -114,4 +114,4 @@ void OnSizeChange()
 }
 ```
 
-Vanilla `MissionGameplay` already handles `WindowsResizeEventTypeID` (`P:\scripts\5_mission\mission\missiongameplay.c:788`); that is the place to fire it. Scaling from the height rather than the width keeps squares square; see `screen-scaling.md`.
+Vanilla `MissionGameplay` already handles `WindowsResizeEventTypeID`: it calls `DestroyAllMenus()`, which closes every open menu, dialog and the inventory, then `m_Hud.OnResizeScreen()` (`P:\scripts\5_mission\mission\missiongameplay.c:788` to `:792`; `DestroyAllMenus` at `:1158`). A menu open during a resize is gone afterwards, so keep its state outside the menu object. `IngameHud.OnResizeScreen()` (`P:\scripts\5_mission\gui\ingamehud.c:340`) only updates the HUD panel, badges and notifiers; a `modded class IngameHud` that overrides it and calls `super` is the place to fire the event. Scaling from the height rather than the width keeps squares square; see `screen-scaling.md`.

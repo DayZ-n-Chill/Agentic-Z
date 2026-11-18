@@ -86,9 +86,9 @@ Vanilla's rifle shot base set shows the keys (`Rifle_Shot_Base_SoundSet`, `P:\DZ
 | `spatial` | 1 for a positioned 3D sound | `1` |
 | `loop` | 0 or 1 | `0` for a shot, `1` for an engine |
 | `doppler` | 0 or 1 | `0` |
-| `positionOffset[]` | Offset from the owner, as a vector | `{0,0,0.3}` |
+| `positionOffset[]` | Offset from the owner, as a vector | `{0,0,0.3}` (`:381901`) |
 | `soundShaders[]` | The sound shaders it plays | |
-| `soundShadersLimit`, `soundObjectsLimit` | How many may play at once | `2` and `2` (`:323698` and `:323699`) |
+| `soundShadersLimit`, `soundObjectsLimit` | How many may play at once | `2` and `2` (`:324368` and `:324369`) |
 
 The full sound pack is `_shared/audio-fx/`.
 

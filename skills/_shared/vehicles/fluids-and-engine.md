@@ -50,11 +50,11 @@ When the economy creates a car, `CarScript.EEOnCECreate` fills a random amount u
 | `NO_BATTERY` | `NeedElectricitySourceDevice()` is true and the battery is missing, ruined, or has less energy than `GetBatteryConsumption()`. |
 | `NO_IGNITER` | `IsVitalSparkPlug()` is true and the `SparkPlug` slot is empty or ruined; or `IsVitalGlowPlug()` is true and the `GlowPlug` slot is empty or ruined. |
 
-The defaults all return `true` (`P:\scripts\3_game\vehicles\transport.c:404` spark plug, `:409` glow plug, `:414` fuel tank, `:821` electricity source). Each vanilla car switches off what it lacks:
+The defaults all return `true` (`P:\scripts\3_game\vehicles\transport.c:407` spark plug, `:412` glow plug, `:417` fuel tank, `:830` electricity source). Each vanilla car switches off what it lacks:
 
 | Car | Override | Result |
 |---|---|---|
-| `OffroadHatchback`, `CivilianSedan`, `Hatchback_02`, `Sedan_02` | `IsVitalGlowPlug()` returns `false` (`offroadhatchback.c:394`) | Petrol: needs a spark plug. |
+| `OffroadHatchback`, `CivilianSedan`, `Hatchback_02`, `Sedan_02` | `IsVitalGlowPlug()` returns `false` (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroadhatchback.c:394`; also `civiliansedan.c:370`, `hatchback_02.c:354`, `sedan_02.c:376`) | Petrol: needs a spark plug. |
 | `Offroad_02` | `IsVitalSparkPlug()` and `IsVitalRadiator()` return `false` (`offroad_02.c:415`, `:420`) | Diesel: needs a glow plug, no radiator. |
 | `Truck_01_Base` | Spark plug, glow plug, engine belt and radiator all `false` (`truck_01_base.c:364` to `:382`) | Needs only fuel and a battery. |
 
@@ -76,7 +76,7 @@ Boats check only ruin, fuel and the spark plug; there is no battery (`EBoatOpera
 - Calls `LeakFluid(CarFluid.BRAKE)` when the `Engine` zone is damaged (`carscript.c:904`), but `LeakFluid` only handles `COOLANT`, `OIL` and `FUEL` (`carscript.c:2098` to `:2119`), so the brake call does nothing and vanilla never leaks brake fluid. Override `LeakFluid` if your car should.
 - Damages the engine when coolant is below half and `IsVitalRadiator()` is true.
 
-Every vanilla car overrides `EOnPostSimulate` for its engine heat source without calling `super` (`civiliansedan.c:98`, `offroad_02.c:112`). Read your parent's version before overriding it, and test fuel use and leaks in game after any change.
+Every vanilla car overrides `EOnPostSimulate` for its engine heat source without calling `super` (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:98`, `offroad_02.c:112`). Read your parent's version before overriding it, and test fuel use and leaks in game after any change.
 
 ## Test kits and spawn fuel
 

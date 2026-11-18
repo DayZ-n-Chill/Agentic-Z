@@ -62,7 +62,7 @@ A cell emits `PASS` only when it shows it booted in the planned mode, covered th
 
 `managed-launcher.md` reads `-mod=` to learn whose machine it is. Here you read it to learn whether an observation counts, before you act on it.
 
-The failure is silent: a missing mod gives no error, the game starts and the observation looks normal. On two quad bike mods tested together, only one of ten runs loaded the animation mod `@SurvivorAnims`. Each mod's `GetAnimInstance` override returns its own instance only when `CfgPatches SurvivorAnims` exists (checked with `ConfigIsExisting`, `P:\scripts\3_game\global\game.c:612`) and otherwise falls back to `VehicleAnimInstances.V3S` (`P:\scripts\4_world\entities\vehicles\vehicleaniminstances.c:4`), the truck pose on a quad. With that pose the driver's camera is in the wrong place, which changes what is seen from the seat and which LOD the engine picks. A LOD fix made on those runs had to be withdrawn.
+The failure is silent: a missing mod gives no error, the game starts and the observation looks normal. On two quad bike mods tested together, only one of ten runs loaded the animation mod `@SurvivorAnims`. Each mod's `GetAnimInstance` override returns its own instance only when `CfgPatches SurvivorAnims` exists (checked with `ConfigIsExisting`, `P:\scripts\3_game\global\game.c:612`) and otherwise falls back to `VehicleAnimInstances.V3S` (`P:\scripts\4_world\entities\vehicles\vehicleaniminstances.c:4`), the truck pose on a quad. With that pose the driver's camera is in the wrong place, which changes what is seen from the seat and which LOD the engine picks, so a LOD fix judged on such a run is not valid.
 
 When an in-game observation will decide code or geometry:
 

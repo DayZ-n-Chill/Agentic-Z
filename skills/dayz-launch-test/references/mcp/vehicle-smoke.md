@@ -30,7 +30,7 @@ The verbs belong to the third-party dayz-mcp tool. Their behaviour and every num
 
 The drive checks run on top of these, in order: spawns, renders, get-in available, seated, drives, wheels turn the right way. Each reads the truth in game and points its failure at a known fix in the vehicle pack. `skills/dayz-launch-test/scripts/run_vehicle_checks.py` runs them and writes `verdict.json`; it applies no fix and rebuilds nothing, and its test data is in `test_run_vehicle_checks.py` beside it.
 
-The gear index in `vehicle_telemetry` is 0 reverse, 1 neutral, 2 first, up to 7 sixth, the order of the vanilla `CarGear` enum (`P:\scripts\3_game\vehicles\car.c:32`).
+The gear index in `vehicle_telemetry` is 0 reverse, 1 neutral, 2 first and so on, so sixth is 7: the order of the vanilla `CarGear` enum, which goes on to `TENTH` (`P:\scripts\3_game\vehicles\car.c:32`).
 
 ## Giving a spawned car wheels and fluids
 
@@ -45,9 +45,9 @@ To fit wheels and fill fluids for real without touching code:
 - A raw `/enqueue` needs `{identity, lease_token}` in the body as well as `?key=`; both come from `session_acquire`.
 - Measured on a car mod: `wheel_count` went from 0 to 4, fuel to 1.0, the full kit fitted, and the car drove up to sixth gear.
 
-`vehicle_prepare_fixture` takes any `CarScript` class name; an object of another class fails with `fixture_not_vehicle` (`<dayz-mcp>/addon/scripts/5_Mission/MCPBridge.c:1214` to `:1280`). Between 2026-08-18 and 2026-10-01 it returned `vehicle_fixture_ready=1` with `wheel_count` 4 on 15 different `CarScript` types, among them `SUB_BRZ`, `LFQuad2`, `Arma2Quad` and the vanilla `Hatchback_02` and `CivilianSedan`; three test variants of one quad returned `fixture_not_ready`.
+`vehicle_prepare_fixture` takes any `CarScript` class name; an object of another class fails with `fixture_not_vehicle` (`<dayz-mcp>/addon/scripts/5_Mission/MCPBridge.c:1214` to `:1280`). It returned `vehicle_fixture_ready=1` with `wheel_count` 4 on 15 different `CarScript` types, among them several test cars and quads and the vanilla `Hatchback_02` and `CivilianSedan`; three test variants of one quad returned `fixture_not_ready`.
 
-This entry used to say, until 2026-10-03, that `vehicle_prepare_fixture` worked only for one car mod, whose class name was hard-coded in `MCPBridge.c:835` and `loopback.py:113`. The loopback copy of 2026-07-25 still had that check; the tools' 2026-08-16 release does not.
+An old dayz-mcp copy hard-codes one car mod's class name in this verb; update dayz-mcp if it refuses every other class.
 
 ## A bare spawn shows the undercarriage
 

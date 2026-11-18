@@ -156,7 +156,7 @@ Only a boot catches engine classes that cannot be `modded` (for example `DayZPla
 
 ## Code that needs players
 
-Without a client, player driven hooks (actions, inventory, damage, vitals) never fire. Drive them from a scratch copy of the mod with a debug call: `g_Game.CreatePlayer(null, "SurvivorM_Mirek", pos, 0, "NONE")` (signature at `P:\scripts\3_game\global\game.c:332`), then `CreateInHands`, then the method under test. Such a player has no `PlayerIdentity`, so code that filters on `GetIdentity()` skips it; mark those runs partial. For a real client (UI, replication, RPCs both ways) see `linux-headless-client.md`.
+Without a client, player driven hooks (actions, inventory, damage, vitals) never fire. Drive them from a scratch copy of the mod with a debug call: `g_Game.CreatePlayer(null, "SurvivorM_Mirek", pos, 0, "NONE")` (signature at `P:\scripts\3_game\global\game.c:332`), then `GetHumanInventory().CreateInHands(...)` (`P:\scripts\3_game\systems\inventory\humaninventory.c:44`), then the method under test. Such a player has no `PlayerIdentity`, so code that filters on `GetIdentity()` skips it; mark those runs partial. For a real client (UI, replication, RPCs both ways) see `linux-headless-client.md`.
 
 ## On Windows (not verified)
 

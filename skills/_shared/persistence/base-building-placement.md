@@ -4,7 +4,7 @@ Which facts decide whether a kit can be placed and whether its recipe can ever b
 
 ## The slot decides how much material fits
 
-For an item that can be split, `GetTargetQuantityMax` asks the slot first, through `InventorySlots.GetStackMaxForSlotId`, and only then falls back to the item's `varStackMax` and then to `varQuantityMax` (`P:\scripts\4_world\entities\itembase.c:3449` to `:3468`). An item that cannot be split skips the slot and uses `varQuantityMax`.
+For an item that can be split, `GetTargetQuantityMax` asks the slot first, through `InventorySlots.GetStackMaxForSlotId`, and only then falls back to the item's `varStackMax` and then to `varQuantityMax` (`P:\scripts\4_world\entities\itembase.c:3453` to `:3472`). An item that cannot be split skips the slot and uses `varQuantityMax`.
 
 Vanilla sets the cap per slot in `CfgSlots`:
 
@@ -13,16 +13,16 @@ Vanilla sets the cap per slot in `CfgSlots`:
 | `Material_WoodenPlanks` | 20 | `P:\scripts\config.cpp:2285` to `:2300` |
 | `Material_MetalSheets` | 20 | `config.cpp:2285` to `:2300` |
 | `Material_Nails` | 99 | `config.cpp:2277` to `:2284` |
-| `Material_MetalWire` (fence) | none | `config.cpp:2309` to `:2315`, used at `P:\DZ\gear\camping\config.cpp:3273` |
+| `Material_MetalWire` (fence) | none | `config.cpp:2309` to `:2315`, used at `P:\DZ\gear\camping\config.cpp:4373` |
 | `Material_FPole_MetalWire` (flag pole) | none | `P:\scripts\config.cpp:2508` to `:2514`, used at `P:\DZ\gear\camping\config.cpp:12504` and `:12762` |
 
-`MetalWire` can be split (`canBeSplit=1`, `varQuantityMax=50`, `varStackMax=1`, `P:\DZ\gear\crafting\config.cpp:376` to `:381`). Its two slots set no `stackMax`, so the cap falls back to `varStackMax=1` (`itembase.c:3460` and `:3461`): one wire per slot, not 50.
+`MetalWire` can be split (`canBeSplit=1`, `varQuantityMax=50`, `varStackMax=1`, `P:\DZ\gear\crafting\config.cpp:376` to `:381`). Its two slots set no `stackMax`, so the cap falls back to `varStackMax=1` (`itembase.c:3464` and `:3465`): one wire per slot, not 50.
 
 Read the cap from `CfgSlots`, not from the item. The item's class overstates plank capacity five times (100 against 20). A recipe that asks for more than the slot holds can never be built: the player fills the slot, never reaches the amount, and the build action never appears. Work out how many slots a material needs as the amount divided by the slot's `stackMax`, rounded up. A design that promises the same configurable range for every material, such as 1 to 100 of each, cannot work.
 
 ## The same fallback sets a crop's harvest
 
-`PlantBase.Harvest` creates each crop with `SetQuantity(GetQuantityMax())` (`P:\scripts\4_world\entities\gardenbase\plantbase.c:574` and `:575`). For an item that can be split, `GetQuantityMax` resolves to `varStackMax` when the slot sets no cap (`itembase.c:3434` to `:3468`), so raising a crop's `varStackMax` changes the vanilla yield. `SetQuantity` clamps to the item's range (`itembase.c:3352`), so a scripted yield above the stack size is cut without a message unless the mod sets the harvest quantity itself.
+`PlantBase.Harvest` creates each crop with `SetQuantity(GetQuantityMax())` (`P:\scripts\4_world\entities\gardenbase\plantbase.c:574` and `:575`). For an item that can be split, `GetQuantityMax` resolves to `varStackMax` when the slot sets no cap (`itembase.c:3439` to `:3472`), so raising a crop's `varStackMax` changes the vanilla yield. `SetQuantity` clamps to the item's range (`itembase.c:3356`), so a scripted yield above the stack size is cut without a message unless the mod sets the harvest quantity itself.
 
 ## A tinted hologram needs two declarations
 
@@ -34,7 +34,7 @@ To get the tint:
 
 - Declare `hiddenSelections[]`, `hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]` with the values the model already uses, so normal rendering does not change.
 - Put the same selection in `sections[]` in `model.cfg`, or the swap has nothing to bind to.
-- Declare `hologramMaterial` and `hologramMaterialPath`. The engine appends `_deployable.rvmat` and `_undeployable.rvmat` (`hologram.c:14` to `:16`), and reads both keys at `:1554` to `:1557`; without them the hologram has no texture.
+- Declare `hologramMaterial` and `hologramMaterialPath`. `RefreshVisual` reads both keys and appends `_deployable.rvmat` or `_undeployable.rvmat` through `CorrectMaterialPathName` (`hologram.c:14` and `:15`, `:1554` to `:1557`, `:1570`); without them the hologram has no texture.
 
 ## The carry pose comes from the animation graph
 
@@ -44,7 +44,7 @@ A mod makes the same call in `ModItemRegisterCallbacks.RegisterHeavy`, an empty 
 
 ## Placement actions come from the deployable subclass
 
-`Container_Base` adds `ActionTogglePlaceObject` and `ActionPlaceObject` only in its deployable subclass (`P:\scripts\4_world\entities\itembase\container_base.c:32` and `:48` to `:54`), which `Barrel_ColorBase` inherits (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:1`). A storage object that extends `Container_Base` directly gets no placement, and `IsDeployable()` is `false` by default (`itembase.c:4348` to `:4351`). Add the two actions to the one class that needs them rather than changing a shared parent, which could change its siblings.
+`Container_Base` adds `ActionTogglePlaceObject` and `ActionPlaceObject` only in its deployable subclass `DeployableContainer_Base` (`P:\scripts\4_world\entities\itembase\container_base.c:32` and `:48` to `:54`), which `Barrel_ColorBase` inherits (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:1`). A storage object that extends `Container_Base` directly gets no placement, and `IsDeployable()` is `false` by default (`itembase.c:4352` to `:4355`). Add the two actions to the one class that needs them rather than changing a shared parent, which could change its siblings.
 
 ## Each placeable config class needs a script class
 

@@ -4,13 +4,13 @@ Where the engine's `proto native` declarations live, what `owned` and `static` m
 
 ## Where natives are declared
 
-Counting lines that begin with `proto native` (after white space), `P:\scripts` holds 2,789 declarations:
+Counting lines that begin with `proto native` (after white space), the five module folders of `P:\scripts` hold 2,758 declarations:
 
 | Folder | `proto native` lines |
 |---|---:|
-| `1_core` | 565 |
+| `1_core` | 533 |
 | `2_gamelib` | 103 |
-| `3_game` | 1,955 |
+| `3_game` | 1,956 |
 | `4_world` | 166 |
 | `5_mission` | 0 |
 

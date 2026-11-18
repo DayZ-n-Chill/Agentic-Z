@@ -31,7 +31,7 @@ class MyMod_Lamp : ItemBase
 }
 ```
 
-Vanilla does the same: `BaseBuildingBase()` registers six variables in its constructor (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:38-48`) and `Edible_Base()` registers its food stage there (`P:\scripts\4_world\entities\itembase\edible_base.c:25-31`).
+Vanilla does the same: `BaseBuildingBase()` registers six variables in its constructor (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:38-48`) and `Edible_Base()` registers its food stage and cooking state there (`P:\scripts\4_world\entities\itembase\edible_base.c:24-38`).
 
 The other vanilla place is an `InitItemVariables()` override, which the `EntityAI` constructor calls (`P:\scripts\3_game\entities\entityai.c:236` and :257). `Barrel_ColorBase` registers there after `super.InitItemVariables()` (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:9-21`).
 

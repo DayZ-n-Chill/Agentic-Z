@@ -18,8 +18,8 @@ The root is `{ "Triggers": [ ... ] }` (`JsonUndergroundTriggers`, `P:\scripts\3_
 | `EyeAccommodation` | float | Eye adaptation. `1.0` with no breadcrumbs gives the `OUTER` type. |
 | `InterpolationSpeed` | float | Transition speed. |
 | `UseLinePointFade` | bool | Simple fade between the breadcrumb points. |
-| `AmbientSoundType` | string | Ambient type for the sound controller. |
-| `AmbientSoundSet` | string | Ambient sound played directly. Livonia uses `Underground_SoundSet`. |
+| `AmbientSoundType` | string | Ambient type for the sound controller. The vanilla files use `caveSmall` and `caveBig` (Sakhal and Nasdara). |
+| `AmbientSoundSet` | string | Ambient sound played directly. Livonia uses `Underground_SoundSet`; Nasdara uses `ambient_Irrigation_Tunnel_loop_SoundSet` and `ambient_Bunker_loop_SoundSet`. |
 | `Breadcrumbs` | array | Transition points. Any breadcrumb makes the type `TRANSITIONING`; the limit is 32. |
 
 Each breadcrumb is a `JsonUndergroundAreaBreadcrumb` (`undergroundarealoader.c:36` to `:51`): `Position` (float[3]), `EyeAccommodation` (float), `UseRaycast` (bool), `Radius` (float; Livonia uses `-1`), `LightLerp` (bool, only with `UseLinePointFade`), `Comment`, and `ExternalValueController` with a `Type` and `Params` (`:53` to `:57`). One controller type is `BreadcrumbDoorStateController`, which takes the selection name of a door (`:59` to `:67`).
@@ -41,7 +41,9 @@ The type is decided in `P:\scripts\4_world\entities\scriptedentities\triggers\un
 3. Sync: when a player connects, the server sends the whole JSON with `RPC_UNDERGROUND_SYNC` (`SyncDataSend`, `undergroundarealoader.c:174` to `:177`, called at `missionserver.c:342` and `:363`), and the client stores it (`OnRPC`, `undergroundarealoader.c:181` to `:193`). A custom mission JSON works without the client having the file.
 4. Local play: in a local game on a `DIAG_DEVELOPER` build, the client loads the file and creates the triggers itself (`P:\scripts\5_mission\mission\missiongameplay.c:112` to `:117`).
 
-`m_TriggerIndex` syncs in the range -1 to 4095 (`P:\scripts\4_world\entities\scriptedentities\triggers\undergroundtrigger.c:10`), so one JSON holds up to 4096 triggers. In 1.29 the range was -1 to 255 (not on `P:\`).
+`m_TriggerIndex` syncs in the range -1 to 4095 (`P:\scripts\4_world\entities\scriptedentities\triggers\undergroundtrigger.c:10`), so one JSON holds up to 4096 triggers. In 1.29 the range was -1 to 255 (not checked on `P:\`). The vanilla files hold 8 triggers on Livonia, 30 on Sakhal and 1,076 on Nasdara, none on Chernarus (`P:\DZ\worlds\<world>\ce\cfgundergroundtriggers.json`); Nasdara alone is past the old limit.
+
+The carrier exists on the server and on clients; the box that tests the player, `UndergroundTrigger`, is spawned locally on the client when the carrier enters the player's network bubble (`P:\scripts\4_world\entities\scriptedentities\triggers\undergroundtrigger.c:1` and `:2`). A server check cannot ask the trigger whether a player is inside; it reads the presence the client reports (`underground-presence.md`).
 
 ## Triggers tied to an object
 
@@ -52,7 +54,10 @@ Both ways set `CustomSpawn` to true.
   - The spawner entry is an `ITEM_SpawnerObject` with `name`, `pos`, `ypr`, `scale`, `enableCEPersistency` and `customString` (`P:\scripts\3_game\objectspawner.c:100` to `:108`). It carries `"customString": "undergroundTriggerTag=TAG"`.
   - The spawner calls `object.OnSpawnByObjectSpawner(item)` (`objectspawner.c:63`).
   - The class walks the `CustomSpawn` triggers and creates those whose `Tag` matches (`OnSpawnByObjectSpawner`, `land_warheadstorage_bunker_facility.c:62` to `:94`). `customString` takes several pairs separated by `;`.
-  - That logic lives in the two Sakhal classes, not in a shared base class, so a mod class writes it again.
+  - That logic is copied into both warhead storage classes (`land_warheadstorage_main.c:183` to `:215` has the same loop), not in a shared base class, so a mod class writes it again.
+  - `GetData` reads the JSON file from disk on every call (`P:\scripts\3_game\undergroundarealoader.c:109` to `:133`), and both ways call it once per spawned object, so keep the number of parented objects small.
+
+Of the vanilla files on `P:\`, only Sakhal uses `CustomSpawn`: 4 of its 30 triggers, all tied by `ParentNetworkId` (`P:\DZ\worlds\sakhal\ce\cfgundergroundtriggers.json`). No vanilla file uses `Tag`, so the Object Spawner route has no vanilla data example.
 
 Unverified: whether `Position` of a parented trigger is a world position or relative to the parent. The code creates the carrier at `data.GetPosition()` and then calls `SetParent(parent)` (`SpawnTriggerCarrier`, `undergroundarealoader.c:24` to `:33`), but how that moves the box has not been measured.
 

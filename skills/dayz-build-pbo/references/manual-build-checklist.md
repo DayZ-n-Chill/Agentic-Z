@@ -18,7 +18,7 @@ What to tick by hand before and after a build when the automated checks are not 
 - [ ] `CfgPatches` exists with at least one patch class, and each patch has `units[]`, `weapons[]`, `requiredVersion` and `requiredAddons[]`.
 - [ ] No class name defined twice, and no member defined twice in one class (1.30).
 - [ ] Parent class names are right (for example `ItemBase`, `Clothing_Base`).
-- [ ] `hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]` each have as many entries as `hiddenSelections[]`. This is a habit, not an engine rule: vanilla `Flashlight` has a shorter material array (`P:\DZ\gear\tools\config.cpp:278` to `:295`).
+- [ ] `hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]` each have as many entries as `hiddenSelections[]`. This is a habit, not an engine rule: vanilla `Flashlight` (`P:\DZ\gear\tools\config.cpp:261`) has a shorter material array (`:278` to `:295`).
 
 ## `model.cfg`, when present
 
@@ -37,7 +37,7 @@ What to tick by hand before and after a build when the automated checks are not 
 
 ## LODs
 
-- [ ] At least one resolution LOD (LOD 0.0), a Geometry LOD and a Memory LOD with a `ce_center` point.
+- [ ] At least one resolution LOD (LOD 0.0), a Geometry LOD and a Memory LOD. A `ce_center` point there is optional; without it script uses the object's origin (`asset-checks.md`, "LODs").
 - [ ] Every Geometry component has a mass above 0.
 - [ ] Named selections match across LODs.
 - [ ] LOD0 stays under about 3,000 vertices for a small item.

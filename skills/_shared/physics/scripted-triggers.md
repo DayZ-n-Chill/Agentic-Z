@@ -56,6 +56,17 @@ The dispatchers are `Enter` (`triggerevents.c:26`), `StayStart` (`:54`), `Stay` 
 
 All hooks are empty `protected` methods in the base class, so a subclass overrides only the phases and sides it needs. Because the side is chosen on each call, one trigger runs its server hooks on the server and its client hooks on each client; this class does not send a hook to the other side.
 
+## `Trigger`: what calls the dispatchers
+
+The dispatchers are protected, and the vanilla caller is `Trigger : TriggerEvents` (`P:\scripts\4_world\entities\scriptedentities\triggers\trigger.c:39`). Start a trigger mod from `Trigger` or one of its subclasses, not from `TriggerEvents`, or nothing calls the hooks.
+
+- The constructor sets `EntityEvent.INIT | FRAME | ENTER | LEAVE` and the `EntityFlags.TRIGGER` flag (`trigger.c:55`, `:56`). `EOnInit` sets a default box of `"-2 -4 -2"` to `"2 4 2"` through `SetExtents` (`:74` to `:77`), so set your own size after `super.EOnInit`, or the default wins over a size set in the constructor.
+- `EOnEnter` adds the object as a `TriggerInsider` when `CanAddObjectAsInsider` allows it (`:94` to `:99`). `AddInsider` then calls `Enter(insider)` followed by `obj.OnEnterTrigger(this)` (`:254`, `:255`). This is where the object side callbacks above come from.
+- `EOnLeave` removes the insider; `RemoveInsider` calls `Leave(insider)` then `obj.OnLeaveTrigger(this)` (`:102` to `:107`, `:265`, `:266`).
+- `EOnFrame` runs `UpdateInsiders` every frame (`:88` to `:91`): `StayStart`, then `Stay` per insider with the time since its last update, then `StayFinish`, and nothing at all while the trigger is empty (`:297` to `:343`). A deleted object, or one for which `ShouldRemoveInsiderNoLeave` returns true, is dropped with no `Leave` (`:317` to `:324`); `ShouldRemoveInsider` drops it with `Leave` (`:328` to `:332`).
+- The old `OnEnter(Object)` and `OnLeave(Object)` are still called, from `OnEnterBeginEvent` and `OnLeaveBeginEvent` (`:169` to `:179`). A subclass that overrides those two Begin hooks without `super` silences them.
+- Ready made shapes: `ManTrigger` accepts only `IsMan()` objects (`P:\scripts\4_world\entities\scriptedentities\triggers\mantrigger.c:9` to `:12`), `SphereTrigger` is a 3 m sphere (`spheretrigger.c:6`), and `CylinderTrigger` uses `SetCollisionCylinderTwoWay(1, -0.25, 0.25)` (`cylindertrigger.c:6`).
+
 ## Vanilla subclasses as patterns
 
 Four shipped subclasses show what the base is used for:

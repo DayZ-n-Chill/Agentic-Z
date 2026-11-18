@@ -1,15 +1,14 @@
 // HUD badge pinned to the top-right, no mouse capture.
 // Pass-through (ignorepointer 1 on the whole tree) as in vanilla
 // gui/layouts/new_ui/hud/hud_player_tag.layout:11 /
-// gui/layouts/day_z_hud.layout:446 (line on P:\ for DayZ 1.30).
+// gui/layouts/day_z_hud.layout:451 (line on P:\ for DayZ 1.30).
 // Stays proportional so the same fractions land at 1920x1080 and 1280x720.
 // Vanilla BadgesPanel uses right_ref with a 252-unit INWARD offset
 // (hexactpos 1; layout-geometry.md, drawn edge − parent edge = −252 at
 // 1920x1080). The dayz-ui-lab parser models that subtraction
 // (scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py:791-792), with exact units as
 // pixels. This file does not copy the offset. An exact offset scales with the
-// screen height too (checklist-and-troubleshooting.md "Declare all four unit flags", corrected 2026-10-03; this comment said
-// "hexactpos 1 + 252 px is what breaks 1280x720").
+// screen height too (checklist-and-troubleshooting.md "Declare all four unit flags").
 FrameWidgetClass HudOverlayRoot {
 	name "HudOverlayRoot"
 	// HUD overlays must not steal aim/look.
@@ -31,7 +30,7 @@ FrameWidgetClass HudOverlayRoot {
 			color 0.12 0.12 0.12 0.90
 			// Top-right as a fraction: x = 1 - width - margin = 0.76.
 			// This template uses the top-right corner. Vanilla puts its BadgesPanel in the bottom-right
-			// corner instead (gui/layouts/day_z_hud.layout:514-524 on P:\ for DayZ 1.30: halign right_ref,
+			// corner instead (gui/layouts/day_z_hud.layout:551-563 on P:\ for DayZ 1.30: halign right_ref,
 			// valign bottom_ref, 252 exact units in from the right edge).
 			position 0.76 0.04
 			size 0.22 0.10
@@ -49,7 +48,7 @@ FrameWidgetClass HudOverlayRoot {
 			{
 				ImageWidgetClass HudIcon {
 					name "HudIcon"
-					// Vanilla HUD badge icon: gui/layouts/day_z_hud.layout:534-551
+					// Vanilla HUD badge icon: gui/layouts/day_z_hud.layout:572-591
 					// (Wetness, image0 set:dayz_gui). Most-used vanilla class (1913x).
 					// Vanilla sizes this icon in exact square units (size 35 35,
 					// hexactsize/vexactsize 1, fixaspect fixwidth). This box is

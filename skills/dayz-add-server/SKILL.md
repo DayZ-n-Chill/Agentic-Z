@@ -88,7 +88,8 @@ On a rerun with everything already set up, the changed lines read:
 
 ## Editing what this skill creates
 
-- **Mission folder** at `.server/<instance>/mission/` is yours to edit. The server runs with `-filePatching` so edits to `init.c`, `cfggameplay.json`, `db/types.xml`, etc. are live on the next launch.
+- **Mission folder** at `.server/<instance>/mission/` is yours to edit. The server reads it from disk at every start, so edits to `init.c`, `db/types.xml` and the other mission files are live on the next launch.
+- **`cfggameplay.json`** in the mission is read only when `serverDZ.cfg` sets `enableCfgGameplayFile = 1`; otherwise the server keeps the built-in defaults (`P:\scripts\3_game\cfggameplayhandler.c:53` and `:62`). The default config this skill writes does not set it, so add the line before you tune that file. The file is looked up as `$mission:cfggameplay.json` (`:3`).
 - **`serverDZ.cfg`** at `.server/<instance>/serverDZ.cfg` is yours to tune (max players, persistence, etc.). The skill never overwrites your edits, except `allowFilePatching`: it is re-added if you remove it and set back to `1` if you change it (without it, clients launched with `-filePatching` can't connect).
 
 ## Do not

@@ -46,7 +46,7 @@ A `proto native` line proves the declaration, not that the engine links a native
 | At most 16 parameters per method (1.28 and later) | Pass a data class | Reported |
 | `array.Remove` does not keep order | It moves the last element into the gap (`P:\scripts\1_core\proto\enscript.c:457` to `:463`); use `RemoveOrdered` (`:470`) | Read on `P:\` |
 
-Reported and not checked on `P:\`: string methods may change the string in place; an empty `#ifdef` block can break the compile (a block holding only a comment compiled; `pitfalls-advanced.md`); a `crash_*.log` name does not prove an engine crash; compile errors sometimes name the wrong file; bracket a bitwise test before comparing it; clean up `Obsolete` warnings. `JsonFileLoader.JsonLoadFile` returns `void` (`P:\scripts\3_game\tools\jsonfileloader.c:105`); `persistence-and-files.md` names the calls that return a status.
+Some string methods change the string in place and return a count, not a new string: `Replace` (`P:\scripts\1_core\proto\enstring.c:156`), `ToLower` (`:171`), `ToUpper` (`:186`) and `TrimInPlace` (`:319`); `Trim()` (`:304`) returns a new string. Reported and not checked on `P:\`: an empty `#ifdef` block can break the compile (a block holding only a comment compiled; `pitfalls-advanced.md`); a `crash_*.log` name does not prove an engine crash; compile errors sometimes name the wrong file; bracket a bitwise test before comparing it; clean up `Obsolete` warnings. `JsonFileLoader.JsonLoadFile` returns `void` (`P:\scripts\3_game\tools\jsonfileloader.c:105`); `persistence-and-files.md` names the calls that return a status.
 
 ## Memory
 

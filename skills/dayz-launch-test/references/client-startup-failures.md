@@ -62,7 +62,7 @@ If the logged-in account is not the `LastOwner`, the client dies about a second 
 
 ## Read the dump before you guess
 
-A minidump carries a `MINIDUMP_EXCEPTION_STREAM` (type 6) and a `MODULE_LIST` (type 4). About 60 lines of Python pull out the exception code and the module that holds `ExceptionAddress`. Read it before theorising about drivers or the mod: here `0x80000003` ruled out both "render crash" and "corrupt mod", the two theories two boot cycles had already been spent on.
+A minidump carries a `MINIDUMP_EXCEPTION_STREAM` (type 6) and a `MODULE_LIST` (type 4). About 60 lines of Python pull out the exception code and the module that holds `ExceptionAddress`. Read it before theorising about drivers or the mod: `0x80000003` rules out both "render crash" and "corrupt mod".
 
 Before you look for the cause in your change, deploy the previous build and reproduce. When the PBO from before the change failed the same way, that cleared the change in one cycle and moved the search to the environment. An A/B with the old build costs the same as testing one theory, and it decides.
 

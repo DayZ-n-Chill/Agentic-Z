@@ -27,7 +27,7 @@ A device that should be both heard by players and noticed by infected needs both
 | 10 | `AddNoiseTarget(vector pos, float lifetime, NoiseParams noise_params, float external_strength_multiplier = 1.0)` | A noise the AI keeps noticing at a position for `lifetime` seconds, with no entity. The tool for a distraction or decoy. |
 | 13 | `GetEnvironmentNoiseReduction(vector pos)` | New in 1.30. How much the environment reduces noise at a point. |
 
-`NoiseParams` (`P:\scripts\3_game\noise.c:16`) holds the strength and type of a noise and is loaded from config with `Load(string noise_name)` for a class of `CfgNoises`, or `LoadFromPath(string noise_path)` for any config path (`P:\scripts\3_game\noise.c:25`).
+`NoiseParams` (`P:\scripts\3_game\noise.c:16`) holds the strength and type of a noise and is loaded from config with `Load(string noise_name)` for a class of `CfgNoises`, or `LoadFromPath(string noise_path)` for any config path (`P:\scripts\3_game\noise.c:23` and `:25`).
 
 ## Where the noise values come from
 
@@ -82,7 +82,22 @@ Since 1.30 the engine does it, and the script helpers are marked obsolete:
 - The step noise of a player now passes only `NoiseAIEvaluate.GetNoiseMultiplier(this)`, which is speed, shoes and surface (`P:\scripts\4_world\entities\dayzplayerimplement.c:3472`).
 - Infected add their noise with no multiplier at all: `AddNoise(this, sound_event.m_NoiseParams)` (`P:\scripts\4_world\entities\creatures\infected\zombiebase.c:600`).
 
-The strength of the damping is config, in `class AIParams` (`P:\DZ\data\aiconfigs\config.cpp:12`): `rainToNoiseMultiplier` (`P:\DZ\data\aiconfigs\config.cpp:15`), `snowfallToNoiseMultiplier`, `seaToNoiseMultiplier`, `fogToNoiseMultiplier`, `windToNoiseMultiplier` and `sandstormToNoiseMultiplier` (`P:\DZ\data\aiconfigs\config.cpp:20`).
+The strength of the damping is config, in `class AIParams` (`P:\DZ\data\aiconfigs\config.cpp:12` to `:23`). Vanilla values:
+
+| Key | Vanilla value |
+|---|---|
+| `maxNoiseRange` | 300 |
+| `rainToNoiseMultiplier` | 10 |
+| `snowfallToNoiseMultiplier` | 5 |
+| `seaToNoiseMultiplier` | 15 |
+| `fogToNoiseMultiplier` | 10 |
+| `windToNoiseMultiplier` | 10 |
+| `sandstormToNoiseMultiplier` | 10 |
+| `noiseDampeningMultiplier` | 0.7 |
+| `noiseCollisionDampeningMultiplier` | 0.2 |
+| `noiseShotCollisionDampeningMultiplier` | 0.5 |
+
+No script reads these keys; the engine does, so what each one does beyond its name is not checked on `P:\`. `AIParams` is a root class of the addon `DZ_data_aiconfigs` (`P:\DZ\data\aiconfigs\config.cpp:3`), so a mod changes it with a root `class AIParams` in its own `config.cpp` and `DZ_data_aiconfigs` in `requiredAddons[]`.
 
 Rules for a mod:
 

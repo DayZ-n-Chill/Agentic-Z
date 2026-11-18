@@ -2,7 +2,7 @@
 
 A knowledge pack is Tier 3 reference material: notes, API tables and worked examples for one kind of work. Any DayZ worker may load any pack for one task. Packs are loaded only when the task needs them, never by default. Tier 1 (`.claude/CLAUDE.md`) and Tier 2 (`dayz-conventions.md` plus `conventions/*.md`) still apply on top of every pack.
 
-This file is the one index of every pack. Paths are relative to `skills/`. The repo integrity test (`scripts/dev/test_repo_integrity.py`) fails when a pack folder or pack file is missing from this index, or when the index names a `_shared/` or `dayz-*` path that does not exist. It does not check that paths under other skills' `references/` folders exist.
+Every pack is listed below, and no other index of packs exists. Paths are relative to `skills/`. The repo integrity test (`scripts/dev/test_repo_integrity.py`) fails when a pack folder or pack file is missing from this index, or when the index names a `_shared/` or `dayz-*` path that does not exist. It does not check that paths under other skills' `references/` folders exist.
 
 ## Pack layout
 
@@ -24,6 +24,7 @@ This file is the one index of every pack. Paths are relative to `skills/`. The r
 | `_shared/answer-formatting.md` | How to format answers grounded in vanilla source. |
 | `_shared/container-base.md` | Custom `Container_Base` config requirements (damage, bullets, interaction). |
 | `_shared/figma-to-dayz-rules.md` | Translation rules for the Figma to DayZ `.layout` pipeline. |
+| `_shared/figma-to-dayz-worked-example.md` | One HUD card carried through the Figma pipeline: Figma node, normalized JSON and `.layout`. |
 | `_shared/py3d-mlod-notes.md` | Reading MLOD `.p3d` files with py3d, used by `/dayz-p3d-audit`. |
 | `_shared/linux-proton.md` | Not yet checked on `P:\`: the Linux supplement to the Windows skills: which step has a native Linux equivalent, which runs under Proton and how, and what was not checked. |
 
@@ -341,6 +342,7 @@ Front index: `_shared/persistence/README.md`. Written for `dayz-persistence-spec
 | `_shared/persistence/deep-audit-evidence-controls.md` | Telling real evidence from evidence that only looks real: the deployed build against the source, controls that can fail, complete inventories. |
 | `_shared/persistence/deep-audit-fix-traps.md` | What goes wrong when fixing and auditing again: a missed sibling call site, two correct fixes that break each other, a fix never audited. |
 | `_shared/persistence/base-building-rebuildable.md` | How a map building (`BuildingBase`) gets its own construction component on 1.30, how that component saves its parts, which config keys it reads and what the game ships for it. |
+| `_shared/persistence/base-building-decay-and-falling.md` | How built parts decay on 1.30, and what happens to items, players, vehicles and buildable objects resting on a part that is dismantled or destroyed, with the server switches. |
 
 ### Vehicle pack (`_shared/vehicles`)
 
@@ -624,6 +626,7 @@ A skill's own pack. The front index of each folder is the table in that skill's 
 | `dayz-particles/references/emat-format-reference.md` | `.emat` particle material format and vanilla materials. |
 | `dayz-particles/references/script-api-reference.md` | Playing, stopping and tuning particles from script. |
 | `dayz-particles/references/integration-patterns.md` | Wiring particles into a device. |
+| `dayz-particles/references/device-particle-choices.md` | Which vanilla particles suit a placed device and whether each needs stopping, tuning a particle at runtime, and bringing older device code up to the 1.30 form. |
 | `dayz-particles/references/vanilla-particle-catalog.md` | Every vanilla particle in `ParticleList`. |
 | `dayz-particles/references/dayz-1-30-particles.md` | What DayZ 1.30 changed in the particle script API: the client check, effects spawned by the server, surface particle IDs, vehicle effect overrides, and the migration checklist. |
 | `dayz-particles/references/dayz-1-30-world-particles.md` | What DayZ 1.30 changed for effect areas, the sandstorm, oil pits and dust kickup, and the `ParticleList` constants it added. |

@@ -9,7 +9,7 @@ Follow these four rules for a spectator, CCTV, drone, thermal or any other scrip
 1. Reuse the engine camera. Take `Camera.GetCurrentCamera()` (`P:\scripts\3_game\entities\camera.c:7`) and activate it. Don't create an unmanaged `staticcamera` object; a shipped mod that reuses the engine camera works where that route can crash.
 2. Keep that camera active through `SelectPlayer`. Turning it off first leaves the engine with no active camera while the player is selected. Call `SetActive(false)` (`camera.c:45`) in the cleanup after the selection.
 3. Enable the `HumanInputController` again before `SelectPlayer`, not after. The restored third person camera reads that input in `UpdateUDAngleUnlocked` (called at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercamera3rdperson.c:54` and `:55`). Get it wrong and first person works while third person stays pinned to the old camera and the player's actions are missing. `SetDisabled(bool pState)` is at `P:\scripts\3_game\human.c:22`.
-4. Don't use a continuous action's key to leave. Use a separate key such as Space or Esc, or the action manager can keep an action running. While an action runs and the player is not in free look, the third person camera takes its up and down limits from `player.GetLookLimits(...)` every frame (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercamera_base.c:152` to `:156`).
+4. Don't use a continuous action's key to leave. Use a separate key such as Space or Esc, or the action manager can keep an action running. The third person camera takes its up and down limits from `player.GetLookLimits(...)` every frame, before it checks tracking or free look (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercamera_base.c:152` to `:156`).
 
 Rules 1 and 2 match a working shipped mod. Rules 3 and 4 follow from the vanilla scripts and match the difference seen between first and third person, but each cause is not confirmed in game. Whether a running action still narrows the look limits on 1.30 is decided inside `GetLookLimits` and is not checked. `Input.ChangeGameFocus(+1)` and `(-1)` also show up around entry and exit in camera mods; their effect here is unverified.
 
@@ -66,10 +66,11 @@ modded class LoadingScreen
     {
         m_MyMod_Index = Math.RandomInt(0, m_MyMod_Images.Count());
         m_ImageWidgetBackground.LoadImageFile(0, m_MyMod_Images[m_MyMod_Index]);
+        super.Show();
+        // after super: vanilla shows the logo again when the screen opens in game
         m_ImageLogoMid.Show(false);
         m_ImageLogoCorner.Show(false);
         m_ModdedWarning.Show(false);
-        super.Show();
     }
 
     override void OnUpdate(float timeslice)
@@ -84,6 +85,8 @@ modded class LoadingScreen
     }
 }
 ```
+
+Hide widgets after `super.Show()`, not before. When the root is not yet visible, vanilla `Show()` sets the logo and status visibility itself: outside the main menu it calls `m_ImageLogoMid.Show(true)` (`dayzgame.c:856` to `:881`), which undoes a hide made earlier. `Show()` runs when the first loading step starts (`Inc()`, `:780` to `:788`), and the screen closes when the count drops back to zero (`Dec()` and `EndLoading()`, `:790` to `:808`). The layout is `gui/layouts/loading.layout` on the separate loading workspace, `game.GetLoadingWorkspace()` (`:729`), not `GetWorkspace()`.
 
 The class names, fields and widget names are checked on `P:\`; the override itself is not tested in game.
 

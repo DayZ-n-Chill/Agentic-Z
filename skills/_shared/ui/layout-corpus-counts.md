@@ -71,7 +71,7 @@ The top attributes over a sample of 300 layouts:
 
 `wrap` sits on text widgets and on no spacer widget. Over the full 819 layouts it appears on multiline text about 355 times, rich text 236, HTML 9 and plain text 4; limited to the `gui\` folder the same count gives the 505 above. The 437 for `text_proportion` is the 300 layout sample; over 819 layouts it is 1,048 (679 text, 361 button, 5 rich text, 3 multiline), as `layout-format.md` reports.
 
-On `P:\gui\layouts` (vanilla only), `mode` always takes a keyword: `blend` 1,721 times, `additive` 144 and `opaque` 4 (`P:\gui\layouts\day_z_ingamemenu.layout:74` and `:551`), never a number. `fixaspect` takes a keyword too: `fixwidth` 488, `inside` 67, `outside` 29 and `none` 15 (`day_z_ingamemenu.layout:72` and `:563`).
+On `P:\gui\layouts` (vanilla only), `mode` always takes a keyword: `blend` 1,733 times, `additive` 132 and `opaque` 4 over the 227 layouts (`P:\gui\layouts\day_z_ingamemenu.layout:74` and `:551`), never a number. `fixaspect` takes a keyword too: `fixwidth` 488, `inside` 67, `outside` 29 and `none` 15 (`day_z_ingamemenu.layout:72` and `:563`).
 
 ## What the less common attributes mean
 

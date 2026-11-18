@@ -37,7 +37,7 @@ else
     seat = transport.GetSeatAnimationType(crewIndex);
 ```
 
-The two hooks are on `Transport` and do nothing by default: `HasDirectionalInOutAction()` returns false (`P:\scripts\3_game\vehicles\transport.c:677`) and `GetSeatAnimationTypeDirectional(int posIdx, int directionIndex)` raises "not implemented" (`:690`). The vanilla motorbike overrides both: it returns true, and for the driver seat returns 0 for direction 0 and 1 for direction 1 (`P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:53`, `:58`). The graph then picks the left or right clip from that number: `GetIn_L` starts on `GetCommandI(CMD_Vehicle_GetIn) == 0` and `GetIn_R` on `== 1` (`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:1618`, `:1598`).
+The two hooks are on `Transport` and do nothing by default: `HasDirectionalInOutAction()` returns false (`P:\scripts\3_game\vehicles\transport.c:680`) and `GetSeatAnimationTypeDirectional(int posIdx, int directionIndex)` raises "not implemented" (`:693` to `:696`). Both vanilla motorbikes override both: they return true, and for the driver seat return 0 for direction 0 and 1 for direction 1 (`P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:50`, `:55`; `motorbike_02.c:51`, `:56`). The graph then picks the left or right clip from that number: `GetIn_L` starts on `GetCommandI(CMD_Vehicle_GetIn) == 0` and `GetIn_R` on `== 1` (`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:1618`, `:1598`).
 
 For a mod vehicle, override both hooks the same way. Not tested: whether that alone removes the need for the snap on a vehicle that is not a `Motorbike`.
 

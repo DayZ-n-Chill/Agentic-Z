@@ -35,6 +35,7 @@ The short pattern file `_shared/enscript/patterns/persistence.md` shows the basi
 | What did 1.30 change for player built objects (class tree, `*ServerEx`, build collision, masonry, fence code lock), and how do I port a 1.29 mod? | `base-building-1-30.md` |
 | How does a rebuildable map building save its parts, which config keys do its parts read, and what does 1.30 ship for it? | `base-building-rebuildable.md` |
 | Why does the build action never appear, why is the hologram not tinted, why is my item carried in one hand, how do I place on a wall? | `base-building-placement.md` |
+| Why do my parts lose health over time, and what happens to items, players and buildable objects on a part that is dismantled or destroyed? | `base-building-decay-and-falling.md` |
 
 ### Data loss audit
 

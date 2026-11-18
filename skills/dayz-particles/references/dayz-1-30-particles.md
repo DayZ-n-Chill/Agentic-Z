@@ -91,6 +91,12 @@ The same block of the manager holds `ReinitParticleServer` (`P:\scripts\3_game\e
 
 `PlayOnObject` stays client only. Use `CreateParticleServer` when every nearby client must see the same short effect and no client side state change would trigger it.
 
+How long an effecter lives:
+
+- The lifespan is the second argument of the parameters, in seconds. `SEffectManager.OnUpdate` counts it down every frame (`P:\scripts\3_game\dayzgame.c:3023`; `P:\scripts\3_game\effectmanager.c:654` to `:663`) and destroys the effecter when it runs out (`effectmanager.c:715` to `:724`).
+- `EffecterBase.NOT_DEFINED_LIFESPAN` (`-1`) never runs out (`effectmanager.c:698` and `:717`). A caller that passes it keeps the ID that `CreateParticleServer` returns and calls `DestroyEffecterParticleServer` itself, as tree cutting and fishing do (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionminetree.c:125`; `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionfishingnew.c:146`). Otherwise the effecter entity stays on the server.
+- `CreateParticleServer` calls `eff.Init` even when the object was not created (`effectmanager.c:589` to `:597`), so a misspelt effecter class name ends in a null pointer error on the server instead of a clear message.
+
 ## Surface particle IDs: SurfaceInfo
 
 In 1.29 `Surface.GetStepsParticleID(string)` and `Surface.GetWheelParticleID(string)` were the lookups to call. Since 1.30 both are marked obsolete and only forward to `SurfaceInfo`:
@@ -167,7 +173,20 @@ What the vanilla vehicle effects do with it:
 - `RegisterEffect` adds one effect (`P:\scripts\4_world\entities\vehicles\components\vehiclevfxcomponent.c:126`); the IDs are in `EVehicleVFXEffect`: `DUST_BEHIND`, `ENGINE_SMOKE`, `COOLANT_STEAM`, `EXHAUST_SMOKE` (`P:\scripts\3_game\enums\evehiclevfxtypes.c:2`).
 - `RegisterEffectGroup` adds several copies of one effect, such as one per wheel (`P:\scripts\4_world\entities\vehicles\components\vehiclevfxcomponent.c:139`); the IDs are in `EVehicleVFXEffectGroup`: `WHEEL_SMOKE`, `WHEEL_CONTACT` (`P:\scripts\3_game\enums\evehiclevfxtypes.c:12`).
 - `GetParticleParamsOverrideData` returns the data object of one effect so the vehicle can fill it (`P:\scripts\4_world\entities\vehicles\components\vehiclevfxcomponent.c:373`), and `GetEffectGroupParticleParamsOverrideData` does the same for a group (`P:\scripts\4_world\entities\vehicles\components\vehiclevfxcomponent.c:530`).
-- `CarScript` registers its six effects with `RegisterEffect` and `RegisterEffectGroup` (`P:\scripts\4_world\entities\vehicles\carscript.c:377` to `:382`), and `MotorbikeScript` does the same (`P:\scripts\4_world\entities\vehicles\motorbikescript.c:199`).
+- `CarScript` registers its six effects with `RegisterEffect` and `RegisterEffectGroup` (`P:\scripts\4_world\entities\vehicles\carscript.c:377` to `:382`), and `MotorbikeScript` registers five, with no coolant steam (`P:\scripts\4_world\entities\vehicles\motorbikescript.c:199` to `:204`).
+
+### Memory points a car model needs for its effects
+
+`CarScript.InitializeParticles()` returns at once on a headless client or dedicated server, then places each effect at a memory point of the model (`P:\scripts\4_world\entities\vehicles\carscript.c:343` to `:382`):
+
+| Memory point | Effect |
+|---|---|
+| `ptcDustPos` | `DUST_BEHIND`, `EffVehicleDust` |
+| `ptcEnginePos` | `ENGINE_SMOKE`, `EffEngineSmoke` |
+| `ptcCoolantPos` | `COOLANT_STEAM`, `EffCoolantSteam` |
+| `ptcExhaust_end`, `ptcExhaust_start` | `EXHAUST_SMOKE`, `EffExhaustSmoke`: the position, and the direction from start to end |
+
+`ConvertMemPointToPosition` returns `vector.Zero` when the point does not exist (`P:\scripts\4_world\entities\vehicles\components\vehiclevfxcomponent.c:115` to `:120`), so a model without one of these points shows that effect at the model origin, with no error. A missing `ptcExhaust_end` also sets the exhaust direction to `"1 1 1"` (`carscript.c:364`). The speed and weight in `m_FloatModifiers` are filled each frame in `EOnPostFrame`, on clients only (`carscript.c:675`, `:681`, `:719` and `:720`); dust starts above `EffVehicleDust.WHEEL_DUST_THRESHOLD` (`carscript.c:716`).
 
 ## What breaks in a 1.29 mod
 

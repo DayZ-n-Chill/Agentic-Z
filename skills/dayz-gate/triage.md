@@ -29,7 +29,7 @@ The `storage` and `server_exit` lines say the test run itself is not valid; they
 
 Two things DayZDiag sessions print are deliberately not errors, and `test_triage.py` pins that:
 
-- The `SCRIPT (E)` stack from `GetPlugin()` (`OnInit()` of `pluginitemdiagnostic.c`, `PluginsInit()` and so on), and the line `Module PluginConfigDebugProfile is not Registred in PluginManager.c!` before it. Vanilla prints both under `DIAG_DEVELOPER` (`P:\scripts\4_world\plugins\pluginmanager.c:339` and `:340`). The stack comes once per peer on every mission start, with or without a mod. The `Module` line usually comes before it but can be missing, so do not rely on it to recognize the stack.
+- The `SCRIPT (E)` stack from `GetPlugin()` (`OnInit()` of `pluginitemdiagnostic.c`, `PluginsInit()` and so on), and the line `Module PluginConfigDebugProfile is not Registred in PluginManager.c!` before it. Vanilla prints both under `DIAG_DEVELOPER` (`P:\scripts\4_world\plugins\pluginmanager.c:337`, printed at `:340` and `:341`). The stack comes once per peer on every mission start, with or without a mod. The `Module` line usually comes before it but can be missing, so do not rely on it to recognize the stack.
 - `Can't load @<Mod>/Anims/cfg/skeletons.anim.xml`, reported once for every loaded mod.
 
 Do not add catalog entries for them: an entry would make every watch report them.

@@ -67,7 +67,7 @@ Not covered: the armour models themselves, and a female body.
 
 ## Config side
 
-- The class inherits a vanilla clothing class for the slot (`classes-and-parents.md`). `model` names the ground model and `ClothingTypes` the worn ones, as `Chainmail` does (`P:\DZ\characters\tops\config.cpp:9279`).
+- The class inherits a vanilla clothing class for the slot (`classes-and-parents.md`). `model` names the ground model and `ClothingTypes` the worn ones, as `Chainmail` (`P:\DZ\characters\tops\config.cpp:9122`) does with its `ClothingTypes` block (`:9279` to `:9283`).
 - `hiddenSelections[]` has one entry per model section, with the texture and material arrays in the same order (`color-variants.md`).
 - In an AddonBuilder build by hand, damage `.rvmat` files named only in `healthLevels[]` are left out of the PBO and must be added to the pack step. `/dayz-build-pbo` passes its own include list, which names `*.rvmat`, so it packs them; with any other build, check the PBO.
 - In one setup a `config.bin` made with CfgConvert did not register the class (`CreateObjectEx` gave an unknown type and the item was missing from an admin tool's spawn list, with no log error), and packing `config.cpp` as text fixed it. That is one setup, not a rule: `/dayz-build-pbo` binarizes configs with AddonBuilder and those mods load. Whichever way you pack, prove the class registered by spawning it in game, not by reading the PBO.

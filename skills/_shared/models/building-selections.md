@@ -36,7 +36,17 @@ Vanilla uses two schemes, depending on whether the ladder is its own model or pa
 | The same, with a side entry on a middle floor | Adds `ladderN_middle_right` and `ladderN_middle_right_align` | `P:\DZ\structures\industrial\cementworks\cementworks_silobig1a.p3d` |
 | Ladder piece used as a proxy inside a building | A selection named after the piece (`long`, `top`); a Geometry LOD with `autocenter` = `0` and no components | `P:\DZ\structures\Proxy_BuildingParts\ladders\ladder_long_proxy.p3d`, `ladder_top_proxy.p3d` |
 
-- `N` starts at 1. `_bottom_front` is the entry at the foot and `_top_front` the exit at the top; that reading and the meaning of the `_con` and `_dir` points are taken from the names, not from a script, and are not checked on `P:\`.
+- `N` starts at 1. `_bottom_front` is the entry at the foot and `_top_front` the exit at the top; that reading and the meaning of `ladderN_dir` are taken from the names, not from a script, and are not checked on `P:\`. The `_con` and `_con_dir` points are read by script (below).
+
+How script enters a built in ladder (`ActionEnterLadder`, `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionenterladder.c`):
+
+1. The target must be a `Building` (`:25` to `:27`), so a ladder on an item or a vehicle never offers the action.
+2. The aimed component must belong to a selection whose name starts with `ladder` and has no `_` after it, such as `ladder1` (`:41` to `:49`). That name also gives the ladder's index to the engine (`HumanCommandLadder.DebugGetLadderIndex`, `:136`).
+3. The Memory LOD must hold `ladderN_con`, and the player must stand within `UAMaxDistances.LADDERS`, 1.3 m, of one of its points (`:54` and `:66` to `:72`; `P:\scripts\4_world\classes\useractionscomponent\actions\actionconstants.c:117`).
+4. The point of `ladderN_con_dir` nearest that entry point sets the facing: the action shows only when the player stands within 90 degrees of the line from the entry point to it (`:62` and `:84` to `:108`).
+5. A `laddertype` named property on the Geometry LOD picks the climbing sound; the default is `metal`, and only `wood` changes it (`:137` to `:149`; `P:\scripts\4_world\entities\dayzplayerimplement.c:3643`). The deer stands store `laddertype` = `wood` (`P:\DZ\structures\residential\misc\misc_deerstand1.p3d`).
+
+Without `ladderN_con` the ladder shows no enter action and logs no error; without `_con_dir` the facing point stays at its default `0 0 0`, the world origin, so whether the action shows depends on where the building stands on the map.
 - All six models above that carry climb points also carry a Roadway LOD (`3.0e+15`). The furniture ladder `P:\DZ\structures\furniture\various\ladder_a_wood.p3d` has neither: only visual LODs, Geometry and View Geometry.
 
 ## Paths LOD
@@ -71,7 +81,8 @@ The wash, drink and fill actions on a well ask for the View Geometry components 
 The selection narrows where the action works; it is not required:
 
 - `CCTLiquid` treats any component of a well as valid when the model has no such selection, and checks the aimed component only when it has one (`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctliquid.c:89` to `:94`, where an empty `componentIndices` sets `isValidInteract = true`).
-- No vanilla model under `P:\DZ\` stores the name (scan of all 8,256 models), so the vanilla wells, such as `P:\DZ\structures\residential\misc\misc_well_pump_blue.p3d`, run on that fallback.
+- Three of the 10,626 vanilla models store the name, all on Takistan: the brick well `P:\DZ\structures_takistan\Props\misc\waterwell_brick.p3d` and the two cistern truck wrecks under `P:\DZ\structures_takistan\Wrecks\wheeled\`, whose script classes extend `Well` (`P:\scripts\4_world\entities\building\wrecks\wreck_truck01_aban1_cistern.c:1`). The other vanilla wells, such as `P:\DZ\structures\residential\misc\misc_well_pump_blue.p3d`, run on the fallback.
+- The check runs only on an object whose `GetWaterSourceObjectType()` is `WELL` (`IsWell`, `P:\scripts\3_game\entities\object.c:664`), which a script class extending `Well` gives (`P:\scripts\4_world\entities\building\well.c:8` to `:11`).
 
 Add `liquid_source` to the View Geometry components of the spout when only that part of a custom well should take the actions. A memory point of that name does nothing.
 

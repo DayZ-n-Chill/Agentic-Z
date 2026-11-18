@@ -82,6 +82,7 @@ A lethal space with no gas can be a deliberate design, but it should never happe
 
 - `TeleportCheck` moves a player who has just connected inside an area, and was not in one when they logged out, to the closest safe position (`P:\scripts\4_world\static\miscgameplayfunctions.c:1767`). The area exposure modifier calls it (`P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\areaexposure.c:44`).
 - `GetClosestSafePos` searches the whole list and measures in two dimensions only (`P:\scripts\4_world\static\miscgameplayfunctions.c:1794`).
+- Each entry is two numbers, x then z: the second number is read as z (`miscgameplayfunctions.c:1801` and `:1802`), and the player is put on the terrain there with `SurfaceY` (`:1779`). A safe position written as `[x, y, z]` sends players to the wrong place, and one above a bunker or under a roof puts them on the terrain, not on the floor.
 
 After any change of radius, measure every safe position against every area. A rescue point that lies inside another area's cylinder moves a reconnecting player from gas to gas.
 
@@ -90,6 +91,10 @@ After any change of radius, measure every safe position against every area. A re
 `JsonDataAreaData` is the authority for the keys of one area: `Pos`, `Radius`, `PosHeight`, `NegHeight`, `InnerRingCount`, `InnerPartDist`, `OuterRingToggle`, `OuterPartDist`, `OuterOffset`, `VerticalLayers`, `VerticalOffset`, `ParticleName`, `EffectInterval`, `EffectDuration` and `EffectModifier` (`P:\scripts\4_world\classes\contaminatedarea\jsondatacontaminatedarea.c:17` to `:34`).
 
 Keys named `InnerRingRatio` and `OuterRingRatio` appear in some `cfgeffectarea.json` files. They are not in that class and no vanilla script reads them.
+
+`InnerRingCount`, `InnerPartDist`, `OuterPartDist`, `OuterOffset`, `VerticalLayers`, `VerticalOffset`, `EffectInterval` and `EffectDuration` are declared `int`, so write whole numbers (`jsondatacontaminatedarea.c:23` to `:32`); what the loader does with a fraction is not checked on `P:\`. The player side particles of an area are named per area in `PlayerData`: `AroundPartName`, `TinyPartName` and `PPERequesterType` (`jsondatacontaminatedarea.c:36` to `:40`).
+
+`FillWithParticles` returns at once in a build compiled with `NO_GUI` (`P:\scripts\4_world\classes\contaminatedarea\effectarea.c:339` to `:341`), so a server without a GUI places no emitters and the budget only matters on clients.
 
 Height values for a large radius stay unconfirmed until the real terrain and any underground depth have been measured in game.
 

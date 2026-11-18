@@ -9,7 +9,7 @@ Which 1.30 changes touch animation work, what breaks in work made for 1.29, and 
 - Instances are `AnimSetInstanceSource` (with `Template`, `ParentTemplates` and `Lines`) and templates are `AnimSetTemplateSource` with a named `AnimSetTemplateSource_AnimationGroup` per group. The unnamed default group is gone.
 - `Buffer Save` and `Buffer Use` nodes are removed (changelog).
 
-Formats, examples and the field by field port from 1.29: `anim-graphs.md`.
+What the graph holds: `anim-graphs.md`. Formats, examples and the field by field port from 1.29: `anim-graph-format-1-30.md`.
 
 ## Bones
 
@@ -31,7 +31,7 @@ Formats, examples and the field by field port from 1.29: `anim-graphs.md`.
 | `PhysicsSetSimpleDeath(bool pEnable)` | `Human`, `P:\scripts\3_game\human.c:1449` | The older death handling, per its source comment. |
 | `PhysicsSetRagdoll(bool pEnable)`, `PhysicsIsRagdoll()` | `Human`, `P:\scripts\3_game\human.c:1451`, `:1452` | Ragdoll on and off, and its state. |
 | `IsFirstRenderFrame()` | `DayZPlayer`, `P:\scripts\3_game\dayzplayer.c:1189` | True on the first tick of a render frame, so work with no visible effect can be skipped on the other ticks. |
-| `HasDirectionalInOutAction()`, `GetSeatAnimationTypeDirectional(int posIdx, int directionIndex)` | `Transport`, `P:\scripts\3_game\vehicles\transport.c:677`, `:690` | Left and right boarding for single track vehicles (`get-in-sides.md`). |
+| `HasDirectionalInOutAction()`, `GetSeatAnimationTypeDirectional(int posIdx, int directionIndex)` | `Transport`, `P:\scripts\3_game\vehicles\transport.c:680`, `:693` | Left and right boarding for single track vehicles (`get-in-sides.md`). |
 
 The ragdoll calls are on `Human` only (`class Human : Man`, `P:\scripts\3_game\human.c:1359`). Measured in game on 1.30, an infected graph does not get a ragdoll death: a `ragdoll` entry in its `enfanimsys` plus player death clips that carry the `Ragdoll` event still plays the full clip and freezes. Other setups, such as a custom `.ragdoll` for the infected skeleton, are not tested. The physics side is in `skills/_shared/physics/ragdoll-and-fall-damage.md`.
 
@@ -40,6 +40,7 @@ New action command constants (`CMD_ACTIONFB_` and `CMD_ACTIONMOD_`): table in `a
 ## Creatures
 
 - Quadrupeds tilt to the terrain through a procedural transform, not a special node (`anim-graphs.md`, "Terrain alignment").
+- The Badlands dogs, mouflon and monitor lizard run on the wolf, herbivore and ambient life graphs with instance files of their own (`P:\DZ\animals_takistan\canis_familiaris_dobermann\config.cpp:264` to `:265`; `creature-rig-to-game.md`, "A new creature on a vanilla graph").
 - Infected have the mind state `MINDSTATE_COWER` (`P:\scripts\3_game\entities\dayzinfected.c:18`), listed as new in 1.30; that it is new cannot be checked on a 1.30 `P:\`.
 
 ## Surrender no longer uses a dummy item

@@ -113,6 +113,9 @@ In DayZ 1.30 `ItemBaseType` reads these keys from the item's `CfgVehicles` class
 | `quantityBar` | Shows a bar instead of a count | `itembasetype.c:74` |
 | `canBeDigged` | The item can be buried | `itembasetype.c:94`; `ItemBase.CanBeDigged()` at `itembase.c:924` to `:927` |
 | `heavyItem` | Taking it to hands plays the full body heavy pick up, `CMD_ACTIONFB_PICKUP_HEAVY` | `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiontakematerialtohands.c:114` to `:122` |
+| `count`, `varQuantityInit`, `varQuantityMin`, `varQuantityMax`, `varStackMax`, `quantityShow` | Quantity and stack values, read once per type | `itembasetype.c:61` to `:73` |
+| `varCleannessInit`, `varCleannessMin`, `varCleannessMax`, `liquidContainerType`, `varLiquidTypeInit`, `heatIsolation` | Cleanness, the liquids a container takes, the starting liquid, insulation | `itembasetype.c:76` to `:84` |
+| `itemBehaviour`, `lockSoundSet` | How the item is held; the lock sound | `itembasetype.c:102` and `:97` |
 
 Vanilla gear also sets `absorbency` and `lootTag[]`, which no script reads; their engine meaning is not covered here. Vanilla spells `hideSelectionsByinventorySlot` with a lower case `i`; keep that spelling.
 

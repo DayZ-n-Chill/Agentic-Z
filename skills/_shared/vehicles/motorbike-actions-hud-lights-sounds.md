@@ -11,15 +11,15 @@ The action files are under `P:\scripts\4_world\classes\useractionscomponent\acti
 | `ActionStartEngineMotorbike` (`continuous\vehicles\actionstartenginemotorbike.c:9`) | Continuous, callback `ActionStartEngineMotorbikeCB` (`:1`) with `CAContinuousTime(UATimeSpent.START_ENGINE)` | Player in `HumanCommandVehicle` (`:28`), bike is a `MotorbikeScript` with the engine off (`:33`), player is the driver (`:36`) | `P:\scripts\4_world\entities\manbase\playerbase.c:1709`; `actionconstructor.c:223` |
 | `ActionStopEngineMotorbike` (`singleuse\vehicles\actionstopenginemotorbike.c:1`) | Single use | Driver, engine running, and speed at most 8 km/h (`:29`), so the engine cannot be switched off at speed | `playerbase.c:1712`; `actionconstructor.c:76` |
 | `ActionPickUpMotorbike` (`interact\vehicles\actionpickupmotorbike.c:1`) | Interact, instant | Target is a `Motorbike`, no heavy item in hands, the cursor is not on a seat (`CrewPositionIndex(componentIndex) < 0`), and `CanPickUp()` (`:64`); runs `PickUp()` (`:74`) | `motorbikescript.c:367`; the side fairings `Motorbike_02_ShieldLeft_ColorBase` and `Motorbike_02_ShieldRight_ColorBase` (`P:\scripts\4_world\entities\core\inherited\inventoryitem.c:499`, `:511`, `:539`, `:551`); `actionconstructor.c:348` |
-| `ActionAnimateMotorbikeSeat` (`interact\vehicles\actionanimatemotorbikeseat.c:1`) | `ActionAnimateSeats` | No driver, player within 1 m, selection belongs to the `SeatDriver` source | `motorbike_01.c:104`; `actionconstructor.c:313` |
+| `ActionAnimateMotorbikeSeat` (`interact\vehicles\actionanimatemotorbikeseat.c:1`) | `ActionAnimateSeats` | No driver, player within 1 m, selection belongs to the `SeatDriver` source | `motorbike_01.c:101`; `actionconstructor.c:313` |
 
-Starting runs in two steps. `OnExecute` (`actionstartenginemotorbike.c:66` to `:75`) calls `vehicle.OnIgnition()` (`:74`), which plays the kickstart sound through `HandleEngineSound(MotorbikeEngineSoundState.STARTING)` (`motorbikescript.c:1598` to `:1620`). `OnFinishProgress` (`:39` to `:64`) calls `vehicle.EngineStart()` (`:63`); the vanilla comment at `:51` says the engine checks the start through the `Motorbike.OnBeforeEngineStart()` callback.
+Starting runs in two steps. `OnExecute` (`actionstartenginemotorbike.c:66` to `:75`) calls `vehicle.OnIgnition()` (`:74`), which plays the kickstart sound through `HandleEngineSound(MotorbikeEngineSoundState.STARTING)` (`motorbikescript.c:1613` to `:1635`); with no spark plug or no fuel it plays the matching failed start sound and returns instead (`:1622` to `:1632`). `OnFinishProgress` (`:39` to `:64`) calls `vehicle.EngineStart()` (`:63`); the vanilla comment at `:51` says the engine checks the start through the `Motorbike.OnBeforeEngineStart()` callback.
 
 ## Repair actions
 
 | Action | File (`continuous\`) | Tool | Target | In `actionconstructor.c` |
 |---|---|---|---|---|
-| `ActionRepairMotorbikeChassisWithBlowtorch` | `actionrepairmotorbikechassiswithblowtorch.c:9` | Blowtorch with gas | Chassis, a zone between `WORN` and `RUINED` (inherited, `actionrepairmotorbikechassis.c:31` to `:47`) | `:259` |
+| `ActionRepairMotorbikeChassisWithBlowtorch` | `actionrepairmotorbikechassiswithblowtorch.c:9` | Blowtorch with gas | Chassis, a zone worse than `STATE_WORN` and better than `STATE_RUINED` (inherited, `actionrepairmotorbikechassis.c:42`) | `:259` |
 | `ActionRepairMotorbikeChassis` | `actionrepairmotorbikechassis.c:1` | Base, no vanilla tool | Chassis | `:255` |
 | `ActionRepairMotorbikeEngineWithBlowtorch` | `actionrepairmotorbikeenginewithblowtorch.c:9` | Blowtorch | `Engine` | `:260` |
 | `ActionRepairMotorbikeEngine` | `actionrepairmotorbikeengine.c:1` | Base, not used | `Engine` | Not registered |
@@ -52,9 +52,9 @@ m_LightsComponent.RegisterSelection("FrontOn", {new VehicleLightSelectionData(0,
 m_LightsComponent.RegisterSelection("BrakeOn", {new VehicleLightSelectionData(1, "brakeReflectorMatOn")});
 ```
 
-- Each vanilla bike registers `BrakeOn` and `BrakeOff` again on index 2 (`motorbike_01.c:19` and `:20`, `motorbike_02.c:20` and `:21`). A later 1.30 stable build also registers `FrontOn` and `FrontOff` on each bike's own index (`Motorbike_01` front 3 and brake 2, `Motorbike_02` front 4 and brake 6); not yet checked on `P:\`.
-- With the lights off, the `else` branch sets `"BrakeOff"` only when `HasGangedTailAndBrakeLights()` is `false` (`motorbikescript.c:1236` to `:1240`). The base returns `false` (`:169` to `:172`) and both vanilla bikes return `true` (`motorbike_01.c:28` to `:31`, `motorbike_02.c:29` to `:32`). The `default` case of the same switch asks for `"BrakesOff"`, which nothing registers (`motorbikescript.c:1231` to `:1233`). A later 1.30 stable build drops both overrides and names the key `"BrakeOff"`; not yet checked on `P:\`.
-- The front light attaches to the `drivewheel` bone so it turns with the bars (`motorbikescript.c:1107` to `:1109`):
+- Each vanilla bike registers `FrontOn`, `FrontOff`, `BrakeOn` and `BrakeOff` again on its own material indexes: `Motorbike_01` front 3 and brake 2 (`motorbike_01.c:19` to `:22`), `Motorbike_02` front 4 and brake 6 (`motorbike_02.c:20` to `:23`). The base also registers `TailOn`, `TailOff`, `DashboardOn` and `DashboardOff` on indexes 2 and 3 (`motorbikescript.c:118` to `:122`). A custom bike whose `hiddenSelections` order differs must register all of them again with its own indexes, or the wrong part lights up.
+- Outside braking, both the `default` case and the `else` branch set `"BrakeOff"` when `HasGangedTailAndBrakeLights()` is `false` (`motorbikescript.c:1246` to `:1255`). The base returns `false` (`:169` to `:172`) and neither vanilla bike overrides it.
+- The front light attaches to the `drivewheel` bone so it turns with the bars (`motorbikescript.c:1122` to `:1124`):
 
 ```c
 int driveWheelIndex = GetBoneIndex("drivewheel");
@@ -65,11 +65,9 @@ The light profiles are classes on `VehicleLightProfileFront` and `VehicleLightPr
 
 | Profile | Brightness | Radius | Angle | Colour (RGB) | Lines |
 |---|---|---|---|---|---|
-| `Motorbike_01LightProfileFront` | 2 | 30 m | 50 degrees | `0.85, 0.85, 0.68` | `:5` to `:8` |
+| `Motorbike_01LightProfileFront` | 8 | 30 m | 50 degrees | `0.85, 0.85, 0.68` | `:5` to `:8` |
 | `Motorbike_01LightProfileRear`, brake | 4 | 6 m | 120 degrees | `0.95, 0.16, 0.05` | `:17` to `:20` |
-| `Motorbike_02LightProfileFront` | 3 | 65 m | 65 degrees | `0.85, 0.85, 0.68` | `:5` to `:8` |
-
-A later 1.30 stable build raises both front brightness values to 8; not yet checked on `P:\`.
+| `Motorbike_02LightProfileFront` | 8 | 65 m | 65 degrees | `0.85, 0.85, 0.68` | `:5` to `:8` |
 
 The light switch uses the vehicle lights input, not the head torch. `ActionSwitchLights.GetInputType()` returns `ToggleVehicleLightsActionInput` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actionswitchlights.c:16` to `:19`), which calls `SetInput("UAToggleVehicleLights")` (`P:\scripts\4_world\classes\useractionscomponent\actioninput.c:849` to `:855`). `ToggleLightsActionInput` still uses `UAToggleHeadlight`, the head torch (`actioninput.c:776` to `:782`). Both names are in `P:\bin\constants.xml:90` and `:91`. A custom `inputs.xml` that only binds `UAToggleHeadlight` turns on the head torch, not the bike's headlight.
 
@@ -84,24 +82,24 @@ The light switch uses the vehicle lights input, not the head torch. `ActionSwitc
 | `DUST_BEHIND` | `EffVehicleDust` | `ptcDustPos` | `:199` |
 | `ENGINE_SMOKE` | `EffEngineSmoke` | `ptcEnginePos` | `:200` |
 | `EXHAUST_SMOKE` | `EffExhaustSmoke` | Between `ptcExhaust_start` and `ptcExhaust_end` | `:201` |
-| `WHEEL_SMOKE`, `WHEEL_CONTACT` | `EffWheelSmoke`, `EffWheelContact` | Per wheel, 5.0 s cooldown (third `VehicleVFXDataParams` argument) | `:203`, `:204` |
+| `WHEEL_SMOKE`, `WHEEL_CONTACT` | `EffWheelSmoke`, `EffWheelContact` | Per wheel, 2.0 s cooldown (third `VehicleVFXDataParams` argument) | `:203`, `:204` |
 
-`VehicleVFXDataParams` takes a position, an orientation and the cooldown in seconds, which defaults to 0 (`vehiclevfxcomponent.c:82` to `:94`). The `engine` memory point is read for the drowning check (`motorbikescript.c:181`). A later 1.30 stable build lowers the wheel cooldown to 2.0 s; not yet checked on `P:\`.
+`VehicleVFXDataParams` takes a position, an orientation and the cooldown in seconds, which defaults to 0 (`vehiclevfxcomponent.c:82` to `:94`). The `engine` memory point is read for the drowning check (`motorbikescript.c:181`).
 
 ## Sound classes
 
-The motorbike sound classes are in `P:\DZ\sounds\hpp\config.cpp`: the `Motorbike_0*` sound shaders at lines 316513 to 318260 and the sound sets at 383946 to 385036. `P:\DZ\sounds\vehicles\config.cpp` holds only `CfgPatches` (`DZ_Sounds_Vehicles`, `:1` to `:10`). Line numbers below are in `P:\DZ\sounds\hpp\config.cpp`.
+The motorbike sound classes are in `P:\DZ\sounds\hpp\config.cpp`: the `Motorbike_0*` sound shaders at lines 317170 to 318910 and the sound sets at 385779 to 386870. `P:\DZ\sounds\vehicles\config.cpp` holds only `CfgPatches` (`DZ_Sounds_Vehicles`, `:1` to `:10`). Line numbers below are in `P:\DZ\sounds\hpp\config.cpp`.
 
 | Sound | Classes | Line |
 |---|---|---|
-| Engine, accelerating | `Motorbike_01_Engine_Ext_Rpm0_SoundShader` to `Rpm6`, layered on `rpm` and `thrust` | `:316513` to `:316668` |
-| Engine, overrun on release | `Motorbike_01_Engine_Offload_Ext_Rpm1_SoundShader` to `Offload_Rpm6` | `:316539` to `:316681` |
-| `Motorbike_02` engine | 8 accelerating layers (`Rpm0` to `Rpm7`) and 7 overrun layers (`Offload_Rpm1` to `Offload_Rpm7`) | `:317358` to `:317552` |
-| Start | `Motorbike_01_engine_start_SoundSet`, sample `\DZ\sounds\vehicles\Motorbike_01\engine_start` | `:384304` to `:384313` |
-| Failed start, no fuel | `Motorbike_01_engine_failed_start_fuel_SoundSet` | `:384314` |
-| Stop, stop on empty | `Motorbike_01_engine_stop_SoundSet`, `Motorbike_01_engine_stop_fuel_SoundSet` | `:384324`, `:384333` |
-| Kickstart | `Motorbike_01_Kickstart_FoldOut_SoundSet` (lever out), `Motorbike_01_Starting_Engine_Off_SoundSet` (kick with no start) | `:384396`, `:384403` |
-| Horn | `Motorbike_01_Horn_SoundSet` (`loop = 1`), `Motorbike_01_Horn_Short_SoundSet` (`volumefactor = 0.8`), `Motorbike_01_Horn_Start_SoundSet` and `_End_SoundSet` | `:384449`, `:384458`, `:384466` to `:384481` |
-| Dampers | `Motorbike_01_damper_front_SoundSet`, `Motorbike_01_damper_rear_SoundSet`, both on `Motorbike_01_damper_SoundShader` with ten samples `motorbike_damper_01` to `_10` | `:384219`, `:384237`, `:316970` |
+| Engine, accelerating | `Motorbike_01_Engine_Ext_Rpm0_SoundShader` to `Rpm6`, layered on `rpm` and `thrust` | `:317170` to `:317313` |
+| Engine, overrun on release | `Motorbike_01_Engine_Offload_Ext_Rpm1_SoundShader` to `Offload_Rpm6` | `:317196` to `:317326` |
+| `Motorbike_02` engine | 8 accelerating layers (`Rpm0` to `Rpm7`) and 7 overrun layers (`Offload_Rpm1` to `Offload_Rpm7`) | `:318015` to `:318197` |
+| Start | `Motorbike_01_engine_start_SoundSet`, sample `\DZ\sounds\vehicles\Motorbike_01\engine_start` | `:386137`, shader `:317684` |
+| Failed start, no fuel | `Motorbike_01_engine_failed_start_fuel_SoundSet` | `:386147` |
+| Stop, stop on empty | `Motorbike_01_engine_stop_SoundSet`, `Motorbike_01_engine_stop_fuel_SoundSet` | `:386157`, `:386166` |
+| Kickstart | `Motorbike_01_Kickstart_FoldOut_SoundSet` (lever out), `Motorbike_01_Starting_Engine_Off_SoundSet` (kick with no start) | `:386229`, `:386236` |
+| Horn | `Motorbike_01_Horn_SoundSet` (`loop = 1`), `Motorbike_01_Horn_Short_SoundSet` (`volumefactor = 0.4`), `Motorbike_01_Horn_Start_SoundSet` and `_End_SoundSet` | `:386282`, `:386291`, `:386299` to `:386307` |
+| Dampers | `Motorbike_01_damper_front_SoundSet`, `Motorbike_01_damper_rear_SoundSet`, both on `Motorbike_01_damper_SoundShader` with ten samples `motorbike_damper_01` to `_10` | `:386052`, `:386070`, `:317627` |
 
-The script classes name the rest: `Motorbike_01_Seat_FlipUp_SoundSet` and `Motorbike_01_Seat_FlipDown_SoundSet` (`motorbike_01.c:119`, `:123`), `Motorbike_01_hit_character_SoundSet` and `Motorbike_01_hit_heavy_SoundSet` (`motorbike_01.c:143`, `:150`).
+The script classes name the rest: `Motorbike_01_Seat_FlipUp_SoundSet` and `Motorbike_01_Seat_FlipDown_SoundSet` (`motorbike_01.c:116`, `:120`), `Motorbike_01_hit_character_SoundSet` and `Motorbike_01_hit_heavy_SoundSet` (`motorbike_01.c:140`, `:147`). The horn sound sets are registered per bike with `m_HornComponent.RegisterSound` (`motorbike_01.c:24` and `:25`), so a custom bike sets its own there.

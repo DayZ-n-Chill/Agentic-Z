@@ -23,7 +23,7 @@ Vanilla keeps inside and outside in separate classes (`ActionCloseCarDoors` and 
 
 When a host renders wrong there is usually nothing reliable to measure it against. Parts drawn through attachment proxies are placed by the engine from the entity transform, so they are reliable. If the proxies agree with each other and disagree with the host, the host is the broken one. Do not move the proxy anchors to match it: that deforms the correct piece, and the error changes with the host's state.
 
-On the helicopter, the doors (just moved to proxies), both rotors and the interior rose with the aircraft while the fuselage stayed on the ground, which located a rendering fault that had been open for a week.
+On the helicopter, the doors (just moved to proxies), both rotors and the interior rose with the aircraft while the fuselage stayed on the ground, which located the rendering fault on the fuselage.
 
 A test tool's scene raycast in proxy mode returns the Geometry LOD, not the visual mesh, so it cannot settle a visual misalignment; on a coarse collision hull it reports a surface tens of centimetres inside the visible skin. Use it for collision questions only.
 

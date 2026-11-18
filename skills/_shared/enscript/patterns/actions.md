@@ -8,7 +8,7 @@ See also: `examples/02_custom_action_singleuse.c` and `examples/03_continuous_ac
 
 ---
 
-## ⚠️ Register the action class
+## Register the action class
 
 A new action class must be inserted once in a modded `ActionConstructor.RegisterActions`. Adding it to an item in `SetActions` is not enough.
 
@@ -25,7 +25,7 @@ modded class ActionConstructor
 
 `ActionConstructor.ConstructActions` builds an action object only for the classes that `RegisterActions` inserts (`P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:3-27`; `RegisterActions` is at `:27`). `ActionManagerBase.GetAction` looks an action up in that map (`actionmanagerbase.c:214`). `ItemBase.AddAction` calls it, and for a class that was never registered it logs an error and returns, so the action never appears (`P:\scripts\4_world\entities\itembase.c:255-262`).
 
-The error goes through `Debug.LogError`, which writes only when the game runs with `-doLogs` and one of `-logToScript` (`script.log`), `-logToFile` (`$profile:scriptExt.log`) or `-logToRpt` (`P:\scripts\3_game\tools\debug.c:594-596`, `646-663`, `719-723`; `constants.c:256`). On a normal launch nothing is logged and the action silently never appears. With logging on, the line ends in:
+The error goes through `Debug.LogError`, which writes only when the game runs with `-doLogs` and one of `-logToScript` (`script.log`), `-logToFile` (`$profile:scriptExt.log`) or `-logToRpt` (`P:\scripts\3_game\tools\debug.c:594-596`, `646-663`, `719-723`; `P:\scripts\3_game\constants.c:256`). On a normal launch nothing is logged and the action silently never appears. With logging on, the line ends in:
 
 ```
 Action ActionMyMod_DrinkContaminate dosn't exist!
@@ -42,7 +42,7 @@ To test from outside whether an action is available, call the public `Can(Player
 
 ---
 
-## ⚠️ `CCINonRuined` vs `CCINone` for tool-in-hand actions
+## `CCINonRuined` vs `CCINone` for tool-in-hand actions
 
 Use `CCINonRuined` (an item in hand that is not ruined) **not** `CCINone` when the action needs a specific tool in hand. `CCINone.Can` returns `true` for anything, including no item and a ruined one (`ccinone.c:3`), so the action shows with a broken tool. `CCINonRuined.Can` returns `item && !item.IsDamageDestroyed()` (`ccinonruined.c:3`).
 
@@ -77,9 +77,9 @@ While the action runs, `CCIBase.CanContinue` also needs the item to still be the
 
 ---
 
-## ⚠️ Stopping a placed item from being picked up
+## Stopping a placed item from being picked up
 
-Both take actions already check `IsTakeable()`: `ActionTakeItem.ActionCondition` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiontakeitem.c:36`) and `ActionTakeItemToHands.ActionCondition` (`actiontakeitemtohands.c:38`). The inventory screen does not go through those actions, so also refuse cargo and hands. Vanilla `PowerGeneratorStatic` does exactly this (`P:\scripts\4_world\entities\building\underground\powergeneratorstatic.c:143`, `:149` and `:219`):
+Both take actions already check `IsTakeable()`: `ActionTakeItem.ActionCondition` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiontakeitem.c:36`) and `ActionTakeItemToHands.ActionCondition` (`actiontakeitemtohands.c:38`). The inventory screen does not go through those actions, so also refuse cargo and hands. Vanilla `PowerGeneratorStatic` does exactly this: `CanPutInCargo` at `P:\scripts\4_world\entities\building\underground\powergeneratorstatic.c:143`, `CanPutIntoHands` at `:149` and `IsTakeable` at `:219`.
 
 ```c
 override bool IsTakeable() { return false; }                          // the take actions
@@ -93,9 +93,9 @@ A fuller version of this pattern has four steps: the `IsTakeable()` and `CanPutI
 
 ---
 
-## ⚠️ Base the condition on synced state only
+## Base the condition on synced state only
 
-`ActionCondition` runs on the client to show the action and again on the server before it runs (`actionmanagerserver.c:168`, `actionbase.c:954`). If it reads client-only or unsynced state (a local variable, a value never net-synced, a `GetGame().IsClient()` branch), the client shows the action and the server rejects it. Base conditions on synced state only.
+`ActionCondition` runs on the client to show the action and again on the server before it runs: the server calls `Can` (`actionmanagerserver.c:168`), which calls `ActionCondition` (`actionbase.c:954`). If it reads client-only or unsynced state (a local variable, a value never net-synced, a `GetGame().IsClient()` branch), the client shows the action and the server rejects it. Base conditions on synced state only.
 
 A separate tip on inheritance: prefer `IsKindOf()` to `GetType()`. `GetType() == "MyMod_FancyKnife"` won't match subclasses of `MyMod_FancyKnife`, while `IsKindOf("MyMod_FancyKnife")` will.
 
@@ -116,6 +116,21 @@ Symptom of a condition that differs between client and server: the action render
 
 ---
 
+## Which key starts it, and where the action is found
+
+`GetInputType()` picks the input class, and the input class decides both the key and where the action manager looks for the action. All input classes are in `P:\scripts\4_world\classes\useractionscomponent\actioninput.c`:
+
+| Input class | Key input | Kind | Looks in | Line |
+|---|---|---|---|---|
+| `InteractActionInput` | `UAAction` | single press | the target and the player, not the item in hand | `:558`, from `:545` to `:555` |
+| `ContinuousInteractActionInput` | `UAAction` | held | the target and the player | `:545` |
+| `DefaultActionInput` | `UADefaultAction` | single press | the item in hand and the player, not the target | `:654`, from `:627` to `:637` |
+| `ContinuousDefaultActionInput` | `UADefaultAction` | held | the item in hand and the player | `:627` |
+
+`ActionBase.GetInputType()` returns `DefaultActionInput` (`P:\scripts\4_world\classes\useractionscomponent\actionbase.c:230`), `ActionContinuousBase` returns `ContinuousDefaultActionInput` (`actions\actioncontinuousbase.c:179`), and `ActionInteractBase` returns `InteractActionInput` (`actions\actioninteractbase.c:61`). So an action meant to be used on a world object or another item must use an interact input and be added in the target's `SetActions`; a default input action added only to the target is never found, because default inputs don't look at the target.
+
+Put the server effect in the hook that matches the base class: `OnExecuteServer` for a single use or interact action, which vanilla's `ActionConsumeSingle` overrides (`actions\singleuse\actionconsumesingle.c:40`; the empty base is `animatedactionbase.c:179`), and `OnFinishProgressServer` for a continuous one, run when the progress completes (`actions\actioncontinuousbase.c:289`). `OnStartServer` and `OnEndServer` (`actionbase.c:1391` and `:1409`) run at the start and the end, and `End` also runs when the action is interrupted (`actionbase.c:802` to `:810`, called from `Interrupt` at `:829`), so don't grant the result there.
+
 ## Action lifecycle (one-shot vs continuous)
 
 | Type | Base class | Used for | Source |
@@ -131,4 +146,4 @@ A continuous action also needs a callback class that sets its progress component
 Two facts about what the player sees on the cursor:
 
 - **An action can be shown and still not start.** Vanilla shows actions whose `CanBeStarted()` returns false, as information panels (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionpartinfo.c:18-21`), and the client manager starts an action only after `CanBeStarted()` passes (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:336-337`). "Visible on the cursor" does not mean the key will run it.
-- **Since 1.30 the cursor distance is also measured from the head.** `CCTCursor` passes when the target is in range of the player's root or of `distanceHead`, taken from `MiscGameplayFunctions.GetPlayerHeadPosition` (`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctcursor.c:35-36`; the helper is at `P:\scripts\4_world\static\miscgameplayfunctions.c:776` and uses stance height, not the head bone). `CCTObject` still measures to the target's `GetPosition()` (`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctobject.c:19`). The 1.30 `CCTLiquid` (`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctliquid.c:37`) replaces `CCTWaterSurfaceEx` in vanilla's fill, drink and wash actions. An action that never appears on a model with no View Geometry LOD is a model problem, not a script one.
+- **Since 1.30 the cursor distance is also measured from the head.** `CCTCursor` passes when the target is in range of the player's root or of `distanceHead`, taken from `MiscGameplayFunctions.GetPlayerHeadPosition` (`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctcursor.c:35-36`; the helper is at `P:\scripts\4_world\static\miscgameplayfunctions.c:778` and uses stance height, not the head bone). `CCTObject` still measures to the target's `GetPosition()` (`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctobject.c:19`). The 1.30 `CCTLiquid` (`P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctliquid.c:37`) replaces `CCTWaterSurfaceEx` in vanilla's fill, drink and wash actions. An action that never appears on a model with no View Geometry LOD is a model problem, not a script one.

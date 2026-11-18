@@ -48,7 +48,7 @@ One `[OK]` line per PNG, then one `[WARN]` or `[NOTE]` line per finding. Finding
 |---|---|---|
 | `off-screen` | `[WARN]` | A shown widget's box goes past the screen edge at the listed sizes. Often a pixel offset that only fits wide screens. |
 | `no-area` | `[WARN]` | A shown widget is under one pixel wide or high at the listed sizes, usually a tiny relative size. |
-| `missing-toggle` | `[NOTE]` | A widget leaves out an exact toggle over a nonzero `position` or `size` value, so the toggle decides the box. The preview draws it as 0 (relative). Vanilla files do this and load (`P:\gui\layouts\day_z_ingamemenu.layout:1` is a full-screen menu root with `size 1 1` and no size toggles), so it is a note for the repo rule that every toggle be written (`figma-to-dayz-rules.md` section 6), not a load problem. A toggle over a value of 0 changes nothing and is not reported, such as `position 0 0` with no `hexactpos` at `P:\gui\layouts\day_z_hud.layout:1`. |
+| `missing-toggle` | `[NOTE]` | A widget leaves out an exact toggle over a nonzero `position` or `size` value, so the toggle decides the box. The preview draws it as 0 (relative). Vanilla files do this and load (the root of `P:\gui\layouts\day_z_ingamemenu.layout:1` is a full-screen frame with `size 1 1` at `:3` and no size toggles), so it is a note for the repo rule that every toggle be written (`figma-to-dayz-rules.md` section 6), not a load problem. A toggle over a value of 0 changes nothing and is not reported, such as the root's `position 0 0` with no `hexactpos` (`P:\gui\layouts\day_z_hud.layout:4`). |
 
 ## What the preview draws
 

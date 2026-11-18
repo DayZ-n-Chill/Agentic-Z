@@ -13,11 +13,11 @@ How vanilla infected and animals are built in script, how their command handler 
 | `ZombieBase` | `DayZInfected` | `P:\scripts\4_world\entities\creatures\infected\zombiebase.c:1` |
 | `AnimalBase` | `DayZAnimal` | `P:\scripts\4_world\entities\creatures\animals\animalbase.c:1` |
 
-The script types are `DayZInfectedType` (`P:\scripts\3_game\entities\dayzinfectedtype.c:19`) and `DayZAnimalType` (`P:\scripts\3_game\entities\dayzanimaltype.c:1`), both children of `DayZCreatureAIType` (`P:\scripts\3_game\entities\dayzcreatureaitype.c:1`). The type reads the config path `CfgVehicles <class>` and its `AnimEvents` (`dayzcreatureaitype.c:13`).
+The script types are `DayZInfectedType` (`P:\scripts\3_game\entities\dayzinfectedtype.c:19`) and `DayZAnimalType` (`P:\scripts\3_game\entities\dayzanimaltype.c:1`), both children of `DayZCreatureAIType` (`P:\scripts\3_game\entities\dayzcreatureaitype.c:1`). The type reads the config path `CfgVehicles <class>` and its `AnimEvents` (`dayzcreatureaitype.c:13` and `:14`).
 
 In config, both families inherit `DZ_LightAI` (`P:\DZ\data\config.cpp:3079`): `DayZInfected` at `P:\DZ\characters\zombies\config.cpp:21` and `AnimalBase` at `P:\DZ\animals\config.cpp:17`. Nothing else in vanilla inherits `DZ_LightAI`, which is why vanilla has no human AI.
 
-Each animal species has its own script class, for example `Animal_CanisLupus` (`animalbase.c:82`) and `Animal_CervusElaphus` (`animalbase.c:209`). Infected script classes split by sex in `zombiemalebase.c` and `zombiefemalebase.c` next to `zombiebase.c`.
+Each animal species has its own script class, for example `Animal_CanisLupus` (`animalbase.c:82`) and `Animal_CervusElaphus` (`animalbase.c:209`). The Nasdara animals have theirs in the same file: `Animal_OvisGmelini` (mouflon, `:375`), `Animal_VaranusGriseus` (monitor lizard, `:512`), `Animal_CanisFamiliaris_Dobermann_ColorBase` (`:600`) and `Animal_CanisFamiliaris_GermanShepherd_ColorBase` (`:626`); the two dog bases copy the wolf's hit components and `IsDanger()` (`:602` to `:617`, against the wolf at `:84` to `:99`). Infected script classes split by sex in `zombiemalebase.c` and `zombiefemalebase.c` next to `zombiebase.c`.
 
 ## Commands
 
@@ -76,20 +76,29 @@ Script never creates or destroys a controller (`dayzcreatureaiinputcontroller.c:
 `DayZInfectedConstants` (`dayzinfected.c:12` to `:18`) lists `MINDSTATE_CALM`, `MINDSTATE_DISTURBED`, `MINDSTATE_ALERTED`, `MINDSTATE_CHASE`, `MINDSTATE_FIGHT` and `MINDSTATE_COWER`. Movement states are `DayZInfectedConstantsMovement` (`:21`): idle, walk, run, sprint.
 
 - The server reads the state every step in `HandleMindStateChange` (`zombiebase.c:454`) and syncs it: `RegisterNetSyncVariableInt("m_MindState", -1, 5)` (`zombiebase.c:54`). Clients read it with `GetMindStateSynced()` (`:182`).
-- When the state changes, `HandleMindStateChange` sets the idle animation with `SetIdleState`: calm 0, disturbed 1, chase 2 (`P:\scripts\4_world\entities\creatures\infected\zombiebase.c:459-472`).
-- `MINDSTATE_COWER` is new in 1.30 (not checkable on `P:\`, which holds 1.30 only) and is the sandstorm state. The infected goes back to the calm idle pose with `SetIdleState(0)`; the vanilla comment says the AI has already stopped its movement (`P:\scripts\4_world\entities\creatures\infected\zombiebase.c:474-478`). What puts an infected into the cower state is engine code; script only shows this reaction. A mod that switches on the mind state in `HandleMindStateChange` or in its own hooks must handle this value, or the creature falls through the switch. A custom infected that registers its own `m_MindState` sync range must keep it wide enough for the value 5.
-- Vanilla attacks only in chase and fight (`zombiebase.c:618` to `:623`): chase uses the `CHASE` attack group, fight the `FIGHT` group.
-- A stealth kill is refused once the infected is disturbed or higher (`P:\scripts\4_world\entities\dayzplayerimplementmeleecombat.c:447` to `:449`). A guard that should never be stealth killed must not sit in calm.
+- When the state changes, `HandleMindStateChange` sets the idle animation with `SetIdleState`: calm 0, disturbed 1, chase 2 (`P:\scripts\4_world\entities\creatures\infected\zombiebase.c:459` to `:472`). Chase sets its pose only when the infected comes from a lower state (`:470`). Every change also resets the attack cooldown and marks the sync variables dirty (`:482` and `:483`).
+- `MINDSTATE_COWER` is new in 1.30 (not checkable on `P:\`, which holds 1.30 only) and is the sandstorm state. The infected goes back to the calm idle pose with `SetIdleState(0)`; the vanilla comment says the AI has already stopped its movement (`P:\scripts\4_world\entities\creatures\infected\zombiebase.c:474` to `:478`). What puts an infected into the cower state is engine code; script only shows this reaction. A mod that switches on the mind state in `HandleMindStateChange` or in its own hooks must handle this value, or the creature falls through the switch. A custom infected that registers its own `m_MindState` sync range must keep it wide enough for the value 5.
+- Vanilla attacks only in chase and fight (`zombiebase.c:618` to `:623`): chase uses the `CHASE` attack group (`:704`), fight the `FIGHT` group (`:749`).
+- A stealth kill is refused once the infected is disturbed or higher (`P:\scripts\4_world\entities\dayzplayerimplementmeleecombat.c:447` to `:449`), which includes cower, the highest value. A guard that should never be stealth killed must not sit in calm.
 
 ## Attacks
 
-`DayZInfectedType.RegisterAttacks` (`dayzinfectedtype.c:49`) builds two groups from `DayZInfectedAttackGroupType` (`:13`): `CHASE` and `FIGHT`. Each `DayZInfectedAttackType` (`:1`) has distance, pitch, type, subtype, ammo, heavy flag, cooldown and probability. The ammo comes from config `AttackActions AttackShort`, `AttackLong` and `AttackRun` (`:57` to `:59`). `ChooseAttack(group, distance, pitch)` (`:96`) picks one. Cooldown drains at `GameConstants.AI_ATTACKSPEED` (1.5, `P:\scripts\3_game\constants.c:1126`).
+`DayZInfectedType.RegisterAttacks` (`dayzinfectedtype.c:49`) builds two groups from `DayZInfectedAttackGroupType` (`:13`): `CHASE` and `FIGHT`. Each `DayZInfectedAttackType` (`:1`) has distance, pitch, type, subtype, ammo, heavy flag, cooldown and probability. The ammo comes from config `AttackActions AttackShort`, `AttackLong` and `AttackRun` (`:57` to `:59`). `ChooseAttack(group, distance, pitch)` (`:96`) picks one. Cooldown drains at `GameConstants.AI_ATTACKSPEED` (1.5, `P:\scripts\3_game\constants.c:1126`), and only in the fight state (`zombiebase.c:733` to `:737`); the chase logic has no cooldown check.
+
+Before `ZombieBase` starts an attack (`ChaseAttackLogic` at `zombiebase.c:682`, `FightAttackLogic` at `:723`):
+
+- The target is whatever `GetTargetEntity()` returns; a player in a vehicle is never attacked (`:689`, `:730`).
+- `CanAttackToPosition` must pass, and the target must be the first melee target in a cone of `TARGET_CONE_ANGLE_CHASE` 20 or `TARGET_CONE_ANGLE_FIGHT` 30 degrees (`:3`, `:4`, `:707`, `:752`).
+- Damage lands only when the attack command reports `WasHit()` and the target is still within the attack's distance (`:631`, `:649`). A player blocking and facing the infected takes `MeleeZombie` from a heavy attack and `Dummy_Light` from a light one instead of the attack's ammo (`:652` to `:664`).
+
+A custom target (a guard post, a decoy object) that the engine AI never returns from `GetTargetEntity()` is never attacked by this code.
 
 ## Damage and death hooks
 
-- `DayZInfected.EEHitBy` (`dayzinfected.c:138`) applies shock as damage for nonlethal ammo, cripples legs above `LEG_CRIPPLE_THRESHOLD` 74 (`:129`), and sends the kill event once.
-- `DayZAnimal.EEHitBy` (`dayzanimal.c:832`) creates wounds and queues a hit animation.
-- `DayZCreatureAI.EEKilled` (`dayzanimal.c:237`) creates the body staging component used for skinning.
+- `DayZInfected.EEHitBy` (`dayzinfected.c:138`) turns the shock of nonlethal ammo (`transferShockToDamage` 1) into health damage and sends the kill event once (`:142` to `:176`). Only that nonlethal shock is checked against `LEG_CRIPPLE_THRESHOLD` 74 (`:129`): 74 or more on a leg zone sets that leg's health to 0, and on the torso or head forces a heavy hit (`HandleSpecialZoneDamage`, `:193` to `:203`). Ordinary bullets do not cripple through this code.
+- `DayZAnimal.EEHitBy` (`dayzanimal.c:832`) turns nonlethal shock into health damage the same way, otherwise creates wounds, then queues a hit animation (`:837` to `:853`).
+- `DayZCreatureAI.EEKilled` (`dayzanimal.c:237`) creates the body staging component used for skinning. The vanilla comment on that line says it is never called on clients in multiplayer, which is why skinning does not work properly there (`:240`).
+- `ZombieBase.HandleDamageHit` (`zombiebase.c:867`) always plays the hit reaction for a heavy hit or while the infected is calm or disturbed; otherwise the chance is `SHOCK_TO_STUN_MULTIPLIER` 2.82 times the shock, out of 100 (`:7`, `:884` to `:886`). A new hit reaction waits at least `HIT_INTERVAL_MIN` 0.3 seconds after the last (`:864`, `:872`).
 - Override these with `super` first to add loot, rewards or alarms.
 
 ## Classes you cannot mod

@@ -36,10 +36,10 @@ Both are in `P:\DZ\vehicles\singletrack\config.cpp` (`config.cpp` below), with s
 
 | Config class | Line | Script class | Notes |
 |---|---|---|---|
-| `Motorbike_01_ColorBase` | `config.cpp:220` (`scope=1`, `config.cpp:222`) | `motorbike_01.c:1` | Three gears (`ratios[]`, `config.cpp:338`), flip-up seat (`SeatDriver`), rider instance `MOTO1`. Colours `Motorbike_01_Blue`, `_Yellow`, `_Red` (`config.cpp:991`, `:995`, `:1007`). |
-| `Motorbike_02_ColorBase` | `config.cpp:1401` (`scope=1`, `config.cpp:1403`) | `motorbike_02.c:1` | Four gears (`ratios[]`, `config.cpp:1528`), three fairing slots (`Motorbike_02_ShieldFront`, `_ShieldLeft`, `_ShieldRight`, `config.cpp:1406` to `:1415`), rider instance `MOTO2`. Colours `Motorbike_02_Red`, `_Yellow`, `_Blue`, `_Green` (`config.cpp:2269`, `:2273`, `:2287`, `:2301`). |
+| `Motorbike_01_ColorBase` | `config.cpp:220` (`scope=1`, `config.cpp:222`) | `inheritedmotorbikes\motorbike_01.c:1` | Three gears (`ratios[]`, `config.cpp:342`), flip-up seat (`SeatDriver`), rider instance `MOTO1`. Colours `Motorbike_01_Blue`, `_Yellow`, `_Red` (`config.cpp:995`, `:999`, `:1011`). |
+| `Motorbike_02_ColorBase` | `config.cpp:1404` (`scope=1`, `config.cpp:1406`) | `inheritedmotorbikes\motorbike_02.c:1` | Four gears (`ratios[]`, `config.cpp:1535`), three fairing slots (`Motorbike_02_ShieldFront`, `_ShieldLeft`, `_ShieldRight`, `config.cpp:1415` to `:1417`), rider instance `MOTO2`. Colours `Motorbike_02_Red`, `_Yellow`, `_Blue`, `_Green` (`config.cpp:2276`, `:2280`, `:2294`, `:2308`). |
 
-Each bike has its own wheel classes on `MotorbikeWheel`, with a `_Ruined` child each: `Motorbike_01_Wheel_1` and `Motorbike_01_Wheel_2` (`config.cpp:154`, `:187`), `Motorbike_02_Wheel_1` and `Motorbike_02_Wheel_2` (`config.cpp:1019`, `:1051`). The wheel proxies are declared in `CfgNonAIVehicles` (`config.cpp:2316` to `:2350`).
+Each bike has its own wheel classes on `MotorbikeWheel`, with a `_Ruined` child each: `Motorbike_01_Wheel_1` and `Motorbike_01_Wheel_2` (`config.cpp:154`, `:187`), `Motorbike_02_Wheel_1` and `Motorbike_02_Wheel_2` (`config.cpp:1023`, `:1055`). The wheel proxies are declared in `CfgNonAIVehicles` (`config.cpp:2323` to `:2357`).
 
 Two ways to make a motorbike, as for a car:
 
@@ -62,14 +62,16 @@ Two ways to make a motorbike, as for a car:
 | Doors | None. `IsAreaAtDoorFree` returns `true`; `CrewCanGetThrough`, `CanReachSeatFromSeat` and `CanReachDoorsFromSeat` return `true`; `CanReachSeatFromDoors` returns `true` only when the player stands within `pDistance` of the seat memory point (height ignored). | `P:\scripts\3_game\vehicles\motorbike.c:60` to `:68`; the reach checks at `motorbikescript.c:469` to `:504` |
 | Radiator and coolant | Not vital: `IsVitalRadiator()` returns `false`. | `P:\scripts\4_world\entities\vehicles\motorbikescript.c:321` to `:324` |
 | Fluids | Capacities for fuel, oil, coolant and brake fluid are declared (`fuelCapacity`, `oilCapacity`, `coolantCapacity`, `brakeFluidCapacity`), but the script only uses `MotorbikeFluid.FUEL`. | `P:\DZ\vehicles\singletrack\config.cpp:30` to `:33` |
-| Battery | Depends on the override. `NeedElectricitySourceDevice()` returns `true` by default and `MotorbikeScript` does not change it; both vanilla bikes return `false`. | `P:\scripts\3_game\vehicles\transport.c:830` to `:833`; `motorbike_01.c:33` to `:36`, `motorbike_02.c:34` to `:37` |
-| Brakes | Two channels. `SetBrake` is the rear brake and `SetHandbrake` the front brake; config binds `Front` to `input=1` and `Rear` to `input=0`. There is no parking brake. | `P:\scripts\3_game\vehicles\motorbike.c:129` to `:139`; `config.cpp:292`, `:301` |
-| Steering | Lean and tip-over curves in `class Steering` (`tipoverAngle`, `maxLeanAngle[]`, `maxSteeringAngle[]`), read by the native simulation. | `P:\DZ\vehicles\singletrack\config.cpp:266` to `:278` |
+| Battery | Depends on the override. `NeedElectricitySourceDevice()` returns `true` by default and `MotorbikeScript` does not change it; both vanilla bikes return `false`. | `P:\scripts\3_game\vehicles\transport.c:830` to `:833`; `inheritedmotorbikes\motorbike_01.c:30` to `:33`, `motorbike_02.c:31` to `:34` |
+| Brakes | Two channels. `SetBrake` is the rear brake and `SetHandbrake` the front brake; config binds `Front` to `input=1` and `Rear` to `input=0`. There is no parking brake. | `P:\scripts\3_game\vehicles\motorbike.c:129` to `:139`; `config.cpp:296`, `:305` |
+| Steering | Lean and tip-over curves in `class Steering` (`tipoverAngle`, `maxLeanAngle[]`, `maxSteeringAngle[]`), read by the native simulation. | `P:\DZ\vehicles\singletrack\config.cpp:270` to `:282` |
 | Standing still | A kickstand, deployed in the constructor with `SetKickstand(1)`. | `P:\scripts\4_world\entities\vehicles\motorbikescript.c:141` |
 | Falling | The bike can fall (`FallOver`, `IsFallen`), ejects its crew when fallen (`CrewShouldEject`) and is picked up with `ActionPickUpMotorbike`. | `P:\scripts\3_game\vehicles\motorbike.c:112` to `:115`; `motorbikescript.c:464` to `:467`, `:367` |
 | Leaving in gear | The engine stops when the driver leaves with a gear engaged (`OnDriverExit`). | `P:\scripts\4_world\entities\vehicles\motorbikescript.c:217` to `:223` |
 | Vehicle HUD | `GetVehicleType()` returns `"VehicleTypeMotorbike"`, which selects `MotorbikeHud`. | `P:\scripts\4_world\entities\vehicles\motorbikescript.c:316` to `:319` |
 | Third-person camera | Its own camera, `DAYZCAMERA_3RD_VEHICLE_MOTORBIKE`, returned by `Get3rdPersonCameraType`. | `P:\scripts\4_world\entities\vehicles\motorbikescript.c:454` to `:457` |
+| Stopping the engine | `ActionStopEngineMotorbike` is offered only while `GetSpeedometerAbsolute()` reads 8 km/h or less. | `P:\scripts\4_world\classes\useractionscomponent\actions\singleuse\vehicles\actionstopenginemotorbike.c:29` |
+| Leaving while moving | Getting off above 10 km/h counts as jumping out; a car's threshold is 8 km/h and a boat's 5. | `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetouttransport.c:34` to `:36`, `:155` to `:164` |
 
 ## What the script class must override
 
@@ -77,28 +79,28 @@ Two ways to make a motorbike, as for a car:
 
 | Override | Vanilla value | In `Motorbike_01` | Default it replaces |
 |---|---|---|---|
-| `int GetAnimInstance()` | `VehicleAnimInstances.MOTO1` (10) or `MOTO2` (11) | `motorbike_01.c:48` to `:51` | `Error("GetAnimInstance() not implemented")` (`P:\scripts\3_game\vehicles\transport.c:662` to `:665`) |
-| `bool HasDirectionalInOutAction()` | `true` | `motorbike_01.c:53` to `:56` | `Transport` version at `transport.c:677` |
-| `int GetSeatAnimationTypeDirectional(int posIdx, int directionIndex)` | `0` from the left, `1` from the right, for the driver | `motorbike_01.c:58` to `:69` | `Error("GetSeatAnimationTypeDirectional() not implemented")` (`P:\scripts\3_game\vehicles\transport.c:690` to `:693`) |
-| `bool NeedElectricitySourceDevice()` | `false` (no battery) | `motorbike_01.c:33` to `:36` | `true` (`transport.c:830` to `:833`) |
-| `float GetTransportCameraDistance()` | `2.5` | `motorbike_01.c:38` to `:41` | `Transport` version at `transport.c:649` |
-| `vector GetTransportCameraOffset()` | `"0 1.3 -0.25"` | `motorbike_01.c:43` to `:46` | `Transport` version at `transport.c:657` |
+| `int GetAnimInstance()` | `VehicleAnimInstances.MOTO1` (10) or `MOTO2` (11) | `motorbike_01.c:45` to `:48` | `Error("GetAnimInstance() not implemented")` (`P:\scripts\3_game\vehicles\transport.c:665` to `:673`) |
+| `bool HasDirectionalInOutAction()` | `true` | `motorbike_01.c:50` to `:53` | `false` (`transport.c:680` to `:683`) |
+| `int GetSeatAnimationTypeDirectional(int posIdx, int directionIndex)` | `0` from the left, `1` from the right, for the driver | `motorbike_01.c:55` to `:66` | `Error("GetSeatAnimationTypeDirectional() not implemented")` (`P:\scripts\3_game\vehicles\transport.c:693` to `:699`) |
+| `bool NeedElectricitySourceDevice()` | `false` (no battery) | `motorbike_01.c:30` to `:33` | `true` (`transport.c:830` to `:833`) |
+| `float GetTransportCameraDistance()` | `2.5` | `motorbike_01.c:35` to `:38` | `4.0` (`transport.c:652` to `:655`) |
+| `vector GetTransportCameraOffset()` | `"0 1.3 -0.25"` | `motorbike_01.c:40` to `:43` | `"0 1.3 0"` (`transport.c:660` to `:663`) |
 
 `MOTO1` and `MOTO2` are the last two entries of `VehicleAnimInstances` (`P:\scripts\4_world\entities\vehicles\vehicleaniminstances.c:13` to `:14`). The directional seat animation is read only when `HasDirectionalInOutAction()` returns `true` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:81` to `:100`), so a bike that overrides only `GetSeatAnimationTypeDirectional` ignores its left and right get-in animations.
 
-The constructor sets what the base leaves empty (`motorbike_01.c:3` to `:26`): the contact damage coefficients `m_VehicleContactDamageCoef` and `m_CrewContactDamageCoef`, the engine sound sets (`m_EngineStartOK`, `m_EngineStartFuel`, `m_EngineStop`, `m_EngineStopFuel`), the light profiles and horn sounds, and `SetEnginePos`. `Motorbike_01` also overrides `CanGetIn` to require the seat down (`motorbike_01.c:92` to `:98`) and `IsVitalGlowPlug` to `false` (`motorbike_01.c:82` to `:85`).
+The constructor sets what the base leaves empty (`motorbike_01.c:3` to `:28`): the contact damage coefficients `m_VehicleContactDamageCoef` and `m_CrewContactDamageCoef`, the engine sound sets (`m_EngineStartOK`, `m_EngineStartFuel`, `m_EngineStop`, `m_EngineStopFuel`), the light profiles and horn sounds, and `SetEnginePos`. `Motorbike_01` also overrides `CanGetIn` to require the seat down (`motorbike_01.c:89` to `:95`) and `IsVitalGlowPlug` to `false` (`motorbike_01.c:79` to `:82`).
 
 ## What the config class must contain
 
 | Block | Vanilla example | Notes |
 |---|---|---|
 | `class Crew` | `P:\DZ\vehicles\singletrack\config.cpp:52` to `:70` | `Driver` and `CoDriver: Driver`; both have `isDriver=1` and `actionSel="seat_driver"`. |
-| `class SimulationModule` | base `config.cpp:71` to `:92`, `Motorbike_01` `config.cpp:263` to `:378` | `Steering`, `Throttle`, `Brakes`, `Aerodynamics`, `Engine`, `Clutch`, `Gearbox`, `Wheels` with `Front` and `Rear`. |
-| `class AnimationSources` | base `config.cpp:111` to `:147`, `Motorbike_01` `config.cpp:379` to `:399` | `HideDestroyed_*`, `AnimHitWheel_1` and `_2`, `damper_1`, `damper_2`, and `SeatDriver` for a flip-up seat. |
-| `class DamageSystem` | `Motorbike_01` `config.cpp:400` to `:989` | Zones `Chassis`, `Fender`, `Engine`, `Front`, `Reflector_1_1`, `Back`, `FuelTank`, then `GUIInventoryAttachmentsProps`. |
+| `class SimulationModule` | base `config.cpp:71` to `:92`, `Motorbike_01` `config.cpp:267` to `:382` | `Steering`, `Throttle`, `Brakes`, `Aerodynamics`, `Engine`, `Clutch`, `Gearbox`, `Wheels` with `Front` and `Rear`. |
+| `class AnimationSources` | base `config.cpp:111` to `:147`, `Motorbike_01` `config.cpp:383` to `:403` | `HideDestroyed_*`, `AnimHitWheel_1` and `_2`, `damper_1`, `damper_2`, and `SeatDriver` for a flip-up seat. |
+| `class DamageSystem` | `Motorbike_01` `config.cpp:404` to `:993` | Zones `Chassis`, `Fender`, `Engine`, `Front`, `Reflector_1_1`, `Back`, `FuelTank`, then `GUIInventoryAttachmentsProps`. |
 | `class NoiseCarHorn` | `config.cpp:148` to `:152` | Read by the horn component for infected hearing. |
-| `speedGeomActivation`, `speedGeoms[]` | `config.cpp:258` to `:262` | Hides the kickstand collision component `geotohide` at speed. |
-| Wheel classes and proxies | `config.cpp:154` to `:219`, `config.cpp:2316` to `:2350` | One class per wheel on `MotorbikeWheel`, a `_Ruined` child each, and a `ProxyVehiclePart` class per wheel model. |
+| `speedGeomActivation`, `speedGeoms[]` | `config.cpp:262` to `:266` | Hides the kickstand collision component `geotohide` at speed. |
+| Wheel classes and proxies | `config.cpp:154` to `:219`, `config.cpp:2323` to `:2357` | One class per wheel on `MotorbikeWheel`, a `_Ruined` child each, and a `ProxyVehiclePart` class per wheel model. |
 
 The literal blocks are in `motorbike-config-contract.md`, `motorbike-simulation-config.md` and `motorbike-damage-and-wheel-config.md`.
 

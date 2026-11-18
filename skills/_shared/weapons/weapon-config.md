@@ -35,7 +35,8 @@ To find out why a gun will not cycle its fire modes: add a throwaway `scope=2` c
 | `ironsightsExcludingOptics[]` | Optics whose model covers the iron sights; the CZ527 lists `HuntingOptic`. Engine key: no vanilla script reads it, so confirm the effect in game. | `cz527\config.cpp:45` |
 | `winchesterTypeOpticsMount` | Makes `HuntingOptic` show its Winchester rings instead of its rail rings. | `cz527\config.cpp:44`; read in `P:\scripts\4_world\entities\itembase\inventory_base\huntingoptic.c:66` |
 | `PPDOFProperties[]` | Depth of field while aiming. Read by `Weapon_Base.InitDOFProperties`. | `cz527\config.cpp:42`; `P:\scripts\4_world\entities\firearms\weapon_base.c:1279` |
-| `WeaponLength`, `ObstructionDistance` | Used by the weapon lift check near walls. `WeaponLength` defaults to 0.8 when missing. | `cz527\config.cpp:49`, `:50`; `weapon_base.c:1300` |
+| `WeaponLength`, `ObstructionDistance` | Used by the weapon lift check near walls. `WeaponLength` defaults to 0.8 when missing, `ObstructionDistance` to 0. | `cz527\config.cpp:49`, `:50`; `weapon_base.c:1300`, `:1337` |
+| `ShoulderDistance`, `WeaponLiftCheckVerticalOffset` | How far from the shoulder the weapon length starts (pistols start nearer the wrist, stocked rifles at 0), and a height offset for the lift check. Both default to 0; the CZ527 sets neither, the M4 uses `ShoulderDistance=0.050000001`, the 1911 `0.40000001` and the M79 `WeaponLiftCheckVerticalOffset=-0.1`. | `weapon_base.c:1312`, `:1324`, `:1756` to `:1760`; `P:\DZ\weapons\pistols\1911\config.cpp:36`; `P:\DZ\weapons\firearms\m4\config.cpp:48`; `P:\DZ\weapons\launchers\m79\config.cpp:147` |
 | `initSpeedMultiplier` | Engine key; by its name a multiplier on the bullet's `initSpeed`. The CZ527 uses 1.2, the AKM 0.9 (`akm\config.cpp:43`). | `cz527\config.cpp:52` |
 | `barrelArmor` | Engine key for barrel wear; it pairs with the bullet's `damageBarrel` (see `magazines-ammo.md`). | `cz527\config.cpp:51` |
 | `class NoiseShoot` | How far AI hears the shot (`strength`, `type="shot"`). | `cz527\config.cpp:76` |
@@ -62,7 +63,8 @@ More keys seen in vanilla:
 ## Jamming
 
 - `class Reliability` holds `ChanceToJam[]` with five values, one per health level from pristine to ruined. `Rifle_Base` uses `{0,0.001,0.0099999998,0.1,1}` (`P:\DZ\data\config.cpp:4218` to `:4221`); `BoltActionRifle_Base` never jams until ruined, `{0,0,0,0,1}` (`:4261` to `:4264`).
-- Script reads it on the server in `InitReliability` (`weapon_base.c:1289`) and picks the value for the current health level in `GetChanceToJam` (`weapon_base.c:403`).
+- Script reads it on the server only, in `InitReliability` from the `Weapon_Base` constructor (`weapon_base.c:126` to `:129`, `:1289`), and picks the value for the current health level in `GetChanceToJam` (`weapon_base.c:403`).
+- The client never reads the config. While the gun is in hands, the server's `WeaponManager` sends the current chance to the client through `DayZPlayerSyncJunctures.SendWeaponJamChance` whenever it differs by more than 0.001 (`P:\scripts\4_world\classes\weapons\weaponmanager.c:927` to `:941`). On each trigger pull `WeaponManager.Fire` calls `JamCheck` (`weaponmanager.c:494`), which compares that synced chance with a synced random number (`RandomGeneratorSyncUsage.RGSJam`, `weapon_base.c:366` to `:376`). To change jamming in script, override `GetChanceToJam` on the server side; never roll the jam with your own random number, or client and server disagree.
 
 ## Damage
 

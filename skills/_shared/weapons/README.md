@@ -19,7 +19,7 @@ Every vanilla fact cites the file on `P:\` it came from as `path:line`. Lessons 
 | How does a weapon get its hand pose and clips, what can a custom weapon change without replacing the player graph, and how do I make the support hand close? | The animation pack: `_shared/animation/weapon-in-hands.md` (grip, binding, the support hand) and `_shared/animation/weapon-anim-blender.md` (clips, state names, registration, `reloadAction`, loop notes) |
 | How do I bring a Blender weapon mesh into the `.p3d` the right way round, and which build do I test? | `model-import.md` |
 | What do I check before the first in-game test, and what causes a given symptom? | `troubleshooting.md` |
-| What breaks when a weapon mod moves to 1.30, and what do I build on instead of the four 1.30 weapons? | `dayz-1-30-migration.md` |
+| What breaks when a weapon mod moves to 1.30, and where do the four 1.30 weapons (SCAR-L, Lee-Enfield, MP18, Luger) and their addons live? | `dayz-1-30-migration.md` |
 
 ## Worked example used across the pack
 

@@ -52,7 +52,7 @@ Read from the working quadbike; the wheel pattern is `wheel_<side>_<axle>` with 
 
 The sedan has no `wheel_X_Y_damper` or steering axis points in Memory: it uses a `susp_arm_*` linkage with `susp_arm_steering_X_1_axis`. Damper and steering names belong to each car's skeleton, so a check should require only `wheel_X_Y_axis` in Memory and `wheel_X_Y_damper_land` in Geometry.
 
-Two points carry hidden defaults. Without `drown_engine` the engine drowns at the model origin (per the Bohemia docs). The fuel position loads only when `MemoryPointExists("refill")` and `GetActionCompNameFuel()` returns `"refill"` (`P:\scripts\3_game\vehicles\transport.c:112` and `:113`, `:459` to `:461`); a model with `fuelpoint` instead leaves the fuel action at 0,0,0.
+Two points carry hidden defaults. Without `drown_engine` the engine drowns at the model origin (per the Bohemia docs). The fuel position loads only when `MemoryPointExists("refill")` and `GetActionCompNameFuel()` returns `"refill"` (`P:\scripts\3_game\vehicles\transport.c:112` and `:113`, `:462` to `:465`); a model with `fuelpoint` instead leaves the fuel action at 0,0,0.
 
 ## Named selections per LOD
 

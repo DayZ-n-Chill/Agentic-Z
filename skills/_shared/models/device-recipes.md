@@ -35,7 +35,7 @@ Largest size of each device: push button 36 mm, battery adapter 80 mm, wall swit
 
 ## LED states through hidden selections
 
-Script shows an LED state by swapping the texture or material of the LED's hidden selection: `SetObjectTexture(0, "\MyMod\data\led_green_co.paa")` on the device, where 0 is the index in `hiddenSelections[]` (`P:\scripts\3_game\entities\entityai.c:2881`); `SetObjectMaterial` swaps the `.rvmat` (`:2884`). Arma's SQF `setObjectTexture [obj, 0, ...]` does not exist in DayZ. Green means active, red a fault, yellow a warning, and off no power.
+Script shows an LED state by swapping the texture or material of the LED's hidden selection: `SetObjectTexture(0, "\MyMod\data\led_green_co.paa")` on the device, where 0 is the index in `hiddenSelections[]` (`P:\scripts\3_game\entities\entityai.c:2881`); `SetObjectMaterial` swaps the `.rvmat` (`:2884`). Which side calls it, and how the state reaches clients, is in `_shared/textures/runtime-material-swaps.md`. Arma's SQF `setObjectTexture [obj, 0, ...]` does not exist in DayZ. Green means active, red a fault, yellow a warning, and off no power.
 
 ## Vertex budgets
 
@@ -61,7 +61,7 @@ A suggested layout for a new mod built from these specifications (the power mod 
 ```
 
 - Selections are `<part>_<material or colour>`: `body_housing`, `button_black`, `led_green`, `led_red`, `led_off`, `terminal_positive`, `terminal_negative`, `cable_gland`, `din_clip`, `mount_tab_l`, `mount_tab_r`.
-- Memory points are `<device part>_<purpose>`, plus the common `actionPos` (where the player interacts) and `ce_center` (the object's centre): `button_axis`, `switch_axis_x`, `fuel_cap_pivot`.
+- Memory points are `<device part>_<purpose>`, plus `actionPos` (the power mod's own name for where the player interacts; no vanilla script looks it up, `memory-points.md`) and `ce_center` (the object's centre, which vanilla reads for actions and the vicinity list, `P:\scripts\3_game\entities\object.c:1363`): `button_axis`, `switch_axis_x`, `fuel_cap_pivot`.
 - Cable ports are `port_input_N` and `port_output_N`, with `N` matching the device script's `AddPort` calls, each paired with a `_dir` point; the cable leaves along the line from the port to its `_dir` point. Without the `_dir` point the cable cannot attach (`memory-and-selections-authoring.md`, "Electrical port convention").
 
 ## Common problems

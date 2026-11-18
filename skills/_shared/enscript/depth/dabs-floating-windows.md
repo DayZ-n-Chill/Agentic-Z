@@ -4,7 +4,7 @@ How a mod's draggable window takes the cursor without a full screen modal, gives
 
 ## Taking input without a modal
 
-Lock game input, show the cursor and disable the player's own input, so the player cannot shoot or eat while the window is open. `Input.ChangeGameFocus(int add, int input_device = -1)` is declared at `P:\scripts\3_game\tools\input.c:20` and `UIManager.ShowUICursor(bool visible)` at `P:\scripts\3_game\tools\uimanager.c:244`.
+Lock game input, show the cursor and disable the player's own input, so the player cannot shoot or eat while the window is open. `Input.ChangeGameFocus(int add, int input_device = -1)` is declared at `P:\scripts\3_game\tools\input.c:20` and `UIManager.ShowUICursor(bool visible)` at `P:\scripts\3_game\tools\uimanager.c:244`; the player's `HumanInputController.SetDisabled(bool pState)` is at `P:\scripts\3_game\human.c:22`.
 
 ```c
 void DoOpen()
@@ -58,7 +58,7 @@ Reported by mod authors, not checked on `P:\`: UI colours look 30 to 50 percent 
 | `COL_SEPARATOR` | `0x30FFFFFF` | Separator line, at the lowest visible alpha |
 | `COL_GREEN`, `COL_RED` | `0xFF4ADE80`, `0xFFF87171` | Accent and warning |
 
-To colour an image widget, give it a plain white procedural texture first, then tint it:
+To colour an image widget, give it a plain white procedural texture first, then tint it (`ImageWidget.LoadImageFile` at `P:\scripts\1_core\proto\enwidgets.c:257`, `Widget.SetColor` at `:144`):
 
 ```c
 PanelBg.LoadImageFile(0, "#(argb,8,8,3)color(1,1,1,1,CO)");

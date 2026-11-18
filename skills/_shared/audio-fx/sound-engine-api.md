@@ -32,7 +32,7 @@ All line numbers below are in `P:\scripts\3_game\sound.c` unless another file is
 Vanilla does this in three places, each a good model:
 
 - The music player builds a `SoundObject`, sets `WaveKind.WAVEMUSIC` and calls `Play2D` (`P:\scripts\3_game\systems\dynamicmusicplayer\dynamicmusicplayer.c:520`).
-- `EffectSound` adds the environment variables, builds the object, sets its kind and parent, sets its position and calls `Play3D` (`P:\scripts\3_game\effects\effectsound.c:173`).
+- `EffectSound` adds the environment variables, builds the object, sets its kind and parent, sets its position and calls `Play3D` (`P:\scripts\3_game\effects\effectsound.c:164` to `:173`). It builds a fresh object only when its environment flag is set (`effectsound.c:162`).
 - The player's step sounds set the position and call `Play3D` (`P:\scripts\4_world\entities\dayzplayerimplement.c:3254`).
 
 The same steps for a looping sound that follows an object, kept as a wave so its pitch can be changed. Client only:

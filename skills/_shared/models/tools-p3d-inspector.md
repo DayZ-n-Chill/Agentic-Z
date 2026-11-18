@@ -2,7 +2,7 @@
 
 How to run the three inspector scripts of `/dayz-model-tools`: one reads a source (MLOD) `.p3d` into a Recipe JSON, one shows that Recipe in a browser where memory points and axis ends can be dragged, and one builds a new `.p3d` from the edited Recipe. The Recipe fields are in `tools-p3d-inspector-recipe.md`, the page in `tools-p3d-inspector-viewer.md`, and what a rebuild can lose in `tools-p3d-inspector-round-trip.md`.
 
-This is tool behaviour, not game fact. Of the points the page colours, only `ce_center`, `box_placing_min`, `box_placing_max` and the `_axis` names are vanilla (`memory-points.md`); vanilla script reads `ce_center` at `P:\scripts\3_game\entities\object.c:1363`.
+This is tool behaviour, not game fact. Of the points the page colours, only `ce_center`, `box_placing_min`, `box_placing_max` and the `_axis` names are vanilla (`memory-points.md`); vanilla script reads `ce_center` at `P:\scripts\3_game\entities\object.c:1363`, and the placement hologram reads `box_placing_min` and `box_placing_max` when the projected model has no collision box (`P:\scripts\4_world\classes\hologram.c:1069` to `:1072`).
 
 The order is always the same: extract the model to a Recipe, open the Recipe in the page and edit it by hand, then build a new `.p3d` from the edited Recipe.
 

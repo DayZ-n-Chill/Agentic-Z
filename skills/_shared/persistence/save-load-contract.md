@@ -47,26 +47,26 @@ You do not write these yourself. They are written by the base classes your class
 | Energy: amount, passive, switched on, plugged, and the energy source's persistent ID in four ints | `EntityAI.OnStoreSave` | `P:\scripts\3_game\entities\entityai.c:2917` to `:2948` |
 | Variables mask and values (temperature in `EntityAI`; quantity, wetness, liquid type, color and cleanness in `ItemBase`) | `SaveVariables` and `WriteVarsToCTX` | `P:\scripts\3_game\entities\entityai.c:3160`; `P:\scripts\4_world\entities\itembase.c:2966` |
 | Quick bar slot when a player carries it | `ItemBase.OnStoreSave` | `P:\scripts\4_world\entities\itembase.c:3194` |
-| Disease agents | `ItemBase.OnStoreSave` calls `SaveAgents` | `P:\scripts\4_world\entities\itembase.c:3194` |
-| Remote trigger pairing | `RemotelyActivatedItemBehaviour.OnStoreSave` from `ItemBase` | `P:\scripts\4_world\entities\itembase.c:3210` to `:3214` |
+| Disease agents | `ItemBase.OnStoreSave` calls `SaveAgents` | `P:\scripts\4_world\entities\itembase.c:3212` |
+| Remote trigger pairing | `RemotelyActivatedItemBehaviour.OnStoreSave` from `ItemBase` | `P:\scripts\4_world\entities\itembase.c:3214` to `:3218` |
 
 Attachments and cargo are stored by the engine as their own records, not in your stream. `AfterStoreLoad` runs "after all children loaded" (`P:\scripts\3_game\entities\entityai.c:1418`), and `OnBinLoadItemsDropped` fires when a child could not be put back into its parent and was dropped (`:1423`). So a safe's contents survive a restart without any script; only state the engine does not know about (a code, a timer, an owner) needs `OnStoreSave`.
 
 ## Load hook order
 
 1. `OnStoreLoad` on the entity. Read your values here and store them in member variables. Do not look up other entities yet.
-2. `AfterStoreLoad`, after this entity and all its children are loaded. Apply state that depends on loaded values or on children. `ItemBase` sets the loaded quantity here (`P:\scripts\4_world\entities\itembase.c:3222`), and `BaseBuildingBase` rebuilds its parts here (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:466`).
+2. `AfterStoreLoad`, after this entity and all its children are loaded. Apply state that depends on loaded values or on children. `ItemBase` sets the loaded quantity here (`P:\scripts\4_world\entities\itembase.c:3222`), and `BaseBuildingBase` rebuilds its parts here (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:465`).
 3. `EEOnAfterLoad`, for links between separate entities. `ItemBase` clears its damage reset flag here (`P:\scripts\4_world\entities\itembase.c:3238`), which shows vanilla expects it to run after `AfterStoreLoad`.
 
 ## Links to other entities
 
-`GetPersistentID(out int b1, out int b2, out int b3, out int b4)` returns an ID that "stays the same even after server restart" (`P:\scripts\3_game\entities\entityai.c:3374`). To restore a link, save the four ints, keep them in `OnStoreLoad`, and look the entity up later with `GetGame().GetEntityByPersitentID(b1, b2, b3, b4)` (the vanilla name is spelled that way, `P:\scripts\3_game\global\game.c:1420`).
+`GetPersistentID(out int b1, out int b2, out int b3, out int b4)` returns an ID that "stays the same even after server restart" (`P:\scripts\3_game\entities\entityai.c:3374`). To restore a link, save the four ints, keep them in `OnStoreLoad`, and look the entity up later with `GetGame().GetEntityByPersitentID(b1, b2, b3, b4)` (the vanilla name is spelled that way, `P:\scripts\3_game\global\game.c:1421`).
 
 The lookup works only inside `EEOnAfterLoad`. The energy manager does exactly this: it stores the IDs during load because the lookup "cannot be called here" (`P:\scripts\3_game\entities\entityai.c:3041`) and calls it in `EEOnAfterLoad`, where "this function is available only in this event" (`:1393`).
 
 ## When a read fails
 
-Check the return of every `Read` and return `false` when it fails. Vanilla returns `false` only when the stream is short or broken, for example `BaseBuildingBase` (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:432` to `:463`). Returning `false` means the engine could not load the record. What the engine then does with the object is not visible in script, so treat `false` as losing the object and test every load path on a copy of the server storage.
+Check the return of every `Read` and return `false` when it fails. Vanilla returns `false` only when the stream is short or broken, for example `BaseBuildingBase` (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:431` to `:463`). Returning `false` means the engine could not load the record. What the engine then does with the object is not visible in script, so treat `false` as losing the object and test every load path on a copy of the server storage.
 
 Do not return `false` to mean "this save has no value for my new field". That case is an upgrade path, covered in `versioning-and-migration.md`.
 

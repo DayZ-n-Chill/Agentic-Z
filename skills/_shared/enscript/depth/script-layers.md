@@ -4,7 +4,7 @@ Which script module a class belongs in, what each module can see, how HUD code b
 
 ## The five modules
 
-DayZ compiles the modules in this order. A mod's `CfgMods` `defs` normally declares the last three; the key names are reported, not checked on `P:\`.
+DayZ compiles the modules in this order. A mod's `CfgMods` `defs` normally declares the last three. Vanilla's Sakhal addon declares `worldScriptModule` this way (`P:\DZ\data_sakhal\config.cpp:21`); no vanilla config uses the other four keys, so those names are reported, not checked on `P:\`.
 
 | Folder | Module key | Typical mod use |
 |---|---|---|

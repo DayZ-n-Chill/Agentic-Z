@@ -49,13 +49,15 @@ So a mod that changes when a door may open overrides the params form and calls `
 		}
 ```
 
-`BuildingBase` then refuses the open while any slot in the door's `m_RelatedInventorySlotNames` holds a locked `DigitalCodeLock` or `CombinationLock` (`P:\scripts\4_world\entities\game\super\building.c:307` to `:333`).
+`BuildingBase` then refuses the open while any slot in the door's `m_RelatedInventorySlotNames` holds a locked `DigitalCodeLock` or `CombinationLock` (`P:\scripts\4_world\entities\game\super\building.c:412` to `:438`). Its `IsLocked(int doorIndex)` (`:388` to `:410`) returns false on every path, a locked lock included, so test the lock items yourself as `CanDoorBeOpened` does; never rely on `IsLocked(int)`.
+
+The action casts its target to `BuildingBase` (`actionopendoors.c:36` to `:37`), so a door on a class that is only a `Building` gets no Open. On the server `OnStartServer` asks `CanDoorBeOpened` again with the same params before it calls `OpenDoor` (`:59` to `:76`). `ActionLockedDoors` is the same action with `CheckIfDoorIsLocked()` returning false (`:101` to `:112`): it is offered only on a locked door, and the base check then lets it through.
 
 ## Doors that open from one side
 
 `DoorsDirectionalCheck` (`P:\scripts\4_world\entities\game\super\building.c:441`) reads the door's `m_InteractLimitingPositionPoint` and `m_InteractLimitingDirPoint` and passes them to `MiscGameplayFunctions.MemPointDirectionalCheck` (`P:\scripts\4_world\static\miscgameplayfunctions.c:942`). The vanilla comment says: "some doors can only be operated from one side".
 
-The helper compares the direction from the player's head to the start point with the direction from the start point to the end point, within a default tolerance of `Math.PI_HALF`. It only runs that test when both names are set and both points exist in the model; otherwise it returns true (`:944` to `:967`). The vanilla comment above it says so: "Intentionally returns true (no restriction) when the check cannot be performed" (`:940`). So a door with no points opens from both sides, and a typo in a point name silently does the same.
+The helper compares the direction from the player's head to the start point with the direction from the start point to the end point, within a default tolerance of `Math.PI_HALF`. It only runs that test when both names are set and both points exist in the model; otherwise it returns true (`:944` to `:970`). The vanilla comment above it says so: "Intentionally returns true (no restriction) when the check cannot be performed" (`:942`). So a door with no points opens from both sides, and a typo in a point name silently does the same.
 
 ## Lock types are not the lock items
 
@@ -66,3 +68,17 @@ Combination locks and code locks are inventory items whose `IsExternalLockType()
 `GetLockCompatibilityType` returns the door's `m_LockCompatibilityBitMask` (`P:\scripts\3_game\entities\building.c:193` to `:196`). `ActionLockDoors` still tests that mask against the tool's `GetKeyCompatibilityType()`, but first returns false when any related slot already holds an external lock item (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionlockdoors.c:40` to `:57`).
 
 The native engine lock calls are unchanged: `IsDoorLocked`, `LockDoor` and `UnlockDoor` (`P:\scripts\3_game\entities\building.c:55` to `:70`).
+
+## Door state queries and events
+
+The state queries read the wanted phase or the current phase against three targets: closed 0.0, ajar 0.2 and open 1.0 (`P:\scripts\3_game\entities\building.c:33` to `:52`). `IsDoorOpen` is true once the door is asked to open (wanted phase above 0.5), before it has moved; use `IsDoorOpened` or `IsDoorClosed` when the door must have arrived. `UnlockDoor(index, animate = true)` swings the door ajar (`:69` to `:70`), and `LockDoor` with `force = true` closes an open door first (`:66` to `:67`).
+
+Override these on a `BuildingBase` child and call `super`; all are empty on `Building` (`:101` to `:139`):
+
+| Event | Params |
+|---|---|
+| `OnDoorOpenStart`, `OnDoorOpenAjarStart`, `OnDoorCloseStart` | `DoorStartParams`, the door index |
+| `OnDoorOpenFinish`, `OnDoorOpenAjarFinish`, `OnDoorCloseFinish` | `DoorFinishParams`, the door index and a `bool` |
+| `OnDoorLocked`, `OnDoorUnlocked` | `DoorLockParams`, the door index |
+
+The param types are at `:1` to `:3`. `BuildingBase` already uses the open and close start events to move the physics of a door that can be rebuilt (`P:\scripts\4_world\entities\game\super\building.c:468` to `:482`), and `Bunker` uses them for its auto close timer (`building-door-locks.md`, "Bunker door"). What the `bool` of the finish params means and on which machine the events fire is not visible in script.

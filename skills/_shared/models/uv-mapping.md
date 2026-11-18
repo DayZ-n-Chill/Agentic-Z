@@ -89,25 +89,25 @@ The most common source of import bugs. Not checked on `P:\`; the py3d rows are r
 
 Each stage of a `.rvmat` names the coordinates it samples with `uvSource` and can transform them with `class uvTransform`. The stage layout is in `_shared/textures/rvmat-stages.md`; this section adds what matters for unwrapping.
 
-`uvSource` values in vanilla. A scan of all 34,899 `.rvmat` files under `P:\DZ` finds four values:
+`uvSource` values in vanilla. A scan of all 44,580 `.rvmat` files under `P:\DZ` finds four values:
 
 | Value | Uses | Meaning | Example |
 |---|---|---|---|
-| `tex` | 128,422 | The first UV set | `uvSource="tex"` at `P:\DZ\characters\tops\data\bomberjacket_destruct.rvmat:12` |
-| `worldPos` | 50,590 | World position, no UVs involved; terrain and tree materials | `uvSource="WorldPos"` at `P:\DZ\plants\tree\data\b_fagussylvatica_leaves_1f.rvmat:38` |
-| `tex1` | 6,278 | The second UV set | `uvSource="tex1"` at `P:\DZ\characters\belts\data\civ_belt.rvmat:52` |
-| `none` | 3,166 | No coordinates; fresnel and other procedural stages | `uvSource="none"` at `P:\DZ\characters\belts\data\civ_belt.rvmat:76` |
+| `tex` | 162,615 | The first UV set | `uvSource="tex"` at `P:\DZ\characters\tops\data\bomberjacket_destruct.rvmat:12` |
+| `worldPos` | 66,450 | World position, no UVs involved; terrain and tree materials | `uvSource="WorldPos"` at `P:\DZ\plants\tree\data\b_fagussylvatica_leaves_1f.rvmat:38` |
+| `tex1` | 7,507 | The second UV set | `uvSource="tex1"` at `P:\DZ\characters\belts\data\civ_belt.rvmat:52` |
+| `none` | 3,566 | No coordinates; fresnel and other procedural stages | `uvSource="none"` at `P:\DZ\characters\belts\data\civ_belt.rvmat:76` |
 
 The format also defines `pos`, `norm`, `worldNorm`, `texShoreAnim`, `texCollimator` and `texCollimatorInv`, with `tex` as the default. None of those appears in a vanilla DayZ material, so treat them as untested here.
 
-The second UV set is ordinary in vanilla Super materials. Of the 5,841 Super materials (5,838 spelled `Super` and 3 spelled `super`), 1,020 have at least one stage on `tex1`. By stage: `Stage4` (ambient shadow `_as`) 913, `Stage3` (macro `_mc`) 671, `Stage2` (detail) 265, `Stage1` (normal) 44, `Stage5` (specular) 20.
+The second UV set is ordinary in vanilla Super materials. Of the 6,612 Super materials (6,609 spelled `Super` and 3 spelled `super`), 1,188 have at least one stage on `tex1`. By stage: `Stage4` (ambient shadow `_as`) 1,060, `Stage3` (macro `_mc`) 810, `Stage2` (detail) 295, `Stage1` (normal) 45, `Stage5` (specular) 23.
 
 - The usual case is a baked ambient shadow map with no overlap on a model whose color UVs are tiled or mirrored: `civ_belt.rvmat` puts `civ_belt_as.paa` on `tex1` (`:51` to `:52`) and leaves every other texture on `tex`.
 - A few models use the second set for everything: `P:\DZ\gear\camping\data\large_tent.rvmat` has `uvSource="tex1"` on stages 1 to 5 (`:12`, `:24`, `:36`, `:48`, `:60`).
-- Bohemia's name for this is "use texture coords 2". The Multi shader reads its mask from the second set too (1,960 vanilla Multi materials; 3,251 of their stages use `tex1`).
+- Bohemia's name for this is "use texture coords 2". The Multi shader reads its mask from the second set too (2,680 vanilla Multi materials; 4,048 of their `TexGen` classes use `tex1`, for example `TexGen4` at `P:\DZ\rocks\data\rock_apart1\rock_apart1.rvmat:55`).
 - A mod model that wants this needs a real second UV set in the `.p3d`. See "Which reader keeps a second set" above before sending such a model through a script.
 
-`uvTransform` tiles, rotates and offsets. `aside[]` and `up[]` are the two rows of a 2D matrix, `pos[]` is the offset. The identity is `aside[]={1,0,0}` and `up[]={0,1,0}`. 1,564 vanilla Super materials have at least one stage that is not the identity, most often `Stage2` (972) and `Stage3` (665).
+`uvTransform` tiles, rotates and offsets. `aside[]` and `up[]` are the two rows of a 2D matrix, `pos[]` is the offset. The identity is `aside[]={1,0,0}` and `up[]={0,1,0}`. 1,718 vanilla Super materials have at least one stage that is not the identity, most often `Stage2` (1,077) and `Stage3` (724).
 
 - Plain tiling: the rubber boat's damage material repeats its detail map 5 by 5 with `aside[]={5,0,0}` and `up[]={0,5,0}` (`P:\DZ\vehicles\water\boat_01\data\boat_01_damage.rvmat:27` to `:28`).
 - Tiling with a rotation: `aside[]={3,1,0}` and `up[]={-1,3,0}` at `P:\DZ\weapons\pistols\mkii\data\ruger_metal_1.rvmat:39` to `:40`.
@@ -131,7 +131,7 @@ The health-level materials (`_damage.rvmat`, `_destruct.rvmat`; see `_shared/tex
 Two consequences:
 
 - Re-unwrapping a vanilla model, or a mod model whose damage materials already exist, moves where the wear lands. A retexture has to keep the UV layout.
-- The identity transform is not a rule. Of the 2,057 vanilla Super materials named `_damage` or `_destruct`, 793 tile at least one stage, most often the wear macro on `Stage3` (556 files). `P:\DZ\characters\backpacks\data\attack2backpack_destruct.rvmat` repeats `vests_destruct_mc.paa` twice each way with `aside[]={2,0,0}` (`:39`) and `up[]={0,2,0}` (`:40`). So check the vanilla material you copy from instead of assuming 1 to 1.
+- The identity transform is not a rule. Of the 2,223 vanilla Super materials named `_damage` or `_destruct`, 863 tile at least one stage, most often the wear macro on `Stage3` (609 files). `P:\DZ\characters\backpacks\data\attack2backpack_destruct.rvmat` repeats `vests_destruct_mc.paa` twice each way with `aside[]={2,0,0}` (`:39`) and `up[]={0,2,0}` (`:40`). So check the vanilla material you copy from instead of assuming 1 to 1.
 
 ## Normal maps and UVs
 

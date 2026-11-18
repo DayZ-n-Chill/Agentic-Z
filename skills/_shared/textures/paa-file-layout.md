@@ -35,7 +35,7 @@ Each block is a 4 byte marker, a 4 byte name, a `uint32` length and the data:
 | `MAXC` | 4 | The largest pixel value, as BGRA |
 | `OFFS` | 64 | Sixteen `uint32` offsets from the start of the file to each mip header, zero for unused slots |
 
-In the sedan file `AVGC` is `49 4A 4B FF`, `MAXC` is `FF FF FF FF`, and the first `OFFS` entry is 112, the offset of its top mip. Unverified (not tested in game): which tags the engine needs before it loads a file, and whether it streams mips from `OFFS`. Write all three, in this order, as vanilla does.
+In the sedan file `AVGC` is `49 4A 4B FF`, `MAXC` is `FF FF FF FF`, and the first `OFFS` entry is 112, the offset of its top mip. Unverified (not tested in game): which tags the engine needs before it loads a file, and whether it streams mips from `OFFS`. Write all three, in this order, as vanilla does. Of the 7,341 vanilla `_co.paa` files under `P:\DZ`, 6,416 carry only these three; the rest add a `FLAG` tag before `OFFS`. Other suffixes add tags too: every vanilla `_nohq`, `_smdi` and `_as` has a `SWIZ` tag before `OFFS` (the windscreen `gazglass_nohq.paa` above), and most `_ca` files have `FLAG` (`P:\DZ\vehicles\wheeled\data\hatchback_glass_ca.paa`).
 
 ## Mip headers
 

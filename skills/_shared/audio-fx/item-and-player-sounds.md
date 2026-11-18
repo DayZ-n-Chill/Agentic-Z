@@ -51,12 +51,23 @@ StopItemSoundServer(SoundConstants.ITEM_DEPLOY_LOOP);      // stop a loop
 
 Vanilla calls it from the action, on the server (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionopenbarrel.c:36`).
 
+### Attach and detach sounds from config
+
+An item can play its own sound when it goes into a slot, or comes out of one, with no script. `InventoryItemType` reads two pairs of arrays from the item's class in `CfgVehicles`, `CfgWeapons`, `CfgMagazines` or `CfgAmmo`: `attachSoundSet[]` with `attachSoundSlot[]`, and `detachSoundSet[]` with `detachSoundSlot[]` (`P:\scripts\3_game\inventoryitemtype.c:37`, `:38`, `:92` and `:93`). Entry `i` of the sound set array plays for the slot named at entry `i` of the slot array. The two arrays must have the same length, or none of them is loaded (`:41`). The vanilla shelter fabric is the model (`P:\DZ\gear\camping\config.cpp:11494` to `:11501`):
+
+```cpp
+attachSoundSet[]={"Shelter_Site_Attach_Fabric_SoundSet"};
+attachSoundSlot[]={"Material_Shelter_Fabric"};
+```
+
+The server starts these through the item sound handler: `OnWasAttached` calls `StartItemSoundServer(SoundConstants.ITEM_ATTACH, slot_id)` and `OnWasDetached` calls it with `ITEM_DETACH` (`P:\scripts\4_world\entities\itembase.c:1336` and `:1347`). On the client the handler looks up the sound set for that slot, and falls back to a set linked with `AddSound` for the same ID when the slot has none (`P:\scripts\4_world\classes\soundhandlers\itemsoundhandler.c:94` to `:108`). `ITEM_ATTACH = 6` and `ITEM_DETACH = 7` are taken (`P:\scripts\3_game\constants.c:430` and `:431`), so never give your own sound one of those numbers. Override `CanPlayAttachSound()` or `CanPlayDetachSound()` to silence one item (`itembase.c:4857` and `:4862`).
+
 ### What happens on the way to the client (1.30)
 
 - `StartItemSoundServer(int id, int slotId)` returns at once unless it runs on the server, then puts the sound in a queue and schedules one flush for the frame (`P:\scripts\4_world\entities\itembase.c:4440`).
 - `FlushItemSoundQueue` sends every queued sound in one `RPC_ITEM_SOUND_PLAY` (`P:\scripts\4_world\entities\itembase.c:4480`).
-- `StopItemSoundServer(int id)` sends one `RPC_ITEM_SOUND_STOP` (`P:\scripts\4_world\entities\itembase.c:4502`).
-- On the client, `ItemBase.OnRPC` reads `RPC_ITEM_SOUND_PLAY` and calls `PlayItemSoundClient` for each entry (`P:\scripts\4_world\entities\itembase.c:2800`), and reads `RPC_ITEM_SOUND_STOP` and calls `StopItemSoundClient` (`P:\scripts\4_world\entities\itembase.c:2816`).
+- `StopItemSoundServer(int id)` sends one `RPC_ITEM_SOUND_STOP` (`P:\scripts\4_world\entities\itembase.c:4499` to `:4506`).
+- On the client, `ItemBase.OnRPC` reads `RPC_ITEM_SOUND_PLAY` and calls `PlayItemSoundClient` for each entry (`P:\scripts\4_world\entities\itembase.c:2800`), and reads `RPC_ITEM_SOUND_STOP` and calls `StopItemSoundClient` (`P:\scripts\4_world\entities\itembase.c:2820`).
 - `PlayItemSoundClient` plays the set at the item's position and sets autodestroy on it. It does nothing when that ID is already playing (`P:\scripts\4_world\classes\soundhandlers\itemsoundhandler.c:56`).
 
 So on 1.30 several sounds started in one frame all arrive. The handler's header comment still says to avoid starting two sounds at the same time because one variable carries them (`P:\scripts\4_world\classes\soundhandlers\itemsoundhandler.c:20`); that comment describes the older path below.
@@ -67,10 +78,14 @@ Up to 1.29 the server wrote the ID into a synced variable, `m_SoundSyncPlay` or 
 
 1.30 keeps the variables, marked as deprecated but kept for older mods (`P:\scripts\4_world\entities\itembase.c:117`), and keeps the old path only for a class that asks for it:
 
-- `LegacyItemSoundSync()` plays and stops from the two variables (`P:\scripts\4_world\entities\itembase.c:3293`). It runs only if your class calls it from its own `OnVariablesSynchronized`.
+- `LegacyItemSoundSync()` plays and stops from the two variables (`P:\scripts\4_world\entities\itembase.c:3297`). It runs only if your class calls it from its own `OnVariablesSynchronized`.
 - `LegacyStopItemSoundServer(int id)` writes `m_SoundSyncStop` and clears it 100 ms later (`P:\scripts\4_world\entities\itembase.c:4487`).
 
 A 1.29 mod that relied on `OnVariablesSynchronized` to play item sounds keeps working through the RPC path without changes, as long as it starts sounds with `StartItemSoundServer`.
+
+### Impact sounds from config
+
+The sound an item makes when it hits the ground comes from config too. `InitImpactSoundData` reads the item's `soundImpactType` key, `"default"` when it is missing, and loads the table `<soundImpactType>_Impact_LookupTable` (`P:\scripts\3_game\entities\inventoryitem.c:114` to `:122`). The tables are classes of `CfgImpactSoundTables` (`P:\DZ\sounds\hpp\config.cpp:506974`); vanilla has `default`, `gun`, `grenade`, `textile`, `wood`, `glass`, `plastic`, `metal`, `organic`, `backpack`, `bones`, `clock` and `pills`. The vanilla shelter fabric sets `soundImpactType="textile"` (`P:\DZ\gear\camping\config.cpp:11502`). Pick one of those names for a mod item. `PlayImpactSound` returns at once when no table was loaded (`inventoryitem.c:94`), so a name with no table most likely leaves the item silent (whether the lookup returns null for an unknown name is not checked on `P:\`). The item's config `weight` and the impact speed reach the sound set as the sound variables `weight` and `speed` (`inventoryitem.c:100` and `:101`). On a dedicated server the impact is sent to clients with the `m_WantPlayImpactSound` signal (`P:\scripts\4_world\entities\itembase.c:1134`).
 
 ### When the item sound handler does not fit
 
@@ -94,7 +109,7 @@ The check itself is `IsHeadlessOrDedicatedServer()` on the game (`P:\scripts\3_g
 - `RegisterHandler(SoundHandlerBase handler)` adds one (`P:\scripts\4_world\classes\soundhandlers\playersoundmanager.c:33`) and `GetHandler(eSoundHandlers id)` returns it (`P:\scripts\4_world\classes\soundhandlers\playersoundmanager.c:39`).
 - There is a server manager and a client manager. The client one registers the client handler of each state (`P:\scripts\4_world\classes\soundhandlers\playersoundmanager.c:95`).
 - State sounds of other players are heard only within `SOUNDS_HEARING_DISTANCE = 50` meters (`P:\scripts\4_world\classes\soundhandlers\playersoundmanager.c:2`).
-- The freezing handler is not live: the whole of `P:\scripts\4_world\classes\soundhandlers\freezingsoundhandler.c` is commented out (lines 1 to 58), and its enum entry and its registration are commented out too (`P:\scripts\4_world\classes\soundhandlers\playersoundmanager.c:99`). A mod cannot extend `FreezingSoundHandlerClient`.
+- The freezing handler is not live: the whole of `P:\scripts\4_world\classes\soundhandlers\freezingsoundhandler.c` is commented out (lines 1 to 57), and its enum entry and its registration are commented out too (`P:\scripts\4_world\classes\soundhandlers\playersoundmanager.c:99`). A mod cannot extend `FreezingSoundHandlerClient`.
 
 ## Step sounds
 
@@ -110,7 +125,7 @@ Step and gesture sounds bound to animation events are played by the engine on ea
 
 1.30 adds the event ID `HEAVY_BREATHING` to `EPlayerSoundEventID` (`P:\scripts\4_world\classes\soundevents\playersoundevents\playersoundeventhandler.c:38`).
 
-- Its class is `HeavyBreathEvent1`, which sets `m_SoundVoiceAnimEventClassID = 907` (`P:\scripts\4_world\classes\soundevents\playersoundevents\events\heavybreathevents.c:21`).
+- Its class is `HeavyBreathEvent1`, which sets `m_SoundVoiceAnimEventClassID = 907` (`P:\scripts\4_world\classes\soundevents\playersoundevents\events\heavybreathevents.c:21` and `:26`).
 - It is registered with `RegisterState(new HeavyBreathEvent1())` (`P:\scripts\4_world\classes\soundevents\playersoundevents\playersoundeventhandler.c:99`).
 - Vanilla requests it from the silicosis modifier: `RequestSoundEventEx(EPlayerSoundEventID.HEAVY_BREATHING, true, EPlayerSoundEventParam.HIGHEST_PRIORITY)` (`P:\scripts\4_world\classes\playermodifiers\modifiers\diseases\silicosis.c:105`).
 

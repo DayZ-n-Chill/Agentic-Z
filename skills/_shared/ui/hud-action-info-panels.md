@@ -17,7 +17,7 @@ The action info classes, `GenericIcon.c`, `action_info_spacer.layout` and `Simpl
 
 ## Registration and update
 
-`InitActionInfoPanels` registers panels per category (`P:\scripts\5_mission\gui\actiontargetscursor.c:152` to `:176`):
+`InitActionInfoPanels` registers panels per category (`P:\scripts\5_mission\gui\actiontargetscursor.c:152` to `:161`; `CreateActionInfoPanel` follows at `:163` to `:176`):
 
 ```c
 protected void InitActionInfoPanels()

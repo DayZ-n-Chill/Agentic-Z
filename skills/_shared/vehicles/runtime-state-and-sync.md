@@ -8,7 +8,7 @@ Facts measured in game were taken on test vehicles built on `CarScript`, a helic
 
 The `CarScript` constructor registers `EntityEvent.POSTSIMULATE` and `EntityEvent.POSTFRAME` and nothing else (`P:\scripts\4_world\entities\vehicles\carscript.c:207` and `:208`), and its per-tick work runs in `EOnPostSimulate` (`:807`). `EOnSimulate` is an empty stub on the base entity (`P:\scripts\1_core\proto\enentity.c:201` to `:203`), so `super.EOnSimulate` does nothing on a car. Hook `EOnPostSimulate` for per-tick logic on a car.
 
-`BoatScript`, unlike `CarScript`, overrides both `EOnPostSimulate` (`P:\scripts\4_world\entities\vehicles\boatscript.c:355`) and `EOnSimulate` (`:393`).
+`BoatScript`, unlike `CarScript`, overrides both `EOnPostSimulate` (`P:\scripts\4_world\entities\vehicles\boatscript.c:355`) and `EOnSimulate` (`:393`). Its constructor sets `POSTSIMULATE` and `FRAME`, not `SIMULATE` (`:95` and `:96`), so whether its `EOnSimulate` runs depends on the engine; not checked in game. `MotorbikeScript` sets `POSTSIMULATE` and `POSTFRAME` (`P:\scripts\4_world\entities\vehicles\motorbikescript.c:111`) and does its per-tick work in `EOnPostSimulate` (`:754`), like a car.
 
 Vanilla runs much of its `EOnPostSimulate` work on the owner client too, but a mod's checks that depend on replicated items, such as `CheckVitalItem`, must stay on the server.
 

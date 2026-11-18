@@ -35,7 +35,7 @@ The `CfgModels` class named after the `.p3d` lists in `sections[]` the selection
 | `selection` | The `.p3d` selection to move |
 | `axis` | The Memory LOD selection of two points that sets the axis |
 | `memory` | 1 when the axis comes from the Memory LOD, 0 from geometry |
-| `minValue`, `maxValue` | The phases where the movement starts and ends. The examples use 0 to 1, but the range is the model's own choice: the vanilla fence gate script sets the phase to 100 (`GATE_ROTATION_ANGLE_DEG`, `P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:12` and `:494`) |
+| `minValue`, `maxValue` | The phases where the movement starts and ends. The examples use 0 to 1, but the range is the model's own choice: the vanilla fence gate script sets the phase to 100 (`GATE_ROTATION_ANGLE_DEG`, `P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:12`, applied at `:507` and `:508`) |
 | `offset0`, `offset1` | The translation at `minValue` and `maxValue`, in lengths of the axis |
 | `angle0`, `angle1` | The rotation at `minValue` and `maxValue`, in radians |
 
