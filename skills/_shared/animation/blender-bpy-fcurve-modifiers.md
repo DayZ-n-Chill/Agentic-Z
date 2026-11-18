@@ -44,7 +44,7 @@ noise.phase = 0.0       # different per axis
 
 ## Cycles for loops
 
-`FModifierCycles` has `mode_before` and `mode_after` (`NONE` default, `REPEAT`, `REPEAT_OFFSET`, `MIRROR`) and `cycles_before` and `cycles_after` (0 is endless).
+`FModifierCycles` has `mode_before` and `mode_after` (`NONE`, `REPEAT`, `REPEAT_OFFSET`, `MIRROR`; `modifiers.new()` sets both to `REPEAT`, so set `mode_before = 'NONE'` when only the end should loop) and `cycles_before` and `cycles_after` (0 is endless).
 
 | Mode | Use |
 |---|---|

@@ -38,7 +38,7 @@ Report "same detection signature" or "different detection signature", never "sam
 
 `-packonly` does not rapify, so the config ships as text and the game's parser is the first to read it. The script validator does not check config syntax either. Use two checks:
 
-- `/dayz-lint` rule `config-syntax` (`skills/dayz-lint/SKILL.md`) catches unbalanced braces, a missing `;` or `};`, an array without `[]`, and a missing `;` between array items. It does not resolve inheritance.
+- `/dayz-lint` rule `config-syntax` (`skills/dayz-lint/SKILL.md`) catches unbalanced braces, a missing `;` or `};`, an array without `[]`, and a `;` used between array items where a `,` belongs. It does not resolve inheritance.
 - `CfgConvert` parses the whole file as the engine does and resolves every base class, including nested `class X: X` chains such as `class SimulationModule: SimulationModule` (`P:\DZ\vehicles\wheeled\config.cpp:1371`) with `class Axles: Axles` inside it (`:1431`).
 
 ```bat

@@ -53,7 +53,7 @@ Rules of thumb that follow from the scan:
 
 ## Procedural textures for empty slots
 
-When a stage has no real texture, vanilla writes a procedural one instead of leaving the stage out. The form is `#(argb,8,8,3)color(r,g,b,a,TAG)`, where the tag names the role. These are the neutral values vanilla uses (from `P:\DZ\characters\tops\data\bomberjacket.rvmat`, `P:\DZ\vehicles\wheeled\data\auta_skla.rvmat` and `P:\DZ\characters\glasses\data\tacgoggles_glass.rvmat`):
+When a stage has no real texture, vanilla writes a procedural one instead of leaving the stage out. The form is `#(argb,8,8,3)color(r,g,b,a,TAG)`, where the tag names the role. These are the neutral values vanilla uses (from `P:\DZ\characters\tops\data\bomberjacket.rvmat`, `P:\DZ\vehicles\wheeled\data\auta_skla.rvmat` and `P:\DZ\characters\glasses\data\tacgoggles_glass.rvmat`; the `Stage7` value from `P:\DZ\animals\bos_taurus_fem\data\cow.rvmat:83`, since those three use `env_land_co.paa` there):
 
 | Slot | Neutral value | Means |
 |---|---|---|

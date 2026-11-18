@@ -6,7 +6,7 @@ The API and graph lines are checked on `P:\`. The behaviour was measured in game
 
 ## Starting, running and ending the command
 
-The class takes the `Human` as the first constructor parameter (`P:\scripts\3_game\human.c:1239`). Start it with `StartCommand_ScriptInst(typename)` or `StartCommand_Script(instance)` and read it back with `GetCommand_Script()` (`:1623`, `:1624`, `:1627`). The vanilla comment says the object is not managed: once started the engine owns it, an instance made but never started must be deleted by hand, and deleting one that is running crashes (`:1230` to `:1234`). Prefer `StartCommand_ScriptInst`, which leaves no instance to own.
+The class takes the `Human` as the first constructor parameter (`P:\scripts\3_game\human.c:1239`). Start it with `StartCommand_ScriptInst(typename)` or `StartCommand_Script(instance)` and read it back with `GetCommand_Script()` (`:1624`, `:1623`, `:1627`). The vanilla comment says the object is not managed: once started the engine owns it, an instance made but never started must be deleted by hand, and deleting one that is running crashes (`:1230` to `:1234`). Prefer `StartCommand_ScriptInst`, which leaves no instance to own.
 
 | Step | Hook | What it may do | Line |
 |---|---|---|---|
@@ -85,7 +85,7 @@ Measured: with replacement clips generated without events, the logged pelvis sta
 
 Give a clip that replaces a `Walk` or `RunSprint` source the four foot events of that line, in its cyclic order:
 
-- The table defines 13 lines with other events: `Turn` has four `Turn...` events (`player_synctable.asy:123`), `Transitions` only `TransitionIn` and `TransitionOut` (`:143` to `:154`), `TurnCro` three `TurnCroFoot` events (`:155`). A clip on another line needs that line's events, read from the node's `SyncLine` and the table. None of those is tested.
+- The table defines 13 lines in all; the other 11 carry other events: `Turn` has four `Turn...` events (`player_synctable.asy:123`), `Transitions` only `TransitionIn` and `TransitionOut` (`:143` to `:154`), `TurnCro` three `TurnCroFoot` events (`:155`). A clip on another line needs that line's events, read from the node's `SyncLine` and the table. None of those is tested.
 - The events may sit off the line's phases: a 63 frame push clip with `RFootDown` at 0.54 instead of 0.4 played too. A clip with events out of order is not tested.
 - On the SEAnim to DayZATool route write each event as a SEAnim note named `RFootDown||-1`; DayZATool writes it as an event with the three fields vanilla foot events carry (the name, an empty string, -1). The tool in `scripts/tools/dayz-animation-formats/` reads and writes SEAnim notes.
 - Before a test, check the built `.anm` holds the event names as plain ASCII in its `EVNT` chunk. Clips with no `EVNT` chunk at all are the ones that stood still.

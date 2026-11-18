@@ -36,11 +36,11 @@ A rig or a clip is skeletal work, not a moving part. Each rule lives in one file
 |---|---|
 | Bone names are exact; a wrong name logs `Bone X doesn't exist in skeleton` and that bone does not move. Survivors bind the `player_testing.xob` list (`P:\DZ\anims\cfg\skeletons.anim.xml:110`), named by `skeletonName` on `SurvivorBase` (`P:\DZ\characters\data\config.cpp:158`). | `player-skeleton.md` |
 | Every limb joint has a twist bone, and the hand IK helpers are in the survivor's list. | `player-skeleton.md` |
-| The plugin's base rig lacks the IK helpers until its "Add Survivor IK Bones" tool runs, before any grip pose; they stay unkeyed in every other clip. | `blender-txa-export.md` |
+| The plugin's base rig lacks the IK helpers until its "Add Survivor IK Bones" tool runs, before any grip pose; they stay unkeyed in every other clip. | `blender-txa-export.md`, `txa-bones-and-axes.md` |
 | Blender and the game differ in handedness as well as in the up axis; a mirrored clip raises no error. | `blender-headless-authoring.md` |
 | Creature FBX export settings and the orientation of `EntityPosition`. | `creature-rig-to-game.md` |
 | Which plugin needs which Blender, and how to install it. | `anm-clips.md` |
-| Export only what the clip owns (IK type for a grip, Additive with only its bones for reload and fire); never key bone scale. | `blender-txa-export.md` |
+| Export only what the clip owns (IK type for a grip, Additive with only its bones for reload and fire); never key bone scale. | `blender-txa-export.md`, `txa-bones-and-axes.md` |
 | Bohemia's rig FBX holds mesh and armature in two spaces, and 17 helper empties hide their world matrix. | `weapon-anim-viewer.md` |
 | Workbench drops nearly equal keys when it compiles `.txa` to `.anm`. | `weapon-anim-compile.md` |
 | Driving Blender itself through the MCP server. | `blender-mcp-workflow.md` |

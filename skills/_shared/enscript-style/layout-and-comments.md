@@ -11,42 +11,42 @@ Vanilla facts: `[NonSerialized()]` is a vanilla attribute class (`P:\scripts\1_c
 ```
 class ClassName : ParentClass
 {
-    // Member variables (private/protected first)
-    private bool m_PrivateVar;
-    protected int m_ProtectedVar;
+	// Member variables (private/protected first)
+	private bool m_PrivateVar;
+	protected int m_ProtectedVar;
 
-    // Public member variables
-    bool PublicEnabled;
-    int MaxItems;
-    float WelcomeDelaySeconds;
+	// Public member variables
+	bool PublicEnabled;
+	int MaxItems;
+	float WelcomeDelaySeconds;
 
-    // Non-serialized members
-    [NonSerialized()]
-    bool m_IsLoaded;
+	// Non-serialized members
+	[NonSerialized()]
+	bool m_IsLoaded;
 
-    // Constructor
-    void ClassName()
-    {
-        // Initialization
-    }
+	// Constructor
+	void ClassName()
+	{
+		// Initialization
+	}
 
-    // Deconstructor
-    void~ClassName()
-    {
-        // Object deletion
-    }
+	// Deconstructor
+	void~ClassName()
+	{
+		// Object deletion
+	}
 
-    // Methods
-    void MethodName()
-    {
-        // Implementation
-    }
+	// Methods
+	void MethodName()
+	{
+		// Implementation
+	}
 
-    override void ParentMethod()
-    {
-        super.ParentMethod();
-        // Additional implementation
-    }
+	override void ParentMethod()
+	{
+		super.ParentMethod();
+		// Additional implementation
+	}
 }
 ```
 
@@ -64,14 +64,14 @@ class ClassName : ParentClass
 ```
 void Method()
 {
-    if (condition)
-    {
-        // code
-    }
-    else
-    {
-        // code
-    }
+	if (condition)
+	{
+		// code
+	}
+	else
+	{
+		// code
+	}
 }
 ```
 
@@ -85,10 +85,10 @@ void Method()
 ```
 if (isEnabled && hasPermission)
 {
-    for (int i = 0; i < count; i++)
-    {
-        array.Insert(value);
-    }
+	for (int i = 0; i < count; i++)
+	{
+		array.Insert(value);
+	}
 }
 ```
 
@@ -151,12 +151,12 @@ class MyMod_Settings
 //! Settings menu
 if (input.LocalPress("UAMyModOpenMenu", false) && !menuOpen)
 {
-    OpenSettingsMenu();
+	OpenSettingsMenu();
 }
 
 //! Help overlay
 if (input.LocalPress("UAMyModToggleHelp", false))
 {
-    // Implementation
+	// Implementation
 }
 ```

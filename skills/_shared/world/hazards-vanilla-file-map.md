@@ -55,7 +55,7 @@ Which vanilla file holds which part of the sandstorm, heat stroke, dust and oil 
 | `P:\scripts\4_world\classes\playersymptoms\states\secondary\squintstate.c` | eye protection for squinting |
 | `P:\scripts\5_mission\mission\gameplayeffectwidgets\gewidgetsmetadataeyeveins.c` | eye veins screen effect (not yet read) |
 | `P:\scripts\5_mission\mission\gameplayeffectwidgets\gewidgetsmetadatasquinting.c` | squinting screen effect (not yet read) |
-| `P:\DZ\data\config.cpp` | `class Sandstorm` in the default world |
+| `P:\DZ\data\config.cpp` | `class Sandstorm` in `CAWorld` > `Weather` |
 | `P:\DZ\data\aiconfigs\config.cpp` | `AIParams` noise multipliers |
 | `P:\DZ\characters\masks\config.cpp` | `dust_particle_breath` and `dust_particle_eyes` on masks |
 | `P:\DZ\characters\glasses\config.cpp` | `dust_particle_eyes` on glasses |

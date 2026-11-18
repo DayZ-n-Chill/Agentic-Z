@@ -76,7 +76,7 @@ Author:
 
 - [ ] Master rig open, or an IK sample scene for grip work; "Add Survivor IK Bones" run before any IK pose work.
 - [ ] Closest vanilla pose or clip imported; weapon FBX parts attached if wanted.
-- [ ] IK pose keys only `LeftHandOrigin`, `RightHandOrigin` and the two forearm direction bones.
+- [ ] IK pose keys `LeftHandIKTarget`, `LeftHandOrigin`, `RightHandOrigin`, both `ForeArmDirection` bones and their origins, the fingers and the `_Dummy` bones (`weapon-in-hands.md`).
 - [ ] Fire about 7 frames, trigger pulled on frame 0, bolt cycle, eject event.
 - [ ] Weapon states three frames (closed, open, jammed), end frame 2, weapon bones only.
 - [ ] Reload, charge, chamber, jam: shoulders down, keyed bones only, small spine motion.

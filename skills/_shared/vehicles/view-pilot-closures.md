@@ -4,7 +4,7 @@ How to close gaps in a fairing or cockpit through which the seated rider sees th
 
 ## Where the closures go
 
-On a model with a View Pilot, a fix for something only the seat sees goes in resolution 1100 alone. This narrows the see-through rules of `_shared/models/axes-and-winding.md` and `skills/dayz-p3d-audit/references/winding-absolute-check.md` for faults seen from the seat. An exterior gap closure (`visual-gates-and-winding.md`) is seen from every angle and is double-sided in the gap; a View Pilot closure is seen only from the seat. It is single-sided on purpose: the rim tuck below relies on the culled side, and a twin would double its cost in an 1100 with little room. It sits behind the steering sweep because the bars and fork move through the rider's line of sight.
+On a model with a View Pilot, a fix for something only the seat sees goes in resolution 1100 alone. This narrows the see-through rules of `_shared/models/axes-and-winding.md` and `skills/dayz-p3d-audit/references/winding-absolute-check.md` for faults seen from the seat. An exterior gap closure (`rip-glass-and-gap-closure.md`) is seen from every angle and is double-sided in the gap; a View Pilot closure is seen only from the seat. It is single-sided on purpose: the rim tuck below relies on the culled side, and a twin would double its cost in an 1100 with little room. It sits behind the steering sweep because the bars and fork move through the rider's line of sight.
 
 Measured in game: closures that were then double-sided, and first-person inverted twins in LOD 0, showed from outside as black slivers, one of them hiding the intake. A build without both lost the slivers; since it removed both together, it does not say which caused them. With both in the 1100 LODs only, close shots from outside were clean, and in first person the closures covered the large gaps.
 
@@ -25,7 +25,7 @@ In each pixel keep the membrane at least 2 cm deeper than the deepest point of t
 Two alternatives fail:
 
 - Trimming the membrane where the sweep passes fails either way. The thin strips left behind stack up in the same gap, one per eye and pitch: in game they show as mottling, and stacked strips can make the generator refuse patches (52 in one run). Refusing patches that cover less than half their gap leaves the gaps the steering crosses open: 108 refused, 55,884 px open over 36 views, against 4,012 for the closures they would replace. Placed behind the sweep instead, the half-coverage guard never fires.
-- Pushing single vertices back along their rays lets triangles cross the steering: in game the top clamp, controls and grips vanish behind black fragments, while an offline check that counts only ground seen through gaps still passes. Count closure pixels in front of parts as well as open pixels (`visual-gates-and-winding.md`, `rip-panel-open-rim.md`).
+- Pushing single vertices back along their rays lets triangles cross the steering: in game the top clamp, controls and grips vanish behind black fragments, while an offline check that counts only ground seen through gaps still passes. Count closure pixels in front of parts as well as open pixels (`rip-glass-and-gap-closure.md`, `rip-panel-open-rim.md`).
 
 ### Tuck the rim under fixed parts by centimetres
 
@@ -53,7 +53,7 @@ Counting only enclosed gaps of at least 40 px centred in the cockpit with at lea
 
 ## What the offline check cannot see
 
-- Its renderer drops every glass face, so "any fixed part" leaves out the windscreen; whether a closure stands in front of it or behind it in the rider's view was not measured. Geometry close to a pane has read in game as a painted-over window (a black band 0 to 1 mm behind the glass, `visual-gates-and-winding.md`) and as an artefact on the glass (skirts within 5 cm of a pane, the closest 6.1 mm, `rip-panel-open-rim.md`). Keep about 8 mm of clearance to transparent glass.
+- Its renderer drops every glass face, so "any fixed part" leaves out the windscreen; whether a closure stands in front of it or behind it in the rider's view was not measured. Geometry close to a pane has read in game as a painted-over window (a black band 0 to 1 mm behind the glass, `rip-glass-and-gap-closure.md`) and as an artefact on the glass (skirts within 5 cm of a pane, the closest 6.1 mm, `rip-panel-open-rim.md`). Keep about 8 mm of clearance to transparent glass.
 - It samples points on faces instead of rasterising them as the engine does, and its gap detector closes slits up to about 2 px wide (about 4 px of the capture) and keeps only enclosed gaps, so a 2 to 3 px line like the one seen in game is never counted.
 - Fixed and turned parts were checked at pitch -50 and yaw 0 only, and since the in-game eye moves with the pitch, real eye and pitch pairs fall between the sampled ones.
 - No in-game first-person capture with the bars turned was judged. The in-game capture stays the last word.

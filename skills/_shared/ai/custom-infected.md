@@ -62,7 +62,7 @@ A class under `ZombieMaleBase` or `ZombieFemaleBase` that redeclares none of the
 | `aiAgentTemplate` | The behaviour template: `Infected` on `ZombieBase`, then `InfectedFemale` and `InfectedMale` on the sex bases | `:160`, `:423`, `:553` |
 | `class enfanimsys` | The graph, its instance, the bind skeleton and `startnode="MasterControl"`: every animation the commands play | `:71` |
 | `class InputController` | `movementSpeedMapping[]`, the speeds behind idle, walk, run and sprint | `:79` |
-| `class AttackActions` | The attack ammo and distances the script type reads | `:436` |
+| `class AttackActions` | The attack ammo the script type reads (`ammoType`), plus config distances that script does not read | `:436` |
 | `class DamageZones` | Health, armour and `componentNames[]` per zone | `:206` |
 | `attackSounds`, `spottedSounds`, `chaseSounds`, `idleSounds` | The voice sets | `:92` |
 
@@ -77,7 +77,7 @@ To change how the creature sees, hears or alerts, add a template and point `aiAg
 ## A bigger body does not reach further
 
 - Attack distances are fixed numbers, not read from the model. The chase attacks register at 2.4 m (`RegisterAttack` with `DayZInfectedAttackGroupType.CHASE` at `P:\scripts\3_game\entities\dayzinfectedtype.c:72`) and the fight attacks at 1.7 m and 1.4 m (`DayZInfectedAttackGroupType.FIGHT` at `:80` and `:86`). Config also holds `minDistance` and `distance` per attack under `AttackActions` (`P:\DZ\characters\zombies\config.cpp:448` and `:449`), but script reads only `ammoType` from there (`dayzinfectedtype.c:57` to `:59`); whether the engine reads the config distances is not checked on `P:\`. A larger mesh keeps these numbers; changing them means a `modded class DayZInfectedType`, which changes every infected.
-- Scaling at run time is no route. `SetScale` exists on every entity (`P:\scripts\1_core\proto\enentity.c:447`), but it does not work reliably on characters and the collision box does not follow it (engine behaviour, not checked on `P:\`). Size is baked into the mesh by the art side.
+- Scaling at run time is no route. `SetScale` exists on every entity (`P:\scripts\1_core\proto\enentity.c:448`), but it does not work reliably on characters and the collision box does not follow it (engine behaviour, not checked on `P:\`). Size is baked into the mesh by the art side.
 - A baked oversize also deforms under the inherited animations, because the engine binds against a body of vanilla size. A test infected at about 1.27 times vanilla size deformed grossly and had to be scaled back (measured in game). Up to about 1.1 times may pass with only foot sliding. A body that is truly bigger and still deforms cleanly needs its own skeleton with a scaled bind, and no vanilla example shows one. There is no character `scale` key in `CfgVehicles`, and the Object Spawner's `scale` is for static objects only (not checked on `P:\`).
 - Check any body that is not vanilla sized in game: foot contact, door clipping, melee and hit range, and whether it still paths through doorways.
 

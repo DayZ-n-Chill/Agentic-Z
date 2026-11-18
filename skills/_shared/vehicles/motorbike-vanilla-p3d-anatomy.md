@@ -31,7 +31,7 @@ Neither model has a shadow LOD, a View Pilot LOD or a LandContact LOD.
 
 ## Wheel models
 
-All four wheel models weigh 4.86 kg, and none has a shadow LOD. Faces per LOD are listed visual LODs first, then Geometry, Memory, View Geometry and Fire Geometry. The models are set in `config.cpp` (`:159`, `:192`, `:1024`, `:1056`).
+All four wheel models weigh 4.86 kg, and none has a shadow LOD. Faces per LOD are listed visual LODs first, then Geometry, Memory, View Geometry and Fire Geometry. The models are set in `config.cpp` (`:159`, `:192`, `:1028`, `:1060`).
 
 | Model | Mass (kg) | Bounding box | Diameter (larger of Y and Z) | Width (X) | Faces per LOD |
 |---|---|---|---|---|---|

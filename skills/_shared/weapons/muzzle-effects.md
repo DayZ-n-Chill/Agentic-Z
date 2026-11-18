@@ -22,7 +22,7 @@ All read in `weaponparticles.c`:
 
 | Key | Meaning | Line |
 |---|---|---|
-| `overrideParticle` | Particle name as registered in `ParticleList`, such as `weapon_shot_cz527_01` (`P:\scripts\3_game\particles\particlelist.c:188`). Looked up with `ParticleList.GetParticleIDByName`. Required; a missing value logs an `INFO` level error and the entry gets no particle. | `:116` to `:127` |
+| `overrideParticle` | Particle name as registered in `ParticleList`, such as `weapon_shot_cz527_01` (`P:\scripts\3_game\particles\particlelist.c:188`). Looked up with `ParticleList.GetParticleIDByName`. When the fired ammo's `CfgAmmo` class sets `muzzleFlashParticle` to a registered particle, that particle plays instead (`:286` to `:323`). A missing `overrideParticle` logs an `INFO` level error and falls back to the ammo's `muzzleFlashParticle`, so nothing plays only when the ammo has none either. | `:116` to `:127` |
 | `overridePoint` | Memory point to spawn at. Defaults to `Usti hlavne`, the muzzle. | `:109` to `:113` |
 | `overrideDirectionPoint` | Memory point the effect points toward. | `:132` |
 | `overrideDirectionVector` | A fixed direction vector, read only when `overrideDirectionPoint` is empty; a zero vector is ignored. | `:134` to `:142` |

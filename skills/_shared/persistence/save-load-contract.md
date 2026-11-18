@@ -89,7 +89,7 @@ The central economy keeps a lifetime in seconds on every entity it persists. `Se
 
 Measured in game on DayZDiag 1.29 with a mod's placed objects (engine behaviour, not checkable on `P:\`): a class with no entry in any `types.xml` gets a maximum lifetime of 1800 seconds, a new object starts at 1 to 2 times that, the lifetime runs down with a player standing next to it, a restart saves and restores what remains, and objects whose lifetime ran out are deleted during the next startup. Adding the entry later protects only objects created after it.
 
-So correct save code does not keep an object in the world. Every class a player places, or that otherwise persists, needs an entry with an explicit `lifetime` in the mod's own `types.xml` (vanilla gives `Fence` and `Watchtower` 3888000 in the Chernarus mission's `db/types.xml`, a server file that is not on `P:\`), and a persistence test with objects younger than an hour proves nothing. Evidence and limits: `lifetime-and-storage.md`.
+So correct save code does not keep an object in the world. Every class a player places, or that otherwise persists, needs an entry with an explicit `lifetime` in the mod's own `types.xml` (vanilla gives `Fence` and `Watchtower` 3888000 at `P:\DZ\worlds\chernarusplus\ce\db\types.xml:7774` for `Fence` and `:25352` for `Watchtower`), and a persistence test with objects younger than an hour proves nothing. Evidence and limits: `lifetime-and-storage.md`.
 
 ## Stored entities load after `OnMissionStart`
 

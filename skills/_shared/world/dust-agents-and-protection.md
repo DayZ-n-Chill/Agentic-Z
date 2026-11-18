@@ -26,12 +26,12 @@ The modifiers are `MDF_SANDSTORM_EXPOSURE_STATIC`, `MDF_SANDSTORM_EXPOSURE_DYNAM
 
 ## How a storm passes the agents on
 
-`SandstormExposureMdfrBase.TransmitAgents` sends each agent through `AGT_AIRBOURNE_SOLID` and sends nothing to an unconscious player (`P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\sandstormexposure.c:45` to `:51`). The base dose is 1.0 agent per second for each agent (`SILICOSIS_AGENTS_PER_SEC` and `EYES_IRRITATION_AGENTS_PER_SEC`, `sandstormexposure.c:16` and `:17`). `OnActivate` also sends one of each at once (`:36` and `:37`).
+`SandstormExposureMdfrBase.TransmitAgents` sends each agent through `AGT_AIRBOURNE_SOLID` and sends nothing to an unconscious player (`P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\sandstormexposure.c:45` to `:51`). The base dose is 1.0 agent per second for each agent (`SILICOSIS_AGENTS_PER_SEC` and `EYES_IRRITATION_AGENTS_PER_SEC`, `sandstormexposure.c:16` and `:17`). `OnActivate` also sends one of each at once (`:36` and `:37`). The dose is passed as `int dose_size` to `TransmitAgentsEx` (`plugintransmissionagents.c:306`) and on to `CalculateAgentsToTransmit` (`:614`), so it is cut to a whole number before protection and transferability apply: only whole agents per tick get through, and a dose below 1 on the 1 s tick (`DEFAULT_TICK_TIME_ACTIVE_SHORT`, `modifiersmanager.c:28`) transmits nothing.
 
 | Modifier | Active when | Dose |
 |---|---|---|
-| `SandstormExposureDynamicMdfr` | a storm is active and `GetIntensityForPlayer` is above 0 (`sandstormexposure.c:101` to `:104`) | base dose times the player's intensity (`:116` to `:121`) |
-| `SandstormExposureStaticMdfr` | a zone switches it on and off; it has no conditions of its own | base dose, no intensity (`OnTick`, `:76` to `:80`) |
+| `SandstormExposureDynamicMdfr` | a storm is active and `GetIntensityForPlayer` is above 0 (`sandstormexposure.c:101` to `:104`) | base dose times the player's intensity times `deltaT`, cut to a whole number (`:116` to `:121`); an intensity times `deltaT` below 1 sends nothing |
+| `SandstormExposureStaticMdfr` | a zone switches it on and off; it has no conditions of its own | base dose times `deltaT`, cut to a whole number, no intensity (`OnTick`, `:76` to `:80`) |
 
 The only vanilla zone that uses the static modifier is `SandstormZoneSmall_TESTONLY` (`sandstormexposure.c:1` to `:11`). It is a test class; keep it off a live server.
 
@@ -66,7 +66,7 @@ From `P:\scripts\4_world\plugins\pluginbase\plugintransmissionagents.c:414`:
 - Only an item in the `MASK` category with `DEF_DUST_PARTICLE_BREATH` stops silicosis. Glasses do nothing against it.
 - `DEF_DUST_PARTICLE_EYES` on glasses, a mask or night vision goggles stops eye irritation.
 - `GetProtectionLevelCachedEquipment` looks at attachments down to depth 2 and adds up `GetProtectionLevel(type)` of every match (`plugintransmissionagents.c:577` to `:592`).
-- The dose that gets through is `(1 - protection) * m_TransferabilityIn * dose` (`CalculateAgentsToTransmit`, `plugintransmissionagents.c:614` to `:638`), and nothing is inserted when that is 0 or less (`:523` to `:533`). Protection 1 blocks the agent fully, and two items that add up past 1 block it too.
+- The dose that gets through is `(1 - protection) * m_TransferabilityIn * dose`, where `dose` is already a whole number (`int dose_size`) (`CalculateAgentsToTransmit`, `plugintransmissionagents.c:614` to `:638`), and nothing is inserted when that is 0 or less (`:523` to `:533`). Protection 1 blocks the agent fully, and two items that add up past 1 block it too.
 
 ## Giving an item protection
 

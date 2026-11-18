@@ -74,7 +74,10 @@ The Takistan cactus bushes use it. From `P:\DZ\plants_takistan\config.cpp:14` to
 ```cpp
 class CfgNonAIVehicles
 {
+	class BushSoft;
 	class BushHard;
+	class TreeSoft;
+	class TreeHard;
 	class BushHard_b_OpuntiaFicusIndica_1s: BushHard
 	{
 		class VegetationSounds

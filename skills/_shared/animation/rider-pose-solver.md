@@ -42,9 +42,9 @@ No FABRIK or CCD is needed. Each arm and leg is an analytic two bone solve, and 
 |---|---|
 | Arm, per side | From the shoulder (end of the spine chain) to the grip, with upper arm 0.30 m and forearm 0.27 m (fixed defaults, which `--rest-pose` does not replace) and an elbow hint forward and slightly down so the elbow does not flip. Gives elbow and hand positions. |
 | Leg, per side | Hip to knee to ankle, 0.42 m and 0.41 m, knee hint forward. |
-| Spine | `Pelvis` at the seat anchor tilted forward by `lean`; `Spine` to `Spine3` spread evenly on the line from `Pelvis` to the base of the neck; `Neck` and `Head` on the same line with an optional small look ahead. |
+| Spine | `Pelvis` at the seat anchor tilted forward by `lean`; `Spine` to `Spine3` spread evenly on the line from `Pelvis` to the base of the neck; `Neck` and `Head` on the same line, 0.08 m and 0.14 m further along it. |
 
-`lean` is the torso's only freedom: 0 upright (a cruiser or quad), 0.2 a slight lean (a typical car driver), 0.5 a strong one. Above about 0.6 the spine clips, so cap it. With `steerMax` not zero the spine also twists by 0.2 times the steering angle between `Pelvis` and `Spine3`, which keeps the elbows natural; turn it off for cars, where the body stays neutral.
+`lean` is the torso's only freedom: 0 upright (a cruiser or quad), 0.2 a slight lean (a typical car driver), 0.5 a strong one. Above about 0.6 the spine clips, so cap it. With a steering angle not zero the two shoulder points turn around `Spine3` by `twistFactor` (default 0.2) times the steering angle, which keeps the elbows natural; no spine joint moves. Set `twistFactor` to 0 for cars, where the body stays neutral.
 
 The hand lands exactly on the grip by construction of the solver. That is not evidence of contact in game (`rider-pose-measured.md`, "Measure the grip hole first").
 

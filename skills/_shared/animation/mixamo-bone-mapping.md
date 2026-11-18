@@ -29,10 +29,10 @@ The score is `SequenceMatcher` on the two normalized names plus bonuses, capped 
 | Bonus | Amount |
 |---|---|
 | One name contains the other | +0.15 |
-| Shared side or position prefix (left, right, upper, lower) | +0.1 |
+| Shared side or position prefix (left, right, up, low, upper, lower) | +0.1 |
 | Shared side suffix (`.L`, `.R`, `_l`, `_r`) | +0.1 |
 | Same number (`Spine1`, `Spine2`) | +0.1 |
-| Shared limb keyword (arm, leg, hand, foot) | +0.05 |
+| Shared limb or body keyword (arm, hand, leg, foot, finger, thumb, index, middle, ring, pinky, shoulder, elbow, wrist, hip, knee, ankle, toe, spine, neck, head) | +0.05 |
 
 Scores for `LeftArm` against other names:
 

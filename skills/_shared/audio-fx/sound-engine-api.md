@@ -88,7 +88,7 @@ Do the same in a hand-built sound: call `SetPosition` after `SetParent` and befo
 
 ## The wave handle
 
-`AbstractWave` methods (all `proto` except `GetEvents()`, which is a script method):
+`AbstractWave` methods (all `proto` except `PlayWithOffset()` and `GetEvents()`, which are script methods):
 
 | Line | Method | Note |
 |---|---|---|

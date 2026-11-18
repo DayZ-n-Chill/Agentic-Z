@@ -71,7 +71,7 @@ The bone list behind `player_testing.xob` has 172 bones and starts at `P:\DZ\ani
 | `Guts` | `Guts` | 1 | `P:\DZ\characters\data\config.cpp:175` |
 | `Bones` | `Bone` | 2 | `P:\DZ\characters\data\config.cpp:181` |
 
-`BloodInfectionSettings` (`P:\DZ\characters\data\config.cpp:187`) adds a `Salmonella` chance of 0.4. There is no `Lard` class in 1.30. 1.29 had one (1.29, not on `P:\`, so that part is not checked here). A recipe that expects `Lard` from a human body no longer gets it.
+`BloodInfectionSettings` (`P:\DZ\characters\data\config.cpp:187`) adds a `Salmonella` chance of 0.4. `SurvivorBase`'s `Skinning` class has no `Lard` entry in 1.30 (the `Lard` item class itself still exists, `P:\DZ\gear\food\config.cpp:11334`). 1.29 had one (1.29, not on `P:\`, so that part is not checked here). A recipe that expects `Lard` from a human body no longer gets it.
 
 ### Surrender state
 

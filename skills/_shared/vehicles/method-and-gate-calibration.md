@@ -23,7 +23,7 @@ These apply to every check: render and winding, capacity, parity, telemetry and 
 
 | Shape | What happened |
 |---|---|
-| A threshold copied, not measured | An assembler used 65535 as the resolved vertex limit; `binarize` rejected the model at 46,133, about 30 percent lower. The ratio differs by model (1.4205 on one test helicopter, 1.46 on another), so re-measure with `binarize` for each model; see `binarize-vertex-budget.md`. |
+| A threshold copied, not measured | An assembler used 65535 as the resolved vertex limit; `binarize` rejected the model above 46,133 (46,134 failed), about 30 percent lower. The ratio differs by model (1.4205 on one test helicopter, 1.46 on another), so re-measure with `binarize` for each model; see `binarize-vertex-budget.md`. |
 | A policy that changes nothing | Two winding policies were the same in maths (`dot(-cross,-n) == dot(cross,n)`), and four variants were built on them before anyone checked. |
 | A check that shares the builder's assumption | Seat parity compared under pure translation, the same assumption the sub-model was built with. A delta of `0.000` proved the two agreed, not that either was right. |
 | One field read from a larger output | `attachment_count=2` was read as a pass while the regression sat in the same output. |

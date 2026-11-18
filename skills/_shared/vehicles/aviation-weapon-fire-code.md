@@ -60,7 +60,7 @@ protected void DoFire()
     {
         string zone = ResolveDamageZone(directHit, hitComp);
         if (zone != "")
-            directHit.ProcessDirectDamage(DamageType.FIRE_ARM, this, zone, AMMO_TYPE, hitPos, 1.0, ProcessDirectDamageFlags.ALL_TRANSFER);
+            directHit.ProcessDirectDamage(DamageType.FIRE_ARM, this, zone, AMMO_TYPE, directHit.WorldToModel(hitPos), 1.0, ProcessDirectDamageFlags.ALL_TRANSFER);
     }
 
     // 7. send the effects to every client

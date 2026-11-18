@@ -17,7 +17,7 @@ If the config says `class MyMod_Car: OffroadHatchback` but the script class is `
 | Method | Default in `Transport` | Effect |
 |---|---|---|
 | `CrewCanGetThrough` | `false` (`transport.c:727`) | No get-in |
-| `IsVitalGlowPlug` | `true` (`:409` to `:412`) | A petrol car will not start (`invariants-engine-fluids-and-handling.md`) |
+| `IsVitalGlowPlug` | `true` (`:412` to `:415`) | A petrol car will not start (`invariants-engine-fluids-and-handling.md`) |
 | `GetAnimInstance` | `Error()` (`:665`) | No seat animation |
 | `GetSeatAnimationType` | `Error()` (`:685`) | No seat animation |
 | `Get3rdPersonCameraType` | `Error()` (`:701`) | No camera |

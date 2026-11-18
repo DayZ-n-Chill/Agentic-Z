@@ -63,7 +63,7 @@ cb = ad.action.layers[0].strips[0].channelbag(ad.action_slot)
 fc = cb.fcurves.find("location", index=2)
 ```
 
-- Across versions, `from bpy_extras import anim_utils` gives `animdata_get_channelbag_for_assigned_slot(ad)` and `action_get_channelbag_for_slot`. On 4.3 fall back to `action.fcurves`, guarded by `hasattr`.
+- `from bpy_extras import anim_utils` gives `animdata_get_channelbag_for_assigned_slot(ad)` on 5.x only, and `action_get_channelbag_for_slot` from 4.4 on. On 4.3 to 4.5 fall back to `action.fcurves`, guarded by `hasattr` (`get_fcurves` in `blender-bpy-sim-baking-export.md`).
 - `action.fcurve_ensure_for_datablock(...)` creates curves directly from 4.4 on.
 - Assigning actions (`animation_data_create()`, `ad.action = ...`) works everywhere.
 - `Bone.select` is gone on 5.x; select bones through `PoseBone.select`. The DayZ plugin's exporter reads `pose.bones[name].select` for its "Selected Bones Only" mask (`ExportTxa.py:163` to `:169`).

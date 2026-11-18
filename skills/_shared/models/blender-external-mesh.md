@@ -113,7 +113,8 @@ bpy.ops.wm.obj_export(
     export_selected_objects=True,
     forward_axis='Y',
     up_axis='Z',
-    apply_modifiers=True
+    apply_modifiers=True,
+    export_smooth_groups=True
 )
 ```
 

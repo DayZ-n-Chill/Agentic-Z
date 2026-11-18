@@ -1,6 +1,6 @@
 # Checking a Blender build
 
-What to check after each part of a model built in Blender over MCP, how to finish the scene, the rules that catch the rarer faults, and the two render traps over MCP. The planning and geometry rules are in `blender-assembly.md`; every helper named here is in `skills/dayz-model-tools/scripts/blender_helpers.py`. This is Blender tool behaviour, not a fact about the game.
+What to check after each part of a model built in Blender over MCP, how to finish the scene, the rules that catch the rarer faults, and the two render traps over MCP. The planning and geometry rules are in `blender-assembly.md`; every helper named here is in `skills/dayz-model-tools/scripts/blender_helpers.py` except `vr_capture`, which is in the code block of `blender-visual-review.md`. This is Blender tool behaviour, not a fact about the game.
 
 ## After every part
 

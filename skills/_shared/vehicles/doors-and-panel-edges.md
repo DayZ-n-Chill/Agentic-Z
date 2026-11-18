@@ -23,7 +23,7 @@ Measure a part in the state where it is exposed. With the door shut the body cov
 
 ## Measure free edge length against a vanilla door
 
-The control is one vanilla door, `P:\DZ\vehicles\wheeled\civiliansedan\proxy\sedandoors_driver.p3d`. It is binarized (ODOL version 56), so debinarize it to MLOD first with an ODOL to MLOD converter; this repo ships none, and `scripts/tools/dayz-odol-strict` expects the same outside tool.
+The control is one vanilla door, `P:\DZ\vehicles\wheeled\civiliansedan\proxy\sedandoors_driver.p3d`. It is binarized (ODOL version 56), so debinarize it to MLOD first with an ODOL to MLOD converter; this repo ships none, and `scripts/tools/dayz-odol-strict` only reads ODOL anatomy through an external parser backend and does not convert to MLOD.
 
 Measure free edge length in a band at each end of the long axis, across every visual LOD and the View Pilot LOD (res 1100). With a 6 percent band:
 

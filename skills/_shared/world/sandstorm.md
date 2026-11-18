@@ -59,7 +59,7 @@ A new environmental hazard copies one of the two vanilla patterns: an `EffectAre
 3. If intensity is still above 0, `ApplyBuildingCheckModifier` (`:213` to `:248`): shelter needs both a roof found by `MiscGameplayFunctions.IsUnder(..., ObjIntersectIFire)` and `IsSoundInsideBuilding()` (`:222` to `:228`).
 4. If intensity is still above 0, `ApplyVehicleModifier` (`:250` to `:282`): only a transport that passes `IsAnyInherited({Car})` shelters (`:265`).
 
-The building and vehicle shelters fade over 1.5 s from the moment the state changes (`:233` to `:247`, `:271` to `:281`). Underground shelter uses the same fade, but its timer `m_UndergroundTransitionTimer` is never set anywhere in vanilla script (`P:\scripts\4_world\systems\sandstorm\playersandstormdata.c:12`), so underground shelter takes effect at once. The fade time and the fade:
+The building and vehicle shelter fade is labelled 1.5 s, but the constant is applied to `g_Game.GetTime()`, which returns mission time in milliseconds (`P:\scripts\3_game\global\game.c:1534` to `:1535`), so the fade completes after 1.5 ms and building and vehicle shelter take effect at once (`:233` to `:247`, `:271` to `:281`). Underground shelter uses the same fade, but its timer `m_UndergroundTransitionTimer` is never set anywhere in vanilla script (`P:\scripts\4_world\systems\sandstorm\playersandstormdata.c:12`), so underground shelter takes effect at once. The fade time and the fade:
 
 ```c
 // P:\scripts\4_world\systems\sandstorm\scriptedsandstormcontroller.c:15
@@ -154,5 +154,5 @@ Infected hearing in a storm is config, not script: `AIParams` has `sandstormToNo
 On a local test server from `/dayz-launch-test`:
 
 - Start: on the server, `GetGame().GetWeather().GetSandstorm().Start(5, false)`. The client gets the `REQ_SANDSTORMEFFECT` post process.
-- Shelter: walk into a building that reports `IsSoundInsideBuilding`, and intensity reaches 0 within 1.5 s. On a motorbike intensity does not drop; in a `Car` it does.
+- Shelter: walk into a building that reports `IsSoundInsideBuilding`, and intensity reaches 0 at once. On a motorbike intensity does not drop; in a `Car` it does.
 - Logs: search the RPT for `Could not get players sandstorm data`, the error `GetPlayerSandstormData` raises when it has no entry for a player (`scriptedsandstormcontroller.c:65` and `:69`).

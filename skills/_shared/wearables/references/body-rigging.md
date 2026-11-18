@@ -11,7 +11,7 @@ This is the expensive step of any new body. DayZ ships no armature: `model.cfg` 
 - Bake the armature scale before automatic weights. Then keep at most 4 influences per vertex, no vertex without a weight, and no vertex weighted to both a left and a right bone.
 - A Blender pose test is not a deform gate. Only a spawn in game or Buldozer proves deformation (`canonical-bind.md`).
 - Size is baked into the mesh, and it fights the bind. About 1.27 times vanilla deforms visibly under animation; only up to about 1.1 times may pass (measured in game).
-- Inheriting the vanilla animation block is free; shipping new character animations is not. Only one mod that changes the player or creature graphs can load at a time (`_shared/animation/anim-graphs.md`), so warn the user before a plan ships custom character animations.
+- Inheriting the vanilla animation block is free; shipping new character animations is not. Two mods that replace the same player or creature graph collide (`_shared/animation/anim-graphs.md`), so warn the user before a plan ships custom character animations.
 - Check bone names on `P:\`, never from memory. The vanilla lists are in `P:\DZ\anims\cfg\skeletons.anim.xml`; the player's `player_testing.xob` list starts at `:110`.
 
 ## Get the official rig

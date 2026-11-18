@@ -21,7 +21,7 @@ The `view` token is subject plus view (`assembled__iso`, `zoom_muzzle__front_iso
 
 The view alone (`iso`, `profile`) is not enough. `profile` exists as a view of `zoom_mag` (`zoom_mag__profile__zoom_mag__v1.png`), while the side views of the assembly are `profile_L` and `profile_R`. A bare `profile` or `iso` cannot tell `assembled__profile_L` from `zoom_mag__profile`, or `assembled__iso` from `body__iso` or `hg__iso`, and the question would be asked against the wrong framing.
 
-Every token in `checks_hardsurface.json` comes from a real render set. The four in use, plus `assembled__profile_R` for a skipped entry, follow the same pattern:
+Every token in `checks_hardsurface.json` comes from a real render set. The three views the active entries use, plus `assembled__profile_R` and `zoom_muzzle__front_iso`, which only skipped entries name, follow the same pattern:
 
 | View | File |
 |---|---|
