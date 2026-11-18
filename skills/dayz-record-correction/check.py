@@ -43,11 +43,19 @@ _DOCS_PROBLEM = re.compile(r"^(wiki/\S+?)(?::\d+)?: (.+)$")
 
 
 def resolve_root(skill_dir: str) -> dict:
-    """Follow links from the skill folder and say whether it is a clone, a plugin, or unknown."""
+    """Follow links from the skill folder and say whether it is a clone, a plugin, or unknown.
+
+    A clone's own .claude/settings.json enables the agentic-z plugin, so inside a clone the
+    skill usually loads from the plugin cache. Then the project (CLAUDE_PROJECT_DIR, or the
+    working directory) is checked: when it holds both REQUIRED files it is the clone to edit.
+    """
     resolved = Path(skill_dir).resolve()
     parts = [p.lower() for p in resolved.parts]
     for i in range(len(parts) - 2):
         if parts[i:i + 3] == [".claude", "plugins", "cache"]:
+            project = Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()).resolve()
+            if all((project / r).is_file() for r in REQUIRED):
+                return {"kind": "clone", "resolved": str(resolved), "root": str(project), "missing": []}
             return {"kind": "plugin", "resolved": str(resolved), "root": None, "missing": []}
     if (resolved.name.lower() == SKILL_NAME and resolved.parent.name.lower() == "skills"
             and resolved.parents[1].name.lower() != ".claude"):

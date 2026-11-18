@@ -15,7 +15,7 @@ This is a meta-skill that edits rule files, not DayZ content, so like `/dayz-sco
 
 ## 1. Find the repo, then draft the rule
 
-First find where this skill really lives, because every path below is relative to that Agentic-Z repo root, not to the current project. `/sync-skills` exposes the skill through a link (a junction on Windows) under `~/.claude/skills/`, and the harness reports the link path as the base directory, so resolve the link before deciding anything:
+First find the Agentic-Z repo root, because every path below is relative to it. Claude Code normally loads this skill from the agentic-z plugin, which a clone's own `.claude/settings.json` enables, so the base directory is in the plugin cache even inside a clone. It can also be a link (a junction on Windows) under `~/.claude/skills/`, which `/sync-skills --agents claude` makes, or under the Codex and Gemini skill folders; the harness reports the link path as the base directory. So resolve it before deciding anything:
 
 ```cmd
 python "<skill-dir>\check.py" root "<skill-dir>"
@@ -23,7 +23,7 @@ python "<skill-dir>\check.py" root "<skill-dir>"
 
 It follows symlinks and junctions and prints JSON with `kind` (`clone`, `plugin` or `unknown`), the resolved path, the repo `root` and any `missing` required files. Exit 0 means a usable clone or a plugin install; exit 2 means stop and ask the user where their Agentic-Z repo is, and write nothing until they answer. What it checks:
 
-- Under `~/.claude/plugins/cache/` (for example `C:\Users\<you>\.claude\plugins\cache\...`): a plugin install.
+- Under `~/.claude/plugins/cache/` (for example `C:\Users\<you>\.claude\plugins\cache\...`): it then checks the project (`CLAUDE_PROJECT_DIR`, or the working directory). When the project holds both `skills\_shared\dayz-conventions.md` and `.claude\CLAUDE.md`, it is an Agentic-Z clone: `kind` is `clone` and `root` is the project, so the rule goes into the Tier 2 or Tier 3 file there and step 3b runs. Otherwise it is a plugin install in another project.
 - Ending in `\skills\dayz-record-correction`: a clone. The repo root is two levels up (the folder that holds `skills\`), and it must hold both `skills\_shared\dayz-conventions.md` and `.claude\CLAUDE.md`. If either is missing, the command lists it under `missing` and exits 2. A copy (not a link) in `~/.claude/skills/`, where two levels up is `~/.claude`, is reported as `unknown` and also exits 2.
 
 Then draft:

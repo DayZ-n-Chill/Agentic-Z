@@ -24,7 +24,7 @@ Also reported: only one `modded class Hologram` may exist across all loaded file
 
 ## Merge loops can lose items
 
-`ItemBase.CombineItems` empties the donor with `AddQuantity(-used)`, which goes through `SetQuantity`. For items with `varQuantityDestroyOnMin = 1`, such as `Rag`, `SetQuantity` at the minimum calls `this.Delete()` (`P:\scripts\4_world\entities\itembase.c:3333` to `:3338`). `EntityAI.Delete()` only sets `m_PendingDelete` (`P:\scripts\3_game\entities\entityai.c:779` to `:782`), and `Object.Delete()` queues `ObjectDelete` for the next frame (`P:\scripts\3_game\entities\object.c:82` to `:85`). Until then the empty stack is still in cargo with quantity 0, and `CanBeCombined` (`itembase.c:2137` to `:2197`) does not check for a pending delete, so an empty stack counts as a valid target.
+`ItemBase.CombineItems` empties the donor with `AddQuantity(-used)`, which goes through `SetQuantity`. For items with `varQuantityDestroyOnMin = 1`, such as `Rag`, `SetQuantity` at the minimum calls `this.Delete()` (`P:\scripts\4_world\entities\itembase.c:3335` to `:3342`). `EntityAI.Delete()` only sets `m_PendingDelete` (`P:\scripts\3_game\entities\entityai.c:779` to `:782`), and `Object.Delete()` queues `ObjectDelete` for the next frame (`P:\scripts\3_game\entities\object.c:82` to `:85`). Until then the empty stack is still in cargo with quantity 0, and `CanBeCombined` (`itembase.c:2141` to `:2201`) does not check for a pending delete, so an empty stack counts as a valid target.
 
 A loop that merges several times in one call, such as stack-all or loot consolidation, can then move live quantity into the empty stack, and everything moved there vanishes next frame. With rag stacks of 2, 2 and 5: B merges into A and is left empty, C fills A and keeps 3, then C merges into the empty B, and 9 rags become 6. Read from the vanilla scripts, not reproduced in game.
 
@@ -40,7 +40,7 @@ if (pile && pile.GetAmmoCount() <= 0)
 
 ## Time in a float
 
-`GetTime()` returns an `int` of milliseconds (`P:\scripts\3_game\global\game.c:1534`). Stored in a 32-bit `float`, about 7 significant digits, it stops holding every millisecond after 2^24 ms, about 4.66 hours, when the step becomes 2 ms; after about 46 hours the step is 16 ms, and it keeps doubling. Keep time in an `int`.
+`GetTime()` returns an `int` of milliseconds (`P:\scripts\3_game\global\game.c:1535`). Stored in a 32-bit `float`, about 7 significant digits, it stops holding every millisecond after 2^24 ms, about 4.66 hours, when the step becomes 2 ms; after about 46 hours the step is 16 ms, and it keeps doubling. Keep time in an `int`.
 
 `int.ToString()` and `float.ToString()` work, but there is no printf-style formatting; write a small helper for fixed decimals.
 
@@ -60,7 +60,7 @@ Reported, cause not checked on `P:\`: a `foreach` straight over a getter's retur
 
 ## Retail replacements for `PluginDeveloper`
 
-`PluginDeveloper` registers only under `#ifdef DIAG_DEVELOPER` (`RegisterPluginDiag`, `P:\scripts\4_world\plugins\pluginmanager.c:65`, `:249` to `:254`). On a release server `GetPlugin(PluginDeveloper)` returns null, so a teleport or give built on it (`TeleportAtCursor`, `SpawnEntityInInventory`) compiles, works in diag and does nothing in release. Admin tools such as Community Online Tools use these instead:
+`PluginDeveloper` registers only under `#ifdef DIAG_DEVELOPER` (`RegisterPluginDiag`, `P:\scripts\4_world\plugins\pluginmanager.c:66`, `:249` to `:254`). On a release server `GetPlugin(PluginDeveloper)` returns null, so a teleport or give built on it (`TeleportAtCursor`, `SpawnEntityInInventory`) compiles, works in diag and does nothing in release. Admin tools such as Community Online Tools use these instead:
 
 - Teleport: `player.SetPosition(pos)`, resolving `GetGame().SurfaceY(x, z)` first when the height is 0.
 - A seated player and the vehicle: `HumanCommandVehicle vc = player.GetCommand_Vehicle();` (`P:\scripts\3_game\human.c:1528`), `Transport veh = vc.GetTransport();` (`:716`), then `veh.GetTransform(mat); mat[3] = pos; veh.SetTransform(mat);`. The occupant moves with the vehicle one frame later, so report `veh.GetPosition()`, not the player's.

@@ -116,6 +116,11 @@ def parse(text: str) -> Widget:
             elif tok == "}":
                 if kind == "widget":
                     _assign(owner, words)
+                    # Some vanilla files open a widget with no name, or a quoted ID, and give its
+                    # name in a Name property: day_z_hud.layout:1 `FrameWidgetClass {` then
+                    # :2 `Name "HudFrameWidget"`, and :5124 `PanelWidgetClass "{0000000018E83EBD}" {`.
+                    if "Name" in owner.props:
+                        owner.name = owner.word("Name")
                 words = []
                 if len(stack) == 1:
                     raise LayoutError(f"line {lineno}: '}}' with no open block")
@@ -289,7 +294,7 @@ def missing_toggles(widget: Widget) -> list[str]:
     A toggle only decides whether its value is pixels or a fraction of the parent, so
     a missing toggle over a value of 0 (or an unset value) cannot move the box. Vanilla
     files rely on this: day_z_hud.layout:1 has `position 0 0` with no hexactpos or vexactpos,
-    and :4851 has `position 0 0.2` with only vexactpos."""
+    and :5124 (ChatFrameWidget) has `position 0 0.2` with only vexactpos."""
     out = []
     for key in EXACT_KEYS:
         prop, index = TOGGLE_TARGET[key]
@@ -424,7 +429,7 @@ def render(screen_w: int, screen_h: int, boxes: list[Box], labels: bool = True):
 def parse_sizes(value: str) -> list[tuple[int, int]]:
     sizes = []
     for part in value.split(","):
-        m = re.fullmatch(r"\s*(\d{2,5})[xX](\d{2,5})\s*", part)
+        m = re.fullmatch(r"\s*(\d{1,5})[xX](\d{1,5})\s*", part)
         if not m:
             raise argparse.ArgumentTypeError(f"'{part}' is not WIDTHxHEIGHT, for example 1920x1080")
         w, h = int(m.group(1)), int(m.group(2))

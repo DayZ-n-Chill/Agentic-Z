@@ -116,7 +116,7 @@ def test_findings_name_off_screen_and_missing_toggles():
 
 
 def test_missing_toggle_over_a_zero_value_is_not_reported():
-    # Shaped like P:\gui\layouts\day_z_hud.layout:1 and :4851, which load in game.
+    # Shaped like P:\gui\layouts\day_z_hud.layout:1 and :5124, which load in game.
     root = lp.parse(
         "FrameWidgetClass HudFrameWidget {\n position 0 0\n size 0.9 0.9\n hexactsize 0\n vexactsize 0\n {\n"
         "  PanelWidgetClass ChatFrameWidget {\n   position 0 0.2\n   size 5 300\n   vexactpos 0\n"
@@ -130,8 +130,28 @@ def test_missing_toggle_over_a_zero_value_is_not_reported():
 @pytest.mark.skipif(not (VANILLA / "day_z_hud.layout").is_file(), reason="vanilla layouts on P: not available")
 def test_vanilla_hud_roots_raise_no_missing_toggle():
     root = lp.parse((VANILLA / "day_z_hud.layout").read_text(encoding="utf-8", errors="replace"))
-    flagged = {f["widget"] for f in lp.findings(root, {}) if f["rule"] == "missing-toggle"}
-    assert not flagged & {"HudFrameWidget", "ChatFrameWidget"}
+    # Both widgets take their names from a Name property (:2 and :5125), so check the names
+    # resolve before relying on them, and check by header line too.
+    names = {}
+    stack = [root]
+    while stack:
+        w = stack.pop()
+        names[w.line] = w.name
+        stack.extend(w.children)
+    assert (names[1], names[5124]) == ("HudFrameWidget", "ChatFrameWidget")
+    flagged = {(f["widget"], f["line"]) for f in lp.findings(root, {}) if f["rule"] == "missing-toggle"}
+    assert not flagged & {("HudFrameWidget", 1), ("ChatFrameWidget", 5124)}
+
+
+def test_name_property_gives_the_widget_name():
+    # The header forms of P:\gui\layouts\day_z_hud.layout:1 and :5124.
+    root = lp.parse('FrameWidgetClass {\n Name "HudFrameWidget"\n {\n'
+                    '  PanelWidgetClass "{0000000018E83EBD}" {\n   Name "ChatFrameWidget"\n   position 0 0.2\n  }\n'
+                    ' }\n}\n')
+    assert (root.name, root.children[0].name) == ("HudFrameWidget", "ChatFrameWidget")
+    found = [f for f in lp.findings(root, {}) if f["rule"] == "missing-toggle"]
+    assert [f["widget"] for f in found] == ["ChatFrameWidget"]
+    assert found[0]["message"].startswith("ChatFrameWidget has no vexactpos")
 
 
 def test_cli_prints_missing_toggle_as_a_note(tmp_path, capsys):
@@ -304,6 +324,7 @@ def test_out_inside_a_mod_workspace_is_refused(tmp_path, monkeypatch, capsys):
 
 def test_sizes_argument():
     assert lp.parse_sizes("1280x720, 3440X1440") == [(1280, 720), (3440, 1440)]
+    assert lp.parse_sizes("5x5") == [(5, 5)]  # SKILL.md: each side may be 1 to 8192 pixels
     with pytest.raises(Exception):
         lp.parse_sizes("1920by1080")
 
