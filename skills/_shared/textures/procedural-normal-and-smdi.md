@@ -83,7 +83,7 @@ def generate_smdi_map(width, height, material='painted_metal'):
     return Image.fromarray(smdi, mode='RGB')
 ```
 
-The presets sit in the middle of these ranges. They are generic starting points, not vanilla measurements; vanilla paint can sit far lower, so set them against a vanilla asset of the same kind (`smdi-and-levels.md`):
+The presets sit inside these ranges, mostly at their low end (the gloss noise adds 0 to 15 to blue). They are generic starting points, not vanilla measurements; vanilla paint can sit far lower, so set them against a vanilla asset of the same kind (`smdi-and-levels.md`):
 
 | Material | Red | Green (specular) | Blue (gloss) | Notes |
 |---|---|---|---|---|

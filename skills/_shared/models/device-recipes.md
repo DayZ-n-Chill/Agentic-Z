@@ -44,7 +44,7 @@ Pick the tier by how much visible detail the device carries, not by its size: th
 | Tier | LOD0 | LOD1 | LOD2 | LOD3 | Devices |
 |---|---|---|---|---|---|
 | Light | up to 500 | up to 250 | up to 125 | up to 60 | Wall switch (64), battery adapter (152), push button (192), junction box (368), sorter (416) |
-| Medium | 500 to 1000 | 250 to 500 | 100 to 250 | 50 to 125 | Generator (584) |
+| Medium | 500 to 1000 | 250 to 500 | 125 to 250 | 60 to 125 | Generator (584) |
 | Heavy | 1000 to 2000 | 500 to 1000 | 250 to 500 | 125 to 250 | None |
 | Machinery | 2000 to 3000 | 1000 to 1500 | 500 to 750 | 250 to 375 | None |
 

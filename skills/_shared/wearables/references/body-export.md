@@ -35,7 +35,7 @@ Do not reverse the faces. Under `(x, z, y)` the Blender face order lands in the 
 - **No mass on the visual LOD.** Set `point.mass = None` there; mass belongs only on the Geometry LOD.
 - **Internal geometry.** A ribcage or similar is merged into the same visual LOD point and face pool, and its spine selections merge by name with the body's. How to weight it is in `body-uv-bake.md`, section "Weighting internal geometry".
 - **Hidden selection.** Add a `camo` selection holding every body point and face for `hiddenSelectionsTextures[]`; vanilla infected declare exactly that (`hiddenSelections[]` at `P:\DZ\characters\zombies\config.cpp:96`). An internal mesh with its own texture gets a second one. Selections that are not bones (`camo`, proxies) are ignored by the skeleton.
-- **Reading weights back.** Read an MLOD with the constructor, `py3d.P3D(open(path, 'rb'))`, not `m = P3D(); m.read(f)`: only the constructor fills `selection.points = {Point: weight}`. An old debinarized MLOD may keep the selection names with empty `.points`.
+- **Reading weights back.** Read an MLOD with `py3d.P3D(open(path, 'rb'))`, which fills `selection.points = {Point: weight}`. An old debinarized MLOD may keep the selection names with empty `.points`.
 
 The selections in the `.p3d` must be a subset of `skeletonBones[]` in `model.cfg`, or the mesh explodes. A misnamed bone logs `Bone X doesn't exist in skeleton ...` in the RPT and that bone does not animate. Which skeleton name vanilla models carry is in `worn-models.md`, section "Skeleton: `DayzTemporarySkeleton`".
 

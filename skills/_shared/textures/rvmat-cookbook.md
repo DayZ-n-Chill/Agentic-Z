@@ -30,7 +30,7 @@ Which material route fits a goal, a seven stage Super starting point and where i
 | A part with one constant color and no `_co` | `NormalMapSpecularMap` (`vehicle-materials.md`) | Super, which expects the color from the face texture |
 | A metallic and roughness set, with no damage look and not terrain | MatPBR (`matpbr-emat.md`), which no vanilla file on `P:\` confirms | MatPBR when either of those is needed |
 
-Two whole vanilla Super materials to read side by side: a vehicle body, `P:\DZ\vehicles\wheeled\van_01\data\van_01_body.rvmat:7` to `:83`, and a weapon, `P:\DZ\weapons\shotguns\saiga\data\saiga.rvmat:7` to `:77`.
+Two whole vanilla Super materials to read side by side: a vehicle body, `P:\DZ\vehicles\wheeled\van_01\data\van_01_body.rvmat:7` to `:92`, and a weapon, `P:\DZ\weapons\shotguns\saiga\data\saiga.rvmat:7` to `:78`.
 
 ## Super template
 

@@ -72,7 +72,7 @@ bpy.ops.mesh.normals_make_consistent(inside=False)
 bpy.ops.object.shade_smooth()
 ```
 
-Bake AO on the conformed shipped low alone: `bake(type='AO', use_selected_to_active=False, samples=256, margin=16, use_clear=True)`. The AO mean on surface pixels, with the black gaps masked out, should be about 180 to 210. Keep the cleaned normals on the shipped mesh; the normal map was baked against them.
+Bake AO on the conformed shipped low alone: set `bpy.context.scene.cycles.samples = 256`, then `bake(type='AO', use_selected_to_active=False, margin=16, use_clear=True)` (the bake operator has no `samples` argument). The AO mean on surface pixels, with the black gaps masked out, should be about 180 to 210. Keep the cleaned normals on the shipped mesh; the normal map was baked against them.
 
 ## Invert green for `_nohq`
 

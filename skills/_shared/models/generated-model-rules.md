@@ -22,7 +22,7 @@ A LOD's resolution value is its type. The Tier 2 table is in `_shared/convention
 | Fire Geometry | `7.0e15` | Bullets |
 
 - Visual values only need to rise. The generator spaces them 0, 1, 4, 8; most vanilla models use 1, 2, 3, 4 (`P:\DZ\gear\camping\wooden_case.p3d`). Either works. The special values were read from the header of that same model.
-- Never use `2e13` for Fire Geometry or `3e13` for View Geometry, as some Arma era guides say: the engine does not treat a LOD at those values as Fire or View Geometry. `4e13` is a real DayZ type, GeoPhys, carried by 8 vanilla models, and `2e13` is the buoyancy LOD of the vanilla boat (`lods.md`).
+- Never use `2e13` for Fire Geometry or `3e13` for View Geometry, as some Arma era guides say: the engine does not treat a LOD at those values as Fire or View Geometry. `4e13` is a real DayZ type, GeoPhys, carried by 12 vanilla models, and `2e13` is the buoyancy LOD of the vanilla boat (`lods.md`).
 - A wrong value means the engine does not see the LOD as that type. When you edit an older model that already works, keep its values unless you have a checked reason to change them.
 
 ## Collision LODs

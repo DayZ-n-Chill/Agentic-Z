@@ -82,7 +82,7 @@ Vanilla `GasMask` sets all four to 1 (`P:\DZ\characters\masks\config.cpp:134`); 
 
 ### Which items the game asks
 
-Airborne agents read protection only from worn items whose script class reports a cached equipment category. `GetCachedEquipmentCategory()` returns `NONE` on every entity (`P:\scripts\3_game\entities\entityai.c:322` to `:325`); `Mask_Base` returns `MASK` and `Glasses_Base` returns `EYEWEAR` (`P:\scripts\4_world\entities\itembase\clothing_base.c:176` and `:196`).
+Airborne agents read protection only from worn items whose script class reports a cached equipment category. `GetCachedEquipmentCategory()` returns `NONE` on every entity (`P:\scripts\3_game\entities\entityai.c:322` to `:325`); `Mask_Base` returns `MASK` and `Glasses_Base` returns `EYEWEAR` (`P:\scripts\4_world\entities\itembase\clothing_base.c:196` and `:176`).
 
 | Agent | Protection type | Categories asked | Where |
 |---|---|---|---|

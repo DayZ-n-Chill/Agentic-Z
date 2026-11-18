@@ -35,7 +35,7 @@ What the vanilla rock shows:
 - The specular slot holds the placeholder `color(0.5,0,1,1,DTSMDI)` (`:122` to `:125`). Vanilla tags this slot `DTSMDI`, the detail and specular form, not plain `SMDI`.
 - `Stage10` holds the baked `_as` with `texGen="4"`, so it also reads the second UV set (`:147` to `:150`).
 - The rock declares `TexGen0` to `TexGen7` and shifts some with `pos[]`, so one tiled texture can sit at a different offset per family.
-- `P:\DZ\rocks_bliss\data\r_rock_general1.rvmat` swaps the UV sets: `TexGen4` reads `uvSource="tex"` (line 55) and the tiling `TexGen` classes read `tex1`, tiled 13 times. Pick one assignment and make the model's UV sets match it. When the mask's set is missing, mirrored, overlapping or scaled like the tiling set, the mask lands in the wrong place.
+- `P:\DZ\rocks_bliss\data\r_rock_general1.rvmat` swaps the UV sets: `TexGen4` reads `uvSource="tex"` (line 55) `TexGen1` to `TexGen3`, which tile the color stages, read `tex1` tiled 13 times, while `TexGen5` to `TexGen7` tile 25 times on `tex` (`Stage5` to `Stage8` use `TexGen7`). Pick one assignment and make the model's UV sets match it. When the mask's set is missing, mirrored, overlapping or scaled like the tiling set, the mask lands in the wrong place.
 
 ## Starting block
 

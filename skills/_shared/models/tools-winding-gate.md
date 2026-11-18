@@ -17,7 +17,7 @@ It needs the DayZ fork of py3d, 1.6.0 or newer, which it looks for at `--py3d`, 
 
 ## What it checks
 
-It reads every visual LOD in the MLOD convention of `axes-and-winding.md`, section "The rule" (the Blender to DayZ reflection that `py3d.blender_to_dayz()` writes): the vertex order cross product `cross(v1 - v0, v2 - v0)` and the stored shading normals both point away from the side meant to be seen, into the material, inward on a solid.
+It reads every visual LOD in the MLOD convention of `axes-and-winding.md`, section "The map from Blender to DayZ" (the Blender to DayZ reflection that `py3d.blender_to_dayz()` writes): the vertex order cross product `cross(v1 - v0, v2 - v0)` and the stored shading normals both point away from the side meant to be seen, into the material, inward on a solid.
 
 Winding is read per closed shell. Points are welded by position (5 decimals). A shell is a set of faces joined only through edges that exactly two faces share; `proxy:*` faces are left out. A shell is closed when each of its edges is used by exactly two of its faces. Its signed volume by winding (the sum of `dot(v0, cross(v1, v2)) / 6` over the fan triangles of its faces) must be negative, the same sign the absolute winding check of `/dayz-p3d-audit` uses.
 

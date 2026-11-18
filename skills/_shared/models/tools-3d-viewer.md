@@ -92,7 +92,7 @@ generate_viewer_html(model_name='Push Button', mode='embedded', geometry_data=ge
 generate_viewer_html(model_name='My Model', mode='web', glb_url='model.glb', output_path='viewer.html')
 ```
 
-The public names are `convert_paa_to_png`, `parse_rvmat`, `extract_geometry_for_viewer`, `generate_viewer_html`, `p3d_to_glb` and `run_pipeline`.
+The main public names are `convert_paa_to_png`, `parse_rvmat`, `extract_geometry_for_viewer`, `generate_viewer_html`, `p3d_to_glb` and `run_pipeline`; the full list is `__all__` in `dayz_3d_viewer/__init__.py`, which also exports `p3d_info` (the function behind `--info`), `PAAFile`, `classify_lod`, `extract_lod_geometry`, `find_best_visual_lod`, `find_textures_for_model`, `ViewerError` and `MissingDependencyError`.
 
 ## What the page offers
 

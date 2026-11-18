@@ -9,7 +9,8 @@ What DayZ 1.30 changed in the config and script around wearables, what that brea
 | Change | Read |
 |---|---|
 | NBC clothing lists a second slot (`NBCHead`, `NBCTop`, `NBCPants`, `NBCBoots`, `NBCGloves`) so the NBC pack can hold it | `slots-and-cargo.md`, section "NBC slots" |
-| Nine backpack bases take the NBC pack in the new `NBCBag` slot | `slots-and-cargo.md`, section "`NBCBag` on backpacks" || GP5 and Airborne mask protection moved to the filter | `protection-and-insulation.md`, section "Masks with a filter slot" |
+| Nine backpack bases take the NBC pack in the new `NBCBag` slot | `slots-and-cargo.md`, section "`NBCBag` on backpacks" |
+| GP5 and Airborne mask protection moved to the filter | `protection-and-insulation.md`, section "Masks with a filter slot" |
 | Head hiding and wetness values are read on the item type | Below, and `models-and-proxies.md`, section "An item that fits two slots" |
 | Wash head and wet clothing actions | `protection-and-insulation.md`, section "Wetting clothes on purpose" |
 | Shoes take less inventory space | Below |
