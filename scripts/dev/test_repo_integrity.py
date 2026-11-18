@@ -108,7 +108,8 @@ def test_ingame_tester_drives_the_game_through_the_test_bridge():
     # dayz-testbridge tools and always stops the session it started.
     server_py = REPO / ".claude" / "mcp" / "dayz-testbridge" / "server.py"
     tools = set(_tools(AGENTS_DIR / "dayz-ingame-tester.md"))
-    names = {"list_commands", "session_start", "session_status", "session_stop", "command", "mark", "logs_since", "screenshot"}
+    names = {"list_commands", "session_start", "session_status", "session_stop", "session_restart", "session_restart_client",
+             "command", "mark", "logs_since", "screenshot"}
     assert {f"mcp__plugin_agentic-z_dayz-testbridge__{n}" for n in names} <= tools
     assert "def build_app" in server_py.read_text(encoding="utf-8")
     text = (AGENTS_DIR / "dayz-ingame-tester.md").read_text(encoding="utf-8")
