@@ -407,7 +407,7 @@ if(g.m.e&&(g.m.e[0]>0||g.m.e[1]>0||g.m.e[2]>0)){{mp.emissive=new T.Color(g.m.e[0
 if(g.m.t){{
 const tex=await new Promise(res=>{{
 const img=new Image();
-img.onload=()=>{{const tx=new T.Texture(img);tx.needsUpdate=true;tx.colorSpace=T.SRGBColorSpace;res(tx)}};
+img.onload=()=>{{const tx=new T.Texture(img);tx.flipY=false;tx.needsUpdate=true;tx.colorSpace=T.SRGBColorSpace;res(tx)}};
 img.onerror=()=>res(null);
 img.src='data:image/png;base64,'+g.m.t;
 }});

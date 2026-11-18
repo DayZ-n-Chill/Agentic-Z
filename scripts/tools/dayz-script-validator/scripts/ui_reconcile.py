@@ -130,7 +130,10 @@ def collect_str_refs(sources: list[Path], root: Path) -> list[dict]:
     for sp in sources:
         text = _strip_block_comments(_read(sp))
         rel = _rel(sp, root)
+        is_script = sp.suffix.lower() == ".c"
         for m in _STR_REF_RE.finditer(text):
+            if is_script and not _match_not_in_line_comment(text, m.start()):
+                continue
             key = m.group(1)
             k = (rel, _line_of(text, m.start()), key.upper())
             if k in seen:

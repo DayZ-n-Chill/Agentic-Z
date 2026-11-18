@@ -253,6 +253,7 @@ class PAAFile:
     """Parser for BI .paa/.pac texture files."""
 
     def __init__(self, filepath: str | None = None, fileobj=None):
+        self.filepath = filepath
         self.paa_type = 0
         self.type_name = "Unknown"
         self.tags = {}
@@ -271,7 +272,10 @@ class PAAFile:
             raise ViewerError("PAAFile requires filepath or fileobj")
 
     def _parse(self, handle):
-        self.paa_type = struct.unpack("<H", handle.read(2))[0]
+        type_bytes = handle.read(2)
+        if len(type_bytes) < 2:
+            raise ViewerError("%s is not a PAA file (truncated header)" % (self.filepath or "input"))
+        self.paa_type = struct.unpack("<H", type_bytes)[0]
         self.type_name = PAA_TYPE_NAMES.get(
             self.paa_type, "Unknown(0x%04X)" % self.paa_type
         )
@@ -336,6 +340,8 @@ class PAAFile:
         return self.mipmaps[0]
 
     def decode_mipmap(self, mip_index: int = 0):
+        if not self.mipmaps:
+            raise ViewerError("No mipmaps found in PAA file")
         mip = self.mipmaps[mip_index]
         width, height = mip["width"], mip["height"]
         data = mip["data"]

@@ -160,7 +160,16 @@ class MigrationReader:
                 "write current header",
             )
         if payload.startswith(b"LEGACY:") and len(payload) > 7:
-            value = payload[7:].decode("utf-8", errors="strict")
+            try:
+                value = payload[7:].decode("utf-8", errors="strict")
+            except UnicodeDecodeError:
+                # A legacy record that does not parse is not a legacy success (migration-matrix.md).
+                return self._result(
+                    "reject_invalid",
+                    0,
+                    "intact",
+                    "preserve evidence",
+                )
             applied = {"value": value}
             self.state = dict(applied)
             return self._result(

@@ -3,7 +3,7 @@ from __future__ import annotations
 from persistence_cf import (
     CF_FRAMEWORK_VERSION,
     CFStorage,
-    FRAMEWORK_HEADER_GAME_VERSION,
+    ENTITY_LIST_GAME_VERSION,
     LEGACY_GAME_VERSION_CUTOFF,
     MIN_FRAMEWORK_DATA_VERSION,
     ModData,
@@ -25,7 +25,7 @@ def test_uninstalled_mod_block_is_reemitted_byte_for_byte() -> None:
     first_frame = _three_mod_storage().save()
     first_load = CFStorage.load(
         first_frame,
-        game_version=FRAMEWORK_HEADER_GAME_VERSION,
+        game_version=ENTITY_LIST_GAME_VERSION,
         installed_mods=MODS,
     )
     assert first_load.success is True
@@ -38,7 +38,7 @@ def test_uninstalled_mod_block_is_reemitted_byte_for_byte() -> None:
 
     second_load = CFStorage.load(
         second_frame,
-        game_version=FRAMEWORK_HEADER_GAME_VERSION,
+        game_version=ENTITY_LIST_GAME_VERSION,
         installed_mods={"alpha", "gamma"},
     )
     assert second_load.success is True
@@ -48,7 +48,7 @@ def test_uninstalled_mod_block_is_reemitted_byte_for_byte() -> None:
 
     reinstall = CFStorage.load(
         second_frame,
-        game_version=FRAMEWORK_HEADER_GAME_VERSION,
+        game_version=ENTITY_LIST_GAME_VERSION,
         installed_mods=MODS,
     )
     assert reinstall.success is True
@@ -78,7 +78,7 @@ def test_game_version_141_or_newer_reads_the_framework_header() -> None:
 
     result = CFStorage.load(
         frame,
-        game_version=FRAMEWORK_HEADER_GAME_VERSION,
+        game_version=ENTITY_LIST_GAME_VERSION,
         installed_mods=MODS,
     )
 
@@ -97,7 +97,7 @@ def test_framework_version_below_2_short_circuits_before_mod_count() -> None:
 
     result = CFStorage.load(
         legacy_header_only,
-        game_version=FRAMEWORK_HEADER_GAME_VERSION,
+        game_version=ENTITY_LIST_GAME_VERSION,
         installed_mods=MODS,
     )
 
@@ -106,3 +106,34 @@ def test_framework_version_below_2_short_circuits_before_mod_count() -> None:
     assert result.bytes_consumed == len(legacy_header_only)
     assert result.storage is not None
     assert result.storage.mod_ids() == ()
+
+
+def test_game_versions_116_to_140_still_read_the_frame() -> None:
+    frame = _three_mod_storage().save()
+
+    for game_version in (LEGACY_GAME_VERSION_CUTOFF, 130, ENTITY_LIST_GAME_VERSION - 1):
+        result = CFStorage.load(frame, game_version=game_version, installed_mods=MODS)
+
+        assert result.success is True
+        assert result.framework_version == CF_FRAMEWORK_VERSION
+        assert result.bytes_consumed == len(frame)
+        assert result.storage is not None
+        assert result.storage.mod_ids() == ("alpha", "beta", "gamma")
+
+
+def test_a_framework_version_above_5_fails_the_load() -> None:
+    frame = b"CFMS" + (CF_FRAMEWORK_VERSION + 4).to_bytes(2, "big") + b"\x00\x00"
+
+    result = CFStorage.load(frame, game_version=ENTITY_LIST_GAME_VERSION, installed_mods=MODS)
+
+    assert result.success is False
+    assert result.storage is None
+
+
+def test_a_mod_count_above_256_fails_the_load() -> None:
+    frame = b"CFMS" + CF_FRAMEWORK_VERSION.to_bytes(2, "big") + (257).to_bytes(2, "big")
+
+    result = CFStorage.load(frame, game_version=ENTITY_LIST_GAME_VERSION, installed_mods=MODS)
+
+    assert result.success is False
+    assert result.storage is None

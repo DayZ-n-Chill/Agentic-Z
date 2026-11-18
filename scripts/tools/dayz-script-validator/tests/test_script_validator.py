@@ -5719,6 +5719,25 @@ class TestVanillaRootBuild(unittest.TestCase):
         self.assertIn("vanilla tree", self._build_skips(result)[0]["reason"])
 
 
+class TestUiReconcileStrRefs(unittest.TestCase):
+    def test_str_key_in_a_line_comment_of_a_c_file_is_not_a_reference(self):
+        import ui_reconcile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            src = root / "menu.c"
+            src.write_text(
+                'void F(TextWidget w)\n'
+                '{\n'
+                '    // w.SetText("#STR_OLD_LABEL");\n'
+                '    w.SetText("#STR_MY_LABEL");\n'
+                '}\n',
+                encoding="utf-8",
+            )
+            refs = ui_reconcile.collect_str_refs([src], root)
+        self.assertEqual([r["key"] for r in refs], ["STR_MY_LABEL"])
+
+
 if __name__ == "__main__":
     unittest.main()
 

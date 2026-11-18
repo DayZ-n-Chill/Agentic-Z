@@ -6,7 +6,10 @@ from dataclasses import dataclass
 
 CF_FRAMEWORK_VERSION = 5
 LEGACY_GAME_VERSION_CUTOFF = 116
-FRAMEWORK_HEADER_GAME_VERSION = 141
+# From this game storage version CF also keeps an entity list; it gates only that list (not modelled
+# here), and every version from LEGACY_GAME_VERSION_CUTOFF up reads the frame (cf-modstorage.md).
+ENTITY_LIST_GAME_VERSION = 141
+MAX_MOD_COUNT = 256
 MIN_FRAMEWORK_DATA_VERSION = 2
 MAGIC = b"CFMS"
 
@@ -95,13 +98,13 @@ class CFStorage:
         empty = cls(installed_mods)
         if game_version < LEGACY_GAME_VERSION_CUTOFF:
             return CFLoadResult(True, empty, 0, None)
-        if game_version < FRAMEWORK_HEADER_GAME_VERSION:
-            return CFLoadResult(True, empty, 0, 1)
 
         if len(payload) < 6 or payload[:4] != MAGIC:
             return CFLoadResult(False, None, 0, None)
         framework_version = struct.unpack(">H", payload[4:6])[0]
         position = 6
+        if framework_version > CF_FRAMEWORK_VERSION:
+            return CFLoadResult(False, None, 0, framework_version)
         if framework_version < MIN_FRAMEWORK_DATA_VERSION:
             return CFLoadResult(
                 True,
@@ -114,6 +117,8 @@ class CFStorage:
 
         mod_count = struct.unpack(">H", payload[position : position + 2])[0]
         position += 2
+        if mod_count > MAX_MOD_COUNT:
+            return CFLoadResult(False, None, 0, framework_version)
         staged: list[tuple[str, _ModRecord]] = []
         seen: set[str] = set()
         for _ in range(mod_count):

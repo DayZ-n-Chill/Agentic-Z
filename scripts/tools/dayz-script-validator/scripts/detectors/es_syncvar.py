@@ -290,7 +290,7 @@ def method_is_syncvar_registration_target(
     # CfgVehicles entry has a Construction class
     # (3_game/entities/entityai.c:248-249), which calls this hook (:3469);
     # BuildingBase registers its m_SyncParts ints in its override
-    # (4_world/entities/game/super/building.c:29-44). Only an override is that
+    # (4_world/entities/game/super/building.c:53-68). Only an override is that
     # hook, with no parameters as EntityAI declares it (:3481), and only when
     # the vanilla tree declares it (construction_hook): 1.29 has none, so
     # there a method of this name, override or not, is the mod's own and runs
@@ -444,13 +444,13 @@ def check_es_syncvar_contract(
                         # WRITE_NO_IFDEF quarantined. The premise -
                         # "a SyncVar write must sit under #ifdef SERVER" - is not
                         # the contract vanilla implements. ItemBase.SetQuantity
-                        # writes m_VarQuantity at itembase.c:3336, :3343 and :3352
+                        # writes m_VarQuantity at itembase.c:3340, :3347 and :3356
                         # with no #ifdef SERVER around any of them (the only side
                         # check is the runtime IsServerCheck(allow_client) at
-                        # :3317), and publishes with
-                        # SetVariableMask(VARIABLE_QUANTITY) at :3382, also
+                        # :3321), and publishes with
+                        # SetVariableMask(VARIABLE_QUANTITY) at :3386, also
                         # outside any #ifdef. Corrected: the quarantine
-                        # note first read the `if` at :3357 as guarding that
+                        # note first read the `if` at :3361 as guarding that
                         # write. It does not - it sits AFTER the assignment and
                         # wraps an inventory-sound block. Re-reading
                         # the file makes the premise MORE clearly false, not less.
