@@ -16,6 +16,8 @@ AddonBuilder, launcher and engine mount behaviour was measured on one Windows te
 
 The mixed-mod failure usually arrives when a mod moves from a hand-written AddonBuilder command to the generated scripts. On a mod with three script files the PBO held 22 entries and 401,857 bytes without the include list and 25 entries and 411,786 bytes with it; the gap was exactly the three `.c` files. The hand command passed `-include=...\tools\include.lst`, a list made by hand, but a generated launch script that builds with no `-include` list drops every script with no visible change: the PBO stays large and the size warning never fires. In game the mod mounts but no action appears, which looks exactly like an unregistered `ActionConstructor` or a bad `ActionCondition`, so the wrong file gets debugged. List the fresh PBO before you spend a test cycle.
 
+On a car mod the same dropped scripts showed up as an engine that would not start, with `NO_IGNITER` in the car's operational state (measured). Read from the code, the likely reason is that without the mod's script class the car falls back to `CarScript`, whose `IsVitalSparkPlug()` and `IsVitalGlowPlug()` both return true (`P:\scripts\3_game\vehicles\transport.c:407` and `:412`), so it also demands a glow plug (`P:\scripts\4_world\entities\vehicles\carscript.c:1783` to `:1787`). Check the packed scripts before you debug the engine parts.
+
 A build script should pass the include list whenever the build is not pack-only, and replace a size check with a content check: when the source has `scripts\`, list the PBO (for example with `BankRev -lf`) and require the packed `.c` count to equal the source `.c` count. `/dayz-build-pbo` does both.
 
 Then launch with `/dayz-launch-test`. Edit a model, rebuild. Edit a script, rebuild the PBO too, unless the probe below showed that your install serves the source.
@@ -55,6 +57,8 @@ The failure is not always silent:
 - On the native Linux server the rule is reversed: an absolute `-mod=` or `-servermod=` mounts nothing and gives no error, so paths go relative to the server tree (`linux-native-server.md`, on running it headless).
 
 `Get-ModString` rewrites every bare `@Name` to its absolute `!Workshop` path through `Resolve-ModToken`. It handles names with spaces such as `@Dabs Framework` and passes through tokens that are already rooted or not found under `!Workshop`. This applies to server, client and offline.
+
+Subscribed mods in `!Workshop` (`@CF`, `@Dabs Framework`, `@VPPAdminTools`) are junctions to `steamapps\workshop\content\221100\<id>`, not real folders, while a mod you build and deploy yourself is usually a real folder. A tool that refuses reparse points refuses them by their relative name. Check with `Get-Item '<!Workshop>\<@Mod>' -Force | Select-Object LinkType`.
 
 Not checked:
 

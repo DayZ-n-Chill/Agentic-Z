@@ -39,12 +39,13 @@ In one run a test box took 0 of 27 rays while a second box from the same PBO and
 |---|---|---|
 | Hit | Miss in every mode, from both sides | Inverted winding in the Geometry, View Geometry and Fire Geometry components. The binarized model keeps them and the engine does not see them. |
 | Hit | Hit only from inside | Reversed faces in the visual mesh only. |
+| Hit | Miss in one mode only (view or fire) | That LOD (View Geometry or Fire Geometry) is missing from the model or not resolved. |
 
 These name the likely cause, not a measured one. With the source winding restored, the same ray found the front face at +0.079 m and a wall 0.42 m thick.
 
 ## Picking an item up proves nothing about its collision
 
-- Action targeting casts `RaycastRVProxy` from the camera over `c_RayDistance` (`P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:246` and `:255`) with the default `ObjIntersectView`.
+- Action targeting casts `RaycastRVProxy` from the camera over `c_RayDistance`, 5.0 m (`actiontargets.c:843`), (`P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:246` and `:255`) with the default `ObjIntersectView`.
 - With the camera pitched down it also takes the objects in a cone, `c_ConeAngle` and `c_MaxTargetDistance` (`actiontargets.c:325`), and scores them by their distance to the ray with `DistSqrPoint2Line`, no hit needed (`:531`, `:543`). Read in source, not measured.
 - `ActionTakeItemToHands` checks only the distance to the object's position, through `CCTObject` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiontakeitemtohands.c:13`; `P:\scripts\4_world\classes\useractionscomponent\targetconditionscomponents\cctobject.c:1` to `:24`). Its other conditions (`actiontakeitemtohands.c:31` to `:47`) do not look at collision either.
 

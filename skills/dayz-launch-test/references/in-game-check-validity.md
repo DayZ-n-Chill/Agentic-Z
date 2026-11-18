@@ -58,6 +58,8 @@ Diag writes the RPT through a buffer of about 52 KB, so a frozen RPT does not te
 2. List everything that changed between the working case and the failing one. With two or more, the negative names none of them until each is tested on its own.
 3. Narrowing a finding to one cause is one more claim. If that cause is wrong, the caution points away from the real mechanism.
 
+Example: a material override written again on a worn garment did not change it, and the finding was filed as "at health level 4 a new override is never rendered", backed by two captures minutes apart. It was false. The two captures ruled out a drawing glitch, not a sample of one, and two things had changed between the write that worked and the one that did not: the health level (0 to 4) and the moment of the write (right after a state change, against an arbitrary moment).
+
 Before you file a repeated or `ERR` log line as test noise, write in one sentence what it would mean if true. If that sentence describes damage (a command running again, two entities sharing one id), it is signal.
 
 ## What a person sees better

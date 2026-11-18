@@ -42,7 +42,7 @@ The get-in checks need the car next to the player, because the last check measur
 | Symptom | Check | Fix (where to read it) |
 |---|---|---|
 | The class does not resolve | Spawns | The mod is not mounted (`windows-build-and-mount.md`, absolute mod paths) or `CfgPatches` does not register it. Not a model fault. |
-| Spawns but is invisible, or "action selection X not found in view/fire geometry" | Spawns | The `componentNN` double tag: `vehicle-structural-parity.md` and `rip-import.md`. Hubs and seats are islands with no overlap, so each also carries a `componentNN` selection on the same faces. |
+| Spawns but is invisible, or "action selection X not found in view/fire geometry" | Spawns | The `componentNN` double tag: `vehicle-structural-parity.md` and `rip-import.md`. Hubs and seats are islands with no overlap, which the collision enumerator does not see, so each also carries a `componentNN` selection on the same faces. |
 | A hole from one angle, solid from the other | Solid | Per part winding, not a global flip (a global flip gave a false green): `rip-import.md`. |
 | The car is rotated or mirrored, or a part floats or is turned about 90 degrees | Solid | The body's orient transform, or the proxy frame `R=((-1,0,0),(0,0,1),(0,1,0))`: `proxies-and-detachable-parts.md`. |
 | The seat component has no crew index | Get-in offered | `componentNN` on the seats, as for the invisible case. |
@@ -51,7 +51,7 @@ The get-in checks need the car next to the player, because the last check measur
 | `CanReachSeatFromDoors` false | Get-in offered | Seat and door geometry, or the car is too far from the player. Move the player next to the car first. |
 | The cursor does not offer the get-in while the component checks pass | The player's own get-in | `CanGetIn()` refuses (for example a fallen motorbike, `P:\scripts\4_world\entities\vehicles\motorbikescript.c:225`), or the cursor is on another component. Aim at the top of the seat and compare the components. |
 | Get-in works from one side only | The player's own get-in | Likely the door condition points sit on one side: `dayz-1-30-vehicles.md`. |
-| The car reads as `CarScript`, not the mod's class, and `CrewCanGetThrough` is false | Get-in offered | The mod's scripts did not load. Compare `Module: World; loaded N files` with a run without the mod; on 1.30 backslashes in `files[]` load nothing (`dayz-1-30-vehicles.md`). |
+| The car reads as `CarScript`, not the mod's class, and `CrewCanGetThrough` is false | Get-in offered | The mod's scripts did not load. Compare `Module: World; loaded N files` with a run without the mod; on 1.30 backslashes in `files[]` load nothing (`dayz-1-30-vehicles.md`). A Workshop copy holding an older PBO loaded five fewer `World` files than the fixed build, and the cursor showed only the vehicle's name. |
 | The seat is occupied, the hands hold a heavy item, or the player is already in a vehicle | Get-in offered | The test's own state: spawn a clean car, drop the item, or get out first. |
 | Wheel count short or fuel 0 after conditioning | Conditioned | `OnDebugSpawn` attaches no wheels, or an `Axles` override lists one axle (`invariants-wheels-and-hubs.md`, "List every axle in an `Axles` override"). For fuel, read again a tick later first. |
 | The client is not seated | Seated as owner | Get-in latency, the crew bone or selection, or the seat animation type: `vehicle-config-crew-lights-sounds.md`. The crew proxy needs a selection in the geometry and a bone in `CfgSkeletons`. |

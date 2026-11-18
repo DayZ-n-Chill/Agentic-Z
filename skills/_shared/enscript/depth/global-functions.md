@@ -68,6 +68,8 @@ ctx.POST(new MyMod_RestCallback(), "param=value", jsonBody);
 // MyMod_RestCallback extends RestCallback and overrides OnSuccess, OnError, OnTimeout
 ```
 
+A failed request reports result state 5, `EREST_ERROR`, which vanilla notes is the same value as `EREST_ERROR_CLIENTERROR` (`P:\scripts\3_game\http\restapi.c:16` and `:17`). An HTTP 401 from the server showed up in script only as error 5 (measured); the HTTP status does not reach the callback.
+
 ## Sound
 
 `SEffectManager.PlaySound(soundSetName, worldPos)` plays a positioned sound (`P:\scripts\3_game\effectmanager.c:178`). For a 2D interface sound, build the sound object yourself: `SoundObjectBuilder` and `SoundParams` (`P:\scripts\3_game\sound.c:82` and `:137`), `Play2D` (`:58`).

@@ -29,6 +29,8 @@ Place the object next to the player. A free camera more than 1 km from the playe
 
 For repeatable captures, set the date to noon (the vanilla `SetDate` takes all five of year, month, day, hour and minute, `P:\scripts\3_game\global\world.c:46`) and full overcast: diffuse light removes the glint of direct sun that burns weapons and materials to white. Do not set the time multiplier to 0 while animations are pending, because it freezes the simulation. A top-down pose shows proxy alignment on a car clearly: the camera 16 m up and 3 m to one side, looking at the car's centre just above the ground.
 
+For an item or weapon, judge proportions against a real-world reference, and look hardest at orientation and winding: that is where generated and imported meshes tend to fail.
+
 ## A scripted camera takes the player away
 
 Installing a scripted camera from mission script usually goes with `PlayerControlDisable` (`P:\scripts\5_mission\mission\missiongameplay.c:886`), which takes control from the player, and a free camera that also calls `DisableSimulation(true)` stops the player's simulation. A camera of class `staticcamera` with the simulation left on keeps the world and the player running.
