@@ -2,9 +2,11 @@
 
 This is half of the tool's safety (the other half is the mod's fixed `switch`;
 test_mod_matches_allowlist.py checks the two agree). Every command is checked
-here before any file is written. There is no command that runs script, reads or
-writes arbitrary files, or calls a method by name, and there never will be
-(owner decision 3 of the plan).
+here before any file is written. One command runs arbitrary script: `exec`,
+allowed but off by default and enabled per session only (owner decision 3,
+revised): the host refuses it unless session_start had allow_exec, and the mod
+refuses it unless the launch passed -azBridgeExec=1. No command reads or writes
+arbitrary files, and action_use names only classes that inherit ActionBase.
 
 `wire_args(cmd, args)` turns the caller's arguments into the full AZB_Args
 object the mod reads: every field present, defaults filled, so the mod never
@@ -60,6 +62,7 @@ class Command:
     outputs: tuple = ()
     timeout: Callable[[dict], float] = lambda a: 15.0
     doc: str = ""
+    opt_in: bool = False           # refused unless the session opted in (exec)
 
 
 def _pos(required: bool = True, wire: str = "") -> Arg:
@@ -75,7 +78,7 @@ COMMANDS: dict[str, Command] = {
     "mark": Command(BOTH, {"label": Arg("str", pattern=LABEL_RE, required=True)}, ("label",),
                     doc="Print [AZ-BRIDGE] MARK <label> in the peer's script log."),
     "spawn": Command(SERVER, {
-        "cls": _CLASS, "pos": _pos(),
+        "cls": _CLASS, "pos": _pos(), "ground": Arg("bool", default=True),
         "flags": Arg("int", default=DEFAULT_SPAWN_FLAGS, lo=0, hi=2**31 - 1),
         "placement": Arg("int", default=DEFAULT_PLACEMENT, lo=0, hi=1023),
     }, ("net_id", "type", "class_name", "pos"), doc="CreateObjectEx; position read back 1 s later."),
@@ -87,7 +90,8 @@ COMMANDS: dict[str, Command] = {
         "pos": _pos(), "radius": Arg("float", default=10.0, lo=0.0, hi=MAX_RADIUS),
         "cls": Arg("str", default="", pattern=re.compile(r"^(|[A-Za-z_]\w{0,127})$")),
     }, ("objects",), doc="Up to 100 objects near a point."),
-    "object_state": Command(SERVER, {"net_id": _NET_ID}, ("net_id", "type", "class_name", "pos", "ori", "health")),
+    "object_state": Command(SERVER, {"net_id": _NET_ID}, ("net_id", "type", "class_name", "pos", "ori", "health",
+                                                         "parent_net_id", "slots", "attachments")),
     "teleport": Command(SERVER, {"pos": _pos(), "ground": Arg("bool", default=True)}, ("pos",),
                         doc="Move the only player; server position read back 1 s later."),
     "player_state": Command(SERVER, {}, ("pos", "health", "in_vehicle", "seat", "vehicle_net_id", "hands")),
@@ -132,6 +136,51 @@ COMMANDS: dict[str, Command] = {
     "camera_reset": Command(CLIENT, {}, ("player_view",)),
     "hud": Command(CLIENT, {"show": Arg("bool", default=True)}, ("hud",)),
     "resume": Command(CLIENT, {}, ("paused",), doc="Close the pause menu the client opens when its window is not active."),
+    # --- added after v1 (feature-gaps.md, item 24) ---------------------------------------
+    "shutdown": Command(SERVER, {}, (), doc="Orderly server exit (RequestExit): the world is saved. session_restart uses it."),
+    "clear_spawns": Command(SERVER, {}, ("count", "kept"), doc="Delete every object `spawn` made this boot; a car with crew is kept."),
+    "animate": Command(SERVER, {
+        "net_id": _NET_ID, "source": Arg("str", pattern=re.compile(r"^\w{1,64}$"), required=True),
+        "phase": Arg("float", default=1.0, lo=0.0, hi=1.0), "seconds": Arg("float", default=1.5, lo=0.0, hi=30.0),
+    }, ("phase",), timeout=lambda a: a["seconds"] + 15.0, doc="SetAnimationPhase on a model.cfg source; phase read back after `seconds`."),
+    "attach": Command(SERVER, {
+        "net_id": _NET_ID, "cls": _CLASS, "slot": Arg("str", default="", pattern=re.compile(r"^(|\w{1,64})$")),
+    }, ("net_id", "parent_net_id", "reason"), doc="Create an item in a slot of any object (a car part, a survivor's clothes)."),
+    "god": Command(SERVER, {"on": Arg("bool", default=True)}, ("god",), doc="The only player takes no damage while on."),
+    "engine": Command(SERVER, {"net_id": _NET_ID, "on": Arg("bool", default=False)}, ("engine_on",),
+                      doc="Start or stop a car's engine on the server; read back a second later."),
+    "walk": Command(SERVER, {
+        "seconds": Arg("float", default=3.0, lo=0.1, hi=30.0), "speed": Arg("float", default=1.0, lo=0.0, hi=3.0),
+        "angle": Arg("float", default=0.0, lo=-180.0, hi=180.0),
+    }, ("pos", "distance"), timeout=lambda a: a["seconds"] + 15.0,
+        doc="Walk the player through its input controller on the server (as vanilla's debug walk does): speed 1 walk, 2 jog, 3 sprint; angle in degrees from its heading."),
+    "look_at": Command(CLIENT, {"pos": _pos(wire="look_at")}, ("aligned", "yaw_error", "pitch_error"),
+                       timeout=lambda a: 20.0, doc="Turn the player's view to a point through its own aim input."),
+    "inventory_move": Command(CLIENT, {
+        "net_id": _NET_ID, "dest": Arg("enum", default="hands", choices=("hands", "cargo", "attachment", "ground")),
+        "target_net_id": Arg("str", default="", pattern=re.compile(r"^(|-?\d{1,10},-?\d{1,10})$")),
+    }, ("parent_net_id", "pos"), timeout=lambda a: 20.0,
+        doc="A real inventory move by the player (vanilla Predictive* calls); read the result on the server with object_state."),
+    "action_use": Command(CLIENT, {
+        "action": _CLASS, "net_id": Arg("str", default="", pattern=re.compile(r"^(|-?\d{1,10},-?\d{1,10})$")),
+        "component": Arg("int", default=-1, lo=-1, hi=1000),
+    }, ("can", "started", "running", "reason"), timeout=lambda a: 20.0,
+        doc="Start a player action (a class inheriting ActionBase only) on a target, or on the cursor's target."),
+    "action_cursor": Command(CLIENT, {}, ("offered", "target_net_id", "target_type"),
+                             doc="The actions the player's cursor offers now, as the vanilla action HUD reads them."),
+    "ui_tree": Command(CLIENT, {}, ("menu", "widgets"), doc="The open menu's widgets: name, type, screen box, visibility."),
+    "ui_click": Command(CLIENT, {"widget": Arg("str", pattern=re.compile(r"^[\w.-]{1,64}$"), required=True)},
+                        ("menu", "clicked"), doc="Press a widget of the open menu through the menu's own OnClick."),
+    "ui_set_text": Command(CLIENT, {
+        "widget": Arg("str", pattern=re.compile(r"^[\w.-]{1,64}$"), required=True),
+        "text": Arg("str", default="", pattern=re.compile(r"^[^\x00]{0,1000}$")),
+    }, ("menu", "text"), doc="Type into an edit box of the open menu."),
+    "ui_open": Command(CLIENT, {"menu": Arg("enum", default="ingame", choices=("ingame", "chat", "close"), wire="widget")},
+                       ("menu",), doc="Open a vanilla menu (the pause menu or the chat input) for the UI commands, or close the open one."),
+    "exec": Command(BOTH, {"code": Arg("str", pattern=re.compile(r"^[^\x00]{1,16000}$", re.S), required=True)},
+                    ("executed",), opt_in=True,
+                    doc="Run any Enforce Script (ExecuteEnforceScript). OFF unless session_start had allow_exec=true; "
+                        "every code string is written to the session's exec log."),
 }
 
 # Every AZB_Args field the mod declares, with the default the host writes when a command does not use it.
@@ -142,6 +191,8 @@ WIRE_DEFAULTS: dict[str, Any] = {
     "from_pos": [0.0, 0.0, 0.0], "to_pos": [0.0, 0.0, 0.0], "mode": "", "layer_mask": 0,
     "x": 0.0, "z": 0.0, "y": 0.0, "has_y": False, "seat": 0, "throttle": 0.0, "steer": 0.0, "brake": 0.0,
     "seconds": 0.0, "sample_hz": 0.0, "look_at": [0.0, 0.0, 0.0], "show": False,
+    "code": "", "source": "", "phase": 0.0, "slot": "", "on": False, "speed": 0.0, "angle": 0.0, "target_net_id": "",
+    "dest": "", "widget": "", "text": "", "action": "", "component": 0,
 }
 
 

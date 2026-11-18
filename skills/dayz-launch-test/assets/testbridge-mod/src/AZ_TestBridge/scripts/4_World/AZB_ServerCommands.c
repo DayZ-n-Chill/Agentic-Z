@@ -11,10 +11,25 @@ class AZB_ServerPeer : AZB_Peer
 
 	Object m_Object;
 	ref array<Man> m_Players;
+	ref array<Object> m_Spawned;   // every object `spawn` created, for clear_spawns
+	bool m_ExitPending;
 
 	void AZB_ServerPeer()
 	{
 		m_Players = new array<Man>;
+		m_Spawned = new array<Object>;
+	}
+
+	// `shutdown` asks the engine to exit only after its result is written.
+	override void Tick(float timeslice)
+	{
+		super.Tick(timeslice);
+		if (m_ExitPending && !m_Pending)
+		{
+			m_ExitPending = false;
+			Print("[AZ-BRIDGE] server shutdown requested");
+			GetGame().RequestExit(IDC_MAIN_QUIT);
+		}
 	}
 
 	override bool IsReady()
@@ -59,8 +74,182 @@ class AZB_ServerPeer : AZB_Peer
 				return CmdRaycast(c, r);
 			case "surface":
 				return CmdSurface(c, r);
+			case "shutdown":
+				return CmdShutdown(c, r);
+			case "clear_spawns":
+				return CmdClearSpawns(c, r);
+			case "animate":
+				return CmdAnimate(c, r);
+			case "attach":
+				return CmdAttach(c, r);
+			case "god":
+				return CmdGod(c, r);
+			case "engine":
+				return CmdEngine(c, r);
+			case "walk":
+				return CmdWalk(c, r);
 		}
 		return super.Execute(c, r);
+	}
+
+	// Orderly exit: the engine saves the world as on a normal stop (RequestExit, game.c:218,
+	// the call the vanilla world classes use with IDC_MAIN_QUIT, chernarusplus.c:252).
+	bool CmdShutdown(AZB_Command c, AZB_Result r)
+	{
+		m_ExitPending = true;
+		return true;
+	}
+
+	bool CmdClearSpawns(AZB_Command c, AZB_Result r)
+	{
+		r.data.kept = new array<string>;
+		int removed = 0;
+		foreach (Object obj : m_Spawned)
+		{
+			if (!obj)
+				continue;
+			Transport transport = Transport.Cast(obj);
+			if (transport && transport.HasCrew())
+			{
+				r.data.kept.Insert(NetId(obj));
+				continue;
+			}
+			GetGame().ObjectDelete(obj);
+			removed++;
+		}
+		m_Spawned.Clear();
+		r.data.count = removed;
+		return true;
+	}
+
+	bool CmdAnimate(AZB_Command c, AZB_Result r)
+	{
+		Entity entity = Entity.Cast(FindByNetId(c.args.net_id));
+		if (!entity)
+		{
+			Fail(r, "not_found");
+			return true;
+		}
+		if (m_Step == 0)
+		{
+			entity.SetAnimationPhase(c.args.source, c.args.phase);
+			m_Step = 1;
+			return false;
+		}
+		// Animations run over time; read the phase back once it had time to move.
+		if (m_Elapsed < c.args.seconds)
+			return false;
+		r.data.phase = entity.GetAnimationPhase(c.args.source);
+		return true;
+	}
+
+	bool CmdAttach(AZB_Command c, AZB_Result r)
+	{
+		EntityAI target = EntityAI.Cast(FindByNetId(c.args.net_id));
+		if (!target)
+		{
+			Fail(r, "not_found");
+			return true;
+		}
+		EntityAI item;
+		if (c.args.slot == "")
+		{
+			item = target.GetInventory().CreateAttachment(c.args.cls);
+		}
+		else
+		{
+			int slotId = InventorySlots.GetSlotIdFromString(c.args.slot);
+			if (slotId == InventorySlots.INVALID)
+			{
+				Fail(r, "no_such_slot");
+				return true;
+			}
+			item = target.GetInventory().CreateAttachmentEx(c.args.cls, slotId);
+		}
+		if (!item)
+		{
+			Fail(r, "attach_failed");
+			r.data.reason = c.args.cls + " does not fit " + c.args.slot + " on " + target.GetType() + ", or the slot is taken";
+			return true;
+		}
+		r.data.net_id = NetId(item);
+		r.data.parent_net_id = NetId(target);
+		return true;
+	}
+
+	// Walks the player through its input controller on the server, the way vanilla's own
+	// debug server walk does (dayzplayerimplement.c:3865). Measured: the same override on
+	// the client is read back by GetMovement but does not move the player.
+	vector m_WalkStart;
+
+	bool CmdWalk(AZB_Command c, AZB_Result r)
+	{
+		PlayerBase player = OnlyPlayer(r);
+		if (!player)
+			return true;
+		HumanInputController input = player.GetInputController();
+		if (m_Step == 0)
+		{
+			if (player.GetCommand_Vehicle())
+			{
+				Fail(r, "in_vehicle");
+				return true;
+			}
+			m_WalkStart = player.GetPosition();
+			m_Step = 1;
+		}
+		if (m_Step == 1 && m_Elapsed < c.args.seconds)
+		{
+			input.OverrideMovementSpeed(HumanInputControllerOverrideType.ENABLED, c.args.speed);
+			input.OverrideMovementAngle(HumanInputControllerOverrideType.ENABLED, c.args.angle);
+			return false;
+		}
+		if (m_Step == 1)
+		{
+			input.OverrideMovementSpeed(HumanInputControllerOverrideType.DISABLED, 0);
+			input.OverrideMovementAngle(HumanInputControllerOverrideType.DISABLED, 0);
+			m_Step = 2;
+			return false;
+		}
+		// Let the player come to a stop before reading where it ended up.
+		if (m_Elapsed < c.args.seconds + 1.0)
+			return false;
+		r.data.pos = FromVector(player.GetPosition());
+		r.data.distance = vector.Distance(m_WalkStart, player.GetPosition());
+		return true;
+	}
+
+	bool CmdGod(AZB_Command c, AZB_Result r)
+	{
+		PlayerBase player = OnlyPlayer(r);
+		if (!player)
+			return true;
+		player.SetAllowDamage(!c.args.on);
+		r.data.god = !player.GetAllowDamage();
+		return true;
+	}
+
+	bool CmdEngine(AZB_Command c, AZB_Result r)
+	{
+		CarScript car = CarScript.Cast(FindByNetId(c.args.net_id));
+		if (!car)
+		{
+			Fail(r, "not_a_car");
+			return true;
+		}
+		if (m_Step == 0)
+		{
+			if (c.args.on)
+				car.EngineStart();
+			else
+				car.EngineStop();
+			m_Step = 1;
+			return false;
+		}
+		if (m_Elapsed < TICK_S * 2)
+			return false;
+		r.data.engine_on = car.EngineIsOn();
+		return true;
 	}
 
 	// The only player, or null with the reason set: player commands refuse a server with more than one.
@@ -92,12 +281,18 @@ class AZB_ServerPeer : AZB_Peer
 	{
 		if (m_Step == 0)
 		{
-			m_Object = GetGame().CreateObjectEx(c.args.cls, ToVector(c.args.pos), c.args.flags, c.args.placement);
+			vector spawnPos = ToVector(c.args.pos);
+			// Placement on the surface traces down from the given point, so a y below the
+			// ground leaves an item buried (measured: a pear at y 0.54 under 338 m of terrain).
+			if (c.args.ground)
+				spawnPos[1] = GetGame().SurfaceY(spawnPos[0], spawnPos[2]);
+			m_Object = GetGame().CreateObjectEx(c.args.cls, spawnPos, c.args.flags, c.args.placement);
 			if (!m_Object)
 			{
 				Fail(r, "spawn_failed");
 				return true;
 			}
+			m_Spawned.Insert(m_Object);
 			m_Step = 1;
 			return false;
 		}
@@ -210,6 +405,30 @@ class AZB_ServerPeer : AZB_Peer
 		FillObject(r.data, obj);
 		r.data.ori = FromVector(obj.GetOrientation());
 		r.data.health = obj.GetHealth("", "");
+		EntityAI entity = EntityAI.Cast(obj);
+		if (!entity)
+			return true;
+		// Where it hangs, the slots its config declares, and what sits in each.
+		if (entity.GetHierarchyParent())
+			r.data.parent_net_id = NetId(entity.GetHierarchyParent());
+		r.data.slots = new array<string>;
+		r.data.attachments = new array<ref AZB_Att>;
+		if (!entity.GetInventory())
+			return true;
+		for (int i = 0; i < entity.GetInventory().GetAttachmentSlotsCount(); i++)
+		{
+			int slotId = entity.GetInventory().GetAttachmentSlotId(i);
+			string slotName = InventorySlots.GetSlotName(slotId);
+			r.data.slots.Insert(slotName);
+			EntityAI part = entity.GetInventory().FindAttachment(slotId);
+			if (!part)
+				continue;
+			AZB_Att att = new AZB_Att();
+			att.slot = slotName;
+			att.type = part.GetType();
+			att.net_id = NetId(part);
+			r.data.attachments.Insert(att);
+		}
 		return true;
 	}
 

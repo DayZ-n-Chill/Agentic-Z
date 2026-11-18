@@ -21,12 +21,61 @@ class AZB_ClientPeer : AZB_Peer
 	float m_LastSample;
 	float m_StopStarted;
 
+	// look_at steers the local player's aim every frame (KeepView). Walking runs on the server.
+	bool m_Looking;
+	vector m_LookTarget;
+	float m_YawError;
+	float m_PitchError;
+
+	static const float LOOK_GAIN = 0.2;
+	static const float LOOK_DONE_DEG = 2.0;
+	static const float LOOK_TIMEOUT_S = 6.0;
+	static const int MAX_WIDGETS = 300;
+
 	// Called every frame: a player camera change (getting out of a car ends with
-	// one) takes the view back, so the scripted camera is made active again.
+	// one) takes the view back, so the scripted camera is made active again; a
+	// turn feeds the player's own aim input (human.c:259 and :262).
 	void KeepView()
 	{
 		if (m_Camera && !m_Camera.IsActive())
 			m_Camera.SetActive(true);
+		PlayerBase player = LocalPlayer();
+		if (!m_Looking || !player || !player.GetInputController())
+			return;
+		HumanInputController input = player.GetInputController();
+		// ENABLED holds until DISABLED is passed (human.c:10); StopSteering clears it.
+		input.SetDisabled(false);
+		MeasureLook();
+		input.OverrideAimChangeX(HumanInputControllerOverrideType.ENABLED, m_YawError * Math.DEG2RAD * LOOK_GAIN);
+		input.OverrideAimChangeY(HumanInputControllerOverrideType.ENABLED, m_PitchError * Math.DEG2RAD * LOOK_GAIN);
+	}
+
+	void StopSteering()
+	{
+		m_Looking = false;
+		PlayerBase player = LocalPlayer();
+		if (!player || !player.GetInputController())
+			return;
+		HumanInputController input = player.GetInputController();
+		input.OverrideAimChangeX(HumanInputControllerOverrideType.DISABLED, 0);
+		input.OverrideAimChangeY(HumanInputControllerOverrideType.DISABLED, 0);
+	}
+
+	// Degrees the camera must still turn to face m_LookTarget (positive yaw = to the right).
+	void MeasureLook()
+	{
+		vector dir = GetGame().GetCurrentCameraDirection();
+		vector want = vector.Direction(GetGame().GetCurrentCameraPosition(), m_LookTarget);
+		want.Normalize();
+		float yawNow = Math.Atan2(dir[0], dir[2]) * Math.RAD2DEG;
+		float yawWant = Math.Atan2(want[0], want[2]) * Math.RAD2DEG;
+		float yaw = yawWant - yawNow;
+		if (yaw > 180)
+			yaw = yaw - 360;
+		if (yaw < -180)
+			yaw = yaw + 360;
+		m_YawError = yaw;
+		m_PitchError = (Math.Asin(want[1]) - Math.Asin(dir[1])) * Math.RAD2DEG;
 	}
 
 	PlayerBase LocalPlayer()
@@ -66,8 +115,319 @@ class AZB_ClientPeer : AZB_Peer
 				return CmdCameraReset(c, r);
 			case "hud":
 				return CmdHud(c, r);
+			case "look_at":
+				return CmdLookAt(c, r);
+			case "inventory_move":
+				return CmdInventoryMove(c, r);
+			case "action_use":
+				return CmdActionUse(c, r);
+			case "action_cursor":
+				return CmdActionCursor(c, r);
+			case "ui_tree":
+				return CmdUiTree(c, r);
+			case "ui_click":
+				return CmdUiClick(c, r);
+			case "ui_set_text":
+				return CmdUiSetText(c, r);
+			case "ui_open":
+				return CmdUiOpen(c, r);
 		}
 		return super.Execute(c, r);
+	}
+
+	// --- moving and aiming the player -----------------------------------------------------
+
+	bool CmdLookAt(AZB_Command c, AZB_Result r)
+	{
+		if (!LocalPlayer())
+		{
+			Fail(r, "no_player");
+			return true;
+		}
+		if (m_Step == 0)
+		{
+			m_LookTarget = ToVector(c.args.look_at);
+			m_Looking = true;
+			m_Step = 1;
+			return false;
+		}
+		MeasureLook();
+		bool aligned = Math.AbsFloat(m_YawError) < LOOK_DONE_DEG && Math.AbsFloat(m_PitchError) < LOOK_DONE_DEG;
+		if (!aligned && m_Elapsed < LOOK_TIMEOUT_S)
+			return false;
+		StopSteering();
+		r.data.aligned = aligned;
+		r.data.yaw_error = m_YawError;
+		r.data.pitch_error = m_PitchError;
+		if (!aligned)
+		{
+			Fail(r, "not_aligned");
+			r.data.reason = "yaw off " + m_YawError.ToString() + " deg, pitch off " + m_PitchError.ToString() + " deg";
+		}
+		return true;
+	}
+
+	// --- real inventory moves through the player's own predictive calls -----------------------
+
+	bool CmdInventoryMove(AZB_Command c, AZB_Result r)
+	{
+		PlayerBase player = LocalPlayer();
+		EntityAI item = EntityAI.Cast(FindByNetId(c.args.net_id));
+		if (!player || !item)
+		{
+			Fail(r, "not_found");
+			return true;
+		}
+		if (m_Step == 0)
+		{
+			EntityAI target = EntityAI.Cast(FindByNetId(c.args.target_net_id));
+			bool sent = true;
+			if (c.args.dest == "hands")
+			{
+				player.PredictiveTakeEntityToHands(item);
+			}
+			else if (c.args.dest == "ground")
+			{
+				sent = player.PredictiveDropEntity(item);
+			}
+			else if (!target)
+			{
+				Fail(r, "no_target");
+				return true;
+			}
+			else if (c.args.dest == "cargo")
+			{
+				sent = player.PredictiveTakeEntityToTargetCargo(target, item);
+			}
+			else
+			{
+				sent = player.PredictiveTakeEntityToTargetAttachment(target, item);
+			}
+			if (!sent)
+			{
+				Fail(r, "move_refused");
+				return true;
+			}
+			m_Step = 1;
+			return false;
+		}
+		if (m_Elapsed < SEAT_WAIT_S / 2)
+			return false;
+		// Where the client now sees it; the server's view is object_state's parent_net_id.
+		if (item.GetHierarchyParent())
+			r.data.parent_net_id = NetId(item.GetHierarchyParent());
+		r.data.pos = FromVector(item.GetPosition());
+		return true;
+	}
+
+	// --- player actions ------------------------------------------------------------------
+
+	// Only classes that inherit vanilla ActionBase can be named: an action, never any method.
+	bool CmdActionUse(AZB_Command c, AZB_Result r)
+	{
+		PlayerBase player = LocalPlayer();
+		ActionManagerClient manager;
+		if (player)
+			manager = ActionManagerClient.Cast(player.GetActionManager());
+		if (!manager)
+		{
+			Fail(r, "no_player");
+			return true;
+		}
+		if (m_Step == 1)
+		{
+			if (m_Elapsed < 1.0)
+				return false;
+			if (manager.GetRunningAction())
+				r.data.running = manager.GetRunningAction().ClassName();
+			return true;
+		}
+		typename actionType = c.args.action.ToType();
+		if (!actionType || !actionType.IsInherited(ActionBase))
+		{
+			Fail(r, "not_an_action");
+			return true;
+		}
+		ActionBase action = ActionManagerBase.GetAction(actionType);
+		if (!action)
+		{
+			Fail(r, "not_registered");
+			return true;
+		}
+		ActionTarget target;
+		Object targetObject = FindByNetId(c.args.net_id);
+		if (c.args.net_id == "")
+			target = manager.FindActionTarget();
+		else if (targetObject)
+			target = new ActionTarget(targetObject, null, c.args.component, targetObject.GetPosition(), 0);
+		if (!target)
+		{
+			Fail(r, "not_found");
+			return true;
+		}
+		r.data.can = action.Can(player, target, player.GetItemInHands());
+		if (!r.data.can)
+		{
+			Fail(r, "action_refused");
+			return true;
+		}
+		manager.PerformActionStart(action, target, player.GetItemInHands());
+		r.data.started = true;
+		m_Step = 1;
+		return false;
+	}
+
+	void AddOffers(AZB_Data d, ActionManagerClient manager, typename inputType, string inputName)
+	{
+		array<ActionBase> actions = manager.GetPossibleActions(inputType);
+		if (!actions)
+			return;
+		foreach (ActionBase action : actions)
+		{
+			AZB_Offer offer = new AZB_Offer();
+			offer.input = inputName;
+			offer.action = action.ClassName();
+			offer.text = action.GetText();
+			d.offered.Insert(offer);
+		}
+	}
+
+	// What the cursor offers now, read the way the vanilla action HUD reads it (actiontargetscursor.c:658).
+	bool CmdActionCursor(AZB_Command c, AZB_Result r)
+	{
+		PlayerBase player = LocalPlayer();
+		ActionManagerClient manager;
+		if (player)
+			manager = ActionManagerClient.Cast(player.GetActionManager());
+		if (!manager)
+		{
+			Fail(r, "no_player");
+			return true;
+		}
+		r.data.offered = new array<ref AZB_Offer>;
+		AddOffers(r.data, manager, InteractActionInput, "interact");
+		AddOffers(r.data, manager, ContinuousInteractActionInput, "continuous_interact");
+		AddOffers(r.data, manager, DefaultActionInput, "single");
+		AddOffers(r.data, manager, ContinuousDefaultActionInput, "continuous");
+		ActionTarget target = manager.FindActionTarget();
+		if (target && target.GetObject())
+		{
+			r.data.target_net_id = NetId(target.GetObject());
+			r.data.target_type = target.GetObject().GetType();
+		}
+		return true;
+	}
+
+	// --- the open UI -------------------------------------------------------------------------
+
+	void AddWidgets(AZB_Data d, Widget w, int depth)
+	{
+		while (w && d.widgets.Count() < MAX_WIDGETS)
+		{
+			AZB_Widget entry = new AZB_Widget();
+			entry.name = w.GetName();
+			entry.type = w.GetTypeName();
+			entry.depth = depth;
+			float x;
+			float y;
+			float width;
+			float height;
+			w.GetScreenPos(x, y);
+			w.GetScreenSize(width, height);
+			entry.x = x;
+			entry.y = y;
+			entry.w = width;
+			entry.h = height;
+			entry.visible = w.IsVisibleHierarchy();
+			d.widgets.Insert(entry);
+			AddWidgets(d, w.GetChildren(), depth + 1);
+			w = w.GetSibling();
+		}
+	}
+
+	UIScriptedMenu OpenMenu(AZB_Result r)
+	{
+		UIScriptedMenu menu = GetGame().GetUIManager().GetMenu();
+		if (!menu || !menu.GetLayoutRoot())
+		{
+			Fail(r, "no_menu");
+			return null;
+		}
+		r.data.menu = menu.ClassName();
+		return menu;
+	}
+
+	bool CmdUiTree(AZB_Command c, AZB_Result r)
+	{
+		UIScriptedMenu menu = OpenMenu(r);
+		if (!menu)
+			return true;
+		r.data.widgets = new array<ref AZB_Widget>;
+		AddWidgets(r.data, menu.GetLayoutRoot(), 0);
+		return true;
+	}
+
+	// Presses a widget the way the menu itself hears a click: its OnClick (uiscriptedmenu.c:238).
+	bool CmdUiClick(AZB_Command c, AZB_Result r)
+	{
+		UIScriptedMenu menu = OpenMenu(r);
+		if (!menu)
+			return true;
+		Widget w = menu.GetLayoutRoot().FindAnyWidget(c.args.widget);
+		if (!w)
+		{
+			Fail(r, "no_widget");
+			return true;
+		}
+		r.data.clicked = menu.OnClick(w, 0, 0, 0);
+		return true;
+	}
+
+	// Opens one of a few vanilla menus by its fixed id (constants.c:184 and :192), or closes the open one,
+	// so the UI commands have a vanilla screen to work on; a mod's own screen is opened by its own action.
+	bool CmdUiOpen(AZB_Command c, AZB_Result r)
+	{
+		UIManager ui = GetGame().GetUIManager();
+		if (m_Step == 0)
+		{
+			if (c.args.widget == "close")
+			{
+				UIScriptedMenu open = ui.GetMenu();
+				if (open)
+					open.Close();
+			}
+			else if (c.args.widget == "ingame")
+			{
+				ui.EnterScriptedMenu(MENU_INGAME, null);
+			}
+			else
+			{
+				ui.EnterScriptedMenu(MENU_CHAT_INPUT, null);
+			}
+			m_Step = 1;
+			return false;
+		}
+		if (m_Elapsed < 0.5)
+			return false;
+		if (ui.GetMenu())
+			r.data.menu = ui.GetMenu().ClassName();
+		return true;
+	}
+
+	bool CmdUiSetText(AZB_Command c, AZB_Result r)
+	{
+		UIScriptedMenu menu = OpenMenu(r);
+		if (!menu)
+			return true;
+		EditBoxWidget box = EditBoxWidget.Cast(menu.GetLayoutRoot().FindAnyWidget(c.args.widget));
+		if (!box)
+		{
+			Fail(r, "not_an_edit_box");
+			return true;
+		}
+		box.SetText(c.args.text);
+		r.data.text = box.GetText();
+		return true;
 	}
 
 	bool CmdVehicleState(AZB_Command c, AZB_Result r)

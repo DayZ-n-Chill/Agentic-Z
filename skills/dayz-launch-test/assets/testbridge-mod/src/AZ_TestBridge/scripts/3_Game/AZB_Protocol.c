@@ -43,6 +43,19 @@ class AZB_Args
 	float sample_hz;
 	ref array<float> look_at;
 	bool show;
+	string code;
+	string source;
+	float phase;
+	string slot;
+	bool on;
+	float speed;
+	float angle;
+	string target_net_id;
+	string dest;
+	string widget;
+	string text;
+	string action;
+	int component;
 
 	void AZB_Args()
 	{
@@ -86,6 +99,32 @@ class AZB_Hit
 	bool exit;
 	float dir_len;
 	ref array<float> normal;
+}
+
+class AZB_Att
+{
+	string slot;
+	string type;
+	string net_id;
+}
+
+class AZB_Offer
+{
+	string input;
+	string action;
+	string text;
+}
+
+class AZB_Widget
+{
+	string name;
+	string type;
+	int depth;
+	float x;
+	float y;
+	float w;
+	float h;
+	bool visible;
 }
 
 class AZB_Sample
@@ -153,6 +192,27 @@ class AZB_Data
 	bool player_view;
 	bool hud;
 	bool paused;
+	bool executed;
+	float phase;
+	string parent_net_id;
+	ref array<string> slots;
+	ref array<ref AZB_Att> attachments;
+	bool god;
+	int count;
+	ref array<string> kept;
+	float yaw_error;
+	float pitch_error;
+	bool aligned;
+	ref array<ref AZB_Offer> offered;
+	string target_net_id;
+	string target_type;
+	bool can;
+	bool started;
+	string running;
+	string menu;
+	ref array<ref AZB_Widget> widgets;
+	bool clicked;
+	string text;
 }
 
 class AZB_Result
@@ -380,8 +440,37 @@ class AZB_Peer
 				return CmdPing(c, r);
 			case "mark":
 				return CmdMark(c, r);
+			case "exec":
+				return CmdExec(c, r);
 		}
 		Fail(r, "unknown_command");
+		return true;
+	}
+
+	// Runs any Enforce Script, off unless the session was started with -azBridgeExec=1
+	// (owner decision 3, revised). The code is wrapped and run the way the Diag script
+	// console runs it (ExecuteEnforceScript, game.c:777; playerbase.c:5982). The host
+	// writes every code string to the session's exec log; this peer prints its start.
+	bool CmdExec(AZB_Command c, AZB_Result r)
+	{
+		string allowed;
+		if (!GetGame().CommandlineGetParam("azBridgeExec", allowed) || allowed != "1")
+		{
+			Fail(r, "exec_disabled");
+			return true;
+		}
+		string head = c.args.code;
+		if (head.Length() > 120)
+			head = head.Substring(0, 120);
+		Print("[AZ-BRIDGE] EXEC " + m_Peer + " " + c.args.code.Length().ToString() + " chars: " + head);
+		r.data.executed = GetGame().ExecuteEnforceScript("void azbExec()\n{\n" + c.args.code + "\n}\n", "azbExec");
+		if (!r.data.executed)
+		{
+			// Measured on DayZDiag 1.30: the engine refuses with "CGame::ExecuteEnforceScript not
+			// allowed in release version"; the console's own run is #ifdef DEVELOPER (scriptconsoleenfscripttab.c:130).
+			Fail(r, "exec_failed");
+			r.data.reason = "the engine refused or the code did not compile; read the peer's script log (DayZDiag 1.30 refuses ExecuteEnforceScript as a release build)";
+		}
 		return true;
 	}
 
