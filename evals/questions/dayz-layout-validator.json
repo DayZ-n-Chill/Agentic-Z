@@ -101,7 +101,7 @@
         "re:XML|brace|root"
       ],
       "must_not_include": [],
-      "verified": "agents/dayz-layout-validator.md workflow step 3 (python hooks/edit_check.py --file <file.layout> first: XML, unbalanced braces, root widget count, children nesting); hooks/edit_check.py:17 (manual use --file <path>, exit 1 on a problem)"
+      "verified": "agents/dayz-layout-validator.md workflow step 4 (python hooks/edit_check.py --file <file.layout> first: XML, unbalanced braces, root widget count, children nesting); hooks/edit_check.py:17 (manual use --file <path>, exit 1 on a problem)"
     },
     {
       "id": "pasted-content-not-written",
@@ -112,7 +112,7 @@
       "must_not_include": [
         "re:\\bI (will |'ll )?(write|save|create) (it|the (content|text|layout)|a (temp|temporary))"
       ],
-      "verified": "agents/dayz-layout-validator.md workflow step 2 (pasted content: never write it anywhere, check it by reading, report both scripts as not run, ask the caller to save it under the mod and gate the file)"
+      "verified": "agents/dayz-layout-validator.md workflow step 3 (pasted content: never write it anywhere, check it by reading, report both scripts as not run, ask the caller to save it under the mod and gate the file)"
     }
   ]
 }

@@ -33,7 +33,7 @@
       "must_include": [
         "re:ThrowPhysically\\s*\\(\\s*null\\s*,\\s*vector\\.Zero"
       ],
-      "verified": "P:/scripts/4_world/classes/constructionbase.c:300 and P:/scripts/4_world/entities/itembase/tentbase/shelter.c:65 (item.ThrowPhysically(null, vector.Zero)); signature at P:/scripts/3_game/entities/inventoryitem.c:26"
+      "verified": "P:/scripts/4_world/classes/constructionbase.c:358 and P:/scripts/4_world/entities/itembase/tentbase/shelter.c:65 (item.ThrowPhysically(null, vector.Zero)); signature at P:/scripts/3_game/entities/inventoryitem.c:26"
     },
     {
       "id": "bullets-pass-through",

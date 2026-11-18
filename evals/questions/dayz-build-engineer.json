@@ -23,7 +23,7 @@
         "re:dependenc"
       ],
       "must_not_include": [],
-      "verified": "agents/dayz-build-engineer.md step 4c (no dependency list: launch with none; /dayz-launch-test refuses on a requiredAddons entry without the DZ_ prefix that is not the mod's own CfgPatches class, and the agent stops and reports it); skills/dayz-launch-test/launch.py:146-179 (missing_dependencies); every vanilla CfgPatches class under P:/DZ starts with DZ_, and JM_CF_Scripts is the Community Framework addon used in skills/dayz-release-pack/fixtures/MyVest/config.cpp:8"
+      "verified": "agents/dayz-build-engineer.md step 4c (no dependency list: launch with none; /dayz-launch-test refuses on a requiredAddons entry without the DZ_ prefix that is not the mod's own CfgPatches class, and the agent stops and reports it); skills/dayz-launch-test/launch.py:149-183 (missing_dependencies); JM_CF_Scripts is not a vanilla CfgPatches class (vanilla patches use the DZ_ prefix apart from the two Takistan dog patches in P:/DZ/animals_takistan), and JM_CF_Scripts is the Community Framework addon used in skills/dayz-release-pack/fixtures/MyVest/config.cpp:8"
     },
     {
       "id": "own-patch-requirement-launches",
@@ -36,7 +36,7 @@
         "re:BLOCKED:\\s*step\\s*4",
         "re:/dayz-launch-test\\s+\\S*MyVest_Data"
       ],
-      "verified": "agents/dayz-build-engineer.md step 4c (no dependency list and not a bundle: launch with no dependencies and let /dayz-launch-test run the requiredAddons check); skills/dayz-launch-test/launch.py:118-143 (workspace_patches reads every config.cpp, skipping .git, Addons and Keys) and :167-177 (the mod's own patches count as provided); vanilla patches start with DZ_, e.g. P:/DZ/AI/config.cpp:1-11"
+      "verified": "agents/dayz-build-engineer.md step 4c (no dependency list and not a bundle: launch with no dependencies and let /dayz-launch-test run the requiredAddons check); skills/dayz-launch-test/launch.py:121-146 (workspace_patches reads every config.cpp, skipping .git, Addons and Keys) and :170-180 (the mod's own patches count as provided); vanilla patches start with DZ_, e.g. P:/DZ/AI/config.cpp:1-11"
     },
     {
       "id": "server-only-dep-uses-flag",

@@ -16,7 +16,7 @@
       "unchanged": [
         "evals/fixtures/figma-to-dayz-layout/trader_panel.json"
       ],
-      "verified": "agents/figma-to-dayz-layout.md Workflow step 2 (prefix decides the class, btn_close is a ButtonWidgetClass even as a frame); skills/_shared/figma-to-dayz-rules.md section 4 (btn_ to ButtonWidgetClass, bar_ to ProgressBarWidgetClass); vanilla ButtonWidgetClass at P:/gui/layouts/camera_tools/camera_tools.layout:298, ProgressBarWidgetClass at P:/gui/layouts/day_z_hud.layout:3814"
+      "verified": "agents/figma-to-dayz-layout.md Workflow step 2 (prefix decides the class, btn_close is a ButtonWidgetClass even as a frame); skills/_shared/figma-to-dayz-rules.md section 4 (btn_ to ButtonWidgetClass, bar_ to ProgressBarWidgetClass); vanilla ButtonWidgetClass at P:/gui/layouts/camera_tools/camera_tools.layout:298, ProgressBarWidgetClass at P:/gui/layouts/day_z_hud.layout:4029"
     },
     {
       "id": "fill-width-is-relative",

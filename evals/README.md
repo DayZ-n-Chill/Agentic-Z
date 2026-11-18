@@ -6,7 +6,7 @@ One question file per agent in `questions/` (all 30 agents are covered), and the
 
 ## Questions not yet run
 
-These twenty questions were added without a run. `baseline.json` counts them in each agent's `total` but not in its `score` or `passed` list until the next run records them.
+These nineteen questions were added without a run. `baseline.json` counts them in each agent's `total` but not in its `score` or `passed` list until the next run records them.
 
 | Agent file | Question ids |
 |---|---|
@@ -14,5 +14,4 @@ These twenty questions were added without a run. `baseline.json` counts them in 
 | `dayz-persistence-specialist` | `persistence`, `persistence-deprecated-api`, `persistence-migration-rollback`, `persistence-mod-version`, `basebuilding-part-id-cap` |
 | `dayz-ui-specialist` | `ui-layout` |
 | `dayz-build-checker` | `build-artifact-postcondition` |
-| `dayz-ingame-tester` | `companion-lifecycle-authority` |
 | `dayz-animation-specialist` | `physics-bake-then-remove`, `easing-overshoot-audit`, `video-output-gate-order`, `txa-add-spine-up-export` |

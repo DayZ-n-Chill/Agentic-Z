@@ -91,7 +91,7 @@
     },
     {
       "id": "txa-add-spine-up-export",
-      "question": "Answer only, do not edit any file. With the DayZ Animation Tools plugin in Blender I made a two second wave for a DayZ character (right arm up, torso and head follow a little) and I am about to export it as a .txa for Workbench. My bone list holds EntityPosition, Pelvis, Spine, Spine1, Spine2, Neck, Head, the right arm chain, RightHand_Dummy, RightHandRing, RightHandPinky, LeftUpLeg and RightUpLeg. Which of these must I leave out of an action animation like this and why, which Export Type must the file declare, and which skeleton must the bone names match? Does the vanilla player bone list contain RightHandRing and RightHandPinky? Cite the vanilla file.",
+      "question": "Answer only, do not edit any file. With the DayZ Animation Tools plugin in Blender I made a two second chamber check for a DayZ character holding a rifle (right arm reaches to the bolt, torso and head follow a little) and I am about to export it as a .txa for Workbench. My bone list holds EntityPosition, Pelvis, Spine, Spine1, Spine2, Neck, Head, the right arm chain, RightHand_Dummy, RightHandRing, RightHandPinky, LeftUpLeg and RightUpLeg. Which of these must I leave out of an action animation like this and why, which Export Type must the file declare, and which skeleton must the bone names match? Does the vanilla player bone list contain RightHandRing and RightHandPinky? Cite the vanilla file.",
       "must_include": [
         "OFP2_ManSkeleton",
         "re:(type|export)[^.\\n]{0,60}\\bADD\\b|\\bADD\\b[^.\\n]{0,40}(type|export)|`ADD`",
