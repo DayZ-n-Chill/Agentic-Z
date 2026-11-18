@@ -108,7 +108,7 @@ Building `class Doors` on a vehicle produces no working action, even though both
 
 What 1.30 changed for building doors, what breaks in a 1.29 door mod and the migration checklist are in `building-door-locks.md`; the open check itself is in `door-open-and-lock-code.md`.
 
-`Entity` has the natives `DisableSimulation` and `GetIsSimulationDisabled` (`P:\scripts\3_game\entities\entity.c:3` to `:6`). The 1.30 changelog also adds a `disableSimulation` config key for houses and fixes inventory attachments on buildings created at load time. Vanilla sets `disableSimulation=1` on 30 Badlands buildings, the lockable houses among them (`P:\DZ\structures_takistan\Residential\config.cpp:21`); no script reads the key, so the engine handles it, and the attachment fix is not checked on `P:\`. A static house that must not tick can set `disableSimulation = 1`, as those houses do even though their doors open.
+`Entity` has the natives `DisableSimulation` and `GetIsSimulationDisabled` (`P:\scripts\3_game\entities\entity.c:3` to `:6`). The 1.30 changelog also adds a `disableSimulation` config key for houses and fixes inventory attachments on buildings created at load time. Vanilla sets `disableSimulation=1` on 30 Badlands buildings, the lockable houses among them (`P:\DZ\structures_takistan\Residential\config.cpp:22`); no script reads the key, so the engine handles it, and the attachment fix is not checked on `P:\`. A static house that must not tick can set `disableSimulation = 1`, as those houses do even though their doors open.
 
 ## On Linux
 

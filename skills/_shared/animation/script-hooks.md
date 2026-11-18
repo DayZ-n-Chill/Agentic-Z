@@ -40,7 +40,7 @@ A phase that reads back as expected does not prove the part moved or that the so
 | `OnDoorCloseStart`, `OnDoorCloseFinish` | the same two | :122, :127 |
 | `OnDoorLocked`, `OnDoorUnlocked` | `DoorLockParams` (`Param1<int>`) | :132, :137 |
 
-Vanilla's bunker starts an auto close timer in `OnDoorOpenStart` and locks its code lock in `OnDoorCloseStart`, checking `params.param1` first (`P:\scripts\4_world\entities\building\bunker.c:73` to `:90`). Which machines the engine raises these events on is not checked on `P:\`; test that on a dedicated server before relying on one.
+Vanilla's bunker checks `IsMainDoor(params.param1)` and starts an auto close timer in `OnDoorOpenStart` (`P:\scripts\4_world\entities\building\bunker.c:73` to `:84`), and locks its code lock in `OnDoorCloseStart` without a door check (`:86` to `:90`). Which machines the engine raises these events on is not checked on `P:\`; test that on a dedicated server before relying on one.
 
 `PlayerBase` registers `ActionOpenDoors` for every player (`P:\scripts\4_world\entities\manbase\playerbase.c:1697`). On the server it finds the door from the aimed component and calls `OpenDoor` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionopendoors.c:59` to `:75`). So a mod building with a correct `class Doors` and matching `model.cfg` needs no script. Write script only to change behavior, for example a keypad lock that calls `LockDoor`.
 

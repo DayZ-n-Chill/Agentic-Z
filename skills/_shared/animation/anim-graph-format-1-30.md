@@ -13,6 +13,8 @@ AnimSrcNodeBlendT MotorBikeB {
  EditorPos 4 -18.3
  BlendTime "0.3"
  BlendFn S
+ TriggerOn ""
+ TriggerOff ""
  Condition "VehicleType == 10 || VehicleType == 11"
  Child0 "VehicleSTM"
  Child1 "MotorBikeSTM"

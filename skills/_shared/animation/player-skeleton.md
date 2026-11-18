@@ -57,7 +57,7 @@ Measured in game on 1.30:
 
 ## Fingers
 
-Per hand `Ring`, `Pinky`, `Middle`, `Index` and `Thumb`, numbered 1 to 4, such as `LeftHandIndex1` (`:54` to `:73` for the left hand). All `lod = "2"`: skip them on a first pass at a weapon clip and pose them for hand detail.
+Per hand `Ring`, `Pinky`, `Middle`, `Index` and `Thumb`, numbered 1 to 4, such as `LeftHandIndex1` (`:208` to `:229` for the left hand). `Ring` and `Pinky` each also have an unnumbered base bone above the numbered ones: `LeftHandRing`, `LeftHandPinky` and their right mirrors. All `lod = "2"`: skip them on a first pass at a weapon clip and pose them for hand detail.
 
 ## IK helpers
 

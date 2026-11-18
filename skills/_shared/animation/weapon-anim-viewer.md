@@ -90,7 +90,7 @@ A later version of the viewer went well past what `build_viewer.py` writes. For 
 
 A grip is set by three levers (`weapon-in-hands.md`), and posing the wrist is not one: the firearms behaviour and an IK pose; geometric parity, moving the weapon to where the IK pose lands the hand (+2.4 cm on one rifle, done with the viewer's place weapon on hand function or the weapon gizmo); and finger curl, the one part of the hand the IK pose visibly drives. The viewer serves the last two. Turning `LeftHand` in the IK pose does almost nothing.
 
-A native IK pose export is not worth it: a real IK pose keys eight IK bones the viewer's rig lacks (the two hand IK targets, two hand origins, two forearm directions and their origins) plus the fingers and `_Dummy` bones, and working mods reuse vanilla IK poses with matching geometry.
+A native IK pose export is not worth it: a real IK pose keys seven IK bones the viewer's rig lacks (`LeftHandIKTarget`, the two hand origins, the two forearm directions and their origins) plus the fingers and `_Dummy` bones, and working mods reuse vanilla IK poses with matching geometry.
 
 ## Bone frame maps per rig
 
