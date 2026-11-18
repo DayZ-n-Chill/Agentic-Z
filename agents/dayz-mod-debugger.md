@@ -17,11 +17,11 @@ Follow Tier 1 (`.claude/CLAUDE.md`) and Tier 2 (`skills/_shared/dayz-conventions
 - Build failures: the AddonBuilder lines quoted in the `/dayz-gate build` JSON (or the `dayz-build-checker` report).
 - Review-gate failures: no engine logs; use the `dayz-mod-reviewer` or `dayz-layout-validator` report and the files the task changed.
 - Behavior-gate failures: start from the failure's `check` id and its `[AZ-BEHAVIOR] FAIL <id> <reason>` line, then that check in `output/<ModName>-plan/behavior-checks.json` (format in `skills/dayz-gate/checks-file.md`) and the server script log around the line.
-- Visual-gate failures (triage marks them known with owner `user`, so you get one only when the caller wants a cause): `Read` the shot's `capture` and `diff` PNGs named in the report (red marks changed pixels) and its entry in `output/<ModName>-plan/visual-shots.json`.
+- Visual-gate failures: triage marks `[visual:diff]`, `[visual:no-baseline]` and `[visual:no-capture]` known with owner `user`, so you get one only when the caller wants a cause: `Read` the shot's `capture` and `diff` PNGs named in the report (red marks changed pixels) and its entry in `output/<ModName>-plan/visual-shots.json`. `[visual:no-scene]` is known with owner `dayz-mod-debugger`: diagnose it from the same session's script logs (a compile error in `AZ_VisualHelper`, or a client that never loaded the player).
 
 ## Start from the triage
 
-Diagnose only failures triage marks `new`; `known` ones already have an `owner_agent` and fix. Every diagnosis rests on a finding: a log line, a review-gate finding, a failed behavior check or a visual diff. Never diagnose a symptom with none.
+Diagnose only failures triage marks `new`, plus `known` ones whose `owner_agent` is `dayz-mod-debugger`; other `known` ones already have an `owner_agent` and fix. Every diagnosis rests on a finding: a log line, a review-gate finding, a failed behavior check or a visual diff. Never diagnose a symptom with none.
 
 - **`/dayz-gate` report:** each failure has its file and line, its stack trace (`context`), the mod files it points to (`points_to`) and a `triage` verdict with its `fingerprint`. Use the file names to pick the session.
 - **`/dayz-logwatch` line:** the same, with log file and line but no stack trace.

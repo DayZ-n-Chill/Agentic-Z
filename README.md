@@ -66,7 +66,7 @@ Full prerequisites, env-var overrides, and troubleshooting: **[`docs/dayz-moddin
 | **Vanilla data on `P:\`** | DayZ Tools → "Extract Game Data". Your configs inherit from vanilla classes such as `Inventory_Base` and `Clothing`, and your scripts from `ItemBase`. |
 | **Python 3.10+** on `PATH` | The skills are Python scripts. |
 
-Search (optional) embeds through Voyage AI's hosted API (`voyage-code-3`, code-tuned, 1024-dim) and stores the vectors in LanceDB under `~/.claude/dayz-search-index/`, where the `dayz-rag` MCP server reads them. Install its Python packages once from the repo root with `pip install -r .claude\mcp\dayz-rag\requirements.txt -r skills\dayz-search-index\requirements.txt`. Add `VOYAGE_API_KEY=pa-…` to `.env` at the repo root; queries need it either way. The last full local build with `/dayz-search-index` (before windowing) embedded about 52,000 chunks and about 66M tokens; the current indexer makes about 62,000 chunks, and its local estimate of about 96M tokens runs high, so check Voyage's pricing first. To skip the build, `/dayz-search-download` installs the prebuilt index from GitHub releases with no embedding cost.
+Search (optional) embeds through Voyage AI's hosted API (`voyage-code-3`, code-tuned, 1024-dim) and stores the vectors in LanceDB under `~/.claude/dayz-search-index/`, where the `dayz-rag` MCP server reads them. Install its Python packages once from the repo root with `pip install -r .claude\mcp\dayz-rag\requirements.txt -r skills\dayz-search-index\requirements.txt`. Add `VOYAGE_API_KEY=pa-…` to `.env` at the repo root; queries need it either way. The last full local build with `/dayz-search-index` (before windowing) embedded about 52,000 chunks and about 66M tokens; the current indexer makes about 77,600 chunks, and its local estimate of about 125M tokens runs high, so check Voyage's pricing first. To skip the build, `/dayz-search-download` installs the prebuilt index from GitHub releases with no embedding cost.
 
 ---
 
@@ -259,7 +259,7 @@ For a whole mod, start the orchestrator as your main session: `claude --agent ag
 | [`dayz-lead`](agents/dayz-lead.md) | Runs one team (script, config, art, UI, server, release) and its gates. |
 | [`dayz-build-checker`](agents/dayz-build-checker.md) | Gate: the PBO builds with no AddonBuilder errors. |
 | [`dayz-ingame-tester`](agents/dayz-ingame-tester.md) | Gate: the mod loads on a diag server and client with clean logs. |
-| [`dayz-build-engineer`](agents/dayz-build-engineer.md) | Builds, launches test sessions and deploys after your yes. |
+| [`dayz-build-engineer`](agents/dayz-build-engineer.md) | Builds the PBO (or deploys a bundle), sets up the test server and launches a test session for you. |
 | [`dayz-docs-writer`](agents/dayz-docs-writer.md) | Keeps the mod's README, changelog and classname list current, and writes the Workshop text and server kit with `/dayz-release-pack` and `/dayz-server-kit`. |
 
 You can still call any specialist below directly for a single task.
@@ -270,12 +270,12 @@ You can still call any specialist below directly for a single task.
 |---|---|
 | [`dayz-script-specialist`](agents/dayz-script-specialist.md) | Enforce Script — modded classes, RPCs, replication, gameplay logic. |
 | [`dayz-config-specialist`](agents/dayz-config-specialist.md) | `config.cpp`, CfgPatches, CfgVehicles, inheritance, hidden selections. |
-| [`dayz-asset-specialist`](agents/dayz-asset-specialist.md) | `.p3d` / `.paa` / `.rvmat` and Workbench asset integration. |
+| [`dayz-asset-specialist`](agents/dayz-asset-specialist.md) | `.paa` textures (via `/dayz-pack-texture`) and `.rvmat` materials; `.p3d` goes to `dayz-object-builder`. |
 | [`dayz-object-builder`](agents/dayz-object-builder.md) | `.p3d` LODs, named selections, geometry, damage zones. |
 | [`dayz-map-specialist`](agents/dayz-map-specialist.md) | Terrain Builder, DayZ Editor, map objects, clutter, surfaces. |
 | [`dayz-ui-specialist`](agents/dayz-ui-specialist.md) | `.layout` files, widget scripting, HUD/menu, UI theme. |
-| [`dayz-server-admin`](agents/dayz-server-admin.md) | `types.xml`, `init.c`, `cfggameplay.json`, server performance. |
-| [`dayz-mod-debugger`](agents/dayz-mod-debugger.md) | Log/RPT/crash analysis, BattlEye diagnosis, performance profiling. |
+| [`dayz-server-admin`](agents/dayz-server-admin.md) | `types.xml`, `init.c`, `cfggameplay.json`, `events.xml`, spawns and `serverDZ.cfg`. |
+| [`dayz-mod-debugger`](agents/dayz-mod-debugger.md) | Log/RPT/crash analysis and BattlEye diagnosis; traces each failure to a file and line and names the owning worker. |
 | [`dayz-mod-reviewer`](agents/dayz-mod-reviewer.md) | Audit `workspace/<ModName>/` for convention compliance; routes findings. |
 | [`dayz-workbench-specialist`](agents/dayz-workbench-specialist.md) | Workbench plugin development (editor-time tooling). |
 | [`dayz-persistence-specialist`](agents/dayz-persistence-specialist.md) | Data that survives a server restart: `OnStoreSave` and `OnStoreLoad`, save versions, base building, the data audit before release. Script lead. |

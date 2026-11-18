@@ -25,7 +25,7 @@ Search: Grep for known names, RAG (`search_dayz_source`) for questions by meanin
 
 ## Skills and other owners' references
 
-Load a skill through Skill only when the task is its kind of task:
+Read these files, or load the named skill through Skill, only when the task is its kind of task:
 
 - `skills/dayz-scope-mod/references/implementation-protocol.md`: writing or fixing a whole feature. It gives the client and server data map to fill in before step 3, a mini-audit per file and the recurring error catalog.
 - `skills/dayz-launch-test/references/mod-loop.md`: a mod that builds on Community Framework or Expansion, or a port to 1.30 (load order and the 1.30 rules).
