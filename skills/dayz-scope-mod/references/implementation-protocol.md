@@ -14,6 +14,7 @@ Where one of its rules repeats a Tier 2 rule or a pack, the Tier 2 file or the p
 | The feature does not work and the log is clean: in what order do I look? | `skills/dayz-launch-test/references/debug-protocol.md` |
 | How do I run the fast DayZDiag loop, and when do I stop iterating? | `skills/dayz-launch-test/references/test-loop.md` |
 | Is a fault a crash, a VM exception or corruption, and which missing engine minimum crashes? | `skills/dayz-launch-test/references/debug-protocol.md`, "Name what the fault actually does" and "Engine minimums to check early" |
+| How do I keep parallel auditor agents independent, and when does a finding count as verified? | `skills/dayz-scope-mod/references/independent-auditors.md` |
 | Which skill does each step of the mod loop, from scope to Workshop? | `skills/dayz-launch-test/references/mod-loop.md` |
 
 ## Before any code

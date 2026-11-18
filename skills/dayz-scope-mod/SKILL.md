@@ -122,6 +122,7 @@ Before a non-trivial feature is coded, write down what done means and how each p
 | Do spec, plan, task list and code agree before the in-game test? | `references/consistency-pass.md` |
 | Which questions do I settle with the user before writing a placeable or usable object? | `references/questions-before-building.md` |
 | How do I write the code once the spec exists: API checks, mini-audit, client and server data map, checkpoints, bug ledger, handoff? | `references/implementation-protocol.md` |
+| How do I keep parallel auditor agents independent, and when does a finding count as verified? | `references/independent-auditors.md` |
 
 ## Do not
 
