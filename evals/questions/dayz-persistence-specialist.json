@@ -35,7 +35,7 @@
         "re:\\A\\W*yes\\b"
       ],
       "cite": "4_world/entities/itembase/basebuildingbase.c",
-      "verified": "P:/scripts/4_world/entities/itembase/basebuildingbase.c:420 (writes m_SyncParts01 to 03 and m_HasBase) and :143 (part_id 1 to 31 maps to a bit in m_SyncParts01); id read from config at P:/scripts/4_world/classes/basebuilding/typeconstructiondata/constructionparttyped.c:83"
+      "verified": "P:/scripts/4_world/entities/itembase/basebuildingbase.c:424-428 (writes m_SyncParts01 to 03 and m_HasBase) and :142 (part_id 1 to 31 maps to a bit in m_SyncParts01); id read from config at P:/scripts/4_world/classes/basebuilding/typeconstructiondata/constructionparttyped.c:83"
     },
     {
       "id": "removed-field-read-and-discard",
@@ -56,7 +56,7 @@
         "EEOnAfterLoad"
       ],
       "cite": "3_game/entities/entityai.c",
-      "verified": "P:/scripts/3_game/entities/entityai.c:1393 (available only in this event, inside EEOnAfterLoad at :1381) and :3041 (cannot be called in OnStoreLoad); native at P:/scripts/3_game/global/game.c:1420"
+      "verified": "P:/scripts/3_game/entities/entityai.c:1393 (available only in this event, inside EEOnAfterLoad at :1381) and :3041 (cannot be called in OnStoreLoad); native at P:/scripts/3_game/global/game.c:1421"
     },
     {
       "id": "persistence",
@@ -94,7 +94,7 @@
         "re:roll(ed|ing)?[ -]?back|downgrad|previous release|old(er)? reader",
         "re:(not|never|no|without) (re)?writ|(not|never) (delete|overwrite)|preserv|intact|untouched|unchanged"
       ],
-      "verified": "skills/_shared/persistence/migration-matrix.md 'The seven cells' (legacy: read, write new after backup; future-version: reject, do not write; truncated: reject, discard partial; rollback-old-reader: old reader rejects, does not delete) and 'Transversal write rule'; vanilla rejects a short record by returning false: P:/scripts/4_world/entities/itembase/basebuildingbase.c:439 (failed Read of m_SyncParts01) to :443"
+      "verified": "skills/_shared/persistence/migration-matrix.md 'The seven cells' (legacy: read, write new after backup; future-version: reject, do not write; truncated: reject, discard partial; rollback-old-reader: old reader rejects, does not delete) and 'The write rule'; vanilla rejects a short record by returning false: P:/scripts/4_world/entities/itembase/basebuildingbase.c:438 (failed Read of m_SyncParts01) to :442"
     },
     {
       "id": "persistence-mod-version",
@@ -121,7 +121,7 @@
       "unchanged": [
         "evals/fixtures/dayz-persistence-specialist/part_id_cap_config.cpp"
       ],
-      "verified": "P:/scripts/4_world/entities/itembase/basebuildingbase.c:157 (part_id 63 to 93 is the last range, in m_SyncParts03; an id above 93 matches no branch), :10 (m_SyncParts01, 31 parts per int) and :43 (RegisterNetSyncVariableInt for m_SyncParts01); the fixture has id = 42 twice and id = 94"
+      "verified": "P:/scripts/4_world/entities/itembase/basebuildingbase.c:156 (part_id 63 to 93 is the last range, in m_SyncParts03; an id above 93 matches no branch), :10 (m_SyncParts01, 31 parts per int) and :43 (RegisterNetSyncVariableInt for m_SyncParts01); the fixture has id = 42 twice and id = 94"
     }
   ]
 }

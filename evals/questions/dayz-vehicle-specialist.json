@@ -10,7 +10,7 @@
         "VehicleAnimInstances",
         "GetSeatAnimationType"
       ],
-      "verified": "P:/scripts/3_game/vehicles/transport.c:662 (GetAnimInstance errors when not overridden) and :682 (GetSeatAnimationType); P:/scripts/4_world/entities/vehicles/vehicleaniminstances.c:1"
+      "verified": "P:/scripts/3_game/vehicles/transport.c:665 (GetAnimInstance errors when not overridden) and :685 (GetSeatAnimationType); P:/scripts/4_world/entities/vehicles/vehicleaniminstances.c:1"
     },
     {
       "id": "bigger-fuel-tank",
@@ -34,7 +34,7 @@
         "re:IsVitalSparkPlug|IsVitalGlowPlug",
         "re:CheckOperationalRequirements|OnBeforeEngineStart"
       ],
-      "verified": "P:/scripts/4_world/entities/vehicles/inheritedcars/offroad_02.c:415 (IsVitalSparkPlug returns false); P:/scripts/3_game/vehicles/transport.c:409 (IsVitalGlowPlug defaults to true); P:/scripts/4_world/entities/vehicles/carscript.c:1752 and :1783 (missing glow plug sets NO_IGNITER)"
+      "verified": "P:/scripts/4_world/entities/vehicles/inheritedcars/offroad_02.c:415 (IsVitalSparkPlug returns false); P:/scripts/3_game/vehicles/transport.c:412 (IsVitalGlowPlug defaults to true); P:/scripts/4_world/entities/vehicles/carscript.c:1752 and :1783 (missing glow plug sets NO_IGNITER)"
     },
     {
       "id": "new-door-slot",

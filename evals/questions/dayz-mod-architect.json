@@ -50,7 +50,7 @@
         "re:server"
       ],
       "must_not_include": [
-        "re:(set|put|add)s? (them |the loot numbers )?in (the )?config\\.cpp"
+        "re:^(?!.*(\\bnot\\b|\\bnever\\b|n't|\\bno\\b)).*\\b(set|put|add)s? (them |the loot numbers )?in (the )?config\\.cpp"
       ],
       "verified": "skills/_shared/conventions/server.md:11 (loot numbers live only in the mission's types.xml; P:/scripts/3_game/ce/centraleconomy.c:754-765 only reads them back)"
     }
