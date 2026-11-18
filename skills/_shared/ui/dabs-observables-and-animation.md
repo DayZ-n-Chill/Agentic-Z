@@ -20,7 +20,7 @@ Every one of these updates the UI: `Insert`, `InsertAt`, `InsertAll`, `Remove(in
 - `Clear()` empties the storage with `m_Data.Clear()` (`MVC\Observables\ObservableCollection.c:138` to `:142`), and the spacer's controller removes each child by walking `GetChildren` and `GetSibling` and calling `RemoveChild` (`SpacerBaseWidgetController.c:88` to `:95`).
 - An item that holds a `ref` back to its controller leaks: nothing breaks the cycle. Null the back reference in the item's destructor.
 - Don't use `ObservableSet`. It raises `NotifyCollectionChangedAction.Add` and `.Set` (`MVC\Observables\ObservableSet.c:14`, `:23`, `:43`), and the enum has only `Insert`, `InsertAt`, `Remove`, `Replace`, `Move`, `Swap` and `Clear` (`MVC\Types\NotifyCollectionChangedAction.c`).
-- The widget to controller registry matches the exact type. `RegisterWidgetControllers` (`3_Game\DabsFramework\!Core\DayZGame.c:54` to `:80`) looks up `data.Type()` without walking the inheritance chain, so a widget type that isn't registered logs "Could not find WidgetController for type X".
+- The widget to controller registry matches the exact type. `RegisterWidgetControllers` (`3_Game\DabsFramework\!Core\DayZGame.c:54` to `:80`) fills the registry, and `GetWidgetController` (`:158` to `:163`) looks it up by `data.Type()` without walking the inheritance chain, so a widget type that isn't registered logs "Could not find WidgetController for type X" (`MVC\ScriptedViewBase.c:87`).
 
 A scroll list bound to a collection, from Dabs's own `layouts\options\options_tab.layout`:
 

@@ -27,7 +27,7 @@ What 1.29 had is not on `P:\`, so "before 1.30" lines are not checked. Lines mar
 
 ## Porting checklist
 
-- Search the whole mod for `FindAnyWidget("interact")`, `"item"`, `"continuous_interact"`, `"single"`, `"continuous"` and `"ia_interact"`, and change `ImageWidget` to `Widget`.
+- Search the whole mod for `FindAnyWidget("interact")`, `"item"`, `"continuous_interact"`, `"single"`, `"continuous"`, `"ia_interact"` and `"ia_continuous_interact"`, and change `ImageWidget` to `Widget`.
 - Replace calls to the `Set*XboxIcon` methods with `SetControllerIcon` in scripts that extend or mod `ActionTargetsCursor`.
 - A mod that decorates inventory slots targets `SlotsIconBase` and still calls `super.InitIcon` and `super.InitIconWidgets` (`P:\scripts\5_mission\gui\inventorynew\containeditems\slotsiconbase.c:61` and `:95`).
 - For a new panel on the cursor, read `hud-action-info-panels.md`.

@@ -45,7 +45,7 @@ The destructor (`:99` to `:124`) removes `Update` from the queue (with a `GetGam
 | `bool UseUpdateLoop()` | `true` | Whether `Update` runs |
 | `void Update(float dt)` | empty | Called every frame when the loop is on |
 
-`GetLayoutRoot()` and its `GetScreenSize()` are valid right after the constructor: Dabs's own `TooltipView` reads `GetLayoutRoot().GetScreenSize()` on the next line (`TooltipView.c:48` to `:51`), and its tooltip places itself with `GetScreenPos`, `GetScreenSize`, `SetScreenPos`, `GetTextSize` and `GetMousePos` (`Tooltip.c:34` to `:128`). `UseUpdateLoop()` returns true unless you override it (`ScriptView.c:293` to `:296`). `GetFocus() == myEditBox` tells a view which field has focus (`OptionSelectorSliderView.c:41`).
+`GetLayoutRoot()` and its `GetScreenSize()` are valid right after the constructor: Dabs's own `TooltipView` reads `GetLayoutRoot().GetScreenSize()` on the next line (`3_Game\DabsFramework\!Core\Views\Tooltip.c:56` and `:59`), and its tooltip places itself with `GetScreenPos`, `GetScreenSize`, `SetScreenPos`, `GetTextSize` and `GetMousePos` (`Tooltip.c:34` to `:136`). `UseUpdateLoop()` returns true unless you override it (`ScriptView.c:293` to `:296`). `GetFocus() == myEditBox` tells a view which field has focus (`OptionSelectorSliderView.c:41`).
 
 Under `#ifdef DIAG_DEVELOPER`, the static `ScriptView.ReloadAll()` (`:126` to `:135`, commented "Hot reload all widgets layouts") unlinks and rebuilds the layout of every live `ScriptView` and fills the widget fields again. Wire it to a key or a DbgUI button to iterate a Dabs layout under DayZDiag.
 

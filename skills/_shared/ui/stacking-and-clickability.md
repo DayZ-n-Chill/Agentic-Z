@@ -67,9 +67,17 @@ ScrollWidgetClass ContentScroll {
    {
     FrameWidgetClass Item1 {
      size 720 40
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
     }
     FrameWidgetClass Item2 {
      size 720 40
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
     }
    }
   }

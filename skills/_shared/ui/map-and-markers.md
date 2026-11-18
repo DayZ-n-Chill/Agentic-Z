@@ -113,7 +113,7 @@ bool NeedMarkerRefresh()
 }
 
 // on the marker: every property that changes how it looks
-int CalcHash(bool includePosition)
+int CalcHash()
 {
     int hash = type + uid + name.Hash() + colorA * 4546546 + colorR * 52412;
     hash += (int)circleRadius * 546353;

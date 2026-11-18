@@ -30,9 +30,9 @@ Use `heightScale` for every dimension, widths included, so squares stay square o
 
 ```c
 txt.SetTextExactSize(16 * MyWidgetUtils.heightScale);          // 16 px at 1080p
-img.SetScreenSize(300 * heightScale, 200 * heightScale);       // 300 by 200 at 1080p
-widget.SetScreenPos(500 * heightScale, 300 * heightScale);     // 500, 300 in 1080p space
-float gap = 10.0 * heightScale;
+img.SetScreenSize(300 * MyWidgetUtils.heightScale, 200 * MyWidgetUtils.heightScale);       // 300 by 200 at 1080p
+widget.SetScreenPos(500 * MyWidgetUtils.heightScale, 300 * MyWidgetUtils.heightScale);     // 500, 300 in 1080p space
+float gap = 10.0 * MyWidgetUtils.heightScale;
 ```
 
 `SetScreenPos` and `SetScreenSize` are at `P:\scripts\1_core\proto\enwidgets.c:142` and `:143`; `SetTextExactSize` at `:193`.
@@ -47,8 +47,8 @@ entry.windowY = y / MyWidgetUtils.heightScale;
 entry.windowW = w / MyWidgetUtils.heightScale;
 entry.windowH = h / MyWidgetUtils.heightScale;
 
-widget.SetScreenPos(entry.windowX * heightScale, entry.windowY * heightScale);
-widget.SetScreenSize(entry.windowW * heightScale, entry.windowH * heightScale);
+widget.SetScreenPos(entry.windowX * MyWidgetUtils.heightScale, entry.windowY * MyWidgetUtils.heightScale);
+widget.SetScreenSize(entry.windowW * MyWidgetUtils.heightScale, entry.windowH * MyWidgetUtils.heightScale);
 ```
 
 ## Gaps, image fit and text fit
