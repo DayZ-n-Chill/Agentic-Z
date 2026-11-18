@@ -10,7 +10,7 @@ not the whole class. Most vanilla containers (not all) also declare a
 
 Vanilla containers declare it next to `DamageSystem`: `Barrel_ColorBase`
 (`P:\DZ\gear\containers\config.cpp:93-98`, `itemsCargoSize[]={10,15}`)
-and `WoodenCrate` (`P:\DZ\gear\camping\config.cpp:10271-10276`). For a
+and `WoodenCrate` (`P:\DZ\gear\camping\config.cpp:10271-10276`, `itemsCargoSize[]={10,5}`). For a
 container that holds no player cargo (loot dropped from `EEKilled` and the
 like), declare it with a zero size:
 
