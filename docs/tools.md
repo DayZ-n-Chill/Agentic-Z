@@ -187,7 +187,7 @@ python scripts/tools/dayz-ui-lab/dayz_ui_lab/widget_ids.py scan <dir> [--json]
 python scripts/tools/dayz-ui-lab/dayz_ui_lab/widget_ids.py collide <layout> [--json]
 ```
 
-`diff.py` reports broken references, clipping, overlap and missing states per widget and scenario. `corpus.py` is the regression gate: it parses the corpora pinned in `scripts/tools/dayz-ui-lab/corpora/manifest.json` (VPP Admin Tools, DayZ Expansion, TraderPlus, TraderX and a negative set), compares every tracked `.layout` against them by content so that none of their layouts is kept in the repo, and reports a tracked `.layout` outside the tool's own fixture folders. The corpora are not in this repo: point the untracked local roots file that `corpus.py` names (`LOCAL_ROOTS_FILE`) at your own copies. A corpus with no configured root is reported `CORPUS-ROOT-MISSING` and fails the run, so "not measured" cannot look like "passes". Measured with all five configured: **376/376 layouts, zero diagnostics**.
+`diff.py` reports broken references, clipping, overlap and missing states per widget and scenario. `corpus.py` is the regression gate: it parses the corpora pinned in `scripts/tools/dayz-ui-lab/corpora/manifest.json` (VPP Admin Tools, DayZ Expansion, TraderPlus, TraderX and LFPowerGrid), compares every tracked `.layout` against them by content so that none of their layouts is kept in the repo, and reports a tracked `.layout` outside the tool's own fixture folders. The corpora are not in this repo: point the untracked local roots file that `corpus.py` names (`LOCAL_ROOTS_FILE`) at your own copies. A corpus with no configured root is reported `CORPUS-ROOT-MISSING` and fails the run, so "not measured" cannot look like "passes". Measured with all five configured: **376/376 layouts, zero diagnostics**.
 
 `widget_ids.py` gives the IDs by which a DayZ 1.30 layout variant addresses vanilla widgets (`Class "{id}" { Prefab "{id}" }`; how they are derived: `skills/_shared/ui/layout-variants.md`). `derive` lists each widget with the ID its layout stores, the ID derived from its name and its ancestors' names, and whether the two match; where a layout stores an ID, that is the one that counts. `scan` counts the stored and the matching IDs of every `.layout` under a folder, and `collide` lists the IDs that two widgets of one layout share, such as the two `top` siblings of `xbox/day_z_ingamemenu_xbox.layout`. Stdlib only; it reads through `parse.py`. Exit 2 on a file it cannot read or parse; `scan` exits 1 when a file fails to parse, and `collide` when an ID is shared. On the DayZ 1.30 vanilla layouts (both stable patches) `scan` counts 1,438 stored IDs, 1,395 of them derived.
 
@@ -299,7 +299,7 @@ The skills say how to build something; the tools say whether it survived. An age
 | Model loads white, untextured or invisible | `python -m dayz_model_preflight check <p3d> --contract <json>` | Whether the selections, scale and winding the export needed are actually in the file |
 | `binarize` refuses the model | same, plus `py3d.validate()` | Which LOD breaks a budget, instead of bisecting by rebuild |
 | Animation never plays | `python -m dayz_animation_formats inspect <rtm> --output anatomy.json` | Whether the signature and bone track are what the engine expects |
-| Layout renders empty, or a widget is missing | `python scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py <layout> --check` | Broken references and structure, offline, with no build |
+| Layout renders empty, or a widget is missing | `python scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py <layout> --check` | Syntax and widget structure, offline, with no build (missing image, font and layout files are `dayz-script-validator`'s check) |
 | Need a widget rectangle or click centre | geometry parser + `ui_rects.py` (not in this repo; see [Two `.layout` parsers](#two-layout-parsers)) | Absolute screen rect / centre; unmodelled anchors are refused, not guessed |
 | Need text, color or image from a `.layout` | `python scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py <layout>` | Full-key format parse, not geometry |
 | About to change a linter rule | `python scripts/tools/dayz-script-validator/scripts/vanilla_control.py` | Whether the new rule is silent on Bohemia's tree |
@@ -350,7 +350,7 @@ scripts\tools\dayz-test\offline.bat MyMod     (build, then one offline DayZDiag)
 
 ## `scripts/tools/dayz-vehicle-checks`
 
-In-game checks of a car, run through the `dayz-testbridge` (`skills/dayz-launch-test/references/test-bridge.md`) in the order of `skills/dayz-launch-test/references/vehicle-acceptance-checks.md`: the driving site (no other vehicle within 30 m, nothing in the 60 m lane ahead), spawns, conditioned (wheels and fuel after a server-side `OnDebugSpawn`), solid (12 level rays; a hit on a door or the trunk counts for the car), seated as driver on both peers, drives (more than 1 m, a speed above 0, engine on), and the turn sign (information only, not calibrated).
+In-game checks of a car, run through the `dayz-testbridge` (`skills/dayz-launch-test/references/test-bridge.md`) following `skills/dayz-launch-test/references/vehicle-acceptance-checks.md`, with the site check added first and conditioning moved before the solid rays: the driving site (no other vehicle within 30 m, nothing in the 16 m lane ahead), spawns, conditioned (wheels and fuel after a server-side `OnDebugSpawn`), solid (12 level rays; a hit on a door or the trunk counts for the car), seated as driver on both peers, drives (more than 1 m, a speed above 0, engine on), and the turn sign (information only, not calibrated).
 
 ```cmd
 python scripts\tools\dayz-vehicle-checks\vehicle_checks.py --vehicle MyCar --start --mods MyCar [--deps CF]
@@ -369,7 +369,8 @@ python scripts\tools\dayz-object-checks\object_checks.py --cls MyMod_Shed --star
 ```
 
 - A collision set whose controls fail proves nothing, so the check fails with them.
-- Writes `output/<Class>-object-checks/<time>/report.json` and the four PNGs. Exit 0 passed, 1 a check failed, 2 the run could not happen. Every spawn is removed with `clear_spawns`.
+- The controls sit a fixed 3 m east or west of the object's centre, so the object must fit within 2.5 m of its centre east and west. A wider building puts the empty spot inside itself and fails the collision and stand-on checks however good its model is.
+- Writes `output/<Class>-object-checks/<time>/report.json` and the four PNGs. Exit 0 passed, 1 a check failed, 2 the run could not happen. Every spawn is removed with `clear_spawns`, also when the run stops early or a bridge call fails.
 - Tests: `test_object_checks.py` beside it.
 
 ## Running the tool tests

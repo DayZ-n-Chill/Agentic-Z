@@ -109,7 +109,9 @@ def extract_lod_geometry(lod) -> dict:
                     normals.append(tuple(lod.facenormals[norm_idx]))
                 else:
                     normals.append((0.0, 1.0, 0.0))
-                uvs.append((u, 1.0 - v))
+                # DayZ and glTF both put V = 0 at the top of the image, so V is written as stored
+                # (_shared/models/py3d-shape-checks.md, "DayZ puts V = 0 at the top").
+                uvs.append((u, v))
             face_indices.append(vertex_map[vert_key])
         if len(face_indices) == 3:
             material_groups[key].extend(face_indices)

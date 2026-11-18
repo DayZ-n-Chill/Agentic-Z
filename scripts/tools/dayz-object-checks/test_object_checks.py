@@ -114,3 +114,30 @@ def test_an_item_skips_the_player_checks(tmp_path):
 def test_a_player_that_never_falls_makes_stand_on_worthless(tmp_path):
     R = run(FakeGame(hovers=True), tmp_path)
     assert R["checks"]["6 stand_on"]["control_fell"] is False and R["checks"]["6 stand_on"]["PASS"] is False
+
+
+def test_a_spawn_that_reads_back_as_another_type_is_still_cleared(tmp_path):
+    class WrongCase(FakeGame):
+        def __call__(self, cmd, args=None, peer=None):
+            answer = super().__call__(cmd, args, peer)
+            if cmd == "spawn":
+                answer["data"]["type"] = answer["data"]["type"].lower()
+            return answer
+
+    game = WrongCase()
+    R = run(game, tmp_path)
+    assert R["checks"]["1 spawns"]["PASS"] is False and game.calls[-1] == "clear_spawns"
+
+
+def test_a_bridge_error_mid_run_still_clears_the_spawns(tmp_path):
+    class Dies(FakeGame):
+        def __call__(self, cmd, args=None, peer=None):
+            if cmd == "raycast":
+                self.calls.append(cmd)
+                raise RuntimeError("peer died")
+            return super().__call__(cmd, args, peer)
+
+    game = Dies()
+    with pytest.raises(RuntimeError, match="peer died"):
+        run(game, tmp_path)
+    assert game.calls[-1] == "clear_spawns"

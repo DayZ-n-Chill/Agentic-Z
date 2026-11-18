@@ -1,7 +1,7 @@
 """dayz-test: build, then launch a mod in DayZ Diag with file patching: server and client, one of them, or offline.
 
     python scripts/tools/dayz-test/dayz_test.py <ModName> [--mode all|server|client|offline]
-        [--deps CF ...] [--server-only MOD ...] [--server <instance>] [--port N] [--build] [--dry-run]
+        [--deps CF ...] [--server-only MOD]... [--server <instance>] [--port N] [--build] [--dry-run]
     python scripts/tools/dayz-test/dayz_test.py --kill
 
 Modes:
@@ -199,7 +199,8 @@ def parse(argv: Optional[list[str]]) -> argparse.Namespace:
     ap.add_argument("--mode", choices=("all", "server", "client", "offline"), default="all")
     ap.add_argument("--deps", nargs="+", default=[], type=launch.mod_name, metavar="MOD",
                     help="Dependency mods in load order, loaded before the mod (CF or @CF).")
-    ap.add_argument("--server-only", action="append", default=[], type=launch.mod_name, metavar="MOD")
+    ap.add_argument("--server-only", action="append", default=[], type=launch.mod_name, metavar="MOD",
+                    help="A server-only mod; repeat the flag once per mod.")
     ap.add_argument("--server", default=launch.DEFAULT_INSTANCE, type=launch.instance_name)
     ap.add_argument("--port", type=launch.port, default=2302)
     ap.add_argument("--build", action="store_true", help="Run /dayz-build-pbo <ModName> first.")

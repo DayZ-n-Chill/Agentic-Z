@@ -14,7 +14,7 @@ The panel opens by itself when a session starts. **Agentic-Z panel** just above 
 
 ## What it shows
 
-Whether P: is mounted, the active mod (from `/dayz-init`), and whether a DayZ test session is running, each with a green or red dot. The buttons sit in framed cards (Build and check, Test session, Tools, Ask vanilla DayZ), and the last run shows in a card framed green or red by its outcome.
+Whether P: is mounted, the active mod (from `/dayz-init`), and whether a DayZ test session is running, each with a green or red dot. The buttons sit in framed cards (Start a project, Build and test, Tools, Ask vanilla DayZ), and the last run shows in a card framed green or red by its outcome.
 
 `/dayz-panel` also replies in the chat with the same state, where Agentic-Z was found, and the last run.
 

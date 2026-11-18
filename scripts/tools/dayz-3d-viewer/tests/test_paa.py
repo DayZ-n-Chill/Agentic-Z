@@ -47,3 +47,23 @@ def test_swiz_tag_is_recorded_and_not_applied(tmp_path):
     source = inspect.getsource(paa_to_png.PAAFile.decode_mipmap)
     assert "SWIZ" not in source
     assert "tags" not in source
+
+
+def test_empty_paa_raises_viewer_error_not_struct_error(tmp_path):
+    from dayz_3d_viewer import ViewerError
+
+    empty = tmp_path / "empty.paa"
+    empty.write_bytes(b"")
+    with pytest.raises(ViewerError, match="truncated header"):
+        PAAFile(str(empty))
+
+
+def test_paa_without_mipmaps_raises_viewer_error_on_decode(tmp_path):
+    from dayz_3d_viewer import ViewerError
+
+    header_only = tmp_path / "nomips.paa"
+    header_only.write_bytes(PAA_RGBA8888.to_bytes(2, "little") + b"\x00\x00")
+    paa = PAAFile(str(header_only))
+    assert paa.mipmaps == []
+    with pytest.raises(ViewerError, match="No mipmaps"):
+        paa.decode_mipmap(0)

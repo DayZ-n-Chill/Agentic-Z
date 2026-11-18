@@ -49,3 +49,13 @@ def test_web_html_links_relative_glb(tmp_path):
     assert str(tmp_path) not in text
     assert str(glb) not in text
     assert "C:\\Users" not in text
+
+
+def test_embedded_textures_use_the_gltf_uv_convention_like_web_mode():
+    # GLTFLoader sets flipY=false; the embedded viewer is fed the same UVs, so its textures must match.
+    import inspect
+
+    from dayz_3d_viewer import viewer_template
+
+    source = inspect.getsource(viewer_template)
+    assert "const tx=new T.Texture(img);tx.flipY=false;" in source

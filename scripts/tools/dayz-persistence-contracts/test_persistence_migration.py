@@ -154,3 +154,16 @@ def test_truncated_record_discards_all_partial_state() -> None:
     assert result.verdict != "ok"
     assert result.applied_state is None
     assert reader.state == {"value": "preserved"}
+
+
+def test_legacy_bytes_that_do_not_decode_are_rejected_with_state_intact() -> None:
+    reader = MigrationReader(
+        current_version=2,
+        initial_state={"value": "preserved"},
+    )
+
+    result = reader.read(b"LEGACY:\xff", window="startup")
+
+    assert result.verdict == "reject_invalid"
+    assert result.applied_state is None
+    assert reader.state == {"value": "preserved"}

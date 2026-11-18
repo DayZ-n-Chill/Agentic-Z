@@ -13,7 +13,12 @@
   5 walk_into    not for --item: the player, facing the object from 4 m, walks 6 s; PASS when it stops
                  short of the object's centre (rays alone can pass while the player walks through)
   6 stand_on     not for --item: the player is put 0.2 m above the object's top (a ray down) and must
-                 stay up there two seconds later, while the same drop over empty ground beside it falls
+                 still be up there after a half-second step, while the same drop over empty ground beside
+                 it falls
+
+The controls (the WoodenCrate, the empty spot and the control drop) sit a fixed 3 m east or west of the
+object's centre, so the object must fit within 2.5 m of its centre east and west; a wider building puts
+the empty spot inside itself and fails checks 4 and 6 however good its model is.
 
 Writes output/<Class>-object-checks/<time>/report.json with the captures beside it.
 Exit codes: 0 every check passed, 1 one failed, 2 the run could not happen.
@@ -57,79 +62,81 @@ def run_checks(call: Callable[..., dict], capture: Callable[[Path], None], cls: 
 
     call("teleport", {"pos": [at[0], 0.0, at[1]]})
     spawn = call("spawn", {"cls": cls, "pos": [at[0], 0.0, at[1] + AHEAD_M]})
-    data = spawn.get("data") or {}
-    if not result("1 spawns", bool(spawn.get("ok")) and data.get("type") == cls, error=spawn.get("error"), pos=data.get("pos")):
-        R["stop"] = "1 spawns"
-        return R
-    net_id, pos = data["net_id"], data["pos"]
+    try:
+        data = spawn.get("data") or {}
+        if not result("1 spawns", bool(spawn.get("ok")) and data.get("type") == cls, error=spawn.get("error"), pos=data.get("pos")):
+            R["stop"] = "1 spawns"
+            return R
+        net_id, pos = data["net_id"], data["pos"]
 
-    # 2 placement
-    state = call("object_state", {"net_id": net_id}).get("data") or {}
-    ground = (call("surface", {"x": pos[0], "z": pos[2]}).get("data") or {}).get("ground_y", pos[1])
-    ori = state.get("ori") or [0, 0, 0]
-    pitch, roll = _signed(ori[1]), _signed(ori[2])
-    result("2 placement", abs(pos[1] - ground) <= 0.5 and abs(pitch) <= 10 and abs(roll) <= 10,
-           height_above_ground=round(pos[1] - ground, 3), pitch=round(pitch, 2), roll=round(roll, 2))
+        # 2 placement
+        state = call("object_state", {"net_id": net_id}).get("data") or {}
+        ground = (call("surface", {"x": pos[0], "z": pos[2]}).get("data") or {}).get("ground_y", pos[1])
+        ori = state.get("ori") or [0, 0, 0]
+        pitch, roll = _signed(ori[1]), _signed(ori[2])
+        result("2 placement", abs(pos[1] - ground) <= 0.5 and abs(pitch) <= 10 and abs(roll) <= 10,
+               height_above_ground=round(pos[1] - ground, 3), pitch=round(pitch, 2), roll=round(roll, 2))
 
-    # 3 pictures
-    call("hud", {"show": False})
-    shots, problems, last = [], [], None
-    for side, (dx, dz) in (("north", (0, 1)), ("east", (1, 0)), ("south", (0, -1)), ("west", (-1, 0))):
-        call("camera_set", {"pos": [pos[0] + dx * CAMERA_DIST_M, ground + CAMERA_HEIGHT_M, pos[2] + dz * CAMERA_DIST_M],
-                            "look_at": [pos[0], ground + 0.5, pos[2]]})
-        sleep(2.0)  # let the client draw from the new camera
-        png = out / f"{side}.png"
-        try:
-            capture(png)
-        except Exception as e:  # noqa: BLE001 - a failed capture is a failed check, not a crash
-            problems.append(f"{side}: {e}")
-            continue
-        digest = hashlib.sha256(png.read_bytes()).hexdigest()
-        if digest == last:
-            problems.append(f"{side}: stale, byte for byte the previous capture")
-        last = digest
-        shots.append(str(png))
-    call("camera_reset")
-    call("hud", {"show": True})
-    result("3 pictures", not problems and len(shots) == 4, captures=shots, problems=problems,
-           note="look at the four pictures for winding, scale and orientation")
+        # 3 pictures
+        call("hud", {"show": False})
+        shots, problems, last = [], [], None
+        for side, (dx, dz) in (("north", (0, 1)), ("east", (1, 0)), ("south", (0, -1)), ("west", (-1, 0))):
+            call("camera_set", {"pos": [pos[0] + dx * CAMERA_DIST_M, ground + CAMERA_HEIGHT_M, pos[2] + dz * CAMERA_DIST_M],
+                                "look_at": [pos[0], ground + 0.5, pos[2]]})
+            sleep(2.0)  # let the client draw from the new camera
+            png = out / f"{side}.png"
+            try:
+                capture(png)
+            except Exception as e:  # noqa: BLE001 - a failed capture is a failed check, not a crash
+                problems.append(f"{side}: {e}")
+                continue
+            digest = hashlib.sha256(png.read_bytes()).hexdigest()
+            if digest == last:
+                problems.append(f"{side}: stale, byte for byte the previous capture")
+            last = digest
+            shots.append(str(png))
+        call("camera_reset")
+        call("hud", {"show": True})
+        result("3 pictures", not problems and len(shots) == 4, captures=shots, problems=problems,
+               note="look at the four pictures for winding, scale and orientation")
 
-    # 4 collision, with a positive and a negative control
-    control = (call("spawn", {"cls": CONTROL_CLASS, "pos": [pos[0] + 3.0, 0.0, pos[2]]}).get("data") or {})
-    hits = _nine_rays(call, pos, ground, net_id)
-    positive = _nine_rays(call, control.get("pos") or pos, ground, control.get("net_id", "-")) if control else 0
-    negative = _nine_rays(call, [pos[0] - 3.0, ground, pos[2]], ground, None)
-    controls_ok = positive >= 1 and negative == 0
-    result("4 collision", controls_ok and hits >= 1, object_hits=hits, positive_control_hits=positive,
-           negative_control_hits=negative, of=9, controls_valid=controls_ok)
+        # 4 collision, with a positive and a negative control
+        control = (call("spawn", {"cls": CONTROL_CLASS, "pos": [pos[0] + 3.0, 0.0, pos[2]]}).get("data") or {})
+        hits = _nine_rays(call, pos, ground, net_id)
+        positive = _nine_rays(call, control.get("pos") or pos, ground, control.get("net_id", "-")) if control else 0
+        negative = _nine_rays(call, [pos[0] - 3.0, ground, pos[2]], ground, None)
+        controls_ok = positive >= 1 and negative == 0
+        result("4 collision", controls_ok and hits >= 1, object_hits=hits, positive_control_hits=positive,
+               negative_control_hits=negative, of=9, controls_valid=controls_ok)
 
-    # 5 walk_into and 6 stand_on (statics only)
-    if item:
-        result("5 walk_into", None, note="skipped for an item")
-        result("6 stand_on", None, note="skipped for an item")
-    else:
-        call("teleport", {"pos": [pos[0], 0.0, pos[2] - 4.0]})
-        call("look_at", {"pos": [pos[0], ground + 1.5, pos[2]]})
-        walk = call("walk", {"seconds": 6, "speed": 1})
-        end = (walk.get("data") or {}).get("pos") or [0, 0, pos[2] + 9]
-        result("5 walk_into", end[2] < pos[2] - 0.2, player_end=end, object_centre=pos,
-               note="a player that passes the centre walked through the object")
-        top = _top(call, pos)
-        if top is None:
-            result("6 stand_on", False, note="no surface found by a ray down onto the object")
+        # 5 walk_into and 6 stand_on (statics only)
+        if item:
+            result("5 walk_into", None, note="skipped for an item")
+            result("6 stand_on", None, note="skipped for an item")
         else:
-            # Measured: a player put in mid-air reads back at that height until it moves, so each
-            # drop is followed by a half-second step before the height is read.
-            call("teleport", {"pos": [pos[0], top + 0.2, pos[2]], "ground": False})
-            y = (call("walk", {"seconds": 0.5, "speed": 1}).get("data") or {}).get("pos", [0, 0, 0])[1]
-            # The control: the same drop over empty ground beside it must fall, or the read proves nothing.
-            call("teleport", {"pos": [pos[0] - 3.0, top + 0.2, pos[2]], "ground": False})
-            fell = (call("walk", {"seconds": 0.5, "speed": 1}).get("data") or {}).get("pos", [0, 0, 0])[1]
-            control_ok = fell < top - 0.5
-            result("6 stand_on", control_ok and y >= top - 0.3, top=round(top, 3), player_y=round(y, 3),
-                   control_player_y=round(fell, 3), control_fell=control_ok)
-
-    R["cleanup"] = call("clear_spawns").get("data")
+            call("teleport", {"pos": [pos[0], 0.0, pos[2] - 4.0]})
+            call("look_at", {"pos": [pos[0], ground + 1.5, pos[2]]})
+            walk = call("walk", {"seconds": 6, "speed": 1})
+            end = (walk.get("data") or {}).get("pos") or [0, 0, pos[2] + 9]
+            result("5 walk_into", end[2] < pos[2] - 0.2, player_end=end, object_centre=pos,
+                   note="a player that passes the centre walked through the object")
+            top = _top(call, pos)
+            if top is None:
+                result("6 stand_on", False, note="no surface found by a ray down onto the object")
+            else:
+                # Measured: a player put in mid-air reads back at that height until it moves, so each
+                # drop is followed by a half-second step before the height is read.
+                call("teleport", {"pos": [pos[0], top + 0.2, pos[2]], "ground": False})
+                y = (call("walk", {"seconds": 0.5, "speed": 1}).get("data") or {}).get("pos", [0, 0, 0])[1]
+                # The control: the same drop over empty ground beside it must fall, or the read proves nothing.
+                call("teleport", {"pos": [pos[0] - 3.0, top + 0.2, pos[2]], "ground": False})
+                fell = (call("walk", {"seconds": 0.5, "speed": 1}).get("data") or {}).get("pos", [0, 0, 0])[1]
+                control_ok = fell < top - 0.5
+                result("6 stand_on", control_ok and y >= top - 0.3, top=round(top, 3), player_y=round(y, 3),
+                       control_player_y=round(fell, 3), control_fell=control_ok)
+    finally:
+        # Every path after the spawn, an early stop or a raised bridge error included, removes what it spawned.
+        R["cleanup"] = call("clear_spawns").get("data")
     return R
 
 

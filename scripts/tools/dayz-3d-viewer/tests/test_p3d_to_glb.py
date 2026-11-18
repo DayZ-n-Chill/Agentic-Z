@@ -103,3 +103,14 @@ def test_proxy_faces_are_exported_as_geometry(tmp_path):
     triangle_count = sum(len(indices) // 3 for indices in geo["material_groups"].values())
     assert triangle_count == 2
     assert len(geo["positions"]) == 6
+
+
+def test_uvs_keep_dayz_v_because_gltf_also_puts_v0_at_the_top(tmp_path):
+    lod = make_triangle_lod()
+    for index, vertex in enumerate(lod.faces[0].vertices):
+        vertex.uv = (0.25 * index, 0.1 + 0.2 * index)
+    path = save_model(tmp_path / "uv.p3d", [lod])
+    with path.open("rb") as handle:
+        model = py3d.P3D(handle)
+    geo = extract_lod_geometry(find_best_visual_lod(model))
+    assert [tuple(round(c, 5) for c in uv) for uv in geo["uvs"]] == [(0.0, 0.1), (0.25, 0.3), (0.5, 0.5)]

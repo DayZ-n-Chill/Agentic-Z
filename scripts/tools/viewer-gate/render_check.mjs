@@ -82,17 +82,24 @@ const minDraws = Number(flag('--min-draws', '1'));
 // that draws triangles satisfies it - so it is a cheap extra net, never proof.
 const minTriDraws = Number(flag('--min-tri-draws', '0'));
 if (!target) {
-  console.error('usage: render_check.mjs <html|url> [--png f] [--expected-three V] [--min-draws N]');
+  console.error('usage: render_check.mjs <html|url> [--png f] [--expected-three V] [--min-draws N] [--min-tri-draws N]');
   process.exit(2);
 }
 // A bare relative path used to become file:///controls/x.html (cwd dropped).
 const url = /^https?:\/\//.test(target) ? target : pathToFileURL(path.resolve(process.cwd(), target)).href;
 
-const browser = await puppeteer.launch({
-  headless: 'new',
-  ...(CHROME ? { executablePath: CHROME } : {}),
-  args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox']
-});
+let browser;
+try {
+  browser = await puppeteer.launch({
+    headless: 'new',
+    ...(CHROME ? { executablePath: CHROME } : {}),
+    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox']
+  });
+} catch (e) {
+  // Exit 2 (the run could not happen), not 1 (a failed check).
+  console.error('Cannot launch Chrome. Set PUPPETEER_EXECUTABLE_PATH (or CHROME_PATH) to a Chrome or Chromium binary.\n  ' + String(e).slice(0, 300));
+  process.exit(2);
+}
 const page = await browser.newPage();
 const pageErrors = [], failedReq = [], consoleErrors = [], threeRequested = new Set();
 page.on('pageerror', e => pageErrors.push(String(e).slice(0, 220)));
