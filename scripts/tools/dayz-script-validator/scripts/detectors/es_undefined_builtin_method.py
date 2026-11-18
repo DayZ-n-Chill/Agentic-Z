@@ -28,7 +28,7 @@ ES_UNDEFINED_BUILTIN_METHOD_RULE_ID = "ES-UNDEFINED-BUILTIN-METHOD"
 
 # A call to a method that the game's own declaration of a built-in type does
 # not have stops the whole script module from compiling. On a DayZDiag
-# 1.30.164200 server, 2026-11-03:
+# 1.30.164200 server:
 #
 #   vector gU = gF.Cross(gR);
 #   gR = gU.Cross(gF);
@@ -119,7 +119,7 @@ def _one_template(targs):
     _declaration_re() reads `<...>` lazily up to any `>` before the name, so
     in `F(array<ref X> a, bool b, map<string, int> m)` the match for m runs
     from array's `<` to map's `>` and names array as the type (measured on
-    two mods, 2026-11-03: `m.GetKey(` and `m.Contains(` reported on array).
+    two mods: `m.GetKey(` and `m.Contains(` reported on array).
     """
     depth = 0
     text = targs.strip()
@@ -364,8 +364,8 @@ def check_es_undefined_builtin_method(
             if builtin is not None:
                 # `Widget map = ...; map.ClearFlags(...)` names a variable
                 # after the type, which ES-VARIABLE-NAMED-AS-TYPE reports: the
-                # call is not the type's (measured on a mod's backup,
-                # 2026-11-03).
+                # call is not the type's (measured on a mod's
+                # backup).
                 if recv not in variables:
                     variables[recv] = _declares_variable(stripped, recv, scopes)
                 if variables[recv]:

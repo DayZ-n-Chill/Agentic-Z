@@ -6219,7 +6219,7 @@ def fibonacci_sphere(n):
 
 
 def vis_orthonormal_basis(d):
-    """d is unit look-from-camera direction. Returns (u, v, d). [EXACT] g1."""
+    """d is unit look-from-camera direction. Returns (u, v, d). Exact for gate g1."""
     d = d.normalized()
     up = Vector((0.0, 0.0, 1.0)) if abs(d.z) < 0.9 else Vector((1.0, 0.0, 0.0))
     u = d.cross(up)
@@ -7597,7 +7597,7 @@ Variant B gives **{linear_gain:.3f}%** more useful linear resolution than A; the
 - The frame packing is at `project_atlas.py:{line_frames}`. No island packer was run.
 - This run drew no PNG files. Drawing the atlas images is a separate manual step that needs a renderer not shipped with this skill.
 
-[EXACT]
+The exact command for this run:
 
 ```powershell
 blender -b '.\retopo_final.blend' --python '.\project_atlas.py' -- '.\out_g9\assignment_REAL.json' '.\out_g10'

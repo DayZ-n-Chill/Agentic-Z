@@ -129,7 +129,7 @@ original, so a proxy selection goes from one face to two and
 
 ## Blender → DayZ: what was measured
 
-Measured 2026-10-01 on DayZDiag 1.29.163709, so nobody has to re-run it. One
+Measured on DayZDiag 1.29.163709, so nobody has to re-run it. One
 chiral model — an "F" in relief on a plate, authored in Blender space with
 outward counter-clockwise faces and outward normals, a single visual LOD of 48
 triangles — was written three ways, binarized with AddonBuilder and looked at
@@ -170,7 +170,7 @@ frame, not a drive. Drawn as a canonical raw triangle with the identity frame
 (the one vanilla `Motorbike_02` gives its crew and wheels, and one of the
 three poses above), such a proxy comes out of binarize as
 `add_proxy(space="engine")` writes it, and that engine-space path is the one
-a py3d-built motorbike was driven with in game (2026-09-23: all three
+a py3d-built motorbike was driven with in game (all three
 variants started and drove, one up to 137 km/h). That covers the proxy frame
 only: the vehicle's selections, bones, model.cfg bindings and LODs still have
 to match a working model. And a frame is not a pose: on the same motorbike a
@@ -188,7 +188,7 @@ raycasts), and any model built partly in DayZ space before the conversion.
 
 ## What `#Selected#` is worth
 
-Measured 2026-09-02, so nobody has to re-run it.
+Measured once, so nobody has to re-run it.
 
 **The game never sees it.** Five variants of `sedanwheel_mlod.p3d` (8 LODs)
 differing *only* in the tag were binarized with
@@ -239,7 +239,7 @@ noise reads as signal.
   collision in View and Fire.** Up to 1.8.0 `ERR_COMPONENT_NAMING` ran on the
   Geometry LOD alone and fired on a lowercase `component01` ("Engine requires
   'Component01' (uppercase C); collision silently fails"). In game (DayZDiag
-  1.29.163709, 2026-10-02) `component01` collided exactly like `Component01`
+  1.29.163709) `component01` collided exactly like `Component01`
   in `geom`, `view` and `fire` rays, the physics ray and a walking player,
   packed unbinarized and binarized, and binarize writes both names as
   `component01`; a box with no component in its Geometry, View and Fire LODs
