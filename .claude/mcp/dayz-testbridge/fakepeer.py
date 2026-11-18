@@ -92,5 +92,5 @@ class FakePeer:
         (res_dir / f"{seq}.json").write_text(json.dumps(
             {"seq": seq, "ok": ok, "error": error, "peer": self.peer, "game_time_ms": 1000 + seq, "data": data}),
             encoding="utf-8")
-        path.unlink()
+        path.unlink(missing_ok=True)  # a second fake peer on the same folder may have taken it
         self.next += 1

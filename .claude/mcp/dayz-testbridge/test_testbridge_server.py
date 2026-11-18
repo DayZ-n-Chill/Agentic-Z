@@ -127,6 +127,30 @@ def test_the_app_registers_its_tools():
     app = server.build_app()
     tools = anyio.run(app.list_tools)
     assert {t.name for t in tools} == {"list_commands", "session_start", "session_status", "session_stop",
+                                       "session_restart", "session_restart_client",
                                        "command", "mark", "logs_since", "screenshot"}
     read_only = {t.name for t in tools if t.annotations and t.annotations.readOnlyHint}
     assert read_only == {"list_commands", "session_status", "logs_since"}
+
+
+def test_a_capture_byte_for_byte_like_the_previous_one_is_flagged_stale(running):
+    def same(pid, out, crop):
+        out.write_bytes(b"identical frame")
+        return (64, 48)
+
+    first = server.screenshot_impl("a", None, same)
+    second = server.screenshot_impl("b", None, same)
+    assert first["ok"] and not first["same_as_previous"]
+    assert second["ok"] is False and second["same_as_previous"] and "stale" in second["error"]
+
+
+def test_exec_is_refused_unless_the_session_opted_in_and_is_logged_when_it_did(running):
+    project, rt = running
+    with pytest.raises(allowlist.AllowlistError, match="allow_exec"):
+        server.command_impl("exec", {"code": "Print(1);"}, "server", rt)
+    state = session.load_state(project)
+    state["allow_exec"] = True
+    session.save_state(project, state)
+    server.command_impl("exec", {"code": "Print(\"hi\");"}, "server", rt)  # the fake peer answers unknown_command
+    log = session.exec_log_path(project, TOKEN).read_text(encoding="utf-8")
+    assert "server seq 1" in log and 'Print("hi");' in log

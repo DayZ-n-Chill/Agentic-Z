@@ -16,6 +16,7 @@ Facts and limits: skills/dayz-launch-test/references/test-bridge.md.
 """
 from __future__ import annotations
 
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -63,8 +64,16 @@ def list_commands_impl() -> dict:
 
 
 def session_start_impl(mods: list[str], deps: list[str], server: str, port: int,
-                       rt: Optional[session.Runtime] = None) -> dict:
-    return session.start(_project(), mods, deps, server, port, rt=rt)
+                       rt: Optional[session.Runtime] = None, allow_exec: bool = False) -> dict:
+    return session.start(_project(), mods, deps, server, port, rt=rt, allow_exec=allow_exec)
+
+
+def session_restart_impl(keep_storage: bool, rt: Optional[session.Runtime] = None) -> dict:
+    return session.restart(_project(), keep_storage, rt)
+
+
+def session_restart_client_impl(rt: Optional[session.Runtime] = None) -> dict:
+    return session.restart_client(_project(), rt)
 
 
 def session_status_impl(rt: Optional[session.Runtime] = None) -> dict:
@@ -142,7 +151,16 @@ def screenshot_impl(name: str, crop: Optional[list[int]] = None, capture=None) -
     except window_capture.CaptureError as e:
         # A black or missing frame is a failed capture, not a verdict on the mod (screenshots-and-cameras.md).
         return {"ok": False, "all_black": "all black" in str(e), "error": str(e), "path": None}
-    return {"ok": True, "all_black": False, "path": str(out), "width": size[0], "height": size[1]}
+    # A stale picture: the same bytes as the previous capture of this session, which a
+    # live game window almost never gives twice (test-bridge.md, "Measured").
+    digest = hashlib.sha256(out.read_bytes()).hexdigest()
+    fresh = session.load_state(project) or state
+    stale = digest == fresh.get("last_shot_sha")
+    fresh["last_shot_sha"] = digest
+    session.save_state(project, fresh)
+    return {"ok": not stale, "all_black": False, "same_as_previous": stale, "path": str(out),
+            "width": size[0], "height": size[1],
+            **({"error": "stale: byte for byte the previous capture; wait and capture again"} if stale else {})}
 
 
 # --- the MCP app -----------------------------------------------------------------------------
@@ -165,13 +183,14 @@ def build_app():
 
     @mcp.tool(annotations=acts)
     async def session_start(mods: Optional[list[str]] = None, deps: Optional[list[str]] = None, server: str = "chernarus",
-                            port: int = 2302) -> dict:
+                            port: int = 2302, allow_exec: bool = False) -> dict:
         """Start a test session: copy .server/<server>/ to <server>-bridge without storage, pack the
         AZ_TestBridge mod, launch the DayZ Diag server and client with `deps` then `mods` (built PBOs
         under P:\\Mods\\; empty for vanilla), wait until both peers answer with the player loaded,
         and close the pause menu. Refuses while any DayZDiag_x64.exe this tool did not start runs.
-        Takes up to about 5 minutes. Always call session_stop when done."""
-        return await anyio.to_thread.run_sync(session_start_impl, mods or [], deps or [], server, port)
+        Takes up to about 5 minutes. Always call session_stop when done. allow_exec=true turns on the
+        exec command (any Enforce Script) for this session only; every code string is logged."""
+        return await anyio.to_thread.run_sync(lambda: session_start_impl(mods or [], deps or [], server, port, None, allow_exec))
 
     @mcp.tool(annotations=read_only)
     async def session_status() -> dict:
@@ -184,6 +203,20 @@ def build_app():
         """Stop the session this tool started: get the player out of a car, end only its own two
         processes, remove @AZ_TestBridge and close the token folders. Safe to call after a failure."""
         return await anyio.to_thread.run_sync(session_stop_impl)
+
+    @mcp.tool(annotations=acts)
+    async def session_restart(keep_storage: bool = True) -> dict:
+        """Shut the server down in order (it saves its world), then start server and client again
+        with the same mods and token. keep_storage=true keeps what this session's server saved, so a
+        mod's saved data can be checked after a restart; false starts from a fresh storage-free copy.
+        Reports whether the shutdown was graceful. Takes a few minutes."""
+        return await anyio.to_thread.run_sync(session_restart_impl, keep_storage)
+
+    @mcp.tool(annotations=acts)
+    async def session_restart_client() -> dict:
+        """End only this session's client and start it again into the running server: for a frozen
+        picture, a client bound to its first car, or get_in failing again and again."""
+        return await anyio.to_thread.run_sync(session_restart_client_impl)
 
     @mcp.tool(annotations=acts)
     async def command(cmd: str, args: Optional[dict] = None, peer: Optional[str] = None) -> dict:

@@ -178,3 +178,47 @@ def test_copy_refuses_a_bridge_copy_and_a_missing_instance(project):
         session.copy_instance(project, "chernarus-bridge")
     with pytest.raises(session.SessionError, match="not set up"):
         session.copy_instance(project, "livonia")
+
+
+def test_restart_shuts_down_in_order_keeps_the_storage_and_relaunches_with_the_same_token(project):
+    game = FakeGame()
+    try:
+        out = session.start(project, ["MyMod"], rt=game.runtime(project), hello_timeout=5)
+        storage = project / ".server" / "chernarus-bridge" / "mission" / "storage_1"
+        storage.mkdir()  # what the session's own server saved
+        game.server_handlers["shutdown"] = lambda a: (game.running.remove(111) or True, "", {})
+        game.peers[0].handlers["shutdown"] = game.server_handlers["shutdown"]
+        launches = len(game.cmds)
+        res = session.restart(project, keep_storage=True, rt=game.runtime(project), hello_timeout=5, shutdown_timeout=5)
+        assert res["graceful_shutdown"] and res["storage"] == ["storage_1"] and storage.is_dir()
+        assert len(game.cmds) == launches + 1 and game.cmds[-1][-2:] == ["--test-bridge", out["token"]]
+        assert 222 in game.killed and 111 not in game.killed  # the client was ended, the server exited itself
+    finally:
+        session.stop(project, game.runtime(project))
+        game.close()
+
+
+def test_restart_client_waits_for_the_server_to_drop_the_old_player(project, monkeypatch):
+    game = FakeGame()
+    try:
+        session.start(project, ["MyMod"], rt=game.runtime(project), hello_timeout=5)
+        counts = iter([1, 1, 0])
+        game.peers[0].handlers["ping"] = lambda a: (True, "", {"player_count": next(counts), "player_loaded": True})
+        spawned = []
+
+        def spawn(cmd):
+            spawned.append(cmd)
+            game.running.append(333)
+            folder = bridge.session_dir(game.dirs["client"], session.load_state(project)["token"])
+            (folder / "hello.json").write_text(json.dumps({"peer": "client", "token": folder.name, "player_loaded": True}),
+                                             encoding="utf-8")
+            return 333
+
+        rt = game.runtime(project)._replace(spawn=spawn)
+        monkeypatch.setattr(session, "client_command", lambda project_dir, state: ["DayZDiag_x64.exe", f"-azBridge={state['token']}"])
+        res = session.restart_client(project, rt, hello_timeout=5)
+        assert res["pids"]["client"] == 333 and 222 in game.killed and spawned
+        assert session.load_state(project)["pids"]["client"] == 333
+    finally:
+        session.stop(project, game.runtime(project))
+        game.close()

@@ -38,6 +38,7 @@ import logs  # noqa: E402
 import skill_helpers as h  # noqa: E402
 
 behavior = h.load_module("dayz_testbridge_behavior", SKILLS / "dayz-gate" / "behavior.py")
+launch = h.load_module("dayz_testbridge_launch", SKILLS / "dayz-launch-test" / "launch.py")
 
 LAUNCH_PY = SKILLS / "dayz-launch-test" / "launch.py"
 BRIDGE_SOURCE = SKILLS / "dayz-launch-test" / "assets" / "testbridge-mod" / "src" / "AZ_TestBridge"
@@ -48,6 +49,8 @@ DIAG_EXE = "DayZDiag_x64.exe"
 P_DRIVE = Path("P:\\")
 HELLO_TIMEOUT_S = 300.0
 STOP_WAIT_S = 30.0
+SHUTDOWN_WAIT_S = 180.0  # an orderly server exit saves the world first
+LOGOUT_WAIT_S = 240.0    # how long a restarted client waits for the server to drop the old player
 EJECT_TIMEOUT_S = 5.0  # session_stop asks the server where the player is; a silent bridge must not hold the stop
 
 
@@ -81,6 +84,7 @@ class Runtime(NamedTuple):
     kill: Callable[[int], None]
     sleep: Callable[[float], None] = time.sleep
     clock: Callable[[], float] = time.monotonic
+    spawn: Callable[[list[str]], int] = lambda cmd: subprocess.Popen(cmd, close_fds=True, creationflags=h.DETACH_FLAGS).pid
 
 
 def real_runtime() -> Runtime:
@@ -149,6 +153,7 @@ def bridge_of(project_dir: Path, state: dict, rt: Runtime) -> bridge.Bridge:
     return bridge.Bridge(
         state["token"], {p: Path(d) for p, d in state["dirs"].items()},
         alive=alive, clock=rt.clock, sleep=rt.sleep, spawns=state.get("spawns", 0),
+        allow_exec=bool(state.get("allow_exec")), exec_log=exec_log_path(project_dir, state["token"]),
     )
 
 
@@ -191,7 +196,9 @@ def copy_instance(project_dir: Path, instance: str) -> str:
 # --- start, status, stop ----------------------------------------------------------------
 
 def start(project_dir: Path, mods: list[str], deps: Optional[list[str]] = None, server: str = "chernarus",
-          port: int = 2302, rt: Optional[Runtime] = None, hello_timeout: float = HELLO_TIMEOUT_S) -> dict:
+          port: int = 2302, rt: Optional[Runtime] = None, hello_timeout: float = HELLO_TIMEOUT_S,
+          allow_exec: bool = False) -> dict:
+    """Start a session. allow_exec turns on the `exec` command for this session only (owner decision 3, revised)."""
     rt = rt or real_runtime()
     deps = [d.lstrip("@") for d in deps or []]
     mods = [m.lstrip("@") for m in mods]  # empty: vanilla with the bridge only
@@ -208,9 +215,27 @@ def start(project_dir: Path, mods: list[str], deps: Optional[list[str]] = None, 
     dirs = peer_dirs(project_dir, copy)
     for d in dirs.values():
         bridge.make_dirs(bridge.session_dir(d, token))
-    offsets = logs.snapshot(dirs)
+    state = {"token": token, "instance": copy, "port": port, "mods": mods, "deps": deps, "pids": {},
+             "dirs": {p: str(d) for p, d in dirs.items()}, "offsets": logs.snapshot(dirs), "marks": {}, "spawns": 0,
+             "mod_line": "", "allow_exec": bool(allow_exec), "restarts": 0,
+             "started": datetime.now().isoformat(timespec="seconds")}
     rt.install()
-    cmd = [sys.executable, str(LAUNCH_PY), *deps, *mods, "--server", copy, "--port", str(port), "--test-bridge", token]
+    _launch(project_dir, state, rt)
+    return {**_await_ready(project_dir, state, rt, hello_timeout), "token": token, "instance": copy,
+            "allow_exec": state["allow_exec"], "exec_log": str(exec_log_path(project_dir, token)) if allow_exec else None,
+            "state": str(state_path(project_dir))}
+
+
+def exec_log_path(project_dir: Path, token: str) -> Path:
+    return state_path(project_dir).parent / f"exec-{token}.log"
+
+
+def _launch(project_dir: Path, state: dict, rt: Runtime) -> None:
+    """Run /dayz-launch-test for the session's mods, instance and token; record the two process ids."""
+    cmd = [sys.executable, str(LAUNCH_PY), *state["deps"], *state["mods"], "--server", state["instance"],
+           "--port", str(state["port"]), "--test-bridge", state["token"]]
+    if state.get("allow_exec"):
+        cmd.append("--test-bridge-exec")
     rc, out = rt.run(cmd)
     pids = {}
     for peer in ("server", "client"):
@@ -218,10 +243,8 @@ def start(project_dir: Path, mods: list[str], deps: Optional[list[str]] = None, 
         if m:
             pids[peer] = int(m.group(1))
     mod_line = re.search(r"-mod=(\S+)", out)
-    state = {"token": token, "instance": copy, "port": port, "mods": mods, "deps": deps, "pids": pids,
-             "dirs": {p: str(d) for p, d in dirs.items()}, "offsets": offsets, "marks": {}, "spawns": 0,
-             "mod_line": mod_line.group(1) if mod_line else "",
-             "started": datetime.now().isoformat(timespec="seconds")}
+    state["pids"] = pids
+    state["mod_line"] = mod_line.group(1) if mod_line else state.get("mod_line", "")
     if pids:
         save_state(project_dir, state)
     if rc != 0 or len(pids) != 2:
@@ -229,17 +252,117 @@ def start(project_dir: Path, mods: list[str], deps: Optional[list[str]] = None, 
         tail = "\n".join(out.strip().splitlines()[-15:])
         raise SessionError(f"/dayz-launch-test exited {rc} and the session was stopped again:\n{tail}")
 
+
+def _await_ready(project_dir: Path, state: dict, rt: Runtime, hello_timeout: float, peers=("server", "client")) -> dict:
+    """Wait for the hellos (the client's with its player loaded), then close the pause menu."""
     b = bridge_of(project_dir, state, rt)
     try:
-        hellos = b.wait_hellos(["server", "client"], hello_timeout,
+        hellos = b.wait_hellos(list(peers), hello_timeout,
                                lambda peer, hello: peer == "server" or bool(hello.get("player_loaded")))
         resumed = b.call("resume")
     except bridge.BridgeError as e:
         stop(project_dir, rt, state=state)
         raise SessionError(f"the session started but the bridge did not answer ({e}); it was stopped again. "
                            "Read the client and server script logs for a compile error in AZ_TestBridge.") from e
-    return {"token": token, "instance": copy, "pids": pids, "hellos": hellos, "resume": resumed,
-            "mod_line": state["mod_line"], "state": str(state_path(project_dir))}
+    return {"pids": state["pids"], "hellos": hellos, "resume": resumed, "mod_line": state["mod_line"]}
+
+
+def _clear_hello(state: dict, peer: str) -> None:
+    (bridge.session_dir(Path(state["dirs"][peer]), state["token"]) / "hello.json").unlink(missing_ok=True)
+
+
+def _wait_gone(rt: Runtime, pids: list[int], timeout: float) -> bool:
+    deadline = rt.clock() + timeout
+    while set(pids) & set(rt.diag_pids()):
+        if rt.clock() >= deadline:
+            return False
+        rt.sleep(1)
+    return True
+
+
+def restart(project_dir: Path, keep_storage: bool = True, rt: Optional[Runtime] = None,
+            hello_timeout: float = HELLO_TIMEOUT_S, shutdown_timeout: float = SHUTDOWN_WAIT_S) -> dict:
+    """Shut the server down in order (it saves its world), then start server and client again.
+
+    keep_storage keeps the storage this session's own server wrote in the
+    storage-free copy, so a mod's saved data can be checked after a restart
+    (owner decision 1 still holds: the copy starts without storage). With
+    keep_storage=False the copy is made fresh again. The token stays, so the
+    sequence numbers go on; each peer skips commands that already have results.
+    """
+    rt = rt or real_runtime()
+    state = load_state(project_dir)
+    if state is None:
+        raise SessionError("no session is running; run session_start first")
+    b = bridge_of(project_dir, state, rt)
+    pids = dict(state["pids"])
+    running = set(rt.diag_pids())
+    steps: list[dict] = []
+    if pids.get("client") in running:  # out of any car first, then the client goes, so the server saves no seated player
+        try:
+            if b.call("player_state", timeout=EJECT_TIMEOUT_S)["data"].get("in_vehicle"):
+                b.call("get_out")
+        except bridge.BridgeError as e:
+            steps.append({"step": "get-out", "error": str(e)})
+        rt.kill(pids["client"])
+    graceful = False
+    if pids.get("server") in running:
+        b.call("shutdown")
+        graceful = _wait_gone(rt, [pids["server"]], shutdown_timeout)
+        if not graceful:
+            rt.kill(pids["server"])
+            _wait_gone(rt, [pids["server"]], STOP_WAIT_S)
+    _wait_gone(rt, [p for p in pids.values()], STOP_WAIT_S)
+    steps.append({"step": "shutdown", "graceful": graceful})
+    if not keep_storage:
+        copy_instance(project_dir, state["instance"][:-len(INSTANCE_SUFFIX)])
+    storage = sorted(p.name for p in (server_root(project_dir) / state["instance"] / "mission").glob("storage_*"))
+    for peer in ("server", "client"):
+        _clear_hello(state, peer)
+    state["restarts"] = state.get("restarts", 0) + 1
+    state["spawns"] = 0  # the restarted server spawns afresh; its clear_spawns list starts empty
+    _launch(project_dir, state, rt)
+    ready = _await_ready(project_dir, state, rt, hello_timeout)
+    return {**ready, "steps": steps, "graceful_shutdown": graceful, "storage_kept": keep_storage, "storage": storage}
+
+
+def restart_client(project_dir: Path, rt: Optional[Runtime] = None, hello_timeout: float = HELLO_TIMEOUT_S) -> dict:
+    """End only the client and start it again into the running server (a stuck picture, a client bound to its first car)."""
+    rt = rt or real_runtime()
+    state = load_state(project_dir)
+    if state is None:
+        raise SessionError("no session is running; run session_start first")
+    running = set(rt.diag_pids())
+    if state["pids"].get("server") not in running:
+        raise SessionError("the session's server is not running; use session_restart")
+    if state["pids"].get("client") in running:
+        rt.kill(state["pids"]["client"])
+        _wait_gone(rt, [state["pids"]["client"]], STOP_WAIT_S)
+    # Measured: a client started while the server still held the killed client's player
+    # was refused (error 0x00040033) and fell back to the main menu. Wait for the server to let go.
+    b = bridge_of(project_dir, state, rt)
+    deadline = rt.clock() + LOGOUT_WAIT_S
+    while b.call("ping", peer="server")["data"].get("player_count"):
+        if rt.clock() >= deadline:
+            raise SessionError(f"the server still holds the old client's player after {LOGOUT_WAIT_S:g} s")
+        rt.sleep(3)
+    _clear_hello(state, "client")
+    state["pids"]["client"] = rt.spawn(client_command(project_dir, state))
+    save_state(project_dir, state)
+    return _await_ready(project_dir, state, rt, hello_timeout, peers=("client",))
+
+
+def client_command(project_dir: Path, state: dict) -> list[str]:
+    """The client line /dayz-launch-test builds for this session, bridge and token included."""
+    diag = launch.resolve_diag_client()
+    _, _, _, client_profile = launch.verify_instance_environment(state["instance"], project_dir)
+    mod_arg = ";".join(str(launch.MODS_ROOT / f"@{n}") for n in state["deps"] + state["mods"])
+    display = launch.read_client_display_prefs(project_dir)
+    cmd = launch.add_test_bridge(mod_arg, launch.build_client_cmd(diag, mod_arg, state["port"], client_profile, display),
+                                 state["token"])
+    if state.get("allow_exec"):
+        cmd.append("-azBridgeExec=1")
+    return cmd
 
 
 def status(project_dir: Path, rt: Optional[Runtime] = None) -> dict:
