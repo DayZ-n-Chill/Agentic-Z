@@ -24,7 +24,9 @@ rerun backs up only the files someone edited by hand.
 
 Exit codes: 0 written (warnings allowed), 2 error (bad arguments, no project,
 no mod folder, no config.cpp, a config.cpp that does not parse, a --since ref
-that is not in the history, an output folder inside the mod folder).
+that is not in the history, an output folder inside the mod folder, a release
+that names the in-game test mod AZ_TestBridge or an AZB_ class in its
+requiredAddons, its --deps or its packed files).
 """
 from __future__ import annotations
 
@@ -328,6 +330,63 @@ def mod_facts(mod: str, mod_dir: Path, deps: Optional[list[str]] = None, p_mods:
     }
 
 
+# --- the in-game test bridge never ships ---------------------------------------
+
+# AZ_TestBridge is the Diag-only test mod /dayz-launch-test loads for a test
+# session, and AZB_ prefixes its classes (output/in-game-test-tool/PLAN.md,
+# sections 4 and 11). A release that requires, loads or packs any of it is refused.
+BRIDGE_MOD = "AZ_TestBridge"
+BRIDGE_RE = re.compile(rb"(?i)\b(?:AZ_TestBridge|AZB_\w+)")
+# The files a PBO carries that can name an addon or a class: configs, scripts,
+# layouts, data files, a binarized config.bin and built .pbo files themselves.
+BRIDGE_SCAN_SUFFIXES = {".c", ".cpp", ".hpp", ".h", ".inc", ".layout", ".xml", ".json", ".bin", ".pbo"}
+
+
+def _bridge_files(mod: str, mod_dir: Path, p_mods: Optional[Path]) -> list[tuple[Path, Path]]:
+    """(file, folder it is shown relative to) for every file of the mod that is packed or was built.
+
+    That is the mod source (dot folders and Keys/ left out, Addons/ kept for its
+    built PBOs) and the deployed P:\\Mods\\@<mod>\\Addons\\ when the drive is there.
+    """
+    out = []
+    for path in mod_dir.rglob("*"):
+        rel = path.relative_to(mod_dir).parts
+        if any(p.startswith(".") or p.lower() == "keys" for p in rel[:-1]) or not path.is_file():
+            continue
+        if path.suffix.lower() in BRIDGE_SCAN_SUFFIXES or path.name.lower() in ("$pboprefix$", "$prefix$"):
+            out.append((path, mod_dir))
+    deployed = p_mods / f"@{mod}" / "Addons" if p_mods is not None else None
+    try:
+        if deployed is not None and deployed.is_dir():
+            out += [(p, deployed) for p in sorted(deployed.iterdir()) if p.suffix.lower() == ".pbo" and p.is_file()]
+    except OSError:
+        pass
+    return out
+
+
+def bridge_refs(facts: dict, mod_dir: Path, p_mods: Optional[Path]) -> list[str]:
+    """Every place the mod names AZ_TestBridge or an AZB_ class: requiredAddons, --deps, packed files."""
+    refs = []
+    if facts["mod"].lower() == BRIDGE_MOD.lower():
+        refs.append(f"the mod itself is {BRIDGE_MOD}")
+    refs += [f"requiredAddons names {a}" for a in facts["required_addons"] if BRIDGE_RE.fullmatch(a.encode())]
+    refs += [f"--deps names @{d}" for d in facts["deps"] if BRIDGE_RE.fullmatch(d.encode())]
+    for path, base in _bridge_files(facts["mod"], mod_dir, p_mods):
+        try:
+            data = path.read_bytes()
+        except OSError:
+            continue
+        m = BRIDGE_RE.search(data)
+        if m is None:
+            continue
+        where = path.relative_to(base).as_posix() if base == mod_dir else str(path)
+        if path.suffix.lower() not in (".pbo", ".bin"):
+            line = data.count(b"\n", 0, m.start()) + 1
+            where += f":{line}"
+        refs.append(f"{where} names {m.group().decode('ascii', 'replace')}")
+    return refs
+
+
 def load_order(facts: dict) -> list[str]:
     return [f"@{d}" for d in facts["deps"]] + [f"@{facts['mod']}"]
 
@@ -600,6 +659,11 @@ def _backup_if_edited(path: Path, text: str, written: Optional[str]) -> Optional
 def release_pack(mod: str, mod_dir: Path, out_dir: Path, version: str = "Unreleased", since: Optional[str] = None,
                  deps: Optional[list[str]] = None, p_mods: Optional[Path] = P_MODS, date: Optional[str] = None) -> dict:
     facts = mod_facts(mod, mod_dir, deps, p_mods)
+    bridge = bridge_refs(facts, mod_dir, p_mods)
+    if bridge:
+        raise ReleaseError(f"the release names the in-game test mod {BRIDGE_MOD} (a Diag-only test tool that must "
+                           f"never ship): {'; '.join(bridge)}. Remove the requiredAddons entry, the --deps entry and "
+                           f"every {BRIDGE_MOD} or AZB_ reference from the mod, rebuild, and rerun")
     changes = git_changes(mod_dir, since, version)
     facts["warnings"].append("server-kit-link: the Workshop text links the server kit as SERVER_KIT_LINK; replace it "
                              "with the address where the kit is published (for example a GitHub release)")
