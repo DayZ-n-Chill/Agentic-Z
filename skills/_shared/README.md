@@ -722,6 +722,7 @@ A skill's own pack. The front index of each folder is the table in that skill's 
 | `dayz-scope-mod/references/spec-review.md` | Which 18 checks a feature spec must pass before any code is written. |
 | `dayz-scope-mod/references/questions-before-building.md` | Which questions to settle with the user before writing the `config.cpp`, `model.cfg` or scripts of a placeable or usable DayZ object, and how to ask them. |
 | `dayz-scope-mod/references/implementation-protocol.md` | Writing the code once the spec exists: API checks, the mini-audit, the client and server data map, checkpoints, the bug ledger and the handoff. |
+| `dayz-scope-mod/references/independent-auditors.md` | How to keep parallel auditor agents on a DayZ mod independent, the signs an audit invented its findings, and the four checks a finding must pass before it is applied. |
 | `dayz-scope-mod/references/consistency-pass.md` | What the read-only check before the in-game test looks for across a feature's spec, plan, task list and code, how it rates each finding, and what its report holds. |
 | `_shared/models/generated-model-pipeline.md` | Front page of the generated model workflow: the steps from Blender and py3d to a packed object, and which file covers each step. |
 | `_shared/models/generated-model-rules.md` | The rules every generated model must meet, each under its own heading, and the LOD resolution values they use. |
