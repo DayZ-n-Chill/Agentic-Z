@@ -82,7 +82,7 @@ A `ViewBinding` reads these from the layout's `ScriptParamsClass` (`MVC\ViewBind
 | `Relay_Command` | `string` | Command class, field or function name |
 | `Debug_Logging` | `bool` | Declared on the base as `[NonSerialized()] reference bool Debug_Logging` (`MVC\ScriptedViewBase.c:8`), so any binding or controller takes it; children inherit it through `SetParent` (`:71`) |
 
-`UpdateView` reads the property through a `TypeConverter` and writes it with `WidgetController.Set()`. `UpdateController` runs only when `Two_Way_Binding` is set and the widget's controller returns true from `CanTwoWayBind()` (`MVC\ViewBinding.c:112`); it reads the widget, writes the field and calls `NotifyPropertyChanged`. `OnClick`, `OnChange` and `OnKeyPress` trigger it. A binding that asks for two way on a widget that can't do it logs `Two Way Binding for <type> is not supported!` at init (`:47` and `:48`).
+`UpdateView` reads the property through a `TypeConverter` and writes it with `WidgetController.Set()`. `UpdateController` writes the `Binding_Name` field back only when `Two_Way_Binding` is set and the widget's controller returns true from `CanTwoWayBind()` (`MVC\ViewBinding.c:112`); it reads the widget, writes the field and calls `NotifyPropertyChanged`. A `Selected_Item` field is always written back the same way, with or without `Two_Way_Binding` (`:119` to `:125`). `OnClick`, `OnChange` and `OnKeyPress` trigger it. A binding that asks for two way on a widget that can't do it logs `Two Way Binding for <type> is not supported!` at init (`:47` and `:48`).
 
 ## Commands
 

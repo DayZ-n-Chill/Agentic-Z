@@ -438,7 +438,7 @@
   },
   {
     "id": "p-mods-junction",
-    "pattern": "P:\\\\Mods\\\\? (?:does not exist|exists as a regular folder|junction is dangling)",
+    "pattern": "P:\\\\Mods\\\\? (?:does not exist|exists as a regular folder|junction is dangling|points to)",
     "meaning": "P:\\Mods\\ is not a junction to the DayZ !Workshop folder, so built PBOs would not land where the engine loads them.",
     "fix": "Recreate the junction: cmd /c mklink /J P:\\Mods \"<DayZ install>\\!Workshop\" (remove a regular P:\\Mods folder first).",
     "owner_agent": "user",
