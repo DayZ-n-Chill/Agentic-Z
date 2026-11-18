@@ -91,7 +91,7 @@ The owner's second round (items 22 and 24 of the queue; `list_commands` gives ev
 
 Measured on DayZ 1.30.164289 Diag, 2026-11-18:
 
-- `exec` reaches `ExecuteEnforceScript`, and the engine refuses it: "CGame::ExecuteEnforceScript not allowed in release version". DayZ Diag counts as a release build here; the Diag console's own run is compiled only under `#ifdef DEVELOPER` (`scriptconsoleenfscripttab.c:130`), which Diag does not define. So `exec` is built and gated but cannot run code on this install; it answers `exec_failed` with that reason.
+- `exec` reaches `ExecuteEnforceScript`, and the engine refuses it: "CGame::ExecuteEnforceScript not allowed in release version". DayZ Diag counts as a release build here; the Diag console's own run is compiled only under `#ifdef DEVELOPER` (`scriptconsoleenfscripttab.c:130`), which Diag does not define. So `exec` is built and gated but cannot run code on this install; it answers `exec_failed` with that reason. It is kept on purpose: other DayZ Diag builds may allow it, and Bohemia may turn it on in a later release, so test it again on each new Diag before relying on it or removing it.
 - An item spawned at y 0 with surface placement stayed buried (a pear at y 0.54 under 338 m of terrain) and the client never saw it. `spawn` now starts at `SurfaceY` unless `ground` is false.
 - The movement override on the client is read back by `GetMovement` and does not move the player; on the server it walked 4.6 m in 3 s, jogged 12.7 m, and an angle of 90 went east. The aim override does work on the client.
 - After `look_at` the cursor offered `ActionTakeItem` and `ActionTakeItemToHands` on a pear, and `action_use` put it in the player's hands.
