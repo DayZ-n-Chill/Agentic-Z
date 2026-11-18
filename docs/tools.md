@@ -2,9 +2,9 @@
 
 What each tool under `scripts/tools/` does, how to run it and what it refuses to do. Two tables at the end say which tool to reach for, by symptom and by task.
 
-Thirteen Python tools live under `scripts/tools/`. They are offline and deterministic, except the experimental [`dayz-terrain-builder-runner`](#scriptstoolsdayz-terrain-builder-runner), which drives a Terrain Builder it launched; none of them phone home, and none of them guess. Most are stdlib-only; [`dayz-vehicle-proxy-contract`](#scriptstoolsdayz-vehicle-proxy-contract) also needs numpy, scipy, matplotlib and this repo's py3d, and [`dayz-navmesh-compare`](#scriptstoolsdayz-navmesh-compare) needs numpy for its terrain inputs only.
+Fifteen Python tools live under `scripts/tools/`. They are offline and deterministic, except the experimental [`dayz-terrain-builder-runner`](#scriptstoolsdayz-terrain-builder-runner), which drives a Terrain Builder it launched, and [`dayz-test`](#scriptstoolsdayz-test) and [`dayz-vehicle-checks`](#scriptstoolsdayz-vehicle-checks), which launch and drive the game; none of them phone home, and none of them guess. Most are stdlib-only; [`dayz-vehicle-proxy-contract`](#scriptstoolsdayz-vehicle-proxy-contract) also needs numpy, scipy, matplotlib and this repo's py3d, and [`dayz-navmesh-compare`](#scriptstoolsdayz-navmesh-compare) needs numpy for its terrain inputs only.
 
-**Install before invoking.** The `python -m <tool>` forms below resolve only once that tool is installed — `python -m pip install -e scripts/tools/<name>` from the repository root. On a fresh clone they fail with `No module named`, which reads like a broken tool and is a missing install. `dayz-script-validator`, `dayz-vehicle-proxy-contract` and `dayz-layout-viewer` also ship a script path and run from the tree without installing; each tool's section gives the command. `dayz-ui-lab`, `dayz-pbo-diff`, `dayz-navmesh-compare`, `dayz-terrain-builder-runner` and `dayz-persistence-contracts` have no package: they are scripts only, run from the tree.
+**Install before invoking.** The `python -m <tool>` forms below resolve only once that tool is installed — `python -m pip install -e scripts/tools/<name>` from the repository root. On a fresh clone they fail with `No module named`, which reads like a broken tool and is a missing install. `dayz-script-validator`, `dayz-vehicle-proxy-contract` and `dayz-layout-viewer` also ship a script path and run from the tree without installing; each tool's section gives the command. `dayz-ui-lab`, `dayz-pbo-diff`, `dayz-navmesh-compare`, `dayz-terrain-builder-runner`, `dayz-persistence-contracts`, `dayz-test` and `dayz-vehicle-checks` have no package: they are scripts only, run from the tree.
 
 They exist because the DayZ asset pipeline fails *silently*: a `.p3d` written with a stale selection loads white, a mistyped RTM signature produces an animation that never plays, a `.layout` typo yields an empty screen with no error. Each tool turns one of those silent failures into an early, actionable one.
 
@@ -23,6 +23,8 @@ They exist because the DayZ asset pipeline fails *silently*: a `.p3d` written wi
 | [`dayz-navmesh-compare`](#scriptstoolsdayz-navmesh-compare) | Compare two `.nm` navmeshes tile by tile, by structure, against terrain edits and routes | Reports only — one new JSON |
 | [`dayz-terrain-builder-runner`](#scriptstoolsdayz-terrain-builder-runner) | EXPERIMENTAL, Windows only: drive a Terrain Builder it launched by Win32 messages | **Yes** — its state file and `menu.json`; Terrain Builder rewrites its own settings on exit |
 | [`dayz-persistence-contracts`](#scriptstoolsdayz-persistence-contracts) | Model the three DayZ save contracts (entity stream, Community Framework ModStorage, sidecar file) and test a persistence design against them | No — models and tests only |
+| [`dayz-test`](#scriptstoolsdayz-test) | Build, then launch a mod in DayZ Diag with file patching: server and client, one of them, or offline; stop only what it started | Launches the game; records its PIDs |
+| [`dayz-vehicle-checks`](#scriptstoolsdayz-vehicle-checks) | Six in-game acceptance checks of a car through the `dayz-testbridge`: spawns, wheels and fuel, solid, seated, drives, turn sign | **Yes** — one `verdict.json` |
 
 ---
 
@@ -328,6 +330,35 @@ The skills say how to build something; the tools say whether it survived. An age
 
 Two habits make the difference. Propose the tool **before** the expensive step, not after it fails: that is the whole point of a preflight. And when a tool reports clean, say which check ran clean; "preflight passed" without naming the contract does not say what was verified.
 
+## `scripts/tools/dayz-test`
+
+Builds a mod with `/dayz-build-pbo` and launches it in DayZ Diag with `-filePatching`, in four modes. It is the repo's own replacement for an outside launcher, built on `/dayz-launch-test`'s commands.
+
+```cmd
+python scripts\tools\dayz-test\dayz_test.py MyMod [--mode all|server|client|offline] [--deps CF] [--server chernarus] [--build] [--dry-run]
+python scripts\tools\dayz-test\dayz_test.py --kill
+scripts\tools\dayz-test\server.bat MyMod      (build, then server and client)
+scripts\tools\dayz-test\client.bat MyMod      (a client joining the server it started)
+scripts\tools\dayz-test\offline.bat MyMod     (build, then one offline DayZDiag)
+```
+
+- `all` runs `/dayz-launch-test`; `server` and `client` start one side with the same commands; `offline` uses `-mission=` and no server. Offline was seen to load the world with no `Creating Mission` line in 150 s, so whether a player spawns is not known: look with it, never judge a mod with it.
+- `--build` refuses while the deployed PBO is held open, because AddonBuilder then fails its copy and leaves the old PBO (`skills/dayz-launch-test/references/build-and-storage-traps.md`).
+- The PIDs it starts go to `.server/!DayZTest/run.json`; `--kill` ends only those. A DayZDiag it did not start is never stopped; that is `/dayz-stop-test`'s job.
+- Tests: `test_dayz_test.py` beside it.
+
+## `scripts/tools/dayz-vehicle-checks`
+
+Six in-game checks of a car, run through the `dayz-testbridge` (`skills/dayz-launch-test/references/test-bridge.md`) in the order of `skills/dayz-launch-test/references/vehicle-acceptance-checks.md`: spawns, conditioned (wheels and fuel after a server-side `OnDebugSpawn`), solid (12 level rays; a hit on a door or the trunk counts for the car), seated as driver on both peers, drives (more than 1 m, a speed above 0, engine on), and the turn sign (information only, not calibrated).
+
+```cmd
+python scripts\tools\dayz-vehicle-checks\vehicle_checks.py --vehicle MyCar --start --mods MyCar [--deps CF]
+```
+
+- Without `--start` it uses the session the `dayz-testbridge` recorded; with it, it starts one and always stops it.
+- Each failure maps to a row of the reference's fix table. `objective_PASS` covers the scriptable checks only; acceptance also needs captures from several angles and the turn sign compared with a vanilla car.
+- Writes `output/<CarClass>-vehicle-checks/<time>/verdict.json`. Exit 0 passed, 1 a check failed, 2 the run could not happen. A vanilla `Hatchback_02` passed every objective check (9 of 12 rays).
+- Tests: `test_vehicle_checks.py` beside it.
 ## Running the tool tests
 
 Each tool keeps its suite in its own `tests/` folder or beside its scripts (`dayz-persistence-contracts` and `dayz-linux` keep their `test_*.py` files next to the scripts, and `test_sync_generated.py` sits beside `sync_generated.py`). `python -m pytest -q scripts/tools` from the repository root runs them all in one process, and CI runs them as part of the repo's test command (`.github/workflows/tests.yml`). That works only while every test module has a unique file name: two test files with the same basename in different folders abort the whole collection with "import file mismatch" before a single test runs. Name a new test module after its tool.
