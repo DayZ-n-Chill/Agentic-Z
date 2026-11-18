@@ -4,7 +4,7 @@ How a proxy triangle becomes a position and a facing, why an attached model come
 
 The names, paths and config classes below are checked on `P:\`. The frame rules are not: vanilla models on `P:\` are binarized and no text file there states how a triangle is read. Those rules are MLOD format knowledge, the behaviour of the py3d in `scripts/tools/py3d`, and in-game measurements on third-party mods. Each such paragraph starts with **Not checked on `P:\`** and says what was measured; treat it as a strong lead and confirm in game.
 
-To fix a proxy, use `/dayz-proxy-align`. Proxy names, indexes and config classes are in `proxies.md`.
+To fix a proxy, use the proxy editor of `/dayz-model-tools` (`tools-proxy-align.md`). Proxy names, indexes and config classes are in `proxies.md`.
 
 ## The triangle is read by its angles
 
@@ -17,13 +17,13 @@ To fix a proxy, use `/dayz-proxy-align`. Proxy names, indexes and config classes
 
 Arma 3 tools read an MLOD proxy this way. That DayZ reads an MLOD proxy the same way is an assumption, held with high confidence because the MLOD format is the same; the in-game measurements below are what back it for DayZ.
 
-Coordinates are raw MLOD, Y up, as py3d reads them. Because the rule is pure geometry, a frame can be worked out offline: `derive_frame` in `skills/dayz-proxy-align/scripts/proxy_frame.py` computes it, and the py3d in `scripts/tools/py3d` has the same code as `derive_proxy_frame`.
+Coordinates are raw MLOD, Y up, as py3d reads them. Because the rule is pure geometry, a frame can be worked out offline: `derive_frame` in `skills/dayz-model-tools/scripts/proxy_frame.py` computes it, and the py3d in `scripts/tools/py3d` has the same code as `derive_proxy_frame`.
 
 ## Ambiguous triangles
 
 A triangle whose two edges from the anchor have the same length, the 90/45/45 right triangle that hand-written proxy builders tend to emit, has no single answer: the middle and smallest angles tie, so +Y and +Z fall to raw vertex order and the frame comes out rotated. This is the usual cause of "the item is worn, but turned".
 
-The fix is a canonical triangle with three different angles: a right angle at the anchor, a short leg along +Y and a leg twice as long along +Z (90, 63.4 and 26.6 degrees). Rotating a canonical triangle keeps its angles, so any orientation survives a write-back. `proxy_extract.py` in `/dayz-proxy-align` flags a tie as `ambiguous`, `proxy_canon.py` rewrites every proxy as a canonical triangle, and the skill's tests check the three cases offline (canonical gives identity, 90/45/45 is flagged, a rotation round-trips).
+The fix is a canonical triangle with three different angles: a right angle at the anchor, a short leg along +Y and a leg twice as long along +Z (90, 63.4 and 26.6 degrees). Rotating a canonical triangle keeps its angles, so any orientation survives a write-back. `proxy_extract.py` in `/dayz-model-tools` flags a tie as `ambiguous`, `proxy_canon.py` rewrites every proxy as a canonical triangle, and the skill's tests check the three cases offline (canonical gives identity, 90/45/45 is flagged, a rotation round-trips).
 
 ## Raw frame and engine frame
 

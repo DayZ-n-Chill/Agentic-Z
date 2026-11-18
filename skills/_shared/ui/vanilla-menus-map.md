@@ -62,8 +62,8 @@ modded class MissionGameplay
 ```
 
 Skipping `SetID` breaks `FindMenu/IsMenuOpen/CloseMenu`, which walk the menu chain comparing
-`GetID()` (`P:\scripts\3_game\tools\uimanager.c:117-175`; ctor sets `m_id = MENU_UNKNOWN`,
-`P:\scripts\3_game\tools\uiscriptedmenu.c:138`). Vanilla ids are 1..48, `MENU_ANY` to `MENU_UNDERGROUND_TRIGGER_EDITOR` (`P:\scripts\3_game\constants.c:176-223`); pick an arbitrary high int.
+`GetID()` (`P:\scripts\3_game\tools\uimanager.c:117-175`;
+ctor sets `m_id = MENU_UNKNOWN`, `P:\scripts\3_game\tools\uiscriptedmenu.c:138`). Vanilla ids are 1..48, `MENU_ANY` to `MENU_UNDERGROUND_TRIGGER_EDITOR` (`P:\scripts\3_game\constants.c:176-223`); pick an arbitrary high int.
 
 ## 3. UIScriptedMenu contract (rules that bite)
 

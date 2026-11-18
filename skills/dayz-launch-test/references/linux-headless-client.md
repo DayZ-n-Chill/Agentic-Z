@@ -11,7 +11,7 @@ The whole flow was measured again on DayZ 1.30 stable (2026-11-13; build not rec
 These are measured tool and runtime results, not yet checked on `P:\`; the one vanilla script fact (godmode) is
 cited inline and was re-opened on `P:\scripts\`.
 
-Scripts: `skills/_shared/scripts/dayz-client-headless.sh`, `dayz-client-test.sh`, `dayz-mod-pack.sh`. Test mod:
+Scripts: `scripts/tools/dayz-linux/dayz-client-headless.sh`, `dayz-client-test.sh`, `dayz-mod-pack.sh`. Test mod:
 `../assets/autotest-mod/`. This pairs the **retail** client with the **native** server. A `DayZDiag` client only
 joins a `DayZDiag` server (`0x00020017`); that pairing, and the managed dayz-mcp cycle, are in
 `skills/_shared/linux-proton.md` and in `linux.md` in this folder.
@@ -32,7 +32,7 @@ joins a `DayZDiag` server (`0x00020017`); that pairing, and the managed dayz-mcp
 ## 1. The client without a display
 
 ```sh
-S=skills/_shared/scripts/dayz-client-headless.sh
+S=scripts/tools/dayz-linux/dayz-client-headless.sh
 sh $S start /var/tmp/dzc -name=autotest "-mod=@9dd22c91;@MyMod" -connect=127.0.0.1 -port=$GAME
 sh $S shot  /var/tmp/dzc /var/tmp/dzc/now.png
 sh $S stop  /var/tmp/dzc                         # ends sway, which ends the game
@@ -125,7 +125,7 @@ was checked by the offline script validator only (`scripts/tools/dayz-script-val
 ## 4. One command: start, wait, report, stop
 
 ```sh
-sh skills/_shared/scripts/dayz-client-test.sh -t "$TREE" -s "@AutoTest" -c "@AutoTest" -o /var/tmp/run1
+sh scripts/tools/dayz-linux/dayz-client-test.sh -t "$TREE" -s "@AutoTest" -c "@AutoTest" -o /var/tmp/run1
 # [AUTOTEST] PASS client_has_player local player SurvivorM_Rolf
 # [AUTOTEST] PASS server_item_synced Chemlight_Red replicated to the client
 # [AUTOTEST] PASS godmode_blocks_damage  | server: health 100 -> 100
@@ -137,7 +137,7 @@ Free ports, server, headless client, wait for `DONE`, collect `[AUTOTEST]` lines
 CF in the server's mod list pass `-m mpmissions/<mission>` (relative): CF resolves `$mission:`/`$storage:` from it.
 Exit 0 = `DONE` seen and no `FAIL`; 1 = a failure or the timeout (default 300 s; a cold client start alone takes
 about 60 s), which saves `timeout.png`. Build and sign the example first:
-`bash skills/_shared/scripts/dayz-mod-pack.sh -C <copy of assets/autotest-mod> keygen`, then `build`; link `build/@AutoTest` and
+`bash scripts/tools/dayz-linux/dayz-mod-pack.sh -C <copy of assets/autotest-mod> keygen`, then `build`; link `build/@AutoTest` and
 `keys/AutoTest.bikey` into the tree and `build/@AutoTest` into the client directory. The key is a test key: never
 install it on a real server.
 
@@ -175,7 +175,7 @@ joins (measured 1.30.164078.38: the client then joined straight into the world, 
 4. Start the server again, then join.
 
 Repeat it for every new server config that loads the bundle. The bundle already contains Spawn-Selection. The mod set
-and its load order: `skills/dayz-mod-workflow/references/dayz-1-30-server-measured.md`, section 8; on the client use the
+and its load order: `dayz-1-30-server-measured.md`, section 8; on the client use the
 client-side folder names of the same mods.
 
 ## Not covered

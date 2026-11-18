@@ -72,7 +72,35 @@ python scripts/tools/dayz-script-validator/scripts/script_validator.py <addon_ro
 
 Exit `0` PASS / `1` FAIL / `2` WARN. **Do not build a PBO on exit 1**: the errors it catches (`Unknown type`, local redeclaration, override of an absent method, `delete`) only surface when the script module compiles at boot, so packing first turns an offline check of about a minute (the 271-file measurement above) into a full in-game cycle. Add `python scripts/tools/dayz-script-validator/scripts/ui_reconcile.py <addon_root>` when the mod ships UI.
 
-Green here means the module should COMPILE and the asset should LOAD. It says nothing about engine behaviour — see `dayz-mod-workflow`, section 8 "Offline gates: structure is not behaviour", for the full contract and the known coverage limits.
+Green here means the module should COMPILE and the asset should LOAD. It says nothing about engine behaviour — see "Offline gates: structure is not behaviour" below for the full contract and the known coverage limits.
+
+### Offline gates: structure is not behaviour
+
+An offline gate that passes does not allow you to say "done" when it checks structure and the success criterion is engine behaviour.
+
+- **A structural gate** (offline, deterministic): class name equals file name, paths exist, topology, winding and UVs, selection sums, braces, cited APIs (the mini-audit of `skills/dayz-scope-mod/references/implementation-protocol.md`), a skeleton or bind compared with vanilla. It predicts that the asset loads, not that it behaves.
+- **A behavioural gate** (only with the engine running, or in Buldozer): deformation under animation, visible render and winding, mass, centre of mass and collision, getting in, the proxy convention the engine applies, elbow and wrist IK. It cannot be derived offline.
+
+Exit 1 of the validator blocks: fix it, or justify it in writing in the handoff with the rule id and the reason. Read a WARN; do not ignore it silently. `ui_reconcile.py` checks `FindAnyWidget` and `FindWidget` names against the real widgets in the `.layout` files, and `#STR_` keys against the stringtable: two faults that compile and show only when the menu opens. The gate takes under a second on a whole addon, so run it on every pass, not only at the end. The behavioural gate stays mandatory, separately (`/dayz-gate ingame`, `behavior` and `visual`).
+
+Known coverage: the validator's tables in `scripts/tools/dayz-script-validator/scripts/shared/vanilla_reference.py` are small on purpose and cover only some rules. When a vanilla scripts tree is found (`--vanilla-root`, then `DAYZ_VANILLA_ROOT`, then `P:\scripts`), the validator also reads it for `ES-UNDEFINED-CLASS-REF`, `ES-UNDEFINED-BUILTIN-METHOD` and the 1.30 `RegisterConstructionSyncVariables` hook; without one those rules are reported as skipped, not as findings. Rules that rely only on the small tables have false negatives by design. Green is not proof of absence.
+
+**The rule.** Before iterating on an offline metric, ask: does it correlate with the behavioural criterion, or is it a proxy the engine can ignore? For a proxy with no shown correlation, run one behavioural test before polishing it further; if it does not correlate, stop polishing it. Measured cases (two mod projects):
+
+- Character deformation. A deform test in Blender cut edge stretch from 34 times to between 6 and 9 times over about 12 offline iterations, with no improvement in game: the engine skins against the real `OFP2_ManSkeleton` from `model.cfg`, not against the FBX armature.
+- Vehicle proxy. A derived proxy frame of identity gave an offline green twice; the engine applied another convention and the body proxy came out rotated about 90 degrees.
+
+### Compile gates cover both sides
+
+A server compile pass is not a script gate for the whole build. Code under `#ifndef SERVER` (vanilla has such blocks, for example `P:\scripts\4_world\classes\constructionbase.c:151`) is absent from the server's compilation and can still break the client's module. Before accepting a build, boot both server and client, read the script compilation of each, and record a pass for each side separately. Wrapping a failing declaration in a side guard is not a fix unless the side that still compiles it also passes. `/dayz-gate ingame` boots both and reads both sets of logs.
+
+### Script module capacity is calibrated by family
+
+Measured in game, not yet checked on `P:\`: the log line `SCRIPT : Module: World; ... used X/33554 kB` reports one shared arena of about 32 MiB for vanilla and every loaded mod. Source lines, file bytes and file count are not a model of that capacity. Comments can be free, while declarations, generic instantiations and compiled method bodies cost structure and bytecode.
+
+Do not use one global "kB per class" number. Measured: generic specializations formed one family at 5.6 to 6.6 kB each, small shell classes measured 0 to 1 kB, and two heavy source classes measured 139 kB. Size a reduction with before and after engine readings of the same family. Count class declarations case-sensitively, so a variable written `Class x` is not taken for a `class X` declaration.
+
+When a module nears capacity, remove or parameterize repeated script declarations before shortening text. A public `config.cpp` class name does not need a script class of the same name; it binds to the nearest scripted ancestor. Keep the public config names and the `types.xml` entries while collapsing redundant script subclasses, then read the same module line again on both sides.
 
 ### The linter scans the WHOLE addon_root and blames the mod for all of it
 

@@ -4,7 +4,7 @@ History only, no authority: the text of vehicle rules that were later corrected,
 
 > Status: the measurements below were taken on mod test vehicles, named in each entry (TestCoupe, TestMercedes, TestQuad, TestHeli OH-1); they are mod behaviour, not vanilla, and were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `skills/_shared/vehicles/README.md` lists which file holds each number.
 
-> No block in this file is current. Every active rule is in the other files of this pack; `skills/_shared/vehicles/README.md` lists them. Each block between the `SUPERSEDED-EXACT` markers is a rule as it read before change 1 replaced it. Change 1 is the family B cutover that took the full runbook off the critical path of `skills/rip-vehicle-import/SKILL.md` (it is kept in that skill's `references/history-family-b-runbook.md`) and rewrote the vehicle rules it carried.
+> No block in this file is current. Every active rule is in the other files of this pack; `skills/_shared/vehicles/README.md` lists them. Each block between the `SUPERSEDED-EXACT` markers is a rule as it read before change 1 replaced it. Change 1 is the family B cutover that took the full runbook off the critical path of the family B runbook (`rip-family-b-runbook.md`; the old runbook is kept in `family-b-runbook-pre-change-1.md`) and rewrote the vehicle rules it carried.
 
 ## Vanilla anchors checked on `P:\`
 

@@ -1,6 +1,6 @@
 # Importing a weapon mesh and testing the build
 
-How a weapon mesh made in Blender goes into a DayZ `.p3d` the right way round, and which build to test it with. The `model` path rule is in `weapon-config.md`, "Model path"; mesh assembly, LODs and the general axis and winding rules are with `dayz-object-builder` (`skills/dayz-model-pipeline/references/axes-and-winding.md`); measuring winding is in `skills/dayz-p3d-audit/references/winding-methodology.md`.
+How a weapon mesh made in Blender goes into a DayZ `.p3d` the right way round, and which build to test it with. The `model` path rule is in `weapon-config.md`, "Model path"; mesh assembly, LODs and the general axis and winding rules are with `dayz-object-builder` (`skills/_shared/models/axes-and-winding.md`); measuring winding is in `skills/dayz-p3d-audit/references/winding-methodology.md`.
 
 Everything below was measured in game on one custom rifle, a 7.62x39 gun made from an AI generated mesh that inherits a third-party weapon pack (mod files, not on `P:\`), and was not repeated on a second weapon unless a line says so. The reference it was checked against is the vanilla AKM, `model="\dz\weapons\firearms\AKM\AKM.p3d"` (`P:\DZ\weapons\firearms\akm\config.cpp:196`), which is binarized on `P:\`, so its numbers come from a readable copy.
 

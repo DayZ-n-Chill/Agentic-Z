@@ -16,7 +16,7 @@ if any(a in ("-h", "--help") for a in sys.argv[1:]):
 import json, math, os, tempfile
 import py3d
 if not getattr(py3d, "IS_DAYZ_FORK", False):
-    raise SystemExit("extract_weapon: %s is not the DayZ fork of py3d; install the one in scripts/tools/py3d/ (install_py3d.py)" % py3d.__file__)
+    raise SystemExit("extract_weapon: %s is not the DayZ fork of py3d; install the one in scripts/tools/py3d/ (skills/dayz-model-tools/scripts/install_py3d.py)" % py3d.__file__)
 W=(sys.argv[1] if len(sys.argv)>1 else "") or os.environ.get('DAYZ_ANIM_WEAPON_P3D') or ""
 if not W:
     raise SystemExit("usage: extract_weapon.py <weapon.p3d>  (or set DAYZ_ANIM_WEAPON_P3D)")

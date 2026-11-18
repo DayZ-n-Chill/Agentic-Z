@@ -195,7 +195,7 @@ TailReflectorMatOn   ="Landrover\data\landrover110_tail_lights_on.rvmat"; TailRe
 ReverseReflectorMatOn="Landrover\data\landrover_reverse_lights_on.rvmat"; ReverseReflectorMatOff="Landrover\data\lr_base.rvmat";
 dashboardMatOn       ="Landrover\data\landrover_dashboard_lights_on.rvmat"; dashboardMatOff    ="Landrover\data\lr_base.rvmat";
 ```
-The `_on.rvmat` is an **emissive** material (see `emissive-leds-and-dynamic-lights.md`, and the emissive section of `skills/dayz-model-pipeline/references/config-and-packing.md`); the `_off` is the plain body material. Without the selections, the memory points and these properties, headlights mount but never illuminate (`vehicle-structural-parity.md` "Lights").
+The `_on.rvmat` is an **emissive** material (see `emissive-leds-and-dynamic-lights.md`, and the emissive section of `skills/_shared/models/model-config-and-packing.md`); the `_off` is the plain body material. Without the selections, the memory points and these properties, headlights mount but never illuminate (`vehicle-structural-parity.md` "Lights").
 
 ## 6. DamageSystem / DamageZones
 
@@ -531,7 +531,7 @@ How the engine picks the seat (`Transport.CrewPositionIndex` over the ViewGeomet
 
 ### 17.1 How the crew proxy frame is derived
 
-`Crew.proxyPos` (§4) names a proxy in the ViewGeometry (a 3-vertex triangle placed as `proxy:\...`). Its frame is derived by angle-sort of the three vertices (the convention `/dayz-proxy-align` uses):
+`Crew.proxyPos` (§4) names a proxy in the ViewGeometry (a 3-vertex triangle placed as `proxy:\...`). Its frame is derived by angle-sort of the three vertices (the convention the proxy editor of `/dayz-model-tools` uses):
 
 | vertex | role |
 |---|---|

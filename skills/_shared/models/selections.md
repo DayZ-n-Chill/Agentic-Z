@@ -56,7 +56,7 @@ A selection's name can survive a conversion while its points do not. The model t
   ```
 
   The same converter also skipped members whose weight byte was 0, which is suspect for skinned selections too, since a stored 0 can stand for full weight.
-- **The `/dayz-p3d-inspector` builder.** Rebuilding a model from its Recipe can wipe the Memory LOD's selections; see that skill's `references/round-trip-caveats.md`.
+- **The p3d inspector builder of `/dayz-model-tools`.** Rebuilding a model from its Recipe can wipe the Memory LOD's selections; see `tools-p3d-inspector-round-trip.md`.
 
 - **An ODOL v55 reader.** The same kind of converter, on a v55 vehicle model, did not parse the animation section: the reading went out of step there (not in the animation class itself), so damper and animation offsets could not be recovered from that file. Rebuild those animations from the source, or read them from a model you binarized yourself.
 

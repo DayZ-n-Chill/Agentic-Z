@@ -22,7 +22,6 @@ from typing import Any, Iterable, Mapping
 
 
 SCHEMA_VERSION = 1
-DEFAULT_SKILL = "dayz-mod-workflow"
 SHORT_COMMIT_LEN = 7
 PROBE_DIRNAME = "probe"
 ADAPTER_ROOT = Path(".agents") / "skills"
@@ -631,7 +630,7 @@ def materialize(
     source: Path,
     commit: str,
     task_root: Path,
-    skill: str = DEFAULT_SKILL,
+    skill: str,
 ) -> dict[str, object]:
     source = source.resolve()
     task_root = task_root.resolve()
@@ -1322,7 +1321,7 @@ def _parser() -> argparse.ArgumentParser:
     materialize_cmd.add_argument("--source", required=True, type=Path)
     materialize_cmd.add_argument("--commit", required=True)
     materialize_cmd.add_argument("--task-root", required=True, type=Path)
-    materialize_cmd.add_argument("--skill", default=DEFAULT_SKILL)
+    materialize_cmd.add_argument("--skill", required=True)
 
     verify_cmd = commands.add_parser("verify")
     verify_cmd.add_argument("--task-root", required=True, type=Path)

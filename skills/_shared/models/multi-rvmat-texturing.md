@@ -32,7 +32,9 @@ None is under `P:\DZ\gear\`, `P:\DZ\weapons\` or `P:\DZ\characters\`.
 
 A surface the mesh does not use still has its stages, filled with placeholders: 562 files have a procedural color in `Stage0` and 881 a procedural normal in `Stage14`.
 
-Which color of the mask selects which surface (black, red, green and blue for surfaces 1 to 4) is Bohemia format knowledge that no vanilla text file states; it is described in `dayz-model-pipeline/references/multi-rvmat-section-texturing.md`, with a template.
+Which color of the mask selects which surface (black, red, green and blue for surfaces 1 to 4) is Bohemia format knowledge that no vanilla text file states; it is described in `_shared/textures/multi-materials.md`, with a skeleton.
+
+The specular stage of a surface can be procedural, `#(argb,8,8,3)color(0.5,G,B,1,DTSMDI)`, where G is the specular intensity and B the glossiness. Give each surface its own values (polished metal, painted metal and rubber differ) rather than one shared gray: a correct specular response per surface is the main gain of the shader. A color or normal stage whose `texGen` does not match its surface's is not reported anywhere; the surface just tiles or lands wrong.
 
 ## The texGen classes and the two UV sets
 
@@ -48,6 +50,8 @@ So a model textured this way usually carries two UV sets: one that tiles the det
 - Vanilla `Multi` materials write the untransformed texGen in two forms: `dir[]={0,0,1}` with `pos[]={0,0,0}` (12,401 texGen classes) and `dir[]={0,0,0}` with `pos[]={0,0,1}` (1,514). `a1-1_multi1.rvmat` has both, the second at `P:\DZ\structures\residential\houseblocks\data\a1-1_multi1.rvmat:16-17` and the first at `:93-94`. Write the first; the second is not an error.
 
 Tool knowledge, not shown by a vanilla file: a face that uses a `Multi` material keeps its texture field empty and carries the material only, and the model must be exported with both UV sets or the mask smears across the tiled UVs. After export, read the model with py3d and check the UV set count of each LOD.
+
+Also tool knowledge: a `Multi` material costs about 15 texture fetches and a heavier pixel shader than a Super material, which is why vanilla keeps it off gear. It holds at most four surfaces; for more, split the mesh into several `Multi` materials or use one material per selection. A face that still carries a texture alongside the `Multi` material renders wrong. The mask needs hard edges of pure color: gradients or anti-aliasing blend the surfaces into each other.
 
 ## Who does what
 

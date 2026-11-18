@@ -67,9 +67,9 @@ So the named property on the Geometry LOD is common in vanilla, handheld items i
 
 ### On every collision LOD (not checked on `P:\`)
 
-Measured on a mod's placed objects, not on vanilla: with `autocenter` = `0` on the Geometry LOD only, the Fire Geometry and View Geometry meshes of a placed object were recentered on their own bounding boxes, about 20 to 25 cm away from the visual mesh. Bullets passed through, a hologram stacked on the object fell to the ground, and the action cursor did not find it. Setting the property on every collision LOD the model has (Geometry, Fire Geometry, View Geometry, and Roadway, Hit points and LandContact when present) fixed all three. Vanilla does both, as the counts above show, so treat this as the safe choice for a placed object built from scratch (`dayz-model-pipeline/references/critical-rules.md`, rule 16).
+Measured on a mod's placed objects, not on vanilla: with `autocenter` = `0` on the Geometry LOD only, the Fire Geometry and View Geometry meshes of a placed object were recentered on their own bounding boxes, about 20 to 25 cm away from the visual mesh. Bullets passed through, a hologram stacked on the object fell to the ground, and the action cursor did not find it. Setting the property on every collision LOD the model has (Geometry, Fire Geometry, View Geometry, and Roadway, Hit points and LandContact when present) fixed all three. Vanilla does both, as the counts above show, so treat this as the safe choice for a placed object built from scratch (`_shared/models/generated-model-rules.md`, rule 16).
 
-Also measured on a third-party storage mod, not checked on `P:\`: an invisible entity whose visual LOD holds only proxy triangles, used to carry and draw attachments, needed `autocenter = 0` in its config class. Without it the engine recentered the model and its memory points shifted (`dayz-model-pipeline/references/memory-and-selections.md`).
+Also measured on a third-party storage mod, not checked on `P:\`: an invisible entity whose visual LOD holds only proxy triangles, used to carry and draw attachments, needed `autocenter = 0` in its config class. Without it the engine recentered the model and its memory points shifted (`_shared/models/memory-and-selections-authoring.md`).
 
 ## Reading and writing them with py3d
 

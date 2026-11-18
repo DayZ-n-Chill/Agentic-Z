@@ -386,7 +386,7 @@ log, or from a broken file the validator passed:
   continuation. One measurement; FAIL since
   the vanilla control found nothing for it on 1.29.0.163451 and on
   1.30.164078 stable. The operator leading the next line is
-  the same parser rule (`skills/enforce-script-reference/SKILL.md`) and is not
+  the same parser rule (`skills/_shared/enscript/depth/hard-rules.md`) and is not
   reported here; neither is a call's argument list over two lines.
 
 Each finding is wrong wherever the code compiles, so code under another
@@ -418,8 +418,8 @@ under:
 | Cited as | Skill folder |
 |---|---|
 | `SKILL.md rule N`, `enforce-script-reference SKILL.md`, `pitfalls-advanced.md`, `networking.md`, `memory-management.md` | `skills/_shared/enscript/depth/` (rule N is in `hard-rules.md`) |
-| `dayz-ui-development SKILL.md`, `layout-format.md` | `skills/dayz-ui-development/` (`SKILL.md` and `references/`) |
-| `dayz-mod-workflow` | `skills/dayz-mod-workflow/` |
+| UI pack `README.md`, `layout-format.md` | `skills/_shared/ui/` |
+| error catalog and debug protocol | `skills/dayz-launch-test/references/` |
 | `dayz-p3d-audit/SKILL.md` | `skills/dayz-p3d-audit/` |
 
 A `file:line` in a message is the line the rule was written against. When

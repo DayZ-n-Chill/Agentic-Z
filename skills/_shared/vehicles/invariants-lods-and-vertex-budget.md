@@ -52,7 +52,7 @@ needs a multi visual-LOD transplant: replace the deployed visual block with ALL 
 (sorted), KEEPING every struct LOD. GATE it with a self-test on a COPY: struct LODs
 (Geo/Mem/HP/ViewGeo/FireGeo) must come out BIT-IDENTICAL (get-in), then re-verify real deployed vs
 backup. Flat body source = shell res0 minus proxy faces + the chunk p3ds (cabin already excluded — it
-lives in the intact interior proxy). Render-review the baked LOD before deploy (blender-visual-review).
+lives in the intact interior proxy). Render-review the baked LOD before deploy (`_shared/models/blender-visual-review.md`).
 (d) **A far-LOD baked WITHOUT the shell's make-consistent/orient pass ships with its WINDING globally
 INVERTED → the body reads TRANSPARENT (see-through) at mid/far distance — a DISTINCT failure from (b)'s
 BLACK.** (added 2026-07-09, measured and fixed on TestCoupe) Transparent = winding/cull wrong (anti-cross faces

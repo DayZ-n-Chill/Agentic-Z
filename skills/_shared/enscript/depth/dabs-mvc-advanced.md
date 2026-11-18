@@ -1,6 +1,6 @@
 # Dabs Framework MVC — Advanced Patterns & Gotchas
 
-Patterns and traps for the third-party Dabs Framework's MVC classes, as met in shipped mods. They describe that framework and are not yet checked on `P:\` or against the Dabs source. What was read in the Dabs source is in `skills/_shared/enscript/integrations/dabs_framework.md`; the full UI material is in the `dayz-ui-development` skill.
+Patterns and traps for the third-party Dabs Framework's MVC classes, as met in shipped mods. They describe that framework and are not yet checked on `P:\` or against the Dabs source. What was read in the Dabs source is in `skills/_shared/enscript/integrations/dabs_framework.md`; the full UI material is in the UI pack `skills/_shared/ui/`.
 
 ## Architecture Overview
 

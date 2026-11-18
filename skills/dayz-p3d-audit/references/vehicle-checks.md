@@ -109,7 +109,7 @@ later as a bounce blocker. The script still does not check it, so surface this p
 spawn / contact=0 / speedo diverges to ±inf / delete-outside-world".
 
 Measured on the TestQuad bounce diagnostic of 2026-05-29. See also Rule 19 of the model
-pipeline skill (`dayz-model-pipeline`).
+pipeline (`_shared/models/generated-model-pipeline.md`).
 
 ---
 

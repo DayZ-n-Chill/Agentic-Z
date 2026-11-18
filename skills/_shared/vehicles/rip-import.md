@@ -2,7 +2,7 @@
 
 The rip import path in detail: what a per-car rip folder holds, which parts to include, how to derive dimensions and the transform from the locators, the structural LOD recipe, the first in-game spawn results and their root causes, textures, materials, wheels, glass, interior and doors.
 
-> Status: one worked example, the TestCoupe build (2026-06 to 2026-10), with the TestMercedes and TestQuad builds, a working Landrover build and two shipped third-party car mods as controls. The measurements and in-game results are not yet checked on `P:\`. Sections are dated and later ones correct earlier ones; a block marked SUPERSEDED, RETRACTED or RESOLVED says which. A label such as `s7` or `s20` numbers a dated pass of the worked example, in order, and is how one section refers to another. The vanilla script line numbers in this file were opened on `P:\` (a 1.30 build). Script names such as `rip_p3_structural.py` and paths such as `<vehicle-import>\...` are the tooling and work folders of the worked example, which this repo does not ship. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number. Other skills are named by skill name, each a folder under `skills/` (dayz-model-pipeline, dayz-launch-test); the Enforce Script pack is `skills/_shared/enscript/`, the texture pack is `skills/_shared/textures/`.
+> Status: one worked example, the TestCoupe build (2026-06 to 2026-10), with the TestMercedes and TestQuad builds, a working Landrover build and two shipped third-party car mods as controls. The measurements and in-game results are not yet checked on `P:\`. Sections are dated and later ones correct earlier ones; a block marked SUPERSEDED, RETRACTED or RESOLVED says which. A label such as `s7` or `s20` numbers a dated pass of the worked example, in order, and is how one section refers to another. The vanilla script line numbers in this file were opened on `P:\` (a 1.30 build). Script names such as `rip_p3_structural.py` and paths such as `<vehicle-import>\...` are the tooling and work folders of the worked example, which this repo does not ship. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number. Other skills are named by skill name, each a folder under `skills/` (dayz-model-tools, dayz-launch-test); the Enforce Script pack is `skills/_shared/enscript/`, the texture pack is `skills/_shared/textures/`.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -89,7 +89,7 @@ with a `PartEnum` attribute. Resolve `game:\` → your `game_path` root for `[ -
   (`bodywide_a`, `fenderswide_a`) — the Manifest is the full catalog; the carbin config selects. For a
   widebody build INCLUDE the `*wide*` and EXCLUDE the stock equivalents (same LOD count = full replacement,
   not flares). The exclusivity is a `[verify]` prior — confirm no z-fight in the visual assemble
-  (blender-visual-review), do not treat it as a fact.
+  (`_shared/models/blender-visual-review.md`), do not treat it as a fact.
 - Wheel rims (`oz_rallyracing_wheellf` etc.): EXCLUDE if reusing the vanilla `sedanwheel.p3d`; the source-game rim
   becomes a post-MVP cosmetic.
 
@@ -228,7 +228,7 @@ BLOCK), not optional steps — skippable verification is how the offline false-g
   ingest one when a future car keeps both Locators and an independent author.)
 - `visual_gate.py <p3d> <out_dir> [--label N] [--views N]` — **generic for ANY DayZ `.p3d`** (added
   2026-06-25). Exports the visual LOD to OBJ and renders N orbit + top + low views via Blender 5.1 headless
-  (not through a Three.js viewer) + a `blender-visual-review` checklist + an
+  (not through a Three.js viewer) + a `_shared/models/blender-visual-review.md` checklist + an
   unresolved-proxy inventory. CAVEAT (s20 2026-07-02, supersedes the old "reproduces the engine cull"
   claim): it does NOT reproduce the engine — the engine renders the ANTI-cross side and shades with the
   STORED MLOD normals, while Blender no-normals + backface culling shows the +cross side (the opposite);
@@ -338,7 +338,7 @@ Geometry LOD has mass (`new Point()` defaults to `mass=None`; `add_proxy` points
   (rotation), `wheel_X_Y_damper` (suspension translation) and front `wheel_X_1_steering` selections so
   model.cfg can drive it; without them the animation is a silent no-op. For deferred dials it is expected.
 - `WARN_NOT_WATERTIGHT` (proxy triangles are open), `WARN_WINDING_MIXED` (multi-box collision: each box is internally consistent relative to its own centroid;
-  the warning uses the global centroid, so infer no absolute sign — see rule 18 in `skills/dayz-model-pipeline/references/critical-rules.md` and use the relative check against the Visual LOD), `WARN_LOD_KIND_UNKNOWN` (ViewPilot 1100) —
+  the warning uses the global centroid, so infer no absolute sign — see rule 18 in `skills/_shared/models/generated-model-rules.md` and use the relative check against the Visual LOD), `WARN_LOD_KIND_UNKNOWN` (ViewPilot 1100) —
   all expected.
 
 ### 3.6 Animated interior vs the shell+proxy architecture (the gauge/steering trap)

@@ -121,7 +121,7 @@ passed as `-temp`: with `-clear`, AddonBuilder wipes its `-temp` before copying.
    - Not measured: what an empty material does in game.
    - **A direct `binarize.exe` call needs a dedicated `-addon` folder too** (BINARIZE
      1.30.164078.38, a vehicle mod whose source sat outside `P:\`), as the direct-call
-     templates have it (`skills/dayz-model-pipeline/references/py3d-direct-generation.md`,
+     templates have it (`skills/_shared/models/py3d-generation.md`,
      `skills/_shared/vehicles/p3d-vehicle-killers.md`).
      Without it the first model loaded about 5 min after launch in one run; in a later run
      none had come out after 30 min (a timeout; right after it, other processes held more
@@ -203,7 +203,7 @@ passed as `-temp`: with `-clear`, AddonBuilder wipes its `-temp` before copying.
      `env_land_optic_co.paa`); the other 7 are vanilla penetration `.rvmat`, not staged either
      (rule 1), and they failed without `-addon` too, though present on `P:\dz`. Not measured
      which keeps them from loading: the unstaged texture, the source outside `P:\`
-     (`/dayz-model-pipeline` `references/py3d-direct-generation.md`), or what the direct
+     (`skills/_shared/models/py3d-generation.md`), or what the direct
      call lacks against AddonBuilder 1.0.240639 (`-binpath`, `-textures`, `-exclude`,
      `-maxProcesses`, `-targetBonesInterval`, `-silent`, and the `-addon` folder as working
      directory, per its rpt). AddonBuilder builds staged outside `P:\` resolved

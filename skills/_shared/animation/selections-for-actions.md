@@ -59,7 +59,7 @@ The quad's numbers: handlebar, 1 step, cap 6 cm, height above 0.83 m and within 
 
 ## Reuse a baked viewer
 
-Parsing a `.p3d` of 10 MB or more with py3d took about 30 seconds when measured, enough to hit a command time limit. An HTML viewer already built for the same model (by the dayz-3d-viewer or dayz-p3d-inspector skills) holds the geometry in a JSON literal: a dayz-3d-viewer page writes `const M={...}`, with positions, normals, UVs and indices as base64 strings inside the JSON; a dayz-p3d-inspector page writes `const R={...}` as plain JSON with no base64. Read that literal, parse it and decode any base64 arrays (about a second) and build the painter on it: the geometry is already in the right frame with materials separated. Parse the `.p3d` again only when no viewer exists or the geometry changed. Say this to a user who asks for a new viewer of a model that already has one.
+Parsing a `.p3d` of 10 MB or more with py3d took about 30 seconds when measured, enough to hit a command time limit. An HTML viewer already built for the same model (by the 3D viewer tool, `_shared/models/tools-3d-viewer.md`, or the p3d inspector of dayz-model-tools) holds the geometry in a JSON literal: a 3D viewer page writes `const M={...}`, with positions, normals, UVs and indices as base64 strings inside the JSON; a p3d inspector page writes `const R={...}` as plain JSON with no base64. Read that literal, parse it and decode any base64 arrays (about a second) and build the painter on it: the geometry is already in the right frame with materials separated. Parse the `.p3d` again only when no viewer exists or the geometry changed. Say this to a user who asks for a new viewer of a model that already has one.
 
 ## Overlays in any lit viewer
 
@@ -72,7 +72,7 @@ The two overlay rules above apply to every overlay in a Three.js scene with phys
 3. Build the painter on that data. The first one takes about a day; later ones are copies.
 4. The user opens it, corrects the seeded brushes and exports JSON.
 5. Run the refiner with caps and filters for this model.
-6. Write the result into the `.p3d` with the dayz-p3d-inspector skill or a project script. That script must follow the rules in `../py3d-mlod-notes.md`, "Writing a `.p3d` from a script".
+6. Write the result into the `.p3d` with the p3d inspector of dayz-model-tools or a project script. That script must follow the rules in `../py3d-mlod-notes.md`, "Writing a `.p3d` from a script".
 7. Look at the selection in Object Builder or reopen the viewer.
 8. Test in game: start the action from every angle a player would. Adjust caps and filters if coverage is wrong.
 

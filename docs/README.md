@@ -208,55 +208,14 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | [`/dayz-p3d-audit`](../skills/dayz-p3d-audit/SKILL.md) | Audit `.p3d` models for collision, action targeting, physics, animation issues |
 | [`/dayz-particles`](../skills/dayz-particles/SKILL.md) | Particle effect creation (`.ptc` / `.emat`) without Workbench |
 
-### Reference and pipeline skills
+### Model and animation tools
 
-Most of these 22 skills are reference skills: the agent loads one when a task touches its topic, and reads the reference file the skill points at. Some also ship offline scripts.
-
-#### Vehicles
+These skills run offline scripts on the files they are given. The knowledge behind them lives in the packs under `skills/_shared/`, indexed in [`skills/_shared/README.md`](../skills/_shared/README.md).
 
 | Command | Purpose |
 |---|---|
-| [`/rip-vehicle-import`](../skills/rip-vehicle-import/SKILL.md) | Guide for importing a ripped racing-game car with moving doors, hood and trunk into a drivable DayZ car: contract deltas, check allowlist, visual signoff and a classification viewer |
-
-#### Models, textures and 3D
-
-| Command | Purpose |
-|---|---|
-| [`/dayz-model-pipeline`](../skills/dayz-model-pipeline/SKILL.md) | Build a complete DayZ object from scratch or from an outside mesh: geometry in headless Blender, a `.p3d` assembled with py3d, textures, `.rvmat`, `model.cfg` and the config entries |
-| [`/dayz-p3d-inspector`](../skills/dayz-p3d-inspector/SKILL.md) | Extract every LOD, memory point, selection and named property of a `.p3d` into one JSON, edit memory points in a 3D viewer, and build a new `.p3d` from it |
-| [`/dayz-3d-viewer`](../skills/dayz-3d-viewer/SKILL.md) | Turn an MLOD `.p3d` with its `.paa` and `.rvmat` files into a `.glb` and a standalone HTML viewer; convert `.paa` to `.png` |
-| [`/dayz-proxy-align`](../skills/dayz-proxy-align/SKILL.md) | Read the proxies of an MLOD `.p3d`, align them in a browser editor against the worn clothing, and write them back with py3d |
-| [`/uv-clean-atlas`](../skills/uv-clean-atlas/SKILL.md) | Build clean UV atlases for hard-surface meshes with headless Blender, and audit any UV set for overlap, island count and density |
-| [`/3d-generation-harness`](../skills/3d-generation-harness/SKILL.md) | Run a 3D model build as a gated pipeline: intake, research, plan with tests, build per component, adversarial review, fix loop and ship gate |
-| [`/ai-3d-to-dayz`](../skills/ai-3d-to-dayz/SKILL.md) | Front end for AI-generated props: image or text to 3D, cleanup, retopology, UVs, normal bake, PBR maps and the handoff to `.p3d`, `.paa` and `.rvmat` |
-| [`/blender-assembly`](../skills/blender-assembly/SKILL.md) | Rules and a helper library for building models in Blender through Blender MCP tools |
-| [`/blender-visual-review`](../skills/blender-visual-review/SKILL.md) | Render a Blender model from several angles, check the images against a defect checklist, and confirm each fix by rendering the same angles again |
-
-#### Animation, characters and clothing
-
-| Command | Purpose |
-|---|---|
-| [`/dayz-animation-pipeline`](../skills/dayz-animation-pipeline/SKILL.md) | Produce and change DayZ animations end to end: `model.cfg` skeletons, `AnimationSources`, RTM and SEAnim files, the animation graphs, rider poses and weapons in hands |
-| [`/dayz-characters`](../skills/dayz-characters/SKILL.md) | Import and author humanoids on the vanilla character bases (infected, survivors, NPCs): rigging, weights, LODs, config and ragdoll, plus an offline winding gate |
-| [`/dayz-clothing`](../skills/dayz-clothing/SKILL.md) | Build, fix and diagnose worn clothing (the `_m` and `_f` models): the worn model and `model.cfg` contract, a staged build, an alignment viewer and an FBX handoff |
-
-#### World and game systems
-
-| Command | Purpose |
-|---|---|
-| [`/dayz-basebuilding`](../skills/dayz-basebuilding/SKILL.md) | Reference for buildable structures on `BaseBuildingBase`: kits, the `Construction` config block, build and dismantle actions, the bit mask save and damage zones |
-| [`/dayz-persistence`](../skills/dayz-persistence/SKILL.md) | Reference for persistence: `OnStoreSave` and `OnStoreLoad` streams, Community Framework ModStorage, format changes and rollback, sidecar JSON files |
-| [`/rigorous-data-audit`](../skills/rigorous-data-audit/SKILL.md) | Audit procedure for mods where a bug loses player progression: mechanical checks, eight audit angles, and every finding verified against the real file |
-| [`/dayz-ai-patterns`](../skills/dayz-ai-patterns/SKILL.md) | Reference for AI behaviour patterns studied in the DayZ Expansion AI module: state machine, threat and targeting, pathfinding and groups, and the vanilla `NoiseSystem` |
-
-#### Scripting, UI and workflow
-
-| Command | Purpose |
-|---|---|
-| [`/enforce-script-reference`](../skills/enforce-script-reference/SKILL.md) | Deep reference for writing and reviewing Enforce Script: hard rules, compiler and runtime traps, script layers, memory, RPC, synced variables and timers |
-| [`/dayz-ui-development`](../skills/dayz-ui-development/SKILL.md) | Reference for building UI: menus, HUD overlays, `.layout` files, widgets, `.styles`, imagesets, stringtables, Dabs Framework MVC and the 1.30 UI changes |
-| [`/dayz-mod-dev`](../skills/dayz-mod-dev/SKILL.md) | Reading guide and rule set for developing a mod as a whole on DayZ 1.30 or later (vanilla, Community Framework, Expansion), on Windows or Linux |
-| [`/dayz-mod-workflow`](../skills/dayz-mod-workflow/SKILL.md) | Protocol for implementing and debugging a mod: the client and server data map, API checks, a checklist per file type, the error catalog and the debug order |
+| [`/dayz-model-tools`](../skills/dayz-model-tools/SKILL.md) | Run the model scripts on source `.p3d` and `.blend` files: the p3d inspector (Recipe JSON, drag memory points, rebuild), the proxy editor, the clothing alignment viewer and FBX handoff, the winding gate, the clean UV atlas pipeline with its exact overlap gate, the `.p3d` to `.glb` browser preview, the Blender build helpers and render review, and the ripped car classification viewer |
+| [`/dayz-animation-pipeline`](../skills/dayz-animation-pipeline/SKILL.md) | Run the animation scripts: `model.cfg` from JSON, SEAnim and RTM files, the rider pose solver, weapon animation viewers, motion contract checks in Blender and Mixamo retargeting |
 
 ### Search / RAG
 

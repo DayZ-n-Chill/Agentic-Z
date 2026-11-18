@@ -18,6 +18,29 @@ Vanilla models under `P:\DZ\` are binarized ODOL, which Object Builder and `/day
 | What does a door need in the model, and who writes the rest? | `_shared/animation/doors.md` (the door subject lives in the animation pack) |
 
 | How are model axes mapped from Blender to DayZ, and how must visual and collision LODs be wound? | `axes-and-winding.md` |
+| How do I build a model in Blender over MCP without exploded parts, scale errors, broken booleans or bare boxes (the helper library, the detail pass, the integrity gate)? | `blender-assembly.md` |
+| How do I scan a reference image zone by zone for the detail list, and where does each texture-side detail land? | `blender-detail-scan.md` |
+| How do I check a Blender model by eye: multi-angle captures, the defect checklist, the bounded fix loop, the delta check, and catching a winding flip a lit render hides? | `blender-visual-review.md` |
+| How do I take an AI-generated mesh (image or text to 3D) to a DayZ prop: generators, retopology, bake, handoff, writing the MLOD? | `ai-generation.md` |
+| How do I run a production model build as a gated pipeline (intake, dossier, plan with tests, build, roast, fix loop, ship gate)? | `generation-harness.md` |
+| The Phase 1 research dossier to fill in before any geometry is built | `generation-dossier-template.md` |
+| The scored rubric for the adversarial roast: 8 categories, evidence, defect list format | `generation-roast-rubric.md` |
+| How is a new object generated end to end (Blender headless or py3d alone, the gates, the steps, acceptance)? | `generated-model-pipeline.md` |
+| What are the 21 rules a generated model must meet? | `generated-model-rules.md` |
+| A generated model is wrong in game: which cause, which fix? | `generated-model-troubleshooting.md` |
+| How do I drive Blender without its window (primitives, modifiers, UVs, AO bake, LODs, OBJ export)? | `blender-headless.md` |
+| What must I check before working on an imported FBX or reshaping an imported mesh? | `blender-import-preflight.md` |
+| How do I clean up and export a mesh that came from another tool? | `blender-external-mesh.md` |
+| How do I write a `.p3d` with py3d (API, build order, proxies, diagnostics, repairs, a collision hull, baked mass)? | `py3d-generation.md` |
+| Which py3d to install, where mass may sit, how to replace a section safely, what the validator's axis finding means | `py3d-assembly-rules.md` |
+| What goes in each LOD of a generated model, the decimation measurements, FBX LOD object names, and keeping a large building's collision inside Binarize's limits | `lods-authoring.md` |
+| How to create memory points and named selections, where each must be present, the three parts of a proxy system, and a cable port naming scheme | `memory-and-selections-authoring.md` |
+| What the model needs in `config.cpp`, the addon layout, proxy attachment classes, and packing | `model-config-and-packing.md` |
+| What 1.30 changed for models (View Geometry proxies, `-cacheP3D`, `disableSimulation`, `liquid_source`, ODOL v56) | `dayz-1-30-models.md` |
+| An artist sent a `.p3d` back, or a binary came from outside: what to check before using it | `artist-returns.md` |
+| Worked specifications of electrical devices (button, switch, generator, cable, junction box) to adapt | `device-recipes.md` |
+| Cookware, a client side cable segment, an asset posed in the hands: what was measured | `domain-recipes.md` |
+| Binarize and proxy faults reported but not confirmed | `unconfirmed-findings.md` |
 
 ## Model tools
 
@@ -42,6 +65,8 @@ How to run the scripts of `/dayz-model-tools` and what was measured with them. T
 | Which PAA types decode, and how an RVMAT becomes a page material | `tools-3d-viewer-formats.md` |
 | Which Three.js version and loading method a generated page can use, and how to test it | `tools-threejs-viewers.md` |
 | The plan (not built) for playing `model.cfg` animations and LED states in the viewer | `tools-3d-viewer-states.md` |
+| A local vision model as a pre-filter on renders: which checklist questions it may answer, how each was calibrated, running `vr_score.py` and `vr_calibrate.py` | `tools-vlm-judge.md` |
+| The JSON format of a render checklist and how `--view` routes each question to one image | `tools-vlm-checklist-format.md` |
 
 ## Other packs this one leans on
 

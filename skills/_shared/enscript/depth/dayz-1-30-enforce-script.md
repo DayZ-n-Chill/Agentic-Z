@@ -296,7 +296,7 @@ Until 1.29, `m_ResultReplacesIngredient` + `TransferItemProperties` could overwr
 
 ### 7.8 `ActionTargetsCursor.Update(bool fullUpdate = true)`
 
-Until 1.29 the vanilla method is `Update()`. Since 1.30 it is `Update(bool fullUpdate = true)`. A 1.29 override does not compile on 1.30: `Overloaded function 'Update' not compatible` (measured in game, DayZDiag 1.30 Exp). Gate the override on the version define (see `skills/dayz-mod-workflow/references/dayz-1-30-mod-workflow.md`):
+Until 1.29 the vanilla method is `Update()`. Since 1.30 it is `Update(bool fullUpdate = true)`. A 1.29 override does not compile on 1.30: `Overloaded function 'Update' not compatible` (measured in game, DayZDiag 1.30 Exp). Gate the override on the version define (see `skills/dayz-launch-test/references/dayz-1-30-server-measured.md`, section 1):
 
 ```c
 #ifdef DAYZ_1_29

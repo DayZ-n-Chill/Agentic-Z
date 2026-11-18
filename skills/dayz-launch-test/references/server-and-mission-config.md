@@ -116,7 +116,7 @@ Stock sections (`MISSION/cfggameplay.json`; `version` is 123):
 - `VehicleData` (111-118): `boatDecayMultiplier` and the wheel detach/damage switches.
 
 The script also knows `ExternalLockData` and `SandstormData` (`CfgGameplayDataJson.c:22-23`), which the Chernarus
-file does not carry and the Nasdara file does (`skills/dayz-mod-workflow/references/dayz-1-30-mod-workflow.md`).
+file does not carry and the Nasdara file does (`skills/_shared/world/README.md`).
 
 ## 4. `cfgeffectarea.json`
 

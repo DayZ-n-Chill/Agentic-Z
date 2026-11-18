@@ -6,7 +6,7 @@ This repo is a Windows workspace: every skill, the `.bat` wrappers and `/dayz-pr
 and on Windows they apply unchanged. This note is the Linux supplement the skills point to: which Windows
 step has a native Linux equivalent, which one runs under Proton and how, and what was not checked. Read it
 when a skill names a DayZ Tools program, `P:\`, PowerShell, `%LOCALAPPDATA%` or `DayZDiag_x64.exe` and the
-machine is Linux. The helper scripts it names are in `skills/_shared/scripts/` (table in section 7).
+machine is Linux. The helper scripts it names are in `scripts/tools/dayz-linux/` (table in section 7).
 
 Not yet checked on `P:\`: nothing here is a fact about vanilla game data. It is measured tool, Proton and
 server behaviour on the builds named below, and the measurements have not been repeated.
@@ -26,16 +26,16 @@ below were not measured at all.
 |---|---|---|
 | Pack / sign a PBO (AddonBuilder, DSSignFile) | `dayzmake build` / `keygen` / `sign` (dayzmake >= 1.0.0; install below) | native; no external wrapper required |
 | Binarize models (`.p3d` MLOD → ODOL) | `dayzmake build --proton-binarize` (invokes BI binarize.exe under Proton) | recorded textured-cube comparison at dayzmake commit `7dcb3cf`, which `v1.0.0` contains (section 4) |
-| Publish to the Workshop (Publisher) | `workshop` uploader (the steam-workshop-uploader tool) | native route; `skills/_shared/scripts/dayz-mod-pack.sh publish-hint` prints the commands (`skills/dayz-build-pbo/references/dayzmake-linux.md`) |
-| Cross-check dayzmake against BI's own tools | `skills/_shared/scripts/dayz-proton.sh tool AddonBuilder P:\<Mod> <out> -prefix=<Mod>`; `tool DSCreateKey` / `DSSignFile` / `DSCheckSignatures`; `dayz-proton.sh binarize <P-root> <addon> <out> [files]` | works (section 4); for comparisons, not the build |
+| Publish to the Workshop (Publisher) | `workshop` uploader (the steam-workshop-uploader tool) | native route; `scripts/tools/dayz-linux/dayz-mod-pack.sh publish-hint` prints the commands (`skills/dayz-build-pbo/references/dayzmake-linux.md`) |
+| Cross-check dayzmake against BI's own tools | `scripts/tools/dayz-linux/dayz-proton.sh tool AddonBuilder P:\<Mod> <out> -prefix=<Mod>`; `tool DSCreateKey` / `DSSignFile` / `DSCheckSignatures`; `dayz-proton.sh binarize <P-root> <addon> <out> [files]` | works (section 4); for comparisons, not the build |
 | `config.cpp` → `config.bin` (CfgConvert) | `dayzmake rapify`, or `dayz-proton.sh tool CfgConvert -bin -dst <bin> <cpp>` | both work |
 | PNG/TGA → PAA (ImageToPAA) | `dayzmake img2paa`, or `dayz-proton.sh tool ImageToPAA <in> <out.paa>` | both work |
 | View a PAA (TexView) | `dayzmake paa2img`, the viewer tool in `scripts/tools/dayz-3d-viewer/`, or `dayz-proton.sh gui TexView <paa>` | all work |
 | Object Builder | `dayz-proton.sh gui ObjectBuilder [model.p3d]` | starts, loads a model; editing not exercised |
 | Workbench | `dayz-proton.sh gui Workbench` | starts and compiles the bundled scripts; game config needs `P:\dz` (section 3) |
 | Terrain Builder, DSUtils GUI, ImageToPAA GUI | `dayz-proton.sh gui <Tool>` | **not verified** |
-| Dedicated server (`DayZServer_x64.exe`) | native `DayZServer` (Steam app 223350) from a private tree: `skills/_shared/scripts/find-dayzserver.sh`, `make-server-tree.sh`, `free-ports.sh` | native, preferred; `skills/dayz-launch-test/references/linux-native-server.md` |
-| Client (`DayZ_x64.exe`) | retail client under Proton, paired with the native server: `skills/_shared/scripts/dayz-client-headless.sh`, `dayz-client-test.sh` | works; `skills/dayz-launch-test/references/linux-headless-client.md` |
+| Dedicated server (`DayZServer_x64.exe`) | native `DayZServer` (Steam app 223350) from a private tree: `scripts/tools/dayz-linux/find-dayzserver.sh`, `make-server-tree.sh`, `free-ports.sh` | native, preferred; `skills/dayz-launch-test/references/linux-native-server.md` |
+| Client (`DayZ_x64.exe`) | retail client under Proton, paired with the native server: `scripts/tools/dayz-linux/dayz-client-headless.sh`, `dayz-client-test.sh` | works; `skills/dayz-launch-test/references/linux-headless-client.md` |
 | `DayZDiag_x64.exe` (client or `-server`) | `dayz-proton.sh headless start <state> DayZDiag <args>`, or managed through dayz-mcp `main` (Linux host support since 2026-11-14; last row) | both roles run; a diag client joins a diag server and reaches the world (section 5, pairing) |
 | `P:` drive (WorkDrive, `subst`) | a plain directory, mapped by `dayz-proton.sh init <dir>` | works (section 3) |
 | Blender model work (Blender, py3d, the model checks) | `apt-get install -y blender`, `pip install opensimplex --break-system-packages`, then `pip install -e scripts/tools/py3d`; py3d, the model preflight tool (`scripts/tools/dayz-model-preflight`) and the 3D viewer (`scripts/tools/dayz-3d-viewer`) are Python and run natively | install described for Debian; not run on this workspace |
@@ -81,7 +81,7 @@ app its own Wine prefix (`steamapps/compatdata/<appid>`), and nothing crosses be
   HKEY_LOCAL_MACHINE/Software\BIStudio\TextureConvert" without them) and the VC++ runtime from
   `Steamworks Shared/_CommonRedist` (Object Builder does not load without `mfc140.dll`).
 
-`skills/_shared/scripts/dayz-proton.sh init <P-root>` handles all of it in private prefixes under
+`scripts/tools/dayz-linux/dayz-proton.sh init <P-root>` handles all of it in private prefixes under
 `~/.local/share/dayz-proton` (Steam's own prefixes are not touched): it replays the install-script
 registry, adds the game `main` key, installs the VC++ runtime, spends the first .NET start (below),
 and links `P:` in the tools and the game prefix. It takes about two minutes once. `doctor` prints what
@@ -91,7 +91,7 @@ is installed, the game version of each app, update state and whether dayzmake (o
 string: each writes a `.bat` holding every user value double-quoted (`%` doubled, a run of trailing
 backslashes doubled, `setlocal DisableDelayedExpansion` so `!` stays literal), and refuses an argument
 with a double quote, CR, LF or an empty argument before anything is created, copied, linked, removed
-or run. The offline tests (`skills/_shared/scripts/test_dayz_proton.py`) prove that .bat serialization only, not how `cmd.exe`, binarize.exe or the console tools parse it (that parsing is not checked).
+or run. The offline tests (`scripts/tools/dayz-linux/test_dayz_proton.py`) prove that .bat serialization only, not how `cmd.exe`, binarize.exe or the console tools parse it (that parsing is not checked).
 `headless stop` signals only a sway whose recorded /proc start time and full argv still match, and then only the wineserver serving that session's recorded display, as a pid:starttime pair re-checked (/proc comm and start time) just before the signal; if the sway is gone or foreign it signals nothing and says so.
 A headless state path may only contain `A-Z a-z 0-9 / . _ -`: `headless start`, `stop` and
 `shot` check the path as given and once `pwd -P` resolved, before any side effect, and refuse
@@ -137,7 +137,7 @@ From a `Z:` path it is a Linux directory, possibly your home, and binarize then 
 
 Vanilla data under `P:\dz` (what WorkDrive's "extract game data" does on Windows): unpack the game's
 PBOs with `dayzmake unpack` into `P/` at their prefix paths using dayzmake >= `v2.0.0` (tag `v2.0.0`, commit `f31056ae`, `src/pbo.rs` `safe_relative_path`/`crosses_symlink`; `v1.0.0` `src/pbo.rs:724,731-733` has no entry-name containment — on < `v2.0.0` check every entry name with `dayzmake inspect` first; the unpacking rules are in `skills/dayz-import-mod/references/extraction-pitfalls.md`). For scripts and configs
-only, `skills/_shared/scripts/extract-dayz-sources.sh <install> <dir>` (configs derapified; about 90 s). Workbench without the
+only, `scripts/tools/dayz-linux/extract-dayz-sources.sh <install> <dir>` (configs derapified; about 90 s). Workbench without the
 extracted data compiled its bundled scripts but logged `No entry 'config.bin/CfgVehicles/…'`
 for vanilla classes. Whether an extracted `P:\dz` removes those errors is **not verified**,
 and neither is a model that references vanilla textures.
@@ -268,11 +268,11 @@ opened, not used to edit. An ODOL produced under Proton was not loaded in game h
 
 ## 7. The helper scripts
 
-All are in `skills/_shared/scripts/`. The shell scripts run on Linux only (POSIX `sh` or `bash`, `/proc`,
+All are in `scripts/tools/dayz-linux/`. The shell scripts run on Linux only (POSIX `sh` or `bash`, `/proc`,
 Proton). The two Python scripts also run on Windows, where the vanilla scripts folder on the work drive is
-already a tree `build-api-index.py` can read: on 2026-11-17 `python skills/_shared/scripts/build-api-index.py`
+already a tree `build-api-index.py` can read: on 2026-11-17 `python scripts/tools/dayz-linux/build-api-index.py`
 with that folder and an output folder as its two arguments wrote the index in about 6 seconds (6,776 classes,
-431 enums), and `python skills/_shared/scripts/dayz-api.py chain PlayerBase` then printed the base class chain.
+431 enums), and `python scripts/tools/dayz-linux/dayz-api.py chain PlayerBase` then printed the base class chain.
 On Windows the Tier 2 search rule (Grep, then the `dayz-rag` search) stays the first choice; the index is for
 a machine with no work drive, or for one answer that needs every inherited member.
 

@@ -1,7 +1,7 @@
 {
   "name": "agentic-z",
   "version": "2.1.0",
-  "description": "AI agent stack for DayZ modding. After install, run /dayz-init for a guided setup wizard that takes you from empty repo to mod-loaded-in-DayZ. Ships specialist subagents and DayZ slash skills covering the full mod pipeline (preflight, scaffold, build PBO, launch test, types.xml, RAG indexer) and tool and reference skills for models, animation, characters and clothing, textures, particles, UI and Enforce Script, knowledge packs the specialists read (vehicles, weapons, physics, audio, world systems and more), plus the dayz-rag MCP server for semantic search over vanilla DayZ source.",
+  "description": "AI agent stack for DayZ modding. After install, run /dayz-init for a guided setup wizard that takes you from empty repo to mod-loaded-in-DayZ. Ships specialist subagents and DayZ slash skills covering the full mod pipeline (preflight, scaffold, build PBO, launch test, types.xml, RAG indexer) tool skills for models, animation, textures, particles and UI previews, knowledge packs the specialists read (Enforce Script, models, textures, UI, persistence, AI, vehicles, weapons, physics, audio, world systems and more), plus the dayz-rag MCP server for semantic search over vanilla DayZ source.",
   "author": {
     "name": "DayZ n' Chill",
     "url": "https://github.com/DayZ-n-Chill"
@@ -58,29 +58,8 @@
     "./skills/dayz-upgrade-guard",
     "./skills/dayz-conflict-check",
     "./skills/dayz-health",
-    "./skills/3d-generation-harness",
-    "./skills/ai-3d-to-dayz",
-    "./skills/blender-assembly",
-    "./skills/blender-visual-review",
-    "./skills/dayz-3d-viewer",
-    "./skills/dayz-ai-patterns",
     "./skills/dayz-animation-pipeline",
-    "./skills/dayz-basebuilding",
-    "./skills/dayz-characters",
-    "./skills/dayz-clothing",
-    "./skills/dayz-mod-dev",
-    "./skills/dayz-mod-workflow",
-    "./skills/dayz-model-pipeline",
-    "./skills/dayz-model-tools",
-    "./skills/dayz-p3d-inspector",
-    "./skills/dayz-persistence",
-    "./skills/dayz-proxy-align",
-    "./skills/dayz-texture-pipeline",
-    "./skills/dayz-ui-development",
-    "./skills/enforce-script-reference",
-    "./skills/rigorous-data-audit",
-    "./skills/rip-vehicle-import",
-    "./skills/uv-clean-atlas"
+    "./skills/dayz-model-tools"
   ],
   "agents": [
     "./agents/agent-creator.md",

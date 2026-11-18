@@ -116,8 +116,9 @@ Deep material lives in `<skill-dir>\references\`. `build.py` runs none of it bey
 | How do I sign the PBO and publish it to the Workshop with the Publisher or SteamCMD? | `references/workshop-publish.md` |
 | How do I build, sign and publish on Linux with dayzmake? | `references/dayzmake-linux.md` |
 | Is there validator code I can adapt for a CI pipeline? | `references/validation-scripts.md` |
+| What do I check in each kind of file (`config.cpp`, script, networking, layout, action, `.rvmat`, persistence, refactor) before it counts as written? | `references/file-checklists.md` |
 
-To study a PBO somebody else built, use `/dayz-import-mod` (its `pbo_inventory.py` lists what a PBO holds). Building is one step of the mod loop in `/dayz-mod-dev` (look up, write, build, boot on a local server, verify, publish).
+To study a PBO somebody else built, use `/dayz-import-mod` (its `pbo_inventory.py` lists what a PBO holds). Building is one step of the mod loop in `skills/dayz-launch-test/references/mod-loop.md` (look up, write, build, boot on a local server, verify, publish).
 
 ## Do not
 

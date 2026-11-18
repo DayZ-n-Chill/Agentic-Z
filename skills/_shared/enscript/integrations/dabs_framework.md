@@ -130,7 +130,7 @@ ButtonWidgetClass BtnRefresh {
 }
 ```
 
-When the bound widget also has child widgets, the `ScriptParamsClass` goes in a second block of its own, after the block that holds the children; it is never mixed in with them. In a count over the layouts of shipped third party mods, all 157 `ScriptParamsClass` blocks sat alone like this, and the block holds its fields directly, with no inner braces (a count over third party layouts, not checked on `P:\`; the layout side is in `skills/dayz-ui-development/references/layout-format.md`).
+When the bound widget also has child widgets, the `ScriptParamsClass` goes in a second block of its own, after the block that holds the children; it is never mixed in with them. In a count over the layouts of shipped third party mods, all 157 `ScriptParamsClass` blocks sat alone like this, and the block holds its fields directly, with no inner braces (a count over third party layouts, not checked on `P:\`; the layout side is in `skills/_shared/ui/layout-format.md`).
 
 `ViewBinding` fields you can set there:
 
@@ -226,7 +226,7 @@ class MyMod_Menu: ScriptViewMenuTemplate<MyMod_StatusController>
 - **`WidgetAnimator` times are milliseconds, but the `TimeSpan` helpers count seconds.** `TimeSpan` is `typedef int` (`1_Core\DabsFramework\TimeSpan.c`), so `TimeSpan.FromMinutes(1)` is 60 and animates for 60 ms. Pass plain millisecond ints: `WidgetAnimator.Animate(widget, WidgetAnimatorProperty.COLOR_A, 1.0, 300);`.
 - **Detect the framework from script with `#ifdef DABSFRAMEWORK_1_51`**, defined at the top of `MVC\ScriptedViewBase.c`. The mod has no release tags.
 
-More depth (the full `WidgetAnimator` and `LinearColor` calls, the complete `ObservableCollection` operations, click dispatch and the shipped prefab layouts) is in `skills/dayz-ui-development/references/dabs-framework.md`.
+More depth (the full `WidgetAnimator` and `LinearColor` calls, the complete `ObservableCollection` operations, click dispatch and the shipped prefab layouts) is in `skills/_shared/ui/dabs-mvc-internals.md`.
 
 Third party mod behaviour, not checked against the Dabs source; the code for each is in `skills/_shared/enscript/depth/dabs-mvc-advanced.md`:
 

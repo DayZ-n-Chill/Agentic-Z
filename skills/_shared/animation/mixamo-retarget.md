@@ -85,7 +85,7 @@ A retarget onto the DayZ skeleton (the survivor's bone list is the `player_testi
 
 The modules are not trusted until one positive and one negative fixture have run.
 
-- **Positive:** import any Mixamo FBX and retarget it onto a copy of its own armature with the identity map. The result must visually match the original (render three frames with `blender-visual-review`).
+- **Positive:** import any Mixamo FBX and retarget it onto a copy of its own armature with the identity map. The result must visually match the original (render three frames with the capture helper of `_shared/models/blender-visual-review.md`).
 - **Negative:** a retarget with an empty bone map must raise or return an error, not silently produce a frozen action.
 
 Record both outcomes; only then drop the experimental label.

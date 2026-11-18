@@ -7,7 +7,7 @@ The work needs Blender and the Blender MCP server, not `P:\` or DayZ Tools. For 
 ## When this is the wrong file
 
 - Retargeting Mixamo or FBX mocap onto a rig: `mixamo-retarget.md` (same MCP server, different job).
-- Building or changing geometry: the `blender-assembly` skill. Visual review of a static model: the `blender-visual-review` skill.
+- Building or changing geometry: `_shared/models/blender-assembly.md`. Visual review of a static model: `_shared/models/blender-visual-review.md`.
 - DayZ object animation driven by config (doors, levers, `model.cfg` `class Animations`, `SetAnimationPhase`): `model-cfg-animations.md`; it needs no Blender at all. For DayZ, Blender work stops at the `.txa` (`blender-txa-export.md`).
 
 ## Preflight (run before any animation work)

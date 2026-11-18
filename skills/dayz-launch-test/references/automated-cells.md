@@ -112,7 +112,7 @@ The standard `DayZDiag_x64` defines `DIAG_DEVELOPER` but not `DEVELOPER` (bare).
 
 Expensive trap: if a mod's PBO calls a symbol that vanilla defines only under `#ifdef DEVELOPER` (a call to `SendGetInVehicle`, for example), that symbol does not exist in this build, so the whole PBO fails to compile and every tool and script of the mod drops. It is not a silent no-op, unlike `ExecuteEnforceScript`, which is Developer-only and returns false at runtime.
 
-Rule before basing a design on a vanilla `#ifdef DEVELOPER` API: (1) grep the `#ifdef` guarding it (`DEVELOPER` or `DIAG_DEVELOPER`?); (2) if it is `DEVELOPER`, read the `defines:` line of a recent `script_*.log` for that build to confirm it is active; (3) if it is not active, do not call the symbol. Wrapping the call in `#ifdef DEVELOPER` does not help when the design depends on it; find a path that does not need `DEVELOPER`. Cross-ref `dayz-mod-workflow` (anti-confabulation). Measured 2026-06-28 in the compile logs of both profiles.
+Rule before basing a design on a vanilla `#ifdef DEVELOPER` API: (1) grep the `#ifdef` guarding it (`DEVELOPER` or `DIAG_DEVELOPER`?); (2) if it is `DEVELOPER`, read the `defines:` line of a recent `script_*.log` for that build to confirm it is active; (3) if it is not active, do not call the symbol. Wrapping the call in `#ifdef DEVELOPER` does not help when the design depends on it; find a path that does not need `DEVELOPER`. Cross-ref the golden rule in `skills/dayz-scope-mod/references/implementation-protocol.md`, section 2a. Measured 2026-06-28 in the compile logs of both profiles.
 
 ## Automated in-game cell without a human pilot: the four measured walls and workarounds
 

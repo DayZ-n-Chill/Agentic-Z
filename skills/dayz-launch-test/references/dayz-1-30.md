@@ -49,7 +49,7 @@ Requires `-filePatching`. Workbench always enables the resolve flag.
 
 (since 1.30) `CGame.IsHeadless()` and `IsHeadlessOrDedicatedServer()`
 (`P:\scripts\3_game\global\game.c:1130`, `:1136`) —
-see `skills/dayz-mod-workflow/references/dayz-1-30-mod-workflow.md`. This skill's
+see `skills/_shared/enscript/depth/dayz-1-30-enforce-script.md`. This skill's
 MCP composition still requires `-Mode all` for a **rendered** client
 (the MCP verification references (`references/mcp/README.md`): headless has no window to grab).
 

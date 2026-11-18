@@ -15,7 +15,7 @@ errors but break collision, targeting, animation, or textures.
 
 Follow `skills/_shared/dayz-conventions.md`. The script runs `/dayz-preflight` first and stops if it fails.
 
-It reports and never edits a file. To look inside a model or move its memory points use `/dayz-p3d-inspector`; to build or fix a model use the model pipeline skill (`dayz-model-pipeline`); to place proxies use `dayz-proxy-align`.
+It reports and never edits a file. To look inside a model or move its memory points use the p3d inspector of `/dayz-model-tools`; to build or fix a model follow the generated model pipeline (`skills/_shared/models/generated-model-pipeline.md`); to place proxies use the proxy editor of `dayz-model-tools`.
 
 ## How to run
 

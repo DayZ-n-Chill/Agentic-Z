@@ -210,8 +210,8 @@ def test_model_changes_still_go_to_object_builder(text):
 
 
 @pytest.mark.parametrize("text", ["inspect the model.cfg of my door", "inspect my model.cfg animations"])
-def test_inspecting_a_model_cfg_is_not_the_p3d_inspector(text):
-    assert decide(text)["route"] != "dayz-p3d-inspector"
+def test_inspecting_a_model_cfg_is_not_the_model_tools(text):
+    assert decide(text)["route"] != "dayz-model-tools"
 
 
 @pytest.mark.parametrize("text", ["triangulate the quads on my crate", "the ground plane in my model"])
@@ -520,30 +520,30 @@ def test_every_user_facing_dayz_skill_is_a_target():
 @pytest.mark.parametrize(
     "text, expected",
     [
-        ("make a 3D viewer for my crate.p3d", "dayz-3d-viewer"),
-        ("convert this paa to png", "dayz-3d-viewer"),
-        ("export my truck model to glb", "dayz-3d-viewer"),
-        ("inspect my vest.p3d", "dayz-p3d-inspector"),
-        ("show me the memory points of the door", "dayz-p3d-inspector"),
-        ("build a p3d from this recipe json", "dayz-p3d-inspector"),
+        ("make a 3D viewer for my crate.p3d", "dayz-model-tools"),
+        ("convert this paa to png", "dayz-model-tools"),
+        ("export my truck model to glb", "dayz-model-tools"),
+        ("inspect my vest.p3d", "dayz-model-tools"),
+        ("show me the memory points of the door", "dayz-model-tools"),
+        ("build a p3d from this recipe json", "dayz-model-tools"),
         ("reverse engineer this Workshop mod", "dayz-import-mod"),
         ("extract the pbos of that trader mod and look for patterns", "dayz-import-mod"),
-        ("align the proxies on my mannequin", "dayz-proxy-align"),
-        ("the vest proxy comes out rotated", "dayz-proxy-align"),
+        ("align the proxies on my mannequin", "dayz-model-tools"),
+        ("the vest proxy comes out rotated", "dayz-model-tools"),
         ("verify MyVest in game with MCP", "dayz-launch-test"),
         ("run the vehicle acceptance ladder", "dayz-launch-test"),
-        ("lint my rvmat", "dayz-texture-pipeline"),
-        ("is my normal map OpenGL or DirectX?", "dayz-texture-pipeline"),
+        ("lint my rvmat", "dayz-pack-texture"),
+        ("is my normal map OpenGL or DirectX?", "dayz-pack-texture"),
         ("check the get-in points on my truck", "dayz-p3d-audit"),
         ("audit my car model before I pack it", "dayz-p3d-audit"),
-        ("run the winding gate on my zombie", "dayz-characters"),
+        ("run the winding gate on my zombie", "dayz-model-tools"),
         ("write a motion contract for the reload", "dayz-animation-pipeline"),
         ("write a feature spec for the trader", "dayz-scope-mod"),
-        ("open the alignment viewer for my vest", "dayz-clothing"),
+        ("open the alignment viewer for my vest", "dayz-model-tools"),
         ("use dayz-model-tools", "dayz-model-tools"),
         ("make realistic animations for the vault", "dayz-animation-specialist"),
-        ("port my mod to 1.30", "dayz-mod-dev"),
-        ("show me the error catalog", "dayz-mod-workflow"),
+        ("port my mod to 1.30", "dayz-script-specialist"),
+        ("show me the error catalog", "dayz-launch-test"),
         ("what hot-reloads with file patching?", "dayz-build-engineer"),
         ("how do I run a headless client under Proton", "dayz-build-engineer"),
     ],
@@ -558,17 +558,17 @@ def test_domain_tool_skills_route_confidently(text, expected):
     "text, expected",
     [
         ("use dayz-animation-pipeline", "dayz-animation-pipeline"),
-        ("open the model pipeline", "dayz-model-pipeline"),
-        ("show me the AI patterns", "dayz-ai-patterns"),
+        ("open the model pipeline", "dayz-object-builder"),
+        ("show me the AI patterns", "dayz-ai-specialist"),
         ("open the aviation reference", "dayz-vehicle-specialist"),
-        ("where is the base building reference?", "dayz-basebuilding"),
+        ("where is the base building reference?", "dayz-persistence-specialist"),
         ("show me the doors reference", "dayz-animation-specialist"),
         ("open the sandstorm reference", "dayz-map-specialist"),
         ("open the motorbike reference", "dayz-vehicle-specialist"),
-        ("open the persistence reference", "dayz-persistence"),
+        ("open the persistence reference", "dayz-persistence-specialist"),
         ("open the physics engine reference", "dayz-physics-specialist"),
         ("open the sound system reference", "dayz-audio-fx-specialist"),
-        ("open the UI development reference", "dayz-ui-development"),
+        ("open the UI development reference", "dayz-ui-specialist"),
         ("open the underground reference", "dayz-map-specialist"),
         ("open the weapons reference", "dayz-weapon-specialist"),
     ],

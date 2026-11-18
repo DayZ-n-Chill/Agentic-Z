@@ -20,7 +20,7 @@ Open only the file the current step needs.
 | Motorbikes: the three-layer class tree, the addon, differences from a car, script overrides, config blocks | `motorbikes.md` |
 | The ten rules that break a motorbike, measured tuning lessons, what is unfinished in 1.30 | `motorbike-invariants.md` |
 
-A ripped racing-game car has its own route in `skills/rip-vehicle-import/SKILL.md`.
+A ripped racing-game car has its own route in `rip-family-b-runbook.md`.
 
 ## Pick the route first
 
@@ -28,7 +28,7 @@ Choose by where the asset came from and how it is built, not by its symptom.
 
 | What you have | Route |
 |---|---|
-| A car ripped from a racing game, split into proxies, with doors or other moving parts (family B) | `skills/rip-vehicle-import/SKILL.md`: follow only its adapter, golden and allowlist, then the asset's own `asset-contract.json` |
+| A car ripped from a racing game, split into proxies, with doors or other moving parts (family B) | `rip-family-b-runbook.md`: follow only its adapter, golden and allowlist, then the asset's own `asset-contract.json` |
 | An asset already in flight with a frozen plan or runbook | That runbook; do not migrate it here |
 | Any other vehicle: authored from scratch, an OBJ import, a port from another mod or game | The tables of this README |
 | A family B asset whose adapter is missing | Stop and report; do not improvise a route from the pack |
@@ -53,7 +53,7 @@ Other files cite these as "invariant N", "preflight #N" or "#N".
 | "METHOD #1" to "#4" | `method-and-gate-calibration.md` |
 | "Day-1" items | `new-car-day-one.md` |
 
-Items 3, 12 and 21 moved to the family B cookbooks of the rip-vehicle-import skill; the invariant files keep a pointer under each number. Before writing a class name, property or named selection, Grep it under `P:\DZ\vehicles\` or in the file a pack file cites, and mark a value you could not check as "not yet checked on `P:\`".
+Items 3, 12 and 21 moved to the symptom files (`symptom-wheels-not-present.md`, `symptom-white-vehicle.md`, `symptom-attachment-invisible.md`); the invariant files keep a pointer under each number. Before writing a class name, property or named selection, Grep it under `P:\DZ\vehicles\` or in the file a pack file cites, and mark a value you could not check as "not yet checked on `P:\`".
 
 ## Aircraft in depth
 
@@ -128,6 +128,9 @@ Before the first boot of an aircraft, check these faults, which compile clean an
 | Origin, `autocenter` and placement problems | `placement-and-autocenter.md` |
 | Rip geometry: retopology, winding gate and direction, `autocenter` scope, deleting or splitting faces without breaking selections | `rip-geometry-and-winding.md` |
 | The rip import path in detail, including the first in-game spawn results | `rip-import.md` |
+| The day-0 family B runbook for a new ripped car: the six contract deltas, the source door inventory, the single ledger entry, the B1 to B7 allowlist, the human visual signoff, the conversion rail | `rip-family-b-runbook.md` |
+| Reviewing and changing the session A classification of a ripped car's parts without Blender: the viewer's Three.js files, the steps per car, the GLB data contract | `rip-classify-viewer.md` |
+| Field by field, what a car profile of the import project holds and which script reads each field (legacy and in flight; not a template) | `rip-profile-schema.md` |
 | Reading a GTA V mod archive offline; bone names against mesh pieces; why an exclusion list is literal names | `gta-rip-intake.md` |
 | Mesh and UV health, mirror against rotation, raw winding, the nose direction, cabin alignment, steering wheel against hands | `invariants-import-mesh-and-winding.md` |
 | How many visual LODs, how far planar dissolve and collapse go, the resolved-vertex ceiling | `invariants-lods-and-vertex-budget.md` |
@@ -186,6 +189,9 @@ Before the first boot of an aircraft, check these faults, which compile clean an
 | Negative fixtures for import gates, rules drawn from field lessons, a config gate is not a visual gate | `process-gates.md` |
 | The superseded diagnostic order, kept for vehicles already in flight. History only | `history/legacy-gate-ladder.md`, `history/pre-change-0-gate-ladder.md` |
 | The exact text of rules that were later corrected. History only | `history/superseded-family-b-rules.md` |
+| The day-1 checklist and 12-step pipeline a ripped car followed before change 0. History only | `history/family-b-canonical-path.md` |
+| The seven document types a new family B car no longer produces since change 0, and where each is kept. History only | `history/family-b-retired-artifacts.md` |
+| The full family B runbook that change 1 took off the critical path: smoke test notes, recurring defects, lift, doors, proxy frames, render gate, glass, winding lineage. History only | `history/family-b-runbook-pre-change-1.md` |
 
 ## Where vanilla keeps vehicle data
 

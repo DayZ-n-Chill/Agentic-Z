@@ -31,7 +31,7 @@ Measured results and third-party behaviour (BattlEye, Steam, VPPAdminTools, LBma
 
 Vanilla sources for the last row: `P:\scripts\4_world\plugins\pluginmanager.c:76` registers `PluginItemDiagnostic` with `RegisterPluginDiag`, `pluginmanager.c:88` registers `PluginConfigDebugProfile` with `RegisterPluginDebug` (kept only when `g_Game.IsDebug()`, `pluginmanager.c:216`), `pluginmanager.c:339` prints the `is not Registred` line and `:340` dumps the stack under `#ifdef DIAG_DEVELOPER`, and `P:\scripts\4_world\plugins\pluginbase\pluginitemdiagnostic.c:94` is the `GetPlugin(PluginConfigDebugProfile)` call in `OnInit`.
 
-Logs (where to look): `script.log` holds script compile and runtime errors; `*.RPT` holds engine errors (missing assets, malformed configs); `crash_*.log` holds handled exceptions, not hard segfaults. All are under the `_server\profiles\` and `_client\profiles\` folders. For a structured script-failure diagnosis, hand off to `dayz-mod-workflow`.
+Logs (where to look): `script.log` holds script compile and runtime errors; `*.RPT` holds engine errors (missing assets, malformed configs); `crash_*.log` holds handled exceptions, not hard segfaults. All are under the `_server\profiles\` and `_client\profiles\` folders. For a structured script-failure diagnosis, follow `debug-protocol.md` and check `error-catalog.md`.
 
 ## MANUAL EXTERNAL RETAIL FOR THIRD-PARTY MODSETS (historical, verified 2026-06-11)
 

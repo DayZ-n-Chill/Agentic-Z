@@ -98,6 +98,21 @@ python "<skill-dir>\scripts\normal_convention.py" --normal <normal.png> --albedo
 
 Each script takes `--help`; the two `.rvmat` scripts also take `--self-test`. Outside an agent session, `scripts\dayz\rvmat-lint.bat`, `scripts\dayz\rvmat-template.bat` and `scripts\dayz\normal-convention.bat` in the repo run them with the same arguments. Which route, map and material to make, and the checks before handing the work over, are in the texture pack, `skills/_shared/textures/README.md`.
 
+### Rules for material work
+
+1. **Check before you write.** Read every path, config key and material pattern in the mod or in the unpacked vanilla data on `P:\` before it goes into an answer or a file. Never edit a file on `P:\`.
+2. **Take the lowest risk route that meets the goal**, from the table in `skills/_shared/textures/rvmat-cookbook.md`, "Pick the route": a `_co.paa` and `hiddenSelectionsTextures[]` for a skin, a `.rvmat` for a different highlight, relief or glow, `healthLevels[]` materials for a look per health level, a penetration `.rvmat` for bullet and surface response, Multi only once the section count and the two UV sets justify it, and MatPBR only for a metallic and roughness set with no damage look that is not terrain.
+3. **`_nohq` is DirectX style, Y-.** Do not guess a source map's convention from where it came from: run `normal_convention.py` for a candidate, then confirm it with the baker's export setting or a raking light render (`skills/_shared/textures/normal-maps.md`). Do not read a shipped `_nohq` as plain RGB.
+4. **Copy the closest vanilla `.rvmat` of the same kind first**, and set `_smdi`, `_as` and `_co` levels against the closest vanilla asset with matching material constants (`skills/_shared/textures/smdi-and-levels.md`).
+5. **A template is a draft** until it holds the mod's real paths, selections and UV sets and was compared with a vanilla reference.
+6. **UI textures**: never change the tone curve from an offline model, and ship a `.paa` from ImageToPAA, not a hand written `.edds` (`skills/_shared/textures/ui-textures.md`).
+7. **Before borrowing a vanilla `.rvmat`**, measure its `_as` per channel and check Stage4, Stage5 and every `uvSource`; **before changing UV orientation or winding**, decode the atlas and draw the affected faces over it (`skills/_shared/textures/baked-atlas-checks.md`).
+8. **A material set from script is judged by the frame**, not by `GetObjectMaterial`, and a health level change wipes it (`skills/_shared/textures/runtime-material-swaps.md`).
+
+### Ask before writing final files
+
+Ask when any of these is unknown: the mod's root folder and packed path; the exact selections that get a texture or material swap; whether the model has one UV set or two; whether the texture is cosmetic only or must change surface, damage, glass, light or penetration behaviour; whether the result is a change to the mod or a standalone reference.
+
 ## Do not
 
 - Don't auto-rename inputs. If the user has `vest_camo.png` (no suffix), they rename it themselves so they're explicit about what role it plays.

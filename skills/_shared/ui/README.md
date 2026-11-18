@@ -120,6 +120,6 @@ The Proton setup, the measured tool matrix and the pitfalls are in `skills/_shar
 
 - The UI lab tool under `scripts/tools/dayz-ui-lab/` (parsing, checking and offline rendering of `.layout` files) is Python and runs natively.
 - Workbench starts under Proton (`dayz-proton.sh gui Workbench`), but its layout and imageset editors were not verified there.
-- Packing uses dayzmake 1.0.0 or later in place of AddonBuilder; the helper scripts are in `skills/_shared/scripts/`. An HTML preview is not an in game sign off: keep the widget, binding and runtime checks above.
+- Packing uses dayzmake 1.0.0 or later in place of AddonBuilder; the helper scripts are in `scripts/tools/dayz-linux/`. An HTML preview is not an in game sign off: keep the widget, binding and runtime checks above.
 
-When the UI has to end in a mod that builds, loads and ships, follow the loop in `dayz-mod-dev` and use `/dayz-build-pbo`, `/dayz-launch-test` and `/dayz-gate` for the steps.
+When the UI has to end in a mod that builds, loads and ships, follow the loop in `skills/dayz-launch-test/references/mod-loop.md` and use `/dayz-build-pbo`, `/dayz-launch-test` and `/dayz-gate` for the steps.

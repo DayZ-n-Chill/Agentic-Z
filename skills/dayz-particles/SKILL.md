@@ -145,8 +145,8 @@ The table of what breaks in a 1.29 mod and the migration checklist are at the en
 
 ## On Linux
 
-Everything above is written for Windows and stays valid there. `.ptc` and `.emat` are text files written without Workbench, so nothing in this skill needs Windows. Workbench can be started under Proton with `dayz-proton.sh gui Workbench` (the script is `skills/_shared/scripts/dayz-proton.sh`); whether it runs there and whether its particle editor works is not yet checked. The Proton setup and its limits are in `skills/_shared/linux-proton.md`.
+Everything above is written for Windows and stays valid there. `.ptc` and `.emat` are text files written without Workbench, so nothing in this skill needs Windows. Workbench can be started under Proton with `dayz-proton.sh gui Workbench` (the script is `scripts/tools/dayz-linux/dayz-proton.sh`); whether it runs there and whether its particle editor works is not yet checked. The Proton setup and its limits are in `skills/_shared/linux-proton.md`.
 
 ## Building, testing and publishing the mod
 
-This skill ends at the effect files and the script that plays them. For the rest (`config.cpp` and `CfgMods`, `requiredAddons`, packing, a boot on a local server) use `/dayz-build-pbo` and `/dayz-launch-test`, and the dayz-mod-dev skill for the whole loop.
+This skill ends at the effect files and the script that plays them. For the rest (`config.cpp` and `CfgMods`, `requiredAddons`, packing, a boot on a local server) use `/dayz-build-pbo` and `/dayz-launch-test`, and `skills/dayz-launch-test/references/mod-loop.md` for the whole loop.

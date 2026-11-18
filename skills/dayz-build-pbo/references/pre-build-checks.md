@@ -233,7 +233,7 @@ rows are enough — provided the CSV carries the full 7-column reference header
 size, even though the PBO mounts and serves files and the client's own language column is
 present with text. Fill untranslated columns with the english text. The size of the addon
 is not the cause. Full rule and evidence:
-`skills/dayz-ui-development/references/localization.md`.
+`skills/_shared/ui/localization.md`.
 
 Vanilla's own header, for comparison, starts with `"Language","original","english"` and carries 15 columns, the
 four named above among them (`P:\languagecore\stringtable.csv:1`).
@@ -314,7 +314,7 @@ named by `config.cpp > CfgSlots > <wheel-slot>.selection` MUST exist in the body
 **FireGeometry LOD**. A selection present only in visual LODs binds the slot as
 inventory but the wheel never simulates: `WheelCountPresent()=0`, no traction, no
 spin, NO RPT error - a silent killer (see `skills/_shared/enscript/depth/vehicle-scripting.md`
-and rule 20 in `references/critical-rules.md` of the dayz-model-pipeline skill).
+and rule 20 in `skills/_shared/models/generated-model-rules.md`).
 
 This check lives in the `dayz-p3d-audit` validator. Run it pre-build and
 treat a CRITICAL as release-blocking:

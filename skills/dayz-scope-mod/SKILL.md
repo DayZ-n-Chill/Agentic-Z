@@ -120,6 +120,8 @@ Before a non-trivial feature is coded, write down what done means and how each p
 | What does the spec look like, section by section? | `references/spec-template.md` |
 | Is this spec ready to implement? | `references/spec-checklist.md` |
 | Do spec, plan, task list and code agree before the in-game test? | `references/analyze-gate.md` |
+| Which questions do I settle with the user before writing a placeable or usable object? | `references/pre-implementation-grill.md` |
+| How do I write the code once the spec exists: API checks, mini-audit, client and server data map, checkpoints, bug ledger, handoff? | `references/implementation-protocol.md` |
 
 ## Do not
 

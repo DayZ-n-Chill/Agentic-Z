@@ -33,7 +33,7 @@ A name that does not match logs `Error: Bone X doesn't exist in skeleton OFP2_Ma
 
 Blender is right handed with Z up. DayZ model space is left handed with Y up. A map between them must be a reflection (determinant −1), or the result is mirrored.
 
-**Geometry.** The model pipeline maps `(x, y, z)` to `(x, z, y)` (the dayz-model-pipeline skill, tested in game on 2026-10-01). An earlier version of this note gave `x' = x, y' = z, z' = -y`, a determinant +1 map that mirrors.
+**Geometry.** The model pipeline maps `(x, y, z)` to `(x, z, y)` (`_shared/models/axes-and-winding.md`, tested in game on 2026-10-01). An earlier version of this note gave `x' = x, y' = z, z' = -y`, a determinant +1 map that mirrors.
 
 **Animation.** `seanim_export.py` carries the reflection, with one map per rig, because the two rigs' bone frames differ by a quarter turn about Z:
 

@@ -30,7 +30,7 @@ What those building LODs hold, read from vanilla: the Paths LOD of `P:\DZ\struct
 
 ## Reading the LOD list of a vanilla model
 
-Every model under `P:\DZ\` is binarized (all 8,256 start with the `ODOL` signature). The file opens with that signature, the format version in bytes 4 to 7, the LOD count, then one resolution value per LOD, which is where the counts above come from. Of the 8,256 models, 8,253 are version 56 (for example `P:\DZ\gear\camping\wooden_case.p3d`) and three are still version 54 (`P:\DZ\vehicles\wheeled\offroad_02\proxy\offroad_02_body.p3d` and two wreck proxies under `P:\DZ\structures\wrecks\vehicles\proxy\`). A reader written for one version fails on another, so read the version before choosing a reader; what changed between 54 and 56 is in `dayz-model-pipeline/references/dayz-1-30-model-pipeline.md`.
+Every model under `P:\DZ\` is binarized (all 8,256 start with the `ODOL` signature). The file opens with that signature, the format version in bytes 4 to 7, the LOD count, then one resolution value per LOD, which is where the counts above come from. Of the 8,256 models, 8,253 are version 56 (for example `P:\DZ\gear\camping\wooden_case.p3d`) and three are still version 54 (`P:\DZ\vehicles\wheeled\offroad_02\proxy\offroad_02_body.p3d` and two wreck proxies under `P:\DZ\structures\wrecks\vehicles\proxy\`). A reader written for one version fails on another, so read the version before choosing a reader; what changed between 54 and 56 is in `_shared/models/dayz-1-30-models.md`.
 
 Tool knowledge, not a vanilla fact: the py3d in `scripts/tools/py3d` classifies a LOD with `classify_lod_resolution`, which accepts a value within 5 % of the canonical one.
 
@@ -44,7 +44,7 @@ LODs sit in rising resolution order: the visual LODs first, then each special LO
 - Most vanilla gear has three to five visual LODs (four is the most common, 260 of 519 gear models with a visual LOD). Each next LOD is a simpler mesh of the same object.
 - Every visual LOD carries the same named selections: hidden selections (`camoGround` on the wooden case, `P:\DZ\gear\camping\config.cpp:10180`), bones for moving parts and proxies. A selection missing from a lower LOD makes that part vanish or stop moving at a distance.
 - The values only have to rise. Some generators space them `0`, `1`, `4`, `8`; vanilla mostly counts `1`, `2`, `3`, `4`. Both load.
-- A part that sits inside another, such as liquid in a tray, is rebuilt from each LOD's own simplified container. Built once from the full detail container, it pokes through the simpler walls of the lower LODs. Seen on a mod model, not checked on `P:\` (`dayz-model-pipeline/references/critical-rules.md`, rule 21).
+- A part that sits inside another, such as liquid in a tray, is rebuilt from each LOD's own simplified container. Built once from the full detail container, it pokes through the simpler walls of the lower LODs. Seen on a mod model, not checked on `P:\` (`_shared/models/generated-model-rules.md`, rule 21).
 
 ## Common LOD sets
 
@@ -67,9 +67,9 @@ The physics body: what players bump into, what items rest on, and where the mass
 - Mass is the sum of the point masses on the Geometry LOD. The audit prints it (`check_geometry_mass` in `skills/dayz-p3d-audit/scripts/audit_p3d.py`). It is not the config `weight`; see `_shared/physics/mass-and-weight.md`.
 - Give every face a penetration material, or bullets and footsteps find no surface (`p3d-killers.md` section 10). The wooden case uses `dz\data\data\penetration\wood_desk.rvmat` (string in `wooden_case.p3d`).
 - Give walls and floors real thickness. A thin face lets fast bodies pass through (`_shared/physics/drop-and-throw.md`).
-- Only this LOD carries mass. Seen on a vehicle mod, not checked on `P:\`: a mass entry on any other LOD, even one where every point mass is `0.0`, makes Binarize bake a centre of mass of zero, and the object spawns underground and is thrown out (`dayz-model-pipeline/references/py3d-assembly-rules.md`).
+- Only this LOD carries mass. Seen on a vehicle mod, not checked on `P:\`: a mass entry on any other LOD, even one where every point mass is `0.0`, makes Binarize bake a centre of mass of zero, and the object spawns underground and is thrown out (`_shared/models/py3d-assembly-rules.md`).
 - A building needs far fewer parts here than in Fire Geometry. Counting the `componentNN` names stored per collision LOD: `P:\DZ\structures\industrial\farms\barn_wood1.p3d` has 564 in one LOD and 73 and 49 in the other two, and `P:\DZ\structures\industrial\garages\garage_small.p3d` has 25, 20 and 16.
-- In the MLOD source each face of a component is wound so its cross product points into the component. Measured in game on mod models, not checked on `P:\` (`dayz-p3d-audit/references/p3d-killers.md` section 1, and `dayz-model-pipeline/references/axes-and-winding.md` for the Blender side).
+- In the MLOD source each face of a component is wound so its cross product points into the component. Measured in game on mod models, not checked on `P:\` (`dayz-p3d-audit/references/p3d-killers.md` section 1, and `_shared/models/axes-and-winding.md` for the Blender side).
 
 ## Fire Geometry
 
@@ -90,7 +90,7 @@ To prove which LOD a fault is in, probe it from script as `_shared/physics/colli
 
 ## Limits (not checked on `P:\`)
 
-Vanilla models are binarized and already inside every limit, so none of these can be read from `P:\`. They are Bohemia format knowledge or measurements on third-party mods; the full accounts are in `dayz-model-pipeline/references/lods-and-geometry.md`.
+Vanilla models are binarized and already inside every limit, so none of these can be read from `P:\`. They are Bohemia format knowledge or measurements on third-party mods; the full accounts are in `_shared/models/lods-authoring.md`.
 
 | Limit | Value | What happens past it |
 |---|---|---|

@@ -4,7 +4,7 @@
 # CreateWidgets parses it. The widget-name/#STR reconciliation passes with the
 # wrong format, so the format must be checked on its own.
 # The crashing files were `<?xml ...?>` + `<GUI><class type=...>`. See
-# dayz-ui-development/references/layout-format.md:5 (".layout files use
+# skills/_shared/ui/layout-format.md (".layout files use
 # Enfusion format (NOT XML)").
 #
 # Trigger is NARROW on purpose: only the verified-crashing signatures

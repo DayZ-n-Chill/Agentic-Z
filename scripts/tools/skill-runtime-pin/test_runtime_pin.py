@@ -62,6 +62,8 @@ def load_pin():
 
 
 def run_pin(*args: str) -> subprocess.CompletedProcess[str]:
+    if args and args[0] == "materialize" and "--skill" not in args:
+        args = (*args, "--skill", "dayz-mod-workflow")
     return subprocess.run(
         [sys.executable, str(SCRIPT), *args],
         cwd=TOOL_DIR,

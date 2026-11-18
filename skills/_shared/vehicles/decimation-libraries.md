@@ -237,8 +237,8 @@ wrong — two face-vertices that share a position may need different UVs.
 
 When `blender` is installed, it produces the highest-quality LODs because it
 can re-UV-unwrap after Decimate, Shade Smooth cleanly, and bake AO. The
-pipeline is covered in the Blender headless reference of the dayz-model-pipeline skill
-(`skills/dayz-model-pipeline/references/blender-headless.md`). Prefer Blender when building
+pipeline is covered in `skills/_shared/models/blender-headless.md`
+(`skills/_shared/models/blender-headless.md`). Prefer Blender when building
 a full object from scratch; prefer pymeshlab when adapting a delivered mesh
 and Blender isn't available.
 

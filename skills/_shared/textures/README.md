@@ -23,6 +23,8 @@ Every game fact here cites the vanilla file on `P:\` it came from, or `<DayZ Too
 | Loading screen, menu and map textures: the tone curve, screen sized images, and why not to write an `.edds` by hand | `ui-textures.md` |
 | Which script call changes a texture or material, what health levels and wetness do to it, and why a material set from script does not show | `runtime-material-swaps.md` |
 | What to check before handing the work over, what to ask first, and what to tell the user to look at in Object Builder and in game | `checking-the-look.md` |
+| Generating `_co`, `_nohq` and `_smdi` maps in Python with coherent noise (OpenSimplex, FBM, layers, material recipes) | `procedural-textures.md` |
+| Material patterns read on mods: flat colors without a bake, a damage overlay, an on and off pair for lit panels, glass, a very bright emissive | `rvmat-mod-patterns.md` |
 
 ## Workflow
 

@@ -28,7 +28,6 @@ All in `<skill-dir>\scripts\`. The viewer steps pass files through the folder na
 | `extract_weapon.py` | Python, py3d | Extracts an MLOD weapon's first visual LOD and memory points to `weapon.json`. Stops when the installed py3d is not the DayZ fork. | `weapon-anim-viewer.md` |
 | `build_viewer.py` | Python, `viewer_core.py` | Builds the weapon animation viewer page from `rig_dayz.json` and `weapon.json` (`python build_viewer.py [out.html] [--viewer-core <path>]`). It looks for the viewer core under `scripts/tools/dayz-3d-viewer/` and then `skills/_shared/`. The page loads Three.js from a CDN. | `weapon-anim-viewer.md` |
 | `weapon_grip_viewer.py` | Python, py3d, `viewer_core.py` | Compares a custom weapon's memory points, bore line and hand zones with a vanilla reference (both MLOD) and writes a viewer page plus an optional JSON report. The page loads Three.js from a CDN. | `weapon-in-hands.md` |
-| `install_py3d.py` | Python, pip | Installs the DayZ py3d fork from a built wheel: this skill's `wheels` folder first, then the `dist` folder of `scripts/tools/py3d/`. Stops without changing anything when there is no wheel, more than one, or an installed py3d that is not the fork. With no wheel built, `python -m pip install -e scripts/tools/py3d` installs it from source. | |
 | `sample_blender_motion.py` | Blender | Reads a motion contract's landmarks, transforms and segments from a scene, frame by frame, into a neutral JSON report. Prints `BLENDER_MOTION_SAMPLING_ERROR=...` and exits 2 on invalid input. | `motion-contract.md` |
 | `validate_motion_contract.py` | Python, standard library only | Report plus contract in, deterministic audit JSON out. Exit 0: every required check passes; 1: valid input, one or more required checks fail; 2: invalid contract, sample or execution, no verdict, reason on stderr as `MOTION_CONTRACT_ERROR=...`. | `realistic-motion.md` |
 | `run_regression_tests.py` | Python; starts Blender when it finds one | Unit tests, the Blender sampler test, the synthetic fixtures in `fixtures\` and, with `--real-fixtures`, a real case. Prints `DAYZ_ANIMATION_REGRESSION=` and a JSON summary and exits 0, or `DAYZ_ANIMATION_REGRESSION_ERROR=...` and exits 1. | `realistic-motion.md` |
@@ -38,7 +37,7 @@ The file names in the last column are in `skills/_shared/animation/`.
 
 ### py3d
 
-The `.p3d` scripts need the DayZ fork of py3d (`scripts/tools/py3d/`, version 1.6.0 or later, `py3d.IS_DAYZ_FORK` true). `pip install py3d` installs an unrelated point cloud library from PyPI, and every geometry read then returns plausible garbage, so check the flag before trusting a result:
+The `.p3d` scripts need the DayZ fork of py3d (`scripts/tools/py3d/`, version 1.6.0 or later, `py3d.IS_DAYZ_FORK` true). `pip install py3d` installs an unrelated point cloud library from PyPI, and every geometry read then returns plausible garbage, so check the flag before trusting a result. To install the fork from a built wheel, run `skills/dayz-model-tools/scripts/install_py3d.py` (`--dry-run` shows what it would do).
 
 ```cmd
 python -c "import py3d; assert getattr(py3d, 'IS_DAYZ_FORK', False), py3d.__file__"
@@ -85,4 +84,4 @@ Outside an agent session, `scripts\dayz\anim-model-cfg.bat` runs `gen_model_cfg.
 
 ## Building, testing and shipping
 
-Build the mod with `/dayz-build-pbo`, run it with `/dayz-launch-test`, and read the logs with `/dayz-logwatch`; the dayz-mod-dev skill has the whole loop from `config.cpp` to the Workshop. The only acceptance for an animation is seeing it play in game with no bone errors in the RPT.
+Build the mod with `/dayz-build-pbo`, run it with `/dayz-launch-test`, and read the logs with `/dayz-logwatch`; `skills/dayz-launch-test/references/mod-loop.md` has the whole loop from `config.cpp` to the Workshop. The only acceptance for an animation is seeing it play in game with no bone errors in the RPT.

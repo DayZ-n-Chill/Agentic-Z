@@ -27,13 +27,12 @@ This file is the one index of every pack. Paths are relative to `skills/`. The r
 | `_shared/py3d-mlod-notes.md` | Reading MLOD `.p3d` files with py3d, used by `/dayz-p3d-audit`. |
 | `_shared/linux-proton.md` | Not yet checked on `P:\`: the Linux supplement to the Windows skills: which step has a native Linux equivalent, which runs under Proton and how, and what was not checked. |
 
-### Shared helper scripts (`_shared/scripts`)
+### Shared helper code
 
-Front index: `_shared/scripts/README.md`, which says which script answers which question.
+The Linux and Proton shell helpers, the script API index builder and its lookup now live in `scripts/tools/dayz-linux/` (its `README.md` says which script answers which question).
 
 | Folder or file | Purpose |
 |---|---|
-| `_shared/scripts` | Helper scripts more than one skill uses: the Linux and Proton shell helpers, the script API index builder and its lookup, and their tests. The Linux route was not run in this repo. |
 | `_shared/viewer_core.py` | Emits the shared Three.js viewer scaffold that the skills' viewer generators splice into their pages. A string emitter; it does not render and does not vendor three.js. |
 
 ### Enforce Script style guide (`_shared/enscript-style`)
@@ -62,6 +61,7 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/integrations` | Outside frameworks and vanilla systems. |
 | `_shared/enscript/references` | API surface by topic. |
 | `_shared/enscript/examples` | Complete `.c` and `.layout` files to start from. Checked on `P:`: `01` to `10` and the three layouts. |
+| `_shared/enscript/depth` | Enforce Script depth pack: measured failures and rules from mod projects. Front index: `_shared/enscript/depth/README.md`. Part checked throughout: a line cited as `P:\...:N` was opened; measurements and third-party mod facts were not re-run. |
 
 | File | Purpose |
 |---|---|
@@ -107,6 +107,25 @@ Front index: `_shared/enscript/README.md`, which also has a symptom to file tabl
 | `_shared/enscript/references/workbench_api.md` | The Enforce Script surface that extends Workbench: entry points, the resource manager and script editor modules, plugin events, the `WORKBENCH` guard. For plugin authors, not game scripts. |
 | `_shared/enscript/references/game_builds.md` | Which DayZ build a vanilla line number or a measurement belongs to, which build `P:\` holds, and the rules the 1.30 patch line taught. |
 | `_shared/enscript/examples/layouts.md` | Checked on `P:`: what the three example layouts are, with their companion scripts. |
+| `_shared/enscript/depth/hard-rules.md` | The rules to apply to every piece of Enforce Script, each tied to a crash, a failed compile or a silent failure seen in a real mod. |
+| `_shared/enscript/depth/compiler-traps.md` | Ways to break the compiler that give a misleading error, or none until the module compiles at boot. |
+| `_shared/enscript/depth/runtime-traps.md` | Failures that compile cleanly and then crash or do nothing at run time. |
+| `_shared/enscript/depth/pitfalls-advanced.md` | Compiler quirks, runtime crashes, `modded class` rules, scoping traps, debugging tools and the DayZ 1.30 traps. |
+| `_shared/enscript/depth/memory-management.md` | `ref`, `autoptr`, `delete`, reference cycles and the lifetime traps that crash a mod after hours. |
+| `_shared/enscript/depth/script-layers.md` | Which script module a class belongs in, what each module can see, the bridge pattern for HUD code, and layer mistakes that compile and then do nothing. |
+| `_shared/enscript/depth/api-patterns.md` | Recurring API patterns and the traps measured around them: type identity, entity lifecycle, creating entities, raycasts, temperature, cooking, cameras, inventory moves. |
+| `_shared/enscript/depth/networking.md` | Synced variables, `ScriptRPC`, the game level RPC bus, what replicates without custom sync, save and load hooks, file I/O. |
+| `_shared/enscript/depth/timers-performance.md` | The timing mechanisms, the `EnProfiler` API and the common optimizations. |
+| `_shared/enscript/depth/server-performance.md` | Third-party mod behaviour, not re-run: the server tick performance techniques used across DayZ mods. |
+| `_shared/enscript/depth/vanilla-deep-dive.md` | Quick facts on five vanilla systems: recipes and crafting, the energy manager, the action system, the damage pipeline, player internals and sync. |
+| `_shared/enscript/depth/verified-api-catalog.md` | A lookup catalog: reflection, global functions, string, math and config lookup patterns, attachment hooks, and the 1.30 engine, inventory, action and mission surface. |
+| `_shared/enscript/depth/vehicle-scripting.md` | Script side traps on vehicles: the seated pose, get in, vital parts and engine start, networking with physics, wheels that never join the simulation. |
+| `_shared/enscript/depth/config-cpp.md` | `config.cpp` patterns for mods: the structure every mod's config needs. |
+| `_shared/enscript/depth/production-patterns.md` | Not yet checked on `P:\`: UI state, view binding, animation, memory and event patterns from production mods; they use the Dabs Framework classes. |
+| `_shared/enscript/depth/dabs-mvc-advanced.md` | Not yet checked on `P:\` or against the Dabs source: patterns and traps for the third-party Dabs Framework's MVC classes. |
+| `_shared/enscript/depth/mod-structure-patterns.md` | Third-party mod behaviour, not vanilla: Enforce Script and config patterns of one aircraft mod. |
+| `_shared/enscript/depth/review-and-troubleshooting.md` | What to scan for before handing over script code, then a symptom table of error, cause and fix. |
+| `_shared/enscript/depth/dayz-1-30-enforce-script.md` | The DayZ 1.30 Enforce Script contract: what replaced the 1.29 hooks. Its line numbers are those of a later 1.30 build than the one on `P:\`. |
 
 ### Physics pack (`_shared/physics`)
 
@@ -157,7 +176,6 @@ Front index: `_shared/animation/README.md`. Used by `dayz-animation-specialist`.
 | `_shared/animation/player-skeleton.md` | The bones of the player skeleton by zone, for mapping a Blender armature onto it. The measured parent table is the text file `player-skeleton-parents.txt` beside it. |
 | `_shared/animation/creature-rig-to-game.md` | From a rigged creature in Blender to one that moves in game: skeleton, export, `model.cfg`, a first graph, AI wiring. The workflow advice is not yet checked on `P:\`. |
 | `_shared/animation/dayz-1-30-changes.md` | What 1.30 changed for building and directing animation, what breaks in 1.29 work, and the migration checklist. Changelog lines are marked. |
-| `_shared/animation/py3d-1.0.0-quirks.md` | Not checked on `P:\`, historical: write quirks of an old py3d version and the frame check for a rebake script. |
 | `_shared/animation/weapon-in-hands.md` | What decides how a custom weapon sits in the hands and the sights, and the memory points a weapon needs. |
 | `_shared/animation/weapon-anim-blender.md` | The whole route for a custom player weapon animation: author in Blender, export, compile in Workbench, map it in an instance file, bind it in script, test. |
 | `_shared/animation/weapon-anim-viewer.md` | A web page for authoring weapon animations on the player skeleton with IK handles and a keyframe timeline, exported as SEAnim. |
@@ -190,7 +208,7 @@ Front index: `_shared/models/README.md`. Written for `dayz-object-builder`.
 | `_shared/models/memory-points.md` | Memory LOD rules, axes, and the point names vanilla script looks up. |
 | `_shared/models/named-properties.md` | Named properties vanilla sets, mass, and the `autocenter` rule. |
 | `_shared/models/proxies.md` | Proxy names, indexes and paths, and the config class an attachment proxy needs. |
-| `_shared/models/doors.md` | Door bones, axes, components and action points; the door actions; who writes each part. |
+| `_shared/animation/doors.md` | Door bones, axes, components and action points; the door actions; who writes each part. |
 | `_shared/models/selections.md` | What a named selection in a `.p3d` is, which LOD each kind belongs in, who reads it, and how tools lose it without a word. |
 | `_shared/models/building-selections.md` | The names a building or ladder model carries: door leaves and their points, the two ladder schemes, Paths LOD points, loot and rain sound points, `liquid_source`. |
 | `_shared/models/proxy-frames.md` | Part checked: how a proxy triangle becomes a position and a facing, and the crew seat, body part, clothing and weapon attachment cases. Names, paths and config classes checked on `P:`; the frame rules are not checked. |
@@ -201,6 +219,9 @@ Front index: `_shared/models/README.md`. Written for `dayz-object-builder`.
 | `_shared/models/tools-p3d-inspector-recipe.md` | Tool behaviour: the Recipe JSON fields, the LOD types it knows, and how each part is written back into a `.p3d`. |
 | `_shared/models/tools-p3d-inspector-viewer.md` | Tool behaviour: what the inspector's HTML page shows, how the user works in it, and the design choices that must not be undone. |
 | `_shared/models/tools-p3d-inspector-round-trip.md` | Not yet checked on `P:\`: what an extract, edit and rebuild cycle can lose or misread, and how to test for it. |
+| `_shared/models/tools-proxy-align.md` | Tool behaviour: aligning proxy triangles on a host model with the proxy editor scripts of `dayz-model-tools`. |
+| `_shared/models/tools-winding-gate.md` | Tool behaviour: what the offline winding and normal gate `check_dayz_winding.py` reads in a source `.p3d`, how to read its verdict, and what it cannot see. |
+| `_shared/models/tools-3d-viewer.md` | Tool behaviour: running the `.p3d` to `.glb` converter in `scripts/tools/dayz-3d-viewer` and reading its HTML page. |
 | `_shared/models/tools-3d-viewer-formats.md` | What the viewer in `scripts/tools/dayz-3d-viewer` supports in `.paa`, `.p3d` and `.rvmat` files and how it turns a material into a Three.js one. Vanilla checks made on `P:\`; the rest is tool behaviour. |
 | `_shared/models/tools-threejs-viewers.md` | No game facts: loading Three.js in a generated viewer page, the fit editor pattern for placing memory points, testing a viewer page. |
 | `_shared/models/tools-uv-mesh-health.md` | Measured on test meshes, not checked on `P:\`: the checks a mesh must pass before UV work, Blender API traps in headless runs, and the seam methods measured. |
@@ -209,6 +230,16 @@ Front index: `_shared/models/README.md`. Written for `dayz-object-builder`.
 | `_shared/models/tools-uv-organic-photograph.md` | Measured, not checked on `P:\`: a paintable atlas for an organic one-shell mesh made by projecting it instead of unwrapping it. |
 | `_shared/models/tools-uv-partuv.md` | Tool behaviour: installing and running PartUV, what went wrong, and how it scored on the same meshes. |
 | `_shared/models/tools-uv-tool-survey.md` | Tool research: which automatic or AI unwrap tools were considered and why each was chosen, shortlisted or discarded. |
+| `_shared/models/tools-uv-atlas.md` | Measured, not checked on `P:\`: turning a hard-surface mesh into a readable UV atlas with the clean atlas scripts of `dayz-model-tools`. |
+| `_shared/models/blender-assembly.md` | Blender method, no game facts: building a model over the Blender MCP with the helper library in `dayz-model-tools`, the detail pass, the boolean protocol, the integrity gate and the render pitfalls over MCP. |
+| `_shared/models/blender-detail-scan.md` | A planning method: scanning a reference zone by zone for the detail list, and where each texture-side detail lands in the DayZ texture set. |
+| `_shared/models/blender-visual-review.md` | Measured tool behaviour: rendering a Blender model from several angles, the defect checklist, the bounded fix loop, the delta check, and catching a winding flip a lit render hides. |
+| `_shared/models/tools-vlm-judge.md` | Tool behaviour: a local vision model as a pre-filter on renders, which checklist questions may be delegated and how each was calibrated. |
+| `_shared/models/tools-vlm-checklist-format.md` | Tool behaviour: the JSON format of a render checklist and how `--view` routes each question to one image. |
+| `_shared/models/ai-generation.md` | Part checked: taking an AI-generated mesh to a DayZ prop (generators, retopology, bake, handoff, writing the MLOD), and reskinning a vanilla infected. |
+| `_shared/models/generation-harness.md` | A working method, no game facts: a production model build as a gated pipeline from intake to ship gate. |
+| `_shared/models/generation-dossier-template.md` | The research dossier template to fill in before any geometry is built. |
+| `_shared/models/generation-roast-rubric.md` | The scored rubric for the adversarial review: 8 categories, the evidence each needs, the defect list format. |
 
 ### Wearables pack (`_shared/wearables`)
 
@@ -226,6 +257,7 @@ Front index: `_shared/wearables/README.md`. Written for `dayz-wearables-speciali
 | `_shared/wearables/references/worn-models.md` | Part checked: what the worn models (`_m` and `_f`) need to bind to the player: skeleton name, coordinate frame, selections and weights, and three failures that give no log error. Results marked "Measured" were measured on one armor build. |
 | `_shared/wearables/references/changes-in-1-30.md` | What DayZ 1.30 changed in the config and script contract around wearables, what that breaks in a 1.29 mod, and a checklist for moving one over. The 1.29 statements are marked and cannot be checked on `P:\`. |
 | `_shared/wearables/references/body-rigging.md` | Giving a custom humanoid body weights on the vanilla bone names in the canonical bind pose in Blender, exporting it with py3d, and a symptom table for a body that deforms wrongly. |
+| `_shared/wearables/references/body-lods.md` | Part checked: the LODs a new humanoid body needs, a see-through hole in a body, and why size cannot come from a scale call. |
 | `_shared/wearables/references/canonical-bind.md` | What the engine binds a character mesh against, the three ways a mesh misses that bind, the infected bind, and the offline checks that hold. |
 | `_shared/wearables/references/body-uv-bake.md` | Measured on one project: unwrapping a rigged low-poly body and baking normal and ambient occlusion maps into the new UV. |
 | `_shared/wearables/references/ragdoll.md` | The data-driven ragdoll 1.30 binds on survivors: where it is bound, the `human.ragdoll` format, the vanilla bone masses, what a custom body must keep. |
@@ -246,7 +278,6 @@ Front index: `_shared/weapons/README.md`. Written for `dayz-weapon-specialist`.
 | `_shared/weapons/muzzle-effects.md` | Muzzle flash, smoke and overheating particles, shot sounds, AI hearing. |
 | `_shared/weapons/model-selections.md` | Memory points, selections and bones the weapon model must have. |
 | `_shared/weapons/weapon-script-api.md` | Script calls around a firearm: spawning it loaded, reading its state, its state machine, the firearm actions, and the calls that changed in DayZ 1.30. |
-| `_shared/weapons/hand-animation-and-grip.md` | How a weapon gets its hand pose and its reload and fire clips, what a custom weapon can change without replacing the player graph, and what was measured about closing the support hand. |
 | `_shared/weapons/model-import.md` | Importing a weapon mesh from Blender the right way round, and which build to test it with. Measured on one project where marked. |
 | `_shared/weapons/troubleshooting.md` | Checks before the first in-game test of a custom firearm, and a symptom table; each line points to the file that holds the fact. |
 | `_shared/weapons/dayz-1-30-migration.md` | What breaks in a 1.29 weapon mod, the checklist for moving it to 1.30, and where the four weapons added in 1.30 live. |
@@ -268,6 +299,26 @@ Front index: `_shared/persistence/README.md`. Written for `dayz-persistence-spec
 | `_shared/persistence/cf-modstorage.md` | Community Framework behaviour, not vanilla: how CF stores one framed block per mod inside an entity's save, and what it leaves to the mod. |
 | `_shared/persistence/lifetime-and-storage.md` | Part checked: why placed objects vanish after a restart even when their save code is right, and what a copied storage folder needs. The measurements are in-game probes. |
 | `_shared/persistence/central-economy-files.md` | The structure and stock values of the Central Economy files a 1.30 server reads, for writing or checking a `types.xml` or `cfgspawnabletypes.xml` entry. |
+| `_shared/persistence/load-and-restore.md` | Part checked: what happens when `OnStoreLoad` returns false, the order in which structures and stored entities come back, mod registries and live cargo. |
+| `_shared/persistence/dayz-1-30-persistence.md` | What 1.30 changed in the vanilla save streams, with the vanilla code copied in and compared with `P:\`. |
+| `_shared/persistence/base-building-structures.md` | The classes that make up a buildable object, the kit to base flow, what breaks silently, and quick triage of build, dismantle and save symptoms. |
+| `_shared/persistence/base-building-config.md` | Every config field a buildable object needs, with the vanilla code that reads it. |
+| `_shared/persistence/base-building-lifecycle.md` | The call chain from crafting a kit to a base surviving a server restart, hop by hop. |
+| `_shared/persistence/base-building-placement.md` | What decides whether a kit can be placed and whether its recipe can be built: slot stack sizes, the hologram tint, the carry pose, custom wall placement. |
+| `_shared/persistence/base-building-fence-gate.md` | The vanilla fence as a template for a stateful part: gate state, barbed wire damage, locks and the saved gate fields. |
+| `_shared/persistence/base-building-save-checklist.md` | The hand-off checklist for a base building save change: the synced bit masks and the 93 part cap. |
+| `_shared/persistence/base-building-1-30.md` | What 1.30 changed in the construction system: the class hierarchy, the type data cache, the second save stream for rebuildable buildings, masonry, the fence code lock. |
+| `_shared/persistence/deep-audit.md` | The full audit for a mod where a bug loses player progression: mechanical checks, eight audit angles, and every finding verified against the real file. |
+| `_shared/persistence/deep-audit-prompts.md` | The text to paste into each review of a deep audit: the shared preamble, one prompt per audit angle, the verifier prompt. |
+| `_shared/persistence/deep-audit-path-naming.md` | Mechanical check 1: a path helper and a recovery or cleanup site that disagree on the file name on disk. |
+| `_shared/persistence/deep-audit-sidecar-cleanup.md` | Mechanical check 2: a writer creates a file or marker and the matching cleanup site fails to remove it. |
+| `_shared/persistence/deep-audit-entry-points.md` | Mechanical check 3: the main path keeps an invariant but another entry point skips it. |
+| `_shared/persistence/deep-audit-flag-lifecycle.md` | Mechanical check 4: two state stores that must move together, where one moves without the other. |
+| `_shared/persistence/deep-audit-state-machine.md` | Illegal transitions, state counted twice, and "should never happen" branches that can happen. |
+| `_shared/persistence/deep-audit-hooks-and-super.md` | Code that overrides an engine event or relies on a `modded class` hook: what the event delivers and whether every class calls `super`. |
+| `_shared/persistence/deep-audit-incremental-rebuild.md` | Three defect classes that appear when a rebuild that ran in one call is spread over several ticks. |
+| `_shared/persistence/deep-audit-evidence-controls.md` | Telling real evidence from evidence that only looks real: the deployed build against the source, controls that can fail, complete inventories. |
+| `_shared/persistence/deep-audit-fix-traps.md` | What goes wrong when fixing and auditing again: a missed sibling call site, two correct fixes that break each other, a fix never audited. |
 
 ### Vehicle pack (`_shared/vehicles`)
 
@@ -372,10 +423,16 @@ The files below are field notes from vehicle projects. Each opens with a `Status
 | `_shared/vehicles/gta-rip-intake.md` | Part checked: reading a GTA V vehicle mod archive offline, what its skeleton names map to in DayZ, and checking bone names against the real mesh pieces. |
 | `_shared/vehicles/rip-import.md` | Part checked: the rip import path in detail, from one worked example: the rip folder, deriving dimensions and the transform, the structural LOD recipe, first spawn results and their causes. |
 | `_shared/vehicles/rip-geometry-and-winding.md` | Part checked: geometry work on a ripped mesh: automatic retopology, the winding rules for proxy triangles and visual faces, the scope of `autocenter=0`, fixing winding per component. |
+| `_shared/vehicles/rip-family-b-runbook.md` | Part checked: the day-0 runbook for a new ripped car split into proxies with moving parts: the six contract deltas, the source door inventory, the single ledger entry, the B1 to B7 check allowlist, the human visual signoff and the conversion rail. |
+| `_shared/vehicles/rip-classify-viewer.md` | Reviewing and changing the classification of a ripped car's parts without opening Blender: the viewer's Three.js files, the steps per car, the GLB data contract. Tool behaviour, no game fact. |
+| `_shared/vehicles/rip-profile-schema.md` | Field by field, what a car profile of the import project holds and which script reads each field (legacy and in flight). No game fact. |
 | `_shared/vehicles/history` | History only, no authority: superseded gate ladders and rules, kept for vehicles already built against them. Listed in `_shared/vehicles/README.md`. |
 | `_shared/vehicles/history/legacy-gate-ladder.md` | Not yet checked on `P:\`: the superseded order of diagnostic gates for an imported car, plus the LOD frame parity rung. |
 | `_shared/vehicles/history/pre-change-0-gate-ladder.md` | Not yet checked on `P:\`: the old ordered ladder of visual gates for an imported car, kept for manual diagnosis. |
 | `_shared/vehicles/history/superseded-family-b-rules.md` | Not yet checked on `P:\`: the exact text of vehicle rules that were later corrected, so a reader can see what was replaced and why. |
+| `_shared/vehicles/history/family-b-canonical-path.md` | History: the day-1 checklist and 12-step pipeline a ripped car followed before change 0. |
+| `_shared/vehicles/history/family-b-retired-artifacts.md` | History: the seven document types a new ripped car no longer produces since change 0, and where each is kept. |
+| `_shared/vehicles/history/family-b-runbook-pre-change-1.md` | History only, no authority: the full ripped car runbook that change 1 removed from the critical path. |
 
 ### Audio and effects pack (`_shared/audio-fx`)
 
@@ -427,6 +484,7 @@ Front index: `_shared/textures/README.md`, which also has a symptom to cause tab
 | `_shared/textures/baked-atlas-checks.md` | The checks between a baked or borrowed texture and a working `.paa`, converting a `.paa` back, and what changes on Linux. |
 | `_shared/textures/normal-bake.md` | Blender practice measured on one mod: the checks a high to low normal bake must pass before the first pass, and the conversion to `_nohq`. |
 | `_shared/textures/matpbr-emat.md` | Not run in this repo: a second material route for metallic and roughness assets through an `.emat` file beside the Super route. |
+| `_shared/textures/ui-textures.md` | Measured on one production mod: the tone curve and screen sized images for loading screen, menu and map textures, and why a hand written `.edds` does not render. |
 
 ### UI pack (`_shared/ui`)
 
@@ -529,6 +587,13 @@ A skill's own pack. The front index of each folder is the table in that skill's 
 | `dayz-launch-test/references/linux.md` | Not yet checked on `P:\`: what changes in the test workflow when the host is Linux. |
 | `dayz-launch-test/references/linux-native-server.md` | Measured on Linux, not yet checked on `P:\`: proving a mod loads on the native Linux dedicated server, with no client. |
 | `dayz-launch-test/references/linux-headless-client.md` | Not yet checked on `P:\`: testing the client side on Linux with the retail client under Proton and a self-reporting test mod. |
+| `dayz-launch-test/references/mod-loop.md` | The mod loop on 1.30 or later from scope to Workshop: which skill runs each step, the rules every mod task needs, where to look an API up, which pack to read, porting to 1.30. |
+| `dayz-launch-test/references/test-loop.md` | The fast script-only test loop with DayZDiag and file patching, when to stop iterating, and the debugging tools the vanilla scripts offer. |
+| `dayz-launch-test/references/debug-protocol.md` | Diagnosing a feature that "doesn't work" after it was implemented: six layers checked top down, rules for probes, component bisection. |
+| `dayz-launch-test/references/error-catalog.md` | Mistakes made more than once while implementing DayZ mods (E01 to E35), each with the correct form. |
+| `dayz-launch-test/references/measurement-discipline.md` | Part checked: reading numbers out of a test session without fooling yourself: aligning client and server series and three statistical traps. Method and measured results; only the script calls are checked on `P:`. |
+| `dayz-launch-test/references/audit-escalation.md` | Labelling the severity of an audit finding and of something missing, and keeping parallel auditors independent. |
+| `dayz-launch-test/references/dayz-1-30-server-measured.md` | Measured on the native Linux server, not yet checked on `P:\`: what was observed by booting test mods on a 1.30 dedicated server that a source file cannot show. |
 | `dayz-launch-test/references/mcp` | Verification through the third-party dayz-mcp bridge. Front index: `dayz-launch-test/references/mcp/README.md`. Tool behaviour throughout: not yet checked on `P:\`; vanilla facts cite their file. |
 | `dayz-launch-test/references/mcp/bridge-setup.md` | What must be true before the first verb (tools registered, config and key seeded, both peers polling) and what each bridge failure means. |
 | `dayz-launch-test/references/mcp/run-lifecycle.md` | How a run is started, adopted, kept alive and stopped, and how several sessions share one test machine. |
@@ -541,12 +606,9 @@ A skill's own pack. The front index of each folder is the table in that skill's 
 | `dayz-launch-test/references/mcp/acceptance-ladder.md` | The full ladder for accepting a drivable car: the driving verbs, rungs R1 to R6, and the table from each failure to its known fix. The ladder script is `skills/dayz-launch-test/scripts/drive_ladder.py`. |
 | `dayz-launch-test/references/mcp/telemetry-gates.md` | Setting a threshold on telemetry read from the game so that real physics can pass it and an incomplete trace cannot. |
 | `dayz-launch-test/references/mcp/verification-discipline.md` | Rules for reading and writing verdicts from an MCP-driven run: which mod loaded, what the PBO holds, how many samples a negative has. |
-| `dayz-launch-test/references/mcp/dayz-1-30.md` | What DayZ 1.30 changed for MCP verification. Vanilla script facts cite the 1.30 file on `P:\`. |
-| `dayz-launch-test/references/mcp/linux.md` | The state of the bridge on a Linux host, as measured on 2026-11-06. |
 | `dayz-preflight/references` | Environment check notes. Front index: `dayz-preflight/SKILL.md`. |
 | `dayz-preflight/references/object-builder-viewer.md` | Object Builder's external viewer (Buldozer) path, a check to run by hand before a session that leans on Object Builder previews. |
 | `dayz-preflight/references/dayz-1-30.md` | Not yet checked on `P:\`: the 1.30 launch options and Workbench editors worth knowing; no environment check changed. |
-| `dayz-preflight/references/linux.md` | Not yet checked on `P:\`: what replaces each environment check on Linux. |
 | `dayz-build-pbo/references` | Build and packing pack. Front index: `dayz-build-pbo/SKILL.md`. |
 | `dayz-build-pbo/references/addonbuilder-rules.md` | How AddonBuilder and binarize behave when they pack a mod: the command line, which source tree a build uses, staging, `-temp`, where the ODOL lands. |
 | `dayz-build-pbo/references/pre-build-checks.md` | What to check in a mod folder before it is packed: structure, `config.cpp`, `model.cfg`, texture and material paths, LODs, stringtable, scripts, wheel slots. |
@@ -557,189 +619,38 @@ A skill's own pack. The front index of each folder is the table in that skill's 
 | `dayz-build-pbo/references/workshop-publish.md` | Signing a built PBO with DsUtils, the Workshop item folder, and publishing with the Publisher or SteamCMD. |
 | `dayz-build-pbo/references/dayz-1-30-pbo-build.md` | Not yet checked on `P:\`: what 1.30 changes for packing: duplicate members stop binarize, unpacked mods, the `fsShadowing` header property. |
 | `dayz-build-pbo/references/dayzmake-linux.md` | Not yet checked on `P:\`: building, signing and publishing a mod on Linux with dayzmake, without DayZ Tools. |
-| `dayz-mod-workflow/references` | Implementation workflow pack. Front index: `dayz-mod-workflow/SKILL.md`. |
-| `dayz-mod-workflow/references/pre-implementation-grill.md` | The questions to settle with the user before writing the `config.cpp`, `model.cfg` or scripts of a placeable or usable object. |
-| `dayz-mod-workflow/references/checklists.md` | What to verify in each kind of file before a mod file counts as written. |
-| `dayz-mod-workflow/references/error-catalog.md` | Mistakes made more than once while implementing DayZ mods (E01 to E35), each with the correct form. |
-| `dayz-mod-workflow/references/debug-protocol.md` | Diagnosing a feature that "doesn't work" after it was implemented: six layers checked top down, rules for probes, component bisection. |
-| `dayz-mod-workflow/references/test-loop.md` | The fast script-only test loop with DayZDiag and file patching, when to stop iterating, and the debugging tools the vanilla scripts offer. |
-| `dayz-mod-workflow/references/measurement-discipline.md` | Part checked: reading numbers out of a test session without fooling yourself: aligning client and server series and three statistical traps. Method and measured results; only the script calls are checked on `P:`. |
-| `dayz-mod-workflow/references/audit-escalation.md` | Labelling the severity of an audit finding and of something missing, and keeping parallel auditors independent. |
-| `dayz-mod-workflow/references/concurrent-session-snapshot.md` | What a session does when the skill files may be rewritten by another session while it runs. |
-| `dayz-mod-workflow/references/dayz-1-30-mod-workflow.md` | What 1.30 changed in the contracts the workflow checks: the action start gate, Central Economy root classes, `cfggameplay.json`, the underground trigger editor, headless guards. Read on `P:\`; later 1.30 builds are marked. |
-| `dayz-mod-workflow/references/dayz-1-30-server-measured.md` | Measured on the native Linux server, not yet checked on `P:\`: what was observed by booting test mods on a 1.30 dedicated server that a source file cannot show. |
+| `dayz-build-pbo/references/file-checklists.md` | What to verify in each kind of file (`config.cpp`, script, networking, layout, action, `.rvmat`, persistence, refactor) before a mod file counts as written. |
 | `dayz-scope-mod/references` | Feature spec pack. Front index: `dayz-scope-mod/SKILL.md` ("Scoping a feature"). A method; the few game facts cite their file. |
 | `dayz-scope-mod/references/feature-spec.md` | Saying what done means for a non-trivial feature and how it will be checked, before code is written, and the two gates that follow. |
 | `dayz-scope-mod/references/spec-template.md` | The template Step 1 fills in: one copy per feature, kept next to the plan in `output/<ModName>-plan/`. |
 | `dayz-scope-mod/references/spec-checklist.md` | The 18 checks Step 2 runs against a feature spec before any code is written. |
+| `dayz-scope-mod/references/pre-implementation-grill.md` | The questions to settle with the user before writing the `config.cpp`, `model.cfg` or scripts of a placeable or usable object. |
+| `dayz-scope-mod/references/implementation-protocol.md` | Writing the code once the spec exists: API checks, the mini-audit, the client and server data map, checkpoints, the bug ledger and the handoff. |
 | `dayz-scope-mod/references/analyze-gate.md` | The read-only consistency pass Step 3 runs over a feature's artifacts before an in-game test is spent on them. |
-| `rigorous-data-audit/references` | Data audit pack. Front index: `rigorous-data-audit/SKILL.md`. Audit method and lessons from third-party mods; the few vanilla facts cite their file. |
-| `rigorous-data-audit/references/audit-prompts.md` | The text to paste into each review of a data audit: the shared preamble, one prompt per audit angle, the verifier prompt, the implementer-grade prompt. |
-| `rigorous-data-audit/references/dayz-persistence-facts.md` | Two engine properties every mod with saved data inherits: no rename or move for files, and a base class that writes a varying number of values into the save stream. |
-| `rigorous-data-audit/references/path-naming-matrix.md` | Mechanical check 1: a path helper and a recovery or cleanup site that disagree on the file name on disk. |
-| `rigorous-data-audit/references/sidecar-cleanup-symmetry.md` | Mechanical check 2: a writer creates a sidecar or marker file and the matching cleanup site fails to remove it. |
-| `rigorous-data-audit/references/entry-point-audit.md` | Mechanical check 3: the canonical path enforces an invariant but an alternative entry point skips it. |
-| `rigorous-data-audit/references/flag-lifecycle-audit.md` | Mechanical check 4: two state stores that must move together, where one moves without the other. |
-| `rigorous-data-audit/references/state-machine-matrix.md` | Structural check: illegal transitions, state counted twice, and "should never happen" branches that can happen. |
-| `rigorous-data-audit/references/engine-hooks-and-super-chain.md` | Checks for code that overrides an engine event or relies on a `modded class` hook: what the event delivers and whether every class calls `super`. |
-| `rigorous-data-audit/references/incremental-rebuild-traps.md` | Three defect classes that appear when a rebuild that ran in one call is spread over several ticks. |
-| `rigorous-data-audit/references/evidence-and-controls.md` | Telling real evidence from evidence that only looks real: the deployed build against the source, controls that can fail, complete inventories. |
-| `rigorous-data-audit/references/fix-and-reaudit-traps.md` | What goes wrong when fixing and auditing again: a missed sibling call-site, two correct fixes that break each other, a corrective never audited. |
-| `rigorous-data-audit/references/authority-and-loopback.md` | Audit rules for lease queues, local daemons and any control plane on localhost. Tooling around a mod; nothing here can be checked on `P:\`. |
-| `rigorous-data-audit/references/crash-safe-evidence-and-bundles.md` | Audit rules for a long evidence campaign, a generated final index, or a release that publishes into more than one root. Tooling; nothing here can be checked on `P:\`. |
-| `rigorous-data-audit/references/fact-audit-postmortem.md` | Case study: a fact audit run by four parallel agents with no verification step, most of whose critical findings were wrong. Not facts about DayZ; do not act on any row. |
-| `rigorous-data-audit/references/why-this-skill-exists.md` | Case study behind the procedure: six reasoning agents signed off a storage mod and an outside auditor then found 12 vulnerabilities. |
-| `enforce-script-reference/references` | Enforce Script depth pack: measured failures and rules from mod projects. Front index: `enforce-script-reference/SKILL.md`. Part checked throughout: a line cited as `P:\...:N` was opened; measurements and third-party mod facts were not re-run. |
-| `enforce-script-reference/references/hard-rules.md` | The rules to apply to every piece of Enforce Script, each tied to a crash, a failed compile or a silent failure seen in a real mod. |
-| `enforce-script-reference/references/compiler-traps.md` | Ways to break the compiler that give a misleading error, or none until the module compiles at boot. |
-| `enforce-script-reference/references/runtime-traps.md` | Failures that compile cleanly and then crash or do nothing at run time. |
-| `enforce-script-reference/references/pitfalls-advanced.md` | Compiler quirks, runtime crashes, `modded class` rules, scoping traps, debugging tools and the DayZ 1.30 traps. |
-| `enforce-script-reference/references/memory-management.md` | `ref`, `autoptr`, `delete`, reference cycles and the lifetime traps that crash a mod after hours. |
-| `enforce-script-reference/references/script-layers.md` | Which script module a class belongs in, what each module can see, the bridge pattern for HUD code, and layer mistakes that compile and then do nothing. |
-| `enforce-script-reference/references/api-patterns.md` | Recurring API patterns and the traps measured around them: type identity, entity lifecycle, creating entities, raycasts, temperature, cooking, cameras, inventory moves. |
-| `enforce-script-reference/references/networking.md` | Synced variables, `ScriptRPC`, the game level RPC bus, what replicates without custom sync, save and load hooks, file I/O. |
-| `enforce-script-reference/references/timers-performance.md` | The timing mechanisms, the `EnProfiler` API and the common optimizations. |
-| `enforce-script-reference/references/server-performance.md` | Third-party mod behaviour, not re-run: the server tick performance techniques used across DayZ mods. |
-| `enforce-script-reference/references/vanilla-deep-dive.md` | Quick facts on five vanilla systems: recipes and crafting, the energy manager, the action system, the damage pipeline, player internals and sync. |
-| `enforce-script-reference/references/verified-api-catalog.md` | A lookup catalog: reflection, global functions, string, math and config lookup patterns, attachment hooks, and the 1.30 engine, inventory, action and mission surface. |
-| `enforce-script-reference/references/vehicle-scripting.md` | Script side traps on vehicles: the seated pose, get in, vital parts and engine start, networking with physics, wheels that never join the simulation. |
-| `enforce-script-reference/references/config-cpp.md` | `config.cpp` patterns for mods: the structure every mod's config needs. |
-| `enforce-script-reference/references/production-patterns.md` | Not yet checked on `P:\`: UI state, view binding, animation, memory and event patterns from production mods; they use the Dabs Framework classes. |
-| `enforce-script-reference/references/dabs-mvc-advanced.md` | Not yet checked on `P:\` or against the Dabs source: patterns and traps for the third-party Dabs Framework's MVC classes. |
-| `enforce-script-reference/references/mod-structure-patterns.md` | Third-party mod behaviour, not vanilla: Enforce Script and config patterns of one aircraft mod. |
-| `enforce-script-reference/references/review-and-troubleshooting.md` | What to scan for before handing over script code, then a symptom table of error, cause and fix. |
-| `enforce-script-reference/references/dayz-1-30-enforce-script.md` | The DayZ 1.30 Enforce Script contract: what replaced the 1.29 hooks. Its line numbers are those of a later 1.30 build than the one on `P:\`. |
-| `dayz-ui-development/references` | UI development pack. Front index: `dayz-ui-development/SKILL.md`. Part checked throughout: a `P:\` path with a line was checked on `P:\`; in-game measurements and third-party mod facts were not re-run. |
-| `dayz-ui-development/references/layout-format.md` | The brace syntax of a `.layout` file, every widget class and attribute seen in shipped layouts, the script API that goes with them, and layout geometry. |
-| `dayz-ui-development/references/styles-format.md` | How the `style` attribute resolves, the format and state names of a `.styles` file, the vanilla styles, and the recipe for a mod's own styles. |
-| `dayz-ui-development/references/widget-api.md` | The native methods of each widget class a mod calls, the `WidgetFlags` and `ControlID` enums, the global widget functions, the preview widgets. |
-| `dayz-ui-development/references/script-recipes.md` | Copyable building blocks for UI script: binding widget fields by name, event signatures, locking input and showing the cursor, blur, alignment flags. |
-| `dayz-ui-development/references/rules-and-checklist.md` | The 18 numbered rules for `.layout` files and UI script, the checklist to run before a UI is done, and a symptom to fix table. |
-| `dayz-ui-development/references/vanilla-menus-map.md` | Which vanilla class and layout build each menu and the HUD, registering a modded menu, the `UIScriptedMenu` contract, the focus model. |
-| `dayz-ui-development/references/text-sizing-and-rendering.md` | What the engine draws, as measured on a running client: `wrap`, font sizes, alpha, blending, render to texture. |
-| `dayz-ui-development/references/theme-and-color.md` | Where UI colors come from, how to scope a recolor request, and the rules of the color system. |
-| `dayz-ui-development/references/localization.md` | The two stringtable formats, how layouts and script refer to a key, and the measured rule that decides whether a `stringtable.csv` is registered. |
-| `dayz-ui-development/references/advanced-patterns.md` | Unchecked sketches (an audit found calls that do not exist): stacking, toggles, tabs, drag, status bars, hover and input fields. Check every call before use. |
-| `dayz-ui-development/references/admin-ui-patterns.md` | Not yet checked on `P:\`: floating windows, world to screen labels, canvas drawing and box selection, as closed source third-party admin mods build them. |
-| `dayz-ui-development/references/dabs-framework.md` | Dabs Framework behaviour, not vanilla: the Dabs Framework UI layer: the view lifecycle, commands, observable collections, animation and color helpers. |
-| `dayz-ui-development/references/expansion-mvc-patterns.md` | DayZ Expansion behaviour, not vanilla: how DayZ Expansion structures a menu: its MVC classes, menu lifecycle, observable collections, subviews, dialogs, HUD panels. |
-| `dayz-ui-development/references/expansion-market-menu-pattern.md` | DayZ Expansion behaviour, not vanilla: the DayZ Expansion Market menu as a worked example of a complete UI feature, end to end. |
-| `dayz-ui-development/references/lbgroups-patterns.md` | Third-party mod behaviour, not vanilla: UI patterns of a large production groups mod: chat, map markers, compass, minimap, player list, admin menu. |
-| `dayz-ui-development/references/lfpg-knowledge-base.md` | Not yet checked on `P:\`: a fact ledger built while writing one mod's UI: what the engine protos say, what the Dabs source says, and which early assumptions were wrong. |
-| `dayz-ui-development/references/community-findings.md` | Five findings on loading screens, imageset names, draw order, layout typos and image progress bars. Each says what was checked on `P:\` and what is not yet checked. |
-| `dayz-ui-development/references/layout-empirical-corpus.md` | Not yet checked on `P:\`: counts of widget classes and attributes over real `.layout` files, the coverage of a static renderer, calibration numbers for layout checks. |
-| `dayz-ui-development/references/hot-iteration.md` | Measured on 1.29: iterating on a UI without repacking: which paths the running game re-reads, the reload loop and its four traps. |
-| `dayz-ui-development/references/layout-variants-130.md` | Measured in game on 1.30: changing a vanilla layout through a layout variant, packing one, scoping it by inheritance. |
-| `dayz-ui-development/references/hud-action-info-panels.md` | How the 1.30 interaction cursor shows the tools and materials an action needs: the classes, the layouts, and how a mod adds its own panel. |
-| `dayz-ui-development/references/dayz-130-ui-changes.md` | What 1.30 changed in the action prompt HUD, the inventory slot icon classes and the preview widgets, what breaks in a mod, and a migration checklist. |
-| `dayz-ui-development/references/cameras-seats-loading-screens.md` | Three lifecycle contracts next to UI work: leaving a scripted camera, opening an interface from a vehicle seat, replacing the loading screen background. |
-| `dayz-ui-development/references/plan-to-implementation.md` | Why a built UI differs from its plan in DayZ, and an author, preview, build and verify loop with a parity gate. |
-| `dayz-ui-development/references/verification-and-automation.md` | What automated UI checks, probes and test harnesses can and cannot prove. |
-| `dayz-ui-development/references/color-test-harness.md` | A diagnostic mod that draws swatches of known colors to measure how UI colors are drawn. A harness, not a pattern to copy. |
-| `dayz-model-pipeline/references` | Model generation pack. Front index: `dayz-model-pipeline/SKILL.md`. Part checked throughout: lines that cite `P:\` were opened; winding, axis and tool results were measured on mod projects and not repeated. |
-| `dayz-model-pipeline/references/critical-rules.md` | The 21 numbered rules every generated model must meet, and the LOD resolution values they rely on. |
-| `dayz-model-pipeline/references/lods-and-geometry.md` | What goes in each LOD of a generated model, the limits that make Binarize or the game reject a LOD, and the Blender object names that become LODs. |
-| `dayz-model-pipeline/references/memory-and-selections.md` | Which memory points and named selections a generated model needs, how to create them, and how proxy selections make an attachment show. |
-| `dayz-model-pipeline/references/axes-and-winding.md` | Cannot be checked on `P:\`: the measurements behind the Blender to DayZ axis conversion and the face winding rules. |
-| `dayz-model-pipeline/references/py3d-direct-generation.md` | The py3d API for building a model in Python: LODs, points, faces, selections, named properties, proxies, reading an existing file. |
-| `dayz-model-pipeline/references/py3d-assembly-rules.md` | Rules for writing or editing a `.p3d` with py3d beyond the basic API: where mass may sit, cutting geometry without breaking selections, what the validator's findings mean. |
-| `dayz-model-pipeline/references/blender-headless.md` | The Blender Python calls the skill uses to build geometry without the Blender window. Tool knowledge, not game data. |
-| `dayz-model-pipeline/references/blender-workflow.md` | Manual Blender steps for a mesh that came from somewhere else: import, cleanup, UVs, LODs, export. Tool knowledge, not game data. |
-| `dayz-model-pipeline/references/blender-import-preflight.md` | What to check before geometry work on an imported mesh, and what was measured while reducing and reshaping such meshes. |
-| `dayz-model-pipeline/references/animations.md` | A worked reference for the `model.cfg` side of a generated object: skeleton, animation types, config sources, script control, memory axes. |
-| `dayz-model-pipeline/references/config-and-packing.md` | The config side of a generated model: folder layout, `$PBOPREFIX$`, the `CfgVehicles` class, proxy attachment classes, a material file, packing. |
-| `dayz-model-pipeline/references/rvmat-patterns.md` | Material recipes beyond the basic Super material: flat colors, a damage overlay, lit panels, glass, emissive. |
-| `dayz-model-pipeline/references/multi-rvmat-section-texturing.md` | Giving one mesh region two to four tiling detail textures with the `Multi` shader: the mask, the stage and texGen layout, the two UV sets, a template. |
-| `dayz-model-pipeline/references/procedural-textures.md` | Generating the `_co`, `_nohq` and `_smdi` maps of a generated model in Python with coherent noise. Tool knowledge and recipes, not game data. |
-| `dayz-model-pipeline/references/domain-recipes.md` | Not yet checked on `P:\`: three results measured on real mods: cookware, a client side cable segment, and an asset posed in the hands. |
-| `dayz-model-pipeline/references/lfpg-recipes.md` | Third-party mod practice, not vanilla: seven object specifications of one power mod, with its vertex budgets and naming habits, as starting points. |
-| `dayz-model-pipeline/references/artist-return-and-provenance.md` | What to check when a `.p3d`, `.paa` or `.rvmat` comes from outside the repo. Process rules learned on mod projects. |
-| `dayz-model-pipeline/references/community-findings.md` | Not checked on `P:\`: three unconfirmed findings of medium confidence, to use as red flags during a model audit. |
-| `dayz-model-pipeline/references/troubleshooting.md` | Symptom, root cause and fix for the failures the pipeline produces most. Causes and fixes come from mod projects and are not checked on `P:\`. |
-| `dayz-model-pipeline/references/dayz-1-30-model-pipeline.md` | What 1.30 changes for meshes, proxies, houses, wells and the model cache, with an evidence label on each line. |
-| `dayz-model-pipeline/references/linux.md` | Not yet checked on `P:\`: what changes for the model pipeline on Linux. |
-| `dayz-p3d-inspector/references` | P3D inspector notes. Front index: `dayz-p3d-inspector/SKILL.md`. Tool behaviour, not game facts. |
-| `dayz-p3d-inspector/references/recipe-format.md` | The data contract between the extractor, the viewer and the builder: the Recipe's fields and how each part is turned back into a `.p3d`. |
-| `dayz-p3d-inspector/references/viewer.md` | What the inspector's HTML page shows, how the user works in it, and the design choices that must not be undone. |
-| `dayz-p3d-inspector/references/round-trip-caveats.md` | Not yet checked on `P:\`: what an extract, edit and rebuild cycle can lose or misread, and how to test for it. |
-| `dayz-3d-viewer/references` | 3D viewer notes. Front index: `dayz-3d-viewer/SKILL.md`. |
-| `dayz-3d-viewer/references/formats-and-materials.md` | What the viewer tool supports in `.paa`, `.p3d` and `.rvmat` files, how it turns a material into a Three.js one, and the faults fixed while building it. |
-| `dayz-3d-viewer/references/threejs-viewers.md` | No game facts: loading Three.js in a generated viewer page, the fit editor pattern for placing memory points, and testing a viewer page. |
-| `dayz-3d-viewer/references/states-animations-leds.md` | Planned, not built: a viewer that plays a model's animations and swaps its materials, with examples from one mod. |
-| `3d-generation-harness/references` | 3D generation harness templates. Front index: `3d-generation-harness/SKILL.md`. Working method; no game facts. |
-| `3d-generation-harness/references/dossier-template.md` | The Phase 1 research dossier to fill in before any geometry is built. |
-| `3d-generation-harness/references/roast-rubric.md` | The scored rubric for the Phase 4 adversarial review: 8 categories, the evidence each needs, the defect list format. |
-| `ai-3d-to-dayz/references` | AI mesh to DayZ notes. Front index: `ai-3d-to-dayz/SKILL.md`. |
-| `ai-3d-to-dayz/references/mlod-winding.md` | Measured, not yet checked on `P:\`: coordinate map, face order and normals when a generated mesh is written to an MLOD, and reading a winding census. |
-| `blender-assembly/references` | Blender assembly notes. Front index: `blender-assembly/SKILL.md`. |
-| `blender-assembly/references/detail-scan.md` | Scanning a reference image zone by zone for the detail list, and where each texture-side detail lands in the DayZ texture set. |
-| `blender-assembly/references/mcp-render-pitfalls.md` | Two traps that make a render over the Blender MCP disagree with the mesh data. Blender tool behaviour. |
-| `blender-visual-review/references` | Visual review notes. Front index: `blender-visual-review/SKILL.md`. Tool behaviour and measurements; no game facts. |
-| `blender-visual-review/references/checklist-format.md` | The JSON format of a question checklist for the scoring script and how each question is routed to one image. |
-| `blender-visual-review/references/local-vlm-judge.md` | Using a local vision model as a pre-filter on renders: which checklist questions may be delegated and how each was calibrated. |
-| `blender-visual-review/references/winding-flip-detection.md` | Measured, not yet checked on `P:\`: catching a reversed face winding in Blender before export, and why a lit render hides it. |
-| `uv-clean-atlas/references` | UV atlas pack. Front index: `uv-clean-atlas/SKILL.md`. Results measured on test meshes and tool behaviour throughout, not checked on `P:\`. |
-| `uv-clean-atlas/references/mesh-health-and-seams.md` | The checks a mesh must pass before any UV work, the Blender API traps in headless runs, and the seam methods that were measured. |
-| `uv-clean-atlas/references/mlod-uv-audit.md` | What to measure on the UVs of a `.p3d` that is already assembled, the traps in measuring it, and one fully measured case. |
-| `uv-clean-atlas/references/multi-lod-shared-atlas.md` | Re-unwrapping a model that already ships with a LOD chain, when the only thing that may move is UV. |
-| `uv-clean-atlas/references/organic-paint-photograph.md` | Building a paintable atlas for an organic one-shell mesh by projecting it orthographically instead of unwrapping it. |
-| `uv-clean-atlas/references/partuv-pilot.md` | Installing and running PartUV, what went wrong, and how it scored against this skill's pipeline on the same meshes. |
-| `uv-clean-atlas/references/tool-research.md` | Which automatic or AI unwrap tools were considered and why each was chosen, shortlisted or discarded. |
-| `dayz-texture-pipeline/references` | Texture pipeline pack. Front index: `dayz-texture-pipeline/SKILL.md`. Part checked throughout: a `P:\` citation was checked on the vanilla files; "measured" blocks name their project and were not rechecked unless they say so. |
-| `dayz-texture-pipeline/references/map-conventions.md` | How each texture map is oriented, packed and levelled: the normal map convention, `_nohq` and `_smdi` storage, getting from metallic and roughness to `_smdi`. |
-| `dayz-texture-pipeline/references/rvmat-cookbook.md` | Patterns for writing a `.rvmat`: which route fits the goal, the Super template, damage, emissive, glass, alpha decals, penetration materials. |
-| `dayz-texture-pipeline/references/config-and-damage.md` | How textures and materials are connected in `config.cpp`: hidden selections, health level materials, vehicle light material pairs. |
-| `dayz-texture-pipeline/references/baked-atlas-to-paa.md` | The checks between a baked or borrowed texture and a working `.paa`. |
-| `dayz-texture-pipeline/references/normal-bake-checklist.md` | Blender practice measured on one mod, not yet checked on `P:\`: the checks a high to low normal bake must pass before the first pass. |
-| `dayz-texture-pipeline/references/multi-rvmat-section-texturing.md` | When to use the Multi shader, its stage layout, the two UV sets it needs, painting the mask, and the checks before accepting a Multi material. |
-| `dayz-texture-pipeline/references/matpbr-emat-pipeline.md` | Not run in this repo and not yet checked on `P:\`: a second material route for metallic and roughness assets through an `.emat` file. |
-| `dayz-texture-pipeline/references/vehicle-materials-and-color-variants.md` | Which shader a vehicle or hard surface part needs, tiled detail on overlapping UVs, and how color variants are wired. |
-| `dayz-texture-pipeline/references/ui-textures-and-edds.md` | Measured on one production mod: two rules for full screen UI textures and the `.edds` layout that was tried. |
-| `dayz-texture-pipeline/references/validation-checklist.md` | The checks to run before handing texture and material work over. States no game facts of its own. |
-| `dayz-characters/references` | Character pack. Front index: `dayz-characters/SKILL.md`. Part checked throughout: a `P:\` path with a line was opened; results marked with a project name were measured on that mod and cannot be checked on `P:\`. |
-| `dayz-characters/references/character-rigging.md` | The Blender workflow that gives a custom mesh weights on the vanilla bone names in the canonical bind pose, and the export that carries them into the `.p3d`. |
-| `dayz-characters/references/canonical-bind.md` | What the engine binds a character mesh against, the three ways a mesh can miss that bind, and the offline checks that hold. |
-| `dayz-characters/references/custom-infected-recipe.md` | Adding a custom infected that reuses the vanilla skeleton, animations and AI with a new mesh: config inheritance, size, LODs, cost. |
-| `dayz-characters/references/character-uv-bake.md` | Blender behaviour measured on one project: unwrapping the low-poly character and baking normal and ambient occlusion maps. |
-| `dayz-characters/references/character-ragdoll.md` | The data-driven ragdoll 1.30 binds on survivors: where it is bound, the file format, the vanilla bone masses, what a custom body must keep. |
-| `dayz-characters/references/worn-clothing-skeleton.md` | The skeleton name a worn clothing model must compile with, the frame a worn mesh is built in, and tests that isolate a worn model that will not follow the body. |
-| `dayz-characters/references/winding-gate.md` | What the offline winding and normal gate reads in a source `.p3d`, how to read its verdict, and what it cannot see. |
-| `dayz-characters/references/dayz-1-30-characters.md` | The 1.30 changes that touch custom infected and survivors: new infected classes, the graph format, the cower state, skinning, surrender. |
-| `dayz-characters/references/case-log.md` | Cannot be checked on `P:\`: the real character imports the skill's rules were learned on, one entry per import. |
-| `dayz-characters/references/linux-notes.md` | Tool behaviour, not yet checked on `P:\`: what changes for character work when the mod is built on Linux. |
-| `dayz-clothing/references` | Clothing notes. Front index: `dayz-clothing/SKILL.md`. |
-| `dayz-clothing/references/autofit-from-official-rig.md` | Tool behaviour, not yet checked on `P:\`: fitting a garment onto the official rig in headless Blender and taking its weights from the rig's body mesh; what worked and what four test rounds refuted. |
-| `dayz-ai-patterns/references` | AI pattern pack. Front index: `dayz-ai-patterns/SKILL.md`. |
-| `dayz-ai-patterns/references/dayz-1-30-ai.md` | What 1.30 changed in vanilla infected, animal and noise code. Blocks marked as exact were read on `P:\`; the 1.29 and Nasdara data statements are not yet checked on `P:\`. |
-| `dayz-ai-patterns/references/eai-fsm-combat.md` | DayZ Expansion behaviour, not vanilla, none of it on `P:\`: how the DayZ Expansion AI module puts a unit to sleep, enters combat, builds its state machine and filters targets. |
-| `dayz-ai-patterns/references/eai-pathfinding-groups.md` | DayZ Expansion behaviour, not vanilla, none of it on `P:\`: how the DayZ Expansion AI module limits path recalculation, spreads a squad, keeps a formation and throttles perception. |
-| `dayz-persistence/references` | Persistence depth pack. Front index: `dayz-persistence/SKILL.md`. Line numbers are from `P:\` (game storage version 144); citations marked 1.29 were not checked there. |
-| `dayz-persistence/references/vanilla-stream.md` | The rules for data saved in an entity's own save stream: write and read order, the version argument, the variable width of the base class data. |
-| `dayz-persistence/references/sidecar-files.md` | Keeping mod data in its own file under the server profile: the file primitives, the load rules, a recoverable save sequence. |
-| `dayz-persistence/references/migration-matrix.md` | The seven kinds of input a reader must classify when a saved format changes, and how vanilla 1.30 handled its own new fields. |
-| `dayz-persistence/references/cf-modstorage.md` | Community Framework behaviour, not vanilla, not yet checked on `P:\`: how Community Framework stores one framed block per mod inside an entity's save. |
-| `dayz-persistence/references/lifetime-and-storage.md` | Part checked: why placed objects vanish after a restart even when their save code is right. The measurements are in-game probes and were not repeated. |
-| `dayz-persistence/references/load-and-restore.md` | Part checked: load failures, restore order and mod registries. The measurements and code reviews come from third-party mods. |
-| `dayz-persistence/references/central-economy-files.md` | The structure of the Central Economy files as the 1.30 dedicated server ships them. |
-| `dayz-persistence/references/dayz-1-30-persistence.md` | What 1.30 changed in the vanilla save streams, with the vanilla code copied in and compared with `P:\`. |
-| `dayz-basebuilding/references` | Base building pack. Front index: `dayz-basebuilding/SKILL.md`. Line numbers are from `P:\` (game storage version 144); citations marked 1.29 were not checked there. |
-| `dayz-basebuilding/references/config-contract.md` | Every config field a buildable object needs, with the vanilla code that reads it. |
-| `dayz-basebuilding/references/entity-lifecycle.md` | The call chain from crafting a kit to a base surviving a server restart, hop by hop. |
-| `dayz-basebuilding/references/placement-and-materials.md` | What decides whether a kit can be placed and whether its recipe can be built: slot stack sizes, the hologram tint, the carry pose, custom wall placement. |
-| `dayz-basebuilding/references/fence-gate-case.md` | The vanilla fence as a template for a stateful part: gate state, barbed wire damage, locks and the saved gate fields. |
-| `dayz-basebuilding/references/persistence-audit.md` | The hand-off checklist for a base building save change: the synced bit masks. |
-| `dayz-basebuilding/references/dayz-1-30-construction-rebuilding.md` | What 1.30 changed in the construction system: the class hierarchy, the type data cache, the second save stream for rebuildable buildings, masonry, the fence code lock. |
-| `rip-vehicle-import/references` | Ripped vehicle import pack. Front index: `rip-vehicle-import/SKILL.md`. Part checked throughout: vanilla facts cite the file on `P:\`; the measurements on imported cars are not yet checked on `P:\`. |
-| `rip-vehicle-import/references/classify-viewer.md` | Reviewing and changing the classification of a ripped car's parts without opening Blender. |
-| `rip-vehicle-import/references/profile-schema.md` | Field by field, what a car profile of the import project holds and which script reads each field (legacy and in flight). |
-| `rip-vehicle-import/references/cookbook-get-in-missing.md` | For a car whose get-in prompt never shows: the ordered guards of the action and naming the guard that blocks. |
-| `rip-vehicle-import/references/cookbook-door-radial-missing.md` | For a vehicle door that shows no open or close action: the three unrelated door mechanisms and picking the right one. |
-| `rip-vehicle-import/references/cookbook-attachment-invisible.md` | For a wheel, door or rack item that is attached and simulates but does not render: the proxy frame contract and the class name rule. |
-| `rip-vehicle-import/references/cookbook-wheelpresent-0.md` | For a car whose wheels are attached but do not simulate: the symptom, the refuted fix and where the real gate is. |
-| `rip-vehicle-import/references/cookbook-white-car.md` | For a car that renders white on a dedicated server: the include list that drops textures and the two fixes. |
-| `rip-vehicle-import/references/history-canonical-path.md` | History: the day-1 checklist and 12-step pipeline a ripped car followed before change 0. |
-| `rip-vehicle-import/references/history-family-b-runbook.md` | History only, no authority: the full runbook that change 1 removed from the critical path. |
-| `rip-vehicle-import/references/history-retired-artifacts.md` | History: the seven document types a new car no longer produces since change 0. |
+| `_shared/models/generated-model-pipeline.md` | Front page of the generated model workflow: the steps from Blender and py3d to a packed object, and which file covers each step. |
+| `_shared/models/generated-model-rules.md` | The 21 numbered rules every generated model must meet, and the LOD resolution values they rely on. |
+| `_shared/models/lods-authoring.md` | What goes in each LOD of a generated model, the limits that make Binarize or the game reject a LOD, and the Blender object names that become LODs. |
+| `_shared/models/memory-and-selections-authoring.md` | Which memory points and named selections a generated model needs, how to create them, and how proxy selections make an attachment show. |
+| `_shared/models/axes-and-winding.md` | Cannot be checked on `P:\`: the measurements behind the Blender to DayZ axis conversion and the face winding rules. |
+| `_shared/models/py3d-generation.md` | The py3d API for building a model in Python: LODs, points, faces, selections, named properties, proxies, reading an existing file. |
+| `_shared/models/py3d-assembly-rules.md` | Rules for writing or editing a `.p3d` with py3d beyond the basic API: where mass may sit, cutting geometry without breaking selections, what the validator's findings mean. |
+| `_shared/models/blender-headless.md` | The Blender Python calls the skill uses to build geometry without the Blender window. Tool knowledge, not game data. |
+| `_shared/models/blender-external-mesh.md` | Manual Blender steps for a mesh that came from somewhere else: import, cleanup, UVs, LODs, export. Tool knowledge, not game data. |
+| `_shared/models/blender-import-preflight.md` | What to check before geometry work on an imported mesh, and what was measured while reducing and reshaping such meshes. |
+| `_shared/animation/model-cfg-device-examples.md` | A worked reference for the `model.cfg` side of a generated object: skeleton, animation types, config sources, script control, memory axes. |
+| `_shared/models/model-config-and-packing.md` | The config side of a generated model: folder layout, `$PBOPREFIX$`, the `CfgVehicles` class, proxy attachment classes, a material file, packing. |
+| `_shared/textures/rvmat-mod-patterns.md` | Material recipes beyond the basic Super material: flat colors, a damage overlay, lit panels, glass, emissive. |
+| `_shared/models/multi-rvmat-texturing.md` | Giving one mesh region two to four tiling detail textures with the `Multi` shader: the mask, the stage and texGen layout, the two UV sets, a template. |
+| `_shared/textures/procedural-textures.md` | Generating the `_co`, `_nohq` and `_smdi` maps of a generated model in Python with coherent noise. Tool knowledge and recipes, not game data. |
+| `_shared/models/domain-recipes.md` | Not yet checked on `P:\`: three results measured on real mods: cookware, a client side cable segment, and an asset posed in the hands. |
+| `_shared/models/device-recipes.md` | Third-party mod practice, not vanilla: seven object specifications of one power mod, with its vertex budgets and naming habits, as starting points. |
+| `_shared/models/artist-returns.md` | What to check when a `.p3d`, `.paa` or `.rvmat` comes from outside the repo. Process rules learned on mod projects. |
+| `_shared/models/unconfirmed-findings.md` | Not checked on `P:\`: three unconfirmed findings of medium confidence, to use as red flags during a model audit. |
+| `_shared/models/generated-model-troubleshooting.md` | Symptom, root cause and fix for the failures the pipeline produces most. Causes and fixes come from mod projects and are not checked on `P:\`. |
+| `_shared/models/dayz-1-30-models.md` | What 1.30 changes for meshes, proxies, houses, wells and the model cache, with an evidence label on each line. |
+| `_shared/models/tools-3d-viewer-formats.md` | What the viewer tool supports in `.paa`, `.p3d` and `.rvmat` files, how it turns a material into a Three.js one, and the faults fixed while building it. |
+| `_shared/models/tools-threejs-viewers.md` | No game facts: loading Three.js in a generated viewer page, the fit editor pattern for placing memory points, and testing a viewer page. |
+| `_shared/models/tools-3d-viewer-states.md` | Planned, not built: a viewer that plays a model's animations and swaps its materials, with examples from one mod. |
 
 ### Not file packs
 

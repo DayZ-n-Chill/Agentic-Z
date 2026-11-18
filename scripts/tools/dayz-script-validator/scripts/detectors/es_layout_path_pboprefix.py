@@ -10,7 +10,7 @@ ES_LAYOUT_PATH_PBOPREFIX_NO_PREFIX_RULE_ID = (
 
 
 # Layout path mismatch causes crash + ghost menu in UIManager
-# (pitfalls-advanced.md:304-316, SKILL.md rule 34, dayz-mod-workflow:187).
+# (pitfalls-advanced.md:304-316, SKILL.md rule 34, implementation protocol).
 # Cross-file rule: addon's `$PBOPREFIX$` defines the canonical prefix; every
 # .layout string literal in .c files must start with that prefix.
 #

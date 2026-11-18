@@ -39,4 +39,4 @@ Stage every vanilla file a LOD names (the penetration `.rvmat` above) into the b
 3. LODs as in the table above: Visual, a solid convex Geometry, Fire Geometry, View Geometry, LandContact, Memory.
 4. Unwrap and bake (`body-uv-bake.md`), then the textures and `.rvmat` (`skills/_shared/textures/`).
 5. Config under `ZombieMaleBase` or `ZombieFemaleBase` (`skills/_shared/ai/custom-infected.md`) and a `model.cfg` with the character skeleton.
-6. Run the offline winding gate (`/dayz-characters`), build with `/dayz-build-pbo`, then test in game with `/dayz-launch-test`: animations, foot sliding, collision, hits, spawning.
+6. Run the offline winding gate (`check_dayz_winding.py` in `/dayz-model-tools`), build with `/dayz-build-pbo`, then test in game with `/dayz-launch-test`: animations, foot sliding, collision, hits, spawning.

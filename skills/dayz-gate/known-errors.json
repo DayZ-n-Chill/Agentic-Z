@@ -351,7 +351,7 @@
     "meaning": "A modded or derived class declares a member variable that its base class already has, so the script module does not compile.",
     "fix": "Delete the declaration in the file named on the line and use the inherited member; grep P:\\scripts\\ for the name in the base class chain to confirm it.",
     "owner_agent": "dayz-script-specialist",
-    "source": "dayz-mod-workflow references/error-catalog.md (E30)"
+    "source": "skills/dayz-launch-test/references/error-catalog.md (E30)"
   },
   {
     "id": "config-undefined-base-class",
@@ -359,7 +359,7 @@
     "meaning": "config.cpp inherits from a class that is not declared in that file's scope, so CfgConvert stops and the mod does not load. In a vehicle child mod it is usually a nested override such as class Axles: Axles with no forward declaration.",
     "fix": "Declare the base as class X; in the same parent class (for a vehicle's nested classes, at the root of this mod's CfgVehicles), or add the parent's CfgPatches class to requiredAddons.",
     "owner_agent": "dayz-config-specialist",
-    "source": "dayz-mod-workflow references/error-catalog.md (E28)"
+    "source": "skills/dayz-launch-test/references/error-catalog.md (E28)"
   },
   {
     "id": "no-damage-system-data",
@@ -367,7 +367,7 @@
     "meaning": "Health was read on an object whose config declares no DamageSystem; reported for vehicles and custom wheel classes, where it crashes as soon as health is touched.",
     "fix": "Add class DamageSystem { class GlobalHealth { class Health { hitpoints = ...; healthLevels[] = {...}; }; }; }; to the class named in the log and to each custom wheel class; copy the shape from OffroadHatchback in P:\\DZ\\vehicles\\wheeled\\config.cpp.",
     "owner_agent": "dayz-vehicle-specialist",
-    "source": "dayz-mod-workflow references/error-catalog.md (E35)"
+    "source": "skills/dayz-launch-test/references/error-catalog.md (E35)"
   },
   {
     "id": "null-pointer",

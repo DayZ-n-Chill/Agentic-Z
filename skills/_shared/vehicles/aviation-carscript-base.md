@@ -85,7 +85,7 @@ override void OnDriverExit(Human player)
 
 ## Seaplanes and water
 
-Vanilla declares `class Buoyancy` on `BoatScript` at `P:\DZ\vehicles\water\config.cpp:32`. LM_Planes puts a `class Buoyancy` on `CarScript` children (a flying boat, a seaplane and an amphibious car) and adds active water physics in script; whether the car simulation reads that class is an LM_Planes result, not checked in game here. Water is detected with `SurfaceIsSea` and `SurfaceIsPond` (`P:\scripts\3_game\global\game.c:1196` to `:1197`). The config block, the two water physics templates and the presets are in the skill's `references/aerodynamics-and-flight-physics.md`.
+Vanilla declares `class Buoyancy` on `BoatScript` at `P:\DZ\vehicles\water\config.cpp:32`. LM_Planes puts a `class Buoyancy` on `CarScript` children (a flying boat, a seaplane and an amphibious car) and adds active water physics in script; whether the car simulation reads that class is an LM_Planes result, not checked in game here. Water is detected with `SurfaceIsSea` and `SurfaceIsPond` (`P:\scripts\3_game\global\game.c:1196` to `:1197`). The config block, the two water physics templates and the presets are in `aviation-aerodynamics.md`.
 
 ## Where the depth is
 

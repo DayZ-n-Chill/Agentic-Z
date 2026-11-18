@@ -86,7 +86,7 @@ In the ViewGeo LOD, flag the model when the selections `seat_driver` or `seat_co
 
 ### Check B: crew proxies that are 90/45/45 isosceles triangles
 
-Flag the model when the `crewdriver` or `crewcodriver` proxies are isosceles 90/45/45 triangles: the frame derived by sorting the angles is ambiguous, and the player sits sideways or turns on get-in. The triangle must have three distinct angles. `skills/_shared/models/proxy-frames.md` ("Crew proxies") gives the frame convention (+Y is vehicle forward) and the fix, and the dayz-proxy-align skill rewrites the triangle.
+Flag the model when the `crewdriver` or `crewcodriver` proxies are isosceles 90/45/45 triangles: the frame derived by sorting the angles is ambiguous, and the player sits sideways or turns on get-in. The triangle must have three distinct angles. `skills/_shared/models/proxy-frames.md` ("Crew proxies") gives the frame convention (+Y is vehicle forward) and the fix, and the proxy editor of the dayz-model-tools skill rewrites the triangle.
 
 ---
 

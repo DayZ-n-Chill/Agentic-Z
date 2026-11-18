@@ -33,7 +33,7 @@ false fix: it displaces everything else that was already correct. Correct the in
 
 **False friend — `autocenter=0` is not this bug.** It is a real and separate requirement (the
 engine recenters LODs by bbox without it, displacing collision ~20-25 cm from visual; see
-dayz-model-pipeline and `dayz-p3d-audit`), but it does not cause or cure anchor divergence.
+`_shared/models/generated-model-rules.md` and `dayz-p3d-audit`), but it does not cause or cure anchor divergence.
 TestMercedes spent a full RCA on that hypothesis and closed it as unproven: adding `autocenter=0`
 to all 18 proxy LODs changed nothing geometric, and the protrusions and see-through were already
 present in the earlier baseline. Do not re-run that investigation.

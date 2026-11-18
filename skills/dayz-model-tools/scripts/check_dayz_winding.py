@@ -70,7 +70,7 @@ from collections import defaultdict
 
 AGREE_ABOVE = 90.0       # % of a shell's corner normals; above it they agree (py3d _check_winding_absolute's 90)
 DISAGREE_BELOW = 10.0    # below it they disagree (where py3d raises ERR_WINDING_VS_NORMALS)
-WELD_DECIMALS = 5        # points equal to 5 decimals are one point (winding-diagnostics.md, Check B)
+WELD_DECIMALS = 5        # points equal to 5 decimals are one point (winding-diagnostics.md, "From Check B to fix", step 1)
 MIN_THICKNESS = 2e-5     # m; a closed shell with 3*|volume|/area below it is flat: no sign. Twins welded at
                          # 5 decimals stay under 1.5e-5; a real part is thicker (a 50-micron one is not flat)
 PERPENDICULAR = 0.0872   # |cos| between a corner normal and its face's vector area at or below it (within 5

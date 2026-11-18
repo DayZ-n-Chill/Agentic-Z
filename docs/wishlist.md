@@ -21,11 +21,11 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 | `/dayz-p3d-audit`: print a per-LOD resolved-vertex count, with a warning at 90 % of a ceiling the user gives. | Models review | 2026-11-17 |
 | `/dayz-p3d-audit`: script the checks its references describe by hand (wheel model memory points, ride height, component count and mass share on a vehicle, `#Mass#` outside Geometry, the per-component inward winding check, the get-in contract gate). | Models review | 2026-11-17 |
 | A UV audit script for MLOD models (`uv_audit.py`), and a `/dayz-p3d-audit` report of the share of zero and degenerate UVs per visual LOD. | Models review | 2026-11-17 |
-| Scripts for the parts of `uv-clean-atlas` that have none: Track B (`smart_project` plus the exact fold loop) and the shared-sheet recipe for LODs. | Models review | 2026-11-17 |
-| `uv-clean-atlas` engine: take the expected `.blend` hash, face count and shell lists from command-line options or the assignment JSON, pick the stage with a `--stage` option, and replace `render_atlas_pngs` with a small PNG writer. | Models review | 2026-11-17 |
+| Scripts for the parts of the clean UV atlas method (`skills/_shared/models/tools-uv-atlas.md`) that have none: Track B (`smart_project` plus the exact fold loop) and the shared-sheet recipe for LODs. | Models review | 2026-11-17 |
+| Clean UV atlas engine (`skills/dayz-model-tools/scripts/project_atlas.py`): take the expected `.blend` hash, face count and shell lists from command-line options or the assignment JSON, pick the stage with a `--stage` option, and replace `render_atlas_pngs` with a small PNG writer. | Models review | 2026-11-17 |
 | `sat_gate.py`: print evaluated, skipped and total triangle counts, and stop cleanly when every triangle is collapsed. Share one module for the SAT check and the island finder, which exist two and three times. | Models review | 2026-11-17 |
-| A Blender-gated end-to-end test for `uv-clean-atlas` (unwrap a small generated mesh, assert zero overlapping pairs). | Models review | 2026-11-17 |
-| Write `probe_truth.py` and `facet_report.py`, which `blender-visual-review` documents but does not ship. | Models review | 2026-11-17 |
+| A Blender-gated end-to-end test for the clean UV atlas scripts of `dayz-model-tools` (unwrap a small generated mesh, assert zero overlapping pairs). | Models review | 2026-11-17 |
+| Write `probe_truth.py` and `facet_report.py`, which `skills/_shared/models/tools-vlm-judge.md` documents but `/dayz-model-tools` does not ship. | Models review | 2026-11-17 |
 | A checker for shorthand citations (`file.c:123`, a bare `:123` after a path), which the integrity test skips. | Animation review | 2026-11-17 |
 | Name the graph layer in the opening sentence of `skills/_shared/animation/README.md`. | Animation review | 2026-11-17 |
 | A pytest for `gen_model_cfg.py` (it has only `--self-test`), one that builds the animation viewer page against `viewer_core.py`, and tests for `ik_pose_to_seanim.py` and `weapon_grip_viewer.py --data`. | Animation review | 2026-11-17 |
@@ -41,7 +41,7 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 | An offline check script for a worn clothing model (skeleton name byte scan, anatomical facing test), and have the alignment viewer export its own cross-check samples. | Animation review | 2026-11-17 |
 | An offline check that every part `id` in a `Construction` block is unique and between 1 and 93, as part of `/dayz-lint`. | World review | 2026-11-17 |
 | A `types.xml` entry check against the public classes of `config.cpp`, as part of `/dayz-lint`. | World review | 2026-11-17 |
-| An offline script that builds the sidecar cleanup table (every file suffix written against every `DeleteFile` site) and the path helper table from a mod's scripts, for `/dayz-lint` or `rigorous-data-audit`. | World review | 2026-11-17 |
+| An offline script that builds the sidecar cleanup table (every file suffix written against every `DeleteFile` site) and the path helper table from a mod's scripts, for `/dayz-lint` or the deep data audit in `skills/_shared/persistence/deep-audit.md`. | World review | 2026-11-17 |
 | An eval question set for `dayz-physics-specialist` drawn from the physics pack, `skills/_shared/physics/`. | World review | 2026-11-17 |
 | `rvmat_lint.py`: warn when a Stage4 `_as` reads `uvSource="tex1"` in a material borrowed from vanilla, and when a `_nohq` source name lacks the suffix. | World review | 2026-11-17 |
 | A script that prints per channel statistics of an `_as` or `_smdi` `.paa`, and one under `scripts/dev/` that regenerates the procedural SMDI and `dir[]` counts after a game update. | World review | 2026-11-17 |

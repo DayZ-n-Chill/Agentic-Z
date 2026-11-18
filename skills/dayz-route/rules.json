@@ -24,7 +24,7 @@
     "dayz-init": {"kind": "skill", "description": "First-run setup wizard, and afterwards the status hub: what is set up, the active mod and the next action"},
     "dayz-launch-workbench": {"kind": "skill", "description": "Open Enfusion Workbench on vanilla DayZ or on a mod's gproj"},
     "dayz-add-server": {"kind": "skill", "description": "Set up a local test server instance under .server/<instance>/, or refresh its mission after a DayZ update"},
-    "dayz-pack-texture": {"kind": "skill", "description": "Convert PNG or TGA images with a texture-role suffix to .paa with ImageToPAA"},
+    "dayz-pack-texture": {"kind": "skill", "description": "Convert PNG or TGA images with a texture-role suffix to .paa with ImageToPAA; also lint an .rvmat, write one from a template, and check whether a normal map is OpenGL or DirectX"},
     "dayz-build-imageset": {"kind": "skill", "description": "Build a mod's .imageset and .paa atlas from the PNG sprites in its .gui-sources/ folders"},
     "dayz-cot-bootstrap": {"kind": "skill", "description": "Grant the developer Community-Online-Tools (COT) admin on a local test server; the user starts it by typing /dayz-cot-bootstrap"},
     "dayz-launch-objectbuilder": {"kind": "skill", "description": "Open DayZ Tools' Object Builder, optionally on a .p3d or the one .p3d in a mod's data folder"},
@@ -41,21 +41,8 @@
     "dayz-statusline": {"kind": "skill", "description": "Install or remove a one-line DayZ status line showing P:\\ mount, active mod, running DayZDiag and search index age"},
     "dayz-clean-workspace": {"kind": "skill", "description": "Delete mod scaffolds the toolkit created, with their P:\\ link and deploy folder, and optionally .server/; the user starts it by typing /dayz-clean-workspace"},
     "dayz-record-correction": {"kind": "skill", "description": "Turn the user's correction of how the team works (always or never do X, remember this) into a written rule in the right tier, after the user says yes"},
-    "dayz-3d-viewer": {"kind": "skill", "description": "Turn a .p3d with its .paa and .rvmat files into a .glb and a standalone HTML 3D viewer, or convert a .paa to .png"},
-    "dayz-p3d-inspector": {"kind": "skill", "description": "Extract a .p3d's LODs, memory points, selections and properties into a Recipe JSON, edit memory points in an interactive viewer, and build a .p3d from the Recipe"},
-    "dayz-proxy-align": {"kind": "skill", "description": "Read the proxies of a host .p3d, show them in a browser editor against the worn clothing or attached item, and write the aligned proxies back"},
-    "dayz-model-tools": {"kind": "skill", "description": "Run the model scripts: extract a .p3d to a Recipe JSON and rebuild it, align proxies, view worn clothing alignment, check face winding, clean and pack UV atlases, install py3d"},
-    "dayz-texture-pipeline": {"kind": "skill", "description": "Plan and check texture and material work: which map each suffix needs, .rvmat authoring, an .rvmat linter and template writer, and a normal map convention check"},
-    "dayz-characters": {"kind": "skill", "description": "Run the offline winding and normal gate on a character .p3d before packing it"},
-    "dayz-clothing": {"kind": "skill", "description": "Run the clothing alignment viewer on a worn model and apply its adjustments, or export worn models to FBX for an artist"},
+    "dayz-model-tools": {"kind": "skill", "description": "Run the model scripts: extract a .p3d to a Recipe JSON and rebuild it, drag memory points, align proxies, view worn clothing alignment and export the FBX handoff, check face winding, clean and pack UV atlases, preview a .p3d as a .glb in a browser or convert a .paa to .png, Blender build helpers and render review, ripped car classification, install py3d"},
     "dayz-animation-pipeline": {"kind": "skill", "description": "Run the animation scripts: model.cfg from JSON, SEAnim and RTM files, rider pose solver, weapon animation viewers, motion contract sampling and validation in Blender, Mixamo retargeting (experimental)"},
-    "dayz-model-pipeline": {"kind": "skill", "description": "Reference for building a complete object: Blender geometry, a .p3d assembled with py3d (LODs, selections, memory points, proxies), textures, .rvmat, model.cfg and config entries"},
-    "dayz-ai-patterns": {"kind": "skill", "description": "Reference for AI behaviour patterns: state machines, combat, threat and targeting, line of sight, pathfinding, group formation and the NoiseSystem, studied in Expansion AI"},
-    "dayz-basebuilding": {"kind": "skill", "description": "Reference for buildable structures on BaseBuildingBase: the kit and hologram flow, the Construction config, build and dismantle actions, the bit mask save and the 1.30 changes"},
-    "dayz-mod-dev": {"kind": "skill", "description": "Reading guide and rule set for developing a whole mod on 1.30 or later: write, review or port it, then build, boot a local server, check in game and release"},
-    "dayz-mod-workflow": {"kind": "skill", "description": "Protocol for implementing and debugging a mod: the client and server data map, checking every API before use, per-file checklists, the recurring error catalog and the debug order"},
-    "dayz-persistence": {"kind": "skill", "description": "Reference for persistence: OnStoreSave and OnStoreLoad streams, CF ModStorage, format changes and rollback, sidecar JSON files, and objects that vanish after a restart"},
-    "dayz-ui-development": {"kind": "skill", "description": "Reference for building UI in Enforce Script: menus, HUD overlays, .layout files, widgets, styles, imagesets, Dabs Framework MVC and the 1.30 UI changes"},
     "dayz-server-admin": {"kind": "agent", "description": "Server economy and config: types.xml, spawns, loot, init.c, serverDZ.cfg, cfggameplay.json"},
     "dayz-config-specialist": {"kind": "agent", "description": "config.cpp work: CfgPatches, CfgVehicles, inheritance, hidden selections"},
     "dayz-script-specialist": {"kind": "agent", "description": "Write or change Enforce Script (.c) code, modded classes, RPCs"},
@@ -226,16 +213,16 @@
       "patterns": ["\\b(?:build|make|create|write)\\s+(?:me\\s+)?(?:a|an)\\s+(?:new\\s+)?[\\w\\s,'-]{0,60}?\\bmod\\b", "\\b(?:scaffold|start)\\s+(?:me\\s+)?(?:a|an)\\s+(?:(?:whole|full|complete|new)\\s+)*(?!(?:new|empty|blank|bare|whole|full|complete)\\b)[\\w'-]+(?:[\\s,]+[\\w'-]+){0,5}?\\s+mod\\b", "\\b(?:scaffold|start)\\s+(?:me\\s+)?(?:a|an)\\s+[\\w\\s,'-]{0,60}?\\bmod\\s+(?:with|that|which|where)\\b"]
     },
     {
-      "route": "dayz-3d-viewer",
+      "route": "dayz-model-tools",
       "confidence": 0.95,
       "absorbs": true,
       "patterns": ["\\bdayz-3d-viewer(?![\\w-])", "\\b(?:3d|p3d|model|three\\.?js)\\s+viewer\\b", "\\bpaa\\s+to\\s+png\\b", "\\b(?:glb|gltf)\\s+export\\b", "\\bexport\\b[^\\n]{0,40}?\\b(?:to|as)\\s+(?:a\\s+)?(?:glb|gltf)\\b"]
     },
     {
-      "route": "dayz-p3d-inspector",
+      "route": "dayz-model-tools",
       "confidence": 0.95,
       "absorbs": true,
-      "patterns": ["\\bdayz-p3d-inspector(?![\\w-])", "\\bp3d\\s+inspector\\b", "\\binspect\\b[^\\n]{0,30}?\\b(?:p3d|model\\b(?!\\.cfg))\\b", "\\brecipe\\s+json\\b", "\\bround-?trip\\b[^\\n]{0,30}?\\bp3d\\b", "\\b(?:view|show|move|drag)\\b[^\\n]{0,30}?\\bmemory\\s+points?\\b"]
+      "patterns": ["\\bp3d\\s+inspector\\b", "\\binspect\\b[^\\n]{0,30}?\\b(?:p3d|model\\b(?!\\.cfg))\\b", "\\brecipe\\s+json\\b", "\\bround-?trip\\b[^\\n]{0,30}?\\bp3d\\b", "\\b(?:view|show|move|drag)\\b[^\\n]{0,30}?\\bmemory\\s+points?\\b"]
     },
     {
       "route": "dayz-import-mod",
@@ -244,10 +231,10 @@
       "patterns": ["\\breverse[\\s-]engineer(?:s|ed|ing)?\\b", "\\b(?:unpack|extract|depbo)\\b[^\\n]{0,30}?\\bpbos?\\b", "\\bextractpbo\\b"]
     },
     {
-      "route": "dayz-proxy-align",
+      "route": "dayz-model-tools",
       "confidence": 0.95,
       "absorbs": true,
-      "patterns": ["\\bdayz-proxy-align(?![\\w-])", "\\bproxy[\\s-]align(?:ment)?\\b", "\\balign\\b[^\\n]{0,30}?\\bprox(?:y|ies)\\b", "\\bprox(?:y|ies)\\b[^\\n]{0,40}?\\b(?:orientation|rotated|misaligned|(?:on|at)\\s+the\\s+floor|floats?|floating)\\b"]
+      "patterns": ["\\bproxy[\\s-]align(?:ment)?\\b", "\\balign\\b[^\\n]{0,30}?\\bprox(?:y|ies)\\b", "\\bprox(?:y|ies)\\b[^\\n]{0,40}?\\b(?:orientation|rotated|misaligned|(?:on|at)\\s+the\\s+floor|floats?|floating)\\b"]
     },
     {
       "route": "dayz-model-tools",
@@ -262,10 +249,10 @@
       "patterns": ["\\bmcp\\s+verif(?:y|ication)\\b", "\\b(?:verify|test|check)\\b[^\\n]{0,40}?\\b(?:with|through|via|over|using)\\s+(?:the\\s+)?(?:dayz[\\s-])?mcp\\b", "\\bvisual\\s+smoke\\s+test\\b", "\\bacceptance\\s+ladder\\b"]
     },
     {
-      "route": "dayz-texture-pipeline",
+      "route": "dayz-pack-texture",
       "confidence": 0.95,
       "absorbs": true,
-      "patterns": ["\\bdayz-texture-pipeline(?![\\w-])", "\\btexture\\s+pipeline\\b", "\\b(?:lint|check|validate)\\b[^\\n]{0,30}?\\brvmats?\\b", "\\brvmat\\s+(?:lint(?:er)?|template)\\b", "\\bnormal\\s+maps?\\b[^\\n]{0,40}?\\b(?:convention|inverted|opengl|directx)\\b", "\\b(?:opengl|directx)\\b[^\\n]{0,30}?\\bnormal\\s+maps?\\b"]
+      "patterns": ["\\btexture\\s+pipeline\\b", "\\b(?:lint|check|validate)\\b[^\\n]{0,30}?\\brvmats?\\b", "\\brvmat\\s+(?:lint(?:er)?|template)\\b", "\\bnormal\\s+maps?\\b[^\\n]{0,40}?\\b(?:convention|inverted|opengl|directx)\\b", "\\b(?:opengl|directx)\\b[^\\n]{0,30}?\\bnormal\\s+maps?\\b"]
     },
     {
       "route": "dayz-p3d-audit",
@@ -280,10 +267,10 @@
       "patterns": ["\\bvehicles?\\s+(?:reference|guide)\\b", "\\b(?:aviation|aircraft|flight)\\s+(?:reference|guide)\\b", "\\b(?:motorbike|motorcycle|bike)s?\\s+(?:reference|guide)\\b"]
     },
     {
-      "route": "dayz-characters",
+      "route": "dayz-model-tools",
       "confidence": 0.95,
       "absorbs": true,
-      "patterns": ["\\bdayz-characters(?![\\w-])", "\\bwinding\\s+(?:gate|check|test)\\b", "\\b(?:check|test|validate)\\b[^\\n]{0,30}?\\b(?:face\\s+)?winding\\b"]
+      "patterns": ["\\bwinding\\s+(?:gate|check|test)\\b", "\\b(?:check|test|validate)\\b[^\\n]{0,30}?\\b(?:face\\s+)?winding\\b"]
     },
     {
       "route": "dayz-animation-pipeline",
@@ -304,10 +291,10 @@
       "patterns": ["\\bfeature\\s+spec(?:ification)?s?\\b", "\\bspec\\s+checklist\\b", "\\bacceptance\\s+criteria\\b", "\\bdefinition\\s+of\\s+done\\b", "\\b(?:consistency|analy[sz]e)\\s+gate\\b"]
     },
     {
-      "route": "dayz-clothing",
+      "route": "dayz-model-tools",
       "confidence": 0.95,
       "absorbs": true,
-      "patterns": ["\\bdayz-clothing(?![\\w-])", "\\balignment\\s+viewer\\b", "\\bfbx\\s+handoff\\b"]
+      "patterns": ["\\balignment\\s+viewer\\b", "\\bfbx\\s+handoff\\b"]
     },
     {
       "route": "dayz-animation-pipeline",
@@ -316,22 +303,22 @@
       "patterns": ["\\bdayz-animation-pipeline(?![\\w-])", "\\banimation\\s+pipeline\\b", "\\banimations?\\s+(?:reference|guide)\\b"]
     },
     {
-      "route": "dayz-model-pipeline",
+      "route": "dayz-object-builder",
       "confidence": 0.95,
       "absorbs": true,
-      "patterns": ["\\bdayz-model-pipeline(?![\\w-])", "\\bmodel\\s+pipeline\\b", "\\bmodel(?:l?ing)?\\s+(?:reference|guide)\\b"]
+      "patterns": ["\\bmodel\\s+pipeline\\b", "\\bmodel(?:l?ing)?\\s+(?:reference|guide)\\b"]
     },
     {
-      "route": "dayz-ai-patterns",
+      "route": "dayz-ai-specialist",
       "confidence": 0.9,
       "absorbs": true,
-      "patterns": ["\\bdayz-ai-patterns(?![\\w-])", "\\bai\\s+patterns?\\b", "\\b(?:eai|ai)\\s+(?:reference|guide)\\b"]
+      "patterns": ["\\bai\\s+patterns?\\b", "\\b(?:eai|ai)\\s+(?:reference|guide)\\b"]
     },
     {
-      "route": "dayz-basebuilding",
+      "route": "dayz-persistence-specialist",
       "confidence": 0.9,
       "absorbs": true,
-      "patterns": ["\\bdayz-basebuilding(?![\\w-])", "\\bbase[\\s-]?building\\s+(?:reference|guide)\\b"]
+      "patterns": ["\\bbase[\\s-]?building\\s+(?:reference|guide)\\b"]
     },
     {
       "route": "dayz-map-specialist",
@@ -340,22 +327,34 @@
       "patterns": ["\\b(?:environment(?:al)?\\s+hazards?|hazards?|sandstorms?|heat\\s?stroke)\\s+(?:reference|guide)\\b", "\\bunderground\\s+(?:reference|guide)\\b"]
     },
     {
-      "route": "dayz-mod-dev",
+      "route": "dayz-launch-test",
       "confidence": 0.9,
       "absorbs": true,
-      "patterns": ["\\bdayz-mod-dev(?![\\w-])", "\\bmod\\s+dev(?:elopment)?\\s+(?:reference|guide|rules)\\b", "\\bport\\b[^\\n]{0,30}?\\bto\\s+(?:dayz\\s+)?1\\.3\\d\\b"]
+      "patterns": ["\\bmod\\s+dev(?:elopment)?\\s+(?:reference|guide|rules)\\b", "\\berror\\s+catalog(?:ue)?\\b"]
     },
     {
-      "route": "dayz-mod-workflow",
+      "route": "dayz-script-specialist",
       "confidence": 0.9,
       "absorbs": true,
-      "patterns": ["\\bdayz-mod-workflow(?![\\w-])", "\\bmod\\s+workflow\\b", "\\berror\\s+catalog(?:ue)?\\b", "\\bdebug\\s+order\\b"]
+      "patterns": ["\\bport\\b[^\\n]{0,30}?\\bto\\s+(?:dayz\\s+)?1\\.3\\d\\b"]
     },
     {
-      "route": "dayz-persistence",
+      "route": "dayz-scope-mod",
       "confidence": 0.9,
       "absorbs": true,
-      "patterns": ["\\bdayz-persistence(?![\\w-])", "\\bpersistence\\s+(?:reference|guide)\\b"]
+      "patterns": ["\\bmod\\s+workflow\\b", "\\bimplementation\\s+protocol\\b"]
+    },
+    {
+      "route": "dayz-mod-debugger",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["\\bdebug\\s+order\\b"]
+    },
+    {
+      "route": "dayz-persistence-specialist",
+      "confidence": 0.9,
+      "absorbs": true,
+      "patterns": ["\\bpersistence\\s+(?:reference|guide)\\b"]
     },
     {
       "route": "dayz-physics-specialist",
@@ -370,10 +369,10 @@
       "patterns": ["\\b(?:sound|audio)\\s+(?:system\\s+)?(?:reference|guide)\\b"]
     },
     {
-      "route": "dayz-ui-development",
+      "route": "dayz-ui-specialist",
       "confidence": 0.9,
       "absorbs": true,
-      "patterns": ["\\bdayz-ui-development(?![\\w-])", "\\bui\\s+(?:development\\s+)?(?:reference|guide)\\b"]
+      "patterns": ["\\bui\\s+(?:development\\s+)?(?:reference|guide)\\b"]
     },
     {
       "route": "dayz-weapon-specialist",

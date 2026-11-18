@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "agentic-z",
-      "description": "AI agent stack for DayZ modding. After install, run /dayz-init for a guided setup wizard that takes you from empty repo to mod-loaded-in-DayZ. Ships specialist subagents and DayZ slash skills covering the full mod pipeline (preflight, scaffold, build PBO, launch test, types.xml, RAG indexer) and tool and reference skills for models, animation, characters and clothing, textures, particles, UI and Enforce Script, knowledge packs the specialists read (vehicles, weapons, physics, audio, world systems and more), plus the dayz-rag MCP server for semantic search over vanilla DayZ source.",
+      "description": "AI agent stack for DayZ modding. After install, run /dayz-init for a guided setup wizard that takes you from empty repo to mod-loaded-in-DayZ. Ships specialist subagents and DayZ slash skills covering the full mod pipeline (preflight, scaffold, build PBO, launch test, types.xml, RAG indexer) tool skills for models, animation, textures, particles and UI previews, knowledge packs the specialists read (Enforce Script, models, textures, UI, persistence, AI, vehicles, weapons, physics, audio, world systems and more), plus the dayz-rag MCP server for semantic search over vanilla DayZ source.",
       "version": "2.1.0",
       "source": "./",
       "author": {

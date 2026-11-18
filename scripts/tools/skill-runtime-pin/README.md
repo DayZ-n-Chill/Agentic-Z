@@ -16,7 +16,7 @@ receipt **outside** `<probe-root>`. Assembled consumer prompts do not include it
 
 ## Contract
 
-- Default skill: `dayz-mod-workflow`. `--skill` must be a single hyphenated
+- `--skill` is required. It must be a single hyphenated
   name that exists as `skills/<skill>/SKILL.md` in the commit.
 - Source worktree must be clean. The commit is read through `git ls-tree` /
   `git cat-file`, not the working tree.
@@ -46,7 +46,7 @@ receipt **outside** `<probe-root>`. Assembled consumer prompts do not include it
 Run from the repo root, without installing a package:
 
 ```powershell
-python scripts/tools/skill-runtime-pin/runtime_pin.py materialize --source <source-repo> --commit <sha> --task-root <new-task-root>
+python scripts/tools/skill-runtime-pin/runtime_pin.py materialize --source <source-repo> --commit <sha> --task-root <new-task-root> --skill <skill-name>
 python scripts/tools/skill-runtime-pin/runtime_pin.py verify --task-root <task-root>
 python scripts/tools/skill-runtime-pin/runtime_pin.py assemble --task-root <task-root> --consumer all
 python scripts/tools/skill-runtime-pin/runtime_pin.py inspect-prompt --task-root <task-root> --prompt-input <prompt-input.txt>
@@ -124,8 +124,8 @@ messages: walk every JSON string, then parse `Skill roots` and skill
 entries from the same string. Regexes must not run only on the raw file
 with escaped `\n`. A dump that names `r10/<alias>/SKILL.md` after a
 `Skill roots` map is resolved against that root. A different absolute root
-with the same suffix is not the adapter. Global `dayz-mod-workflow` hits
-may remain; they are a different name.
+with the same suffix is not the adapter. Global hits for the original skill
+name may remain; they are a different name.
 
 Cursor (`program` is `%LOCALAPPDATA%\cursor-agent\cursor-agent.cmd`; `argv`
 is flags then `-p` and the short prompt last):
@@ -155,7 +155,7 @@ Cursor:
   "exit_code": 0,
   "stdout": "CANARY:<nonce>",
   "argv": ["--mode", "ask", "--trust", "--workspace", "<probe-root>", "--output-format", "stream-json", "--model", "cursor-grok-4.6-xhigh", "-p", "/<alias> <prompt>"],
-  "tool_reads": ["skills/dayz-mod-workflow/SKILL.md"],
+  "tool_reads": ["skills/<skill>/SKILL.md"],
   "injected_bodies": [],
   "system_init": {
     "type": "system",
@@ -192,3 +192,7 @@ python -m pytest -q -p no:cacheprovider scripts/tools/skill-runtime-pin
 
 The tests need `git` on PATH and build their fixture repositories in a
 temporary folder.
+
+## Consumer procedure
+
+What a session does when the skill files it reads may be rewritten by another session while it runs: `concurrent-session-snapshot.md` in this folder.

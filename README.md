@@ -7,7 +7,7 @@
 ## What you get
 
 - **A 30-agent mod team**: an orchestrator that plans and tracks a whole mod, a Haiku router that picks the handler for a request, team leads, specialists for scripts, configs, models, textures, UI, Figma, maps, server admin, Workbench plugins, saving data, AI, vehicles, weapons, wearables, animation, audio and effects, and physics, and gatekeepers that review, build and test every task in game before you see it.
-- **66 slash-command skills** (62 in the plugin, plus 4 clone-only template-maintenance skills). 40 of them drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc. The other 22 are reference skills and offline tools for models, textures, animation, characters and clothing, vehicle imports, base building and saved data, AI, UI and Enforce Script; the facts they rely on live in the knowledge packs under `skills/_shared/`.
+- **46 slash-command skills** (42 in the plugin, plus 4 clone-only template-maintenance skills). 40 of them drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc. The other 2 run the offline model and animation scripts; the facts every skill relies on live in the knowledge packs under `skills/_shared/`.
 - **Knowledge packs** under `skills/_shared/`: per-topic reference files the specialists load only when a task needs them (vehicles, models, animation, wearables, weapons, persistence, physics, audio and effects, textures, AI, Enforce Script, and cross-cutting notes in `knowledge/`). Facts about the game cite the vanilla file on `P:\` by path and line.
 - **Offline tools** under `scripts/tools/`: an Enforce Script, `.layout`, `config.cpp`, `inputs.xml` and `.rvmat` validator that `/dayz-lint` runs as its second stage, py3d for reading and writing MLOD `.p3d` models, model, layout and animation-format checkers, and viewers. [`docs/tools.md`](docs/tools.md) says which tool to reach for.
 - **A semantic-search RAG** over the vanilla DayZ source (Enforce Script, configs, layouts, materials), exposed through the `dayz-rag` MCP server to the specialists, reviewer, debugger, architect and layout agents. Embeddings via Voyage AI (`voyage-code-3`) stored in LanceDB; needs `VOYAGE_API_KEY` in `.env`. Skip the build with `/dayz-search-download`, which pulls the prebuilt index from GitHub releases.
@@ -88,7 +88,7 @@ L3 files reference L2 in one line. The more specific tier wins ties. Corrections
 ```
 <repo>/
 ├── agents/                 # 30 agents: mod team, router, specialists, agent-creator (L3)
-├── skills/                 # 62 plugin slash-command skills (L3) + L2 shared conventions
+├── skills/                 # 42 plugin slash-command skills (L3) + L2 shared conventions
 │   ├── _shared/dayz-conventions.md   # L2 core
 │   ├── _shared/conventions/          # L2 topic files (config, assets, scripts, ui, server)
 │   ├── _shared/<topic>/    # knowledge packs (vehicles, models, animation, ...), indexed in _shared/README.md
@@ -115,7 +115,7 @@ L3 files reference L2 in one line. The more specific tier wins ties. Corrections
 
 ## DayZ skills (slash commands)
 
-Most skills gate on `/dayz-preflight` first per L2 conventions. Exceptions, each with its reason, are listed in `skills/_shared/dayz-conventions.md`: `/dayz-stop-test` (escape hatch that must work even when the environment is broken), `/dayz-scope-mod` and `/dayz-record-correction` (they edit settings or rule files, not DayZ content), `/dayz-init` (runs preflight inside its own steps), `/dayz-workdrive` (it mounts the `P:\` that preflight checks), `/dayz-preflight` itself, `/dayz-gate` (it gates through the scripts it runs), `/dayz-search-download` (it only downloads a prebuilt index into `~/.claude/` and never reads or writes `P:\`), `/dayz-ask` (it only reads vanilla files and checks itself that `P:\` is mounted), the skills that only read files and write reports (`/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe`, `/dayz-layout-preview`, `/dayz-upgrade-guard`, `/dayz-release-pack`, `/dayz-server-kit`, `/dayz-health`, `/dayz-logwatch`), `/dayz-route` and `/dayz-statusline`. The knowledge pack skills that run offline scripts on the files they are given are listed there too, each with its reason.
+Most skills gate on `/dayz-preflight` first per L2 conventions. Exceptions, each with its reason, are listed in `skills/_shared/dayz-conventions.md`: `/dayz-stop-test` (escape hatch that must work even when the environment is broken), `/dayz-scope-mod` and `/dayz-record-correction` (they edit settings or rule files, not DayZ content), `/dayz-init` (runs preflight inside its own steps), `/dayz-workdrive` (it mounts the `P:\` that preflight checks), `/dayz-preflight` itself, `/dayz-gate` (it gates through the scripts it runs), `/dayz-search-download` (it only downloads a prebuilt index into `~/.claude/` and never reads or writes `P:\`), `/dayz-ask` (it only reads vanilla files and checks itself that `P:\` is mounted), the skills that only read files and write reports (`/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe`, `/dayz-layout-preview`, `/dayz-upgrade-guard`, `/dayz-release-pack`, `/dayz-server-kit`, `/dayz-health`, `/dayz-logwatch`), `/dayz-route` and `/dayz-statusline`. The model and animation tool skills that run offline scripts on the files they are given are listed there too, each with its reason.
 
 ### Front door
 
@@ -202,56 +202,14 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Exceptions, each
 | [`/dayz-p3d-audit`](skills/dayz-p3d-audit/SKILL.md) | Audit `.p3d` models for collision, action targeting, physics, animation issues. |
 | [`/dayz-particles`](skills/dayz-particles/SKILL.md) | Particle effect creation (`.ptc` / `.emat`) without Workbench. |
 
-### Knowledge pack skills
+### Model and animation tools
 
-Most of these 22 skills are reference skills: the agent loads one when a task touches its topic, and reads the reference file the skill points at. Some also ship offline scripts. The knowledge itself lives in the packs under `skills/_shared/`, indexed in [`skills/_shared/README.md`](skills/_shared/README.md).
-
-#### Vehicles
+These skills run offline scripts on the files they are given. The knowledge behind them lives in the packs under `skills/_shared/`, indexed in [`skills/_shared/README.md`](skills/_shared/README.md).
 
 | Command | Purpose |
 |---|---|
-| [`/rip-vehicle-import`](skills/rip-vehicle-import/SKILL.md) | Guide for importing a ripped racing-game car with moving doors, hood and trunk into a drivable DayZ car: contract deltas, check allowlist, visual signoff and a classification viewer. |
-
-#### Models, textures and 3D
-
-| Command | Purpose |
-|---|---|
-| [`/dayz-model-pipeline`](skills/dayz-model-pipeline/SKILL.md) | Build a complete DayZ object from scratch or from an outside mesh: geometry in headless Blender, a `.p3d` assembled with py3d, textures, `.rvmat`, `model.cfg` and the config entries. |
-| [`/dayz-p3d-inspector`](skills/dayz-p3d-inspector/SKILL.md) | Extract every LOD, memory point, selection and named property of a `.p3d` into one JSON, edit memory points in a 3D viewer, and build a new `.p3d` from it. |
-| [`/dayz-3d-viewer`](skills/dayz-3d-viewer/SKILL.md) | Turn an MLOD `.p3d` with its `.paa` and `.rvmat` files into a `.glb` and a standalone HTML viewer; convert `.paa` to `.png`. |
-| [`/dayz-proxy-align`](skills/dayz-proxy-align/SKILL.md) | Read the proxies of an MLOD `.p3d`, align them in a browser editor against the worn clothing, and write them back with py3d. |
-| [`/dayz-texture-pipeline`](skills/dayz-texture-pipeline/SKILL.md) | Plan, write and check texture and material work: which map each suffix needs, `.rvmat` authoring, hidden selection wiring and damage materials. |
-| [`/uv-clean-atlas`](skills/uv-clean-atlas/SKILL.md) | Build clean UV atlases for hard-surface meshes with headless Blender, and audit any UV set for overlap, island count and density. |
-| [`/3d-generation-harness`](skills/3d-generation-harness/SKILL.md) | Run a 3D model build as a gated pipeline: intake, research, plan with tests, build per component, adversarial review, fix loop and ship gate. |
-| [`/ai-3d-to-dayz`](skills/ai-3d-to-dayz/SKILL.md) | Front end for AI-generated props: image or text to 3D, cleanup, retopology, UVs, normal bake, PBR maps and the handoff to `.p3d`, `.paa` and `.rvmat`. |
-| [`/blender-assembly`](skills/blender-assembly/SKILL.md) | Rules and a helper library for building models in Blender through Blender MCP tools. |
-| [`/blender-visual-review`](skills/blender-visual-review/SKILL.md) | Render a Blender model from several angles, check the images against a defect checklist, and confirm each fix by rendering the same angles again. |
-
-#### Animation, characters and clothing
-
-| Command | Purpose |
-|---|---|
-| [`/dayz-animation-pipeline`](skills/dayz-animation-pipeline/SKILL.md) | Produce and change DayZ animations end to end: `model.cfg` skeletons, `AnimationSources`, RTM and SEAnim files, the animation graphs, rider poses and weapons in hands. |
-| [`/dayz-characters`](skills/dayz-characters/SKILL.md) | Import and author humanoids on the vanilla character bases (infected, survivors, NPCs): rigging, weights, LODs, config and ragdoll, plus an offline winding gate. |
-| [`/dayz-clothing`](skills/dayz-clothing/SKILL.md) | Build, fix and diagnose worn clothing (the `_m` and `_f` models): the worn model and `model.cfg` contract, a staged build, an alignment viewer and an FBX handoff. |
-
-#### World and game systems
-
-| Command | Purpose |
-|---|---|
-| [`/dayz-basebuilding`](skills/dayz-basebuilding/SKILL.md) | Reference for buildable structures on `BaseBuildingBase`: kits, the `Construction` config block, build and dismantle actions, the bit mask save and damage zones. |
-| [`/dayz-persistence`](skills/dayz-persistence/SKILL.md) | Reference for persistence: `OnStoreSave` and `OnStoreLoad` streams, Community Framework ModStorage, format changes and rollback, sidecar JSON files. |
-| [`/rigorous-data-audit`](skills/rigorous-data-audit/SKILL.md) | Audit procedure for mods where a bug loses player progression: mechanical checks, eight audit angles, and every finding verified against the real file. |
-| [`/dayz-ai-patterns`](skills/dayz-ai-patterns/SKILL.md) | Reference for the AI behaviour patterns of the DayZ Expansion AI module: state machine, threat and targeting, pathfinding and groups, and the vanilla `NoiseSystem`. |
-
-#### Scripting, UI and workflow
-
-| Command | Purpose |
-|---|---|
-| [`/enforce-script-reference`](skills/enforce-script-reference/SKILL.md) | Deep reference for writing and reviewing Enforce Script: hard rules, compiler and runtime traps, script layers, memory, RPC, synced variables and timers. |
-| [`/dayz-ui-development`](skills/dayz-ui-development/SKILL.md) | Reference for building UI: menus, HUD overlays, `.layout` files, widgets, `.styles`, imagesets, stringtables, Dabs Framework MVC and the 1.30 UI changes. |
-| [`/dayz-mod-dev`](skills/dayz-mod-dev/SKILL.md) | Reading guide and rule set for developing a mod as a whole on DayZ 1.30 or later (vanilla, Community Framework, Expansion), on Windows or Linux. |
-| [`/dayz-mod-workflow`](skills/dayz-mod-workflow/SKILL.md) | Protocol for implementing and debugging a mod: the client and server data map, API checks, a checklist per file type, the error catalog and the debug order. |
+| [`/dayz-model-tools`](skills/dayz-model-tools/SKILL.md) | Run the model scripts on source `.p3d` and `.blend` files: the p3d inspector (Recipe JSON, drag memory points, rebuild), the proxy editor, the clothing alignment viewer and FBX handoff, the winding gate, the clean UV atlas pipeline with its exact overlap gate, the `.p3d` to `.glb` browser preview, the Blender build helpers and render review, and the ripped car classification viewer. |
+| [`/dayz-animation-pipeline`](skills/dayz-animation-pipeline/SKILL.md) | Run the animation scripts: `model.cfg` from JSON, SEAnim and RTM files, the rider pose solver, weapon animation viewers, motion contract checks in Blender and Mixamo retargeting. |
 
 ### Search / RAG
 

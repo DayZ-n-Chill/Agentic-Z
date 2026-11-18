@@ -28,7 +28,7 @@ Memory points in the vehicle's Memory LOD. Any names work as long as the solver'
 
 For a passenger place the same set under another prefix, for example `crewcodriver` and `pos_co_grip_L`.
 
-Add the points with the dayz-p3d-inspector or dayz-model-pipeline skills, then run `/dayz-p3d-audit` on the model.
+Add the points with the p3d inspector of dayz-model-tools or a py3d script (`_shared/models/py3d-generation.md`), then run `/dayz-p3d-audit` on the model.
 
 **The engine never reads these points.** They feed the offline solver only. In the vanilla graph the hands go where the steering pose clip leaves them (see "Where the hands come from"), so a different grip or footpeg position needs new clips, not a model or config change.
 

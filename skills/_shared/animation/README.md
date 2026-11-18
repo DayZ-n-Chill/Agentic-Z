@@ -15,6 +15,7 @@ Vanilla ships `model.cfg` only inside the packed `.p3d` files, so there is no va
 | A handlebar or steering wheel that turns with the steering | `handlebar-and-steering.md` |
 | A get in that puts the player on the correct side of a seat | `get-in-sides.md` |
 | Named selections precise enough for action raycasts (seat, grip, door handle) | `selections-for-actions.md` |
+| Worked `model.cfg` examples for a generated device (switch, lever, button, LED, panel door): skeleton, animation types, sources, script control, common mistakes | `model-cfg-device-examples.md` |
 | What must the user keep straight when the model comes from Blender? | `blender-handoff.md` |
 | What does a door need inside the `.p3d` (bones, axes, components, action points), and who writes each part? | `doors.md` (the model side is `dayz-object-builder` work) |
 
@@ -85,4 +86,4 @@ These three vanilla objects cover the common cases. `animation-sources.md`, `mod
 | Item lid that hides and shows | `P:\DZ\gear\containers\config.cpp:99` (`Barrel_ColorBase` `AnimationSources`) | `P:\scripts\4_world\entities\itembase\barrel_colorbase.c:144` | `P:\DZ\gear\containers\55galDrum.p3d` |
 | Gate that rotates with a custom range | `P:\DZ\gear\camping\config.cpp:4418` (`Fence` `AnimationSources`) | `P:\scripts\4_world\entities\itembase\basebuildingbase\fence.c:488` | `P:\DZ\gear\camping\fence.p3d` |
 
-Humanoids rigged to the vanilla skeleton (a custom infected, survivor or NPC) are in the wearables pack (`skills/_shared/wearables/references/body-rigging.md`); `/dayz-characters` runs the winding gate on them.
+Humanoids rigged to the vanilla skeleton (a custom infected, survivor or NPC) are in the wearables pack (`skills/_shared/wearables/references/body-rigging.md`); `/dayz-model-tools` runs the winding gate on them.

@@ -47,11 +47,9 @@ The short pattern file `_shared/enscript/patterns/persistence.md` shows the basi
 | Mechanical check 3: does every entry point (sync shortcut, admin, shutdown, boot) keep the invariant? | `deep-audit-entry-points.md` |
 | Mechanical check 4: do a flag and the file it mirrors always move together? | `deep-audit-flag-lifecycle.md` |
 | Which state transitions are legal, and is any state counted twice? | `deep-audit-state-machine.md` |
-| How do I audit evidence indexes and bundles published across several roots for crash safety? | `deep-audit-evidence-bundles.md` |
-| How do I audit durable authority publication and authenticated localhost calls? | `deep-audit-authority-loopback.md` |
 | What goes wrong when an atomic operation is rebuilt in phases? | `deep-audit-incremental-rebuild.md` |
 | Does this engine event deliver what the code assumes, and does every class in the chain call `super`? | `deep-audit-hooks-and-super.md` |
 | A fix hardened a contract, reuses another actor's id, or was applied to generated output: what must be checked again? | `deep-audit-fix-traps.md` |
 | Is this evidence real: deployed build against source, log lines, positive and negative controls, inventories? | `deep-audit-evidence-controls.md` |
 
-Offline Python models of the three contracts, with tests, are in `scripts/tools/persistence-contracts/`.
+Offline Python models of the three contracts, with tests, are in `scripts/tools/dayz-persistence-contracts/`.

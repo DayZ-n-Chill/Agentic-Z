@@ -1,6 +1,6 @@
 # UV mapping
 
-How texture coordinates are stored in a `.p3d`, which UV set each material stage reads, what binarizing does to them, and how to trace an in-game texture fault back to the UVs. For making a new unwrap, use the `uv-clean-atlas` skill; this file is the DayZ side.
+How texture coordinates are stored in a `.p3d`, which UV set each material stage reads, what binarizing does to them, and how to trace an in-game texture fault back to the UVs. For making a new unwrap, use the clean UV atlas scripts of `dayz-model-tools` (`tools-uv-atlas.md`); this file is the DayZ side.
 
 What is checked and what is not: the material and config facts cite vanilla files on `P:\`. The file format details are Bohemia format knowledge, the measured numbers were taken on a quad-bike mod and one infected model, and both are marked "not checked on `P:\`" where they appear, because vanilla models are binarized and no vanilla file shows them.
 
@@ -154,7 +154,7 @@ A recipe that worked on two mod models (a quad bike and an infected character). 
 
 ## Symptom to cause
 
-"Audit" below means measuring the listed number on the MLOD; the method is in `uv-clean-atlas/references/mlod-uv-audit.md`. "OB" is Object Builder.
+"Audit" below means measuring the listed number on the MLOD; the method is in `tools-uv-mlod-audit.md`. "OB" is Object Builder.
 
 | What you see in game | Likely cause | How to confirm | Fix |
 |---|---|---|---|

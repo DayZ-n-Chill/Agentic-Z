@@ -87,7 +87,7 @@ def _read_asciiz(f, encoding="utf-8"):
 #
 # The same ids the DayZ p3d inspector uses (LOD_THRESHOLDS in
 # p3d_inspector_extract.py and LOD_RESOLUTION in p3d_inspector_build.py,
-# under skills/dayz-p3d-inspector/scripts), verified against real MLODs.
+# under skills/dayz-model-tools/scripts), verified against real MLODs.
 # There used to be 4 copies of the resolution -> LOD map, each with a
 # DIFFERENT absolute tolerance (+-1e11, +-5e13, +-1e13 and ad-hoc ranges).
 # Here there is ONE relative tolerance.
@@ -187,8 +187,8 @@ def classify_lod_resolution(resolution):
 # ---------------------------------------------------------------------------
 # MLOD proxy frame.
 #
-# The same convention as proxy_frame.py in the dayz-proxy-align skill
-# (skills/dayz-proxy-align/scripts), written with the stdlib only:
+# The same convention as proxy_frame.py in the dayz-model-tools skill
+# (skills/dayz-model-tools/scripts), written with the stdlib only:
 #   - derive_proxy_frame() follows its derive_frame() (ANGLE-SORT: the
 #     vertex with the largest interior angle is the anchor; the middle one
 #     gives local +Y, the smallest local +Z; x = y X z; z = x X y
@@ -381,7 +381,7 @@ def _proxy_angle(u, v):
 
 def derive_proxy_frame(tri):
     """The frame of a proxy triangle, by the same rule as derive_frame in
-    the dayz-proxy-align skill's proxy_frame.py.
+    the dayz-model-tools skill's proxy_frame.py.
 
     tri: a sequence of 3 (x, y, z) coordinates in raw MLOD space.
     Returns (anchor list, R as rows (x, y, z) tuple-of-tuples,
@@ -405,7 +405,7 @@ def derive_proxy_frame(tri):
 
 def canonical_proxy_triangle(anchor, rotation=None, scale=0.001, space="raw"):
     """The canonical proxy triangle, by the same rule as canonical_triangle
-    in the dayz-proxy-align skill's proxy_frame.py.
+    in the dayz-model-tools skill's proxy_frame.py.
 
     An unambiguous triangle at *anchor* whose derived frame equals
     *rotation* (identity if None). Order: [anchor, vert_y (+Y, the short
@@ -446,7 +446,7 @@ def canonical_proxy_triangle(anchor, rotation=None, scale=0.001, space="raw"):
 # The inspector's schema v1 IS the specification here. These helpers
 # reproduce, without numpy, what the inspector's extract and build scripts
 # (p3d_inspector_extract.py and p3d_inspector_build.py under
-# skills/dayz-p3d-inspector/scripts) did when schema v1 was fixed; each
+# skills/dayz-model-tools/scripts) did when schema v1 was fixed; each
 # docstring names the inspector function it follows. The inspector has
 # changed since - its extractor also writes face_of_triangle and
 # point_of_vertex, and its builder puts mass on the Geometry LOD only - so

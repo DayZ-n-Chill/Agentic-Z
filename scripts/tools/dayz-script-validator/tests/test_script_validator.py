@@ -1354,7 +1354,7 @@ class TestEsRefAutoptrCombined(unittest.TestCase):
         self.assertEqual("WARN", warning["severity"])
         self.assertEqual("warn_ref_autoptr_combined.c", warning["file"])
         self.assertEqual(3, warning["line"])
-        self.assertIn("SKILL.md:38", warning["message"])
+        self.assertIn("skills/_shared/enscript/depth/hard-rules.md, rule 13", warning["message"])
         assert_standard_findings(self, result)
 
     def test_autoptr_ref_combined_warns(self):
@@ -1395,7 +1395,7 @@ class TestEsOnMouseLeaveParamCount(unittest.TestCase):
         self.assertEqual("WARN", warning["severity"])
         self.assertEqual("warn_onmouseleave_3params.c", warning["file"])
         self.assertEqual(3, warning["line"])
-        self.assertIn("SKILL.md:635", warning["message"])
+        self.assertIn("checklist-and-troubleshooting.md", warning["message"])
         assert_standard_findings(self, result)
 
     def test_delegate_class_without_handler_base_passes(self):

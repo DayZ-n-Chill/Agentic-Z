@@ -47,7 +47,7 @@ when its prefix matches one already loaded, so its files can shadow vanilla
 paths. Vanilla PBO headers do not carry it. A shadow PBO does not hide the
 vanilla files it does not hold: with two holding only layouts, the rest of
 vanilla `gui` still loaded on 1.30.164289
-(`skills/dayz-ui-development/references/layout-variants-130.md` §2).
+(`skills/_shared/ui/layout-variants.md` §2).
 
 Measured on DayZDiag 1.30.164200 for a Workbench-generated layout variant: a PBO whose
 `$PBOPREFIX$.txt` is the bare line `gui`, built by a third-party packer that
@@ -55,12 +55,12 @@ has an option to set the property, packed `config.bin`, the `.layout` and its `.
 and the header read back as `prefix=gui`, `fsShadowing=1`. It loaded unsigned
 and the variant applied in game. A `config.cpp` was present. What the variant
 does and how to author it:
-`skills/dayz-ui-development/references/layout-variants-130.md`.
+`skills/_shared/ui/layout-variants.md`.
 
 Checks for such a PBO: the header shows both properties; the PBO contains only
 the files it means to shadow. A `.meta` beside each variant `.layout` is
 optional, and so is `config.cpp`: variants packed without them applied on
-1.30.164289 (`layout-variants-130.md` §1 and §3).
+1.30.164289 (`skills/_shared/ui/layout-variants.md` §1 and §3).
 
 MakePbo writes the property too (MakePbo 2.16): a `$PBOPREFIX$.txt` holding the two lines
 `prefix=gui` and `fsShadowing=1` gives the header `prefix=gui`,
@@ -80,4 +80,4 @@ AddonBuilder calls (`Bin\PboUtils\FileBank.exe`; DayZ Tools Steam build
 nothing else, and a list file holding the line `$PBOPREFIX$.txt` kept the prefix
 file out. The PBO is named after the source folder (`gui.pbo`). Such a PBO,
 holding only a layout variant and installed under another name, loaded unsigned
-on DayZDiag 1.30.164289 and its variant applied (`layout-variants-130.md` §3).
+on DayZDiag 1.30.164289 and its variant applied (`skills/_shared/ui/layout-variants.md` §3).

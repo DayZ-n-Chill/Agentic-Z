@@ -13,8 +13,8 @@ checked on `P:\`; the vanilla script symbols named in sections 4 and 5 are cited
 `README.md` and `/dayz-launch-test` win on Windows (mod paths, mission path). This is the route without dayz-mcp; the managed
 route is in `linux.md` in this folder.
 
-Scripts: `skills/_shared/scripts/` (`find-dayzserver.sh`, `make-server-tree.sh`, `free-ports.sh`),
-tested by `skills/_shared/scripts/test_linux_helpers.py`.
+Scripts: `scripts/tools/dayz-linux/` (`find-dayzserver.sh`, `make-server-tree.sh`, `free-ports.sh`),
+tested by `scripts/tools/dayz-linux/test_linux_helpers.py`.
 
 ## 1. Use the server Steam already installed
 
@@ -25,7 +25,7 @@ update it yourself. Do not install it for the user; ask them to install **DayZ S
 the Library's Tools filter (or `steam steam://install/223350`) and wait until they confirm.
 
 ```sh
-S=skills/_shared/scripts
+S=scripts/tools/dayz-linux
 sh "$S/find-dayzserver.sh" -v     # install dir on stdout; buildid and StateFlags on stderr
 sh "$S/find-dayzserver.sh" -w     # the DayZ client's workshop dir (content/221100)
 sh "$S/find-dayzserver.sh" -e -v  # experimental server 1042420 ("DayZ Server Exp", note the space)
@@ -210,7 +210,7 @@ grep -h 'MyMod' "$TREE"/profiles/script_*.log                  # your own Print 
      deploys to `@<ModName>\Addons\`);
    - an absolute mod path (section 3);
    - on 1.30, backslashes in the `CfgMods` script module paths (`files[] = {"MyMod\scripts\4_World"}`): the
-     defines appear, no script compiles, no error (`skills/dayz-mod-workflow/references/dayz-1-30-server-measured.md`);
+     defines appear, no script compiles, no error (`dayz-1-30-server-measured.md`);
    - a PBO without the prefix its `config.cpp` script paths expect, or inner names that repeat the prefix
      (`MyMod\MyMod\config.cpp`): pack from inside the addon folder.
 
@@ -226,7 +226,7 @@ Only a boot catches: engine classes that cannot be `modded` (for example
 `DayZPlayerInventory`, declared at `P:\scripts\4_world\systems\inventory\dayzplayerinventory.c:147`),
 proto native methods that cannot be overridden (for example `SendSyncJuncture`, `P:\scripts\3_game\dayzplayer.c:1303`),
 and wrong override signatures. A server that "works" also proves nothing about load order: see section 7,
-"Mod load order is not the `-mod` order", of `skills/dayz-mod-workflow/references/dayz-1-30-server-measured.md`.
+"Mod load order is not the `-mod` order", of `dayz-1-30-server-measured.md`.
 
 ## 5. Code that needs players
 

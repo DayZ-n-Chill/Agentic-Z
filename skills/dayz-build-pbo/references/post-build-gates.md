@@ -365,7 +365,7 @@ grep -c -a -F "<control marker>" <path>/Addons/<Mod>.pbo   # must be >= 1 always
 
 ### Cross-link: load order and thin lower layers
 
-The `requiredAddons[]` dependency graph orders cross-mod compile within each script module layer (see `/dayz-mod-workflow`). Prefer not inventing 1_Core/2_GameLib content unless you truly need that surface; default shared data to 3_Game.
+The `requiredAddons[]` dependency graph orders cross-mod compile within each script module layer (see `skills/dayz-launch-test/references/dayz-1-30-server-measured.md`, section 7). Prefer not inventing 1_Core/2_GameLib content unless you truly need that surface; default shared data to 3_Game.
 
 ## A content gate string that the base build also contains cannot turn red
 

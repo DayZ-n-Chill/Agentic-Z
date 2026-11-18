@@ -2,7 +2,7 @@
 
 Turn a source tree into a Workshop-ready folder without Windows: **dayzmake** builds and signs the PBOs,
 **`workshop`** (the steam-workshop-uploader command-line tool) uploads the folder, and
-`skills/_shared/scripts/dayz-mod-pack.sh` wires the two together. The Windows route (AddonBuilder, DsUtils,
+`scripts/tools/dayz-linux/dayz-mod-pack.sh` wires the two together. The Windows route (AddonBuilder, DsUtils,
 Publisher, SteamCMD) is the rest of this skill and `workshop-publish.md`.
 
 Not checkable on `P:\`: this is Linux tool behaviour, measured on Debian, with Proton Hotfix for the DayZ Tools
@@ -10,7 +10,7 @@ comparisons. End to end, a PBO built, signed and verified this way loaded
 on a server with `-mod=@Mod` and `verifySignatures = 2`, and its scripts ran, also on DayZ 1.30 stable (build
 not recorded). Not verified: the v3-against-v2 signature check on a real client. The AutoTest mod
 (`skills/dayz-launch-test/assets/autotest-mod`) builds, signs and verifies with this flow and dayzmake 1.0.0 in
-`skills/_shared/scripts/test_linux_helpers.py`.
+`scripts/tools/dayz-linux/test_linux_helpers.py`.
 
 ## Get the right dayzmake
 
@@ -31,7 +31,7 @@ both ways and `cmp` the results. `dayz-mod-pack.sh` runs the same check: it uses
 ## Quick start (`dayz-mod-pack.sh`)
 
 ```sh
-S=skills/_shared/scripts/dayz-mod-pack.sh
+S=scripts/tools/dayz-linux/dayz-mod-pack.sh
 $S init MyMod                 # folders, .gitignore, .workshopignore; --servermod sets the Server tag
 $S keygen                     # secrets/MyMod.biprivatekey (never committed) + keys/MyMod.bikey (public)
 $S build                      # build/@MyMod/{addons,keys} (+ mod.cpp, meta.cpp): the upload folder
@@ -79,7 +79,7 @@ if a model does not convert.
   listing `~/.cargo` and a CIFS mount, with or without the input file. Confined to a sandbox it took 3 s, exit 0. A
   model without textures binarizes from any directory (a hand-made MLOD triangle came out as ODOL); with textures the
   current directory must be the `P:` root, and vanilla `dz\...` textures are only found if they exist under `P:`.
-  `skills/_shared/scripts/dayz-proton.sh binarize` and `skills/_shared/linux-proton.md` section 3 do this setup.
+  `scripts/tools/dayz-linux/dayz-proton.sh binarize` and `skills/_shared/linux-proton.md` section 3 do this setup.
 - On Windows dayzmake finds `binarize_x64.exe` through `HKCU\Software\Bohemia Interactive\binarize` and `build`
   binarizes in one go (not tested).
 
@@ -196,9 +196,9 @@ vanilla (`skills/dayz-launch-test/references/linux-native-server.md`, section 4)
 
 The rest of `/dayz-build-pbo` is the Windows workflow and stays valid there. On Linux, the Proton setup, the measured tool matrix and the pitfalls are in `skills/_shared/linux-proton.md`; this section only says what changes for this skill.
 
-- Build with dayzmake (version and install: "Get the right dayzmake" above): use `dayzmake build`, `keygen` and `sign`. The original armake2 is no substitute: it is built for Arma, its V3 file hash omits `*.c` files and it lacks the DayZ-only functions dayzmake keeps adding. `build --proton-binarize` invokes BI binarize under Proton. `skills/_shared/scripts/dayz-mod-pack.sh` wraps keygen, build, sign, check and the Workshop upload commands; the whole Linux route (signatures, `meta.cpp`, tags, `workshop` uploader) is in the sections above. The validation checks of this skill (prefix, `config.cpp`, `$PBOPREFIX$`, duplicates, stringtable) do not depend on the packer and apply unchanged.
+- Build with dayzmake (version and install: "Get the right dayzmake" above): use `dayzmake build`, `keygen` and `sign`. The original armake2 is no substitute: it is built for Arma, its V3 file hash omits `*.c` files and it lacks the DayZ-only functions dayzmake keeps adding. `build --proton-binarize` invokes BI binarize under Proton. `scripts/tools/dayz-linux/dayz-mod-pack.sh` wraps keygen, build, sign, check and the Workshop upload commands; the whole Linux route (signatures, `meta.cpp`, tags, `workshop` uploader) is in the sections above. The validation checks of this skill (prefix, `config.cpp`, `$PBOPREFIX$`, duplicates, stringtable) do not depend on the packer and apply unchanged.
 - `--proton-binarize` keeps texture alpha from commit `0a0ce3b` on, which `v1.0.0` contains; older local builds lose it. Reinstall from the tag when in doubt: a pre-rename build prints `v0.3.0` either way.
 - To compare against BI's AddonBuilder, it runs under Proton: `dayz-proton.sh tool AddonBuilder <P-root>/<Mod> <out> -prefix=<Mod>` (`-packonly` and full builds measured, `-clear` too). The binarize rules in `addonbuilder-rules.md` hold: stage the mod in a dedicated folder that holds nothing else (binarized-build rule 1) and build from there, never from `P:\<Mod>` or a path whose parent is a large Linux directory, because binarize scans the parent and stops on any broken `config.cpp` it finds there. AddonBuilder exits 0 on a failed build; `dayz-proton.sh` returns the `[ResultCode]` from `DayZ Tools/Bin/Logs/AddonBuilder.rpt` instead.
 - A mod with its own `build_*.ps1`, `robocopy` calls and junctions: read the script for the source tree, then do the same with `sh`, `rsync` and symlinks. Do not run the `.ps1` under `pwsh`: it calls Windows programs and the registry.
-- Publishing: the `workshop` uploader by itself instead of Publisher, its command left to its own `--help`; `skills/_shared/scripts/dayz-mod-pack.sh publish-hint` prints the commands and does not run them.
+- Publishing: the `workshop` uploader by itself instead of Publisher, its command left to its own `--help`; `scripts/tools/dayz-linux/dayz-mod-pack.sh publish-hint` prints the commands and does not run them.
 - dayz-mcp on a Linux host: `dayz_test_run build=true` drives the pinned dayzmake `v1.0.0` release binary from `PATH` and refuses any other build (`dayzmake_pin_mismatch`). It writes `@Mod/Addons/<Mod>.pbo`; both the native server and `DayZDiag` load that spelling. Managed binarization with assets is not verified.

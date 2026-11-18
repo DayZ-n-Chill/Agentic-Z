@@ -4,7 +4,7 @@ import re
 ES_ONMOUSELEAVE_PARAM_COUNT_RULE_ID = "ES-ONMOUSELEAVE-PARAM-COUNT"
 
 
-# dayz-ui-development SKILL.md:635 (TROUBLESHOOTING row "OnMouseLeave never
+# skills/_shared/ui/checklist-and-troubleshooting.md (TROUBLESHOOTING row "OnMouseLeave never
 # fires | Wrong parameter count (3 instead of 4)"). Engine proto verified at
 # P:\scripts\1_core\proto\enwidgets.c:666:
 #     bool OnMouseLeave(Widget w, Widget enterW, int x, int y);
@@ -33,7 +33,7 @@ ES_ONMOUSELEAVE_PARAM_COUNT_MESSAGE = (
     "signature is `OnMouseLeave(Widget w, Widget enterW, int x, int y)` -- 4 "
     "params (enwidgets.c:666). With any other arity the handler compiles but "
     "never fires. OnMouseEnter takes 3 params -- do not copy its arity "
-    "(dayz-ui-development SKILL.md:635)."
+    "(skills/_shared/ui/checklist-and-troubleshooting.md)."
 )
 
 

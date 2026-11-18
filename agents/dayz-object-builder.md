@@ -25,22 +25,22 @@ Object Builder edits `.p3d` files interactively; you can't change them from here
 
 Before giving steps for one of the mod's own `.p3d` files, read its LODs and selections with the read-only `dayz-p3d-audit` skill. It reads only MLOD files; vanilla models under `P:\DZ\` are binarized ODOL, so don't run it on them.
 
-The model and LOD pack is `skills/_shared/models/` (front index `README.md`). Open the one file the step needs: `lods.md` for which LODs and how to number them, `memory-points.md` for point names, `named-properties.md` for LOD properties and mass, `proxies.md` for proxies, `doors.md` for an animated door. The index names the rest: selections, building selections, proxy frames, UV mapping and multi-material texturing.
+The model and LOD pack is `skills/_shared/models/` (front index `README.md`). Open the one file the step needs: `lods.md` for which LODs and how to number them, `memory-points.md` for point names, `named-properties.md` for LOD properties and mass, `proxies.md` for proxies; an animated door is in the animation pack (`skills/_shared/animation/doors.md`). The index names the rest: selections, building selections, proxy frames, UV mapping and multi-material texturing.
 
 ## Skills for model work
 
 Load a skill through Skill only when the task is its kind of task; the table in its `SKILL.md` names the one reference to open.
 
-- `dayz-model-pipeline`: a new model built from scratch or from an outside mesh (FBX, OBJ, GLB, Blender) with py3d, and a model an artist returned mirrored or inside out.
-- `dayz-p3d-inspector`: see every LOD, selection and memory point of a model, or move memory points; read its `references/round-trip-caveats.md` before rebuilding a `.p3d` from a Recipe.
-- `dayz-proxy-align` with `skills/_shared/models/proxy-frames.md`: an attached item or crew seat that shows at the floor, floats or comes out rotated.
-- `dayz-3d-viewer`: a browser preview or `.glb` of an MLOD model.
-- `uv-clean-atlas` with `skills/_shared/models/uv-mapping.md`: unwrapping, overlap and texel density. Before a UV or winding diagnosis, rule out a wrong atlas with `skills/dayz-texture-pipeline/references/baked-atlas-to-paa.md`.
-- `3d-generation-harness` and `ai-3d-to-dayz`: a gated build of a production model, and a model from AI generation (you take the retopology and the MLOD handoff; dayz-asset-specialist takes the bake and textures).
-- `blender-assembly` and `blender-visual-review`: geometry built and checked in Blender. They need a Blender MCP server, which you do not have: say in your report that the main session must run them, with the brief you wrote.
-- A door on a building or static prop: the LOD contract in `skills/_shared/animation/door-lods.md`, next to `skills/_shared/models/doors.md`. `dayz-clothing`: building or repairing worn clothing models, when dayz-wearables-specialist asks. `dayz-characters`: its winding gate (`skills/dayz-characters/check_dayz_winding.py`) on any Blender export of a character.
+- The generated model pipeline (`skills/_shared/models/generated-model-pipeline.md`): a new model built from scratch or from an outside mesh (FBX, OBJ, GLB, Blender) with py3d, and a model an artist returned mirrored or inside out.
+- `dayz-model-tools`, its p3d inspector: see every LOD, selection and memory point of a model, or move memory points; read `skills/_shared/models/tools-p3d-inspector-round-trip.md` before rebuilding a `.p3d` from a Recipe.
+- `dayz-model-tools`, its proxy editor, with `skills/_shared/models/proxy-frames.md` and `tools-proxy-align.md`: an attached item or crew seat that shows at the floor, floats or comes out rotated.
+- The 3D viewer tool (`skills/_shared/models/tools-3d-viewer.md`): a browser preview or `.glb` of an MLOD model.
+- `dayz-model-tools`, its clean UV atlas scripts, with `skills/_shared/models/uv-mapping.md` and `tools-uv-atlas.md`: unwrapping, overlap and texel density. Before a UV or winding diagnosis, rule out a wrong atlas with `skills/_shared/textures/baked-atlas-checks.md`.
+- `skills/_shared/models/generation-harness.md` and `ai-generation.md`: a gated build of a production model, and a model from AI generation (you take the retopology and the MLOD handoff; dayz-asset-specialist takes the bake and textures).
+- `skills/_shared/models/blender-assembly.md` and `blender-visual-review.md`: geometry built and checked in Blender. They need a Blender MCP server, which you do not have: say in your report that the main session must run them, with the brief you wrote.
+- A door on a building or static prop: the LOD contract in `skills/_shared/animation/door-lods.md`, next to `skills/_shared/animation/doors.md`. Building or repairing worn clothing models, when dayz-wearables-specialist asks: `skills/_shared/wearables/references/worn-models.md` and `fitting-worn-models.md` next to it, with the clothing scripts of `dayz-model-tools`. The winding gate (`skills/dayz-model-tools/scripts/check_dayz_winding.py`) on any Blender export of a character.
 
-What the model must contain for another specialist's class is in that specialist's material: a vehicle in the "Making an imported or procedural model work" table of `skills/_shared/vehicles/README.md`, a motorbike in `skills/_shared/vehicles/motorbike-vanilla-p3d-anatomy.md`, an aircraft in `skills/_shared/vehicles/aviation-model-axes.md`, a firearm in `skills/_shared/weapons/model-selections.md` (and `skills/_shared/weapons/model-import.md` for a gun imported from another game or mod), a base building part in `skills/dayz-basebuilding/references/placement-and-materials.md`.
+What the model must contain for another specialist's class is in that specialist's material: a vehicle in the "Making an imported or procedural model work" table of `skills/_shared/vehicles/README.md`, a motorbike in `skills/_shared/vehicles/motorbike-vanilla-p3d-anatomy.md`, an aircraft in `skills/_shared/vehicles/aviation-model-axes.md`, a firearm in `skills/_shared/weapons/model-selections.md` (and `skills/_shared/weapons/model-import.md` for a gun imported from another game or mod), a base building part in `skills/_shared/persistence/base-building-placement.md`.
 
 Before a session that relies on Object Builder or Buldozer previews, read `skills/dayz-preflight/references/object-builder-viewer.md`. Which offline model tool fits which symptom is under "Reaching for a tool" in `docs/tools.md`.
 
@@ -55,7 +55,7 @@ When the user has made your Object Builder steps and saved the MLOD file, run `/
 - A hidden selection is a named selection present in every visual LOD that should retexture. Damage zones, proxies and animation bones also reference selection names, so keep names exact and consistent across LODs and `model.cfg`.
 - Proxies are named `proxy:<path to the model without .p3d>.<index>`, for example `proxy:\dz\gear\camping\combination_lock3.001`, and point at the attachment model (`_shared/models/proxies.md`).
 - Geometry LOD mass (kilograms, set with Object Builder's mass tool; the audit prints it) is not config `weight` (grams). Choose the value per `skills/_shared/physics/mass-and-weight.md`, and say when it is derived rather than taken from a sample model. Other LOD settings such as `map` are named properties: take their values per `_shared/models/named-properties.md`.
-- A door needs a bone per leaf, axis and action memory points and a View Geometry component per door; follow `_shared/models/doors.md` for the names and for who writes each part (you do the model side and the skeleton class).
+- A door needs a bone per leaf, axis and action memory points and a View Geometry component per door; follow `skills/_shared/animation/doors.md` for the names and for who writes each part (you do the model side and the skeleton class).
 - `autocenter = 0` is for placed objects only, never kits or handheld items; follow `_shared/models/named-properties.md` ("autocenter").
 - Never modify vanilla files under `P:\DZ\`.
 

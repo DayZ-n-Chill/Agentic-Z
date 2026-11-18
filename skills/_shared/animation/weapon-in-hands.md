@@ -176,4 +176,4 @@ The weapon viewer's rig without IK bones lacks those seven, so exporting a nativ
 - `player-skeleton.md`: the hand and IK bones the clips pose.
 - `anim-graphs.md`: the instance chain that picks the clip per weapon and state.
 - `items-in-hands.md`: `AddItemInHandsProfileIK` reused for heavy items.
-- The dayz-p3d-inspector skill: reading an MLOD and editing memory points when the checker finds a problem.
+- The p3d inspector of the dayz-model-tools skill: reading an MLOD and editing memory points when the checker finds a problem.

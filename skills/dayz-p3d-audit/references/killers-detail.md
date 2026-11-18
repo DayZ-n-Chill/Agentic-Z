@@ -8,7 +8,7 @@ Where this file and `p3d-killers.md` once disagreed (killers 1, 2 and 8), the in
 
 **Terms used throughout**
 
-- *Rule 12* (the model pipeline skill, numbered in `dayz-model-pipeline/references/critical-rules.md`): the Blender to DayZ conversion. In a correct MLOD both the cross product `cross(v1-v0, v2-v0)` and the stored normals point away from the side meant to be seen, so on a solid seen from outside both point inward.
+- *Rule 12* (the model pipeline skill, numbered in `_shared/models/generated-model-rules.md`): the Blender to DayZ conversion. In a correct MLOD both the cross product `cross(v1-v0, v2-v0)` and the stored normals point away from the side meant to be seen, so on a solid seen from outside both point inward.
 - *Rule 18* (same skill): the per-component winding check of a collision LOD. Every face of every closed, convex `ComponentNN` must read inward.
 - *Rule 1* (same skill): each collision component is one closed, convex part.
 - `scene_raycast`, `RayCastBullet`: the ray battery driven through the dayz-mcp bridge (a script-side `RaycastRVProxy` per intersection mode `geom`, `view`, `fire`, and `DayZPhysics.RayCastBullet` for the physics world).
@@ -35,7 +35,7 @@ Where this file and `p3d-killers.md` once disagreed (killers 1, 2 and 8), the in
 A collision component (Geometry, View or Fire Geometry LOD) whose cross product
 `cross(v1-v0, v2-v0)` points OUTWARD lets the LOD raycasts (`RaycastRV`, `RaycastRVProxy`)
 from outside pass through it, the rays action targeting (`view`) and ballistic hits (`fire`)
-rely on (`dayz-model-pipeline` Rule 18 and its symptom triplet). On the boxes measured below
+rely on (Rule 18 of `_shared/models/generated-model-rules.md` and its symptom triplet). On the boxes measured below
 its physics body still stopped a walking player and held one standing on it. A correct MLOD
 winds the cross product away from the side meant to be seen and stores its normals the same
 way (Rule 12): INWARD on a solid seen from
@@ -80,7 +80,7 @@ stop the player (measured above), but the LOD raycasts go through it.
 
 **Detection**: Rule 18's per-component check decides, once its prerequisites hold: every
 non-proxy face of the collision LOD belongs to a `ComponentNN` selection (killer #8), and every
-component is closed (killer #9) and convex (`dayz-model-pipeline` Rule 1). Then compare each
+component is closed (killer #9) and convex (Rule 1 of `_shared/models/generated-model-rules.md`). Then compare each
 face's cross product with `face_centroid - component_centroid`; on a convex component this reads
 each face exactly. A healthy component has EVERY face pointing toward its centroid (inward), not
 most of them: one face pointing away is an inverted face. Faces outside every component, an open
@@ -144,7 +144,7 @@ One can be correct while the other is inverted. DayZ renders Visual LODs single-
 inverted faces are see-through / textured on the inside. Check the Visual LOD offline with the absolute check
 (`winding-absolute-check.md`) and Check A (`winding-diagnostics.md`).
 
-*(Corrected 2026-10-02 against `dayz-model-pipeline` Rule 12, measured in game 2026-10-01, and
+*(Corrected 2026-10-02 against Rule 12 of `_shared/models/generated-model-rules.md`, measured in game 2026-10-01, and
 Rule 18. This killer was titled "Inverted Face Winding" and opened: "Geometry LOD faces have
 normals pointing INWARD. Raycasts from outside pass through without detecting collision — no
 collision, no action targeting, no physics." Its root cause read: "Blender Z-up → DayZ Y-up axis
@@ -154,9 +154,9 @@ same model." The automated check took the Visual LOD as the reference, "(which r
 in-game and therefore defines this model's correct convention)", and ended: "If the CRITICAL
 fires, swap `vertices[1]`/`[2]` on every face of that LOD so it matches the Visual LOD
 convention." The Fix line read: "Swap `vertices[1]` and `vertices[2]` of each inverted face."
-The last paragraph ended by pointing at the offline winding gate of the dayz-characters skill
+The last paragraph ended by pointing at the offline winding gate of the model tools
 (`check_dayz_winding.py`). That script then predated Rule 12 and failed a correct export; since
-2026-10-02 it reads Rule 12 (dayz-characters skill, its offline gate section).)*
+2026-10-02 it reads Rule 12 (`skills/dayz-model-tools/scripts/check_dayz_winding.py`; `skills/_shared/models/tools-winding-gate.md`).)*
 
 *(Measured in game 2026-10-02, the outward boxes above: the opening said an outward component
 "lets raycasts from outside pass through without detecting collision — no collision, no action
@@ -272,7 +272,7 @@ Same as `p3d-killers.md` section 7. The fallback order is in vanilla script: `Ge
 
 Every face of a collision LOD (proxy triangles aside), and every point those faces use, must belong
 to a `ComponentNN` selection with weight=1: one component per closed, convex part
-(`dayz-model-pipeline` Rule 1), the components together covering the LOD. A closed part left out of
+(Rule 1 of `_shared/models/generated-model-rules.md`), the components together covering the LOD. A closed part left out of
 every component collides with nothing in the LODs it is left out of, also when they have other
 components (measured in game on two such parts, below): a box left out of all three took no
 `scene_raycast` hit in `geom`, `view` or `fire` and no `RayCastBullet` hit, and the player walked
@@ -387,11 +387,11 @@ A needle is a triangle that is almost a line: tiny in area, or tiny against its 
 
 **Detection**: `audit_p3d.py` (`check_collision_needle_triangles`) reads every face of every `ComponentNN` selection in the Geometry, View and Fire LODs, any case of the name. A quad is read as the two triangles of its fan. It fails a triangle (CRITICAL) whose area is under 1e-6 m², or whose area over the square of its longest edge is under 1e-4. A face at weight 0 is not in the selection. Proxy triangles are left out, by the rule the DayZ fork of py3d uses: a selection named `proxy:<path>.<index>` that holds exactly one triangle and, as its points, exactly that triangle's corners. A selection under a proxy name with any other shape is not a proxy and is read. A face in no component is the coverage check's subject (killer 8), not this one's.
 
-**Fix**: build that hull again without the point the finding names, the corner opposite the needle's longest edge. The procedure for generated hulls is in the py3d generation reference of `dayz-model-pipeline`, under "Needle triangles".
+**Fix**: build that hull again without the point the finding names, the corner opposite the needle's longest edge. The procedure for generated hulls is in `_shared/models/py3d-generation.md`, under "Needle triangles".
 
 ## Source meshes for collision: zero-area faces, orphan points, inexact hulls
 
-Measured offline on a building generated from Blender whose collision is hundreds of convex pieces (a rock with a helicopter interior, 2026-10-01; the collision recipe is in the LODs and geometry reference of `dayz-model-pipeline`, under "Collision of a large building with an interior").
+Measured offline on a building generated from Blender whose collision is hundreds of convex pieces (a rock with a helicopter interior, 2026-10-01; the collision recipe is in `_shared/models/lods-authoring.md`, under "Collision of a large building with an interior").
 
 1. **Source meshes carry zero-area faces, and dropping them can leave orphan points.** 5.4 % of the rock's faces and 11 % of the lift cabin's had zero area. Drop them, then emit only the points the remaining faces use: after the drop, 8 points stood 1.5 to 10.8 cm off the surface in the project's fidelity check, all of them corners of dropped faces, and a point without a face poisons any bounding box computed from `lod.points`. The same meshes had about 240 rock faces and 38 interior faces wound against their stored normals. That disagreement does not say which side is wrong (`winding-absolute-check.md`, rule 1), and smoothed normals can point against a face that is right (rule 5): read those faces with the Check A table (`winding-diagnostics.md`) on the MLOD, after the Rule 12 conversion, before reversing any. Its rows are written toward Rule 12's MLOD convention, not toward the Blender mesh before the conversion. The project turned each one to its normals; that step was not checked in game.
 2. **`bmesh.ops.convex_hull` hulls are not exactly convex.** In that project's builds the hulls merged near-coplanar triangles into n-gons that are not planar, and fanned back into triangles those folded by a few mm; near-duplicate points made slivers whose plane is noise. Recomputing each hull with Qhull (`scipy.spatial.ConvexHull`), after welding points at 1 mm and dropping the point that made a sliver, left 0 open or non-convex pieces in the project's integrity check. A convexity check needs a model built to fail it, and it must require the models it expects: the project's first version passed on an empty folder.

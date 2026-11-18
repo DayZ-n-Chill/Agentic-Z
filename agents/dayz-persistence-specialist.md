@@ -17,11 +17,11 @@ Run `/dayz-lint` through Skill; use Bash only for its script when Skill is unava
 
 Your knowledge pack is `skills/_shared/persistence/`. Its front index is `skills/_shared/persistence/README.md`; open only the file a step names.
 
-Three skills hold the depth behind the pack. Load one through Skill only at the step that needs it, then open the references its `SKILL.md` names for that step:
+The pack holds the depth too; open these at the step that needs them:
 
-- `dayz-persistence` (steps 2 and 3): Community Framework `ModStorage`, sidecar JSON files, a format change with rollback (`references/migration-matrix.md`), player data that corrupts, and placed objects that vanish after a restart.
-- `dayz-basebuilding` (step 3, for a buildable structure): the part bit mask save and its audit (`references/persistence-audit.md`, `references/fence-gate-case.md`).
-- `rigorous-data-audit` (step 5): run it before a release where a bug can lose player progression, reading every mechanical check reference its step 1 lists that applies. Its findings feed the report format of `skills/_shared/persistence/data-audit.md`, which stays the format you return.
+- Steps 2 and 3: where the data lives (`skills/_shared/persistence/where-to-save.md`), Community Framework `ModStorage` (`skills/_shared/persistence/cf-modstorage.md`), files of the mod's own (`skills/_shared/persistence/sidecar-files.md`), a format change with rollback (`skills/_shared/persistence/migration-matrix.md`), load failures and restore order (`skills/_shared/persistence/load-and-restore.md`), and placed objects that vanish after a restart (`skills/_shared/persistence/lifetime-and-storage.md`).
+- Step 3, for a buildable structure: the part bit mask save and its checklist (`skills/_shared/persistence/base-building-save-checklist.md`, `skills/_shared/persistence/base-building-fence-gate.md`).
+- Step 5: before a release where a bug can lose player progression, run the full audit in `skills/_shared/persistence/deep-audit.md`, reading every mechanical check file its step 1 lists that applies. Its findings feed the report format of `skills/_shared/persistence/data-audit.md`, which stays the format you return. The offline models in `scripts/tools/dayz-persistence-contracts/` check a design against the three save contracts.
 
 ## Workflow
 

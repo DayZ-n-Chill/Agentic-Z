@@ -10,7 +10,7 @@ History only: the superseded order of diagnostic gates for an imported car, kept
 
 ## The ladder
 
-Nothing here is current doctrine. This is the diagnostic order from before change 0, the family B cutover of 2026-08-05 that made the B1 to B6 allowlist the only automatic checks (B7 was added on 2026-08-16), kept for vehicles already in flight. For a new family B asset none of these rungs runs automatically unless its exact contract is in the allowlist of the rip-vehicle-import skill (`skills/rip-vehicle-import/SKILL.md`, now B1 to B7); every rung can still be run by hand during diagnosis. The rule that set the order is in `pre-change-0-gate-ladder.md`, next to this file.
+Nothing here is current doctrine. This is the diagnostic order from before change 0, the family B cutover of 2026-08-05 that made the B1 to B6 allowlist the only automatic checks (B7 was added on 2026-08-16), kept for vehicles already in flight. For a new family B asset none of these rungs runs automatically unless its exact contract is in the allowlist of the family B runbook (`rip-family-b-runbook.md`, now B1 to B7); every rung can still be run by hand during diagnosis. The rule that set the order is in `pre-change-0-gate-ladder.md`, next to this file.
 
 The findings that used to sit under this heading and are current (the open rim of a rip panel, the offline viewer traps, ViewPilot curation and gate calibration) are in `rip-panel-open-rim.md`, `view-pilot-and-first-person.md` and `method-and-gate-calibration.md`.
 

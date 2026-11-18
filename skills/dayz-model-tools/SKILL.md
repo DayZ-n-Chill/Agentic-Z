@@ -1,6 +1,6 @@
 ---
 name: dayz-model-tools
-description: "Runs the DayZ model tools on source (MLOD) .p3d and .blend files: the p3d inspector (Recipe JSON, a 3D page to drag memory points, rebuild), the proxy editor (find and fix proxies that render at the floor, float or turn), the clothing alignment viewer and the FBX handoff to an artist, the offline winding and normal gate, the clean UV atlas pipeline with its exact overlap gate, and the .p3d to .glb viewer tool. Use when one of these has to run: inspect or rebuild a p3d, move memory points, align a proxy, fit worn clothing plates, export clothing for an artist, check winding before a pack, unwrap or audit UVs, or preview a model in a browser. The knowledge behind them is the model pack, skills/_shared/models/README.md."
+description: "Runs the DayZ model tools on source (MLOD) .p3d and .blend files: the p3d inspector (Recipe JSON, a 3D page to drag memory points, rebuild), the proxy editor (find and fix proxies that render at the floor, float or turn), the clothing alignment viewer and the FBX handoff to an artist, the offline winding and normal gate, the clean UV atlas pipeline with its exact overlap gate, the .p3d to .glb viewer tool, and the ripped car classification viewer. Use when one of these has to run: inspect or rebuild a p3d, move memory points, align a proxy, fit worn clothing plates, export clothing for an artist, check winding before a pack, unwrap or audit UVs, or preview a model in a browser. The knowledge behind them is the model pack, skills/_shared/models/README.md."
 argument-hint: "<tool> <model.p3d | recipe.json | file.blend> [options]"
 ---
 
@@ -61,7 +61,7 @@ python "<skill-dir>\scripts\proxy_apply.py" host.p3d edits.json host_aligned.p3d
 | `proxy_canon.py` | Rewrites every proxy as an unambiguous triangle; `--rot Slot=AXIS:DEG` per slot |
 | `proxy_viewer.py` | Recipe to an editor page with a move and rotate gizmo; exports `edits.json` |
 | `proxy_apply.py` | Writes the listed proxy points back into the MLOD and changes nothing else |
-| `install_py3d.py` | Installs the py3d fork from a built wheel |
+| `install_py3d.py` | Installs the py3d fork from a built wheel; `--dry-run` prints the wheel and pip commands without running pip |
 
 Outside an agent session: `scripts\dayz\proxy-extract.bat`, `proxy-canon.bat`, `proxy-worn-overlay.bat`, `proxy-viewer.bat`, `proxy-apply.bat`.
 
@@ -122,6 +122,51 @@ blender -b file.blend -P "<skill-dir>\scripts\sat_gate.py" -- object_name
 ### 3D viewer tool
 
 How-to: `tools-3d-viewer.md`, with `tools-3d-viewer-formats.md` (PAA and RVMAT), `tools-threejs-viewers.md` (the page library and testing it) and `tools-3d-viewer-states.md` (the plan for animations and LED states, not built). The tool is `scripts/tools/dayz-3d-viewer`, run as `python -m dayz_3d_viewer`; this skill ships no script for it.
+
+### Ripped car classification viewer
+
+How-to: `skills/_shared/vehicles/rip-classify-viewer.md` (the Three.js r128 files to download, the steps per car, the GLB data contract). It reviews the session A part classification of a ripped car without Blender; the lane it serves is `skills/_shared/vehicles/rip-family-b-runbook.md`. The page is advisory: authority stays with the `.blend`.
+
+```cmd
+blender --background --python-exit-code 1 --python "<skill-dir>\scripts\export_car_glb.py" -- --blend <sessionA.blend> --out <dir>\car.glb
+py -m http.server <port> --directory <dir>
+```
+
+Copy `<skill-dir>\scripts\classify-viewer\index.html` and a `lib\` folder holding `three.min.js`, `GLTFLoader.js` and `OrbitControls.js` next to `car.glb` first; the page cannot load the GLB from `file://`. The human's changes are in `window.DZ_DELTAS`.
+
+| Script | Does |
+|---|---|
+| `export_car_glb.py` | Runs in Blender: session A `.blend` to `car.glb` with the `dz_*` node extras and no materials; never saves the `.blend`; prints `GLB_DONE` |
+| `classify-viewer\index.html` | The page: click a part, set INCLUDE, MOVABLE or EXCLUDE with a reason, copy the changes as JSON |
+
+### Blender build helpers
+
+How-to: `blender-assembly.md` (the rules, the detail pass, the integrity gate) and `generation-harness.md` (a gated production build). The library needs a Blender MCP server connected to the session; this repo configures none. At session start, read the file and execute it whole through the MCP's code tool instead of pasting single functions.
+
+| Script | Does |
+|---|---|
+| `blender_helpers.py` | Runs inside Blender: `make_beam`, `make_cable`, `loft_profile`, `panel_recess`, `place_copies`, `boolean_cut`, `add_bevel`, `smart_uv`, `bake_map`, and the gates `verify_bounds`, `verify_overlap`, `verify_mesh_integrity`, `finalize`, `audit_all` |
+
+### Render review
+
+How-to: `blender-visual-review.md` (the capture helper, the checklist, the stop policy, the delta check, winding flips), with `tools-vlm-judge.md` (a local vision model as a pre-filter, and its calibration) and `tools-vlm-checklist-format.md` (the checklist JSON and `--view` routing). Plain Python, no packages, no Blender; `vr_score.py` and `vr_calibrate.py` need an Ollama server.
+
+```cmd
+python "<skill-dir>\scripts\correction_loop.py" --history _review\history.json --json
+python "<skill-dir>\scripts\vr_delta.py" _review\model__front__iter1.png _review\model__front__iter2.png --json
+python "<skill-dir>\scripts\vr_score.py" ask _review\model__iso__iter3.png --checklist "<skill-dir>\scripts\checks_hardsurface.json" --model gemma4:26b --json
+python "<skill-dir>\scripts\vr_calibrate.py" report --shadow cal.jsonl --verdicts verdicts.json --checklist "<skill-dir>\scripts\checks_hardsurface.json"
+```
+
+| Script | Does |
+|---|---|
+| `correction_loop.py` | The stop policy of the fix loop: reads `history.json`, prints keep going or stop with `continue`, `refine-spec` or `request-input`; exit 0 keep iterating, 1 stop, 2 unreadable history |
+| `vr_delta.py` | Compares a before and after render of the same camera: silhouette IoU, bounding box, SSIM, edges, tone; a change filter, never a verdict |
+| `vr_score.py` | Asks a local vision model the checklist questions about a render (`ask`) or scores it against a reference (`score`); logs every answer to a shadow JSONL |
+| `vr_calibrate.py` | Runs the checklist over a folder of renders (`run`) and reports agreement per question against your own verdicts (`report`) |
+| `checks_hardsurface.json` | The starter checklist for hard-surface models: 8 questions, 5 active |
+
+Outside an agent session: `scripts\dayz\render-delta.bat` runs `vr_delta.py`.
 
 ## Tests
 

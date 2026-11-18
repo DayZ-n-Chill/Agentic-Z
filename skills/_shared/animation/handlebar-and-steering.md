@@ -81,7 +81,7 @@ class CfgModels
 
 Place the two memory points on the steering stem or column, so the line between them is the real pivot. One sport quad used `(0, 0.748, -0.298)` and `(0, 1.139, -0.384)`: direction about `(0, 0.977, -0.214)`, tilted slightly back like a quad's stem, and on the centre line (`x = 0`) so the steering stays centred.
 
-Add the two points and the selection with the dayz-p3d-inspector or dayz-model-pipeline skills; do not send the user to Object Builder for it.
+Add the two points and the selection with the p3d inspector of dayz-model-tools or a py3d script (`_shared/models/py3d-generation.md`); do not send the user to Object Builder for it.
 
 ## Sources for the neighbouring parts
 

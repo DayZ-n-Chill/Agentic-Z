@@ -109,7 +109,7 @@ More one-line traps, not yet checked on `P:\` unless a citation follows: string 
 34. **Layout paths must match `$PBOPREFIX$`.** If the prefix is `MyMod`, paths must be `MyMod/gui/layouts/...`, not `OtherMod/gui/...`. A mismatch crashes and leaves a ghost menu in `UIManager`.
 35. **Guard the construction of a Dabs `ScriptViewMenu`.** Check `GetLayoutRoot()` after `new`; if it is null, set the singleton to null (do not `delete`). A failed `ScriptViewMenu` leaves a ghost entry in `UIManager` that blocks every later menu.
 
-The full UI, layout and Dabs material is in the `dayz-ui-development` skill and in `skills/_shared/enscript/integrations/dabs_framework.md`.
+The full UI, layout and Dabs material is in the UI pack `skills/_shared/ui/` and in `skills/_shared/enscript/integrations/dabs_framework.md`.
 
 ## Input and keybind rules
 

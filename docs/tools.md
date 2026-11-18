@@ -337,7 +337,7 @@ Emits one self-contained `*.preview.html` for a `.layout`, with the same tree
 drawn at **four viewports** (1080p, 1440p, ultrawide 21:9, 720p) plus the
 parser's diagnostics. In it exact widgets keep their declared pixels at every
 viewport while proportional ones scale. The engine draws exact units as 1/1080
-of the screen height (`dayz-ui-development` Rule 3, measured in game), so off
+of the screen height (`skills/_shared/ui/checklist-and-troubleshooting.md` rule 3, measured in game), so off
 1080p that difference is the viewer's model, not the game's: trust its other
 viewports only for widgets with no exact ancestor. *(Corrected 2026-10-03: this called
 the difference the "looked right in the mockup, wrong in game" failure made
@@ -388,7 +388,7 @@ task-local root and add one derived discovery adapter. It is not a host launcher
 prove the rest of a global catalog is off.
 
 ```powershell
-python scripts/tools/skill-runtime-pin/runtime_pin.py materialize --source <skills-repo> --commit <sha> --task-root <new-task-root>
+python scripts/tools/skill-runtime-pin/runtime_pin.py materialize --source <skills-repo> --commit <sha> --task-root <new-task-root> --skill <skill-name>
 python scripts/tools/skill-runtime-pin/runtime_pin.py verify --task-root <task-root>
 python scripts/tools/skill-runtime-pin/runtime_pin.py assemble --task-root <task-root> --consumer cursor
 python scripts/tools/skill-runtime-pin/runtime_pin.py inspect-prompt --task-root <task-root> --prompt-input <dump.txt>
@@ -543,8 +543,8 @@ answer is "install it first".
 | Rebuilding or patching a PBO | `dayz-pbo-diff` | Payload SHA-256 per entry; between two builds a different `.p3d` entry proves nothing by itself |
 | Regenerating a terrain's navmesh | `dayz-navmesh-compare` | Structure, not bytes; verified only for one 12 288 m world in 12.5, 25 or 50 m tiles |
 | Driving Terrain Builder without the desktop | `dayz-terrain-builder-runner` | EXPERIMENTAL, Windows only: menus and file dialogs verified; Generate Layers, imports and WRP export not; a disposable instance only |
-| Working on Linux (DayZ Tools, DayZDiag, `P:`) | `skills/_shared/scripts/dayz-proton.sh` | Runs BI's tools under Proton in private prefixes; native dayzmake / `workshop` first. Guide and measured matrix: `skills/_shared/linux-proton.md` |
-| Testing a mod on Linux without dayz-mcp (native server, headless retail client), building and publishing with dayzmake | `make-server-tree.sh`, `free-ports.sh`, `dayz-client-test.sh` and `dayz-mod-pack.sh` in `skills/_shared/scripts/` | References: `skills/dayz-launch-test/references/linux-native-server.md` and `linux-headless-client.md` beside it, and `skills/dayz-build-pbo/references/dayzmake-linux.md` |
+| Working on Linux (DayZ Tools, DayZDiag, `P:`) | `scripts/tools/dayz-linux/dayz-proton.sh` | Runs BI's tools under Proton in private prefixes; native dayzmake / `workshop` first. Guide and measured matrix: `skills/_shared/linux-proton.md` |
+| Testing a mod on Linux without dayz-mcp (native server, headless retail client), building and publishing with dayzmake | `make-server-tree.sh`, `free-ports.sh`, `dayz-client-test.sh` and `dayz-mod-pack.sh` in `scripts/tools/dayz-linux/` | References: `skills/dayz-launch-test/references/linux-native-server.md` and `linux-headless-client.md` beside it, and `skills/dayz-build-pbo/references/dayzmake-linux.md` |
 
 Two habits make the difference. Propose the tool **before** the expensive step,
 not after it fails: that is the whole point of a preflight. And when a tool

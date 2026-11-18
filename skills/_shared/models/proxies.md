@@ -22,11 +22,11 @@ A proxy that shows an attachment needs a `CfgNonAIVehicles` class named `Proxy` 
 
 A proxy that is only decoration needs no config of its own: no vanilla `config.cpp` under `P:\DZ\` has a `Proxyfluor_lamp` class for the house lamps above.
 
-For an item, write a `ProxyAttachment` class of the mod's own rather than adding the slot to a vanilla vehicle part class. Measured in one in-game test on a third-party item, not checked on `P:\`: a slot added with `inventorySlot[] +=` to the vanilla `ProxyBattery_Car` (`P:\DZ\vehicles\parts\config.cpp:1145`) never drew the battery on an `ItemBase` flag, in three proxy layouts, while a class of the item's own deriving from `ProxyAttachment`, with its own small proxy model, drew it. `ProxyBattery_Car` derives from `ProxyPart`, a vehicle part class with `reversed=1` (`P:\DZ\vehicles\parts\config.cpp:1125`); the vanilla flag's own proxy class is `ProxyDZ_Flag: ProxyAttachment` (`P:\DZ\gear\camping\config.cpp:13595`). The full account is in `dayz-model-pipeline/references/config-and-packing.md`.
+For an item, write a `ProxyAttachment` class of the mod's own rather than adding the slot to a vanilla vehicle part class. Measured in one in-game test on a third-party item, not checked on `P:\`: a slot added with `inventorySlot[] +=` to the vanilla `ProxyBattery_Car` (`P:\DZ\vehicles\parts\config.cpp:1145`) never drew the battery on an `ItemBase` flag, in three proxy layouts, while a class of the item's own deriving from `ProxyAttachment`, with its own small proxy model, drew it. `ProxyBattery_Car` derives from `ProxyPart`, a vehicle part class with `reversed=1` (`P:\DZ\vehicles\parts\config.cpp:1125`); the vanilla flag's own proxy class is `ProxyDZ_Flag: ProxyAttachment` (`P:\DZ\gear\camping\config.cpp:13595`). The full account is in `_shared/models/model-config-and-packing.md`.
 
-A proxy that points at a binarized vanilla model can disappear in game. That is not checked on `P:\`; the cases are in `dayz-model-pipeline/references/community-findings.md`.
+A proxy that points at a binarized vanilla model can disappear in game. That is not checked on `P:\`; the cases are in `_shared/models/unconfirmed-findings.md`.
 
-Two more findings measured on third-party mods, not checked on `P:\` (`dayz-model-pipeline/references/memory-and-selections.md`):
+Two more findings measured on third-party mods, not checked on `P:\` (`_shared/models/memory-and-selections-authoring.md`):
 
 - Binarize does not merge the proxied model into the parent. Converting the binarized parent back and finding the proxy there shows only that the proxy survived; whether the other model sits right can be seen only in game.
 - An entity can be nothing but proxies: a visual LOD holding only proxy triangles, plus Memory, View Geometry and Fire Geometry boxes and no Geometry LOD, drew its attachments, appeared in the vicinity panel and kept its attachments across restarts. It still blocked the player through its bounding volume.
@@ -35,7 +35,7 @@ Clothing and gear proxies, including the body proxies on the survivor, are in `_
 
 ## When the other model shows in the wrong place
 
-An attached item that sits on the floor, floats, clips or is turned has a proxy triangle that is misplaced or ambiguous. `/dayz-proxy-align` reads every proxy of an MLOD host, shows them in a browser editor against the worn clothing, rewrites them as unambiguous triangles and writes them back with py3d, leaving the rest of the model as it was.
+An attached item that sits on the floor, floats, clips or is turned has a proxy triangle that is misplaced or ambiguous. The proxy editor of `/dayz-model-tools` (`tools-proxy-align.md`) reads every proxy of an MLOD host, shows them in a browser editor against the worn clothing, rewrites them as unambiguous triangles and writes them back with py3d, leaving the rest of the model as it was.
 
 `proxy-frames.md` has the rules that skill applies, and the cases that behave differently:
 

@@ -4,6 +4,23 @@ The depth part of the Enforce Script pack: failures met in real mods, with the b
 
 How to read the evidence in these files: a line cited as `P:\...:N` was opened on `P:\` and holds what the text says. "Measured in game" gives the game build; those results were not run again here. A fact about a third-party mod (Community Framework, Expansion, Dabs Framework) names that mod.
 
+## The rules broken most often
+
+The full list, with evidence, is in `hard-rules.md`. Check these on every file:
+
+1. No ternary operator. `++`, `--`, `+=`, `foreach` and string literals as arguments all work.
+2. Keep each statement on one line. A condition, a string `+` chain or an argument list continued on the next line can stop the whole module compiling.
+3. A local variable has method scope. Do not declare the same name in two `if`, `else` or `case` blocks of one method.
+4. Put `ref` on member fields that own an object, never on a parameter or a return type. Break reference cycles in destructors.
+5. Write synced variables only on the server and call `SetSynchDirty()`. Register them in the constructor, not in `EEInit`.
+6. Check the return value of every `ctx.Read()` and stop on failure. On the server, validate the sender of every RPC.
+7. During load, tell the sides apart with `IsDedicatedServer()`; `IsServer()` and `IsClient()` are safe only in callbacks after load.
+8. Do not allocate arrays, maps or `Param` objects in a periodic tick. Run periodic work from one place, not one repeating `CallLater` per object.
+9. Check every `Cast()` and every creation call for `null` before use.
+10. Before you call or mod a vanilla symbol, check that it is not inside an inactive `#ifdef` or a block comment.
+
+## Which file answers which question
+
 | Question | Read |
 |---|---|
 | Which rules apply to all Enforce Script (syntax, memory, networking, timers, overrides, actions, layout paths, inputs and keybinds)? | `hard-rules.md` |
@@ -26,11 +43,11 @@ How to read the evidence in these files: a line cited as `P:\...:N` was opened o
 | UI state, hover caching, view binding, animation and event handler patterns from shipped mods | `production-patterns.md` |
 | Mod structure patterns: `CfgMods`, custom inputs, `CfgSoundSets` parameters, building doors, RPC enums, server-authoritative input, parent and child mods | `mod-structure-patterns.md` |
 
-Fire modes on a derived weapon are in `../../weapons/recoil-fire-modes.md` and `../../weapons/weapon-config.md`. Full UI, layout, widget and Dabs work is in the `dayz-ui-development` skill.
+Fire modes on a derived weapon are in `../../weapons/recoil-fire-modes.md` and `../../weapons/weapon-config.md`. Full UI, layout, widget and Dabs work is in the UI pack `skills/_shared/ui/`.
 
 ## Offline checks prove form, not compilation
 
-The script validator in `scripts/tools/dayz-script-validator/` reads a mod's scripts, layouts and configs without the game; how to run it and what its exit codes mean is in `docs/tools.md`. `/dayz-lint <ModName>` runs `script_validator.py` as its second stage; `ui_reconcile.py` is not part of lint, so run it by hand. A script module is known to compile only when the game boots with it: use `/dayz-gate`.
+The script validator in `scripts/tools/dayz-script-validator/` reads a mod's scripts, layouts and configs without the game; how to run it and what its exit codes mean is in `docs/tools.md`. `/dayz-lint <ModName>` runs `script_validator.py` as its second stage; `ui_reconcile.py` is not part of lint, so run it by hand; it matches `FindAnyWidget` names against layouts and `#STR` keys against the stringtable, which no compiler checks, and `--strict` turns its warnings into a failure. `script_validator.py` exits 2 for a clean tree with warnings, so a caller that rejects any non-zero exit rejects it: count the errors in the JSON, or accept 2. A script module is known to compile only when the game boots with it: use `/dayz-gate`.
 
 ## On Linux
 

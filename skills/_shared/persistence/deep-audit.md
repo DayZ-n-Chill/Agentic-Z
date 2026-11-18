@@ -56,8 +56,6 @@ These reference files give the procedures. Read the ones that apply before runni
 - `deep-audit-sidecar-cleanup.md`: catches missing cleanup on delete/reset (VULN-008 class)
 - `deep-audit-entry-points.md`: catches alternative entry points skipping invariants (VULN-009, VULN-001 class)
 - `deep-audit-flag-lifecycle.md`: catches flag/sidecar state-store divergence (VULN-010 class)
-- `deep-audit-evidence-bundles.md`: authoritative evidence indexes and multi-root publication
-- `deep-audit-authority-loopback.md`: durable authority publication and authenticated-localhost provenance
 - `deep-audit-incremental-rebuild.md`: atomic-to-phased conversion hazards
 
 Plus the existing structural check:

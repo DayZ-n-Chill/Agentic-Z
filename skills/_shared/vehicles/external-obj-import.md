@@ -2,7 +2,7 @@
 
 OBJ to game-ready `.p3d`, end to end: parse, transform, decimate, normals, LOD assembly, PNG to PAA, config wiring and validation, with the winding and normal corrections that later vehicle imports forced.
 
-> Status: the workflow was measured on third-party mod content, not vanilla (a wall lamp of a power-grid mod; the winding corrections on a sports coupe import), and is not yet checked on `P:\`. The mod-side hooks the steps describe (placement modes, wall yaw offset, port registration, device registries) belong to that kind of mod, not to vanilla. A citation written with its full `P:\` path was opened on the vanilla data. The Python libraries named are optional third-party packages that this repo does not install. `py3d-direct-generation.md` and `memory-and-selections.md` are in `skills/dayz-model-pipeline/references/`, not files of this pack. The fixed "32k" ceiling in step 5 is a planning figure: `binarize-vertex-budget.md` holds the measured rule.
+> Status: the workflow was measured on third-party mod content, not vanilla (a wall lamp of a power-grid mod; the winding corrections on a sports coupe import), and is not yet checked on `P:\`. The mod-side hooks the steps describe (placement modes, wall yaw offset, port registration, device registries) belong to that kind of mod, not to vanilla. A citation written with its full `P:\` path was opened on the vanilla data. The Python libraries named are optional third-party packages that this repo does not install. `py3d-generation.md` and `memory-and-selections-authoring.md` are in the model pack, `skills/_shared/models/`, not files of this pack. The fixed "32k" ceiling in step 5 is a planning figure: `binarize-vertex-budget.md` holds the measured rule.
 
 ## Vanilla anchors checked on `P:\`
 
@@ -28,8 +28,8 @@ Related references:
 
 - Decimation mechanics → `decimation-libraries.md`
 - PNG → PAA encoding (no external tools needed) → `png-to-paa-encoding.md`
-- P3D assembly API → `py3d-direct-generation.md` (dayz-model-pipeline skill)
-- Memory points / port naming → `memory-and-selections.md` (dayz-model-pipeline skill)
+- P3D assembly API → `_shared/models/py3d-generation.md`
+- Memory points / port naming → `_shared/models/memory-and-selections-authoring.md`
 
 ## Quick workflow (annotated)
 
@@ -158,7 +158,7 @@ def xform(v):
 - **OBJ Y-up == DayZ Y-up.** If the OBJ was exported from Maya or a
   modern Blender OBJ exporter with Y-up preset, no axis rotation is
   needed. Unlike Blender's native Z-up exports (covered in
-  `py3d-direct-generation.md`), OBJs are almost universally Y-up.
+  `_shared/models/py3d-generation.md`), OBJs are almost universally Y-up.
 - **Don't flip Z speculatively — and "flip ⇒ reverse every face" is NOT the invariant.** A reflection (det=-1) does invert face orientation, but what matters is (a) the NET
   determinant of the full multi-stage transform chain and (b) the side-convention gap between source and
   target: glTF/OBJ/OpenGL render the +cross side, DayZ renders the ANTI-cross side. One net reflection with
@@ -241,7 +241,7 @@ normals.)
 
 ## Step 6: Assemble P3D
 
-Standard py3d assembly (see `py3d-direct-generation.md`), but with two
+Standard py3d assembly (see `_shared/models/py3d-generation.md`), but with two
 considerations specific to imported meshes:
 
 1. **Store the smooth normals in the `facenormals` pool once per vertex**,
@@ -268,8 +268,8 @@ Use the DayZ resolution constants:
 | Memory | `1.0e15` |
 
 Do not use `2.0e13` for Fire Geometry or `3.0e13` for View Geometry, values
-some Arma era guides give: the P3D inspector of the dayz-p3d-inspector skill labels
-them "unknown" (`skills/dayz-p3d-inspector/references/recipe-format.md`).
+some Arma era guides give: the P3D inspector of the dayz-model-tools skill labels
+them "unknown" (`skills/_shared/models/tools-p3d-inspector-recipe.md`).
 
 ## Step 7: PNG → PAA without external tools
 
@@ -326,7 +326,7 @@ candidate for wall-lamp-specific registration.
 - **Textured viewer** (`scripts/tools/dayz-3d-viewer/`) — shows PBR-rendered result
   with the baked PAA/RVMAT, best for spotting UV seam artifacts, inverted
   normals, missing geometry.
-- **Inspector** (dayz-p3d-inspector skill) — shows LODs, memory points,
+- **Inspector** (p3d inspector of the dayz-model-tools skill) — shows LODs, memory points,
   axes, bounding boxes, named selections. Best for verifying electrical
   ports are at the right place, ce_center is sensible, LODs have the
   expected resolutions.
@@ -353,7 +353,7 @@ constants — regenerate with the values of Step 6.
 - **Cable won't attach to the device** — Memory LOD is missing
   `port_input_N` / `port_output_N` points, or their names don't match
   the port names the device script registers. See
-  `memory-and-selections.md`.
+  `_shared/models/memory-and-selections-authoring.md`.
 - **P3D is enormous (20MB+)** — you skipped decimation. Real items
   should be 0.5–5 MB. Decimate with pymeshlab.
 

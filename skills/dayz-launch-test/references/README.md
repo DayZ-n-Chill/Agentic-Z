@@ -44,6 +44,13 @@ Most files here are measured results from real test sessions with third-party mo
 | How do I test the client side on Linux with a headless client under Proton, and have a test mod report its own results? | `linux-headless-client.md` |
 | Has this symptom been seen before in a real session (third-party dependencies, retail capture, launching from an agent, untextured runs)? | `session-findings.md` |
 | How do I verify a mod in game through dayz-mcp (spawn, capture, collision, vehicle ladder, report)? | `mcp/README.md`, which indexes the files in `mcp/` |
+| Which skill runs each step from scope to Workshop, which pack do I read for a request, and how do I port a mod to 1.30? | `mod-loop.md` |
+| How do I run the fast DayZDiag script loop, when do I stop iterating, and which debug tools does vanilla offer? | `test-loop.md` |
+| The feature does not work and the log is clean: in what order do I look, how do I place probes, how do I bisect? | `debug-protocol.md` |
+| Which mistakes keep coming back (E01 to E35), and what is the correct form of each? | `error-catalog.md` |
+| How do I read numbers from a test session without fooling myself (clock offsets, ranges, defect rates)? | `measurement-discipline.md` |
+| How do I label the severity of an audit finding or of something missing, and keep parallel auditors independent? | `audit-escalation.md` |
+| What was measured on a running 1.30 server (version define, `FindFile`, `files[]` slashes, compile crashes, load order, CF and Expansion)? | `dayz-1-30-server-measured.md` |
 
 ## Scripts and assets
 

@@ -33,7 +33,7 @@ A clock race in a scheduled one-shot: a `GetGame().GetCallQueue(...).CallLater(f
 
 Sleeping entities miss `EOnSimulate`: an idle `CarScript` that is not moving goes to sleep within a few ticks, and anything living inside `EOnSimulate` (countdowns, polls) stops with it. `dBodyActive(this, ActiveState.ALWAYS_ACTIVE)` alone did not guarantee the tick in that mod; the robust way to time logic on an entity that may sleep is the call queue, which body sleep does not affect.
 
-A working habit: one log marker per fix. Each fix that goes through an in game cycle adds its own log line ("keep-awake applied", "TrySpikeStart fired state=X"). Without it, "the fix was not compiled" and "the fix is not enough" look the same and cost a full rebuild and boot. Related: the `CallLater` rule (rule 21 in `hard-rules.md`) and the debug order in the `dayz-mod-workflow` skill.
+A working habit: one log marker per fix. Each fix that goes through an in game cycle adds its own log line ("keep-awake applied", "TrySpikeStart fired state=X"). Without it, "the fix was not compiled" and "the fix is not enough" look the same and cost a full rebuild and boot. Related: the `CallLater` rule (rule 21 in `hard-rules.md`) and the debug order in `skills/dayz-launch-test/references/debug-protocol.md`.
 
 ## A path literal whose backslashes never arrive
 

@@ -148,7 +148,7 @@ The Bohemia `model.cfg` documentation for the older Real Virtuality games lists 
 
 Items 1, 2, 4 and 5 are Binarize rules, not something a vanilla file on `P:\` shows; the vanilla models above follow them (bone `doors5` with axis `doors5_axis`).
 
-Adding a missing selection or the two axis points to an MLOD `.p3d` is script work for the dayz-p3d-inspector or dayz-model-pipeline skills (py3d), checked with `/dayz-p3d-audit`; offer it instead of sending the user to Object Builder. A binarized model has to be converted to MLOD by the user first.
+Adding a missing selection or the two axis points to an MLOD `.p3d` is script work for the p3d inspector of dayz-model-tools or a py3d script (`_shared/models/py3d-generation.md`), checked with `/dayz-p3d-audit`; offer it instead of sending the user to Object Builder. A binarized model has to be converted to MLOD by the user first.
 
 ## Limits and measured behaviour
 

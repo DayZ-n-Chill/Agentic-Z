@@ -41,8 +41,12 @@ work.** The normals in the `lod.facenormals` pool are per-vertex-corner smoothed
 (smoothing groups): on flat faces they match the flat normal; on smoothed faces they
 don't. To use them as an "intent" reference you must **average the normals of the 3-4
 corners of ONE face** and compare that with `cross(e1, e2)`. See Check A below.
+`audit_p3d.py` does not run Check A; its winding findings come from `P3D.validate()`
+of the DayZ fork of py3d (printed only when that fork is in use), whose absolute check
+(`ERR_WINDING_VS_NORMALS`, `winding-absolute-check.md`) takes the first corner's normal.
 
-**Assuming `lod.facenormals[i]` is the normal of `lod.faces[i]`.** False.
+**Assuming `lod.facenormals[i]` is the normal of `lod.faces[i]`.** False
+(`_shared/py3d-mlod-notes.md`).
 `lod.facenormals` is a global POOL (its size is the MLOD header's `num_facenormals`,
 **independent** of `len(lod.faces)`); each Vertex points into it via `normal_index`.
 Confusing the two leads to checks that never run (length mismatch) or checks that
@@ -110,7 +114,7 @@ compare the wrong things.
   based on a misunderstanding of the format: do not do it. If it was applied, the
   pool normals are wrongly negated; revert by negating them again.
 - **One field-verified crate model has mixed winding in its Visual LOD** (~38.6% bad
-  edges under Check B) yet **DayZ tolerates it in rendering** (verified in-game:
+  edges under Check B, 2026-04-25) yet **DayZ tolerates it in rendering** (verified in-game:
   visual, ballistics, cursor, and collision all OK). Its collision LODs
   (Geometry/LandContact/ViewGeo/FireGeo) are internally consistent. Treat such a
   Check B reading as a preventive signal even though the engine tolerated it in that
@@ -120,10 +124,12 @@ compare the wrong things.
 - **`face.flags |= 0x20000` (`NoBackfaceCulling`) does not work.** It was once listed
   here as a way round the problem in the Visual LOD. Measured since: the faces stayed
   see-through in game, because binarize discards the MLOD per-face `flags` field (three
-  MLODs that differ only in `face.flags` binarize to byte-identical models). The route
+  MLODs that differ only in `face.flags`, `0`, `0x00000020` and `0x00020000`, binarize to
+  byte-identical models, while a moved point and a cleared texture on the same faces each
+  change it; round-trip 2026-08-24). No face-flag value reaches the game. The route
   that works for a part seen from both sides is double-sided geometry, and fixing the
   winding in Geometry/GeoPhys/FireGeo/ViewGeo is mandatory either way
-  (`winding-diagnostics.md`, "Known traps").
+  (killer #1 in `p3d-killers.md`).
 - **Making a mesh double-sided** (duplicating faces with reversed winding)
   complicates Check B: it introduces non-manifold edges (3+ faces sharing an edge),
   which is correct geometry but the check must treat it as NOTE, not CRITICAL.

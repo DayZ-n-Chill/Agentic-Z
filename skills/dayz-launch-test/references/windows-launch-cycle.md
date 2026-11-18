@@ -16,7 +16,7 @@ Until 1.29 the loop was: pack the PBO, deploy the packed `@Mod`, launch DayZDiag
 
 ## WHEN TO USE / WHEN NOT
 
-Use when the user wants to see a mod running in game, iterate scripts and configs, or stand up a local server and client. Do not use it to author the mod (that is `dayz-model-pipeline` and the Enforce Script pack `skills/_shared/enscript/`), to validate or pack only (`/dayz-build-pbo`), or to configure a production server. The retail `DayZ_x64.exe` is for final pre-release validation only; default to the diag exe. Retail is manual-only and external to this launcher.
+Use when the user wants to see a mod running in game, iterate scripts and configs, or stand up a local server and client. Do not use it to author the mod (that is the model pack `skills/_shared/models/` and the Enforce Script pack `skills/_shared/enscript/`), to validate or pack only (`/dayz-build-pbo`), or to configure a production server. The retail `DayZ_x64.exe` is for final pre-release validation only; default to the diag exe. Retail is manual-only and external to this launcher.
 
 In the June 2026 runs, before 1.30, the retail executables on the measured machine did not finish loading a mission, so a retail run there only proved that `3_Game` and `4_World` compile; `5_Mission` was only compiled on diag. On 1.30 that no longer held for the server: the retail DayZServer 1.30.164289 loaded the mission and ran once `serverDZ.cfg` set `instanceId` (see the `instanceId` bullet below). Report script coverage per module, never as one green retail result.
 
@@ -189,7 +189,7 @@ Authoring the mod, production server config (stock 1.30 formats: `server-and-mis
 
 - `skills/_shared/conventions/server.md` - the DayZ rules for server config and launch; `/dayz-preflight` - the work drive, the `P:\Mods` junction and the installs.
 - `/dayz-build-pbo` - pre-build validation and packaging.
-- `dayz-mod-workflow` - the debug protocol when a launch surfaces script or engine errors.
+- `debug-protocol.md` and `error-catalog.md` - the debug protocol when a launch surfaces script or engine errors.
 - `scripts\dayz-test.ps1`, `server.bat`, `client.bat`, `offline.bat` - the generated tooling.
 
 ## Session findings (dated appendices -> session-findings.md)
@@ -208,4 +208,4 @@ In-game findings from single sessions are in `session-findings.md`; load it when
 
 ## The rest of the mod loop
 
-Testing is one step of the loop in the `dayz-mod-dev` skill (look up, write, build, boot, verify, publish), which also routes a failing mod to the domain skill that owns the broken part.
+Testing is one step of the loop in `mod-loop.md` (look up, write, build, boot, verify, publish), which also routes a failing mod to the domain skill that owns the broken part.

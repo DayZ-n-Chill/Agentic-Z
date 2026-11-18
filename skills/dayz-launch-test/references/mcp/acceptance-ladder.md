@@ -177,13 +177,13 @@ These three rules always apply.
 
 ### Reference orchestrator
 
-`references/drive_ladder.py` drives R1 to R6 against the daemon on port 8765 with raw `/enqueue` and `/await` calls, the same verified pattern as `tramoA_verbs_gate.py` and `tramoB_getin_gate.py`.
+`skills/dayz-launch-test/scripts/drive_ladder.py` drives R1 to R6 against the daemon on port 8765 with raw `/enqueue` and `/await` calls, the same verified pattern as `tramoA_verbs_gate.py` and `tramoB_getin_gate.py`.
 
 - It needs a live lease. Adopt the run with `session_acquire_wait` from your MCP session and pass the identity and lease token it returned (`--identity` and `--lease-token`, or the `DAYZ_MCP_IDENTITY` and `DAYZ_MCP_LEASE_TOKEN` environment variables); the script sends them in every `/enqueue` body next to `?key=` (`vehicle-smoke.md`). It does not renew the lease, so keep sending `session_heartbeat` from your session at least every 90 s while it runs. A fence rejection (`run_not_owned`, `lease_expired`, `lease_invalid`) stops the script at once with that error.
 - It stops at the first failure that ends the pass, or collects the failures that do not, and writes `verdict.json` naming the rung, the `first_block` and the mapped fix into the `--journal` folder (pass a new `<TargetMod>_dev\_ladder\run_<n>` each pass, guardrail 3).
 - It does not apply fixes or rebuild; that is the loop of the agent or a human (guardrail 1).
 - It reports `objective_PASS` for the rungs a script can close. Real acceptance also needs the agent's visual rungs (R2_visual for winding, orientation and scale, and the R6 turn calibration), which the script cannot close.
 - Its safeguards: R3 checks the driver seat, not any seat. `R4_conditioned` seats the player on the server, runs `OnDebugSpawn` there and requires `wheel_count` (`--wheels`, 4 by default) and fuel. R4 fails closed on seated, owner and fixture ready. A preflight aborts if the player is already in a car, since a second run would measure the old one. R5 requires the engine on and ownership, and reports `needs_clear_ground_retest` instead of guessing between an obstacle and the drivetrain. Each verb is checked for a timeout and for `ok`, because a harness failure is not a model fix.
-- Offline fixtures: `tests/test_drive_ladder.py` (12 tests).
+- Offline fixtures: `skills/dayz-launch-test/scripts/test_drive_ladder.py` (12 tests).
 
 Verification status: each rung reuses a verb sequence that passed its own gate in game. The chain of R1 to R6 in a single run is the very test in the game the ladder exists to run, and it has not been gated as a unit. The script compiles and its offline fixtures pass. The server-side conditioning step and the lease arguments follow `vehicle-smoke.md` and `run-lifecycle.md` and have not yet been run through this script in game.

@@ -12,7 +12,7 @@ Follow Tier 1 (`.claude/CLAUDE.md`) and Tier 2 (`skills/_shared/dayz-conventions
 
 In a plugin install, every repo path in this file (`.claude/CLAUDE.md` and everything under `agents/`, `skills/` and `docs/`) sits under the plugin root: find it once with Glob, as `agents/dayz-lead.md` describes, and read those files by full path under it. `workspace/<ModName>/` stays in the user's checkout.
 
-Deeper references, each Read only when the review calls for it; the checks and severities below stay the gate: how to label a finding's severity, including for something missing, and how to keep parallel auditors independent (`skills/dayz-mod-workflow/references/audit-escalation.md`); a change to saved data, a state machine or a recovery path (`skills/rigorous-data-audit/SKILL.md`, whose audit dayz-persistence-specialist runs); which DayZ build a fact belongs to, before a finding rests on one cited line alone (`skills/_shared/enscript/references/game_builds.md`).
+Deeper references, each Read only when the review calls for it; the checks and severities below stay the gate: how to label a finding's severity, including for something missing, and how to keep parallel auditors independent (`skills/dayz-launch-test/references/audit-escalation.md`); a change to saved data, a state machine or a recovery path (`skills/_shared/persistence/deep-audit.md`, whose audit dayz-persistence-specialist runs); which DayZ build a fact belongs to, before a finding rests on one cited line alone (`skills/_shared/enscript/references/game_builds.md`).
 
 ## Run lint first
 

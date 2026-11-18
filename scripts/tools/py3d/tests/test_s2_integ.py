@@ -7,7 +7,7 @@
 
 They skip, with a stated reason, when those scripts or their dependencies
 are not present. SKILLS_DIR names a skills folder that holds
-dayz-p3d-inspector/scripts, dayz-p3d-audit/scripts/audit_p3d.py and
+dayz-model-tools/scripts (the p3d inspector), dayz-p3d-audit/scripts/audit_p3d.py and
 dayz-3d-viewer/scripts/p3d_to_gltf.py as they stood when py3d's recipe and
 audit code was written:
     SKILLS_DIR=<...>/skills pytest tests/test_s2_integ.py
@@ -30,7 +30,7 @@ if SKILLS:
     # relative SKILLS_DIR has to be resolved here, against pytest's own.
     SKILLS = os.path.abspath(SKILLS)
 
-INSPECTOR = os.path.join(SKILLS, "dayz-p3d-inspector", "scripts")
+INSPECTOR = os.path.join(SKILLS, "dayz-model-tools", "scripts")
 AUDIT_ORIG = os.path.join(SKILLS, "dayz-p3d-audit", "scripts",
                           "audit_p3d.py")
 VIEWER = os.path.join(SKILLS, "dayz-3d-viewer", "scripts",

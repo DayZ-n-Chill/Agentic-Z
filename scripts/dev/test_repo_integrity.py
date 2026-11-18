@@ -746,26 +746,6 @@ def test_readme_ask_note_names_the_free_grep_fallback():
 # dayz-particles is reference-only (no script). dayz-record-correction ships check.py, but only
 # the agent running the skill calls it (root, baseline, compare steps in its SKILL.md), never a user.
 RUNNABLE_WITHOUT_BAT = {"dayz-particles", "dayz-record-correction"}
-# Reference-only skills: a SKILL.md and reference files, no Python script to run.
-RUNNABLE_WITHOUT_BAT |= {
-    "3d-generation-harness",
-    "ai-3d-to-dayz",
-    "dayz-ai-patterns",
-    "dayz-basebuilding",
-    "dayz-mod-dev",
-    "dayz-mod-workflow",
-    "dayz-model-pipeline",
-    "enforce-script-reference",
-    "rigorous-data-audit",
-}
-# Skills whose scripts a user never starts from a terminal with python.
-RUNNABLE_WITHOUT_BAT |= {
-    "blender-assembly",    # blender_helpers.py runs inside Blender (import bpy), through the Blender MCP
-    "rip-vehicle-import",  # export_car_glb.py runs inside Blender (blender --background --python)
-    "uv-clean-atlas",      # its scripts run inside Blender (blender -b <file> -P <script>)
-    "dayz-3d-viewer",      # no script of its own; it runs the tool in scripts/tools/dayz-3d-viewer
-    "dayz-persistence",    # its .py files are the offline models under tests/ that its own tests import
-}
 
 
 def test_every_runnable_skill_has_a_bat_wrapper():
@@ -829,17 +809,38 @@ CITATION_EXEMPT = {
     "animation/blender-realism-and-review.md",  # animation craft and the Blender review loop, no game fact
     "animation/blender-mcp-workflow.md",        # driving Blender through MCP; DayZ facts live in blender-txa-export.md
     "animation/mixamo-bone-mapping.md",         # bone name matching between Blender rigs, no game fact
-    "animation/py3d-1.0.0-quirks.md",           # notes on an old Python library version
     "animation/selections-for-actions.md",      # a tooling pattern for painting selections; measured results only
     "models/tools-threejs-viewers.md",          # building Three.js viewer pages; no game fact
+    "models/tools-3d-viewer.md",                # how to run the .p3d to .glb converter; no game fact
+    "models/tools-uv-atlas.md",                 # a measured UV atlas method for hard-surface meshes
     "models/tools-uv-mesh-health.md",           # Blender UV checks measured on test meshes
     "models/tools-uv-mlod-audit.md",            # UV measurements on one assembled model
     "models/tools-uv-multi-lod-atlas.md",       # a measured UV re-unwrap method
     "models/tools-uv-organic-photograph.md",    # a measured projection method for a paint atlas
     "models/tools-uv-partuv.md",                # setup and results of one UV tool
     "models/tools-uv-tool-survey.md",           # a survey of UV tools
+    "models/blender-assembly.md",               # Blender modeling method over MCP, no game fact
+    "models/blender-detail-scan.md",            # a planning method for the detail list
+    "models/blender-visual-review.md",          # the render review method, measured tool behaviour
+    "models/tools-vlm-judge.md",                # a local vision model as a render pre-filter
+    "models/tools-vlm-checklist-format.md",     # the render checklist format of the review scripts
+    "models/generation-harness.md",             # a gated build method, no game fact
+    "models/generation-dossier-template.md",    # a working template
+    "models/generation-roast-rubric.md",        # a review rubric
+    "models/generated-model-pipeline.md",       # the generation workflow; facts live in the files it indexes
+    "models/generated-model-troubleshooting.md",  # symptoms measured in game on generated mod models
+    "models/blender-headless.md",               # Blender Python API calls, no game fact
+    "models/blender-import-preflight.md",       # Blender import checks measured in Blender
+    "models/blender-external-mesh.md",          # a Blender cleanup and export workflow
+    "models/py3d-assembly-rules.md",            # py3d tool rules measured on mod models
+    "models/artist-returns.md",                 # file handling rules for outside binaries
+    "textures/procedural-textures.md",          # Python noise recipes; a pixel recipe has no vanilla file
     "textures/normal-bake.md",                  # Blender bake practice measured on one mod
     "ui/templates/panel-contract.md",           # the contract of this repo's layout templates, not the game
+    "vehicles/rip-profile-schema.md",           # fields of the import project's car profiles, no game fact
+    "vehicles/rip-classify-viewer.md",          # a Blender export and a browser page, no game fact
+    "vehicles/history/family-b-retired-artifacts.md",  # where retired import documents are kept, no game fact
+    "persistence/deep-audit-evidence-controls.md",  # audit method; the DayZ facts in it were measured in game
 }
 CITATION_EXEMPT_FOLDERS = {"enscript-style"}  # the style guide's section files
 # A citation names a vanilla file, not just the drive: a path with a line
@@ -1020,9 +1021,6 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
         "P:/scripts/3_game/entities/entityai.c:1393",
         "P:/scripts/3_game/entities/entityai.c:3041",
     },
-    "_shared/ai/perception.md": {
-        r"P:\scripts\3_game\playerconstants.c:263",
-    },
     "_shared/ai/spawning-and-performance.md": {
         r"P:\scripts\4_world\entities\creatures\infected\zombiebase.c:29",
     },
@@ -1102,11 +1100,6 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
         r"P:\DZ\gear\tools\config.cpp:5365",
         r"P:\scripts\3_game\constants.c:821",
         r"P:\scripts\4_world\entities\itembase\clothing\gp5gasmask.c:13",
-    },
-    # gameplay.c:276-314 holds PreviewWidget, ItemPreviewWidget and PlayerPreviewWidget;
-    # the citing line says they declare no `Particle` method, so the symbol is absent on purpose.
-    "dayz-ui-development/references/widget-api.md": {
-        r"P:\scripts\3_game\gameplay.c:276-314",
     },
 }
 

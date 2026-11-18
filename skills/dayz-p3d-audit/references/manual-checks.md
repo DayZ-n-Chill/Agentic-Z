@@ -38,7 +38,7 @@ vs `switch_v2_remote.p3d`, memory points: `switch_axis` (-0.0407, 0.0288, -0.147
 0.1039); Geometry LOD 0.293/0.0911/0.4185 → 0.293/0.4185/0.0911. It refuted a review finding that a pitch had been
 forgotten on one kit: applying the "forgotten" pitch would have PRODUCED the symptom it was meant to cure. The
 comparison needs only the memory points and the extents per LOD, which any MLOD
-reader gives (py3d included). See also the model pipeline skill (`dayz-model-pipeline`).
+reader gives (py3d included). See also the generated model pipeline (`_shared/models/generated-model-pipeline.md`).
 
 ## UV audit step (added 2026-07-06)
 
@@ -49,7 +49,7 @@ script (`uv_audit.py` of the TestQuad project, not shipped here). Its checks: ze
 (union-find) + texel density (px/m; healthy reference ≈ 292 px/m TestQuad wheels; 27 px/m =
 measured cause of bake artifacts). Gotchas: whitelist `proxy:*` faces (degenerate by design),
 exclude full-frame tris (UV area > 0.2) from cross-group overlap, classic raster misses
-subpixel islands. Which in-game symptom points at which UV fault is in `skills/_shared/models/uv-mapping.md`; the repair workflow is the `uv-clean-atlas` skill.
+subpixel islands. Which in-game symptom points at which UV fault is in `skills/_shared/models/uv-mapping.md`; the repair workflow is the clean UV atlas of `dayz-model-tools` (`skills/_shared/models/tools-uv-atlas.md`).
 
 ## Resolution LOD count: a performance check (added 2026-07-14)
 
@@ -65,7 +65,7 @@ three to five (`_shared/models/lods.md`).
   low-poly prop (a few hundred faces) may legitimately keep one.
 - Manual (not automated in `audit_p3d.py`): open in Object Builder / py3d and count
   Resolution LODs; or compare face counts across LODs (identical counts = the ladder is a
-  copy, not a decimation; see the LODs and geometry reference of `dayz-model-pipeline`).
+  copy, not a decimation; see `_shared/models/lods-authoring.md`).
 - Fix: author decimated LODs (the user decides, per the decimation gate of the model pipeline skill).
 
 Related cap: 30 or more LODs in total can crash the binarizer (not checked here).
@@ -81,7 +81,7 @@ Do not treat matching cardinalities as an equivalent check.
 Run `binarize` as the authoritative serialization check, with the previous known-good model
 as a control in the same run. This separates a product failure from a broken test bench and
 makes pre-existing log noise comparable. A binarize pass proves that this index/serialization
-gate passed; it still does not replace the in-game spawn gate (`winding-diagnostics.md`, "How TO verify", item 5).
+gate passed; it still does not replace the in-game spawn gate (`winding-diagnostics.md`, "How to verify: Check A and the spawn gate", item 2).
 
 ## Trusting a FAIL from a new gate on a binarized ODOL: run the control piece first (added 2026-09-28)
 
@@ -115,7 +115,7 @@ Before citing "vanilla equals N" for a field, ask THROUGH WHAT CHANNEL that N ar
 
 Everything above is the Windows workflow and stays valid there. On Linux, the Proton setup, the measured tool matrix and the pitfalls are in the shared Linux and Proton notes (`_shared/linux-proton.md`); this section only says what changes for this skill.
 
-- Pack, sign and binarize with dayzmake, the DayZ build of armake2, at a pinned release; which version to pin and how to install it are in `skills/dayz-build-pbo/references/dayzmake-linux.md`, "Get the right dayzmake". Use `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. The original armake2 is no substitute: it is built for Arma, its V3 file hash omits `*.c` files (dayzmake includes them) and it lacks the DayZ-only functions of dayzmake. `skills/_shared/scripts/dayz-mod-pack.sh` wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`; its notes are in that same file). A textured cube binarized with dayzmake `v1.0.0` on 2026-11-03 matched BI binarize from a `P:` root byte for byte; this is not an in-game ODOL check. See the shared Linux and Proton notes (`skills/_shared/linux-proton.md`) for setup and limits.
-- `P:\` is a plain directory mapped by `dayz-proton.sh init <dir>` (the script is `skills/_shared/scripts/dayz-proton.sh`); a `P:\<Mod>\...` path in this skill is `<dir>/<Mod>/...`.
-- Object Builder and TexView run under Proton: `dayz-proton.sh gui ObjectBuilder <p3d>`, `gui TexView <paa>`. Object Builder opened and displayed a model; editing in it was not exercised. Offline checks (`py3d`, the model preflight tool under `scripts/tools/dayz-model-preflight/`, `dayz-3d-viewer`) are Python and run natively.
+- Pack, sign and binarize with dayzmake, the DayZ build of armake2, at a pinned release; which version to pin and how to install it are in `skills/dayz-build-pbo/references/dayzmake-linux.md`, "Get the right dayzmake". Use `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. The original armake2 is no substitute: it is built for Arma, its V3 file hash omits `*.c` files (dayzmake includes them) and it lacks the DayZ-only functions of dayzmake. `scripts/tools/dayz-linux/dayz-mod-pack.sh` wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`; its notes are in that same file). A textured cube binarized with dayzmake `v1.0.0` on 2026-11-03 matched BI binarize from a `P:` root byte for byte; this is not an in-game ODOL check. See the shared Linux and Proton notes (`skills/_shared/linux-proton.md`) for setup and limits.
+- `P:\` is a plain directory mapped by `dayz-proton.sh init <dir>` (the script is `scripts/tools/dayz-linux/dayz-proton.sh`); a `P:\<Mod>\...` path in this skill is `<dir>/<Mod>/...`.
+- Object Builder and TexView run under Proton: `dayz-proton.sh gui ObjectBuilder <p3d>`, `gui TexView <paa>`. Object Builder opened and displayed a model; editing in it was not exercised. Offline checks (`py3d`, the model preflight tool under `scripts/tools/dayz-model-preflight/`, the 3D viewer tool under `scripts/tools/dayz-3d-viewer/`) are Python and run natively.
 - In-game checks: the Linux notes of the `/dayz-launch-test` skill (`skills/dayz-launch-test/references/linux.md`).

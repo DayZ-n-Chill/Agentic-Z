@@ -2,7 +2,7 @@
 
 How proxies are placed on a working car, the four config and model layers a detachable door, hood or trunk needs, what a seated player's action must register, how to hide an attachment proxy from script, and what the first-person View Pilot LOD of a shell and proxy vehicle must carry.
 
-> Status: the measurements below were made on mod vehicles, not on vanilla ones: a working off-road car that ships unbinarized (the control), a helicopter built on `CarScript` with two airframes, two imported cars, three quad bikes, a gun rack mod, a storage mod and a motorbike import derived from `Motorbike_02_ColorBase`. They are third-party mod behaviour, not vanilla. The vanilla script line numbers were opened on the vanilla data on `P:\` (a 1.30 build); a bare `file.c:N` is the vanilla script of that name under `P:\scripts\`, and `entityai.c` means `P:\scripts\3_game\entities\entityai.c`. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number. Other skills are named by skill name, each a folder under `skills/` (dayz-model-pipeline, dayz-launch-test).
+> Status: the measurements below were made on mod vehicles, not on vanilla ones: a working off-road car that ships unbinarized (the control), a helicopter built on `CarScript` with two airframes, two imported cars, three quad bikes, a gun rack mod, a storage mod and a motorbike import derived from `Motorbike_02_ColorBase`. They are third-party mod behaviour, not vanilla. The vanilla script line numbers were opened on the vanilla data on `P:\` (a 1.30 build); a bare `file.c:N` is the vanilla script of that name under `P:\scripts\`, and `entityai.c` means `P:\scripts\3_game\entities\entityai.c`. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number. Other skills are named by skill name, each a folder under `skills/` (dayz-model-tools, dayz-launch-test).
 
 Related file in this pack: `get-in-actions-and-proxy-pose.md` (the get-in condition chain, action registration and which anchor places the occupant).
 
@@ -502,8 +502,8 @@ Measured in game and offline on a motorbike import derived from `Motorbike_02_Co
 
 Gaps in a fairing or cockpit through which the seated rider sees the ground can be closed with
 single-sided black membranes ("closures") that only the ViewPilot (res 1100) carries. On a model
-with a ViewPilot this narrows the seals of the dayz-model-pipeline skill ("Instrument and seal for
-see-through triage") and of `skills/dayz-p3d-audit/references/winding-absolute-check.md` (a defect seen from the seat): a fix for what
+with a ViewPilot this narrows the seals of `skills/_shared/models/axes-and-winding.md` ("Open geometry and
+see-through faults") and of `skills/dayz-p3d-audit/references/winding-absolute-check.md` (a defect seen from the seat): a fix for what
 only the seat sees goes in res 1100 alone. Unlike the exterior gap closure of
 `visual-gates-and-winding.md` #10 (m), seen from every angle and double-sided in the gap, a 1100
 closure is seen only from the seat. It is single-sided on purpose (rule 3 relies on the culled

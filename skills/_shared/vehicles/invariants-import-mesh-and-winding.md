@@ -63,12 +63,12 @@ causes, and auditing the texture pipeline is the **most expensive** way to find 
 this ladder first; each rung is minutes, the full audit is sessions.
 
 1. **Audit the UVs, not the textures.** Exact SAT overlap + island count + density
-   (the uv-clean-atlas skill). Overlap > 0, atomised islands (2-4 faces each) or wildly
+   (the clean UV atlas scripts of the dayz-model-tools skill). Overlap > 0, atomised islands (2-4 faces each) or wildly
    uneven density means the problem sits before any `.rvmat` in the chain — no material wiring fixes it.
 
    **No-overlap means an exact `SAT=0` (added 2026-08-31).** A Monte-Carlo
    estimate has a measured nonzero floor, so its displayed `0%` is not proof. Route
-   vehicle UV repair to `uv-clean-atlas` and use its current chart/SLIM/fold/SAT and
+   vehicle UV repair to the clean UV atlas of `dayz-model-tools` (`skills/_shared/models/tools-uv-atlas.md`) and use its current chart/SLIM/fold/SAT and
    semantic-packing contract; `PartUV` is not the vehicle default. One anti-fold
    round is a cost target, not a correctness exception: run the same exact SAT
    detector after every round, continue when it is nonzero, and block any mesh that
@@ -188,7 +188,7 @@ is the gate. → #10(j).
 
 **Imported-car offline VISUAL gates that LIE — the #7 family (offline geometry heuristic != in-game truth).** The per-session changelog of sub-entries #10(a)-#10(o) (steering-axis fit, single-sided see-through, debug fluids, raycast oracle, rip duplicate faces, per-piece winding uniformity, ViewPilot interior, bright-triangle shading seams, the import-orientation saga, glass occluder twins, foreign-LOD material transfer, gap skirts, hub-lift decoupling, get-in-preserving patches) lives in **`visual-gates-and-winding.md`** (SUPERSEDED entries archived there). The single operative winding rule stays here:
 - **THE RULE (import orientation, #10j):** keep the raw glTF winding VERBATIM for ALL pieces (net rip→DayZ = `(-Fx, Fy+Y0, -Fz)`, det=+1, preserves the authored visible side end-to-end); stored MLOD normals = smooth(+cross) of the FINAL winding. NEVER orient winding to a normal oracle or to outward-of-centre. Repair ONLY source-inconsistent components by MAJORITY flood-fill per connected component (never minority-area). `glass*int_a` panes are legitimate cabin-side glass (do not delete as z-fight). Full mechanism, measurements, and the SUPERSEDED (h)/(i) history: `visual-gates-and-winding.md` #10(j)/(f).
-- **Winding is per profile.** rip/vehicle with measured transform det=+1: preserve (`#10j`). Generic DCC import with no profile: dayz-model-pipeline Rule 12 (det=-1 map, face order kept, normals negated; no face reversed). The in-game A/B test adjudicates correction; a lineage gate adjudicates preservation. Do not apply generic dayz-model-pipeline Smart UV / decimation / flip defaults to a vehicle. *(Rule 12 was measured in game on 2026-10-01; it replaces the older default "flip visual, proxies exempt".)*
+- **Winding is per profile.** rip/vehicle with measured transform det=+1: preserve (`#10j`). Generic DCC import with no profile: Rule 12 of `_shared/models/generated-model-rules.md` (det=-1 map, face order kept, normals negated; no face reversed). The in-game A/B test adjudicates correction; a lineage gate adjudicates preservation. Do not apply the generic model pipeline's Smart UV / decimation / flip defaults to a vehicle. *(Rule 12 was measured in game on 2026-10-01; it replaces the older default "flip visual, proxies exempt".)*
 
 ## Invariant 11: vanilla forward is nose at minus Z, and the visual side of an imported car is not one block
 

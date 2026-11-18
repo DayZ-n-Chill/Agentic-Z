@@ -104,4 +104,4 @@ A test verdict that reads only its own log lines misses these exceptions: 241 of
 
 Measured (skateboard test, 2026-10-07, DayZDiag 1.30.164014 Experimental), cause unknown and still open: a `HumanCommandScript` subclass declared in `4_World` and started two or more times crashed every orderly exit of client and server. This held for the test's ride command and for an empty class alike. The same empty class declared in `3_Game`, or started only once, exited cleanly.
 
-The workaround, not yet verified: a thin class in `3_Game` that forwards to a `Managed` logic object in `4_World`. The measurements are entry E23 of `skills/dayz-mod-workflow/references/error-catalog.md`.
+The workaround, not yet verified: a thin class in `3_Game` that forwards to a `Managed` logic object in `4_World`. The measurements are entry E23 of `skills/dayz-launch-test/references/error-catalog.md`.

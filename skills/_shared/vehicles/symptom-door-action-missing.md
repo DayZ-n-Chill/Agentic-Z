@@ -20,7 +20,7 @@ Decide this before modelling or scripting anything. DayZ has three unrelated doo
 
 ## Two traps of the vehicle paths
 
-- **Attachment path.** The radial never appears, with no error, when the points of the item's View Geometry carry flags `0x0` instead of the flags of a working control. Config, script overrides, slots, bones and animation sources can all be correct and the action is still filtered. Census the item's View Geometry point flags against a working control before touching config. The required value is recorded two ways: `0x02000000` in the legacy seat rule (step 7 of `history-canonical-path.md`) and `0x0000003F` in invariant 22 (`skills/_shared/vehicles/invariants-get-in-and-seats.md`), so take the value from the control, not from either literal.
+- **Attachment path.** The radial never appears, with no error, when the points of the item's View Geometry carry flags `0x0` instead of the flags of a working control. Config, script overrides, slots, bones and animation sources can all be correct and the action is still filtered. Census the item's View Geometry point flags against a working control before touching config. The required value is recorded two ways: `0x02000000` in the legacy seat rule (row 7 of the table in `skills/_shared/vehicles/history/family-b-canonical-path.md`) and `0x0000003F` in invariant 22 (`skills/_shared/vehicles/invariants-get-in-and-seats.md`), so take the value from the control, not from either literal.
 - **Scripted path.** Enumeration probes must be read-only. A diagnostic probe that calls `SetAnimationPhase` to "look at" a door corrupts live state: the door closes visually while the logical state stays open, and the next diagnosis chases a bug the probe created.
 
 ## Status

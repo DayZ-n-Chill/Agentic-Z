@@ -166,4 +166,4 @@ Stop and ask for the missing decision or evidence when:
 
 ## Building, testing and publishing the mod
 
-When this work has to end in a mod that builds, loads and ships (`config.cpp` and `CfgMods`, `requiredAddons`, the PBO, a boot on a local server, the release pack), use `/dayz-lint`, `/dayz-build-pbo`, `/dayz-gate` and `/dayz-release-pack`, and `/dayz-mod-dev` for the mod's structure.
+When this work has to end in a mod that builds, loads and ships (`config.cpp` and `CfgMods`, `requiredAddons`, the PBO, a boot on a local server, the release pack), use `/dayz-lint`, `/dayz-build-pbo`, `/dayz-gate` and `/dayz-release-pack`, and `skills/dayz-launch-test/references/mod-loop.md` for the mod's structure.
