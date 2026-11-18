@@ -1,7 +1,7 @@
 ---
 name: dayz-gate
 description: "Runs the build, in-game, behavior and visual gates as scripts, with PASS or FAIL, triaged failures and a stored result for each. Use when gating a finished wave or checking a mod builds, loads, works and looks right in game."
-argument-hint: "build <ModName> [--yes] [--json] | ingame <ModName> [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--yes] [--json] | behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX] [--prepare-only | --logs [FILE ...]] [--yes] [--json] | visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--threshold R] [--ready-pattern REGEX] [--compare [DIR] | --accept [DIR] [--shot ID ... [--replace-failed]]] [--yes] [--json]"
+argument-hint: "build <ModName> [--yes] [--json] | ingame <ModName> [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--test-bridge] [--yes] [--json] | behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX] [--prepare-only | --logs [FILE ...]] [--yes] [--json] | visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--threshold R] [--ready-pattern REGEX] [--compare [DIR] | --accept [DIR] [--shot ID ... [--replace-failed]]] [--yes] [--json]"
 ---
 
 <!-- skill-dir-note -->
@@ -17,7 +17,7 @@ Follow `skills/_shared/dayz-conventions.md`.
 
 ```cmd
 python "<skill-dir>\gate.py" build <ModName> [--yes] [--json]
-python "<skill-dir>\gate.py" ingame <ModName> [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--yes] [--json]
+python "<skill-dir>\gate.py" ingame <ModName> [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--test-bridge] [--yes] [--json]
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX] [--yes] [--json]
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] --prepare-only [--json]
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--server <instance>] --logs [FILE ...] [--json]
@@ -33,6 +33,7 @@ python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] [--threshold R] --a
 | `--server` | `ingame`, `behavior`, `visual`: instance added with `/dayz-add-server` (default `chernarus`). `--port` default `2302`. |
 | `--timeout` | `ingame`, `behavior`, `visual`: seconds to wait for the client to reach the mission (default 300). |
 | `--settle` | `ingame` only: seconds to keep reading after that, to catch spawn-time errors (default 30). `visual` has no `--settle`: it reads until its last shot is taken. |
+| `--test-bridge` | `ingame` only: also load the `AZ_TestBridge` test mod (packed for the run, removed after) and check that both peers answer a ping once the client is in the mission. A bridge that does not answer is ERROR (exit 2), not the mod's FAIL; when the mod itself fails, its FAIL stands. v1 checks only that both peers answer. See `dayz-launch-test/references/test-bridge.md`. |
 | `--done-timeout` | `behavior` only: the most seconds to wait for the test mission's `DONE` line after the client joins (default 600). The gate stops as soon as that line appears. |
 | `--ready-pattern` | `ingame`, `behavior` and `visual` in-game runs: regex in the client script log that means the mission is running. Default `Creating Mission: mpmissions\__cur_mp.`, printed by vanilla `CreateMission()` (`P:\scripts\5_mission\somemission.c:3`) when the client joins. |
 | `--checks` | `behavior`: the checks file. Default `output/<ModName>-plan/behavior-checks.json`, which `dayz-mod-architect` writes with the plan. |
@@ -81,6 +82,7 @@ Every `PASS` or `FAIL` is stored for `/dayz-health` under `.server/!Health/<ModN
 
 1. Stops any running session, records the size of every log in `.server/<instance>/Profiles/` and `.server/!ClientDiagLogs/`, then runs `/dayz-launch-test <deps...> <ModName> --server <instance>`. A launch refusal is a FAIL with its `[FAIL]` lines.
 2. Polls the new log lines every 2 s until the ready line appears in the client script log plus `--settle` seconds, or `--timeout` (FAIL: no ready signal). It stops early on a `Can't compile ... script module` line, a new `crash*.log`, or a server or client process exiting (FAIL: crash).
+   With `--test-bridge`, step 1 also packs `@AZ_TestBridge` and passes `--test-bridge <token>`, and step 2 pings both peers once both wrote their hello; the report gets a `test-bridge` step.
 3. Always stops the session with `/dayz-stop-test`, then judges only the lines written after step 1, with the `dayz-ingame-tester` rules:
    - Fail: script compile errors, missing config entries, textures or models, crashes, a refused join (`0x00020005`, `0x00020017`, `0x00020013`, `0x00010002`), persistence storage the server cannot read (`Serious stream damage`, `Failed to read modstorage`, `Scripted variables corrupted`) and a server that shuts itself down (`[Server] :: termination in:`, `BattlEye initialization failed`); `NULL pointer` and `Can't find` errors only when they name the mod. The category of each line is listed in [triage.md](triage.md).
    - A line names the mod when it, or its stack trace, mentions the mod's folder, its `$PBOPREFIX$` root, or a class the mod declares (top-level classes in `config.cpp`'s `Cfg*` blocks and non-modded script classes).

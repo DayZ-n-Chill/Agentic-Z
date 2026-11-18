@@ -2,7 +2,7 @@
 
   gate.py build  <ModName> [--yes] [--json]
   gate.py ingame <ModName> [--deps CF ...] [--server <instance>] [--port N]
-                 [--timeout S] [--settle S] [--ready-pattern REGEX] [--yes] [--json]
+                 [--timeout S] [--settle S] [--ready-pattern REGEX] [--test-bridge] [--yes] [--json]
   gate.py behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>]
                  [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX]
                  [--prepare-only | --logs [FILE ...]] [--yes] [--json]
@@ -117,6 +117,43 @@ def remove_visual_helper() -> None:
     visual.remove_helper(P_DRIVE, h.SCAFFOLD_MARKER)
 
 
+# --- the in-game test bridge (ingame --test-bridge) ------------------------------------
+#
+# AZ_TestBridge is the Diag-only mod of the dayz-testbridge MCP server
+# (.claude/mcp/dayz-testbridge/, skills/dayz-launch-test/references/test-bridge.md).
+# ingame --test-bridge loads it next to the mod and checks that both peers answer
+# a ping; a bridge that does not answer is the tool's fault (ERROR), never the mod's FAIL.
+TESTBRIDGE_DIR = SKILLS_DIR.parent / ".claude" / "mcp" / "dayz-testbridge"
+BRIDGE_SOURCE = SKILLS_DIR / "dayz-launch-test" / "assets" / "testbridge-mod" / "src" / "AZ_TestBridge"
+BRIDGE_MOD = "AZ_TestBridge"
+BRIDGE_PING_TIMEOUT_S = 15
+
+
+def _bridge():
+    """The dayz-testbridge file protocol (bridge.py), imported on first use."""
+    sys.path.insert(0, str(TESTBRIDGE_DIR))
+    import bridge
+    return bridge
+
+
+def install_test_bridge() -> None:
+    """Pack AZ_TestBridge into P:\\Mods\\@AZ_TestBridge\\ (skills/_shared/helper_mod.py)."""
+    import helper_mod
+    tools = h.preflight.find_dayz_tools()
+    if tools is None:
+        raise GateError("DayZ Tools not found, so the test bridge mod cannot be packed. Run /dayz-preflight.")
+    try:
+        helper_mod.install(BRIDGE_SOURCE, BRIDGE_MOD, P_DRIVE, tools / "Bin" / "AddonBuilder" / "AddonBuilder.exe",
+                           h.SCAFFOLD_MARKER, run_captured)
+    except helper_mod.HelperModError as e:
+        raise GateError(f"could not pack {BRIDGE_MOD}: {e}") from e
+
+
+def remove_test_bridge() -> None:
+    import helper_mod
+    helper_mod.remove(P_DRIVE, BRIDGE_MOD, h.SCAFFOLD_MARKER)
+
+
 class Runtime(NamedTuple):
     """Everything that touches processes or time, so tests can run without DayZ."""
     run: Callable[[list[str]], tuple[int, str]]
@@ -128,6 +165,8 @@ class Runtime(NamedTuple):
     confirm: Callable[[list[int]], bool] = lambda pids: confirm_at_terminal(pids)
     install_helper: Callable[[], None] = install_visual_helper
     remove_helper: Callable[[], None] = remove_visual_helper
+    install_bridge: Callable[[], None] = install_test_bridge
+    remove_bridge: Callable[[], None] = remove_test_bridge
 
 
 def run_captured(cmd: list[str]) -> tuple[int, str]:
@@ -545,9 +584,67 @@ def gate_ingame(
     timeout: float = DEFAULT_TIMEOUT_S,
     settle: float = DEFAULT_SETTLE_S,
     ready_pattern: str = DEFAULT_READY_RE,
+    test_bridge: bool = False,
 ) -> dict:
-    report, _ = ingame_session(mod, project_dir, rt, deps, instance, port, timeout, settle, ready_pattern)
+    if not test_bridge:
+        report, _ = ingame_session(mod, project_dir, rt, deps, instance, port, timeout, settle, ready_pattern)
+        return finish(report, project_dir, {"instance": instance})
+
+    bridge = _bridge()
+    token = bridge.new_token()
+    dirs = {"server": project_dir / ".server" / instance / "Profiles", "client": project_dir / ".server" / "!ClientDiagLogs"}
+    for d in dirs.values():
+        bridge.make_dirs(bridge.session_dir(d, token))
+    handshake = BridgeHandshake(bridge.Bridge(token, dirs, clock=rt.clock, sleep=rt.sleep), bridge.BridgeError)
+    rt.install_bridge()
+    try:
+        report, _ = ingame_session(mod, project_dir, rt, deps, instance, port, timeout, settle, ready_pattern,
+                                   on_poll=handshake, extra_args=["--test-bridge", token])
+    finally:
+        rt.remove_bridge()
+        for d in dirs.values():
+            bridge.close(bridge.session_dir(d, token))
+    if report["failures"]:
+        # The mod's own failures decide; a bridge that never answered may be their effect.
+        report["steps"].append({"step": "test-bridge", "result": handshake.summary() + " (the mod failed first)"})
+        return finish(report, project_dir, {"instance": instance})
+    if handshake.error is not None:
+        raise GateError(f"test bridge fault, not a verdict on {mod}: {handshake.error}. "
+                        f"Read [AZ-BRIDGE] lines in both script logs; rerun without --test-bridge to judge the mod alone.")
+    report["steps"].append({"step": "test-bridge", "result": handshake.summary(), "pings": handshake.pings})
     return finish(report, project_dir, {"instance": instance})
+
+
+class BridgeHandshake:
+    """Called on each poll of an ingame --test-bridge session: once the client is in the
+    mission and both peers wrote their hello, ping both and keep the answers (v1 of the
+    gate's bridge check: both peers answer; checks files come later)."""
+
+    def __init__(self, bridge, error_type):
+        self.bridge = bridge
+        self.error_type = error_type
+        self.pings: dict = {}
+        self.error: Optional[str] = "the session ended before both peers said hello"
+
+    def __call__(self, elapsed: Optional[float], client_pid: Optional[int]) -> None:
+        if elapsed is None or self.pings:
+            return
+        hellos = {p: self.bridge.hello(p) for p in ("server", "client")}
+        if not all(hellos.values()) or not hellos["client"].get("player_loaded"):
+            return
+        try:
+            for peer in ("server", "client"):
+                res = self.bridge.call("ping", peer=peer, timeout=BRIDGE_PING_TIMEOUT_S)
+                if not res.get("ok"):
+                    raise self.error_type(f"the {peer} refused ping: {res.get('error')}")
+                self.pings[peer] = res["data"]
+            self.error = None
+        except self.error_type as e:
+            self.pings = {"failed": True}
+            self.error = str(e)
+
+    def summary(self) -> str:
+        return "both peers answered ping" if self.error is None else f"no answer: {self.error}"
 
 
 def required_deps(identity: ModIdentity, mod_dir: Path, deps: list[str]) -> list[str]:
@@ -577,6 +674,7 @@ def ingame_session(
     done_re: Optional[re.Pattern] = None,
     on_poll: Optional[Callable[[Optional[float], Optional[int]], None]] = None,
     extra_mods: Optional[list[str]] = None,
+    extra_args: Optional[list[str]] = None,
 ) -> tuple[dict, list[tuple[Path, int, str]]]:
     """The in-game flow up to the verdict: (unfinished report, every new log line).
 
@@ -597,7 +695,8 @@ def ingame_session(
     lines: list[tuple[Path, int, str]] = []
     extra: list[dict] = []
     try:
-        cmd = [sys.executable, str(LAUNCH_PY), *deps, mod, *(extra_mods or []), "--server", instance, "--port", str(port)]
+        cmd = [sys.executable, str(LAUNCH_PY), *deps, mod, *(extra_mods or []), "--server", instance, "--port", str(port),
+               *(extra_args or [])]
         rc, out = rt.run(cmd)
         report["steps"].append({"step": "dayz-launch-test", "rc": rc})
         if rc != 0:
@@ -939,6 +1038,8 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
     g.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_S, help="Seconds to wait for the client to reach the mission.")
     g.add_argument("--settle", type=float, default=DEFAULT_SETTLE_S, help="Seconds to keep reading after the ready signal.")
     g.add_argument("--ready-pattern", default=DEFAULT_READY_RE, help="Regex in the client script log that means the mission is running.")
+    g.add_argument("--test-bridge", action="store_true",
+                   help="Also load the AZ_TestBridge test mod and check both peers answer a ping; a silent bridge is ERROR.")
     g.add_argument("--json", action="store_true")
     g.add_argument("--yes", action="store_true", help=YES_HELP)
     v = sub.add_parser("behavior", help="Run a test mission that spawns and uses each item in a checks file.")
@@ -1022,7 +1123,7 @@ def main(argv: Optional[list[str]] = None, rt: Optional[Runtime] = None) -> int:
         else:
             report = gate_ingame(
                 args.mod, project_dir, rt, args.deps, args.server, args.port,
-                args.timeout, args.settle, args.ready_pattern,
+                args.timeout, args.settle, args.ready_pattern, args.test_bridge,
             )
     except SystemExit:  # resolve_project_dir already printed why on stderr
         return _error("no usable project: run /dayz-init", args.json)
