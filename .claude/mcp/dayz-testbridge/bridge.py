@@ -108,7 +108,8 @@ class Bridge:
 
     # -- sending --------------------------------------------------------------------------
 
-    def call(self, cmd: str, args: Optional[dict] = None, peer: Optional[str] = None) -> dict:
+    def call(self, cmd: str, args: Optional[dict] = None, peer: Optional[str] = None,
+             timeout: Optional[float] = None) -> dict:
         """Check `cmd` against the allowlist, send it to its peer and return the result.
 
         Commands that run on both peers need `peer`. Raises AllowlistError before
@@ -128,7 +129,7 @@ class Bridge:
         payload = {"cmd": cmd, "args": allowlist.wire_args(cmd, args)}
         if cmd == "spawn":
             self.spawns += 1  # counted when sent: a spawn that timed out may still have happened
-        result = self.send(peer, payload, allowlist.timeout(cmd, checked))
+        result = self.send(peer, payload, timeout if timeout is not None else allowlist.timeout(cmd, checked))
         return outputs_only(cmd, result)
 
     def send(self, peer: str, payload: dict, timeout: float, seq: Optional[int] = None, token: Optional[str] = None) -> dict:

@@ -653,3 +653,63 @@ def test_wait_for_port_times_out(monkeypatch, fake_clock):
     monkeypatch.setattr(launch.h, "udp_port_free", lambda port: True)
     assert launch.wait_for_server_port(2302, _ServerProc(), timeout_s=10) is False
     assert fake_clock[0] >= 10
+
+
+# --- --test-bridge ---------------------------------------------------------------------
+
+TOKEN = "0123456789abcdef0123456789abcdef"
+
+
+def test_test_bridge_loads_the_bridge_last_on_both_peers_with_the_token(monkeypatch, tmp_path, capsys):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["CF", "MyMod", "--server-only", "Srv", "--test-bridge", TOKEN, "--dry-run"])
+    checked = []
+    monkeypatch.setattr(launch, "verify_built_mods", lambda names: checked.extend(names))
+    assert launch.main() == 0
+    out = capsys.readouterr().out.splitlines()
+    bridge = launch.MODS_ROOT / "@AZ_TestBridge"
+    shared = f"{launch.MODS_ROOT / '@CF'};{launch.MODS_ROOT / '@MyMod'};{bridge}"
+    for prefix in ("[DRY-RUN] Server cmd:", "[DRY-RUN] Client cmd:"):
+        line = next(l for l in out if l.startswith(prefix))
+        assert f"-mod={shared} " in line and line.endswith(f"-azBridge={TOKEN}"), line
+    server = next(l for l in out if l.startswith("[DRY-RUN] Server cmd:"))
+    assert f"-serverMod={launch.MODS_ROOT / '@Srv'} " in server and "AZ_TestBridge" not in server.split("-serverMod=")[1]
+    assert checked[-1] == "AZ_TestBridge"
+
+
+def test_without_test_bridge_nothing_of_the_bridge_is_on_the_command_line(monkeypatch, tmp_path, capsys):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["MyMod", "--dry-run"])
+    assert launch.main() == 0
+    out = capsys.readouterr().out
+    assert "AZ_TestBridge" not in out and "-azBridge" not in out
+
+
+@pytest.mark.parametrize("argv", [
+    ["MyMod", "--test-bridge", "not-a-token"],
+    ["MyMod", "--test-bridge", TOKEN.upper()],
+    ["MyMod", "AZ_TestBridge"],
+    ["MyMod", "--server-only", "@az_testbridge"],
+])
+def test_bad_tokens_and_the_bridge_named_as_a_mod_are_refused(monkeypatch, tmp_path, argv):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, argv + ["--dry-run"])
+    with pytest.raises(SystemExit) as e:
+        launch.main()
+    assert e.value.code == 2
+
+
+def test_test_bridge_alone_launches_vanilla_with_only_the_bridge(monkeypatch, tmp_path, capsys):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["--test-bridge", TOKEN, "--dry-run"])
+    assert launch.main() == 0
+    out = capsys.readouterr().out
+    assert f"-mod={launch.MODS_ROOT / '@AZ_TestBridge'} " in out
+
+
+def test_no_mod_without_the_bridge_is_refused(monkeypatch, tmp_path):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["--dry-run"])
+    with pytest.raises(SystemExit) as e:
+        launch.main()
+    assert e.value.code == 2
