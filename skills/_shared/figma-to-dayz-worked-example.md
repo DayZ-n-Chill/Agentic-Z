@@ -23,7 +23,7 @@ Frame "StatusCard"  auto-layout vertical
 
 ```json
 {
-  "name": "status_card",
+  "name": "StatusCard",
   "type": "panel",
   "layout": "vertical",
   "spacing": 4,
