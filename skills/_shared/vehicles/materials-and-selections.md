@@ -1,81 +1,39 @@
-# Materials and selections: two misleading diagnostics
+# Materials and selections on a proxied car
 
-Two diagnoses that look solid and are not (one material on two identical textures, and a part that follows on the server but not on screen), and the rule that a selection the car's config drives must live in the parent model, never only in a proxy.
+Which two texture and movement diagnoses look solid but prove nothing, and why a selection the car's config drives must live in the parent model, never only in a proxy. The light selections of a car and their order are in `lights.md`.
 
-> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number. The light selections of a car and their order are in `lights.md`.
+## Two diagnoses that prove nothing on their own
 
-## Vanilla anchors checked on `P:\`
+### One `.rvmat` bound to two base textures
 
-- `SELECTION_ID_DASHBOARD_LIGHT` is 8: `P:\scripts\4_world\entities\vehicles\carscript.c:182`.
-- `dashboardMatOn` is registered on the `DashboardOn` selection: `P:\scripts\4_world\entities\vehicles\carscript.c:230`.
-- `UpdateLightsServer` rewrites the light selections: `P:\scripts\4_world\entities\vehicles\carscript.c:1974`.
-- `SetObjectMaterial` is declared at `P:\scripts\3_game\entities\entityai.c:2884`.
+A material that resolves to two differently named `_co.paa` files looks like the cause of a texture defect. Hash the textures before acting on it: if the files are identical, reassigning the faces changes no pixel, and the defect lies elsewhere (the virtual file system at runtime, a material stage, or the UV layout against the atlas). A texture binding check is right to flag the split, but a fail there is not a diagnosis. Measured on a test helicopter whose two names held the same image.
 
-## How these lessons are ordered
+### A part that moves with the vehicle on the server
 
-The reference tables of `README.md` say when to read this file.
-Nothing in this file is repealed: these are active lessons, ordered by topic
-instead of date.
+A server measurement that shows the hull and its proxy moving together (a ratio of 1.000 over a climb, a constant separation) does not prove the client draws them that way. When a part "does not follow", measure both the server transform and what the client renders before designing a fix. A perfect server ratio with a visible mismatch points at rendering, replication or perception, and rules out the physics and the model's cohesion, which are the expensive branches to chase. Measured in game on a test helicopter.
 
----
+## Selections the car drives belong in the shell
 
-## Two diagnoses that look solid and are not: identical textures, and server co-move (added 2026-07-26)
+Any named selection the car's config drives must live in the parent model: `hiddenSelections` swapped with `SetObjectTexture` or `SetObjectMaterial` (`P:\scripts\3_game\entities\entityai.c:2884`), `model.cfg` animations declared on the parent, and `sections[]` entries. A selection that exists only inside a proxy model is not reached.
 
-Both cost real cycles on TestHeli OH-1. Both are one cheap measurement away.
+Measured in game on a test car with its interior as a proxy:
 
-**A. "One .rvmat bound to two base textures" is NOT automatically the cause of a texture defect.**
-On OH-1, `oh1_fuselage.rvmat` resolved to `rd_oh1_fuselage_co.paa` (10403 faces) and
-`rd_oh1_hs_fuselage_basecolor_co.paa` (6420 faces), UVs perfectly inside [0,1]. It reads like a
-smoking gun. **Hashing the files killed it**: all four .paa were byte-identical
-(`16B0FD978AAD7552...`, 6822200 bytes) - the same image under two names, so reassigning the faces
-would not change a single pixel. Rule: before concluding a texture-binding split explains anything
-visible, **hash the referenced textures**. If they are identical, the split is hygiene, not a cause,
-and the real defect is elsewhere (runtime/VFS, material stage, UV layout vs atlas content).
-A texture-binding gate is right to flag the split,
-but a FAIL there is not a diagnosis.
+- Dashboard needle animations declared over the interior proxy stayed still.
+- The selections that worked, the dashboard light at index 8 and a navigation screen at index 9, had their faces in the shell.
+- A static proxy animates none of its pieces. Moving the needles off the proxy left the steering wheel animation on it, and the wheel had never turned either.
 
-**B. Server-authoritative co-movement does NOT prove the client renders it that way.**
-The user reported the hull staying behind while rotors and interior climbed. The instrumented
-measurement over a 28 m ascent said the opposite: `ratio shell/root = 1.000`, `proxy/root = 1.000`,
-separation constant at 0.626 m - hull and proxy co-move exactly. Both statements were true: the
-authoritative transform is coherent and the client still renders the part detached. Rule: when a
-part "does not follow", measure BOTH sides before designing a fix. A perfect server-side ratio with
-a visible mismatch points at render/replication/perception, and it rules out the physics and
-cohesion branches - which is worth a lot, because those are the expensive ones to chase.
+When one dead animation shows a static proxy, list every `Animations` class bound to that proxy and move them all to the shell in the same change, with their bones added to the shell skeleton.
 
-## Parent-driven selections (hiddenSelections / config anims) do NOT reach a PROXY - host them in the SHELL (added 2026-08-07, TestCoupe + TestVehicleUI)
+## Moving selections out of a proxy
 
-Any named selection the CAR's config must drive - hiddenSelections swaps
-(SetObjectTexture/SetObjectMaterial), model.cfg Animations declared on the parent,
-sections[] entries - must live in the PARENT model, never only inside a proxy sub-p3d.
-Evidence, both measured on TestCoupe: (a) dashboard needle anims declared over the interior
-proxy = needles STATIC in-game; (b) the selections that DO work
-(light_dashboard idx 8; screen_nav idx 9 for the nav screen) are faces hosted in the shell
-- light_dashboard ships duplicated shell+proxy with identical coords and works FROM the
-shell copy. TestMercedes carries the same latent defect (interior selections in proxy).
+1. Every `hiddenSelections` entry needs its faces in the shell, in LOD 0 and in the View Pilot LOD (resolution 1100, which mirrors LOD 0).
+2. Move the faces out of the proxy rather than copying them when the selection can wear a different material from the base. A swap on the shell copy z-fights the proxy copy. A duplicate is safe only while both copies always share one material.
+3. Copy vertex order and stored normals exactly when moving. Faces that render correctly from the proxy then render correctly from the shell.
+4. Check the move as you make it: the component picked by aspect and centre, the face count change per LOD, the size of each selection, and proxies and bones left untouched.
+5. Scan the body against the proxy for faces that coincide and keep one copy of each. On a test car, a scan at 0.05 mm tolerance found 384 dashboard faces in the body lying exactly on proxy faces with a different material, and 42 proxy panel faces 0.5 mm behind the dashboard light; the dashboard flickered at rest.
 
-A static proxy animates NONE of its pieces, and one dead anim hides the rest (added 2026-10-01, TestCoupe). A first fix moved the needles off the interior proxy and left `DrivingWheel` on it - the steering wheel had never turned, and finding it cost another full cycle. When a dead animation exposes a static proxy, enumerate EVERY `Animations` class bound to that proxy and move them ALL to the shell in the SAME change, with their bones appended to the shell skeleton.
+## One writer for the dashboard light
 
-Rules for a proxy-split car (day-1 for car #2, surgery for cars in flight):
-1. Every hiddenSelections entry needs its faces in the SHELL, in LOD0 AND the ViewPilot
-   1100 (1100 mirrors LOD0 content).
-2. MOVE the faces out of the proxy instead of duplicating when the selection can carry a
-   DIFFERENT material than the base (a swap on the shell copy z-fights the proxy copy).
-   A duplicate is only tolerable while both copies always share the same material - the
-   light_dashboard duplicate is a latent z-fight for the dashboard-light swap.
-3. Copy vertex order and stored normals VERBATIM when moving: faces that
-   render correctly from the proxy keep rendering correctly from the shell (empirical
-   control: the instrument cluster).
-4. Do the surgery with asserts: component pick by aspect+centre, per-LOD face deltas,
-   selection cardinality, proxies/bones untouched.
-5. Scan body-vs-proxy for COINCIDENT faces and keep ONE copy (added 2026-10-01, TestCoupe): a vertex-match scan (0.05 mm tolerance, negative control) found 384 `light_dashboard_static`
-   body faces sitting exactly on proxy faces wearing a DIFFERENT material, plus 42 proxy panel faces
-   0.5 mm behind `light_dashboard` - the user saw intermittent flicker at rest. Coincident duplicates
-   that can ever wear different materials z-fight; leave one owner per face.
-6. The dashboard light index has ONE writer. Vanilla
-   registers `SELECTION_ID_DASHBOARD_LIGHT` (index 8) with `dashboardMatOn`/`dashboardMatOff`
-   (`carscript.c:230-231`) and `UpdateLightsServer` rewrites it on every resync - `DashboardOff`
-   whenever `!LightIsOn()` (`carscript.c:1974-2025`, called on braking, gear change and each sync;
-   DayZ 1.30.164014 Exp). Any script that must re-assert the dashboard material after a resync calls
-   that same owner; a timer writing a fixed `dashboardMatOn` fights the resync path and the index
-   flickers between the two materials (measured in game).
+Vanilla registers index 8, `SELECTION_ID_DASHBOARD_LIGHT` (`P:\scripts\4_world\entities\vehicles\carscript.c:182`), for both `DashboardOn` with `dashboardMatOn` and `DashboardOff` with `dashboardMatOff` (`carscript.c:230` and `:231`). `UpdateLightsServer` (`carscript.c:1974`) sets `DashboardOn` or `DashboardOff` each time it runs, which includes braking, gear changes and each sync.
+
+A script that must set the dashboard material again after a sync goes through that same method. A timer that writes a fixed `dashboardMatOn` fights it, and the index flickers between the two materials (measured in game).

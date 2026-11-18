@@ -18,7 +18,7 @@ repository root. On a fresh clone they fail with `No module named`, which
 reads like a broken tool and is a missing install. `dayz-script-validator`,
 `dayz-vehicle-proxy-contract` and `dayz-layout-viewer` also ship a script path
 and run from the tree without installing; each tool's section gives the
-command. `dayz-ui-lab`, `skill-runtime-pin`, `dayz-pbo-diff`,
+command. `dayz-ui-lab`, `dayz-pbo-diff`,
 `dayz-navmesh-compare` and `dayz-terrain-builder-runner` have no package: they
 are scripts only, run from the tree.
 
@@ -39,7 +39,6 @@ one.
 | [`dayz-3d-viewer`](#scriptstoolsdayz-3d-viewer) | Convert MLOD `.p3d`, PAA and RVMAT to glTF + HTML | **Yes** — `.glb`, PNG, HTML |
 | [`dayz-script-validator`](#scriptstoolsdayz-script-validator) | Lint Enforce, `config.cpp`, `.layout` and `.rvmat` before packing | Reports only |
 | [`dayz-vehicle-proxy-contract`](#scriptstoolsdayz-vehicle-proxy-contract) | Audit vehicle proxy graph, fit, engine properties and PBO closure | Reports only; `repair` stages copies outside the addon |
-| [`skill-runtime-pin`](#scriptstoolsskill-runtime-pin) | Capture one commit of a skills repository and expose one derived runtime adapter | **Yes** — new task-local root only |
 | [`dayz-pbo-diff`](#scriptstoolsdayz-pbo-diff) | Compare the entries of two PBOs by SHA-256, and their header properties | Reports only — one new JSON |
 | [`dayz-navmesh-compare`](#scriptstoolsdayz-navmesh-compare) | Compare two `.nm` navmeshes tile by tile, by structure, against terrain edits and routes | Reports only — one new JSON |
 | [`dayz-terrain-builder-runner`](#scriptstoolsdayz-terrain-builder-runner) | EXPERIMENTAL, Windows only: drive a Terrain Builder it launched by Win32 messages | **Yes** — its state file and `menu.json`; Terrain Builder rewrites its own settings on exit |
@@ -53,7 +52,7 @@ question you are asking, not by which file you already have open. Only the
 format parser, `dayz-ui-lab`, is in this repo; the geometry parser,
 `layout_ast.py`, is not.
 
-Measured on 2026-08-19 over a working tree of 819 `.layout` files:
+Measured over a working tree of 819 `.layout` files:
 
 | | `layout_ast.py` (not in this repo) | `dayz-ui-lab` (in this repo) |
 |---|---|---|
@@ -120,10 +119,7 @@ this one:
 python -c "import py3d; assert py3d.IS_DAYZ_FORK; print(py3d.__version__)"
 ```
 
-Current version **1.10.1**. The pinned wheel is built from that source:
-`py3d_dayz-1.10.1-py3-none-any.whl`, SHA-256
-`c9f000a51e6aca83104a8f021ef5e3eefe8d7f0a5b053623544b49dbdd5d1785`
-(`scripts/tools/py3d/rollout/wheel-manifest.json`; the wheel itself is not in this repo).
+Current version **1.10.1**.
 Known limitations are listed in `scripts/tools/py3d/KNOWN-ISSUES.md` — read it before
 assuming a bug is yours.
 
@@ -311,7 +307,7 @@ repo, and reports a tracked `.layout` outside the tool's own fixture folders.
 The corpora are not in this repo: point the untracked local roots file that
 `corpus.py` names (`LOCAL_ROOTS_FILE`) at your own copies. A corpus with no configured
 root is reported `CORPUS-ROOT-MISSING` and fails the run, so "not measured"
-cannot look like "passes". Measured on 2026-07-28 with all five configured:
+cannot look like "passes". Measured with all five configured:
 **376/376 layouts, zero diagnostics**.
 
 `widget_ids.py` gives the IDs by which a DayZ 1.30 layout variant addresses
@@ -324,8 +320,8 @@ is the one that counts. `scan` counts the stored and the matching IDs of every
 layout share, such as the two `top` siblings of
 `xbox/day_z_ingamemenu_xbox.layout`. Stdlib only; it reads through `parse.py`.
 Exit 2 on a file it cannot read or parse; `scan` exits 1 when a file fails to
-parse, and `collide` when an ID is shared. On the 1.30.164200 and 1.30.164289
-vanilla layouts `scan` counts 1,438 stored IDs, 1,395 of them derived.
+parse, and `collide` when an ID is shared. On the DayZ 1.30 vanilla layouts (both stable
+patches) `scan` counts 1,438 stored IDs, 1,395 of them derived.
 
 **The offline render is not the engine.** It is a semantic model good enough to
 catch structural mistakes before a build; DayZDiag remains the golden reference
@@ -337,11 +333,9 @@ Emits one self-contained `*.preview.html` for a `.layout`, with the same tree
 drawn at **four viewports** (1080p, 1440p, ultrawide 21:9, 720p) plus the
 parser's diagnostics. In it exact widgets keep their declared pixels at every
 viewport while proportional ones scale. The engine draws exact units as 1/1080
-of the screen height (`skills/_shared/ui/checklist-and-troubleshooting.md` rule 3, measured in game), so off
+of the screen height (`skills/_shared/ui/checklist-and-troubleshooting.md`, "Declare all four unit flags", measured in game), so off
 1080p that difference is the viewer's model, not the game's: trust its other
-viewports only for widgets with no exact ancestor. *(Corrected 2026-10-03: this called
-the difference the "looked right in the mockup, wrong in game" failure made
-visible without a build.)*
+viewports only for widgets with no exact ancestor.
 
 ```bash
 python scripts/tools/dayz-layout-viewer/build_viewer.py <layout> [-o out.html]
@@ -381,28 +375,6 @@ bundled, so a render needs a network. Known converter gaps (SWIZ, proxy
 triangles, ViewPilot at resolution 1100) are listed in
 `scripts/tools/dayz-3d-viewer/KNOWN-ISSUES.md` and are not repaired here.
 
-## `scripts/tools/skill-runtime-pin`
-
-Capture **every blob** of one clean commit of a skills repository into a new
-task-local root and add one derived discovery adapter. It is not a host launcher and it does not
-prove the rest of a global catalog is off.
-
-```powershell
-python scripts/tools/skill-runtime-pin/runtime_pin.py materialize --source <skills-repo> --commit <sha> --task-root <new-task-root> --skill <skill-name>
-python scripts/tools/skill-runtime-pin/runtime_pin.py verify --task-root <task-root>
-python scripts/tools/skill-runtime-pin/runtime_pin.py assemble --task-root <task-root> --consumer cursor
-python scripts/tools/skill-runtime-pin/runtime_pin.py inspect-prompt --task-root <task-root> --prompt-input <dump.txt>
-python scripts/tools/skill-runtime-pin/runtime_pin.py grade --task-root <task-root> --transcript <transcript.json>
-```
-
-The capture stays byte-identical to the git objects. The adapter is
-**DERIVED** (`<skill>-<short-commit>`), points at the captured original
-`SKILL.md`, and holds a canary whose nonce is never placed in the assembled
-prompt. Codex `--ignore-user-config` is not HOME isolation; Cursor has no
-exclusive catalog. Consumer argv is `[DESIGN]` until someone runs the real
-Cursor/Codex probes. A nonce without a read or injection of the original is a
-failed grade, not a pin.
-
 ## `scripts/tools/dayz-pbo-diff`
 
 Compare the entries of two uncompressed PBOs by the SHA-256 of each entry's
@@ -420,7 +392,7 @@ duplicate or non-ASCII name and a truncated archive are refused (exit 1), never
 skipped. `differing` lists every entry whose bytes differ or that is on one
 side only; `--ignore-prefix` filters a view (`differing_not_ignored`), not the
 comparison. `--out` must not exist. Between two AddonBuilder runs a different
-`.p3d` entry proves nothing by itself (`skills/dayz-build-pbo/references/post-build-gates.md`).
+`.p3d` entry proves nothing by itself (`skills/dayz-build-pbo/references/comparing-builds.md`).
 
 ## `scripts/tools/dayz-navmesh-compare`
 
@@ -457,7 +429,7 @@ python scripts/tools/dayz-terrain-builder-runner/tbrunner.py menu
 python scripts/tools/dayz-terrain-builder-runner/tbrunner.py command <menu id>
 ```
 
-Verified on 2026-10-03 for menu commands and the standard file dialogs;
+Verified for menu commands and the standard file dialogs;
 **not** for Generate Layers, a real import or a WRP export. Use a disposable
 instance (`probe` posts every enabled entry under a prefix), back up
 `TerrainBuilder.opt`, `GUILayout.opt` and `Proj.vdat` (rewritten on exit), and
@@ -553,9 +525,8 @@ contract does not say what was verified.
 
 ## Running the tool tests
 
-Each tool keeps its suite in its own `tests/` folder (`skill-runtime-pin` keeps
-its tests beside `runtime_pin.py`, and `test_sync_generated.py` sits beside
-`sync_generated.py`). `python -m pytest -q scripts/tools` from the repository root runs
+Each tool keeps its suite in its own `tests/` folder (`test_sync_generated.py`
+sits beside `sync_generated.py`). `python -m pytest -q scripts/tools` from the repository root runs
 them all in one process, and CI runs them as part of the repo's test command
 (`.github/workflows/tests.yml`). That works only while every test module has a
 unique file name: two test files with the same basename in different folders

@@ -96,7 +96,7 @@ Use `Print` or `ErrorEx` for messages you must see in a normal test session; `De
 
 Reported, not checked on `P:\` (the log writer is native): the script log cuts every `Print` line at 255 characters (172 of 193 diagnostic lines were cut at exactly 255 in one measured session). Write a long diagnostic as several short lines that share a tag, and print a stack line by line. Later measurements narrow it: the cut came from the 1.29 retail logger, and neither DayZDiag 1.30 nor the 1.30 retail server cut long lines. Short lines stay the safe habit for a mod that may run on an older server.
 
-On the retail server the RPT repeats the script log's `SCRIPT` lines (server RPTs of 1.29 and 1.30.164200), so a script error shows in both.
+On the retail server the RPT repeats the script log's `SCRIPT` lines (server RPTs of 1.29 and 1.30), so a script error shows in both.
 
 ## Connect error codes
 

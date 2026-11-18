@@ -1,164 +1,80 @@
-# `binarize` as the load oracle: vertex budget, measured
+# Binarize as the load check
 
-The three verdicts of `binarize.exe` on a model, the real vertex ceiling in resolved triples, how thin the headroom of a deployed model can be, and which log lines do not discriminate.
+How to use `binarize.exe` to tell, offline, whether the engine will load a model: its three verdicts, the real vertex ceiling in resolved triples, how thin a deployed model's headroom can be, and which log lines mean nothing.
 
-> Status: field notes. The results below were measured on mod models (an HH-60G helicopter, cross-checked against 25 in-game verdicts, an OH-1 helicopter, a vehicle called H2R and two buildings) and are mod behaviour, not vanilla; they were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo. "Invariant N", "preflight #N" and "#N" mean the numbered invariants; `README.md` lists which file holds each number. The short rule this file develops is invariant 24 in `invariants-lods-and-vertex-budget.md`.
+The results here were measured on mod models: a helicopter checked against 25 in-game verdicts, a second helicopter, a test vehicle and two buildings. They are mod behaviour, not vanilla. The short rule is in `invariants-lods-and-vertex-budget.md`; this file holds the evidence behind it. Read it when a model passes every offline check and still will not spawn, or before you add geometry to a model near its limit.
 
-## Vanilla anchors checked on `P:\`
+## What vanilla shows
 
-- `binarize.exe` ships with DayZ Tools and reads its source from the work drive; `/dayz-preflight` checks that DayZ Tools is installed and `P:\` is mounted before any step here that runs it.
-- Vanilla models are that tool's output: `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` opens with the `ODOL` signature, version 56 (header read 2026-11-17). A verdict in this file can therefore only be reproduced on a mod's own MLOD source, not on a vanilla model.
+- `binarize.exe` ships with DayZ Tools and reads its source from the work drive; run `/dayz-preflight` before any step here that calls it.
+- Vanilla models are that tool's output: `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` starts with the `ODOL` signature, version 56. So a verdict here can only be reproduced on a mod's own MLOD source, never on a vanilla model.
 
-## The evidence behind invariant 24
+## Too many vertices looks like missing geometry
 
-Development of **invariant 24** in `invariants-lods-and-vertex-budget.md` (`binarize` is the three-state offline load
-oracle; `RESOLVED_LIMIT = 65535` is a false friend). The invariant is stated there; this is
-the evidence behind it. Read it when a model passes every offline gate and still refuses to
-spawn, or when you need to know your headroom before adding geometry.
+`Too many vertices` and `Won't simulate, it has no geometry` are the same fault. The engine rejects the model while loading the MLOD, before conversion, so it drops the whole model and prints the generic physics message even when the Geometry LOD is fine. If a model that passes every offline check does not spawn, run binarize on it before you touch the Geometry LOD.
 
-Everything below is measured on the HH-60G, cross-checked against 25 in-game verdicts, except the
-two building cases under item 3, which are binarize runs with no in-game verdict, and the H2R
-runs under item 2, another vehicle with `PASS` verdicts only.
+## Run it on a batch
 
-**1. `Too many vertices` and `Won't simulate, it has no geometry` are the SAME defect.**
-The rejection happens while **loading the MLOD**, before conversion, so the engine aborts the
-whole model and emits the generic physics message even though the Geometry LOD is perfect.
-Chasing it as a collision problem costs days. If a model that passes every offline gate does
-not spawn, run binarize on it **before** touching the Geometry LOD.
+`binarize.exe -always <source under P:\> <out>` checks many models in one pass, in about 90 s. Give it a `model.cfg` that declares every base name in the source folder; an undeclared name falls back to `Default` and takes a different code path. On the reference helicopter, 28 variants gave 13 pass and pass, 12 fail and fail against their in-game verdicts, with no false green and no false red. A model bisection drops from about 6 minutes per variant to about 90 s per batch.
 
-**2. binarize adjudicates N models per pass, offline, in ~90 s.**
-`binarize.exe -always <src under P:\> <out>`, with a `model.cfg` that declares **every**
-basename in the source dir (undeclared basenames fall back to Default and change the code
-path). Validated on 28 variants against the in-game verdicts of the previous cycle:
-**13 PASS/PASS, 12 FAIL/FAIL, zero false greens, zero false reds.** This turns a model
-bisection from ~6 min per variant into ~90 s per batch.
+Also pass `-addon=<bench>`, where `<bench>` is a folder holding the source folder; binarize parses every `config.cpp` under `-addon` (`skills/dayz-build-pbo/references/addonbuilder-rules.md`). The 28 variant check ran without it. On the test vehicle, with its source outside `P:\` and no `-addon`, a run waited about 5 minutes before loading its first model, and a later run gave no ODOL in 30 minutes; with `-addon` the first model loaded within a second, all 8 still passed, and kits built from them spawned in game. No capacity failure has been run with `-addon`, and the stall was seen only with a source outside `P:\`.
 
-Recommended, not part of that validation: give the call `-addon=<bench>` as well, `<bench>` being
-a dedicated folder that holds the source dir (binarize parses every `config.cpp` under `-addon`:
-`skills/dayz-build-pbo/references/addonbuilder-rules.md`). The validation above ran without it.
-On the H2R (2026-10), a call with its source outside `P:\` and no `-addon` waited about 5 min
-before loading its first model, and three days later, other processes busy, gave no ODOL in
-30 min; with `-addon` the first model loaded within a second, all 8 read `PASS` as they had
-without it, and the kits built from them spawned in game. No `CAPACITY_FAIL` has been run with
-`-addon`, and the stall was seen only with the source outside `P:\` (a source under `P:\` was not
-timed). The `Material not loaded` lines listed under "Noise that does NOT discriminate" are
-noise for the verdict, not for the ODOL: every material entry of the H2R bench's 8 ODOLs came
-out empty, with `-addon` and without, so run the empty-material control of
-`skills/dayz-build-pbo/references/addonbuilder-rules.md` before shipping a bench ODOL.
+The `Material not loaded` lines (see "Log lines that mean nothing") do not affect the verdict, but they do affect the ODOL: every material entry in the test vehicle's 8 ODOLs came out empty, with `-addon` and without. Run the empty material check in `skills/dayz-build-pbo/references/addonbuilder-rules.md` before you ship an ODOL from the bench.
 
-**3. The verdict has THREE states. Using two is a bug in your bench.**
-- `PASS` - a **new**, non-empty ODOL for the basename under test, in an output dir that did
-  not already contain it. Skip the "new" requirement and a residual ODOL gives you a false green.
-- `CAPACITY_FAIL` - no new ODOL **and** a `Too many vertices` line attributed to that MLOD.
-  The line names the MLOD, not the LOD: on a building it came from collision LODs that had grown,
-  with the visual LOD as it passed (`skills/_shared/models/lods-authoring.md`,
-  "Binarize: `Too many vertices` from the collision LODs"). Before blaming the change just made,
-  compare every LOD with the last build that passed.
-- `OTHER_FAIL` - any other absence: bad `model.cfg`, undeclared basename, malformed MLOD, I/O,
-  aborted tool. **It blocks and does NOT authorize touching geometry.** Without this state you
-  decimate a mesh because your bench was misconfigured.
-  One cause prints nothing of its own (measured 2026-10-03, on a building, not a
-  vehicle): with too many pieces in its collision LODs, `binarize.exe` wrote no ODOL and no
-  capacity line, and the bench read `OTHER_FAIL` while the bench was fine. Rule it in only once
-  the MLOD walks to `#EndOfFile#` in every LOD (a truncated MLOD gave the same verdict) and the
-  same model passes without its collision LODs: those two checks place the failure in the
-  collision LODs, they do not measure the limit. The fix then moves pieces to another model with
-  the same transform and leaves every piece as it is (none is merged or decimated), and each
-  resulting model still has to PASS. Boundary and figures:
-  `skills/_shared/models/lods-authoring.md`, "Collision of a large building with an interior".
+## Three verdicts, not two
 
-**The verdict is reproducible; the ODOL bytes are NOT.** The same `.p3d` produced 1,725,025 and
-1,726,689 bytes with different hashes in two clean consecutive runs. Never gate on the ODOL SHA.
+| Verdict | Means |
+|---|---|
+| `PASS` | A new, non-empty ODOL for the base name under test, in an output folder that did not already hold it. Without the "new" condition, a leftover ODOL gives a false pass. |
+| `CAPACITY_FAIL` | No new ODOL, and a `Too many vertices` line naming that MLOD. |
+| `OTHER_FAIL` | Any other missing output: a bad `model.cfg`, an undeclared base name, a malformed MLOD, a file error, an aborted tool. It blocks the build and never justifies touching geometry. |
 
-**Noise that does NOT discriminate** (it appears for the known-good control too):
-`Material not loaded`, `No entry '.CfgVehicles'`, `Trying to access error value`,
-`Error occured: Loading LODShape`, `UV mapping too varied`, `vertices of bone X are shared with
-bone Y`, `Too detailed shadow lod`. The word `Error` in the log classifies nothing - attribute
-the outcome to a model and a cause, or record `OTHER_FAIL`.
+Without the third state you decimate a mesh because the bench was set up wrong.
 
-**4. The ceiling in triple units is not 65535, and it is not portable.**
-Measured by walking four structurally different bases of the same asset to the cliff:
-**46,133 loads, 46,134 does not** - the same integer for all four. The engine's hard cap does
-appear to be 65,535 but on **post-split** vertices, and a `(point, normal, uv)` counter
-under-counts those by a model-dependent factor: **1.4205** here, **1.46** on the OH-1 (see #24).
-An assembler with `RESOLVED_LIMIT = 65535` hardcoded closed its own gate in green, for weeks, on
-a model the engine refuses. **Re-measure per model; the hard gate is binarize's verdict.**
+The capacity line names the MLOD, not the LOD. On a building it came from collision LODs that had grown while the visual LOD was as before (`_shared/models/lods-authoring.md`). Before you blame the latest change, compare every LOD with the last build that passed.
 
-**5. Know your headroom, because it can be one edit wide.**
-The deployed HH-60G sat at 46,019 of 46,133 - **114 triples of margin**, 99.8 %. Any change that
-adds more than 114 resolved vertices kills it: a normal tweak, a UV seam, a texture that forces
-another split. Measure resolved before and after **every** visual edit.
+One cause prints nothing of its own (measured on a building, not a vehicle): with too many pieces in its collision LODs, `binarize.exe` wrote no ODOL and no capacity line, and the bench read `OTHER_FAIL` although it was set up correctly. Rule it in only when the MLOD reads through to `#EndOfFile#` in every LOD (a truncated MLOD gives the same verdict) and the same model passes without its collision LODs. Those two checks place the fault in the collision LODs; they do not measure the limit. The fix moves pieces into another model with the same transform and leaves every piece as it is, none merged or decimated, and each resulting model must still pass. The limits and figures are in `_shared/models/building-collision-limits.md`.
 
-**6. When you mint a normal, you are spending budget; when you reverse a corner order, you are not.**
-The defect that cost the HH-60G a week: a winding-flip block negated the stored normal **per
-corner** for the 151 faces (0.43 %) whose source normal disagreed with the source winding. Those
-453 corners minted 630 pool entries and +886 resolved. Re-reversing the corner order of those
-151 faces reaches **identical** coherence at zero cost. A face's corner order is free; a new
-normal is not.
+The verdict repeats; the ODOL bytes do not. The same `.p3d` gave 1,725,025 and 1,726,689 bytes with different hashes in two clean runs, so never check an ODOL by its hash.
 
-And the identity to have in your head before "fixing" a winding by inverting things:
-`dot(-cross, -n) == dot(cross, n)`. Reversing the corners **and** negating the normal is a
-no-op for their relationship - it re-parametrizes, it does not flip. A policy that does both
-changes nothing.
+## Log lines that mean nothing
 
-**7. A perturbation below the consumer's quantum is a null mutation.**
-When walking a limit to find where it breaks, the step must survive the consumer's quantization.
-Nudging a normal by 1e-4 on one component (~0.006 deg) does not survive DayZ's normal
-compression: the estimator counted +120 new triples, the engine saw none, 42 samples "passed",
-and the ceiling would have been reported 7 units too high. Use a step that is unambiguously
-above the quantum (>= 3 deg for normals) and include a sample past the known-failing value as
-a self-check.
+These appear for a known good model too: `Material not loaded`, `No entry '.CfgVehicles'`, `Trying to access error value`, `Error occured: Loading LODShape`, `UV mapping too varied`, `vertices of bone X are shared with bone Y`, `Too detailed shadow lod`. The word `Error` in the log decides nothing. Tie the outcome to a model and a cause, or record `OTHER_FAIL`.
 
-Tooling: a resolved-triple counter (py3d, one count per LOD) is informative only; only a
-`binarize` run gives the authoritative three-state verdict. No such bench script ships in this
-repo: write it from the three states above.
+## The ceiling is not 65535
 
-## Qualify a capacity warning on the deployed artifact first
+Walking four differently built versions of the same model to the limit gave the same number each time: 46,133 resolved triples load and 46,134 do not. The engine's hard cap does appear to be 65,535, but on vertices after splitting, and a `(point, normal, uv)` counter undercounts those by a factor that depends on the model: 1.4205 on that helicopter and 1.46 on the second one. An assembler with `RESOLVED_LIMIT = 65535` hard coded passed its own check, for weeks, on a model the engine refused. Measure each model; the binarize verdict is the real check.
 
-Before changing geometry for a numerical warning, run the same counter on the
-known-good model extracted from the deployed PBO. If that artifact already exceeds
-the proposed threshold, the threshold does not govern that load route. Confirm the
-blob rather than the editable tree, and read its magic: `MLOD` proves the engine's
-packonly route, while `ODOL` proves a binarized route. Neither result automatically
-proves the other.
+## Know the headroom
 
-A discrete tolerance sweep proves only the sampled grid. Powers-of-ten can jump over
-the usable interval; refine around the transition and, for unit normals, test an
-angular merge rather than only component-wise rounding. The refined instrument must
-first reproduce every previously published sample before any new intermediate point
-is accepted.
+The deployed reference helicopter sat at 46,019 of 46,133: 114 triples of margin, 99.8 percent full. Any change that adds more than 114 resolved vertices breaks it: a normal tweak, a UV seam, a texture that forces another split. Count resolved vertices before and after every visual edit.
 
-## Read the verdict artifact, not the wrapper exit code
+## A new normal costs budget; a corner order does not
 
-A bench script's `binarize` run and a Python import failure can both exit `1`. Have the
-bench write a per-model verdict report (for example `_verdicts.json`) and read the state
-from a newly written one; a missing report or missing
-row is `OTHER_FAIL`, never PASS or `CAPACITY_FAIL`. The child process needs the
-required module on `PYTHONPATH`, because an in-process `sys.path` edit is not
-inherited. Allow for the measured startup cost (about 68 s even for a four-point
-control); for a batch, set an explicit larger timeout and include a tiny known-good
-model in that same invocation. If the control does not PASS, no product red is
-attributable to capacity.
+A winding fix that negated the stored normal per corner, on the 151 faces (0.43 percent) whose source normal disagreed with their winding, added 630 pool entries and 886 resolved vertices from 453 corners. Reversing the corner order of the same 151 faces gives the same result at no cost. A face's corner order is free; a new normal is not.
 
-Keep three units separate: a DCC estimator may split one source point by rounded
-corner normal/UV; py3d `resolved` counts `(point_index, normal value, uv)` on the
-assembled MLOD; the engine enforces post-split vertices. Budget in assembled py3d
-units and adjudicate with the three-state binarize result. Count after host proxies
-are present; each proxy contributes three points, one face normal, one face and
-three resolved entries.
+Before you "fix" a winding by inverting things, keep this in mind: `dot(-cross, -n) == dot(cross, n)`. Reversing the corners and negating the normal together changes nothing between them.
 
-## Source geometry census is a planning bound, not engine authorization
+## Step past the engine's rounding
 
-Before sacrificing artist normals, decimating, or repartitioning, compose the source
-node world transforms and count `POSITION` accessor vertices per final frozen owner
-container. Count every emitted instance; a mesh definition referenced by three nodes
-has three costs after emission. The glTF accessor sum is a conservative planning bound
-for that routing and is useful before the MLOD exists.
+When you walk a limit, each step must survive the engine's quantisation. Nudging one component of a normal by 1e-4 (about 0.006 degrees) does not survive DayZ's normal compression: the estimator counted 120 new triples, the engine saw none, 42 samples "passed", and the ceiling would have been reported 7 too high. Use a step clearly above the quantum (3 degrees or more for normals), and include one sample past the known failing value as a self check.
 
-The count chooses where to measure next; it does not authorize a build. Do not compare
-it with a fixed 60,000, 65,535, or approximate 32,768 ceiling. Those literals mix
-source accessor vertices, assembled resolved triples and engine post-split vertices.
-The assembled py3d count remains informative and the three-state `binarize` verdict
-remains authoritative. This rule supersedes approximate fixed-ceiling planning advice
-elsewhere in this pack (for example the fixed targets in `decimation-libraries.md` and
-`external-obj-import.md`) without weakening any measured product gate.
+A resolved triple counter (py3d, one count per LOD) is a guide; only a binarize run gives the three state verdict. No bench script for it ships in this repo: write one from the three states above.
+
+## Check a warning against the deployed model first
+
+Before you change geometry over a numeric warning, run the same counter on the known good model taken from the deployed PBO. If that model already exceeds the threshold, the threshold does not apply to that load path. Check the packed file, not the editable source, and read its signature: `MLOD` means the engine loads it unbinarized, `ODOL` means binarized. Neither result proves the other.
+
+A tolerance sweep proves only the points it sampled. Steps of ten can jump over the useful range; refine around the change, and for unit normals test an angular merge, not only rounding each component. A refined sweep must first reproduce every earlier sample before any new point counts.
+
+## Read the verdict file, not the exit code
+
+A bench's binarize run and a Python import error can both exit `1`. Have the bench write a verdict file per run, for example `_verdicts.json`, and read the state from a freshly written one; a missing file or row is `OTHER_FAIL`, never a pass or a capacity failure. The child process needs its module on `PYTHONPATH`, since a `sys.path` change inside the parent is not inherited. Allow for start up (about 68 s even for a four point test model); give a batch a longer timeout, and put a tiny known good model in the same run. If that control does not pass, no failure in the run can be blamed on capacity.
+
+Keep three counts apart: a modelling tool's estimate may split one source point by rounded corner normal and UV; py3d `resolved` counts `(point_index, normal value, uv)` on the assembled MLOD; the engine limits vertices after splitting. Budget in assembled py3d counts and decide with the binarize verdict. Count with the host's proxies in place: each proxy adds three points, one face normal, one face and three resolved entries.
+
+## A source count plans, it does not approve
+
+Before you give up the artist's normals, decimate or repartition, compose the source nodes' world transforms and count `POSITION` accessor vertices for each final owner container. Count every instance: a mesh used by three nodes costs three times. The glTF accessor total is a safe planning bound and is available before the MLOD exists.
+
+It tells you where to measure next; it does not approve a build. Do not compare it with a fixed 60,000, 65,535 or roughly 32,768: those numbers mix source vertices, assembled resolved triples and engine vertices after splitting. Use the py3d count as a guide and the binarize verdict as the decision. This replaces the fixed vertex targets in `decimation-libraries.md` and `external-obj-import.md` for planning, without weakening any measured check.

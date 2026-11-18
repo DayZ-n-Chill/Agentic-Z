@@ -3,7 +3,7 @@
 `#Selected#` is the editor's current selection: one byte per point followed
 by one per face, the layout of a named selection. Up to 1.6.0 py3d read it
 into nothing and never wrote it back, so a file written by Object Builder
-lost it on save - measured on 2026-09-02 over MLOD written by BI:
+lost it on save, measured over MLOD written by BI:
 InfectedSpecialLODs.p3d -863 B (LOD1 -45, LOD2 -409, LOD3 -409) and
 WeaponSpecialLODs.p3d -202 B (LOD1 -30, LOD2 -48, LOD3 -60, LOD4 -64), which
 was the whole remaining delta.

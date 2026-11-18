@@ -1,69 +1,56 @@
 # Cockpit screens and map tiles
 
-Showing a map on a dashboard screen: the render target bridge and its limit, satellite tiles on hidden selections, tile overlap, and sizing a sliding tile window.
+How to show a map on a dashboard screen: the render target route and why it cannot show a live map, satellite tiles on hidden selections, the overlap between tiles, and sizing a sliding tile window.
 
-> Status: field notes measured in game on a mod test car (TestCoupe, a sedan with a dashboard map screen), on 1.29 unless an entry names another build. They are mod behaviour, not vanilla, and were not repeated for this file. A citation written with its full `P:\` path was opened on the vanilla data of this repo (a 1.30 build).
+The results were measured in game on a test car with a dashboard map screen; they are mod behaviour, not vanilla.
 
-## Vanilla anchors checked on `P:\`
+## What vanilla shows
 
-- `RTTextureWidgetTypeID` is documented as a texture used as render target for children widgets (`P:\scripts\1_core\proto\enwidgets.c:28-29`).
-- `SetGUIWidget` binds an `RTTextureWidget` to a hidden selection index of an entity, referenced in the shader as `$rendertarget` (`P:\scripts\1_core\proto\enwidgets.c:634-637`).
-- No vanilla script calls `SetGUIWidget`: its declaration is the only occurrence under `P:\scripts` (Grep, 2026-11-17).
-- Both tile folders named below exist in the vanilla data: `P:\DZ\gear\navigation\data\usermap\` (1,024 `s_XXX_YYY_lco.paa` files) and `P:\DZ\worlds\chernarusplus\data\layers\` (1,849 of them), counted 2026-11-17.
+- `RTTextureWidgetTypeID` is a "Texture used as render target for children widgets" (`P:\scripts\1_core\proto\enwidgets.c:28` and `:29`).
+- `SetGUIWidget(IEntity ent, int index, RTTextureWidget w)` binds a render target widget to a hidden selection of an entity, which the shader reads as `$rendertarget` (`enwidgets.c:634` to `:637`).
+- No vanilla script calls `SetGUIWidget`; its declaration is the only place it appears under `P:\scripts`.
+- Both tile folders below exist: `P:\DZ\gear\navigation\data\usermap\` holds 1,024 `s_XXX_YYY_lco.paa` files (a 32 by 32 grid) and `P:\DZ\worlds\chernarusplus\data\layers\` holds 1,849 (43 by 43).
 
-## Cockpit screen to live engine map: the RTTextureWidget bridge (added 2026-08-19, TestCoupe)
+## The render target route: static content only
 
-**Cockpit screen → live engine map (RTTextureWidget bridge) (added 2026-08-19, TestCoupe):**
-Any hiddenSelections screen can display the ENGINE's map renderer (the one the in-game map uses) instead
-of baked tiles: create the RT via `CreateWidget(RTTextureWidgetTypeID, …)` (children render INTO its
-texture, `RTTextureWidgetTypeID` at `P:\scripts\1_core\proto\enwidgets.c:28-29` — they never paint to the viewport, so no HUD witness), hang a `MapWidget`
-under it with `CreateWidgets(layout, rt)`, then hook the entity **in this exact order**:
-`SetObjectMaterial(idx, "Mod\data\x.rvmat")` FIRST (no leading backslash), `SetObjectTexture(idx,
-"$rendertarget")` second, `proto native void SetGUIWidget(IEntity, int idx, RTTextureWidget)`
-(`P:\scripts\1_core\proto\enwidgets.c:637`) LAST. A later SetObjectMaterial rebinds the base texture slot and silently undoes
-the hook — a uniform light-grey screen means `$rendertarget` resolved to the white fallback texture.
-Vanilla script has no call site to copy (anchors above); the order was verified in-game on 1.29 diag.
-MapWidget `GetScale()` defaults to 0.85; at 0.05–0.6 it draws line-work only (contours + roads, no
-urban/forest fill) — pick the zoom with the user's eye gate. If the hooked vehicle leaves the client
-streaming bubble its `GetPosition()` reads `<0,0,0>` and the map recenters to the map corner:
-production code must re-resolve the vehicle every tick, never cache the entity reference. MCP test
-flow that actually seats and starts: `vehicle_get_in_client` (ownership get-in; `vehicle_enter`
-answers seated:1 without sticking) → `engine_set`; the tools are those of the DayZ-MCP notes in `skills/dayz-launch-test/references/mcp/`.
-**Closed 2026-08-19b — RT unusable for a live GPS:** the RT freezes the FIRST composed frame
-(later `SetScale`/`SetMapPos`/vehicle movement never recompose it), and a MapWidget child only ever
-contributes the vector layers (roads + contours) — the raster fill (land, forest, buildings) never
-reaches the RT, even with a 24 s warm-up between widget creation and the entity hook. The bridge
-recipe above remains valid for STATIC screen content only. Live vehicle GPS goes through baked
-tiles on hiddenSelections instead (next section).
+A hidden selection screen can show the engine's own map renderer, the one the in-game map uses, instead of baked tiles:
 
-## Screen tiles: terrain satmap, not the navigation usermap, re-asserted client-side (added 2026-08-19, TestCoupe)
+1. Create the render target with `CreateWidget(RTTextureWidgetTypeID, ...)`. Its children draw into its texture, never onto the screen.
+2. Hang a `MapWidget` under it with `CreateWidgets(layout, rt)`.
+3. Hook the entity in this order: `SetObjectMaterial(idx, "MyMod\data\screen.rvmat")` first (no leading backslash), then `SetObjectTexture(idx, "$rendertarget")`, then `SetGUIWidget(entity, idx, rt)` last.
 
-**Vehicle screen tiles: terrain satmap, not navigation usermap — and re-assert client-side (added 2026-08-19, TestCoupe):**
-Two tile sources share the same `s_XXX_YYY_lco.paa` naming on chernarusplus but look completely
-different, and their grids are not the same size: on this repo's `P:\` the usermap folder holds
-32×32 tiles (`s_000_000` to `s_031_031`) and the layers folder 43×43 (`s_000_000` to `s_042_042`),
-so read the grid size from the folder and do not assume 32. The notes below were written against a
-32×32 grid of 480 m tiles, which is not what `P:\` holds for the layers folder. `dz\gear\navigation\data\usermap\` is the PAPER
-map art (light background, red roads, contour lines — what the ItemMap shows), while
-`dz\worlds\chernarusplus\data\layers\` is the colored aerial satmap (the real "GPS look").
-A GPS screen wants the layers path; world name must be parameterized per terrain. Second half of
-the rule: `SetObjectTexture`/`SetObjectMaterial` called ONLY client-side is silently reverted
-to the config `hiddenSelectionsTextures[]` whenever the server pushes a visual-state resync —
-observed reproducibly on GEAR CHANGE. **Applying on the dedicated server does NOT fix it
-(refuted in-game 2026-08-19 afternoon): scripted SetObject* state does not replicate
-server→client.** The working pattern is the skin-mod one: re-assert the full scripted visual
-state client-side on EVERY `OnVariablesSynchronized` (no packed==applied early-out; gate only
-the diagnostics). Also force-hide every bank window on the first apply
-(`SetAnimationPhaseNow(name, 1.0)` loop): windows spawn with the config-default texture and
-their initial hide phase is not guaranteed applied. The force-hide only exists at runtime if
-the hide animations actually BAKED — see "Animations only bake for selections that are skeleton
-bones" in `animation-bake-and-odol-sections.md`. Satmap-in-bank
-verified in-game 2026-08-19 (TestCoupe, 1.29 diag, human driver gate).
+A later `SetObjectMaterial` rebinds the base texture and silently undoes the hook. A flat light grey screen means `$rendertarget` fell back to the white texture. Vanilla has no call to copy, so this order comes from the in-game test.
 
-## Neighbouring satmap tiles share 32 px (added 2026-09-14, TestCoupe)
+`MapWidget.GetScale()` defaults to 0.85. Between 0.05 and 0.6 it draws lines only, contours and roads with no town or forest fill; choose the zoom by eye with the user. If the vehicle leaves the client's streaming range its `GetPosition()` reads `<0,0,0>` and the map jumps to the corner, so look the vehicle up again every tick instead of keeping the reference.
 
-**Tile overlap: neighboring satmap layer tiles share 32 px — sample only the tile core (added 2026-09-14, TestCoupe).** In `dz\worlds\chernarusplus\data\layers\`, column 480 of a tile is column 0 of its east neighbor and row 480 is row 0 of its south neighbor: a per-tile screen map must sample only the core `16/512..496/512` of each tile. Without the crop the measured seam ratio was ~1.9-2.1 and roads jumped ~30 m; with it, 0.90-1.12 (measured offline on the 1.30.164014 Exp satmap tiles). Name index of `s_AAA_BBB_lco.paa`: AAA is the tile column tx, BBB encodes the row as 31 - tz on a 32-row grid (last row index minus tz; not yet checked on the 43-row layers folder of `P:\`), and UV (0,0) is the northwest corner.
+The route cannot show a live GPS. The render target keeps the first frame it draws: later `SetScale`, `SetMapPos` or vehicle movement never redraw it. A `MapWidget` child also gives only the vector layers (roads and contours); the raster fill of land, forest and buildings never reaches the render target, even 24 s after creating the widget. Use it for static screen content only, and build a live GPS from baked tiles (next section).
 
-## Sliding-plate tile window: border row and bezel size
+To seat a driver and start the engine from the test bridge, use `vehicle_get_in_client` (a get-in that takes ownership; `vehicle_enter` reports seated without it sticking) and then `engine_set`. The tools are described in `skills/dayz-launch-test/references/mcp/`.
 
-**Sliding-plate tile window: fix the border row and size the bezel with `wy + COVER + T` (added 2026-10-01, TestCoupe).** Design rule, worked out offline: on a sliding-plate tile map with the marker centred, the hidden margin under the window must reach one full tile past the lowest window corner: with a free bottom row it is 1.5 tiles deep (97.5 mm under the centre on a 7x5 grid of 32 mm tiles, window +/-88.63 x +/-52.92 mm, bezel 99 mm). Pinning the bottom row with `minValue`/`offset0` in its `_y` class (same slope), whenever its top edge stays COVER below the lowest projected window corner, cuts the requirement to 88.68 mm and the bezel to 90 mm. Under the window the requirement is always `wy + COVER + T`; with a centred marker nothing below one full tile reduces it. If a smaller bezel is wanted, the lever is tile size (zoom), not the window - say so with a preview.
+## Screen tiles: the satellite layers, reapplied on the client
+
+Both folders name their tiles `s_XXX_YYY_lco.paa` but look nothing alike, and their grids differ in size, so read the grid size from the folder rather than assuming 32:
+
+| Folder | Look | Grid on `P:\` |
+|---|---|---|
+| `dz\gear\navigation\data\usermap\` | The paper map: light background, red roads, contour lines, as the map item shows | 32 by 32, `s_000_000` to `s_031_031` |
+| `dz\worlds\chernarusplus\data\layers\` | The coloured aerial image, the real GPS look | 43 by 43, `s_000_000` to `s_042_042` |
+
+A GPS screen wants the layers folder, with the world name as a parameter for other terrains. The figures in the rest of this file were worked out on a 32 by 32 grid of 480 m tiles, not the 43 by 43 layers folder on `P:\`; check them against it.
+
+`SetObjectTexture` and `SetObjectMaterial` called only on the client are silently reset to the config `hiddenSelectionsTextures[]` whenever the server pushes a visual state resync; a gear change triggers it every time. Applying them on the dedicated server does not help, because scripted `SetObject*` state does not travel from server to client. Do what skin mods do: on the client, reapply the whole scripted visual state in every `OnVariablesSynchronized`, with no "already applied" shortcut (gate only the diagnostics). On the first apply, also force every tile window hidden with a `SetAnimationPhaseNow(name, 1.0)` loop: windows spawn with the config texture, and their starting hide phase is not guaranteed. That works only if the hide animations baked, which needs every window to be a skeleton bone (`animation-bake-and-odol-sections.md`).
+
+## Neighbouring tiles share 32 px
+
+In `dz\worlds\chernarusplus\data\layers\`, column 480 of a tile is column 0 of its east neighbour, and row 480 is row 0 of its south neighbour. A screen map built per tile must sample only the core of each tile, `16/512` to `496/512`. Without that crop the seam ratio measured about 1.9 to 2.1 and roads jumped about 30 m; with it, 0.90 to 1.12 (measured offline on DayZ 1.30 tiles).
+
+In `s_AAA_BBB_lco.paa`, `AAA` is the tile column `tx` and `BBB` is the row written as `31 - tz` on a 32 row grid, that is the last row index minus `tz`. This is not yet checked on the 43 row layers folder on `P:\`. UV `(0,0)` is the north west corner.
+
+## Sizing a sliding tile window
+
+With a sliding plate of tiles and the position marker centred, the hidden margin under the window must reach one full tile past the lowest corner of the window. Worked out offline on a 7 by 5 grid of 32 mm tiles, with the window at plus or minus 88.63 by 52.92 mm:
+
+- With a free bottom row, the margin is 1.5 tiles deep: 97.5 mm under the centre, and a 99 mm bezel.
+- Pinning the bottom row with `minValue` and `offset0` in its `_y` class (same slope), as long as its top edge stays `COVER` below the lowest projected window corner, cuts it to 88.68 mm and a 90 mm bezel.
+
+Under the window the need is always `wy + COVER + T`; with a centred marker, nothing below one full tile reduces it. For a smaller bezel the lever is tile size, that is the zoom, not the window; show the user a preview when you suggest it.

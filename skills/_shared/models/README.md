@@ -7,7 +7,7 @@ Vanilla models under `P:\DZ\` are binarized ODOL, which Object Builder and `/day
 | Question | Open |
 |---|---|
 | Which LODs does a model need, in what order, and how are the visual LODs numbered? What are the rules for Geometry, Fire Geometry and View Geometry? | `lods.md` |
-| Which memory points does vanilla script look for, and how are axes built? | `memory-points.md` |
+| Which memory points does vanilla script look for, how are they made, and how are axes built and placed? | `memory-points.md` |
 | Which named properties does vanilla set, and where does mass go? | `named-properties.md` |
 | How is a proxy named and placed? | `proxies.md` |
 | How does a proxy triangle become a position and a facing, and why does an attached model come out rotated or on the floor (clothing on a static host, crew seats, body-part and weapon attachment proxies)? | `proxy-frames.md` |
@@ -18,28 +18,42 @@ Vanilla models under `P:\DZ\` are binarized ODOL, which Object Builder and `/day
 | What does a door need in the model, and who writes the rest? | `_shared/animation/doors.md` (the door subject lives in the animation pack) |
 
 | How are model axes mapped from Blender to DayZ, and how must visual and collision LODs be wound? | `axes-and-winding.md` |
-| How do I build a model in Blender over MCP without exploded parts, scale errors, broken booleans or bare boxes (the helper library, the detail pass, the integrity gate)? | `blender-assembly.md` |
-| How do I scan a reference image zone by zone for the detail list, and where does each texture-side detail land? | `blender-detail-scan.md` |
-| How do I check a Blender model by eye: multi-angle captures, the defect checklist, the bounded fix loop, the delta check, and catching a winding flip a lit render hides? | `blender-visual-review.md` |
-| How do I take an AI-generated mesh (image or text to 3D) to a DayZ prop: generators, retopology, bake, handoff, writing the MLOD? | `ai-generation.md` |
-| How do I run a production model build as a gated pipeline (intake, dossier, plan with tests, build, roast, fix loop, ship gate)? | `generation-harness.md` |
-| The Phase 1 research dossier to fill in before any geometry is built | `generation-dossier-template.md` |
-| The scored rubric for the adversarial roast: 8 categories, evidence, defect list format | `generation-roast-rubric.md` |
-| How is a new object generated end to end (Blender headless or py3d alone, the gates, the steps, acceptance)? | `generated-model-pipeline.md` |
-| What are the 21 rules a generated model must meet? | `generated-model-rules.md` |
+| How do I build a model in Blender over MCP without exploded parts, wrong sizes, broken booleans or bare boxes (the helper library, joint and detail planning, the geometry rules, the normal bake)? | `blender-assembly.md` |
+| What do I check after each part of a Blender build, how do I finish the scene, and why does a render over MCP show the old mesh? | `blender-assembly-checks.md` |
+| How do I scan a reference image zone by zone for the detail list, and where does each texture detail land? | `blender-detail-scan.md` |
+| How do I review a Blender model by eye: the capture, the fix loop and its stop rule, checking that a fix landed? | `blender-visual-review.md` |
+| What do I look for in the renders (orientation, scale, normals, animated parts, a vanilla model, a reference photo)? | `blender-review-checklist.md` |
+| Why can't a Blender render judge DayZ winding, and which two Blender checks still catch a flip? | `blender-winding-flips.md` |
+| How do I take a generated mesh (image or text to 3D) to a DayZ prop: generators, retopology, bake, handoff, writing the MLOD? | `ai-generation.md` |
+| How do I take a production model from the brief to the packed file in checked stages (research sheet, plan with tests, build, fault review, fixes, final check)? | `model-build-stages.md` |
+| How is a new object generated end to end (Blender and py3d or py3d alone, what to ask first, the steps, when it is done)? | `generated-model-pipeline.md` |
+| Which rules must a generated model meet, and which LOD resolution values does it use? | `generated-model-rules.md` |
 | A generated model is wrong in game: which cause, which fix? | `generated-model-troubleshooting.md` |
-| How do I drive Blender without its window (primitives, modifiers, UVs, AO bake, LODs, OBJ export)? | `blender-headless.md` |
+| How do I drive Blender without its window (starting it, primitives, modifiers, UVs, materials, the AO bake)? | `blender-headless.md` |
+| How do I export OBJ files for py3d from a Blender script, make the LOD set, and avoid losing data on export? | `blender-headless-export.md` |
 | What must I check before working on an imported FBX or reshaping an imported mesh? | `blender-import-preflight.md` |
 | How do I clean up and export a mesh that came from another tool? | `blender-external-mesh.md` |
-| How do I write a `.p3d` with py3d (API, build order, proxies, diagnostics, repairs, a collision hull, baked mass)? | `py3d-generation.md` |
-| Which py3d to install, where mass may sit, how to replace a section safely, what the validator's axis finding means | `py3d-assembly-rules.md` |
-| What goes in each LOD of a generated model, the decimation measurements, FBX LOD object names, and keeping a large building's collision inside Binarize's limits | `lods-authoring.md` |
-| How to create memory points and named selections, where each must be present, the three parts of a proxy system, and a cable port naming scheme | `memory-and-selections-authoring.md` |
-| What the model needs in `config.cpp`, the addon layout, proxy attachment classes, and packing | `model-config-and-packing.md` |
-| What 1.30 changed for models (View Geometry proxies, `-cacheP3D`, `disableSimulation`, `liquid_source`, ODOL v56) | `dayz-1-30-models.md` |
+| How do I write a `.p3d` with py3d (the API, LOD values, selections, Memory LOD points, build order, the checklist)? | `py3d-generation.md` |
+| How do I map Blender's Z up geometry into a `.p3d` without mirroring it, and when may a script reverse faces? | `py3d-axis-map.md` |
+| How do I write a proxy triangle and a minimal proxy model with py3d? | `py3d-proxies.md` |
+| How do I read an existing MLOD with py3d: LODs, faces, selections, bounds, texture paths? | `py3d-reading.md` |
+| Which py3d checks and repairs catch a model off centre, axes swapped between LODs, bad UVs or winding that disagrees with the normals? | `py3d-shape-checks.md` |
+| Which py3d checks catch broken proxies, selections missing from collision LODs and collision LODs without `autocenter`, materials or mass? | `py3d-part-checks.md` |
+| How do I check baked mass offline with `binarize.exe`, build a collision LOD from a convex hull, and find needle triangles rays pass through? | `py3d-collision-and-mass.md` |
+| Which py3d to install, where mass may sit, how to replace part of a LOD safely, what the validator's axis finding means | `py3d-assembly-rules.md` |
+| How do I reduce a visual LOD, stay within the vertex and normal limits, name Blender objects for the FBX import, and keep the LOD count down? | `lods-authoring.md` |
+| A very large building with rooms inside: collision that follows the walls, and Binarize rejecting the collision LODs with or without a message | `building-collision-limits.md` |
+| Where each named selection must be present, the three parts of a proxy, and a cable port naming scheme | `memory-and-selections-authoring.md` |
+| What the model needs in `config.cpp`, the addon layout, packing and testing | `model-config-and-packing.md` |
+| How is the `CfgNonAIVehicles` class of an attachment proxy named, and why does an item need its own? | `proxy-attachment-config.md` |
+| What does a Super `.rvmat` for a new model hold, stage by stage, and how does a part glow? | `model-material-file.md` |
+| What DayZ 1.30 changed for models (View Geometry proxies, `-cacheP3D`, `disableSimulation`, `liquid_source`, ODOL v56) | `dayz-1-30-models.md` |
 | An artist sent a `.p3d` back, or a binary came from outside: what to check before using it | `artist-returns.md` |
-| Worked specifications of electrical devices (button, switch, generator, cable, junction box) to adapt | `device-recipes.md` |
-| Cookware, a client side cable segment, an asset posed in the hands: what was measured | `domain-recipes.md` |
+| Worked specifications of electrical devices to adapt: shared design, budgets, names, a template | `device-recipes.md` |
+| A push button and a wall switch, part by part | `device-recipes-controls.md` |
+| A battery adapter, a floor generator and a cable segment, part by part | `device-recipes-power.md` |
+| A six output sorter and a junction box, part by part | `device-recipes-distribution.md` |
+| Cookware on vanilla heat sources, a client side cable segment, a weapon posed in the hands | `domain-recipes.md` |
 | Binarize and proxy faults reported but not confirmed | `unconfirmed-findings.md` |
 
 ## Model tools
@@ -64,7 +78,8 @@ How to run the scripts of `/dayz-model-tools` and what was measured with them. T
 | A `.p3d` with its textures to a `.glb` and an HTML page; `.paa` to `.png` | `tools-3d-viewer.md` |
 | Which PAA types decode, and how an RVMAT becomes a page material | `tools-3d-viewer-formats.md` |
 | Which Three.js version and loading method a generated page can use, and how to test it | `tools-threejs-viewers.md` |
-| The plan (not built) for playing `model.cfg` animations and LED states in the viewer | `tools-3d-viewer-states.md` |
+| Where a model's moving parts and material states are defined, and the maths of each animation | `tools-3d-viewer-states.md` |
+| The plan (not built) for playing `model.cfg` animations and LED states in the viewer | `tools-3d-viewer-states-build.md` |
 | A local vision model as a pre-filter on renders: which checklist questions it may answer, how each was calibrated, running `vr_score.py` and `vr_calibrate.py` | `tools-vlm-judge.md` |
 | The JSON format of a render checklist and how `--view` routes each question to one image | `tools-vlm-checklist-format.md` |
 

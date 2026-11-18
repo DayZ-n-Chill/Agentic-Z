@@ -58,15 +58,15 @@ Limits: the instance file is fixed by the item's weight class, so start from the
 
 ### Turn the model, not the IK pose
 
-Measured in game on a tray item (DayZDiag 1.29, 2026-09-27), not checked on `P:\`. When a vanilla IK pose already gives a natural grip and only the direction the item points is wrong, turn the item's geometry about its vertical, keeping its origin, and leave the pose alone. The tray was turned 90 degrees when the `.p3d` was assembled so its 43 cm length lay along X, then registered in `RegisterTwoHanded` with no pose of its own:
+Measured in game on a tray item on 1.29, not checked on `P:\`. When a vanilla IK pose already gives a natural grip and only the direction the item points is wrong, turn the item's geometry about its vertical, keeping its origin, and leave the pose alone. For the tray, turn it 90 degrees when the `.p3d` is assembled so its 43 cm length lay along X, then register it in `RegisterTwoHanded` with no pose of its own:
 
 ```c
 pType.AddItemInHandsProfileIK("MyMod_Tray", "dz/anims/workspaces/player/player_main/props/player_main_2h_pot.asi", pBehavior, "dz/anims/anm/player/ik/vehicles/BatteryTruck.anm");
 ```
 
-That pairs the truck battery's IK pose (vanilla `TruckBattery`, `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:867`) with the pot's animation set. Vanilla makes the same kind of pairing for `GiftBox_Small` (`:1042`: the pot's `.asi` with the cauldron's pose). The hands took the tray by its short ends in the battery's pose and the pot's pour animation stayed.
+That pairs the truck battery's IK pose (vanilla `TruckBattery`, `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:867`) with the pot's animation set. Vanilla makes the same kind of pairing for `GiftBox_Small` (`:1042`: the pot's `.asi` with the cauldron's pose). The hands take the tray by its short ends in the battery's pose, and the pot's pour animation stays.
 
-Before that, the pot's own pose put the hands through the tray, and a custom pose with `RightHand_Dummy` turned about the wrong SEAnim axis broke the grip (frames and axes: `player-skeleton.md`, "The frame an IK pose is keyed in"). The grip was chosen in game among six vanilla poses, with one test subclass of the item per pose, the same method `weapon-in-hands.md` uses for weapons.
+The pot's own pose puts the hands through the tray, and a custom pose with `RightHand_Dummy` turned about the wrong SEAnim axis breaks the grip (frames and axes: `player-skeleton.md`, "The frame an IK pose is keyed in"). Choose a grip in game among several vanilla poses, with one test subclass of the item per pose, the same method `weapon-in-hands.md` uses for weapons.
 
 To shortlist poses by size, the wrist's distance from the item's origin (length of the `RightHand_Dummy` key, measured offline from the extracted clips): pot 16.9 cm, cauldron 16.3, car battery 18.4, truck battery 31.0, car radiator 36.9.
 
@@ -119,7 +119,7 @@ override void EEItemDetached(EntityAI item, string slot_name)
 }
 ```
 
-- Phase 1 hides and phase 0 shows. Vanilla says so itself: `HideSelection` is `SetAnimationPhase(selection_name, 1)` with the comment "1 = hide, 0 = unhide!" (`P:\scripts\3_game\entities\entityai.c:3355` to `:3361`). The value where the flip happens is `hideValue`; vanilla barrel lids use 0.6 (`model-cfg-animations.md`), and the 0.5 above was used in game on a vehicle mod.
+- Phase 1 hides and phase 0 shows. Vanilla says so itself: `HideSelection` is `SetAnimationPhase(selection_name, 1)` with the comment "1 = hide, 0 = unhide!" (`P:\scripts\3_game\entities\entityai.c:3355` to `:3361`). The value where the flip happens is `hideValue`; vanilla barrel lids use 0.6 (`model-cfg-animations.md`), and the 0.5 above works in game on a vehicle mod.
 - `EEItemAttached` and `EEItemDetached` are on `EntityAI` (`P:\scripts\3_game\entities\entityai.c:1159`, `:1199`). `EEItemAttached` also fires for items created with `CreateInInventory` (seen in game, not checked on `P:\`), so debug spawned attachments update too.
 - The attached item is still a real inventory item; the hide only changes how the host shows it.
 - Use it for visible cargo (jerry cans, barrels, spare wheels) and modular parts that would otherwise need many `.p3d` variants. Do not use it when the part changes collision: that needs real model variants.
@@ -174,9 +174,9 @@ proto native void EnableAutoAnimInstUpdateOnHandsChange(bool pNewValue);
 proto native bool IsAutoAnimInstUpdateOnHandsChangeEnabled();
 ```
 
-**Going back to empty hands.** Vanilla registers a profile named `Empty` so the base instance is loaded and can be switched to (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1548`). It switches by the `.asi` path, not the profile name: `SetAnimationInstanceByName("dz/anims/workspaces/player/player_main/player_main.asi", 1)` (`P:\scripts\4_world\entities\manbase\playerbase.c:2107`). Measured in game: a mod's child `.asi` registered the same way was switched to by its path (`rider-pose-solver.md`). Passing the name `"Empty"` instead of a path is not tested.
+Going back to empty hands: vanilla registers a profile named `Empty` so the base instance is loaded and can be switched to (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1548`). It switches by the `.asi` path, not the profile name: `SetAnimationInstanceByName("dz/anims/workspaces/player/player_main/player_main.asi", 1)` (`P:\scripts\4_world\entities\manbase\playerbase.c:2107`). Measured in game: a mod's child `.asi` registered the same way was switched to by its path (`rider-pose-measured.md`). Passing the name `"Empty"` instead of a path is not tested.
 
-**Surrender without a dummy item.** Up to 1.29 the hands up emote put an invisible `SurrenderDummyItem` in the hands. In 1.30 nothing goes into the hands. The dummy's profile is still registered so `player_main_surrender.asi` is loaded (`dayzplayercfgbase.c:1543`), and `PlayerBase` switches to it:
+Surrender without a dummy item: up to 1.29 the hands up emote put an invisible `SurrenderDummyItem` in the hands. In 1.30 nothing goes into the hands. The dummy's profile is still registered so `player_main_surrender.asi` is loaded (`dayzplayercfgbase.c:1543`), and `PlayerBase` switches to it:
 
 ```c
 protected void OnStartTransitionToSurrender()
@@ -197,10 +197,10 @@ State is set with `SetSurrenderState(bool newState)` (`playerbase.c:2116`) and r
 
 ## Syncing an object's pose to a continuous action
 
-Measured in game on a pot emptying action (seven runs, client and server within ±3 ms; DayZ 1.30.164014 Experimental). Not checked on `P:\` beyond the calls named.
+Measured in game on 1.30 Experimental on a pot emptying action, over seven runs with client and server within ±3 ms. Not checked on `P:\` beyond the calls named.
 
-1. **Probe first.** Add a test `modded class` of the action that logs the `OnStart` and loop events, every change of `HumanCommandActionCallback.GetState()` (states at `P:\scripts\3_game\human.c:369` to `:380`, `GetState` at `:383`), and one sample every 0.1 s from `OnUpdateClient` and `OnUpdateServer` (both run every frame, `P:\scripts\4_world\classes\useractionscomponent\actionbase.c:1356`, `:1372`), each sample with the object's `GetAnimationPhase`.
-2. **A `user` source has one `animPeriod` for both directions.** If out and back take different times, drive the return with targets set every frame on the client.
-3. **Two writers coexist only when they write the same target.** The server writes the start and the end; the owning client carries the states between.
-4. **State timings alone are not enough.** The engine started the final segment 0.03 to 0.05 s after the loop and played it 5 to 10 percent faster than 30 fps, and the curve inside a segment is not linear. Moving the object inside the animation itself removes the problem instead of softening it.
+1. Probe first. Add a test `modded class` of the action that logs the `OnStart` and loop events, every change of `HumanCommandActionCallback.GetState()` (states at `P:\scripts\3_game\human.c:369` to `:380`, `GetState` at `:383`), and one sample every 0.1 s from `OnUpdateClient` and `OnUpdateServer` (both run every frame, `P:\scripts\4_world\classes\useractionscomponent\actionbase.c:1356`, `:1372`), each sample with the object's `GetAnimationPhase`.
+2. A `user` source has one `animPeriod` for both directions. If out and back take different times, drive the return with targets set every frame on the client.
+3. Two writers coexist only when they write the same target. The server writes the start and the end; the owning client carries the states between.
+4. State timings alone are not enough. The engine starts the final segment 0.03 to 0.05 s after the loop and plays it 5 to 10 percent faster than 30 fps, and the curve inside a segment is not linear. Moving the object inside the animation itself removes the problem instead of softening it.
 5. Even with states matched to the millisecond, the hand that is not the anchor follows the vanilla graph's curve.

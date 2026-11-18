@@ -739,7 +739,7 @@ def check_collision_needle_triangles(p):
                     "area/longest edge^2 %.2e (this check fails a triangle under %.0e m^2 or %.0e). "
                     "In game a convex hull holding one took no ray in geom, view or fire, and binarize "
                     "said nothing: build the hull again without point %d, the corner opposite the "
-                    "longest edge (references/killers-detail.md, 'Needle triangles')."
+                    "longest edge (references/collision-mesh-hygiene.md, 'Needle triangles')."
                     % (i, kind, name, faces[n][0], tri[0], tri[1], tri[2], area, ratio,
                        NEEDLE_MIN_AREA, NEEDLE_MIN_RATIO, _opposite_longest_edge(points, tri))))
     return issues

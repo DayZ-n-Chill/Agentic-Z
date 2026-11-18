@@ -1,10 +1,10 @@
-# Object Builder's external viewer (Buldozer) path
+# Object Builder's external viewer
 
-Buldozer is the cheap answer to "how does it look?". Object Builder starts the game engine as a viewer, so materials, alpha and animations can be previewed without paying for a build and an in-game test. Object Builder starts the viewer from one registry value. When that value names an exe that does not exist, or is empty, the preview never opens and nothing reports an error, so the question gets answered in game instead.
+How to check the registry value that tells Object Builder where Buldozer, its game engine preview, lives. When that value names a missing exe or is empty, the preview never opens and nothing reports an error. `preflight.py` does not run this check; run it by hand before a session that leans on Object Builder previews.
 
-`preflight.py` does not run this check. Run it by hand before a session that will lean on Object Builder previews.
+Buldozer is the cheap way to answer "how does it look?": materials, alpha and animations show without a build and an in-game test. Without it those questions get answered in game, one full build and launch at a time.
 
-Not yet checked on `P:\`: this is registry and tool behaviour, which no vanilla file records. The measurements are listed under "What was measured".
+This is registry and tool behaviour, which no vanilla file records, so none of it is checked on `P:\`.
 
 ## The check
 
@@ -19,26 +19,25 @@ if ($exe) { Test-Path $exe } else { 'not set' }
 | Result | Meaning | What to tell the user |
 |---|---|---|
 | `True` | The viewer exe exists. | Nothing to fix. |
-| `False` | The value names an exe that is not there. | Report it as a failure of this check and suggest the real path, `<steamapps>\common\DayZ\DayZ_x64.exe` (`find_dayz_game()` in `preflight.py` returns that folder). |
+| `False` | The value names an exe that is not there. | Report the check as failed and suggest the real path, `<steamapps>\common\DayZ\DayZ_x64.exe` (`find_dayz_game()` in `preflight.py` returns that folder). |
 | `not set` | The value is empty, so no viewer is configured. | Same suggestion: set the value to the real exe followed by ` -buldozer`. |
 | An error that the key does not exist | Object Builder has never been configured on this machine. | Run `/dayz-setup-objectbuilder` first, then repeat the check. |
 
-Do not write the registry value from this skill. Report the result and the suggested path, and let the user set it.
+Never write the registry value from this skill. Report the result and the suggested path, and let the user set it.
 
-## Why the default is broken
+## Why a fresh install is usually broken
 
-On one install the value pointed at `<steamapps>\common\DayZ_x64.exe`, without the `DayZ\` folder, which is why the viewer was dead out of the box. The DayZ Tools installer probably wrote that path; this was not confirmed.
+Expect one of two broken states on a machine nobody has fixed, and treat both as "no preview":
 
-A second install (DayZ Tools with game 1.30.164289) showed a different broken state: the value existed but was empty, and the `Bin\ObjectBuilder\ObjectBuilder_defaultSettings.reg` file that `/dayz-setup-objectbuilder` imports has no `%External Viewer` line at all. So expect either a wrong path or an empty value on a machine nobody has fixed, and treat both as "no preview".
+- **A wrong path.** One install pointed at `<steamapps>\common\DayZ_x64.exe`, without the `DayZ\` folder; `Test-Path` gave `False` for it and `True` for the real path. The DayZ Tools installer probably wrote it; that is not confirmed.
+- **An empty value.** Another install, with DayZ Tools and the game at 1.30, had the value present but empty. The `Bin\ObjectBuilder\ObjectBuilder_defaultSettings.reg` file that `/dayz-setup-objectbuilder` imports has no `%External Viewer` line at all.
 
-## What was measured
+`P:\Buldozer` was present on the first install and missing on the second, so its absence alone says nothing about the viewer.
 
-- First install: configured path `Test-Path` gave `False`, the real path gave `True`, and `P:\Buldozer` was present.
-- The cost of not checking: about 20 work sessions on one vehicle project paid for full in-game cycles to answer "does it show?" questions (label alpha, needle size, a quad behind the screen) that Buldozer was never used for.
-- Second install: the snippet above printed `not set`; the game exe was at `<steamapps>\common\DayZ\DayZ_x64.exe` and nothing was at `<steamapps>\common\DayZ_x64.exe`. `P:\Buldozer` did not exist there.
+Skipping the check is expensive: on one vehicle project about 20 work sessions paid for full in-game cycles to answer "does it show?" questions (label alpha, needle size, a quad behind the screen) that Buldozer could have answered.
 
-## Not verified yet
+## What the check does not prove
 
-Nobody has measured that Buldozer opens a custom `.p3d` together with its `.rvmat` files. Until that is measured, do not make "preview in Buldozer" a visual gate in the model or vehicle skills. This check only tells you whether the viewer can start.
+Nobody has confirmed that Buldozer opens a custom `.p3d` together with its `.rvmat` files. Until that is tested, do not make "preview in Buldozer" a visual gate in the model or vehicle skills. This check only tells you whether the viewer can start.
 
-On DayZ 1.30 the check itself is unchanged; see `dayz-1-30.md` for the `-cacheP3D` option that goes with Buldozer work. On Linux the key lives in the tools prefix's registry and the check was not run; see `skills/_shared/linux-proton.md`, section 3.
+On DayZ 1.30 the check is unchanged; `dayz-1-30.md` covers the `-cacheP3D` option that goes with Buldozer work. On Linux the key lives in the tools prefix's registry and the check has not been run there; see `skills/_shared/linux-proton.md`, "The work drive on Linux".

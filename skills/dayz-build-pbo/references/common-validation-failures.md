@@ -1,57 +1,48 @@
-# Common validation failures and fixes
+# Common validation failures
 
-Symptom, cause and fix for the failures the pre-build checks report most often.
+Which failures the pre-build checks report most often, what causes each one and how to fix it. The checks themselves are in `pre-build-checks.md`.
 
-### FAIL: Custom weapon stuck in single-mode (only fires semi; fire-mode key does nothing; no mode name in HUD) — binarize stays silent
-**Cause:** `class Mode_SemiAuto;` / `class Mode_FullAuto;` forward-declared INSIDE `class CfgWeapons` creates an empty stub at `CfgWeapons.Mode_FullAuto` that eclipses the real one (`Mode_FullAuto: Mode_SemiAuto` with `autoFire=1` at root scope, vanilla `P:\bin\config.cpp:315` to `:318`). Subclasses inherit the stub without `autoFire` → engine discards the mode. A forward-decl is a valid external, so CfgConvert/binarize never warns and the de-rapped .bin looks perfect.
-**Fix:** Move `class Mode_SemiAuto;` / `class Mode_FullAuto;` to ROOT scope (above `class CfgWeapons`, alongside `class OpticsInfoRifle;`). Verify with `bin.pbo` decompilation. A diagnostic clone `WeaponName_ModeTest: VanillaWeapon_Base` (pure inherit, no `Mode_*` refs) that cycles isolates the cause to your `Mode_*` reference. See `skills/_shared/weapons/recoil-fire-modes.md` (fire mode bases at the config root).
+## Quick table
 
-### FAIL: "Unclosed brace in config.cpp"
-**Cause:** Missing closing `}` in a class definition
-**Fix:** Count all `{` and `}` pairs, especially in large classes. Use a code editor with brace matching (Sublime, VS Code).
+| Report | Cause | Fix |
+|---|---|---|
+| Unclosed brace in `config.cpp` | A class is missing its closing `}`. | Count the `{` and `}` pairs, most often in a long class. An editor with brace matching finds it fast. |
+| Missing semicolon after a property | A property or array has no `;` at its end. | End every property and array with `;`, and close every class with `};`. |
+| Texture not found | The path is wrong or the file is missing. | Check the capitalisation, since paths are case sensitive on a Linux server, and put the `.paa` at exactly that path. |
+| `hiddenSelections` count mismatch | `hiddenSelectionsTextures[]` or `hiddenSelectionsMaterials[]` has a different length from `hiddenSelections[]`. | Give each array one entry per selection, in the same order (example below). |
+| Missing `ce_center` in the Memory LOD | The `.p3d` has no `ce_center` memory point. | Add it as a memory point in the Memory LOD with Object Builder or py3d. |
 
-### FAIL: "Missing semicolon after property"
-**Cause:** Forgot `;` at end of property or array
-**Fix:** Every line in config.cpp must end with `;` (except opening `{`)
+`ce_center` is the object's centre for actions and the vicinity list, not its centre of mass: `GetCenter` (`P:\scripts\3_game\entities\object.c:1361`) reads it (`:1363`).
+
+The three arrays line up index by index:
+
 ```cpp
-class MyClass {
-    displayName = "My Item";  // <-- MUST have semicolon
-    scope = 2;
-};
+hiddenSelections[] = {"skin1", "skin2"};
+hiddenSelectionsTextures[] = {"tex1.paa", "tex2.paa"};
+hiddenSelectionsMaterials[] = {"mat1.rvmat", "mat2.rvmat"};
 ```
 
-### FAIL: "Texture not found: data\textures\..."
-**Cause:** Referenced texture doesn't exist or path is wrong
-**Fix:** Check capitalization (paths are case-sensitive on a Linux server). Ensure .paa file is in exact path.
+The engine accepts a shorter array (`pre-build-checks.md` explains why this is a warning).
 
-### FAIL: "#STR_KEY missing from stringtable.csv"
-The sample below carries the seven-column header that `pre-build-checks.md` check 6 calls for; with a
-four-column header every key stays unresolved.
-**Cause:** Used `#STR_MYKEY` in code, config or a `.layout` but didn't add it to the
-stringtable. The engine says nothing about this: the key prints its own name on screen and
-logs zero RPT lines (measured over a 49,340-byte client log).
-**Fix:** Add a row to `stringtable.csv` at the addon root. DayZ uses CSV, not the
-`stringtable.xml` of Arma 3. The key goes in column 1
-**without** the leading `#`:
+## A custom weapon stuck in one fire mode
+
+The weapon fires only semi automatic, the fire mode key does nothing and the HUD shows no mode name. Binarize says nothing.
+
+The cause is `class Mode_SemiAuto;` and `class Mode_FullAuto;` declared inside `class CfgWeapons`. That creates empty stubs at `CfgWeapons.Mode_FullAuto` that hide the real classes at the config root, where vanilla defines `class Mode_FullAuto: Mode_SemiAuto` with `autoFire=1` (`P:\bin\config.cpp:315` to `:318`). A mode that inherits the stub has no `autoFire`, so the engine drops it. A forward declaration is a valid external, so CfgConvert and binarize never warn and the decoded `config.bin` looks right.
+
+Move `class Mode_SemiAuto;` and `class Mode_FullAuto;` to the root, above `class CfgWeapons` and beside `class OpticsInfoRifle;`, then check the built config by decompiling the PBO's `config.bin`. To isolate the cause, add a test clone `WeaponName_ModeTest: VanillaWeapon_Base` that only inherits and names no `Mode_*` class: if it cycles modes, the fault is your `Mode_*` reference. More in `skills/_shared/weapons/recoil-fire-modes.md`.
+
+## A stringtable key that shows its own name
+
+`#STR_MYKEY` is used in code, config or a `.layout` but has no row in the stringtable. The engine says nothing: the key prints its own name on screen and the client RPT holds no line about it (measured in game).
+
+Add a row to `stringtable.csv` at the addon root. DayZ reads CSV, not the `stringtable.xml` of Arma 3. The key goes in column 1 without the leading `#`, and the header carries the seven columns `pre-build-checks.md` asks for; with a four-column header every key stays unresolved.
+
 ```csv
 "Language","original","english","spanish","german","russian","chinesesimp"
 "STR_MYKEY","My Item Name","My Item Name","Mi objeto","My Item Name","My Item Name","My Item Name"
 ```
 
-### WARN: "Missing ce_center in Memory LOD"
-**Cause:** the `.p3d` has no `ce_center` memory point (the object's centre for actions and the vicinity list, read by `GetCenter` at `P:\scripts\3_game\entities\object.c:1363`; it is not the centre of mass)
-**Fix:** Add `ce_center` as a memory point in the Memory LOD (use Object Builder or py3d).
+## Binarize stops on a member defined twice
 
-### FAIL: "hiddenSelections count mismatch"
-**Cause:** `hiddenSelectionsTextures[]` or `hiddenSelectionsMaterials[]` length differs from `hiddenSelections[]`
-**Fix:** Ensure each array aligns index-by-index with `hiddenSelections[]`:
-```cpp
-hiddenSelections[] = {"skin1", "skin2"};                      // 2 selections
-hiddenSelectionsTextures[] = {"tex1.paa", "tex2.paa"};        // 2 textures (one per selection)
-hiddenSelectionsMaterials[] = {"mat1.rvmat", "mat2.rvmat"};   // 2 materials (one per selection)
-// Total items in hiddenSelections (2) must match texture count (2) AND material count (2)
-```
-
-### FAIL: Binarizer stops — member defined multiple times (DayZ 1.30)
-**Cause:** The same member (`scope`, `displayName`, `weight`, `hiddenSelections[]`, an inner class, …) appears twice in one class body; `build.py` prints binarize's `Member already defined` line from AddonBuilder's log.
-**Fix:** Delete or merge the extra assignment so each member appears once per class block, then rebuild. What changed in 1.30 and how to audit for it: `dayz-1-30-pbo-build.md`.
+Since DayZ 1.30 the same member (`scope`, `displayName`, `weight`, `hiddenSelections[]`, an inner class) written twice in one class body stops binarize, and `build.py` prints binarize's `Member already defined` line from AddonBuilder's log. Delete or merge the extra line so each member appears once per class block, then rebuild. What changed and how to audit for it: `dayz-1-30-pbo-build.md`.

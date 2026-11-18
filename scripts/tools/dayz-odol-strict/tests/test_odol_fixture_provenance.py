@@ -7,7 +7,7 @@ import struct
 FIXTURES = Path(__file__).with_name("fixtures")
 
 
-def test_authorized_fixture_manifest_matches_every_tracked_byte():
+def test_fixture_manifest_matches_every_tracked_byte():
     manifest = json.loads(
         (FIXTURES / "fixtures.json").read_text(encoding="utf-8")
     )
@@ -21,12 +21,10 @@ def test_authorized_fixture_manifest_matches_every_tracked_byte():
         assert set(item) == {
             "filename",
             "lod_count",
-            "rights",
             "sha256",
             "size",
             "version",
         }
-        assert "authorized" in item["rights"].lower()
         path = FIXTURES / item["filename"]
         payload = path.read_bytes()
         assert len(payload) == item["size"]

@@ -20,7 +20,7 @@ Open only the file the current step needs.
 | Motorbikes: the three-layer class tree, the addon, differences from a car, script overrides, config blocks | `motorbikes.md` |
 | The ten rules that break a motorbike, measured tuning lessons, what is unfinished in 1.30 | `motorbike-invariants.md` |
 
-A ripped racing-game car has its own route in `rip-family-b-runbook.md`.
+A ripped racing-game car has its own route in `ripped-car-proxy-split.md`.
 
 ## Pick the route first
 
@@ -28,48 +28,36 @@ Choose by where the asset came from and how it is built, not by its symptom.
 
 | What you have | Route |
 |---|---|
-| A car ripped from a racing game, split into proxies, with doors or other moving parts (family B) | `rip-family-b-runbook.md`: follow only its adapter, golden and allowlist, then the asset's own `asset-contract.json` |
+| A car ripped from a racing game, split into proxies, with doors or other moving parts | `ripped-car-proxy-split.md` |
 | An asset already in flight with a frozen plan or runbook | That runbook; do not migrate it here |
 | Any other vehicle: authored from scratch, an OBJ import, a port from another mod or game | The tables of this README |
-| A family B asset whose adapter is missing | Stop and report; do not improvise a route from the pack |
 
 Before re-importing or re-assembling any piece, measure whether it is complete, face for face, against the model already packed: a mesh that looks rotten is usually complete and the defect lies elsewhere (`rip-panel-open-rim.md`). The offline vehicle checks (get-in anchors, seat selections, wheel axes, ODOL sections and bone bindings) are scripts of `/dayz-p3d-audit`.
 
-## Numbered invariants
+## Before writing a name
 
-Other files cite these as "invariant N", "preflight #N" or "#N".
-
-| Number | File |
-|---|---|
-| 0, 0b, 7, 10, 11, 12, 14, 29, 33 | `invariants-import-mesh-and-winding.md` |
-| 1, 2, 3, 4, 5, 20, 20b, 21, 22, 23, 28, 30, 31, 32, 34 | `invariants-get-in-and-seats.md` |
-| 5b, 5c, 6, 15, 15a, 15b | `invariants-wheels-and-hubs.md` |
-| 8, 9, 15c, 15f, 15g, 15h, 16, 17, 18, 19, 35 | `invariants-engine-fluids-and-handling.md` |
-| 13, 24, 27 | `invariants-lods-and-vertex-budget.md` |
-| 15d | `lights.md` |
-| 15e | `test-stand-and-mcp.md` |
-| 25, 26 | `gta-rip-intake.md` |
-| #10(a) to #10(o) | `visual-gates-and-winding.md` |
-| "METHOD #1" to "#4" | `method-and-gate-calibration.md` |
-| "Day-1" items | `new-car-day-one.md` |
-
-Items 3, 12 and 21 moved to the symptom files (`symptom-wheels-not-present.md`, `symptom-white-vehicle.md`, `symptom-attachment-invisible.md`); the invariant files keep a pointer under each number. Before writing a class name, property or named selection, Grep it under `P:\DZ\vehicles\` or in the file a pack file cites, and mark a value you could not check as "not yet checked on `P:\`".
+Rules in this pack are named by their section heading, not by number. Before writing a class name, property or named selection, Grep it under `P:\DZ\vehicles\` or in the file a pack file cites, and mark a value you could not check as "not yet checked on `P:\`".
 
 ## Aircraft in depth
 
 | Question | File |
 |---|---|
-| Fixed-wing flight in script: lift, drag, stall, atmosphere, self levelling, NaN guards, seaplane buoyancy | `aviation-aerodynamics.md` |
+| Fixed-wing flight in script: lift, drag, stall, atmosphere, self levelling, NaN guards, damping with no pilot | `aviation-aerodynamics.md` |
+| Per-aircraft parameter values: large, small, aerobatic and flying car presets | `aviation-aircraft-presets.md` |
 | `AnimationSources` and `model.cfg` classes for control surfaces, dials, dampers and the propeller | `aviation-animation-and-modelcfg.md` |
 | What DayZ 1.30 changed under a plane or helicopter that inherits `CarScript` | `aviation-dayz-1-30.md` |
 | Navigation lights, headlights and seaplane spray | `aviation-effects-and-lights.md` |
-| One base class for several planes: config skeleton, `requiredAddons`, sub-mod wrapper | `aviation-fixed-wing.md` |
+| One base class for several planes: config skeleton, `requiredAddons`, sub-mod wrapper, Pawn classes, ground and air modes | `aviation-fixed-wing.md` |
 | Testing a scripted flight model in game and judging it from logs | `aviation-flight-testing.md` |
 | Flight inputs in `Inputs.xml`, keyboard and pad scheme, stringtable | `aviation-input-bindings.md` |
 | Offsets measured with py3d that land on the wrong end of the aircraft, and the runtime probe that settles it | `aviation-model-axes.md` |
 | Engine sound shaders and sets, RPM band crossfade | `aviation-sounds.md` |
 | Thermal (FLIR) view by swapping textures and materials per entity | `aviation-thermal-imaging.md` |
-| Optional aircraft weapons: tracer projectiles, hitscan damage, the fire pipeline | `aviation-weapons.md` |
+| Optional aircraft weapons: tracer projectiles, raycast damage, pilot only fire, impact effects timed to the tracer | `aviation-weapons.md` |
+| The server side of an aircraft gun: ammunition from cargo, alternating muzzles, the damage ray, choosing a damage zone | `aviation-weapon-fire-code.md` |
+| Memory points, skeleton bones and the lit dashboard material a plane model needs | `aviation-plane-model.md` |
+| Skipping unchanged animation calls, update rates, cached inputs, cockpit detail in proxies | `aviation-script-performance.md` |
+| Seaplanes: the `Buoyancy` class, water takeoff in script, large and small templates, spray effects | `aviation-seaplanes.md` |
 | Helicopter flight loops of published mods, one file each | `helicopter-expansion.md`, `helicopter-mh6.md`, `helicopter-rffs.md`, `helicopter-sib.md` |
 | Those helicopter mods side by side | `helicopter-model-comparison.md` |
 | Which Workshop helicopter mods can be read as plain script | `helicopter-mod-sources.md` |
@@ -91,61 +79,81 @@ Before the first boot of an aircraft, check these faults, which compile clean an
 | Question | File |
 |---|---|
 | Motorbike actions, `MotorbikeHud`, lights, horn and VFX components, sound classes | `motorbike-actions-hud-lights-sounds.md` |
-| The vanilla `config.cpp` blocks and the parameter table | `motorbike-config-contract.md` |
+| The `MotorbikeScript` config class and the key values of both vanilla bikes side by side | `motorbike-config-contract.md` |
+| The vanilla `SimulationModule` and `AnimationSources` of `Motorbike_01` | `motorbike-simulation-config.md` |
+| The vanilla damage zones, damage materials and wheel classes of `Motorbike_01` | `motorbike-damage-and-wheel-config.md` |
 | The full specification for a new motorbike | `motorbike-forward-contract.md` |
 | Rider animation: vehicle command, `vehicles.agf`, clips, camera | `motorbike-rider-animation.md` |
 | Native `Motorbike` interface, callbacks, `MotorbikeScript` lifecycle, net sync | `motorbike-script-api.md` |
-| What the binarized vanilla bike models hold | `motorbike-vanilla-p3d-anatomy.md` |
+| What the binarized vanilla bike models hold, at a glance, and how to read the tables | `motorbike-vanilla-p3d-anatomy.md` |
+| Full model tables of each vanilla bike: LODs, bones, animations, memory points, proxies, selections | `motorbike-01-model-anatomy.md`, `motorbike-02-model-anatomy.md` |
 | Every vanilla file the motorbike files cite, with line counts | `motorbike-vanilla-sources.md` |
 
 ## Symptoms of a ripped car
 
 | Symptom | File |
 |---|---|
-| An attached wheel, door or part simulates but does not render | `symptom-attachment-invisible.md` |
-| A door shows no open or close action | `symptom-door-action-missing.md` |
-| The get-in prompt never shows | `symptom-get-in-missing.md` |
-| Wheels are attached but do not simulate | `symptom-wheels-not-present.md` |
-| The car renders white or untextured on a dedicated server | `symptom-white-vehicle.md` |
+| An attached wheel, door or part simulates but does not render: the proxy class name, the proxy frame, `ProxyVehiclePart` against `ProxyAttachment`, racks | `attachment-proxies.md` |
+| A door shows no open or close action: choosing among the three door mechanisms | `vehicle-door-mechanisms.md` |
+| The get-in prompt never shows: the action's guards in order, right-hand drive door pairing, asking the game which guard blocks | `get-in-guards.md` |
+| Wheels are attached but do not simulate: the slot to Fire Geometry wiring | `wheel-simulation-wiring.md` |
+| The car renders white or untextured on a dedicated server: what binarize leaves out, the include list, the two fixes | `binarize-dropped-textures.md` |
 
 ## Authoring and config
 
 | Question | File |
 |---|---|
-| A complete, source-checked `config.cpp` and `model.cfg` for a drivable car, block by block; window and glass damage zones; what the engine feeds the dashboard needles; how get-in picks a seat; ruined wheels | `vehicle-config-and-modelcfg.md` |
-| Boats (propeller, buoyancy, boat fluids, always-free get-in), trucks (three axles, double wheels under one class name), ATV slots | `vehicle-types-boat-truck.md` |
-| What changed for vehicles in DayZ 1.30: light profiles and the light toggle, the battery methods, horn, the get-in condition, fluids, boats, `speedGeoms`, ruined wheels and tyre fields, script module paths, line drift, and a 1.29 to 1.30 migration checklist | `dayz-1-30-vehicles.md` |
+| A car's `config.cpp` block by block: what each file owns, the class tree, `SimulationModule`, crew, lights, sounds, `AnimationSources`, how config, `model.cfg` and the model wire together, keys that do nothing | `vehicle-config-and-modelcfg.md` |
+| Attachments, cargo and fuel; wheel and door items with their slots and proxies; an engine that will not start; `OnDebugSpawn` | `vehicle-parts-and-start.md` |
+| A car's `model.cfg`: skeleton, animation classes, what the engine feeds the dashboard needles, reusing a vanilla rig, the crew proxy frame, limits of the seat probe | `vehicle-modelcfg-animations.md` |
+| `DamageSystem` zones in config, window glass, `RefTexsMats[]` and `"hidden"`, a windscreen that never hid | `vehicle-damage-and-glass.md` |
+| Ruined wheels: the swap script on 1.29 and 1.30, the ruined proxy, repair, the in-hands pose, flat tyre radius, sealing the rim | `ruined-wheels.md` |
+| Boats (propeller, buoyancy, boat fluids, get-in always open, boat actions), trucks (three axles, double wheels under one class name), quads | `vehicle-types-boat-truck.md` |
+| What changed for vehicles in DayZ 1.30, the deleted `ToggleHeadlights`, script module paths, ODOL version 56, line drift, and a 1.29 to 1.30 checklist | `dayz-1-30-vehicles.md` |
+| DayZ 1.30 light profiles, the light toggle and lens flare, the battery methods, horn, `GetWeightCoef`, ganged rear bulbs | `dayz-1-30-lights-and-battery.md` |
+| DayZ 1.30 get-in condition and boarding side, boats, `speedGeoms`, wreck cisterns, the motorbike camera | `dayz-1-30-get-in-and-boats.md` |
+| DayZ 1.30 ruined wheel twins and the new tyre fields | `dayz-1-30-wheels.md` |
 | What each of `.p3d`, `config.cpp` and `model.cfg` owns; what to measure before the first in-game cycle; gaps a port inherits | `new-car-day-one.md` |
 
 ## Making an imported or procedural model work
 
 | Question | File |
 |---|---|
-| The parity-first method: diff the model against a working vanilla car and build every missing LOD, selection, crew proxy and wheel hub in one pass | `vehicle-structural-parity.md` |
-| OBJ to game-ready `.p3d`, end to end: parse, transform, decimate, assemble LODs, encode textures, write config | `external-obj-import.md` |
+| Comparing a car with the vanilla sedan before the first test: what each LOD holds, the memory point catalogue, selections, lights, damage and animation sources, auditing a car you received, checking the checker | `vehicle-structural-parity.md` |
+| The Geometry LOD, mass and centre of mass, what makes a car launch or sink on spawn, wheel wells, contact diagnostics, suspension, the wheel `.p3d` collider | `vehicle-geometry-and-mass.md` |
+| Proxy paths without `.p3d`, body chunk frames, bone selections for attachment proxies, hub and seat `componentNN` tags, which way a car faces, wheel spin direction, high-detail bodies as proxies | `vehicle-proxies.md` |
+| Seat components, inward winding and point flags, the crew proxy triangle, the script class get-in needs, the script module, the headless seat probe | `crew-get-in-geometry.md` |
+| OBJ import, first half: copying the closest item, splitting faces by material, the UV flip, the transform, winding against normals | `external-obj-import.md` |
+| OBJ import, second half: decimating per material, smooth normals, LOD assembly and resolutions, PAA encoding, wiring into the mod, first-import problems | `obj-import-assembly.md` |
 | Reducing a high-poly import to per-LOD face budgets | `decimation-libraries.md` |
-| PNG to PAA in pure Python | `png-to-paa-encoding.md` |
+| PNG to PAA in pure Python | `_shared/textures/png-to-paa-encoding.md` |
 | Origin, `autocenter` and placement problems | `placement-and-autocenter.md` |
-| Rip geometry: retopology, winding gate and direction, `autocenter` scope, deleting or splitting faces without breaking selections | `rip-geometry-and-winding.md` |
-| The rip import path in detail, including the first in-game spawn results | `rip-import.md` |
-| The day-0 family B runbook for a new ripped car: the six contract deltas, the source door inventory, the single ledger entry, the B1 to B7 allowlist, the human visual signoff, the conversion rail | `rip-family-b-runbook.md` |
-| Reviewing and changing the session A classification of a ripped car's parts without Blender: the viewer's Three.js files, the steps per car, the GLB data contract | `rip-classify-viewer.md` |
-| Field by field, what a car profile of the import project holds and which script reads each field (legacy and in flight; not a template) | `rip-profile-schema.md` |
+| Rip geometry: retopology, proxy triangle winding, where `autocenter=0` belongs, what a winding check must cover, fixing winding per connected part, deleting faces by side and with py3d, comparing two builds | `rip-geometry-and-winding.md` |
+| A ripped racing game car: what the rip folder holds, which parts to include, the right side, dimensions and the transform from the locators, drivetrain and mass data | `rip-import.md` |
+| Rip body and structural LODs: shell plus proxy chunks, thinning, what crashes the render, the LOD recipe, first spawn faults, offline checks, building and launching | `rip-structural-lods.md` |
+| Rip textures: swatch UV channels, the factory paint colour, materials by type from the source, glass, interiors and two-sided surfaces, duplicate faces | `rip-textures-and-materials.md` |
+| Rip wheels, doors and interior: deploying a rebuilt shell, wheels that draw, the original rim, track width, doors from the rip, the car's own first-person interior | `rip-wheels-and-doors.md` |
+| Rip glass bands and gap closure, material transfer with foreign geometry, where a rally lift belongs, patching a deployed structure | `rip-glass-and-gap-closure.md` |
+| A new ripped car split into proxies with moving parts: the transform, what to settle first, what the rips ship for doors, the user's visual check before a build, the order of work | `ripped-car-proxy-split.md` |
+| Reviewing which parts of a ripped car are kept, dropped or movable without Blender: the viewer's Three.js files, the steps per car, the data the GLB must carry | `rip-classify-viewer.md` |
+| Field by field, what a per-car profile of a rip import pipeline holds and which step reads it | `rip-profile-schema.md` |
 | Reading a GTA V mod archive offline; bone names against mesh pieces; why an exclusion list is literal names | `gta-rip-intake.md` |
 | Mesh and UV health, mirror against rotation, raw winding, the nose direction, cabin alignment, steering wheel against hands | `invariants-import-mesh-and-winding.md` |
 | How many visual LODs, how far planar dissolve and collapse go, the resolved-vertex ceiling | `invariants-lods-and-vertex-budget.md` |
-| The three verdicts of `binarize`, the real ceiling in triples, headroom, what does not discriminate | `binarize-vertex-budget.md` |
+| The three verdicts of `binarize`, the real ceiling in resolved triples, headroom, log lines that mean nothing | `binarize-vertex-budget.md` |
 | Mass tagged in the wrong LOD, wheel-well clearance, seat components, crew proxy triangles, the vertex ceiling false positive | `p3d-vehicle-killers.md` |
 
 ## Get-in, seats, doors and proxies
 
 | Question | File |
 |---|---|
-| No get-in prompt, no co-driver or rear seat, no door action; four seats; right-hand drive; choosing a donor; inherited config keys | `invariants-get-in-and-seats.md` |
+| No get-in prompt, no co-driver or rear seat, no door action; four seats; right-hand drive; which vanilla car to copy; inherited config keys | `invariants-get-in-and-seats.md` |
 | The four-link get-in condition chain, action registration, the `Geometry` and `autocenter=0` gate for proxied submodels, which anchor really places the occupant, and why a part's `model=` governs both the fitted part and the loose item | `get-in-actions-and-proxy-pose.md` |
-| Proxy placement measured on a reference car, the four-layer contract of detachable parts, the two registrations a vehicle action needs, View Pilot of a shell and proxy car | `proxies-and-get-in.md` |
+| Proxy placement measured on a working car, the four layers of a detachable part, debug spawns and `attachments[]` after a baked part becomes an attachment, binarized output that is not byte-stable | `proxies-and-detachable-parts.md` |
+| The two registrations an action for a seated player needs, continuous actions and input excludes from the seat, a shared script core, a phantom vehicle command after a crash | `seated-actions-and-get-in-faults.md` |
+| Hiding a baked attachment proxy from script with an animation source, blocking a seat while something is attached | `attachment-proxy-hiding.md` |
 | Door edges: measuring the missing edge, closing it by script, hood and trunk against a door | `doors-and-panel-edges.md` |
-| Why a ripped door, hood or tailgate shows a see-through rim, and what does not close it | `rip-panel-open-rim.md` |
+| Why a ripped door, hood or tailgate shows a see-through rim, what does not close it, how to cap it and check the cap | `rip-panel-open-rim.md` |
 | Letting a rider fire their own weapon from a moving vehicle (the free gunner pattern) | `gunner-shoot-from-vehicle.md` |
 
 ## Wheels, engine and handling
@@ -161,12 +169,19 @@ Before the first boot of an aircraft, check these faults, which compile clean an
 | Question | File |
 |---|---|
 | Lights that do not switch: material paths, hidden selection order and ownership, bulbs, driver exit | `lights.md` |
-| An LED or indicator that changes colour, glows and optionally lights the scene: hidden selection, one `.rvmat` per state with `emmisive[]`, the swap from script, a `PointLightBase` on a memory point | `emissive-leds-and-dynamic-lights.md` |
-| Dashboard needles and dials: frame and mirror traps, rotation direction, deriving `angle0` and `angle1`, needle build, fuel panel from scratch, night check, the full recipe | `gauge-needles.md` |
-| A map on a cockpit screen: render target bridge, satmap tiles, tile overlap, sliding tile window | `cockpit-screens-and-map-tiles.md` |
-| What the seated player sees: the res 1100 View Pilot LOD and its proxies; offline first-person viewer traps | `view-pilot-and-first-person.md` |
+| An LED or indicator that changes colour and optionally lights the scene: the hidden selection, the swap from script, a `PointLightBase` on a memory point | `emissive-leds-and-dynamic-lights.md` |
+| The `.rvmat` for each LED state: shader and stages, `emmisive[]` strength and spelling, an LED that renders black | `emissive-led-materials.md` |
+| Dashboard needles: selection, axis and bone, the `Indicator*` classes, which way vanilla needles turn, `rpm` against its ceiling, the build order | `gauge-needles.md` |
+| The needle mesh: canonical pose, cutting a needle out of an imported cluster, rest angle, depth, winding and normal signs of new faces | `gauge-needle-part.md` |
+| A dial's screen frame: mirror against rotation, the V direction, deriving `angle0` and `angle1` | `gauge-dial-frame.md` |
+| Dial art: measuring the printed arc, one texture per dial, padding, legibility on screen, stale textures | `gauge-dial-art.md` |
+| A fuel gauge panel on a model with no face for it | `gauge-fuel-panel.md` |
+| A map on a cockpit screen: the render target route, satellite tiles, tile overlap, sliding tile window | `cockpit-screens-and-map-tiles.md` |
+| What the seated player sees: the res 1100 View Pilot LOD and its proxies, trimming it safely, collapsed UVs in far LODs, offline first-person viewer traps | `view-pilot-and-first-person.md` |
+| The View Pilot of a shell and proxy car: body geometry, its three states, creating a missing one, counting what the seat sees against LOD 0 | `view-pilot-assembly.md` |
+| Closing gaps the seated rider sees through: membranes in the View Pilot only, behind the steering sweep, tested from every eye | `view-pilot-closures.md` |
 | An empty inventory preview of a door or part: `rotationFlags` per side, `invview` placement | `inventory-preview.md` |
-| Identical textures and server mismatch as false diagnoses; parent-driven selections do not reach a proxy | `materials-and-selections.md` |
+| Identical textures and a server-side measurement as false diagnoses; selections the car drives must live in the shell, not a proxy | `materials-and-selections.md` |
 
 ## Build, runtime and test
 
@@ -177,21 +192,16 @@ Before the first boot of an aircraft, check these faults, which compile clean an
 | Is the packed PBO the approved artifact; `config.cpp` syntax with `CfgConvert` and canaries; comparing native crashes | `deploy-gates-and-crash-fingerprint.md` |
 | Per-tick events, engine state on a passenger's client, visual state on a fresh spawn, a vehicle drawn or exited in the wrong place | `runtime-state-and-sync.md` |
 | Network ownership against a forced seat, why writing the pose fights the owner, a custom Pawn frame | `network-physics-ownership.md` |
-| Driving, seating and unseating a vehicle from an automated harness; what the server still validates | `test-stand-and-mcp.md` |
-| Whether a pose complaint is a perspective artifact; anchoring a HUD marker ray; validating a visual metric | `visual-metrics-and-viewer.md` |
-| The per-session history of the imported-car visual gates, items #10(a) to #10(o); what a clean `validate()` and a Blender culling render cannot prove about winding; the sign of a face a script adds or moves | `visual-gates-and-winding.md` |
+| Driving, seating and unseating a vehicle from an automated test bridge; what the server still checks; camera traps | `test-stand-and-mcp.md` |
+| Whether a pose complaint is perspective; anchoring a HUD marker ray; checking a ripped part before rebuilding it; an offline visibility check | `visual-metrics-and-viewer.md` |
+| Winding checks for imported cars: the orientation rule, per-piece uniformity, the see-through ray check, duplicate faces, shading seams, what a clean `validate()` and a Blender culling render cannot prove, the sign of a face a script adds or moves | `visual-gates-and-winding.md` |
 
 ## Method and history
 
 | Question | File |
 |---|---|
-| The iteration budget, calibrating a gate before trusting it, what a PASS covers, the habits that stop re-deriving known causes | `method-and-gate-calibration.md` |
-| Negative fixtures for import gates, rules drawn from field lessons, a config gate is not a visual gate | `process-gates.md` |
-| The superseded diagnostic order, kept for vehicles already in flight. History only | `history/legacy-gate-ladder.md`, `history/pre-change-0-gate-ladder.md` |
-| The exact text of rules that were later corrected. History only | `history/superseded-family-b-rules.md` |
-| The day-1 checklist and 12-step pipeline a ripped car followed before change 0. History only | `history/family-b-canonical-path.md` |
-| The seven document types a new family B car no longer produces since change 0, and where each is kept. History only | `history/family-b-retired-artifacts.md` |
-| The full family B runbook that change 1 took off the critical path: smoke test notes, recurring defects, lift, doors, proxy frames, render gate, glass, winding lineage. History only | `history/family-b-runbook-pre-change-1.md` |
+| Counting the cycles spent on one goal, making a check able to fail before trusting it, what a pass covers, habits that stop re-deriving known causes | `method-and-gate-calibration.md` |
+| Import checks that can be trusted: a failing case for every rule, three exit states, independent controls, a config check is not a visual check | `process-gates.md` |
 
 ## Where vanilla keeps vehicle data
 

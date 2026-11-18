@@ -1,271 +1,107 @@
-# The `.styles` system: how a layout picks a style, what a style holds, and how to add one
+# Widget styles
 
-How the `style` attribute of a layout widget resolves, the format and state names of a `.styles` file, the 9-slice items each widget type expects, which vanilla styles exist, and the recipe for a mod's own styles. `style` is the third most common layout attribute.
+How the `style` attribute of a layout widget finds its style, what a `.styles` file holds, which states and 9-slice items each widget type uses, which vanilla style draws what, and how to add a mod's own styles. `style` is the third most common layout attribute.
 
-Built from a full parse of `P:\gui\looknfeel\dayzwidgets.styles` (4,462 lines in 1.29; 4,596 lines in 1.30, 28 widget
-types, 130+ styles) cross-checked against all vanilla `.layout` files, plus the group mod's core library
-shipped-mod example (third-party, not checked on `P:\`) and the `enwidgets.c` protos. Every count was reproduced by a second,
-independent pass. The counts come from 1.29 data unless a line says 1.30; the `path:line` citations were read on a `P:\` holding 1.30,
-and the lines given are the 1.30 lines.
+The vanilla file is `P:\gui\looknfeel\dayzwidgets.styles`: 28 widget types and more than 130 styles. Counts are over the vanilla layouts under `P:\gui\layouts`.
 
-## 1. How a layout selects a style
+## How a layout picks a style
 
-- Attribute: `style NAME` — **always unquoted, one token** (3,134 occurrences across the 214 vanilla
-  layouts; zero quoted forms exist).
-- The engine maps the layout widget class to the styles-file `<Widget Name>` by **stripping the
-  `Class` suffix**: `TextWidgetClass` → `<Widget Name="TextWidget">`. Under this mapping **all 3,134
-  vanilla refs resolve — zero dangling** (mechanism corroborated by the perfect data-side
-  correspondence; not traced in engine binaries).
-- **Style names are scoped to their widget type**: `TextWidget` has `Normal`/`Bold` while
-  MultilineText/RichText use `DayZNormal`/`DayZBold` and Html has only `DayZNormal`
-  (`P:\gui\looknfeel\dayzwidgets.styles:3883-3885`) — the same name can mean different things
-  under different widget types, and a style must be declared under every widget type that uses it.
-- **Default when `style` is omitted: unknown offline** `[verify in-game]`. 4,000+ vanilla widgets
-  omit it (192 text widgets ship with neither `style` nor `font`), so an engine fallback exists, but
-  nothing in scripts names it. `Widget.GetStyleName()` (`P:\scripts\1_core\proto\enwidgets.c:133`) can settle it in-game.
-- Runtime API is read-only + load-only: `GetStyleName()` getter and global
-  `LoadWidgetStyles(string filename)` (`P:\scripts\1_core\proto\enwidgets.c:693`). There is **no SetStyle/SetStyleName** —
-  a widget's style cannot be changed at runtime; plan state changes via styles' own State system or
-  script SetColor/Show.
+- `style NAME` is always unquoted and one token. Vanilla layouts use it 3,134 times and never quote it.
+- The layout class maps to the `<Widget Name>` of the styles file by dropping the `Class` suffix: `TextWidgetClass` reads `<Widget Name="TextWidget">`. Under that rule every vanilla reference resolves.
+- Style names belong to their widget type. `TextWidget` has `Normal` and `Bold`, `MultilineTextWidget` and `RichTextWidget` use `DayZNormal` and `DayZBold`, and `HtmlWidget` has only `DayZNormal` (`P:\gui\looknfeel\dayzwidgets.styles:3883`). A style used on two widget types is declared under both.
+- A name borrowed from another type fails without a load error, a warning or a log line: the widget gets nothing to draw, so its `color` never paints and text floats over the world.
+- Unverified (not tested in game): which style a widget gets when it names none. More than 4,000 vanilla widgets leave `style` out. `Widget.GetStyleName()` (`P:\scripts\1_core\proto\enwidgets.c:133`) can tell you in game.
+- A style cannot change at runtime. Script has `GetStyleName()` and the global `LoadWidgetStyles(string filename)` (`:693`) and no `SetStyle`; change looks through the style's own states, `SetColor` or `Show`.
 
-## 2. File format
+## File format
 
 ```xml
 <WidgetStyles>
-    <Widget Name="PanelWidget">                                   <!-- widget TYPE (class minus 'Class') -->
-        <Style Name="MyStyle" Font="gui/fonts/MetronBook" ImageSet="my_set" Color="4294967295">
+    <Widget Name="PanelWidget">
+        <Style Name="MyMod_Outline" Font="gui/fonts/MetronBook" ImageSet="my_set" Color="4294967295">
             <State Name="Normal">
-                <Item Name="Center" Image="SomeImagesetImage" />  <!-- 9-slice items -->
+                <Item Name="Center" Image="SomeImage" />
             </State>
         </Style>
     </Widget>
 </WidgetStyles>
 ```
 
-- **Color** = decimal packed 32-bit color; `4294967295` = 0xFFFFFFFF opaque white (82% of styles,
-  105/128). Every non-white value in the vanilla file is a transparency setting (alpha byte 0x00),
-  not a hue.
-- **Font** accepts two forms: size-suffixed atlas (`gui/fonts/sdf_MetronLight24`) or **size-less
-  family** (`gui/fonts/MetronBook`) resolved via `gui/fonts/<family>.xml` `fontGenerator` descriptors
-  that enumerate the baked sizes.
-- **ImageSet** + each Item's **Image** refer to the imageset's registered name (line-2 `Name` field
-  of the `.imageset`) and an image Name inside it — never file paths. Vanilla styles use 6 sets:
-  `dayz_gui` (85 styles), `rover_imageset` (18), `ccgui_enforce` (14), `empty` (9), plus 2 minor.
-  A mod style may freely reference a vanilla imageset.
-- Empty `Image=""` on a slice/state is presumed to draw nothing (consistent with vanilla data;
-  engine behavior inferred, not tested).
+- `Color` is a decimal packed 32 bit color; `4294967295` is `0xFFFFFFFF`, opaque white, on 105 of 128 vanilla styles. Every other vanilla value only changes transparency.
+- `Font` is a sized atlas (`gui/fonts/sdf_MetronLight24`) or a family with no size (`gui/fonts/MetronBook`), resolved through the `gui/fonts/<family>.xml` descriptors that list the baked sizes.
+- `ImageSet` and each `Image` are the imageset's registered name and an image name in it, never file paths. Vanilla styles use six sets, mostly `dayz_gui`, `rover_imageset`, `ccgui_enforce` and `empty`. A mod style may use a vanilla imageset.
+- An empty `Image=""` draws nothing for that slice and state.
 
-## 3. State vocabulary (complete — nothing else exists in the vanilla file)
+## States
 
-`Normal, Pushed, Highlight, Focus, Disabled, Mark, Checked, Crossed, Empty`
+The whole vocabulary is `Normal`, `Pushed`, `Highlight`, `Focus`, `Disabled`, `Mark`, `Checked`, `Crossed` and `Empty`. There is no `Hover` (mouse over is `Highlight`) and no `Pressed` (it is `Pushed`).
 
-- There is **no 'Hover'** (mouse-over = `Highlight`) and **no 'Pressed'** (= `Pushed`).
-- Per widget kind:
-  - **ButtonWidget** = Normal/Pushed/Highlight/Focus/Disabled
-  - **XComboBoxWidget** = Normal/Focus/Highlight/Disabled
-  - **listbox family + EditBox/PasswordEditBox/Slider** = Normal/Focus/Disabled
-  - **MultilineEditBoxWidget** = Normal/Focus only (no Disabled)
-  - **ProgressBar/SimpleProgressBar/Window/Panel/SmartPanel/Scroll/GridSpacer/WrapSpacer** =
-    Normal/Disabled only
-  - **CheckBoxWidget** = Normal/Disabled/Mark(=checked, Image "MarkDone")/Highlight
-  - **ThreeStateCheckboxWidget** = Checked/Crossed/Empty/Disabled/Highlight (no Normal)
-  - **graph widgets** (4) = Normal only
-  - **TextWidget/MultilineText/RichText/Html** = no `<State>` blocks at all (font+color only,
-    self-closing `<Style/>`)
+| Widget type | States |
+|---|---|
+| `ButtonWidget` | `Normal`, `Pushed`, `Highlight`, `Focus`, `Disabled` (`P:\gui\looknfeel\dayzwidgets.styles:1598` to `:1642`) |
+| `XComboBoxWidget` | `Normal`, `Focus`, `Highlight`, `Disabled` |
+| List boxes, `EditBoxWidget`, `PasswordEditBoxWidget`, `SliderWidget` | `Normal`, `Focus`, `Disabled` |
+| `MultilineEditBoxWidget` | `Normal`, `Focus` |
+| Progress bars, window, panel, smart panel, scroll and spacers | `Normal`, `Disabled` |
+| `CheckBoxWidget` | `Normal`, `Disabled`, `Mark` (checked, image `MarkDone`), `Highlight` |
+| `ThreeStateCheckboxWidget` | `Checked`, `Crossed`, `Empty`, `Disabled`, `Highlight`; no `Normal` |
+| The four graph widgets | `Normal` |
+| `TextWidget`, `MultilineTextWidget`, `RichTextWidget`, `HtmlWidget` | No states: font and color only |
 
-## 4. Item-name contracts per widget type (the 9-slice system)
+## 9-slice items per widget type
 
-Base 9-slice: `LeftTop/Top/RightTop/Right/RightBottom/Bottom/LeftBottom/Left/Center` — exactly the
-set for ButtonWidget, EditBoxWidget, PasswordEditBoxWidget, PanelWidget, ScrollWidget,
-GridSpacerWidget, WrapSpacerWidget and the 4 graph widgets.
+The base set is `LeftTop`, `Top`, `RightTop`, `Right`, `RightBottom`, `Bottom`, `LeftBottom`, `Left` and `Center`. Button, edit box, password edit box, panel, scroll, both spacers and the graph widgets use exactly that.
 
-Extensions:
-- **ProgressBarWidget** = 9 + a `Bar*` mirror of all 9 (18 items; Default style: `Center` = trough
-  image, `BarCenter` = fill image, frame slices empty).
-- **SimpleProgressBarWidget** = only the `Bar*` 9-set.
-- **SliderWidget** = frame 9 + `Bar*` 9 (18).
-- **WindowWidget** = 9 + a `Title*` mirror of all 9 (18) for the title bar.
-- **XComboBoxWidget** = 9 + `ArrowLeft` + `ArrowRight` (11).
-- **SmartPanelWidget** = 9 + `Overlay` (10).
-- **CheckBoxWidget / ThreeStateCheckboxWidget** = a single Item named `CheckBox`.
-- **MultilineEditBoxWidget** = a single Item named `Highlight` (text-selection highlight). The
-  single-line EditBoxWidget style has no Highlight item — plain 9-slice border only.
-- **Listbox family** (GenericListbox/UniversalListbox/ServerBrowser/TextListbox) = identical 31-item
-  union: 9-slice with `*Center` edge naming (`TopCenter/BottomCenter/LeftCenter/RightCenter`) +
-  `Header*` 9-set + `TitleLeftCenter/TitleCenter/TitleRightCenter` + `TitleCenterSeparator` +
-  `Separator/TopSeparator/BottomSeparator` + `ScrollBarTop/ScrollBarCenter/ScrollBarBottom` +
-  `Highlight` + `LeftTopWithTitle/RightTopWithTitle`.
+| Widget type | Items |
+|---|---|
+| `ProgressBarWidget` | The nine plus a `Bar*` copy of all nine; `Center` is the trough, `BarCenter` the fill |
+| `SimpleProgressBarWidget` | Only the `Bar*` nine |
+| `SliderWidget` | The nine plus the `Bar*` nine |
+| `WindowWidget` | The nine plus a `Title*` copy for the title bar |
+| `XComboBoxWidget` | The nine plus `ArrowLeft` and `ArrowRight` |
+| `SmartPanelWidget` | The nine plus `Overlay` |
+| `CheckBoxWidget`, `ThreeStateCheckboxWidget` | One item, `CheckBox` |
+| `MultilineEditBoxWidget` | One item, `Highlight`, the selection; the single line edit box has none |
+| List boxes (generic, universal, server browser, text) | The same 31 items: edges named `TopCenter` and so on, a `Header*` nine, `TitleLeftCenter`, `TitleCenter`, `TitleRightCenter`, `TitleCenterSeparator`, `Separator`, `TopSeparator`, `BottomSeparator`, `ScrollBarTop`, `ScrollBarCenter`, `ScrollBarBottom`, `Highlight`, `LeftTopWithTitle` and `RightTopWithTitle` |
 
-## 5. The 'Colorable' mechanism (why script SetColor works on styled widgets)
+## Styles that draw a tintable fill
 
-`ButtonWidget/Colorable` (`P:\gui\looknfeel\dayzwidgets.styles:2167-2223`): `Color="0"` + `Center Item = "WhitePixel"`
-(a 1×1 white region, `P:\gui\imagesets\rover_imageset.imageset:11-14`) in **all 5 states** → the widget renders a
-white pixel that script `SetColor(ARGB)` then tints. **This is the verified mechanism behind the
-skill fact "ButtonWidget.SetColor() works directly, no LoadImageFile needed"** — it holds for styles
-whose Center is a white/colorable image (the WhitePixel Center is the load-bearing part;
-`WindowWidget/Colorable` keeps Color=white and is still colorable via its WhitePixel Center).
+`SetColor` tints a styled widget only when its style draws a white image. `WhitePixel` is a 1x1 white region of `rover_imageset` (`P:\gui\imagesets\rover_imageset.imageset:11`).
 
-Also style-driven for free: ButtonWidget/Default overlays
-`alpha_176` on Pushed (`P:\gui\looknfeel\dayzwidgets.styles:1617`), `alpha_128` on Focus (`:1639`) and
-`alpha_64` on Disabled (`:1650`) — **picking `style Default` on a button gives
-working press/focus/disabled visual feedback with zero script**. Its `Normal` state has every
-slice empty (`P:\gui\looknfeel\dayzwidgets.styles:1598-1608`), so at rest it draws no body. A button declared with a `color` and no
-`style` drew no fill in game, while the same frame's `style Colorable` button did (measured in game
-).
+| Style | Type | Normal state | Use |
+|---|---|---|---|
+| `Colorable` | `ButtonWidget` | `Center` `WhitePixel` in all five states, `Color="0"` (`P:\gui\looknfeel\dayzwidgets.styles:2167`) | A button `SetColor` can fill |
+| `Colorable` | `WindowWidget` | `WhitePixel` centre, white color | Vanilla dialogs (`P:\gui\layouts\dialog.layout:16`) |
+| `rover_sim_colorable` | `PanelWidget` | `WhitePixel` in all nine slices (`:3284`) | The panel to tint; 641 uses in 100 vanilla layouts |
+| `ColorablePanel` | `PanelWidget` | Every slice `Image=""` (`:3388`) | Draws nothing despite its name |
+| `Default` | `ButtonWidget` | Every slice empty (`:1598` to `:1608`) | Draws no body at rest; `alpha_176` on `Pushed` (`:1617`), `alpha_128` on `Focus` (`:1639`), `alpha_64` on `Disabled` (`:1650`) |
+| `EmptyHighlight` | `ButtonWidget` | Empty, but `Focus` has `Center` `WhitePixel` (`:2224`, `:2236`, `:2238`) | Fills white on focus; set a body `color` |
 
-## 6. Style inventory (what exists to pick from — most-used names)
+`PanelWidget` has no `Colorable`: its block runs from `P:\gui\looknfeel\dayzwidgets.styles:3233` to `:3724`. Pick a style by what it draws, never by its name. Inside `<Widget Name="<YourType>">`, list the styles whose `Normal` state has a non-empty `Center`; anything with `Center=""` paints nothing and the engine never says so. The file is XML: a search written for the brace format finds nothing and reads like "that style does not exist".
 
-28 widget types have styles; **ImageWidget and FrameWidget have no entry** (never styleable).
-Top vanilla usage: `PanelWidget/rover_sim_colorable` 577×, `GridSpacerWidget/DayZDefaultPanel` 455×,
-`PanelWidget/blank` 210×, `TextWidget/Normal` 174×, `ButtonWidget/Colorable` 174×.
+Measured in game: a button with a `color` and no `style` drew no fill, while a `style Colorable` button in the same frame did. A `PanelWidget` with `style Colorable` drew nothing, and switching it to `ColorablePanel` still drew nothing.
 
-Highlights per type (full inventory in the styles file itself):
-- TextWidget: `Normal, Bold, Light, None` · MultilineText/RichText: `DayZNormal, DayZBold` · Html: `DayZNormal`
-- ButtonWidget (22): `Default, Colorable, Empty, EmptyHighlight, MainMenu, MenuDefault, Editor,
-  InventoryActionMenu, OldStyle, DayZDefaultButton(+NoBorder/Bottom/Sides/Top/All/_DisabledState),
-  DayZInventoryButton(All/Top/Bottom/Right/Left)`
-- PanelWidget (22+): `rover_sim_colorable, blank, Outline, ColorablePanel, editor_quad,
-  editor_quad_dark, dashed, DayZDefaultPanel(+Left/Right/Top/Bottom/Sides), ToolbarWidget,
-  UIDefaultPanel, rover_sim_black(_2), InventoryPanel, EditorPanel, editor_selection`,
-  **`ActionWidget` (DayZ 1.30)**
-- ProgressBarWidget: `Default, DayZLoading, Stamina, Quantity, Loading`
-- Styles exist for XComboBox/SmartPanel/Html/ThreeStateCheckbox/graph widgets too. Seven types have
-  styles but no instance in any vanilla layout: the 4 graph widgets (BasicGraph, RingBufferGraph,
-  TimeBasedGraph, TimeBasedGraphWithAxes), GenericListboxWidget, UniversalListboxWidget and
-  SimpleProgressBarWidget.
+## Vanilla styles to pick from
 
-### The `ActionWidget` style (added in DayZ 1.30)
+`ImageWidget` and `FrameWidget` have no styles. The most used are `PanelWidget/rover_sim_colorable`, `GridSpacerWidget/DayZDefaultPanel`, `PanelWidget/blank`, `TextWidget/Normal` and `ButtonWidget/Colorable`.
 
-In DayZ 1.30 (`P:\gui\looknfeel\dayzwidgets.styles:3700-3723`), a new style `ActionWidget`
-was introduced for `PanelWidget`. The same name is declared again under `GridSpacerWidget`
-(`:4280`) and `WrapSpacerWidget` (`:4570`), as the rule of section 1 requires for a style used on
-more than one widget type. The `PanelWidget` declaration:
+- `TextWidget`: `Normal`, `Bold`, `Light`, `None`.
+- `ButtonWidget` (22): `Default`, `Colorable`, `Empty`, `EmptyHighlight`, `MainMenu`, `MenuDefault`, `Editor`, `InventoryActionMenu`, `OldStyle`, the `DayZDefaultButton` family and the `DayZInventoryButton` family.
+- `PanelWidget` (22): `rover_sim_colorable`, `blank`, `Outline`, `ColorablePanel`, `editor_quad`, `editor_quad_dark`, `dashed`, the `DayZDefaultPanel` family, `ToolbarWidget`, `UIDefaultPanel`, `rover_sim_black`, `rover_sim_black_2`, `InventoryPanel`, `EditorPanel`, `editor_selection` and, new in 1.30, `ActionWidget`.
+- `WindowWidget` (6): `Default`, `rover_sim_black`, `rover_sim_black_2`, `Colorable`, `Simple`, `debugUI`.
+- `ProgressBarWidget`: `Default`, `DayZLoading`, `Stamina`, `Quantity`, `Loading`.
+- Seven types have styles and no vanilla layout uses them: the four graph widgets, `GenericListboxWidget`, `UniversalListboxWidget` and `SimpleProgressBarWidget`.
 
-```xml
-<!-- [EXACT] P:\gui\looknfeel\dayzwidgets.styles:3700 -->
-<Style Name="ActionWidget" Font="gui/fonts/AmorSerifPro-Bold" ImageSet="dayz_gui" Color="0">
-    <State Name="Disabled">
-        <Item Name="Bottom" Image="ActionWidgetGradientBottom" />
-        <Item Name="Center" Image="ActionWidgetGradientCenter" />
-        <Item Name="Left" Image="ActionWidgetGradientLeft" />
-        <Item Name="LeftBottom" Image="ActionWidgetGradientLeftBottom" />
-        <Item Name="LeftTop" Image="ActionWidgetGradientLeftTop" />
-        <Item Name="Right" Image="ActionWidgetGradientRight" />
-        <Item Name="RightBottom" Image="ActionWidgetGradientRightBottom" />
-        <Item Name="RightTop" Image="ActionWidgetGradientRightTop" />
-        <Item Name="Top" Image="ActionWidgetGradientTop" />
-    </State>
-    <State Name="Normal">
-        <Item Name="Bottom" Image="ActionWidgetGradientBottom" />
-        <Item Name="Center" Image="ActionWidgetGradientCenter" />
-        <Item Name="Left" Image="ActionWidgetGradientLeft" />
-        <Item Name="LeftBottom" Image="ActionWidgetGradientLeftBottom" />
-        <Item Name="LeftTop" Image="ActionWidgetGradientLeftTop" />
-        <Item Name="Right" Image="ActionWidgetGradientRight" />
-        <Item Name="RightBottom" Image="ActionWidgetGradientRightBottom" />
-        <Item Name="RightTop" Image="ActionWidgetGradientRightTop" />
-        <Item Name="Top" Image="ActionWidgetGradientTop" />
-    </State>
-</Style>
-```
+`ActionWidget` (`P:\gui\looknfeel\dayzwidgets.styles:3700`) builds a 9-slice gradient frame from the `ActionWidgetGradient*` images of `dayz_gui` in its `Normal` and `Disabled` states. It is declared again under `GridSpacerWidget` (`:4280`) and `WrapSpacerWidget` (`:4570`). The HUD sets it on the two action cursor containers, `ActionTargetsCursorWidget` (`P:\gui\layouts\day_z_hud.layout:2271`, style at `:2287`) and `ItemActions` (`:3844`, style at `:3859`); the prompt rows inside are `PanelWidgetClass` with no style of their own (`ui-changes-1-30.md`).
 
-**What it does:** It builds a parametric 9-slice gradient frame around interaction widgets using cut slices
-from the `dayz_gui` imageset (`ActionWidgetGradient*`).
-Where the HUD uses it, read on a `P:\` holding 1.30.164014: `style ActionWidget` sits on the two
-`GridSpacerWidgetClass` containers of the action cursor:
-`ActionTargetsCursorWidget` (`P:\gui\layouts\day_z_hud.layout:2271`, style at `:2287`) and `ItemActions` (`:3844`, style at `:3859`).
-The five interaction widgets inside (`item` at `:2294`, `interact` `:2477`, `continuous_interact` `:2755`,
-`single` `:3033`, `continuous` `:3249`) are `PanelWidgetClass` with no `style` line of their own.
-In 1.29 the interaction prompts were `ImageWidgetClass` widgets loading `linear_gradient.edds` or
-`card_drop.edds`; that half cannot be read on a 1.30 `P:\`.
+## A mod's own styles
 
-## 7. Custom-style recipe (production-proven, the group mod's core library)
+A group mod's core library ships a working example; this recipe follows it.
 
-1. **File** `<ModDir>/gui/styles/<name>.styles` — one `<Widget>` block per target widget type (the
-   style must be declared separately under each type it will be used on; the group mod's core library declares
-   `My_Clean_outline` twice: under PanelWidget and GridSpacerWidget, `my.styles:2-27/28-53`).
-   The outline-only trick: Normal state sets the 8 border slices to `Image="pixel"` and
-   `Center=""`.
-2. **Registration** in `config.cpp` inside `CfgMods > <ModName> > class defs`:
-   ```cpp
-   class widgetStyles { files[] = {"MyMod/gui/styles/my.styles"}; };
-   class imageSets    { files[] = {"MyMod/gui/imagesets/my_set.imageset"}; };
-   ```
-   (prefix-relative path, no leading slash). **An unregistered .styles file is inert** —
-   the group mod ships a dead `customStyles.styles` with no registration and no refs: anti-example.
-3. **Usage**: `style My_Clean_outline` on matching widget classes in the mod's layouts.
-   Registration is **global**: the group mod uses the style registered by its Core dependency
-   (requiredAddons) without registering anything itself.
-4. **Merge semantics**: a mod `.styles` file adds styles to existing vanilla widget types —
-   additive merge with `dayzwidgets.styles`, not replacement (evidenced by shipped layouts mixing
-   `My_Clean_outline` and vanilla `rover_sim_colorable` in the same file; runtime semantics inferred
-   from shipped-mod structure). Custom styles may reference vanilla fonts and imagesets.
-5. **Workbench preview**: also register the .styles/.imageset in `dayz.gproj` or the Layout Editor
-   renders them blank — see `plan-to-implementation.md`, section 3 (dual registration).
+1. Write `MyMod/gui/styles/mymod.styles` with one `<Widget>` block per widget type the style is used on. For an outline only frame, set the eight border slices to `Image="pixel"` and `Center=""`.
+2. Register it in `config.cpp`, `CfgMods`, `class defs`: `class widgetStyles { files[] = {"MyMod/gui/styles/mymod.styles"}; };` (`script-recipes.md`). An unregistered file does nothing.
+3. Use it with `style MyMod_Outline` on widgets of a matching class. Registration is global: a mod that requires the one registering a style can use it without registering anything.
+4. A mod file adds styles to the vanilla widget types; shipped layouts mix mod and vanilla styles in one file. That is read from shipped mods, not measured. A shadow PBO of `dayzwidgets.styles` itself replaces the whole file (`layout-variants.md`).
+5. For the Workbench Layout Editor, list the file in `dayz.gproj` too, or the editor draws it blank (`plan-to-implementation.md`).
 
-## 8. Practical guidance
-
-- Building a themed panel/button UI? **Reach for a style before hand-composing Image+Text widgets**:
-  a 9-slice style gives borders, state feedback (press/focus/disabled) and script-tintability
-  (WhitePixel Center + SetColor) declaratively.
-- Debugging "my style does nothing": (1) is the style declared under this widget's type (Class-suffix
-  stripped)? (2) is the .styles file registered in `config.cpp class defs > widgetStyles`? (3) does
-  the ImageSet name (not filename) resolve? (4) for Workbench preview, is it in dayz.gproj?
-- The HTML renderer (`scripts/tools/dayz-layout-viewer/build_viewer.py`) does not resolve styles — styled widgets preview as
-  invisible/plain. Note it in the spec and rely on in-game verification for styled chrome.
-
-
----
-
-## Before writing `style X`, check the block of that widget type (measured in game)
-
-The style namespace is **per widget type**, and a name borrowed from another
-type fails **silently**: no load error, no warning, no log line. The widget
-simply has no ImageSet to tint, so its `color` never paints and you get text
-floating over the game world.
-
-Real case, cost a full in-game session to notice and a human to see it:
-`MCPDialogPanel` is a `PanelWidgetClass` and declared `style Colorable`.
-
-- `<Widget Name="WindowWidget">` does declare `Colorable` (6 styles: Default,
-  rover_sim_black, rover_sim_black_2, Colorable, Simple, debugUI).
-- `<Widget Name="PanelWidget">` declares 21 styles (22 on 1.30, which adds `ActionWidget`) and **none** is
-  `Colorable`: the block runs from `P:\gui\looknfeel\dayzwidgets.styles:3233` to `:3724`, and its two
-  nearest names are `rover_sim_colorable` (`:3284`) and `ColorablePanel` (`:3388`).
-
-### The obvious-looking replacement is a second trap (measured the same night)
-
-`ColorablePanel` does exist for `PanelWidget`, so switching to it passes the
-name check above — and still paints nothing. Its `Normal` state is
-`<Item Name="Center" Image="" />`: an empty skin. The rename fixed the grep and
-not the pixel, and the panel stayed invisible through a full repack, deploy and
-relaunch. Two in-game cycles spent on a name.
-
-The real equivalent of `WindowWidget/Colorable` is
-**`PanelWidget/rover_sim_colorable`**: `Center="WhitePixel"` +
-`Color="4294967295"`, the identical mechanism — a white pixel tinted by the
-widget's own `color`. It is also the most-used panel style in all of vanilla
-(577x, section 6 above), in `day_z_hud.layout`,
-`day_z_connection_dialogue.layout`, `day_z_ingamemenu.layout` and about 100 layouts in all
-under `P:\gui\layouts` on 1.30.
-
-**Pick a style by what it draws, never by what it is called.** `ColorablePanel`
-sounds like the panel flavour of `Colorable` and is not; `rover_sim_colorable`
-sounds like simulation chrome and is exactly it. The mechanical query is one
-pass over the file: inside `<Widget Name="<YourType>">`, list the styles whose
-`<State Name="Normal">` carries a **non-empty** `Center` image. Anything with
-`Center=""` is a no-op skin however promising the name, and the engine will
-never tell you.
-
-So the name was real, the layout looked plausible, vanilla itself uses
-`style Colorable` on `P:\gui\layouts\dialog.layout:1-16` — but that is a
-`WindowWidgetClass`. Same word, different type, nothing painted.
-
-**The check is mechanical:** open `P:\gui\looknfeel\dayzwidgets.styles`, find
-`<Widget Name="<YourWidgetType>">`, confirm the style name is inside that block.
-Having seen the name in another working layout proves nothing.
-
-**And grep the XML as XML.** This file is `<WidgetStyles><Widget Name=...>
-<Style Name=... ImageSet=.../>`. A grep written for the brace format returns
-zero hits and reads as "that style does not exist anywhere" — a false negative
-that sounds like an answer.
+When a style does nothing, check in order: is it declared under this widget's type; is the `.styles` file registered; does the `ImageSet` name (not file name) resolve; for the editor, is it in `dayz.gproj`. The HTML viewer does not read styles, so styled widgets preview plain; check styled chrome in game.

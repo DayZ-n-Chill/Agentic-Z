@@ -1,0 +1,52 @@
+# Rider poses measured in game
+
+What was measured in game on 1.30 when a mod's own rider pose was swapped in for one motorbike class through a child instance file, with vanilla clips and with clips of its own, and the traps found. The vanilla mechanism is in `rider-poses.md`, "Changing the pose for one vehicle class"; the solver that made the clips is in `rider-pose-solver.md`.
+
+Each result was measured on one test motorbike with a dedicated server and the owning client, one player. They are evidence for that setup, not rules, and none is checkable on `P:\`.
+
+## The swap, with vanilla steering clips
+
+A child `.asi` of `player_main.asi` that overrides only the column the bike rides on changed that player's pose on that class only, with `vehicles.agf`, `player_main.ast` and `player_main.agr` untouched. Like the weapon instance route, it does not replace the graph, but it can still collide with any other mod that swaps the player's instance.
+
+- The file: a text `.asi` in the vanilla format, its header copied from `player_main_surrender.asi` (lines 1 to 6), holding only the two `Vehicle.Jawa_Bitrak.DriverSteering...` lines (vanilla's at `P:\DZ\anims\workspaces\player\player_main\player_main.asi:5175` to `:5180`), pointed at the CivilianSedan's steering poses (`Vehicle.CivilianSedan.DriverSteeringExtreme` and `DriverSteeringMain`, `:4785` to `:4790`). Vanilla stores its `.asi` files the same way: plain text, LF line ends, no `.meta`. Packed as a plain file in the mod's PBO (AddonBuilder with `-packonly` leaves it as it is), it loaded by path with no Workbench step and no workspace entry.
+- Registration: `AddItemInHandsProfileIK("<no such item>", "<pboprefix>/anims/<name>.asi", cfg, "")` with an empty handed `DayzPlayerItemBehaviorCfg`, inside `RegisterCustom`, which runs before `DebugPreloadAnimationInstances` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1653`). It returned 913 on both machines. `DayZPlayerTypeRegisterItems` runs twice per machine (called at `dayzplayercfgbase.c:12` and `:21`), and the client runs it once more for the main menu character.
+- The switch, on server and owning client. On: in `OnCommandVehicleStart` of `PlayerBase` (`P:\scripts\4_world\entities\manbase\playerbase.c:4342`) when the vehicle command's transport `IsKindOf` the class, with surrender's two calls. Off: as soon as `IsGettingOut()` is true, and again in `OnCommandVehicleFinish` (`:4375`) before `super`, with `EnableAutoAnimInstUpdateOnHandsChange(true)`, the base `player_main.asi` by path and `OnItemInHandsChanged(true)`, so vanilla's `RefreshHandAnimationState` (`:4384`) runs after it.
+- Result: both machines got both callbacks and ran `CommandHandler`; their switch on calls were 24 ms apart and their switch off calls 5 ms apart. Stopped, the rider's left hand, pelvis and head sat 0.84, 1.01 and 1.01 m from the same player without the swap (owning client samples). The player stayed unswapped on the other classes of the row. On exit both machines switched back with the automatic switch on again; on three other bikes ridden after, the stopped pelvis stood 1.098 m high in the bike's model space as without the swap (0.093 m with it), so the override was gone.
+
+Traps:
+
+- After the get out clip the command still reads as seated until `OnCommandVehicleFinish`. A check every frame switched the rider back on for about 30 ms. Latch the swap off from the start of the get out until the command is gone.
+- `GetBoneIndexByName` on `Human` (`P:\scripts\3_game\human.c:1417`) returns hash like ids, several negative: `RightHand` gave -1405358722, and `RightFoot`, `RightToeBase`, `LeftForeArm` and `RightHandRing1` were negative too. Only -1 means missing.
+- The server's hands are not the client's. For the same stopped pose the dedicated server put the left hand 0.35 m (vanilla pose) and 0.55 m (swapped pose) from the client's, while pelvis and head agreed within a few millimetres. Measure hand placement on the client.
+
+## Own clips on the rider
+
+The same route with generated clips, riding included, on a custom sport bike with a 20 degree steering lock. The test mod kept a config table (one class per pose, each with a vehicle class and an `.asi`), registered every `.asi` in `RegisterCustom`, switched in `OnCommandVehicleStart`, `CommandHandler` and a client check every frame, and latched off from the start of the get out.
+
+- A clip from `DayZATool --generate-anim <file>.seanim 100` plays. DayZATool writes `ANIMSET5`; 1.30's player clip PBO holds 10 `ANIMSET4`, 2,398 `ANIMSET5` and 5,007 `ANIMSET6` clips. A vanilla steering pose with `Spine1` bent 20 degrees put the stopped rider's head 0.4 mm (median of 129 client samples) from the clip's forward kinematics and 19 cm from the vanilla one. The `.asi` `Resource` line loaded both as a bare path and with an invented `{GUID}` in front; vanilla ships no `.meta` for its clips.
+- The steering clip always spans 45 degrees each way. The motorbike steering poses are read at `Time "clamp((VehicleSteering + 0.785) * 0.63694..., 0.0, 1.0)"` (`P:\DZ\anims\workspaces\player\player_main\vehicles.agf:50` for `DriverSteeringMain`, the same at `:1466` for `DriverSteeringExtreme`), and `VehicleSteering` is the wheel angle in radians. Author frame `i` of `N` at `(2i/(N-1) - 1) × 45` degrees, clamped to the lock. The node reads normalized time, so the frame count is free: 37 frames put a 20 degree lock exactly on a frame. With frames spread over the lock instead, both hands sat 44 mm off at full lock (the engine read the clip at 0.45 of its length). With frames at 45 degrees, the frame that best explains the measured hands (fit residual median 0.3 mm, at most 0.6 mm per hand) sat at the bars' measured angle: 20.0 degrees stopped at full lock, and within 1.2 degrees of the bars while riding at 11 to 27 km/h with the bars between -16.0 and +17.4 degrees (0.1 degree or less in 29 of 39 samples). No hand to grip distance was measured; the solver puts the hands on the grips by construction.
+- Write transitions as absolute whole body poses. The vanilla `IdleToDrive` and `DriveToIdle` clips hold differences: per bone, pose = base × add in local space, translations added. `IdleToDrive` goes over the riding pose (its frame 0 rebuilds the stopped pose within 0.19 degrees and it ends at identity), `DriveToIdle` over the stopped one. They play as states of `Idle_MotorBikeSTM` (`vehicles.agf:1204` to `:1220`) under the blend node `Steerinng` (`:2720`; vanilla spells it so). A DayZATool clip holding the same kind of data played as an absolute pose: during transitions the pelvis, spine, neck and head collapsed onto one point near the root in 8 of 209 client and 9 of 218 server samples. Exported as absolute poses keying every bone of the steering pose, arms included, nothing collapsed, and while stopping the hands sat 0.1 to 1.5 mm from the clip's hands at the measured bar angle. Keep the vanilla notes (`Sound` at frame 10 of `IdleToDrive`, `Step` at 7 and 15 of `DriveToIdle`); a SEAnim with notes needs presence flag 64.
+- How close it sat: stopped, per bone medians 0.1 to 0.5 mm from the clip's forward kinematics (single samples up to 37 cm during the blend after getting on). Riding, pelvis medians 1.1 to 1.7 cm and head medians 2.1 to 2.6 cm (the graph's lean and acceleration layers add to the pose). Getting on and off still play the vanilla clips and blend into the new pose in about 0.3 s. One sample while pulling away had both hands 4 cm wider than the grips during the blend. In later first person runs with the same clips, bike stopped and pelvis within 0.6 mm, the head moved up to 7.6 cm between runs and looks; the cause is not known.
+
+## Probes for a test
+
+Reading the bars' real angle: `GetBonePivotsForAnimationSource(GetViewGeometryLevel(), "turnfront", pivots)` (`P:\scripts\3_game\entities\object.c:233`, `GetViewGeometryLevel` at `:220`), then `GetBoneRotationMS(pivots[0], q)` (`:242`). The angle is `2 * atan2(|q.xyz|, |q.w|)`, signed along the steering axis. Vanilla does the same lookup for its sounds (`P:\scripts\4_world\entities\vehicles\motorbikescript.c:287` to `:292`). `WheelGetDirection(0)` on `Motorbike` (`P:\scripts\3_game\vehicles\motorbike.c:247`) gives the front wheel's direction.
+
+A scripted get out, for a test that must see the pose switch back: `ActionGetOutTransport` needs no target. Its `HasTarget` returns false (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetouttransport.c:220`), its `ActionCondition` reads only the vehicle command (`:70`), and it ends in `GetOutVehicle` (`:183`), so starting it with any target gets the rider off. The switch off fired at the start of the get out on both machines; the get out took 2 s.
+
+## Measure the grip hole first
+
+On the skinned body mesh, vanilla vehicle clip hands close on a thin bar: the centre of the vanilla fist's hole sat about 23 mm from the memory point centre that had been used, and the hole's radius is 9.9 mm on the left hand and 11.5 mm on the right (the vanilla motorbike's bar). A custom grip of 20.1 mm radius cut up to 19 to 20 mm into the hand.
+
+- Before reusing vanilla clip hands on another vehicle, measure the clip's fist hole against the new grip or wheel radius.
+- Vehicle memory points such as the `accelerator` and `clutchlever` axes are not fist centres.
+- A hand on the grip at 0 mm that the solver gives by construction is not contact. Measure the wrap in degrees and the overlap on the mesh.
+- Wrap by turning each finger and thumb phalanx tangent to the grip. The test reached 330 to 360 degrees covered with 5 to 6 mm of overlap at every piece, through the whole steering range.
+
+## Not tested yet
+
+- Remote observers and late join. `OnCommandVehicleStart` and `OnCommandVehicleFinish` are engine callbacks (`P:\scripts\3_game\human.c:1691` and `:1692`), and nothing yet shows they reach remote proxies.
+- A weapon or other item in the hands, and the delayed hand refresh while riding: `OnItemInHandsChanged(bool pInstant = false, bool pChangeAnimationInstance = true)` (`P:\scripts\3_game\humanitems.c:112`) and `RefreshHandAnimationState(396)` (`playerbase.c:6197` to `:6200`).
+- The restart after unconsciousness, ejection and death.
+- The mod's own get in and get out clips.
+- Other graph mods. Survivor Animations' graph was in the 1.29 format with no `Jawa_` lines when checked, so on a server that loads it this route has nothing to override; check per mod whether a graph replacement still uses the `Vehicle.Jawa_Bitrak.` lines.

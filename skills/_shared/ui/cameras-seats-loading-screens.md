@@ -1,136 +1,100 @@
-# Scripted camera exit, interfaces opened from a seat, and the loading screen hook
+# Scripted cameras, seat interfaces and the loading screen
 
-Three lifecycle contracts that sit next to UI work and fail late: leaving a scripted camera (spectator, CCTV, drone), opening an interface while the player sits in a vehicle, and replacing the loading screen background.
+How to leave a scripted camera cleanly, how to open an interface while the player sits in a vehicle, and how to hook the loading screen. All three look finished and then fail on exit or on the next login.
 
-**How facts are marked here.** A `P:\` path with a line was opened and checked on `P:\` (DayZ 1.30). Results described as checked against a working implementation or measured in game are from a shipped mod on DayZ 1.29 (unless a line says otherwise) and are not yet checked on `P:\`.
+## Leaving a scripted camera
 
----
+Follow these four rules for a spectator, CCTV, drone, thermal or any other scripted camera. The failure usually shows when the player leaves the camera.
 
-## Contents
+1. Reuse the engine camera. Take `Camera.GetCurrentCamera()` (`P:\scripts\3_game\entities\camera.c:7`) and activate it. Don't create an unmanaged `staticcamera` object; a shipped mod that reuses the engine camera works where that route can crash.
+2. Keep that camera active through `SelectPlayer`. Turning it off first leaves the engine with no active camera while the player is selected. Call `SetActive(false)` (`camera.c:45`) in the cleanup after the selection.
+3. Enable the `HumanInputController` again before `SelectPlayer`, not after. The restored third person camera reads that input in `UpdateUDAngleUnlocked` (called at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercamera3rdperson.c:54` and `:55`). Get it wrong and first person works while third person stays pinned to the old camera and the player's actions are missing. `SetDisabled(bool pState)` is at `P:\scripts\3_game\human.c:22`.
+4. Don't use a continuous action's key to leave. Use a separate key such as Space or Esc, or the action manager can keep an action running. While an action runs and the player is not in free look, the third person camera takes its up and down limits from `player.GetLookLimits(...)` every frame (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercamera_base.c:176` to `:180`).
 
-- [Scripted camera exit lifecycle](#scripted-camera-exit-lifecycle)
-- [In seat interfaces: interrupt before excluding input](#in-seat-interfaces-interrupt-before-excluding-input)
-- [Loading screen classes and fields](#loading-screen-classes-and-fields)
-- [Loading screen hook contract](#loading-screen-hook-contract)
+Rules 1 and 2 match a working shipped mod. Rules 3 and 4 follow from the vanilla scripts and match the difference seen between first and third person, but each cause is not confirmed in game. Whether a running action still narrows the look limits on 1.30 is decided inside `GetLookLimits` and is not checked. `Input.ChangeGameFocus(+1)` and `(-1)` also show up around entry and exit in camera mods; their effect here is unverified.
 
-## Scripted camera exit lifecycle
+`HumanInputController.SetDisabled` has no callers under `P:\scripts` (a search for `.SetDisabled(` finds none), yet the working mod breaks without it. Vanilla not calling something is no reason to remove it from a mechanism that works.
 
-Use this checklist for a spectator, CCTV, drone, thermal or other scripted camera. The failure usually shows on **exit**, after the feature itself looked finished.
+## Interfaces opened from a seat
 
-1. **Reuse the engine camera.** Take `Camera.GetCurrentCamera()` (`P:\scripts\3_game\entities\camera.c:7`) and activate it. Do not create an unmanaged `staticcamera` object: compared with a working implementation that reuses the engine camera, that route could crash.
-2. **Keep that camera active through `SelectPlayer`.** Deactivating it first leaves the engine with no active camera while the player is selected. Call `SetActive(false)` (`P:\scripts\3_game\entities\camera.c:45`) in the cleanup after the selection.
-3. **Enable the `HumanInputController` again before `SelectPlayer`, not after it.** The restored third person camera reads that input in `UpdateUDAngleUnlocked` (called at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercamera3rdperson.c:54-55`). The symptom is specific: first person works, while third person stays pinned to the old camera transform and the player's actions are missing. `SetDisabled(bool pState)` is declared at `P:\scripts\3_game\human.c:22`.
-4. **Do not use a continuous action's key as the exit key.** Use a separate key such as SPACE or ESC. Otherwise the action manager can keep an action in progress. The third person camera narrows the up and down look while an action runs and the player is not in free look: on 1.30 it takes the limits from `player.GetLookLimits(...)` every frame (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercamera_base.c:176-180`). On 1.29 the same file was read as blocking the look outright during such an action (1.29 is not on `P:\`); whether a running action still narrows the limits on 1.30 is decided inside `GetLookLimits` and is not yet checked.
+For an interface opened while the player is seated, `HumanInputController.SetDisabled(true)` does not stop action input on its own. When the interface shares a key with a seat action, one hold of that key can close the interface and complete the vanilla action underneath it.
 
-How far each rule was verified:
+- Before you add an input exclude, interrupt any continuous action already running with `ActionManagerClient.RequestInterruptAction()` (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:1341`). Excluding input first can hide the key release and leave the action manager stuck in progress until the player logs in again.
+- Add the exclude you need (for example `{"menu"}`) on open with `AddActiveInputExcludes` (`P:\scripts\3_game\gameplay.c:800`). Remove it on every exit path with `RemoveActiveInputExcludes` (`gameplay.c:798`), guarded by a flag, so a half finished open never releases an exclude someone else owns.
+- While the exclude is active, `UAInput.LocalValue()` reads zero. The raw `KeyState(KeyCode key)` (`P:\scripts\1_core\proto\ensystem.c:291`) and `GetMouseState` (`ensystem.c:326`) still read the hardware, but `KeyState` ignores the player's key bindings, so use it only as a rough fallback.
 
-- Rules 1 and 2 were checked against a working implementation in a shipped mod.
-- Rules 3 and 4 were checked in the vanilla scripts and match the observed difference between first and third person, but each cause is not yet confirmed in game.
-- `Input.ChangeGameFocus(+1)` and `(-1)` were also seen around entry and exit; their effect in this camera contract is unverified.
-- "Vanilla never calls it" is not a reason to remove a mechanism that works. `HumanInputController.SetDisabled` has no callers under `P:\scripts` (a search for `.SetDisabled(` finds none on 1.30), yet removing it broke the working implementation.
+Letting a continuous action progress while seated, and the server state that makes late joiners see the vehicle right, are vehicle topics: see `_shared/vehicles/`.
 
-## In seat interfaces: interrupt before excluding input
-
-For an interface opened while the player is seated, `HumanInputController.SetDisabled(true)` does not by itself stop action input. When the interface shares a key with a seat action, one hold of that key can close the interface **and** complete the vanilla action underneath it.
-
-- Add the mission input exclude you need (for example `{"menu"}`) on open, with `AddActiveInputExcludes` (`P:\scripts\3_game\gameplay.c:800`). Remove it on **every** exit path (`RemoveActiveInputExcludes`, `P:\scripts\3_game\gameplay.c:798`), guarded by a flag, so a half finished open cannot release an exclude that someone else owns.
-- **Before you add an exclude, interrupt any continuous action already running** with `ActionManagerClient.RequestInterruptAction()` (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:1341`). Excluding input first can hide the key release and leave the action manager "in progress" until the player logs in again.
-- While the exclude is active, `UAInput.LocalValue()` reads zero. The raw `KeyState(KeyCode key)` (`P:\scripts\1_core\proto\ensystem.c:291`) and `GetMouseState` (`P:\scripts\1_core\proto\ensystem.c:326`) still read the hardware, but `KeyState` ignores the player's key bindings. Use it only as a rough fallback.
-
-The command modification that lets a continuous action progress while seated, and the server owned state needed so players who join late see the vehicle correctly, are vehicle topics: see the vehicles pack (`skills/_shared/vehicles/`), not this pack.
-
-## Loading screen classes and fields
-
-
-The "Loading screen hook contract" below replaces two parts of the example in this section: the `Timer` used to rotate backgrounds and the hand written `.edds` files. Follow the contract where the two differ.
+## Loading screen classes
 
 Four classes can be hooked, all in `P:\scripts\3_game\dayzgame.c`:
 
-- `LoginScreenBase` extends `UIScriptedMenu` at `P:\scripts\3_game\dayzgame.c:63`.
-- `LoginQueueBase` extends `LoginScreenBase` at `P:\scripts\3_game\dayzgame.c:110`.
-- `LoginTimeBase` extends `LoginScreenBase` at `P:\scripts\3_game\dayzgame.c:213`.
-- `LoadingScreen` at `P:\scripts\3_game\dayzgame.c:704` is not a `UIScriptedMenu`. It owns `m_WidgetRoot` directly.
+| Class | Base | Line |
+|---|---|---|
+| `LoginScreenBase` | `UIScriptedMenu` | `:63` |
+| `LoginQueueBase` | `LoginScreenBase` | `:110` |
+| `LoginTimeBase` | `LoginScreenBase` | `:213` |
+| `LoadingScreen` | none; a plain class that owns `m_WidgetRoot` | `:704` |
 
-These are the lines on DayZ 1.30. Older game builds have the same classes at other lines, so search for the class name on another version.
+Hook each with `modded class X { ... }` and no `extends` clause. `modded class LoginQueueBase extends UIScriptedMenu` is wrong syntax; the chain already runs through `LoginScreenBase`.
 
-`modded class LoginQueueBase extends UIScriptedMenu` is wrong syntax. `modded class` takes no `extends` clause; it changes the existing class. The correct form is `modded class LoginQueueBase { ... }`. The inheritance chain is already `LoginQueueBase`, `LoginScreenBase`, `UIScriptedMenu`.
+`LoadingScreen` declares its widgets at `dayzgame.c:706` to `:724` and fills them with `m_WidgetRoot.FindAnyWidget` in the constructor (`:729` to `:743`):
 
-**`LoadingScreen` fields to use in an override.** The fields are declared at `P:\scripts\3_game\dayzgame.c:706-724` and filled from `m_WidgetRoot.FindAnyWidget` in the constructor at `P:\scripts\3_game\dayzgame.c:729-743`:
+| Field | Type | Widget name |
+|---|---|---|
+| `m_ImageWidgetBackground`, `m_ImageBackground` | `ImageWidget` | `ImageBackground` (both point at it) |
+| `m_ImageLogoMid` | `ImageWidget` | `ImageLogoMid` |
+| `m_ImageLogoCorner` | `ImageWidget` | `ImageLogoCorner` |
+| `m_ImageLoadingIcon` | `ImageWidget` | `ImageLoadingIcon` |
+| `m_ProgressLoading` | `ProgressBarWidget` | `LoadingBar` |
+| `m_TextWidgetTitle` | `TextWidget` | `TextWidget` |
+| `m_TextWidgetStatus` | `TextWidget` | `StatusText` |
+| `m_ModdedWarning` | `TextWidget` | `ModdedWarning` |
 
-```c
-TextWidget   m_ModdedWarning;          // "ModdedWarning" — set in m_WidgetRoot.FindAnyWidget
-ImageWidget  m_ImageWidgetBackground;  // "ImageBackground"
-ImageWidget  m_ImageLogoMid;           // "ImageLogoMid"
-ImageWidget  m_ImageLogoCorner;        // "ImageLogoCorner"
-ImageWidget  m_ImageLoadingIcon;       // "ImageLoadingIcon"
-ImageWidget  m_ImageBackground;        // also "ImageBackground" (alias cast)
-ProgressBarWidget m_ProgressLoading;   // "LoadingBar"
-TextWidget   m_TextWidgetTitle;        // "TextWidget"
-TextWidget   m_TextWidgetStatus;       // "StatusText"
-ref Timer    m_Timer;                  // exists, lazy-init pattern OK
-```
+## Rotating the background
 
-**Override pattern.** `LoadingScreen` has a plain `void Show()` at `P:\scripts\3_game\dayzgame.c:848` to override:
+Don't add a `Timer` just to rotate backgrounds. Add up `timeslice` in `LoadingScreen.OnUpdate(float timeslice)` (`dayzgame.c:832`, called every loading frame from `:3034` to `:3037`) and, for the queue and login time screens, in the inherited `LoginScreenBase.Update(float timeslice)` (`:69`). Loading has no known total length, so rotate on a fixed period. `Show()` (`:848`) is the place to pick the first image:
 
 ```c
 modded class LoadingScreen
 {
-    protected ref TStringArray m_LoadingImageNames = {
-        "MyMod/data/loading_01.edds",
-        "MyMod/data/loading_02.edds"
-    };
-    protected int   m_CurrentImageIndex;
-    protected const float CYCLE_INTERVAL = 15.0;
+    protected ref TStringArray m_MyMod_Images = { "MyMod/data/loading_01.paa", "MyMod/data/loading_02.paa" };
+    protected int m_MyMod_Index;
+    protected float m_MyMod_Elapsed;
 
     override void Show()
     {
-        if (m_LoadingImageNames.Count() == 0) {
-            super.Show();
-            return;
-        }
-        m_CurrentImageIndex = Math.RandomInt(0, m_LoadingImageNames.Count());
-        ApplyCurrentImage();
+        m_MyMod_Index = Math.RandomInt(0, m_MyMod_Images.Count());
+        m_ImageWidgetBackground.LoadImageFile(0, m_MyMod_Images[m_MyMod_Index]);
         m_ImageLogoMid.Show(false);
         m_ImageLogoCorner.Show(false);
         m_ModdedWarning.Show(false);
-
-        if (!m_Timer) m_Timer = new Timer();
-        m_Timer.Run(CYCLE_INTERVAL, this, "CycleImage", NULL, true);
         super.Show();
     }
 
-    void CycleImage()
+    override void OnUpdate(float timeslice)
     {
-        if (!m_ImageWidgetBackground || m_LoadingImageNames.Count() == 0) return;
-        m_CurrentImageIndex++;
-        if (m_CurrentImageIndex >= m_LoadingImageNames.Count())
-            m_CurrentImageIndex = 0;
-        ApplyCurrentImage();
-    }
-
-    protected void ApplyCurrentImage()
-    {
-        string path = m_LoadingImageNames.Get(m_CurrentImageIndex);
-        m_ImageWidgetBackground.LoadImageFile(0, path);
+        super.OnUpdate(timeslice);
+        m_MyMod_Elapsed += timeslice;
+        if (m_MyMod_Elapsed < 15.0)
+            return;
+        m_MyMod_Elapsed = 0;
+        m_MyMod_Index = (m_MyMod_Index + 1) % m_MyMod_Images.Count();
+        m_ImageWidgetBackground.LoadImageFile(0, m_MyMod_Images[m_MyMod_Index]);
     }
 }
 ```
 
-`LoadImageFile(0, path)` accepts either a direct `.edds` or `.paa` path or the imageset form `"set:NAME image:NAME"` (the second form is for imagesets, see UI-2 for the name pitfall). Not yet checked in game.
+The class names, fields and widget names are checked on `P:\`; the override itself is not tested in game.
 
-`LoadMaskTexture(path)` (`P:\scripts\1_core\proto\enwidgets.c:282`) loads the alpha mask layer that vanilla loading screens use. Not yet checked in game: passing `""` removes the vanilla mask.
+- Make the `.paa` with DayZ Tools `ImageToPAA.exe` (`/dayz-pack-texture`). Don't ship a hand written `.edds`; decoding your own file back proves nothing about what the engine draws.
+- `LoadImageFile(0, path)` takes a `.paa` or `.edds` path or the imageset form `"set:NAME image:NAME"` (for the set name trap see `imagesets-draw-order-progress-bars.md`). Not checked in game.
+- Whether the layout itself can be swapped from `Show()` is not checked in game.
 
-Open question, not yet checked in game: whether the layout can be swapped from `Show()`.
+## The reveal mask
 
-Checked on `P:\`: the four class declarations, the field list and the `FindAnyWidget` names. Not tested in game: the override itself.
+A new background keeps the vanilla reveal mask. `LoadMaskTexture` and `SetMaskProgress` are `ImageWidget` calls (`P:\scripts\1_core\proto\enwidgets.c:282` and `:296`), and vanilla calls `m_ImageBackground.SetMaskProgress(0.0)` when the screen shows (`dayzgame.c:854`). A black frame can be the mask at low progress, not a broken texture. Passing `""` to `LoadMaskTexture` is said to remove the mask; not checked in game.
 
-## Loading screen hook contract
+For a diagnostic full reveal, `SetMaskProgress(1.0)` alone doesn't last, because `ProgressAsync` writes the value again every frame. Detach it with `ProgressAsync.SetUserData(null)` (`P:\scripts\3_game\progressasync.c:4`; vanilla attaches the background at `dayzgame.c:774`), and only for that diagnostic.
 
-This replaces the timer and the hand written `.edds` in the example of the previous section.
-
-- A loading screen mod hooks `LoadingScreen`, `LoginQueueBase` and `LoginTimeBase` with `modded class X` and **no `extends` clause**. `LoadingScreen` is a plain class, not a `UIScriptedMenu` (`P:\scripts\3_game\dayzgame.c:704`); `LoginQueueBase` (`:110`) and `LoginTimeBase` (`:213`) already inherit through `LoginScreenBase` (`:63`).
-- Do not add a `Timer` only to rotate backgrounds. Add up `timeslice` in `LoadingScreen.OnUpdate(float timeslice)` (`P:\scripts\3_game\dayzgame.c:832`, called every loading frame at `:3034-3037`), and in the inherited `LoginScreenBase.Update(float timeslice)` (`:69`) for the queue and login time screens. Loading has no known total length, so rotate on a fixed period; do not try to split the duration.
-- Use a `.paa` made by DayZ Tools `ImageToPAA.exe` (`/dayz-pack-texture`). Do not ship a hand written `.edds`. Decoding your file back is an inspection step, not proof that the engine will draw what your writer produced.
-- Replacing the background does not reset the reveal mask. `LoadMaskTexture` and `SetMaskProgress` are `ImageWidget` calls (`P:\scripts\1_core\proto\enwidgets.c:282` and `:296`), and vanilla sets `m_ImageBackground.SetMaskProgress(0.0)` when the screen shows (`P:\scripts\3_game\dayzgame.c:854`). A black frame can be the vanilla mask at low progress, not a broken texture.
-- For a diagnostic full reveal, `SetMaskProgress(1.0)` alone does not last, because `ProgressAsync` writes the value again every frame. Detach that updater with `ProgressAsync.SetUserData(null)` (`P:\scripts\3_game\progressasync.c:4`; vanilla attaches the background at `P:\scripts\3_game\dayzgame.c:774`), and only for the controlled diagnostic.
-- Never apply a tone correction worked out from an offline model of the transfer function. Measure a known texture from an in game screenshot first.
+Never apply a tone correction worked out from an offline model. Measure a known texture in an in game screenshot first.

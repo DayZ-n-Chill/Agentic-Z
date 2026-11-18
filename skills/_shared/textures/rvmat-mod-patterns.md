@@ -1,146 +1,111 @@
-# rvmat patterns for generated models
+# Material patterns from mods
 
-Material recipes a generated model reaches for after the basic Super material: flat colors without a texture bake, a damage overlay, an on and off pair for lit panels, glass, a six stage variant and a very bright emissive. The stage by stage reference for a `.rvmat` is `_shared/textures/rvmat-stages.md`; read that first. The damage overlay is read from vanilla files on `P:\`. The other patterns are third-party mod behaviour, not vanilla, and are marked as such.
+Which material a generated or imported model reaches for after the basic Super material: flat colors without a bake, a damage overlay that shows wear, an on and off pair for lit panels, glass, and a very bright emissive. Read `rvmat-stages.md` first; it holds the stage by stage reference.
 
-## Flat color models: one .rvmat per material, not a UV atlas bake
+The damage overlay and the dashboard swap are read from vanilla files on `P:\`. The other patterns were read on mod aircraft, a mod car and a mod hangar (third-party mod behaviour, not vanilla), and are reusable beyond aircraft.
 
-For monochrome models, or models with one flat color per piece, use one `.rvmat` per material with `diffuse[]` set to the
-base color and `texture=""` (no UVs needed, no gaps). A UV atlas bake of many flat materials yields
-black holes and smudges. Atlas baking is for models with real texture detail.
+## Flat colors: one material per color, no atlas bake
 
-## Damage that shows as cracks and wear, not only a tint
+For a single colored model, or one flat color per piece, use one `.rvmat` per material with `diffuse[]` set to the base color and `texture=""`. It needs no UVs and leaves no gaps. Baking many flat materials into one UV atlas leaves black holes and smudges; keep atlas bakes for models with real texture detail.
 
-When damage shows only as a color tint, the `_damage.rvmat` has a procedural `color()` texture in `Stage3` instead of the vanilla overlay texture. Vanilla's wooden case uses `texture="dz\weapons\data\weapons_damage_wood_mc.paa"` in `Stage3` of its damage material (`P:\DZ\gear\camping\data\wooden_case_damage.rvmat:35`), tiled four times with the axes swapped: `aside[]={0,4,0}` and `up[]={4,0,0}` (`P:\DZ\gear\camping\data\wooden_case_damage.rvmat:39` to `:40`). Its destruct material uses `weapons_destruct_wood_mc.paa` the same way (`P:\DZ\gear\camping\data\wooden_case_destruct.rvmat:35`). For metal use `weapons_damage_metal_mc.paa` and `weapons_destruct_metal_mc.paa`, which sit in the same folder, `P:\DZ\weapons\data\`.
+## Damage that shows wear, not only a tint
 
-## Third-party mod patterns (not vanilla)
+When damage shows only as a color tint, the `_damage.rvmat` has a procedural `color()` texture in `Stage3` where vanilla puts an overlay texture. The vanilla wooden case uses `texture="dz\weapons\data\weapons_damage_wood_mc.paa"` in `Stage3` of its damage material (`P:\DZ\gear\camping\data\wooden_case_damage.rvmat:35`), tiled four times with the axes swapped, `aside[]={0,4,0}` and `up[]={4,0,0}` (`:39` and `:40`). Its destruct material uses `weapons_destruct_wood_mc.paa` the same way (`P:\DZ\gear\camping\data\wooden_case_destruct.rvmat:35`). For metal use `weapons_damage_metal_mc.paa` and `weapons_destruct_metal_mc.paa` from the same folder, `P:\DZ\weapons\data\`.
 
-These patterns are third-party mod behaviour, not vanilla, read on aircraft, a car and a hangar on 2026-05-23. They were applied to aircraft there but are reusable in general. The exception is the dashboard material swap, whose config properties and script are vanilla (see the toggle pattern below).
+## Lit panels: an on and off pair
 
-### Toggle rvmat pattern (lights on/off without duplicating material)
+A dashboard, control panel or display with an on and an off state uses two materials that differ in two places only. One mod's pair:
 
-For dashboards, control panels, displays that have an "on" and "off" state, create **two near-identical rvmats** with minimal diff:
+| Key | `Controls.rvmat` (off) | `Controls_on.rvmat` (on) |
+|---|---|---|
+| `ambient[]`, `diffuse[]` | `{0.9999992,...}` | same |
+| `forcedDiffuse[]` | `{0,0,0,1}` | `{0.1,0.1,0.1,1}`, a slight glow |
+| `specular[]`, `specularPower` | `{0.882,...}`, `55` | same |
+| `Stage5` | `...controls_SMDI.paa` | `...controls_on_SMDI.paa`, with the lit elements |
 
-```
-Controls.rvmat (lights off)           Controls_on.rvmat (lights on)
-ambient[]      = {0.9999992,...}     ambient[]      = {0.9999992,...}    SAME
-diffuse[]      = {0.9999992,...}     diffuse[]      = {0.9999992,...}    SAME
-forcedDiffuse[] = {0,0,0,1}      →   forcedDiffuse[] = {0.1,0.1,0.1,1}   DIFFERS (slight emissive boost)
-specular[]     = {0.882,...}         specular[]     = {0.882,...}         SAME
-specularPower  = 55                  specularPower  = 55                  SAME
-
-Stage5 SMDI:
-  texture = "...controls_SMDI.paa"   texture = "...controls_on_SMDI.paa"  DIFFERS
-
-Everything else identical.
-```
-
-**Pattern**: only `forcedDiffuse` (controls overall brightness) + Stage5 SMDI texture (specular/material mask with glowing elements) differ. This two-rvmat diff was read on a mod. The swap itself is vanilla: `dashboardMatOn` and `dashboardMatOff` are vanilla CfgVehicles properties (for example `P:\DZ\vehicles\wheeled\config.cpp:1336-1337` on the offroad hatchback), and vanilla `CarScript` and `MotorbikeScript` register them with their `VehicleLightsComponent`, which swaps the dashboard material with the lights (`P:\scripts\4_world\entities\vehicles\carscript.c:230-231`, `P:\scripts\4_world\entities\vehicles\motorbikescript.c:121-122`). A class that inherits `CarScript` only sets the two properties:
+Everything else is identical. The swap itself is vanilla: `dashboardMatOn` and `dashboardMatOff` are vanilla vehicle config keys (`P:\DZ\vehicles\wheeled\config.cpp:1336` and `:1337` on the offroad hatchback), and `CarScript` and `MotorbikeScript` register them with their `VehicleLightsComponent`, which swaps the dashboard material along with the lights (`P:\scripts\4_world\entities\vehicles\carscript.c:230` and `:231`; `P:\scripts\4_world\entities\vehicles\motorbikescript.c:121` and `:122`). A config class that inherits `CarScript` only sets the two keys:
 
 ```cpp
-class MyPlane: CarScript {
-    dashboardMatOn  = "MyMod\MyPlane\data\Controls_on.rvmat";
-    dashboardMatOff = "MyMod\MyPlane\data\Controls.rvmat";
-    ...
+class MyMod_Plane: CarScript
+{
+	dashboardMatOn="MyMod\MyPlane\data\Controls_on.rvmat";
+	dashboardMatOff="MyMod\MyPlane\data\Controls.rvmat";
 };
 ```
 
-Related vehicles can share the pair: the config of one aircraft can name the rvmats of another directly.
+Related vehicles can share one pair; one vehicle's config may name another's materials directly.
 
-### Glass rvmat distinctives
+## Glass
 
-Transparency comes from the alpha of the `_ca` color texture, not from the rvmat (`_shared/textures/surface-recipes.md`, "Glass"). The values below are one mod's glass material:
+The see-through part comes from the alpha of the `_ca` color texture, not from the material (`surface-recipes.md`, "Glass"). One mod's glass material:
 
 ```cpp
-ambient[]      = {0.55,0.55,0.55,1};
-diffuse[]      = {0.45,0.45,0.45,1};
-forcedDiffuse[] = {0,0,0,1};
-emmisive[]     = {0,0,0,1};
-specular[]     = {0.25,0.25,0.25,1};
-specularPower  = 1320;                      // HIGH — glassy reflection
-renderFlags[]  = {"noZwrite"};              // optional; this mod's choice
-PixelShaderID  = "Super";
-VertexShaderID = "Super";
-
-class Stage1 { texture = "#(argb,8,8,3)color(0.5,0.5,1,1,NOHQ)"; ... };  // procedural normal
-class Stage4 { texture = "#(argb,8,8,3)color(1,1,1,1,AS)"; ... };          // procedural AS
-class Stage5 { texture = "#(argb,8,8,3)color(1,1,1,1,SMDI)"; ... };        // procedural SMDI
-class Stage6 { texture = "#(ai,64,64,1)fresnel(1,0)"; uvSource = "tex1"; ... };  // softer fresnel for glass
-class Stage7 { texture = "dz\data\data\env_land_chrome_co.paa"; ... };     // CHROME env map, not env_land
+ambient[]={0.55,0.55,0.55,1};
+diffuse[]={0.45,0.45,0.45,1};
+forcedDiffuse[]={0,0,0,1};
+emmisive[]={0,0,0,1};
+specular[]={0.25,0.25,0.25,1};
+specularPower=1320;
+renderFlags[]={"noZwrite"};
+PixelShaderID="Super";
+VertexShaderID="Super";
+class Stage1 { texture="#(argb,8,8,3)color(0.5,0.5,1,1,NOHQ)"; };
+class Stage4 { texture="#(argb,8,8,3)color(1,1,1,1,AS)"; };
+class Stage5 { texture="#(argb,8,8,3)color(1,1,1,1,SMDI)"; };
+class Stage6 { texture="#(ai,64,64,1)fresnel(1,0)"; uvSource="tex1"; };
+class Stage7 { texture="dz\data\data\env_land_chrome_co.paa"; };
 ```
 
-Some vanilla glass sets the same flag: `renderFlags[]` with `"noZwrite"` in `P:\DZ\characters\headgear\data\firehelmetvisor.rvmat:9` to `:12` (its `specularPower` is 200, lower than the 1320 above). Vanilla car glass does not: `P:\DZ\vehicles\wheeled\data\auta_skla.rvmat` has no `renderFlags[]`.
+- `renderFlags[]={"noZwrite"}` is that mod's choice, not a need. Some vanilla glass sets it, such as `P:\DZ\characters\headgear\data\firehelmetvisor.rvmat:9` to `:12`, whose `specularPower` is 200; vanilla car glass does not (`P:\DZ\vehicles\wheeled\data\auta_skla.rvmat` has no `renderFlags[]`, and `rvmat-stages.md` says a window needs none). A see-through window needs a `_ca` whose alpha is not white.
+- `specularPower=1320` is far above the mod's opaque materials, which sit around 50 to 200.
+- The normal, ambient shadow and `_smdi` stages hold procedural placeholders rather than real textures.
+- `Stage7` uses the chrome environment map, not `env_land_co.paa`, for a stronger reflection.
+- The `fresnel(1,0)` stage gives a softer edge fall-off than the mod's opaque materials.
 
-Key points:
-- `renderFlags[] = {"noZwrite"}` is optional. A window does not need it (`_shared/textures/rvmat-stages.md`); a see-through window needs a `_ca` color texture with a non-white alpha
-- `specularPower = 1320` — much higher than opaque materials (typical 50-200)
-- Glass usually omits real textures for Stage4/5 (uses procedural `color(...)` placeholders)
-- Stage7 uses `env_land_chrome_co.paa` for reflective chrome look, not the regular `env_land_co.paa`
-- Stage6 fresnel `(1,0)` softer than standard `(1.1,0.3)` — glass has subtle edge fall-off
+## A damage variant with its own overlay
 
-### Damage variant rvmat pattern
+A mod engine material and its damaged copy share the base textures and change these values:
 
-For materials that should look damaged/scratched/burnt at higher damage levels, create a damage variant with same texture base + overlay:
+| Key | `engine.rvmat` | `engine_scratch_damagex1.rvmat` |
+|---|---|---|
+| `ambient[]`, `diffuse[]` | `{0.9999,...}` | `{0.634,...}`, darker |
+| `specular[]` | `{0.882,...}` | `{0.392,...}`, weaker |
+| `specularPower` | `55` | `85`, sharper on worn metal |
+| `Stage2` | the base detail | `DZ\data\data\detail_maps\plastic1_512_dt.paa`, a vanilla detail map |
+| `Stage3` | `#(argb,8,8,3)color(0,0,0,0,mc)` | `<mod>\<aircraft>\data\damage_layer_mc.paa` |
 
-```cpp
-// engine.rvmat (normal)                    engine_scratch_damagex1.rvmat (damaged)
-ambient[]    = {0.9999,...};                 ambient[]    = {0.634,...};         REDUCED
-diffuse[]    = {0.9999,...};                 diffuse[]    = {0.634,...};         REDUCED
-specular[]   = {0.882,...};                  specular[]   = {0.392,...};         REDUCED
-specularPower = 55;                          specularPower = 85;                  HIGHER (worn = sharper specular)
-
-// Stage1-2: same base textures
-// Stage3 (Macro Color) is the KEY:
-Stage3 normal:  "#(argb,8,8,3)color(0,0,0,0,mc)"
-Stage3 damaged: "<mod>\<aircraft>\data\damage_layer_mc.paa"   // CUSTOM damage overlay
-
-// Stage2 detail (worn material reuses vanilla DZ texture):
-Stage2 damaged: "DZ\data\data\detail_maps\plastic1_512_dt.paa"   // Reuse vanilla
-```
-
-**Pattern**: damage variants share base texture set, swap Stage3 (Macro Color) for a damage overlay texture, reduce color values to simulate burn/wear. The damage overlay is a single `damage_layer_mc.paa` per aircraft that overlays scratches/blackening on top of the base diffuse.
-
-Tied to `DamageSystem` zones via `healthLevels[]`:
+The overlay is one `damage_layer_mc.paa` per aircraft that lays scratches and blackening over the base color. The mod ties it to the damage zone through `healthLevels[]`, where an empty list keeps the base material:
 
 ```cpp
-healthLevels[] = {
-    {1.0, {}},                                     // pristine: base rvmat
-    {0.7, {}},
-    {0.5, {}},
-    {0.3, {"<path>/engine_scratch.rvmat"}},        // damaged level 1
-    {0.0, {"<path>/engine_scratch_damagex1.rvmat"}} // damaged level 2 / destroyed
+healthLevels[]=
+{
+	{1.0,{}},
+	{0.7,{}},
+	{0.5,{}},
+	{0.3,{"<path>/engine_scratch.rvmat"}},
+	{0.0,{"<path>/engine_scratch_damagex1.rvmat"}}
 };
 ```
 
-This example declares no `RefTexsMats[]`. Vanilla vehicle damage zones do declare that list (for example `RefTexsMats[]` at `P:\DZ\vehicles\wheeled\config.cpp:978`); what it is and which zones carry it is vehicle material, in the vehicles pack (`_shared/vehicles/damage.md` and `_shared/vehicles/vehicle-config-and-modelcfg.md`). Whether a swap reaches its faces is
-judged in game, not from the rvmats or the config (`skills/_shared/vehicles/process-gates.md`, "A config gate is not a visual gate"). That file records a glass section
-that never hid although config and ODOL
-matched the vanilla motorbike glass slot in the two respects checked (glass rvmat in its `RefTexsMats[]`
-slot, section inside `dmgzone_front`), with a zone of 67 sections against two to five in vanilla.
+This example declares no `RefTexsMats[]`. Vanilla vehicle damage zones do declare that list, for example `RefTexsMats[]` at `P:\DZ\vehicles\wheeled\config.cpp:978`; what it is and which zones carry it is in the vehicles pack (`_shared/vehicles/damage.md` and `_shared/vehicles/vehicle-damage-and-glass.md`). Whether a swap reaches its faces is judged in game, never from the materials or the config (`_shared/vehicles/process-gates.md`, "A config check is not a visual check"). A windscreen section in a damage zone of 67 sections never hid on a wreck, although its material sat in the zone's `RefTexsMats[]` slot and the section sat inside `dmgzone_front` as on the vanilla motorbike (`_shared/vehicles/vehicle-damage-and-glass.md`, "A windscreen that never hid").
 
-### 6-stage rvmat layout (AS stage dropped): not checked on P:\
+## Keep all seven Super stages
 
-A standard Super rvmat has 7 stages (NOHQ, DT, MC, AS, SMDI, Fresnel, env), the order of vanilla's `P:\DZ\gear\camping\data\wooden_case.rvmat`. A 6-stage layout read on a car body material drops the AS stage and moves SMDI up to Stage4:
+A Super material has seven stages in this order: normal, detail, macro, ambient shadow, `_smdi`, fresnel, environment map, as in vanilla's `P:\DZ\gear\camping\data\wooden_case.rvmat` (its `_as` sits at `:47` and its `_smdi` at `:59`). A mod car body material drops the ambient shadow stage and moves everything up one: `_smdi` in Stage4, fresnel in Stage5, the environment map in Stage6, plus a thermal stage. No vanilla file on `P:\` does this, and it breaks the stage numbering in `rvmat-stages.md`. Never copy it: write all seven stages, with the placeholder `#(argb,8,8,3)color(1,1,1,1,AS)` in Stage4 when there is no ambient shadow map.
 
-```
-Stage1=NOHQ, Stage2=DT, Stage3=MC, Stage4=SMDI, Stage5=Fresnel, Stage6=env (combined), StageTI=thermal
-```
+## A very bright emissive
 
-This layout is not checked on `P:\` and departs from the seven-stage Super rule in `_shared/textures/rvmat-stages.md` (Stage4 is AS, Stage5 is SMDI, and all seven numbered stages are kept even when most hold placeholders). Do not use it: write all seven stages, with the AS placeholder `#(argb,8,8,3)color(1,1,1,1,AS)` in Stage4 when the material has no ambient shadow map.
-
-### HDR emissive trick (super-bright lights)
-
-For materials that simulate fluorescent lamps / bright LEDs glowing visibly even in daylight, use values **>1.0** across all stages — engine accepts HDR-range values:
+For fluorescent tubes or LEDs that glow even in daylight, a mod hangar sets every color array above 1:
 
 ```cpp
-ambient[]       = {10,10,10,10};
-diffuse[]       = {10,10,10,10};
-forcedDiffuse[] = {10,10,10,10};
-emmisive[]      = {10,10,10,10};
-specular[]      = {10,10,10,10};
-specularPower   = 100;
-// Plus Stage5 SMDI uvTransform aside/up = {5,0,0}/{0,5,0} (texture scale 5x for finer detail)
+ambient[]={10,10,10,10};
+diffuse[]={10,10,10,10};
+forcedDiffuse[]={10,10,10,10};
+emmisive[]={10,10,10,10};
+specular[]={10,10,10,10};
+specularPower=100;
 ```
 
-This produces a glowing material without needing point light objects: it is purely material based. It was read on the fluorescent lamps of a hangar model. Tradeoff: no actual illumination on nearby surfaces (no dynamic light cast), just the material itself appears very bright. Combine with a real `CarLightBase` or `PointLightBase` if you need surfaces lit too.
+Its `Stage5` also tiles the `_smdi` five times (`aside[]={5,0,0}`, `up[]={0,5,0}`) for finer detail. Values far above 1 are vanilla practice too: the sedan's lit lights use `emmisive[]={1,1,1,120}` (`P:\DZ\vehicles\wheeled\sedan_02\data\sedan_02_lights_e.rvmat:4`).
 
-For LED screens that need both a glow visible from far away and dynamic light, use this trick plus a script controlled `PointLightBase` to match.
+The material only makes itself look bright; it lights nothing around it. When nearby surfaces must be lit too, add a real `CarLightBase` or `PointLightBase`. An LED screen that must glow from far away and also cast light uses both, with a script controlled `PointLightBase` matched to it.

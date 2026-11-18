@@ -8,7 +8,7 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 | A census script for the hidden-selection face ownership check and the light selection preflight the vehicle pack describes by hand. | Vehicles review | 2026-11-17 |
 | A PBO reader for the checks in section 5 of `skills/_shared/vehicles/build-packaging-and-debug.md` (completeness, build mode, baked wheel angle, stray drive letters); `scripts/tools/dayz-pbo-diff/` may cover part of it. | Vehicles review | 2026-11-17 |
 | An override resolver for the 1.30 migration checklist: flag an `override` of a method DayZ 1.30 deleted, which the script validator passes today. | Vehicles review | 2026-11-17 |
-| Turn the DXT1 PAA encoder printed in `skills/_shared/vehicles/png-to-paa-encoding.md` into a tested script with a DXT5 path. | Vehicles review | 2026-11-17 |
+| Turn the DXT1 PAA encoder printed in `skills/_shared/textures/png-to-paa-encoding.md` into a tested script with a DXT5 path. | Vehicles review | 2026-11-17 |
 | A `/dayz-p3d-audit` check for a vehicle sub-model whose visual LOD lacks `autocenter=0`. | Vehicles review | 2026-11-17 |
 | A `/dayz-p3d-audit` check built from a negative fixture that swaps the proxy frame sides and must fail. | Vehicles review | 2026-11-17 |
 | A script that finds each un-prefixed `file.c:N` citation in the vehicle field-note files on `P:\` and rewrites it with the `P:\` prefix, so the citation tests cover them. | Vehicles review | 2026-11-17 |
@@ -21,7 +21,7 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 | `/dayz-p3d-audit`: print a per-LOD resolved-vertex count, with a warning at 90 % of a ceiling the user gives. | Models review | 2026-11-17 |
 | `/dayz-p3d-audit`: script the checks its references describe by hand (wheel model memory points, ride height, component count and mass share on a vehicle, `#Mass#` outside Geometry, the per-component inward winding check, the get-in contract gate). | Models review | 2026-11-17 |
 | A UV audit script for MLOD models (`uv_audit.py`), and a `/dayz-p3d-audit` report of the share of zero and degenerate UVs per visual LOD. | Models review | 2026-11-17 |
-| Scripts for the parts of the clean UV atlas method (`skills/_shared/models/tools-uv-atlas.md`) that have none: Track B (`smart_project` plus the exact fold loop) and the shared-sheet recipe for LODs. | Models review | 2026-11-17 |
+| Scripts for the parts of the clean UV atlas method (`skills/_shared/models/tools-uv-atlas.md`) that have none: the `smart_project` fallback (`smart_project` plus the exact fold loop) and the shared-sheet recipe for LODs. | Models review | 2026-11-17 |
 | Clean UV atlas engine (`skills/dayz-model-tools/scripts/project_atlas.py`): take the expected `.blend` hash, face count and shell lists from command-line options or the assignment JSON, pick the stage with a `--stage` option, and replace `render_atlas_pngs` with a small PNG writer. | Models review | 2026-11-17 |
 | `sat_gate.py`: print evaluated, skipped and total triangle counts, and stop cleanly when every triangle is collapsed. Share one module for the SAT check and the island finder, which exist two and three times. | Models review | 2026-11-17 |
 | A Blender-gated end-to-end test for the clean UV atlas scripts of `dayz-model-tools` (unwrap a small generated mesh, assert zero overlapping pairs). | Models review | 2026-11-17 |

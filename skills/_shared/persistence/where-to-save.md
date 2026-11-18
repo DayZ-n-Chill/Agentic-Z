@@ -1,6 +1,6 @@
 # Where to save: entity stream, ModStorage or a file
 
-Choose one of three places for saved data before writing any code. Open this when a task says "keep this after a restart" and it is not yet clear where the data lives.
+Which of three places saved data belongs in, what each one costs, and what must stop persistence work from shipping. Decide before writing any code; open it when a task says "keep this after a restart" and it is not yet clear where the data lives.
 
 ## Four questions
 
@@ -38,4 +38,4 @@ Stop and fix the problem before recommending or shipping persistence work when:
 5. A failed `ctx.Read` leaves partly applied state that is treated as valid.
 6. A test covers only the happy path; future, truncated, rollback and injected I/O failures are not exercised.
 7. Live cargo is walked by a frozen index across ticks while items can be removed during the walk (`load-and-restore.md`).
-8. An entry of the mod's own registry of world entities is removed by proximity, bound on restore to an entity that does not carry its id, or given a new entity while one it already had may still live; no rule for that restore has come out of review sound (`load-and-restore.md`).
+8. An entry of the mod's own registry of world entities is removed by proximity, bound on restore to an entity that does not carry its id, or given a new entity while one it already had may still live; no rule for that restore has held up under review (`load-and-restore.md`).

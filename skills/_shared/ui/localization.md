@@ -1,12 +1,8 @@
-# Localization: stringtable.xml, stringtable.csv and the panel generator
+# Localization
 
-How UI text is translated: the two stringtable formats, how layouts and script refer to a key, a naming convention, the measured rule that decides whether a `stringtable.csv` is registered at all, and the generator for preview panels that need no stringtable.
+How UI text is translated: the two stringtable formats, how layouts and script name a key, a naming scheme, the column header that decides whether the engine reads a `stringtable.csv` at all, and preview panels that need no stringtable.
 
-**How facts are marked here.** A `P:\` path with a line was checked on `P:\` (DayZ 1.30). The CSV results were measured in game (DayZ 1.29) and are not yet repeated on 1.30.
-
----
-
-## File format (stringtable.xml)
+## stringtable.xml
 
 Put `stringtable.xml` at the addon root, beside `config.cpp`:
 
@@ -25,52 +21,35 @@ Put `stringtable.xml` at the addon root, beside `config.cpp`:
 </Project>
 ```
 
-## Usage rules
+- In a `.layout`, write `text "#STR_MYMOD_DEVICE_NAME"`, with the `#` and the quotes.
+- In script, pass the key to `SetText("#STR_MYMOD_DEVICE_NAME")`, or translate it with `Widget.TranslateString("#STR_MYMOD_DEVICE_NAME")` (`proto static`, `P:\scripts\1_core\proto\enwidgets.c:112`).
+- The `Key Id` never has the `#`; only references to it do.
+- `<Original>` is the fallback when the player's language has no entry. Leave out languages you do not translate.
+- Raw text in a layout shows fine but cannot be translated and breaks translation mods. Put every UI string in the stringtable.
 
-- **In a `.layout`:** `text "#STR_MYMOD_DEVICE_NAME"`, with the `#` prefix and the quotes.
-- **In script:** `Widget.TranslateString("#STR_MYMOD_DEVICE_NAME")` (`TranslateString` is `proto static` at `P:\scripts\1_core\proto\enwidgets.c:112`), or pass the key straight to `SetText("#STR_MYMOD_...")`.
-- **The `Key Id` never includes `#`.** Only references to the key do.
-- `<Original>` is the fallback when the player's language has no entry.
-- Leave out languages you do not support. English plus one or two others is enough for a mod.
+## Naming keys
 
-## Naming convention
-
-```
-STR_MYMOD_[DEVICE]_[ELEMENT]
-STR_MYMOD_BTC_BTN_BUY_BTC     (the Buy Bitcoin button on the Bitcoin device)
-STR_MYMOD_PHONE_TITLE_MAIN    (the main title on the phone)
+```text
+STR_MYMOD_<DEVICE>_<ELEMENT>
+STR_MYMOD_PHONE_TITLE_MAIN
+STR_MYMOD_ATM_BTN_WITHDRAW
 ```
 
-Keep one prefix for the whole mod. It makes keys easy to search for and keeps them apart from other mods' keys.
+One prefix for the whole mod keeps keys easy to search and apart from other mods' keys.
 
-## Common mistake
+## stringtable.csv and its header
 
-Raw text in a `.layout` shows up fine, but it cannot be translated and it breaks translation mods. Put every UI string in the stringtable.
+DayZ also reads a `stringtable.csv` at the addon root. Vanilla's starts with fifteen columns: `"Language","original","english","czech","german","russian","polish","hungarian","italian","spanish","french","chinese","japanese","portuguese","chinesesimp"` (`P:\languagecore\stringtable.csv:1`).
 
-## stringtable.csv: the column header decides whether the engine registers it
+Measured in game on 1.29, over eight variants of the addon and nine of the CSV:
 
-DayZ also accepts a `stringtable.csv` at the addon root. Vanilla's own file starts with fifteen columns: `"Language","original","english","czech","german","russian","polish","hungarian","italian","spanish","french","chinese","japanese","portuguese","chinesesimp"` (`P:\languagecore\stringtable.csv:1`).
+- Keys resolve with nearly everything else stripped from the addon. Scripts, `data\`, `gui\`, `model.cfg`, `include.lst` and a rich `CfgPatches` or `CfgMods` can all go: an addon of three files, `$PBOPREFIX$`, a minimal config and the CSV, resolves its keys.
+- The header decides. With the seven columns `"Language","original","english","spanish","german","russian","chinesesimp"`, keys resolve even with two data rows. With four (no `german`, `russian` or `chinesesimp`) every key prints raw, whatever the row count, although the PBO loads and the client's language column is filled.
+- Row count, file size, blank lines, the packer (FileBank or MakePbo) and the form of `$PBOPREFIX$` make no difference.
+- Which of the three missing columns matters was not isolated. Always use the full seven column header, and copy the English text into columns you have not translated.
 
-Measured in game, in two test series flown the same day (eight structural variants of the addon, then nine variants of the CSV itself):
+A key the engine did not register prints raw without its `#`, exactly like a key that does not exist. A stringtable comes only from an addon PBO at start; a `.layout` loaded from `$profile:` brings none, so text you change while iterating is a literal or is set from script. The `templates/stringtable.csv` of this pack carries the seven column header.
 
-- Key resolution survives removing every structural element of the addon: scripts and class definitions, `data\`, `gui\`, `model.cfg`, `include.lst`, the config body, a rich `CfgPatches` or `CfgMods`. An addon of **three files** (`$PBOPREFIX$`, a minimal config and the csv) resolves its keys.
-- **The switch is the column header.** With these seven columns, `"Language","original","english","spanish","german","russian","chinesesimp"`, keys resolve even with only two data rows. With four columns (no `german`, `russian` or `chinesesimp`) the key is printed raw at any size (263 rows or 8), even though the PBO loads (confirmed from the addon list in a crash report) and even though the client's language column is there with text in it.
-- Row count, total size and blank lines make no difference.
-- The packer makes no difference (FileBank and MakePbo behave the same), and neither does the `$PBOPREFIX$` dialect (`prefix=...;product=...;` or a bare name), including under MakePbo, which does read the file.
-- Which of the three removed columns is the one that matters was not isolated. The safe rule is the full seven column header.
+## Preview panels with no stringtable
 
-**Practical rule.** Every `stringtable.csv` you pack carries the seven column header; columns you have not translated copy the English text. Use as many rows as you need; two are enough.
-
-Two more consequences:
-
-- A key that was not registered is printed raw **without** the `#`. The engine recognised it as a key and did not find it, which looks exactly like a key that does not exist.
-- A `.layout` loaded from `$profile:` brings no stringtable with it. Stringtables enter only through an addon PBO at boot. For text you change while iterating, write literals or set the text from the test harness, not keys.
-
-The `stringtable.csv` in `templates/` folder of this pack carries the seven column header for this reason.
-
-## Preview panels on demand (generator included)
-
-`skills/dayz-layout-preview/gen_panel_layout.py` writes layouts made for the hot iteration loop (load from `$profile:`, reload, set text from the harness; see `hot-iteration.md`): a chat or log feed, a label and value panel, and a minimal HUD. The widget names are a contract (`TitleText`, `FeedLine0` to `FeedLineN-1`, `LabelK` and `ValueK`), documented in `templates/panel-contract.md`.
-
-- Flown in game: a ten line feed was filled at runtime with no stringtable.
-- `--self-test` checks that braces balance and that widget names are unique, without starting the game.
+`skills/dayz-layout-preview/gen_panel_layout.py` writes layouts for the `$profile:` loop (`hot-iteration.md`): a chat or log feed, a label and value panel, and a small HUD. Every text starts empty and is set at runtime, so no stringtable is needed; a ten line feed was filled this way in game. The widget names are a contract, listed in `templates/panel-contract.md`. `--self-test` checks the braces and that names are unique without starting the game.

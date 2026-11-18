@@ -9,7 +9,7 @@ argument-hint: "<tool> <model.p3d | recipe.json | file.blend> [options]"
 
 # /dayz-model-tools
 
-The scripts of the model work. Each tool has one how-to file in the model pack (`skills/_shared/models/`) with its options, its output, its limits and what was measured with it; read that file before the first run. This page only says which script does what and how to start it.
+The scripts of the model work. Each tool has one how-to file in the model pack (`skills/_shared/models/`) with its options, its output, its limits and what its results mean; read that file before the first run. This page only says which script does what and how to start it.
 
 Follow `skills/_shared/dayz-conventions.md`. The scripts read and write only the files named on their command line and need neither DayZ Tools nor the game, so they do not gate on `/dayz-preflight` (the stated exception in `dayz-conventions.md`). The one exception is `worn_overlay.py`: it reads vanilla clothing and runs the preflight gate when its `--dz` folder is on `P:\`.
 
@@ -121,14 +121,14 @@ blender -b file.blend -P "<skill-dir>\scripts\sat_gate.py" -- object_name
 
 ### 3D viewer tool
 
-How-to: `tools-3d-viewer.md`, with `tools-3d-viewer-formats.md` (PAA and RVMAT), `tools-threejs-viewers.md` (the page library and testing it) and `tools-3d-viewer-states.md` (the plan for animations and LED states, not built). The tool is `scripts/tools/dayz-3d-viewer`, run as `python -m dayz_3d_viewer`; this skill ships no script for it.
+How-to: `tools-3d-viewer.md`, with `tools-3d-viewer-formats.md` (PAA and RVMAT), `tools-threejs-viewers.md` (the page library and testing it), `tools-3d-viewer-states.md` (where moving parts and LED states are defined) and `tools-3d-viewer-states-build.md` (the plan for playing them, not built). The tool is `scripts/tools/dayz-3d-viewer`, run as `python -m dayz_3d_viewer`; this skill ships no script for it.
 
 ### Ripped car classification viewer
 
-How-to: `skills/_shared/vehicles/rip-classify-viewer.md` (the Three.js r128 files to download, the steps per car, the GLB data contract). It reviews the session A part classification of a ripped car without Blender; the lane it serves is `skills/_shared/vehicles/rip-family-b-runbook.md`. The page is advisory: authority stays with the `.blend`.
+How-to: `skills/_shared/vehicles/rip-classify-viewer.md` (the Three.js r128 files to download, the steps per car, the GLB data contract). It reviews which parts of a ripped car are kept, dropped or movable without opening Blender; the workflow it serves is `skills/_shared/vehicles/ripped-car-proxy-split.md`. The page is advisory: authority stays with the `.blend`.
 
 ```cmd
-blender --background --python-exit-code 1 --python "<skill-dir>\scripts\export_car_glb.py" -- --blend <sessionA.blend> --out <dir>\car.glb
+blender --background --python-exit-code 1 --python "<skill-dir>\scripts\export_car_glb.py" -- --blend <car.blend> --out <dir>\car.glb
 py -m http.server <port> --directory <dir>
 ```
 
@@ -136,12 +136,12 @@ Copy `<skill-dir>\scripts\classify-viewer\index.html` and a `lib\` folder holdin
 
 | Script | Does |
 |---|---|
-| `export_car_glb.py` | Runs in Blender: session A `.blend` to `car.glb` with the `dz_*` node extras and no materials; never saves the `.blend`; prints `GLB_DONE` |
+| `export_car_glb.py` | Runs in Blender: the car's classification `.blend` to `car.glb` with the `dz_*` node extras and no materials; never saves the `.blend`; prints `GLB_DONE` |
 | `classify-viewer\index.html` | The page: click a part, set INCLUDE, MOVABLE or EXCLUDE with a reason, copy the changes as JSON |
 
 ### Blender build helpers
 
-How-to: `blender-assembly.md` (the rules, the detail pass, the integrity gate) and `generation-harness.md` (a gated production build). The library needs a Blender MCP server connected to the session; this repo configures none. At session start, read the file and execute it whole through the MCP's code tool instead of pasting single functions.
+How-to: `blender-assembly.md` (the rules, the detail pass, the integrity gate) and `model-build-stages.md` (a production build in checked stages). The library needs a Blender MCP server connected to the session; this repo configures none. At session start, read the file and execute it whole through the MCP's code tool instead of pasting single functions.
 
 | Script | Does |
 |---|---|
@@ -149,12 +149,12 @@ How-to: `blender-assembly.md` (the rules, the detail pass, the integrity gate) a
 
 ### Render review
 
-How-to: `blender-visual-review.md` (the capture helper, the checklist, the stop policy, the delta check, winding flips), with `tools-vlm-judge.md` (a local vision model as a pre-filter, and its calibration) and `tools-vlm-checklist-format.md` (the checklist JSON and `--view` routing). Plain Python, no packages, no Blender; `vr_score.py` and `vr_calibrate.py` need an Ollama server.
+How-to: `blender-visual-review.md` (the capture helper, the stop policy, the delta check), `blender-review-checklist.md` (what to look for) and `blender-winding-flips.md` (catching a winding flip), with `tools-vlm-judge.md` (a local vision model as a pre-filter, and its calibration) and `tools-vlm-checklist-format.md` (the checklist JSON and `--view` routing). Plain Python, no packages, no Blender; `vr_score.py` and `vr_calibrate.py` need an Ollama server.
 
 ```cmd
 python "<skill-dir>\scripts\correction_loop.py" --history _review\history.json --json
 python "<skill-dir>\scripts\vr_delta.py" _review\model__front__iter1.png _review\model__front__iter2.png --json
-python "<skill-dir>\scripts\vr_score.py" ask _review\model__iso__iter3.png --checklist "<skill-dir>\scripts\checks_hardsurface.json" --model gemma4:26b --json
+python "<skill-dir>\scripts\vr_score.py" ask _review\model__iso__iter3.png --checklist "<skill-dir>\scripts\checks_hardsurface.json" --model <vision-model> --json
 python "<skill-dir>\scripts\vr_calibrate.py" report --shadow cal.jsonl --verdicts verdicts.json --checklist "<skill-dir>\scripts\checks_hardsurface.json"
 ```
 

@@ -19,7 +19,9 @@ Follow `skills/_shared/dayz-conventions.md`. This skill is reference only; it ru
 | Play, stop or tune particles from script | `references/script-api-reference.md` |
 | Wire particles into a device (toggle, one-shot, cleanup), or bring older device code up to date | `references/integration-patterns.md` |
 | Find a vanilla particle to reuse | `references/vanilla-particle-catalog.md` |
-| Build a layered effect (explosion, impact, fireball), use `Mast` curves, switch single emitters from script, or convert an old `CfgCloudlets` particle | `references/standalone-particle-reference.md` |
+| Build a layered effect (explosion, impact, fireball), pick vanilla materials, use `Mast` curves | `references/layered-effects.md` |
+| Check the layout of a `.ptc`, the vanilla emitter shapes, or convert an old `CfgCloudlets` particle | `references/ptc-layout-and-cloudlets.md` |
+| Register a mod's own effects, play them, or switch single emitters from script | `references/effects-from-script.md` |
 | Size a contaminated area in `cfgeffectarea.json`: emitter budget, the 1,000 cap, the vertical band, safe positions | `references/effect-area-particles.md` |
 | Move a mod to DayZ 1.30: the headless client check, `CreateParticleServer`, `SurfaceInfo` particle IDs, `ParticleParamsOverrideData`, vehicle effects, sandstorm, oil pits | `references/dayz-1-30-particles.md` |
 | See a full `PlayOnObject` example for a custom wreck, checked against the vanilla wrecks | `references/playonobject-client-guard.md` |

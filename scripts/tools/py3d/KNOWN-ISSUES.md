@@ -38,14 +38,6 @@ selection is invisible to it; coordinates and UV values still are.
 
 *Do not use `diff` to verify that an edit did what you intended.*
 
-### `tools/audit_p3d.py` can print `ALL PASSED` when nothing was checked
-
-The wrapper returns exit 0 and `OVERALL: ALL PASSED` when given no inputs, when
-pointed at a directory that does not exist, and even after printing a read error
-for a file it could not open. Warnings also end in exit 0.
-
-*Check that the file count in its output is what you expected.*
-
 ---
 
 ## Data-loss risks

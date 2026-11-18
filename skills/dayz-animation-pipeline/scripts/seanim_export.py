@@ -52,7 +52,7 @@ UNIT_CM = 100.0  # rig meters -> SEAnim cm (verified against the finger offsets 
 #       within 0.87deg of where the jd map lands the JD rig; no rotation pair. In game 2026-10-02
 #       (DayZDiag 1.29.163709) LeftArm keyed straight ahead on the FBX rig came out forward through
 #       this map and out to the side through the jd map: one bone, rotations only
-#       (weapon-anim-authoring-viewer.md, "Route C bone-frame maps, per rig").
+#       (skills/_shared/animation/weapon-anim-viewer.md, "Bone frame maps per rig").
 #       rot (x,y,z,w) -> (-x,-z,-y,w); pos (x,y,z) -> (x,z,y).
 def seanim_rot(frame, q):
     x, y, z, w = q

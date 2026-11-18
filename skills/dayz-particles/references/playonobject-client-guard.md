@@ -1,6 +1,6 @@
-# PlayOnObject with the client check: a custom wreck checked against vanilla
+# A smoking wreck with PlayOnObject
 
-The usual way to attach a looping particle to a placed object, shown on a custom wreck and compared with the vanilla wrecks it follows. The class in the example, `Land_Wreck_C130J`, is a mod's own class and is not on `P:\`.
+How to attach a looping particle to a placed object behind the client check, shown on a custom wreck and compared with the vanilla wrecks it follows. The class in the example, `Land_Wreck_C130J`, is a mod's own class and is not on `P:\`.
 
 ## Contents
 
@@ -8,13 +8,11 @@ The usual way to attach a looping particle to a placed object, shown on a custom
 - [What vanilla does](#what-vanilla-does)
 - [Key points](#key-points)
 
----
-
 ## The pattern
 
 A wreck that smokes: the constructor plays a looping particle on the object and stores it in the `m_ParticleEfx` member that `CrashBase` declares (`P:\scripts\4_world\entities\building\crashbase.c:3`).
 
-```
+```c
 class Land_Wreck_C130J extends CrashBase
 {
     void Land_Wreck_C130J()
@@ -31,7 +29,7 @@ class Land_Wreck_C130J extends CrashBase
 }
 ```
 
-Older mod code tests `!g_Game.IsDedicatedServer()` here. That was the vanilla check up to 1.29 (1.29, not yet checked on `P:\`). The code above uses the 1.30 check, which is what the vanilla wrecks on `P:\` use now. Keep the old form in mind only when reading 1.29 code.
+Older mod code tests `!g_Game.IsDedicatedServer()` here, the vanilla check up to 1.29 (not checked on `P:\`, which holds 1.30). The code above uses the 1.30 check that most vanilla wrecks on `P:\` use now.
 
 ## What vanilla does
 
@@ -52,7 +50,7 @@ The Chinook and Mi-24 wrecks still use the dedicated server check alone, `!g_Gam
 
 ## Key points
 
-- Particles are client only. The server must never call `PlayOnObject`: it draws nothing there, and on a dedicated server or a headless client `ParticleManager.GetInstance()` returns null (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:65`), so the call fails on a null reference. Do not use `IsClient()` for this check: vanilla notes that `IsDedicatedServer()` is valid much sooner during load than `IsMultiplayer()`, `IsClient()` and `IsServer()` (`P:\scripts\3_game\global\game.c:1118-1125`). `IsHeadlessOrDedicatedServer()` combines `IsDedicatedServer()` with `IsHeadless()` (`P:\scripts\3_game\global\game.c:1132-1136`), so it also skips headless clients; vanilla gives no load-time note for it.
+- Particles are client only. The server must never call `PlayOnObject`: it draws nothing there, and on a dedicated server or a headless client `ParticleManager.GetInstance()` returns null (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:65`), so the call fails on a null reference. Do not use `IsClient()` for this check: vanilla notes that `IsDedicatedServer()` is valid much sooner during load than `IsMultiplayer()`, `IsClient()` and `IsServer()` (`P:\scripts\3_game\global\game.c:1118` to `:1125`). `IsHeadlessOrDedicatedServer()` combines `IsDedicatedServer()` with `IsHeadless()` (`game.c:1132` to `:1136`), so it also skips headless clients; vanilla gives no load-time note for it.
 - Use the named constants of `ParticleList`, never a bare number. `SMOKING_HELI_WRECK` is registered at `P:\scripts\3_game\particles\particlelist.c:288`. There is no `ParticleList.FIRE_SMALL_CAMP`; the campfire constant is `CAMP_SMALL_FIRE` (`P:\scripts\3_game\particles\particlelist.c:29`).
 - The offset vector is in the parent object's local space.
 - Keep what `PlayOnObject` returns. `CrashBase` stops it in `EEDelete` with `m_ParticleEfx.Stop()`, behind the same client check (`P:\scripts\4_world\entities\building\crashbase.c:51`). A class that does not extend `CrashBase` needs its own member and its own stop.

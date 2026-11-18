@@ -793,22 +793,16 @@ def test_pack_index_paths_exist():
 
 
 # _shared/README.md: "Facts about the game cite the vanilla file on P:\". These files
-# hold no game facts of their own (style, answer format, tool notes, repo layout).
+# hold no game facts of their own (tool notes, working methods, measured mod results).
 CITATION_EXEMPT = {
-    "enscript-style.md",              # style guide index; facts live in enscript/references/
-    "enscript/integrations/expansion_style.md",  # style for Expansion mods; no vanilla facts
-    "answer-formatting.md",           # how to format answers
     "py3d-mlod-notes.md",             # notes on a Python library, not the game
-    "conventions/server.md",          # the .server/ test-server layout of this repo
     "dayz-conventions.md",            # environment and workflow rules; facts live in the topic files
     "textures/checking-the-look.md",  # what to look at in Object Builder and in game
-    "linux-proton.md",                # measured Linux, Proton and tool behaviour; no vanilla fact
     "animation/blender-bpy-armatures.md",       # Blender bpy behaviour, no game fact
     "animation/blender-bpy-objects-camera.md",  # Blender bpy behaviour, no game fact
     "animation/blender-bpy-physics.md",         # Blender simulation behaviour, no game fact
     "animation/blender-realism-and-review.md",  # animation craft and the Blender review loop, no game fact
     "animation/blender-mcp-workflow.md",        # driving Blender through MCP; DayZ facts live in blender-txa-export.md
-    "animation/mixamo-bone-mapping.md",         # bone name matching between Blender rigs, no game fact
     "animation/selections-for-actions.md",      # a tooling pattern for painting selections; measured results only
     "models/tools-threejs-viewers.md",          # building Three.js viewer pages; no game fact
     "models/tools-3d-viewer.md",                # how to run the .p3d to .glb converter; no game fact
@@ -824,23 +818,34 @@ CITATION_EXEMPT = {
     "models/blender-visual-review.md",          # the render review method, measured tool behaviour
     "models/tools-vlm-judge.md",                # a local vision model as a render pre-filter
     "models/tools-vlm-checklist-format.md",     # the render checklist format of the review scripts
-    "models/generation-harness.md",             # a gated build method, no game fact
-    "models/generation-dossier-template.md",    # a working template
-    "models/generation-roast-rubric.md",        # a review rubric
     "models/generated-model-pipeline.md",       # the generation workflow; facts live in the files it indexes
     "models/generated-model-troubleshooting.md",  # symptoms measured in game on generated mod models
     "models/blender-headless.md",               # Blender Python API calls, no game fact
     "models/blender-import-preflight.md",       # Blender import checks measured in Blender
     "models/blender-external-mesh.md",          # a Blender cleanup and export workflow
-    "models/py3d-assembly-rules.md",            # py3d tool rules measured on mod models
     "models/artist-returns.md",                 # file handling rules for outside binaries
-    "textures/procedural-textures.md",          # Python noise recipes; a pixel recipe has no vanilla file
     "textures/normal-bake.md",                  # Blender bake practice measured on one mod
-    "ui/templates/panel-contract.md",           # the contract of this repo's layout templates, not the game
-    "vehicles/rip-profile-schema.md",           # fields of the import project's car profiles, no game fact
     "vehicles/rip-classify-viewer.md",          # a Blender export and a browser page, no game fact
-    "vehicles/history/family-b-retired-artifacts.md",  # where retired import documents are kept, no game fact
     "persistence/deep-audit-evidence-controls.md",  # audit method; the DayZ facts in it were measured in game
+    "animation/blender-bpy-keyframes-and-actions.md",# Blender keys, Actions and the NLA, no game fact
+    "animation/blender-bpy-ik-and-baking.md",   # Blender IK, baking and context overrides, no game fact
+    "animation/blender-bpy-fcurves.md",         # Blender F-curves and easing, no game fact
+    "animation/blender-bpy-fcurve-modifiers.md",# Blender F-curve modifiers, no game fact
+    "animation/blender-bpy-materials-drivers.md",# Blender shader, driver and shape key animation, no game fact
+    "animation/blender-bpy-sim-baking-export.md",# Blender simulation baking and export, no game fact
+    "animation/blender-bpy-cloth-and-particles.md",# Blender cloth, soft bodies and particles, no game fact
+    "animation/blender-review-loop.md",         # checking Blender animation without a timeline, no game fact
+    "models/blender-assembly-checks.md",        # checks while building in Blender over MCP, no game fact
+    "models/blender-headless-export.md",        # OBJ export from a windowless Blender script, no game fact
+    "models/blender-review-checklist.md",       # the fault checklist for Blender renders
+    "models/blender-winding-flips.md",          # winding checks measured in Blender and in game on mod models
+    "models/device-recipes-power.md",           # worked specifications of a third-party mod's devices
+    "models/device-recipes-distribution.md",    # worked specifications of a third-party mod's devices
+    "models/model-build-stages.md",             # a staged build method, no game fact
+    "vehicles/gauge-needle-part.md",            # a measured needle building method on mod models
+    "vehicles/gauge-dial-frame.md",             # a measured dial frame method on mod models
+    "vehicles/gauge-dial-art.md",               # measured dial texture work on mod models
+    "vehicles/gauge-fuel-panel.md",             # a measured fuel panel method on mod models
 }
 CITATION_EXEMPT_FOLDERS = {"enscript-style"}  # the style guide's section files
 # A citation names a vanilla file, not just the drive: a path with a line

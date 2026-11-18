@@ -1,58 +1,48 @@
-# Blender assembly
+# Building a model in Blender
 
-Rules and a helper library for building 3D models in Blender through a Blender MCP server (furniture, vehicles, architecture, props, mechanical parts). Read this before writing any Blender Python that creates geometry with primitives, bmesh, curves, modifiers or booleans. It prevents geometry errors and adds a detail pass so models come out looking like objects, not boxes. It needs a Blender MCP server connected to the session; this repo configures none, so a worker agent without one hands its brief to the main session. The recurring failures it addresses:
+How to build a hard surface model in Blender through a Blender MCP server without exploded parts, wrong sizes, broken booleans or bare boxes: planning the joints and the detail, the geometry rules, and the normal bake. The checks to run after each part, finishing, and the render traps over MCP are in `blender-assembly-checks.md`.
 
-1. **Cube size math.** `primitive_cube_add(size=1)` creates vertices at ±0.5, so `scale=0.4` gives a half-extent of 0.2, not 0.4. This silently halves every dimension and misplaces all connected parts.
-2. **Euler rotation on cylinders.** Rotating a cylinder to point in a direction with Euler angles often points it along the wrong axis, because of the XYZ rotation order.
-3. **Invisible gaps.** Parts placed near each other with no geometric overlap look exploded when rendered. Even a 5 mm gap is visible at model scale.
-4. **Bare-box output.** Nothing in the workflow asked for detail, so none was built. Phase 1.5 and Rules 6 to 11 fix this.
-5. **Broken meshes.** Booleans and joins leave non-manifold edges, duplicate vertices and degenerate faces that bounding-box checks never see. The integrity gate in Phase 3 catches them.
+Read this before writing any Blender Python that makes geometry with primitives, bmesh, curves, modifiers or booleans. It needs a Blender MCP server connected to the session; this repo configures none, so a worker agent without one hands its brief to the main session. It is a Blender method, not a fact about the game; where it touches DayZ (the `_nohq` convention, LOD budgets) the files it links carry the evidence.
 
-This is a Blender method, not a statement about the game. Where it touches DayZ (the `_nohq` convention, LOD budgets) the facts are not checked against the vanilla files on `P:\` here; the files it points to carry the evidence.
+The failures it prevents:
 
-## What to read
+- **Cube size.** `primitive_cube_add(size=1)` puts vertices at 0.5 either side, so `scale=0.4` gives a half extent of 0.2, not 0.4. Every size halves and every connected part lands wrong.
+- **Rotated cylinders.** Pointing a cylinder with Euler angles often lands it on the wrong axis, because of the XYZ rotation order.
+- **Gaps.** Parts placed close but not overlapping look exploded in a render. A 5 mm gap shows at model scale.
+- **Bare boxes.** Nothing asked for detail, so none was built. The detail list and the geometry rules below fix that.
+- **Broken meshes.** Booleans and joins leave open edges, doubled vertices and degenerate faces that a bounding box check never sees. The integrity check in `blender-assembly-checks.md` catches them.
 
 | Question | Read |
 |---|---|
-| The helper functions themselves (run the file in Blender at session start) | `skills/dayz-model-tools/scripts/blender_helpers.py` |
-| How to scan a reference zone by zone for the detail list, the texture-side detail kinds and where each lands in DayZ textures, and the three kinds of linework | `blender-detail-scan.md` |
-| Renders over MCP show the mesh from before an edit, or the wrong scene | "Render pitfalls over MCP" below |
-| Checking the built model by eye | `blender-visual-review.md` |
+| The helper functions (run the file in Blender at session start) | `skills/dayz-model-tools/scripts/blender_helpers.py` |
+| Scanning a reference zone by zone for the detail list, and where texture detail lands | `blender-detail-scan.md` |
+| The checks after each part, finishing, the checklist, render traps over MCP | `blender-assembly-checks.md` |
+| Checking the finished model by eye | `blender-visual-review.md` |
 
-## Helper library
+## The helper library
 
-All helper functions live in `skills/dayz-model-tools/scripts/blender_helpers.py`, with a version in its docstring. At session start, read that file and execute it whole through the Blender MCP instead of pasting individual functions again: this stops copies drifting apart. A new helper enters the library only after it passes a test in Blender. The library was validated on Blender 5.1.1; the module docstring records that.
+Every helper lives in `skills/dayz-model-tools/scripts/blender_helpers.py`, with its version in the docstring. At session start, read the file and run it whole through the Blender MCP; never paste single functions again, or the copies drift apart. A new helper joins the library only after it passes a test in Blender. The library is tested on Blender 5.1.
 
-## Routing: build it, or generate it?
+## Build it or generate it
 
-This method covers parametric hard-surface modeling: anything that can be defined by dimensions, joints and repeated features (furniture, machines, crates, frames, pipes, electrical devices, weapons). For organic or densely decorative geometry (statues, creatures, irregular props, sculpted surfaces), building by hand in Blender is the expensive path. Route those to AI generation instead: an AI base mesh, then optimize and remesh, then this method for cleanup and export. No image to 3D generator is shipped in this repo; the DayZ side of that route is in `ai-generation.md`. Decide before writing any geometry code. A half-sculpted bmesh blob is the worst of both.
+This method covers parametric hard surface work: anything defined by sizes, joints and repeated features (furniture, machines, crates, frames, pipes, electrical devices, weapons). Organic or densely decorated shapes (statues, creatures, sculpted surfaces) are expensive to build by hand; send those to a generator first, then clean them up here (`ai-generation.md`). Decide before writing any geometry code. A half sculpted bmesh blob is the worst of both.
 
-## Phase 1: connection planning (before any code)
+## Plan the joints first
 
-Write a connection map listing every joint before writing any geometry. This forces correct thinking about where parts touch.
+Before any geometry, write a connection map of every joint: the two parts, which face or edge of each meets the other, and the overlap, at least 5 mm. Put it as a comment block in the first code cell, before any `bpy` call.
 
-For each joint, write:
-
-- the two parts that connect
-- which face or edge of each meets the other
-- the target overlap (at least 0.005 m, 5 mm)
-
-```
+```text
 Connection Map:
   tabletop_bottom (Z=0.73) <-> leg_top (Z=0.74)     overlap: 0.01m on Z
   leg_bottom (Z=0.01)      <-> floor (Z=0.00)        sits on floor
   drawer_back              <-> desk_body_front        overlap: 0.01m on Y
 ```
 
-Write this as a comment block in your first code cell, before any `bpy` call.
+## Plan the detail
 
-## Phase 1.5: detail planning (before any code)
+The connection map makes the model hold together; it does not stop it shipping as bare boxes. A model with no detail features is not finished: nothing real has perfect 90 degree edges. Next to the map, write a detail list: for each visible part, the features the real object has, the technique for each, and its rough size. Work from the reference photo, not from the primitive.
 
-The connection map guarantees the model holds together. It does not stop the model shipping as a set of bare boxes. A model with zero detail features is unfinished by default: nothing in the real world has perfect 90 degree edges.
-
-Next to the connection map, write a detail list: for each visible part, the features the real object has, the technique that produces each, and its approximate size. Think like the reference photo, not like the primitive.
-
-```
+```text
 Detail List:
   housing      edge chamfer        bevel 3mm/2seg      all exterior edges
   housing      side vent recess    inset+sink          0.12 x 0.06m, depth 5mm
@@ -60,226 +50,70 @@ Detail List:
   front panel  panel line          inset+sink          2mm wide, 1mm deep
   frame        cable run           make_cable r=6mm    junction box to motor
   grip         compound shape      loft_profile        palm swell + taper
-  grip         stippling           bake (Rule 11)      normal map, not geometry
+  grip         stippling           bake                normal map, not geometry
 ```
 
-Floors (a model below these is not done):
+A model below these floors is not done:
 
-- Every exterior edge of every visible part gets a bevel (Rule 6), background parts included. Edges without a bevel read as computer graphics from any distance.
-- A hero object carries at least 3 distinct detail feature types (for example bevel, recess and hardware). If the detail list has fewer, go back to the reference before coding.
-- Budget by LOD: the full list on LOD0, then drop hardware and recesses step by step on lower LODs. The vertex budgets are in `lods.md`, "Limits".
-- Fine surface detail (knurling, threads, stippling, stamped text) goes to the bake (Rule 11), never to LOD0 geometry.
+- Every exterior edge of every visible part gets a bevel, background parts included. Unbevelled edges read as computer graphics at any distance.
+- A main object carries at least 3 kinds of detail feature (for example bevel, recess and hardware). With fewer, go back to the reference before coding.
+- Budget by LOD: the full list on LOD0, then drop hardware and recesses step by step on lower LODs. Vertex budgets are in `lods.md`, "Limits".
+- Fine surface detail (knurling, threads, stippling, stamped text) goes to the bake, never to LOD0 geometry.
 
-If no reference image exists, get one first. The visual review (`blender-visual-review.md`) compares against it later, and a detail list invented from memory produces generic detail.
+Get a reference image before you start; the visual review compares against it later, and a list written from memory gives generic detail. A list written from one glance misses the small marks that give the object its identity, so scan the reference zone by zone (`blender-detail-scan.md`).
 
-A detail list written from one glance at the reference misses the small marks that give the object its identity. Scan the reference zone by zone and keep the scan with the list: the method, the count floor by complexity, the per-detail record, the texture-side detail kinds and the three kinds of linework are in `blender-detail-scan.md`.
+## Geometry rules
 
-## Phase 2: geometry rules
-
-### Rule 1: always use size=2 for cube primitives
-
-A cube with `size=S` has vertices at `±S/2`. After `scale=K`, the half-extent is `K * S/2`, not `K`.
-
-Always use `size=2`. Then the vertices are at ±1, and after `scale=K` the half-extent equals `K` directly. The math is plain and the factor of 2 error disappears.
+**Make cubes with `size=2`.** A cube with `size=S` has vertices at `S/2` either side, so after `scale=K` the half extent is `K * S/2`. With `size=2` the half extent equals `K` and the factor of two disappears. Cylinders and spheres take `radius`, which is already the real radius.
 
 ```python
-# CORRECT: size=2, scale = desired half-extent
+# right: size=2, scale is the half extent
 bpy.ops.mesh.primitive_cube_add(size=2, location=(0, 0, 0.75))
-obj.scale = (0.60, 0.30, 0.02)   # box is 1.2m wide, 0.6m deep, 0.04m tall
+obj.scale = (0.60, 0.30, 0.02)   # 1.2 m wide, 0.6 m deep, 0.04 m tall
 
-# WRONG: size=1, scale misread as full extent
+# wrong: size=1, scale read as the full extent
 bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0.75))
-obj.scale = (0.60, 0.30, 0.02)   # box is only 0.6m wide, half of what was intended
+obj.scale = (0.60, 0.30, 0.02)   # only 0.6 m wide
 ```
 
-Cylinders and spheres take `radius`, which is already the real radius. No conversion is needed.
+**Never rotate a cylinder into place.** For anything that spans from one point to another (legs, beams, axles, struts, rails), build it from explicit vertex positions with `make_beam(name, start, end, hw, hh)`. Skip it for parts already on a world axis (vertical posts, wheels, hubs). Round sections (pipes, cables, trigger guards) use `make_cable`; changing sections (grips, stocks) use `loft_profile`.
 
-### Rule 2: use bmesh for directional geometry, never rotate cylinders
+**Apply scale straight after setting it.** In a loop, `bpy.context.active_object` can point at another object by the end, so a late scale lands on the wrong mesh. Call `bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)` right after each scale assignment, inside the loop.
 
-Never create a cylinder and rotate it to point in a direction. The Euler rotation order (XYZ) makes this fail silently: the cylinder often ends up on the wrong axis.
+**Size spanning parts from their neighbours.** Never hard code a part that must reach between two others. Read both neighbours with `verify_bounds()` and compute the size from their real extents: `half_span = (b_b['x'][1] - b_a['x'][0]) / 2`. A guessed `0.28` is wrong as soon as a neighbour moves.
 
-For any geometry that must span from point A to point B (legs, beams, axles, supports, pipes, rails), build it with explicit vertex positions: `make_beam(name, start, end, hw, hh)` from the helper library.
+**Allow for subsurf shrinkage.** A subdivision surface pulls geometry in; a box from 0 to 0.30 m may reach only 0.26 m after level 2. Build 10 to 15% past the target (`build_to = target_reach * 1.13`) and check the result, or use a bevel modifier on structural parts, which smooths edges without shrinking.
 
-- Use it for: chair and table legs, beams, axles, frame members, railings, any angled strut.
-- Skip it for: vertical posts, wheels, hubs, anything aligned with a world axis where no rotation is needed.
-- Round cross-sections (pipes, cables, trigger guards): `make_cable` (Rule 8). Varying cross-sections (grips, stocks): `loft_profile` (Rule 10).
+**Bevel every exterior edge.** Bevels make most of the difference between a primitive and an object. Add an angle limited bevel to every visible part as the last step, after all booleans: `add_bevel(obj, width=0.003, segments=2, angle_deg=40)`; 2 to 4 mm reads right at prop scale. Apply it so decimation and export see real geometry. Scale must already be applied, or the width comes out uneven. Run `verify_mesh_integrity` afterwards.
 
-### Rule 3: call transform_apply right after setting scale
+**Recesses through bmesh.** Panel lines, vents, screens and recessed faces are an inset plus a sink: `panel_recess(obj, near_point, inset, depth)`. It picks the face by its world position, never by index, which changes with any earlier edit. For a raised panel, move along `+face.normal` instead. Chain two insets (frame, then sink) for vents.
 
-When objects are created in a loop, `bpy.context.active_object` can silently point at the wrong object by the end of the loop, so a scale assignment fails or lands on the wrong mesh. Call `transform_apply` immediately after every scale assignment, inside the loop, before anything else:
+**Repeated hardware.** Model one low poly bolt or rivet (8 segments is plenty) and place copies in an explicit loop with `place_copies(src, positions)`; it is easier to check than an Array modifier. Each copy overlaps its mount by at least 1 mm.
 
-```python
-# CORRECT
-bpy.ops.mesh.primitive_cube_add(size=2, location=(x, y, z))
-obj = bpy.context.active_object
-obj.name = name
-obj.scale = (sx, sy, sz)
-bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)   # immediately, inside the loop
+**Cables, pipes and hoses.** Never chain rotated cylinders. `make_cable(name, points, radius)` builds a bevelled Bezier curve through explicit points and converts it to mesh. Take the end points from `verify_bounds()` of the parts it joins, with at least 5 mm into each.
 
-# WRONG: the scale may silently not apply
-obj.scale = (sx, sy, sz)
-# ... more operations ...
-bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)   # too late; active_object may have changed
-```
+**Booleans.** Booleans break more meshes than anything else:
 
-### Rule 4: derive spanning dimensions from verified neighbour bounds
+1. Apply scale on both operands first. A boolean on a live scale gives garbage intersections.
+2. Let the cutter pass every surface it cuts by at least 1 mm. A flush cutter leaves coplanar faces, the first cause of slivers and open holes.
+3. Use the `'EXACT'` solver.
 
-Never hardcode a dimension for a part that must reach between two existing parts. Hardcoded values drift from the real geometry. Call `verify_bounds()` on both neighbours and compute the size from their real extents:
+`boolean_cut(target, cutter, op)` sets the EXACT solver and cleans up (`remove_doubles`, `dissolve_degenerate`); the caller applies scale and sizes the cutter. Run `verify_mesh_integrity` after every boolean, before building on top. On Blender 5.1 the EXACT solver handled an exactly flush, axis aligned cutter cleanly (same pocket and volume as the overshoot cut, clean counters, only the ngon layout differed), so a flush cut that passes the integrity check and the visual check is acceptable. Keep the 1 mm overshoot as the default for oblique cuts and float drift.
 
-```python
-# CORRECT: measure first, then size the new part
-b_a = verify_bounds("Part_A")
-b_b = verify_bounds("Part_B")
-half_span = (b_b['x'][1] - b_a['x'][0]) / 2   # the half-width needed to bridge A and B
+**Loft compound shapes.** Boxes and beams cannot make a pistol grip, a stock, a bottle or a handle. Sweep a 2D profile along a 3D path and scale it per section with `ellipse_profile(rx, ry, n)`, `rounded_rect_profile(hw, hh, r, seg)` and `loft_profile(name, profile, path, scales, close_caps)`. For a grip, sweep `rounded_rect_profile` down a slightly curved path with scales such as `[1.0, 1.05, 0.95, 0.9]` (palm swell, then taper), with the top ring at least 5 mm into the receiver. The helper recalculates normals, but duplicate path points still make zero area faces, so run `verify_mesh_integrity` after every loft. If it looks faceted, raise the profile's `n`.
 
-# WRONG: dimension set independently of the neighbours' real positions
-half_span = 0.28   # guessed; wrong if a neighbour shifted even slightly
-```
+## Fine detail goes to the bake
 
-Apply this rule whenever one part must cover, fill or connect two others on any axis. Measure the gap from real bounds; never guess.
+Knurling, stippling, threads, stamped text and fine seams blow the polygon budget as geometry and still look worse than a bake. Bake them into the `_nohq` normal map and multiply ambient occlusion into the `_co`:
 
-### Rule 5: compensate for subsurf shrinkage
+1. Build the part twice from one script with two parameter sets: high (bevel segments 4 to 6, knurl and thread geometry, deep panel lines) and low (game budget, the geometry rules only). Never two scripts that drift apart.
+2. Unwrap the low mesh. `smart_uv(obj)` works for a quick hard surface bake, but it shatters the mesh into islands of 2 to 4 faces that nobody can paint. For a DayZ visual asset, unwrap by logical sections into an atlas a person can read (`tools-uv-atlas.md`; the audit scripts are in `dayz-model-tools`). Islands need a margin or the bake bleeds.
+3. Bake high to low with `bake_map(high, low, 'NORMAL', ...)` and `bake_map(high, low, 'AO', ...)` (Cycles, selected to active).
 
-Subdivision surface modifiers pull geometry inward. A box spanning 0.0 to 0.30 m may only reach 0.26 m after level 2 subsurf.
+What goes wrong:
 
-Extend the geometry 10 to 15% past the target boundary before applying subsurf, then verify:
+- A low mesh with no UVs is a hard error. Unwrap it first.
+- High and low not in the same space, or a ray distance too short or too long, gives patchy maps. Set `max_ray_distance` a little above the largest gap between the surfaces, and use a cage for deep recesses. The default `ray=0.01` gave clean 1024 px normal and AO bakes at a gap of about 4 mm.
+- Blender bakes tangent normals green up (OpenGL). DayZ's `_nohq` is green down (DirectX), so invert green (`G' = 255 - G`) on every Cycles bake before export. This was calibrated against a vanilla `_nohq`, not checked on `P:\`. A `.paa` `_nohq` stores one minus X in alpha and one minus the source alpha in red (DayZ Tools `Bin\ImageToPAA\TexConvert.cfg`, class `normalmap_hq`: `channelSwizzleA = "1-R"`, `channelSwizzleR = "1-A"`). That is not the usual DXT5nm layout, so recover X as one minus the stored alpha before auditing a converted map. The calibration is in `_shared/textures/normal-maps.md`.
 
-```python
-target_reach = 0.28
-build_to     = target_reach * 1.13   # 13% longer to compensate for shrinkage
-```
-
-Alternative: use a bevel modifier instead of subsurf for structural parts. It adds smooth edges without shrinking the shape.
-
-### Rule 6: bevel every exterior edge (the box-to-object rule)
-
-About 80% of the visual difference between a primitive and an object is edge bevels. Add an angle-limited bevel to every visible part as the last step of its construction, after all booleans: `add_bevel(obj, width=0.003, segments=2, angle_deg=40)`. The width is in meters; 2 to 4 mm reads right at prop scale.
-
-Apply the bevel (do not leave it live) so LOD decimation and export see real geometry. Scale must already be applied (Rule 3): a live scale makes the bevel width uneven. Run `verify_mesh_integrity` after applying (Phase 3).
-
-### Rule 7: panel recesses and insets through bmesh
-
-Panel lines, vents, screens and recessed faces come from an inset plus a sink: `panel_recess(obj, near_point, inset, depth)`. The face is picked by its world-space center, never by index, which changes with any earlier edit. For a raised panel instead of a recess, translate along `+face.normal` (edit the helper call). Chain two insets (frame, then sink) for vent-style detail.
-
-### Rule 8: repeated hardware and cables
-
-**Hardware (bolts, rivets, handles).** Model one low-poly instance (a cylinder with 8 segments is plenty at bolt scale), then place copies in an explicit loop with `place_copies(src, positions)`. That matches the explicit-math approach of this file and is easier to verify than an Array modifier. Each copy must overlap its mount surface by at least 1 mm: the connection map applies to hardware too.
-
-**Cables, pipes, hoses, trigger guards.** Never chain rotated cylinders. `make_cable(name, points, radius)` builds a Bezier curve through explicit points, bevels it and converts it to mesh. The endpoints come from `verify_bounds()` of the parts being connected (Rule 4), with at least 5 mm of penetration into each.
-
-### Rule 9: boolean protocol
-
-Booleans are the main source of broken meshes. Three rules, then cleanup:
-
-1. Apply scale on both operands first (Rule 3). Booleans on a live scale produce garbage intersections.
-2. Do not leave coplanar faces between the operands. The cutter overshoots every surface it cuts through by at least 1 mm. A flush cutter is a coplanar cutter, the first cause of boolean failure (degenerate slivers, open holes).
-3. The solver is always `'EXACT'`.
-
-`boolean_cut(target, cutter, op)` sets the EXACT solver (point 3) and runs the cleanup (`remove_doubles` and `dissolve_degenerate`). It does not apply scale or check the overshoot: the caller applies scale on both operands (point 1) and sizes the cutter to overshoot (point 2) before calling it. After every boolean, run `verify_mesh_integrity` before building anything on top. A broken mesh found three parts later costs the whole session.
-
-Point 2 is a strong recommendation, not an absolute. Measured on Blender 5.1.1: the EXACT solver handled an exactly flush, axis-aligned cutter without breaking the mesh: the open pocket and the volume were identical to the overshoot cut and the hard counters were clean; only the layout of the ring ngons differed. Keep the 1 mm overshoot as the default for robustness (float drift, oblique cuts), but a flush cut that passes the integrity gate and the visual checkpoint is acceptable, not an automatic fail. The gate reports ngons as warnings, never as failures.
-
-### Rule 10: loft cross-sections for compound shapes
-
-Boxes and beams cannot make a pistol grip, a stock, a bottle or an ergonomic handle. The technique for those is cross-section lofting: define a 2D profile, sweep it along a 3D path, and scale it per section. This is the standard parametric approach for weapon grips and receivers.
-
-Helpers: `ellipse_profile(rx, ry, n)`, `rounded_rect_profile(hw, hh, r, seg)`, `loft_profile(name, profile, path, scales, close_caps)`.
-
-Pattern for a grip: `rounded_rect_profile` swept down a slightly curved path with scales such as `[1.0, 1.05, 0.95, 0.9]` (palm swell, then taper). The path points come from the connection map, and the top ring must overlap the receiver by at least 5 mm. The helper recalculates face normals, so winding is verified, not assumed. Degenerate rings (duplicate path points) still produce zero-area faces, so run `verify_mesh_integrity` after every loft. If the result looks faceted in review, raise the profile's `n`.
-
-### Rule 11: fine detail goes to the normal map, not to LOD0
-
-Knurling, grip stippling, screw threads, stamped text, fine panel seams: modeled as geometry these blow the poly budget and still read worse than a bake. The game industry standard is the high to low pass, and it fits the DayZ texture pipeline directly (the `_nohq` normal map, and ambient occlusion multiplied into the `_co`):
-
-1. Build the part twice from the same build script: **high** (bevel segments 4 to 6, knurl and thread geometry, deep panel lines) and **low** (game budget, Rules 1 to 10 only). One script with two parameter sets, never two scripts that drift apart.
-2. Unwrap the low mesh: `smart_uv(obj)`. Smart UV Project is acceptable for hard surface, and the islands need a margin or the bake bleeds. It also shatters the mesh into tiny islands (a median of 2 to 4 faces per island is the classic failure), which makes an atlas nobody can paint detail on. For a DayZ visual asset, unwrap by logical sections with contiguous islands and an atlas a person can read; the gate is a person reading the atlas. The full reference is `tools-uv-atlas.md` and the audit scripts are in the `dayz-model-tools` skill.
-3. Bake from high to low with `bake_map(high, low, 'NORMAL', ...)` and `bake_map(high, low, 'AO', ...)` (Cycles, selected to active).
-
-Known pitfalls, all controllable:
-
-- No UVs on the low mesh is a hard error. Unwrap it first (step 2): `smart_uv` for a quick hard-surface bake, or the clean UV atlas method of `dayz-model-tools` for a DayZ visual asset.
-- High and low not occupying the same space, or `ray` too small or too large, gives patchy garbage in the map. Set `max_ray_distance` slightly above the largest gap between the high and low surfaces; use a cage for parts with deep recesses. The default `ray=0.01` gave clean 1024 px NORMAL and AO bakes at a gap of about 4 mm (measured on Blender 5.1.1).
-- Blender bakes tangent normals in the OpenGL convention (Y+). DayZ's `_nohq` is the DirectX convention (Y-): invert the green channel (G' = 255 - G) on every Cycles bake before export. The convention was measured by calibration against a vanilla `_nohq`; it is not checked on `P:\` here. A `.paa` `_nohq` stores 1 minus X in alpha and 1 minus the source alpha in red (`DayZ Tools\Bin\ImageToPAA\TexConvert.cfg`, class `normalmap_hq`: `channelSwizzleA = "1-R"`, `channelSwizzleR = "1-A"`). This is not the standard DXT5nm layout, so un-swizzle with X = 1 minus the stored alpha before auditing a converted map. The evidence and the calibration method are in `skills/_shared/textures/normal-maps.md`.
-
-The output feeds `/dayz-pack-texture`: the normal PNG becomes `_nohq.paa`, and the AO PNG becomes a multiply layer in the `_co` composite.
-
-## Phase 3: verify after every part
-
-Call these after creating each part. Catching a defect immediately is far cheaper than debugging an exploded or broken model later. All three are in the helper library.
-
-**`verify_bounds(name)`** prints and returns the world-space bounding box of a part.
-
-**`verify_overlap(name_a, name_b, axis, min_overlap)`** confirms two parts physically overlap on the given axis. Run it for every joint in the connection map before moving to the next part. If it shows a gap, fix the position before continuing.
-
-**`verify_mesh_integrity(name, require_closed, allow_ngons)`** is the broken-geometry gate. `verify_bounds` proves position and passes happily on a non-manifold mess. This gate proves the mesh itself is sound. Run it after every boolean, every modifier apply, every loft, and once per part at finalization. Reading the result:
-
-- `non_manifold_edges > 0`: an edge with no face (a loose wire edge) or shared by 3 or more faces, almost always a boolean leftover or two parts joined without merging. Fix it at the operation that caused it; do not patch around it.
-- `duplicate_verts > 0`: run `remove_doubles` on the real mesh (the gate's own pass runs on a throwaway copy).
-- `boundary_edges > 0` with `require_closed=True`: a hole. Collision geometry must be closed. For a visual mesh with intentional openings, call with `require_closed=False` and record why in a comment in the build script.
-- `ngons`: on curved surfaces they shade badly and decimate badly, so triangulate or inset again. On large flat faces they are tolerable, which is why this is a warning and not a failure.
-
-A failed gate means stop and fix before the next part. The discipline and the reason are the same as for `verify_overlap`: broken geometry compounds.
-
-**Component checkpoint.** For complex parts (lofts, pieces with many booleans), also take one quick visual capture of the part alone before building on top of it (`vr_capture` in `blender-visual-review.md`). Numbers verify topology; only eyes verify intent.
-
-**Moving mechanisms: check the fit over the whole travel and the whole length** (measured offline). A vertical mechanism checked on one representative section failed twice on one model: standing leaves checked only at their widest section (y = 0.8) stuck out of the rock by up to 0.96 m elsewhere, and a platform checked only at the top touched the lining at the hangar end by up to 1.1 m.
-
-**Sampling once per frame skips short collisions** (measured offline). Folding a 2.46 m leaf hinged on its top edge brings each lower corner 4.7 mm closer in the first degrees, a collision shorter than one frame. Sweep the kinematics with angles set by hand and a fine step near 0 degrees, with the actions unhooked so the depsgraph does not override the angles. Keyframe clearance in presentation renders is covered in `blender-visual-review.md`, checklist A, "Animated parts".
-
-## Phase 4: finalization
-
-Call `finalize(name)` on each part right after it is created, while it is still the active object: the helper renames and transforms `bpy.context.active_object` and does not look the name up (transforms applied, origin set, shade smooth). When every part is built, run `audit_all()` to confirm rotation (0,0,0) and scale (1,1,1) across the whole scene. Both are in the helper library.
-
-## Further rules
-
-- **Organic meshes.** Do not use booleans to carve open or non-watertight organic meshes; prefer extruding the boundary loop or bridging by hand. If you do use a boolean, operate between closed solids and validate raycast, boundary and non-manifold before continuing.
-- **Stale matrices.** After changing `location`, `rotation` or `scale` through the API, call `bpy.context.view_layer.update()` before reading `matrix_world`. Put the update in the helper that reads, and use fixtures that vary all axes.
-- **Closed tubes.** For closed tubes, enable `use_fill_caps`, convert to mesh and weld with `remove_doubles(1e-5)`. Keep the `require_closed` gate; do not lower it for boundary edges.
-- **Explicit `transform_apply`.** Always call `transform_apply(location=False, rotation=<bool>, scale=<bool>)` with all three arguments explicit. Create copy sources at the world origin before baking transforms.
-- **`finalize()` contract.** Call `finalize()` immediately on the newly created active object; do not loop over names expecting the helper to look them up. Check the helper's real contract, and confirm name to bounding box after renaming.
-- **Planar curved pieces.** For planar curved pieces, build a 2.5D loft with a fixed width on a world axis and the depth derived from the planar tangent. Run `remove_doubles` and `dissolve_degenerate` after each loft.
-- **Hollow pieces.** In hollow pieces, size each cutter to cross only the target wall, overshooting into the hollow without reaching the opposite wall. Run the integrity gate after each boolean.
-- **Compound cutters.** Keep the components of each cutter disjoint, and apply circles and slots in separate passes. Make the gate fail if a mesh is left with zero vertices, and raise an alert if successive operations produce identical signatures.
-- **Recesses on caps and ngons.** Do not use `panel_recess` on loft caps or ngons; use an oriented boolean or leave the detail to the bake. Position cutters from the analytical path, scales and profile, never by sampling bands of the resulting mesh.
-
-## Workflow checklist
-
-Every Blender model, every time:
-
-1. **Route first.** Parametric hard surface stays here; organic or sculpted goes to AI generation (`ai-generation.md`).
-2. **Connection map.** Every joint, written before any `bpy` code.
-3. **Detail list.** Scanned by zone (`grid-3x3` or `component-zones`), at or above the count floor for its complexity, every row mapped to a technique or a texture channel, at least 3 feature types on a hero object, reference image in hand.
-4. **`size=2`** for all cube primitives: scale is the half-extent.
-5. **`make_beam()`, `make_cable()`, `loft_profile()`** for A to B and compound shapes: no Euler rotations.
-6. **`transform_apply(location=False, rotation=False, scale=True)` immediately** after every scale assignment, inside the loop.
-7. **Spanning dimensions from `verify_bounds()`**: measured, never guessed.
-8. **Booleans by protocol.** Scale applied, cutter overshoots by at least 1 mm, EXACT, cleanup, gate.
-9. **Bevel every visible part.** Angle-limited, applied, after all booleans.
-10. **Fine detail to the bake.** High and low twins from one script, the low mesh unwrapped (by logical sections with the clean UV atlas scripts of `dayz-model-tools` for a DayZ visual asset, `smart_uv` only where nobody paints the atlas), then `bake_map` (NORMAL and AO), never knurling on LOD0.
-11. **`verify_bounds()` and `verify_overlap()`** after every part and every joint.
-12. **`verify_mesh_integrity()`** after every boolean or modifier apply, after every loft, and at finalization.
-13. **Component checkpoint.** One quick `vr_capture` of each complex part (lofts, boolean-heavy pieces) before building on top.
-14. **`finalize()` and `audit_all()`**: transforms clean across the scene.
-15. **Hand off to the visual review (`blender-visual-review.md`).** Numbers verify topology; only eyes verify intent.
-
-## Render pitfalls over MCP
-
-Two traps that make a render over the Blender MCP disagree with the mesh data: a render depsgraph that keeps serving the mesh from before an in-place edit, and a scene that silently changes between calls. It is Blender tool behaviour, measured with Blender driven over MCP; nothing here is a statement about the game.
-
-### The render depsgraph goes stale after in-place mesh edits
-
-When the host Blender is driven over MCP, `obj.data.transform()` and other low-level in-place writes to a datablock do update the data, which you can verify by reading the vertices. The render depsgraph, though, keeps serving a frozen copy of that datablock: every `render.render()` shows the mesh from before the edit.
-
-- `data.update()`, `update_tag()`, `view_layer.update()` and `evaluated_depsgraph_get().update()` do not clear it.
-- A `mesh.copy()` inherits the stale cache.
-- New objects render fine.
-
-**Fix.** Write the edited geometry to a new mesh datablock with `bm.to_mesh(new_mesh)`, link it on a new object, and remove the old object and mesh.
-
-**Cost of not knowing.** Phantom renders that contradict your measurements. On one weapon model this nearly led to diagnosing a correct orientation as wrong.
-
-**Diagnosis: the marker-sphere test.** Add primitive spheres at known coordinates and render. Markers in the right place with a stale mesh means this cache, not your math.
-
-### The scene can change between calls
-
-`bpy.context.scene` can silently go back to the user's scene between MCP calls. Pin `bpy.context.window.scene`, and pass `scene=` to `render.render()` on every call, or you render (and screenshot) the wrong scene.
+The normal PNG then goes through `/dayz-pack-texture` to `_nohq.paa`, and the AO PNG becomes a multiply layer in the `_co`.

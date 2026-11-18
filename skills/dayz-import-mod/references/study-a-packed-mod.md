@@ -18,7 +18,7 @@ Not for:
 
 Respect the author's terms: study and compatibility work is the purpose. Repacking somebody else's content is the user's decision and responsibility.
 
-## Step 0: the extractor
+## The extractor
 
 `ExtractPbo.exe` from Mikero's DePboTools does the extraction. Its default install folder is `Mikero\DePboTools\bin` under the 32-bit Program Files folder:
 
@@ -29,13 +29,13 @@ Test-Path $extract
 
 If it is missing, install it from https://mikero.bytex.digital/Downloads. Allow two to three times the PBO's size in free disk space if you keep the binaries. On Linux, see "On Linux" in `extraction-pitfalls.md`.
 
-## Step 1: inventory pass
+## Inventory first
 
 Classify every PBO before any deep work, with `pbo_inventory.py` (`SKILL.md`, "Studying a packed mod") or `ExtractPbo -LB -P <pbo>`, which lists the contents without extracting. A PBO whose config is absent or zero bytes has nothing to load as a mod: it is a source distribution when it holds archives or source art, and data only when it holds neither. A PBO with a substantial config plus `.c` scripts and `.p3d` models is a deployable mod.
 
-Always do this first and re-scope on the first day if it contradicts the assumption. In one large Workshop item, 42 of 43 PBOs turned out to be source-only distributions, and the inventory pass saved weeks of misdirected work.
+Do this first, and change the plan the same day if it contradicts what you expected: in one large Workshop item, 42 of 43 PBOs were source-only distributions.
 
-## Step 2: extraction
+## Extraction
 
 ```powershell
 & $extract -P "<pbo path>" "<workdir>\<category>\"
@@ -52,11 +52,11 @@ Always do this first and re-scope on the first day if it contradicts the assumpt
 
 The ledger and the notes go under `output/<project>-extraction/` (`_state/` and `notes/`); the extracted files stay in `<workdir>`.
 
-## Step 3: the ledger
+## The ledger
 
 Four files in `_state/`: `queue.md` (ordered work units), `seen.json` (what was read), `findings.jsonl` (one finding per line, evidence mandatory) and `skill_changes.md` (every change applied to a skill or pack). Formats, novelty rules and the final report: `extraction-ledger.md`.
 
-## Step 4: dimensional sweep (pass 1)
+## First pass: file type by file type
 
 Process one PBO's files in this order:
 
@@ -74,18 +74,18 @@ Process one PBO's files in this order:
 
 For each file: read it, identify the patterns, classify each one's novelty by searching this repo's `skills/` folder (the skills and the packs under `skills/_shared/`), pick where it belongs, and write one line to `findings.jsonl` with `path:line` evidence.
 
-## Step 5: per-entity deep dive (pass 2)
+## Second pass: entity by entity
 
 One entity per unit (one vehicle, weapon or item). Look for what the dimensional sweep does not show: custom logic beyond parameter overrides, per-entity tuning, inheritance variations, unique features. A unit typically gives 3 findings for a pure parameter override and 9 to 11 for an entity with custom code. Once most entities turn out to be clones of one or two templates, confirm the clones quickly and spend the time on the customised ones.
 
-## Step 6: convergence and report
+## When to stop, and the report
 
-Two consecutive passes with fewer than 2 novel findings means converged. In practice diminishing returns is the signal: pass 1 typically gives 50 to 100 novel findings, pass 2 gives 20 to 40, pass 3 fewer than 5. If pass 2 drops below half of pass 1 and most of its novel findings are minor cross-entity synthesis, stop and ask the user instead of spending turns on confirmations. Write `_state/CONVERGED.md` with the metrics and the final report (`extraction-ledger.md`).
+Two consecutive passes with fewer than 2 novel findings means converged. In practice falling returns are the signal: the first pass typically gives 50 to 100 novel findings, the second 20 to 40, a third fewer than 5. If the second drops below half of the first and most of its novel findings are small links between entities, stop and ask the user instead of spending turns on confirmations. Write `_state/CONVERGED.md` with the metrics and the final report (`extraction-ledger.md`).
 
 ## Rules that keep the result honest
 
 - **Evidence is mandatory.** Every finding carries `<relative path>:<line range>`. Never write "function X does Y" without it, and never extrapolate behaviour: document what is literally in the code.
 - **Their code is not a reference.** It may use undocumented engine calls, have bugs or carry dead code. Document the pattern and note suspected problems separately. A fact taken from a mod names that mod; it is not a fact about vanilla until a file on `P:\` confirms it (Tier 2, "Cite, then verify").
-- **Do not claim `new` without searching `skills/` first**, and do not claim `confirm` unless the existing file documents the exact pattern.
+- **Search `skills/` before you call a finding `new`**, and call it `confirm` only when the existing file documents the exact pattern.
 - **Changing a skill or pack is a repo change.** Apply findings only when the user asked for that, re-read the target file first, follow the pack rules in `skills/_shared/README.md`, and log the change in `skill_changes.md`. Corrections to a rule go through `/dayz-record-correction`.
 - **Never copy another author's files** into `workspace\` or a pack. The output is findings with evidence.

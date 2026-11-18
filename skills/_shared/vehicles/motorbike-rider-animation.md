@@ -1,101 +1,85 @@
-# Rider animation, the `vehicles.agf` graph and the camera
+# Motorbike rider animation and camera
 
-How the motorbike rider is animated: the human vehicle command, the text animation graph `vehicles.agf`, the vanilla `.anm` clips, the third-person camera, and which vanilla rider set a new bike should use. The rider's pose and how a mod changes it live in the animation pack (section 5). Short citations: `config.cpp:N` is `P:\DZ\vehicles\singletrack\config.cpp`, and a bare script file name is the file of that name under `P:\scripts\` (`motorbike_01.c` and `motorbike_02.c` are the ones in `4_world\entities\vehicles\inheritedmotorbikes\`). Line numbers match the 1.30 data on `P:\` at the time of writing; when a line has moved, Grep for the symbol. Results marked as measured were measured in game on DayZDiag 1.30.164014 with sport bike mods; they cannot be checked on `P:\`.
+How the motorbike rider is animated: the human vehicle command, the `vehicles.agf` animation graph, the vanilla rider clips, the third-person camera, and which vanilla rider set a new bike should use. The rider's pose and how a mod changes it belong to the animation pack (see the last section).
 
----
+## The vehicle command
 
-## 1. Human Control Methods and Interaction
+`HumanCommandVehicle.IsTransitioning()` returns `IsGettingIn() || IsGettingOut() || IsSwitchSeat()` (`P:\scripts\3_game\human.c:735`), so it blocks other actions while the rider gets on, off or changes seat.
 
-### `HumanCommandVehicle`
-- `bool IsTransitioning()` (`P:\scripts\3_game\human.c:735`):
-  ```c
-  bool IsTransitioning()
-  {
-      return IsGettingIn() || IsGettingOut() || IsSwitchSeat();
-  }
-  ```
-  Unifies kinematic checks and blocks concurrent actions while the character enters, exits, or switches seats.
-- `JumpOutVehicle()` (`proto native`, `human.c:725`): `ActionGetOutTransport` jumps out while moving when `m_Speed > m_JumpingOutThreshold` (`actiongetouttransport.c:164`) and then calls `JumpOutVehicle()` (`:185`). On motorbikes the threshold is `MOTO_JUMPOUT_THRESHOLD = 10.0` km/h (`:36`, assigned at `:157`) and speed comes from `GetSpeedometerAbsolute()` (`:158`).
+`JumpOutVehicle()` is native (`human.c:725`). `ActionGetOutTransport` treats the exit as a jump-out when `m_Speed` is above the jump-out threshold (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetouttransport.c:164`), then calls `JumpOutVehicle()` (`:185`). On a motorbike the threshold is `MOTO_JUMPOUT_THRESHOLD = 10.0` km/h (`:36`, set at `:157`) and the speed comes from `GetSpeedometerAbsolute()` (`:158`).
 
----
+## Third-person camera
 
-## 2. Third-Person Camera: `DayZPlayerCamera3rdPersonVehicleMotorbike`
+The bike has its own camera, `DAYZCAMERA_3RD_VEHICLE_MOTORBIKE = 32`, registered to `DayZPlayerCamera3rdPersonVehicleMotorbike` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameras.c:20` and `:63`). The class is in `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:239` to `:470`.
 
-- **Registration**: `DAYZCAMERA_3RD_VEHICLE_MOTORBIKE = 32;` in `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameras.c:20, 63`.
-- **Implementation**: `DayZPlayerCamera3rdPersonVehicleMotorbike` in `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:239-470`.
-- **Spring Damping (Spring Smooth Time)**:
-  Like the car camera (`dayzplayercameravehicles.c:142-148`, with fixed time `0.3`), uses `Math.SmoothCD` and `Math.SmoothCDPI2PI` (`:369-375`), but with dedicated per-axis constants (`:256-265`):
-  - `CONST_SPRING_SMOOTHTIME_YAW = 0.5;`
-  - `CONST_SPRING_SMOOTHTIME_PITCH = 0.3;`
-  - `CONST_SPRING_SMOOTHTIME_ROLL = 0.3;`
-  - `CONST_SPRING_SMOOTHTIME_POS_X/Y/Z = 0.4;`
-- **Yaw lag reverse and damping**:
-  ```c
-  // P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:387-390
-  float lagYaw = tempRot[0];
-  if (lagYaw > 180.0)
-      lagYaw -= 360.0;
-  rot[0] = -lagYaw * CONST_YAW_LAG_REVERSE; // CONST_YAW_LAG_REVERSE = 0.3
-  ```
-  Reverses and dampens the camera yaw swing when turning (vanilla comment: "reverse + dampen the yaw lag swing").
+Like the car camera, which smooths every axis with a fixed time of `0.3` (`dayzplayercameravehicles.c:142` to `:148`), it uses `Math.SmoothCD` and `Math.SmoothCDPI2PI` (`:369` to `:375`), but with its own constants per axis (`:256` to `:265`):
 
----
+| Constant | Value |
+|---|---|
+| `CONST_YAW_LAG_REVERSE` | `0.3` |
+| `CONST_SPRING_SMOOTHTIME_YAW` | `0.5` |
+| `CONST_SPRING_SMOOTHTIME_PITCH`, `_ROLL` | `0.3` |
+| `CONST_SPRING_SMOOTHTIME_POS_X`, `_POS_Y`, `_POS_Z` | `0.4` |
 
-## 3. Enfusion Animation Graph: `vehicles.agf`
+The yaw swing in a turn is reversed and damped (`:387` to `:390`), with the vanilla comment "reverse + dampen the yaw lag swing":
 
-In 1.30 the vehicle graph ships as structured text: `P:\DZ\anims\workspaces\player\player_main\vehicles.agf` (3655 lines). The 1.29 data has no `.agf`, but its graphs are not binary: they are text `.agr` files in the old `$AnimGraph 7` format (line 1 of the 1.29 `player_main.agr`, and of the 1.29 `Vehicles.agr` for the vehicle sub-graph). That graph declares `#Var VehicleType int -1 -1 10 ""` (line 99 of the 1.29 `player_main.agr`) and has no `Jawa_*` column, so the motorbike rider is new in 1.30. The 1.29 files are not part of the 1.30 data, so these 1.29 facts are not yet checked on `P:\`.
-
-### Vehicle Type Selector (`MotorBikeB`)
-```enfusion
-// [EXACT] P:\DZ\anims\workspaces\player\player_main\vehicles.agf:1564-1576
-    AnimSrcNodeBlendT MotorBikeB {
-     EditorPos 4 -18.3
-     BlendTime "0.3"
-     BlendFn S
-     TriggerOn ""
-     TriggerOff ""
-     Condition "VehicleType == 10 || VehicleType == 11"
-     Child0 "VehicleSTM"
-     Child1 "MotorBikeSTM"
-     OptimizeMin 1
-     OptimizeMax 1
-     SelectMainPath 0
-    }
+```c
+float lagYaw = tempRot[0];
+if (lagYaw > 180.0)
+    lagYaw -= 360.0;
+rot[0] = -lagYaw * CONST_YAW_LAG_REVERSE;
 ```
-- `VehicleType == 10`: `VehicleAnimInstances.MOTO1` (`Motorbike_01`).
-- `VehicleType == 11`: `VehicleAnimInstances.MOTO2` (`Motorbike_02`).
 
-### State Machine `MotorBikeSTM` (`vehicles.agf:1582-1751`)
-1. `Idle`: Stretched-out riding or rest with hand IK active (`Child "AnimNodeIK2hands"`).
-2. `GetIn_L` / `GetIn_R`: Directional get-in from left or right with `"TagVehicleGetIn"` tag.
-3. `GetOut_L` / `GetOut_R`: Get-out at a complete stop (`IsExit 1`).
-4. `JumpOut_L` / `JumpOut_R`: Running jump-out at speed with ground impact animation.
-5. `Death`: Death on the seat (`IsCommand(CMD_Death) && !IsTag("TagVehicleGetIn")`).
-6. `GettingInDeath`: Death while mounting the motorbike.
+## The `vehicles.agf` graph
 
----
+The vehicle graph ships as text in `P:\DZ\anims\workspaces\player\player_main\vehicles.agf` (3,655 lines). The DayZ 1.29 data had no `.agf`; its graphs were text `.agr` files in the older `$AnimGraph 7` format, declared `VehicleType` with a range up to 10 and had no `Jawa_*` column, so the motorbike rider is new in 1.30. The 1.29 files are not on `P:\`, so that comparison is not checked there.
 
-## 4. Animation Clips (.anm) of Jawa_05 and Jawa_Bitrak
+The node that picks the bike branch (`vehicles.agf:1564` to `:1576`):
 
-The `.anm` clips are binary. `P:\DZ\anims\workspaces\player\player_main\player_main.asi` (not to be confused with that of `player_inventory`) references them as `DZ/anims/anm/player/vehicles/Jawa_05/…` and `DZ/anims/anm/player/vehicles/Jawa_Bitrak/…`, which on `P:\` are the folders `P:\DZ\anims\anm\player\vehicles\jawa_05\` and `jawa_bitrak\`. Columns `"Jawa_05"` and `"Jawa_Bitrak"` are in `player_main.ast:1119-1120`; `Jawa_05` instances occupy `player_main.asi:5088-5144` and `Jawa_Bitrak` instances start at line `5145`.
+```text
+AnimSrcNodeBlendT MotorBikeB {
+ BlendTime "0.3"
+ BlendFn S
+ Condition "VehicleType == 10 || VehicleType == 11"
+ Child0 "VehicleSTM"
+ Child1 "MotorBikeSTM"
+}
+```
 
-### `Motorbike_01` (`Jawa_05`) Mapping
-Instances `Vehicle.Jawa_05.*` present in `player_main.asi:5088-5144`:
-- Riding: `DriverIdle`, `DriverSteeringMain`, `DriverSteeringExtreme`, `DriverWobble`, `DriverCollision`, `DriverAimIdle`, `AccelerationSpine`, `AccelerationSpineUD`, `IdleToDrive`, and `DriveToIdle`.
-- Entry, exit, and jump-out: `DriverGetIn_L`/`_R`, `DriverGetOut_L`/`_R`, and `DriverJumpOut_L`/`_R`.
-- Death and unconsciousness: `DriverDeath`, `DriverUnconsciousIdle`, and `DriverUnconsciousDeath`.
+`VehicleType` 10 is `VehicleAnimInstances.MOTO1` (`Motorbike_01`) and 11 is `MOTO2` (`Motorbike_02`).
 
-### Implications for a New Motorbike Modder
-- If ergonomics of your motorbike (seat height, handlebar reach, footpegs) resemble an enduro or light moped, **use `VehicleAnimInstances.MOTO1`**.
-- If your motorbike is heavier, wider, or upright / cruiser posture, **use `VehicleAnimInstances.MOTO2`**.
-- Both instances are free and work out-of-the-box without touching the graph.
+The state machine `MotorBikeSTM` (`vehicles.agf:1582` to `:1751`) has these states:
 
----
+| State | What it plays |
+|---|---|
+| `Idle` | Riding or resting, with hand IK on (`Child "AnimNodeIK2hands"`) |
+| `GetIn_L`, `GetIn_R` | Get on from the left or right, tagged `TagVehicleGetIn` |
+| `GetOut_L`, `GetOut_R` | Get off at a full stop (`IsExit 1`) |
+| `JumpOut_L`, `JumpOut_R` | Jump off at speed, with the landing |
+| `Death` | Death on the seat (`IsCommand(CMD_Death) && !IsTag("TagVehicleGetIn")`) |
+| `GettingInDeath` | Death while getting on |
 
-## 5. Rider pose, boarding side and falling off
+## Rider clips
 
-The rider's pose, the hand IK on the bars, the left and right boarding states, ejection when the bike falls and the fall when a rider dies are animation subjects, and their one home is the animation pack:
+The `.anm` clips are binary. `P:\DZ\anims\workspaces\player\player_main\player_main.asi` (not the one of `player_inventory`) points at them under `P:\DZ\anims\anm\player\vehicles\jawa_05\` and `jawa_bitrak\`. The columns `"Jawa_05"` and `"Jawa_Bitrak"` are in `player_main.ast:1119` and `:1120`; the `Jawa_05` instances fill `player_main.asi:5088` to `:5144`, and the `Jawa_Bitrak` ones start at `:5145`.
 
-- `skills/_shared/animation/rider-poses.md`: where the driver's body and hands come from (clips, not the bike model; no IK node reads a vehicle memory point), the steering pose read over 45 degrees of wheel angle, the four pieces of the motorbike pose, the child `.asi` route that changes the pose for one bike class without replacing the graph, the boarding side (`HasDirectionalInOutAction`, `GetSeatAnimationTypeDirectional`) and ejection.
-- `skills/_shared/animation/rider-pose-solver.md`: solving a pose from anchors on the model, and everything measured in game with the child `.asi` route and with generated clips.
-- `skills/_shared/animation/anim-graphs.md`, "Which changes collide": why replacing `player_main` is a wall that only one mod can cross.
+The `Vehicle.Jawa_05.*` instances used by `Motorbike_01`:
+
+- Riding: `DriverIdle`, `DriverSteeringMain`, `DriverSteeringExtreme`, `DriverWobble`, `DriverCollision`, `DriverAimIdle`, `AccelerationSpine`, `AccelerationSpineUD`, `IdleToDrive`, `DriveToIdle`.
+- Getting on and off: `DriverGetIn_L` and `_R`, `DriverGetOut_L` and `_R`, `DriverJumpOut_L` and `_R`.
+- Death and unconsciousness: `DriverDeath`, `DriverUnconsciousIdle`, `DriverUnconsciousDeath`.
+
+## Which rider set to use
+
+Both sets work without touching the graph. Return the one that fits from `GetAnimInstance()`:
+
+- `VehicleAnimInstances.MOTO1` for a bike shaped like an enduro or light moped: seat height, bar reach and footpegs.
+- `VehicleAnimInstances.MOTO2` for a heavier or wider bike, or an upright cruiser posture.
+
+## Rider pose, boarding side and falling off
+
+These are animation subjects, kept in the animation pack:
+
+- `_shared/animation/rider-poses.md`: where the driver's body and hands come from (clips, not the bike model; no IK node reads a vehicle memory point), the steering pose over 45 degrees of wheel angle, the four pieces of the motorbike pose, the child `.asi` route that changes the pose for one bike class without replacing the graph, the boarding side (`HasDirectionalInOutAction`, `GetSeatAnimationTypeDirectional`) and ejection.
+- `_shared/animation/rider-pose-solver.md`: solving a pose from anchors on the model; `_shared/animation/rider-pose-measured.md`: what was measured in game with the child `.asi` route and with generated clips.
+- `_shared/animation/anim-graphs.md`, on which changes collide: why replacing `player_main` is something only one mod can do.

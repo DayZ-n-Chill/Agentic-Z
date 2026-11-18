@@ -40,9 +40,9 @@ Keep these names exactly; script reads them by string.
 
 A car with a `Motor` zone instead of `Engine` would never lose engine health to overrevving or low coolant, and a ruined engine would not stop it starting.
 
-A car with no `Engine` zone at all is the common import mistake, and it shows as an engine that starts and stops within a tick with fuel and every part fitted: `m_EngineHealth` is read from the `Engine` zone (`P:\scripts\4_world\entities\vehicles\carscript.c:2134-2135`), and `EOnPostSimulate` stops a running engine when `m_EngineHealth <= 0` (`P:\scripts\4_world\entities\vehicles\carscript.c:850`). Declare both `Engine` and `FuelTank`, as every vanilla car does. Field notes: invariant 9 in `invariants-engine-fluids-and-handling.md`.
+A car with no `Engine` zone at all is the common import mistake, and it shows as an engine that starts and stops within a tick with fuel and every part fitted: `m_EngineHealth` is read from the `Engine` zone (`P:\scripts\4_world\entities\vehicles\carscript.c:2134-2135`), and `EOnPostSimulate` stops a running engine when `m_EngineHealth <= 0` (`P:\scripts\4_world\entities\vehicles\carscript.c:850`). Declare both `Engine` and `FuelTank`, as every vanilla car does. Field notes: `invariants-engine-fluids-and-handling.md`, section "An engine that starts and stalls at once".
 
-The damage system reads a zone's `componentNames` from config (`P:\scripts\3_game\damagesystem.c:63`); the `Chassis` zone of `OffroadHatchback` has `componentNames[]` and no `memoryPoints[]` at all (`P:\DZ\vehicles\wheeled\config.cpp:1579-1593`). Missing zone memory points are therefore not a cause of collision jerks or driving stutter (invariant 35 in the same file).
+The damage system reads a zone's `componentNames` from config (`P:\scripts\3_game\damagesystem.c:63`); the `Chassis` zone of `OffroadHatchback` has `componentNames[]` and no `memoryPoints[]` at all (`P:\DZ\vehicles\wheeled\config.cpp:1579-1593`). Missing zone memory points are therefore not a cause of collision jerks or driving stutter (`invariants-engine-fluids-and-handling.md`, section "Missing zone memory points do not cause jerks").
 
 ## Damage while driving
 

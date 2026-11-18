@@ -1,6 +1,6 @@
 # Sound engine API: building and tuning a sound by hand
 
-The classes under `EffectSound`: `SoundParams`, `SoundObjectBuilder`, `SoundObject`, `AbstractWave` and the sound scene. Use them when the sound set helpers in `sound-script.md` are not enough: to change the pitch of a playing sound, to pick its mixer category, to override the environment sound controllers, or to read what a legacy call returns.
+Covers the classes under `EffectSound`: `SoundParams`, `SoundObjectBuilder`, `SoundObject`, `AbstractWave` and the sound scene. Use them when the sound set helpers in `sound-script.md` are not enough: to change the pitch of a playing sound, to pick its mixer category, to override the environment sound controllers, or to read what a legacy call returns.
 
 All line numbers below are in `P:\scripts\3_game\sound.c` unless another file is named. They are from the 1.30 scripts on `P:\`.
 
@@ -84,7 +84,7 @@ The calls, with their lines:
 
 The comment on `SetPosition` says it "Sets the position locally if parented" (line 123). `EffectSound` always sets the position right before it plays: it calls `SetCurrentLocalPosition` (`P:\scripts\3_game\effects\effectsound.c:172`) one line before `Play3D`, and its override passes the position on to `m_SoundObject.SetPosition` (`P:\scripts\3_game\effects\effectsound.c:746`).
 
-A case measured in game on DayZ 1.30 experimental (not checked on `P:\`) shows what happens when a hand-built sound skips that step: a roll loop built with `SoundParams`, `SoundObjectBuilder`, `SetKind(WaveKind.WAVEEFFECTEX)`, `SetParent` on the player and `Play3D` did play (its header loaded and the script logged it) but was barely audible, while one-shots of the same sound bases played through `PlaySoundSet` were loud. The loop had set no position and sat far from the rider. Calling `SetPosition` after `SetParent` and before `Play3D`, with a small offset in the parent's model space (0.1 m up), fixed it.
+Do the same in a hand-built sound: call `SetPosition` after `SetParent` and before `Play3D`, with a small offset in the parent's model space (0.1 m up is enough). A loop built with `SoundParams`, `SoundObjectBuilder`, `SetKind(WaveKind.WAVEEFFECTEX)`, `SetParent` on the player and `Play3D` but no position plays (its header loads) yet is barely audible, while one-shots of the same sound played through `PlaySoundSet` are loud. Measured in game on DayZ 1.30; not checked on `P:\`.
 
 ## The wave handle
 
@@ -112,7 +112,7 @@ A case measured in game on DayZ 1.30 experimental (not checked on `P:\`) shows w
 | 199 | `IsHeaderLoaded()` | True once the header is in. Ask before `GetLength()`. |
 | 201 | `GetEvents()` | The wave's `AbstractWaveEvents`. |
 
-`SetFrequency` takes a factor, not a frequency in Hz. In the measured case above, `GetFrequency()` on a playing `.ogg` loop returned 1.0, so the value is a pitch multiplier. Set it relative to `GetFrequency()`, and only once `IsHeaderLoaded()` is true. This was measured in game on 1.30 experimental and is not checked on `P:\`.
+`SetFrequency` takes a factor, not a frequency in Hz. `GetFrequency()` on a playing `.ogg` loop returns 1.0, so the value is a pitch multiplier (measured in game on DayZ 1.30; not checked on `P:\`). Set it relative to `GetFrequency()`, and only once `IsHeaderLoaded()` is true.
 
 The events of a wave are five `ScriptInvoker` members of `AbstractWaveEvents`: `Event_OnSoundWaveStarted` (line 148), `Event_OnSoundWaveStopped` (line 149), `Event_OnSoundWaveLoaded` (line 150), `Event_OnSoundWaveHeaderLoaded` (line 151) and `Event_OnSoundWaveEnded` (line 152). `EffectSound` uses the header event to wait before it asks for the length (`P:\scripts\3_game\effects\effectsound.c:181`).
 

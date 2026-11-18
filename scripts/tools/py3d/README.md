@@ -341,8 +341,6 @@ the inspector round trip passes: the inspector's recipe has gained keys, the
 audit script now gates on `/dayz-preflight`, and the viewer script lives in
 `scripts/tools/dayz-3d-viewer`.
 
-The rollout tests under `rollout/tests/` need Windows PowerShell.
-
 Fixtures are synthetic — no Bohemia Interactive assets are included or required.
 
 ## License

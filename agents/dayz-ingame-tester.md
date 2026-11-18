@@ -17,7 +17,7 @@ References, read only when the step needs one; the rules below stay the gate:
 
 - The launch or connect in steps 2 and 3 fails for a reason the logs do not name: the symptom table in `skills/dayz-launch-test/references/troubleshooting.md`, then `skills/dayz-launch-test/references/build-and-storage-traps.md`. Quote the matching row in your report; the fix belongs to someone else.
 - On Linux: `skills/_shared/linux-proton.md` and the Linux references listed in `skills/dayz-launch-test/references/README.md`.
-- A check that needs the running game driven (spawn, camera capture, collision probe, vehicle acceptance ladder) is the dayz-mcp verification in `skills/dayz-launch-test/references/mcp/README.md`, which needs the dayz-mcp server (setup in `skills/dayz-launch-test/references/mcp/bridge-setup.md`). You have no MCP tools, so name it in your report for the main session to run. A session that verification started is not yours: step 0 applies, and it is never stopped with `/dayz-stop-test`.
+- A check that needs the running game driven (spawn, camera capture, collision probe, vehicle acceptance checks) is the dayz-mcp verification in `skills/dayz-launch-test/references/mcp/README.md`, which needs the dayz-mcp server (setup in `skills/dayz-launch-test/references/mcp/bridge-setup.md`). You have no MCP tools, so name it in your report for the main session to run. A session that verification started is not yours: step 0 applies, and it is never stopped with `/dayz-stop-test`.
 
 ## How you test
 

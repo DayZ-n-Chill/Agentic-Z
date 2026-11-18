@@ -22,9 +22,9 @@ A scan of every `.p3d` under `P:\DZ\` read the LOD list at the start of each fil
 | GeoPhys (PhysX geometry) | `4.0e+13` | 8 | `P:\DZ\structures\furniture\beds\pillow_grey.p3d`, `P:\DZ\structures\furniture\beds\stretcher_green.p3d` |
 | Buoyancy geometry | `2.0e+13` | 1 | `P:\DZ\vehicles\water\boat_01\boat_01.p3d` |
 
-No vanilla model has a ShadowVolume LOD (`10000` to `19999`). Do not add one unless the user asks. When one is asked for, make it slightly smaller than the visual LOD, or the object looks fully shaded; that is format knowledge no vanilla model shows.
+No vanilla model has a ShadowVolume LOD (`10000` to `19999`). Do not add one unless the user asks. When one is asked for, make it slightly smaller than the visual LOD, or the object looks fully shaded (a Push modifier in Blender shrinks it), with closed faces and no textures. The usual pair is a detailed one at `10000` and a simple one at `11000`, which Object Builder shows as ShadowVolume 0 and ShadowVolume 1000. That is format knowledge no vanilla model shows.
 
-Roadway, Paths and Hit points are Bohemia format LODs that script never names: Roadway is the surface characters walk on (vanilla buildings, ruins, rocks and the base building fence carry it), Paths holds the walking routes inside buildings, and Hit points is carried by vanilla buildings, walls and containers (150 of its 201 models are under `structures`, `structures_bliss` and `structures_sakhal`, for example `P:\DZ\structures\specific\churches\chapel.p3d` and `P:\DZ\structures\industrial\harbour\lighthouse.p3d`), character heads (33, for example `P:\DZ\characters\heads\f_baty.p3d`), wrecks (13) and vehicles (5). A new item never needs them. A walkable building or structure follows the closest vanilla model of the same kind.
+Roadway, Paths and Hit points are Bohemia format LODs that script never names: Roadway is the surface characters walk on (vanilla buildings, ruins, rocks and the base building fence carry it), Paths holds the walking routes inside buildings, and Hit points is carried by vanilla buildings, walls and containers (150 of its 201 models are under `structures`, `structures_bliss` and `structures_sakhal`, for example `P:\DZ\structures\specific\churches\chapel.p3d` and `P:\DZ\structures\industrial\harbour\lighthouse.p3d`), character heads (33, for example `P:\DZ\characters\heads\f_baty.p3d`), wrecks (13) and vehicles (5). A new item never needs them. A walkable building or structure follows the closest vanilla model of the same kind. The texture on a Roadway face picks the footstep sound, and thrown objects collide with Roadway and GeoPhys, so keep a GeoPhys LOD as simple as possible (format knowledge, not shown by a vanilla file).
 
 What those building LODs hold, read from vanilla: the Paths LOD of `P:\DZ\structures\industrial\garages\garage_small.p3d` stores the points `pos1`, `pos2`, `in1`, `in2`, `actionbegin1` and `actionend1`, and the climbable ladder props carry a Roadway LOD besides their climb points (`P:\DZ\structures\residential\misc\ladder.p3d` and `ladder_half.p3d` beside it), while the decorative `P:\DZ\structures\furniture\various\ladder_a_wood.p3d` has only Geometry and View Geometry. The names and what each is for are in `building-selections.md`.
 
@@ -43,8 +43,9 @@ LODs sit in rising resolution order: the visual LODs first, then each special LO
 - Numbering starts at `1` in most vanilla models and at `0` in the rest (gear: 375 start at `1`, 132 at `0`; structures: 1,607 at `1`, 934 at `0`). Either works. The audit checks the lowest one as LOD0.
 - Most vanilla gear has three to five visual LODs (four is the most common, 260 of 519 gear models with a visual LOD). Each next LOD is a simpler mesh of the same object.
 - Every visual LOD carries the same named selections: hidden selections (`camoGround` on the wooden case, `P:\DZ\gear\camping\config.cpp:10180`), bones for moving parts and proxies. A selection missing from a lower LOD makes that part vanish or stop moving at a distance.
+- Each next LOD must cut the polygon count by a real amount, roughly half of LOD0 at LOD1 and a quarter at LOD2, down to a box; a copy of LOD0 only costs memory. Every visual LOD needs its `.paa` textures, and LODs that share a texture share its UV layout. Decimating a LOD the player sees needs the user's approval first (`generated-model-pipeline.md`); how to decimate is in `lods-authoring.md`, "Reducing a visual LOD".
 - The values only have to rise. Some generators space them `0`, `1`, `4`, `8`; vanilla mostly counts `1`, `2`, `3`, `4`. Both load.
-- A part that sits inside another, such as liquid in a tray, is rebuilt from each LOD's own simplified container. Built once from the full detail container, it pokes through the simpler walls of the lower LODs. Seen on a mod model, not checked on `P:\` (`_shared/models/generated-model-rules.md`, rule 21).
+- A part that sits inside another, such as liquid in a tray, is rebuilt from each LOD's own simplified container. Built once from the full detail container, it pokes through the simpler walls of the lower LODs. Seen on a mod model, not checked on `P:\` (`generated-model-rules.md`, "Parts inside other parts").
 
 ## Common LOD sets
 
@@ -64,6 +65,8 @@ A mod model always has a visual LOD, Geometry and Memory; `/dayz-p3d-audit` repo
 The physics body: what players bump into, what items rest on, and where the mass lives.
 
 - Build it from simple closed convex parts. Each part is a named selection `Component01`, `Component02` and so on, with a capital C (`p3d-killers.md` sections 2, 8 and 9). Binarize stores them lower case (`component01` in `wooden_case.p3d`).
+- In Object Builder make each component convex (Structure > Convexity > Component Convex Hull), confirm with Structure > Topology > Find Components, and give it mass (Alt-M), at least 10 for a character to collide with it. In Blender name the pieces `ComponentXX_LODGeometry` so the FBX import assigns them (`lods-authoring.md`, "Object names for the FBX import"). A hull built with `bmesh.ops.convex_hull` came out folded by a few millimetres; rebuilt with Qhull it passed the convexity check (`dayz-p3d-audit/references/collision-mesh-hygiene.md`, "Source meshes for collision").
+- A building's Geometry LOD carries the named property `class` = `house`: `P:\DZ\structures\industrial\garages\garage_small.p3d` stores `class` = `house`, `map` = `building` and `damage` = `no` there (`named-properties.md`).
 - Mass is the sum of the point masses on the Geometry LOD. The audit prints it (`check_geometry_mass` in `skills/dayz-p3d-audit/scripts/audit_p3d.py`). It is not the config `weight`; see `_shared/physics/mass-and-weight.md`.
 - Give every face a penetration material, or bullets and footsteps find no surface (`p3d-killers.md` section 10). The wooden case uses `dz\data\data\penetration\wood_desk.rvmat` (string in `wooden_case.p3d`).
 - Give walls and floors real thickness. A thin face lets fast bodies pass through (`_shared/physics/drop-and-throw.md`).
@@ -73,7 +76,7 @@ The physics body: what players bump into, what items rest on, and where the mass
 
 ## Fire Geometry
 
-What bullets hit. Same rules as Geometry: closed convex components, named the same way, with penetration materials. Damage zones in `config.cpp` list selection names in `componentNames[]` (`MediumTent` zone `Body`, `P:\DZ\gear\camping\config.cpp:242`), so those names must exist in this LOD. A model can stop players and still let bullets through, so it needs its own check. Thickness counts here too: glass built too thick stops bullets (format knowledge, not shown by a vanilla file).
+What bullets hit. Same rules as Geometry: closed convex components, named the same way, with penetration materials. Damage zones in `config.cpp` list selection names in `componentNames[]` (`MediumTent` zone `Body`, `P:\DZ\gear\camping\config.cpp:242`), so those names must exist in this LOD. A model can stop players and still let bullets through, so it needs its own check. Thickness counts here too: glass built too thick stops bullets, and two armour plates that overlap should be one piece, since overlapping Fire Geometry can upset the bullet simulation (format knowledge, not shown by a vanilla file).
 
 The penetration materials are vanilla files under `P:\DZ\data\data\penetration\`, a `.rvmat` and nearly always a `.bisurf` of the same name: `metalplate`, `wood`, `wood_desk`, `glass`, `concrete`, `plastic`, `rubber`, `cloth` and about forty more. Write the path as `dz\data\data\penetration\<name>.rvmat`. Arma guides name `CA\Data\Penetration\metal_plate.rvmat`; the DayZ folder is the one above, and it holds no `metal_plate.rvmat`.
 
@@ -85,6 +88,8 @@ Two more things read this LOD:
 
 - **Attachment proxies, since 1.30.** A dedicated server reads the position of an inventory attachment proxy from the View Geometry LOD when the proxy is not in the last visual LOD, instead of returning the parent's center. Put a copy of the proxy triangle and its selection here as well as in the visual LODs (`proxies.md`). The fallback is engine code that no script names, so it is not checked on `P:\`.
 - **Liquid actions on a well.** The wash, drink and fill actions ask for the View Geometry components of a selection named `liquid_source` (`P:\scripts\4_world\classes\useractionscomponent\actions\actionconstants.c:180`). The selection is optional: see `building-selections.md`.
+
+Keep it simpler than the visual LOD but close enough to hide what it should: a poor one costs performance and shows players who should be hidden.
 
 To prove which LOD a fault is in, probe it from script as `_shared/physics/collision-lods.md` shows.
 

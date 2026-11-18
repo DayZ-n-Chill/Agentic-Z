@@ -1,6 +1,6 @@
-# DayZ 1.30 particles: dust, vehicle effects, sandstorm
+# DayZ 1.30 particles
 
-What DayZ 1.30 changed for particles: the client check, effects spawned by the server, surface particle IDs, runtime overrides for vehicle effects, how effect areas tick and place particles, the sandstorm, oil pits and the new `ParticleList` constants. Line numbers are from the 1.30 scripts on `P:\`. Statements about 1.29 are not yet checked on `P:\`, which holds 1.30.
+What DayZ 1.30 changed for particles: the client check, effects spawned by the server, surface particle IDs, runtime overrides for vehicle effects, how effect areas tick and place particles, the sandstorm, oil pits and the new `ParticleList` constants. Line numbers are from the 1.30 scripts on `P:\`. What 1.29 did is not checked on `P:\`, which holds 1.30 only.
 
 ## Contents
 
@@ -16,11 +16,9 @@ What DayZ 1.30 changed for particles: the client check, effects spawned by the s
 - [What breaks in a 1.29 mod](#what-breaks-in-a-129-mod)
 - [Migration checklist](#migration-checklist)
 
----
-
 ## Client check: IsHeadlessOrDedicatedServer
 
-Until 1.29, vanilla wrecks and `FireplaceBase` tested `!g_Game.IsDedicatedServer()` (1.29, not yet checked on `P:\`). Since 1.30, most vanilla particle code skips headless clients as well as dedicated servers. The Chinook and Mi-24 wrecks still use the dedicated server check alone (`P:\scripts\4_world\entities\building\wrecks\wreck_chinook.c:6` and `P:\scripts\4_world\entities\building\wrecks\wreck_mi24_tk.c:5`).
+In 1.29 vanilla wrecks and `FireplaceBase` tested `!g_Game.IsDedicatedServer()`. Since 1.30, most vanilla particle code skips headless clients as well as dedicated servers. The Chinook and Mi-24 wrecks still use the dedicated server check alone (`P:\scripts\4_world\entities\building\wrecks\wreck_chinook.c:6` and `P:\scripts\4_world\entities\building\wrecks\wreck_mi24_tk.c:5`).
 
 - `IsHeadlessOrDedicatedServer` is a native method on the game (`P:\scripts\3_game\global\game.c:1136`).
 - Its comment says it combines `IsDedicatedServer` and `IsHeadless`, and that it is also true for a server with a head (`-headlessMode=0`) (`P:\scripts\3_game\global\game.c:1133`).
@@ -29,7 +27,7 @@ Until 1.29, vanilla wrecks and `FireplaceBase` tested `!g_Game.IsDedicatedServer
 
 The vanilla crashed helicopter, whole class:
 
-```
+```c
 // P:\scripts\4_world\entities\building\wrecks\wreck_mi8.c:2
 class Wreck_Mi8_Crashed extends CrashBase
 {
@@ -43,7 +41,7 @@ class Wreck_Mi8_Crashed extends CrashBase
 }
 ```
 
-Design note: a mod that still checks only for a dedicated server runs its particle code on headless clients. There `ParticleManager.GetInstance()` returns null, because it creates the global pool only when `IsHeadlessOrDedicatedServer()` is false (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:65`), so a call such as `ParticleManager.GetInstance().PlayOnObject(...)` fails on a null reference. Use `IsHeadlessOrDedicatedServer()` for every particle effect. This narrows the general client-only rule in `skills/_shared/conventions/scripts.md`, which names `!GetGame().IsDedicatedServer()`: `IsHeadlessOrDedicatedServer()` includes that check and adds headless clients.
+A mod that still checks only for a dedicated server runs its particle code on headless clients. There `ParticleManager.GetInstance()` returns null, because it creates the global pool only when `IsHeadlessOrDedicatedServer()` is false (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:65`), so a call such as `ParticleManager.GetInstance().PlayOnObject(...)` fails on a null reference. Use `IsHeadlessOrDedicatedServer()` for every particle effect. This narrows the general client-only rule in `skills/_shared/conventions/scripts.md`, which names `!GetGame().IsDedicatedServer()`: `IsHeadlessOrDedicatedServer()` includes that check and adds headless clients.
 
 ## Server spawned effects: CreateParticleServer
 
@@ -58,7 +56,7 @@ Design note: a mod that still checks only for a dedicated server runs its partic
 
 The synced ceiling dust handler:
 
-```
+```c
 // P:\scripts\4_world\classes\dust\dusteffectceilinghandler.c:92
 class DustEffectCeilingHandlerSynced : DustEffectCeilingHandlerBase
 {
@@ -75,7 +73,7 @@ The local handler, `DustEffectCeilingHandlerLocal`, still plays on the client wi
 
 The manager method:
 
-```
+```c
 // P:\scripts\3_game\effectmanager.c:585
 	//! returns unique effecter ID
 	static int CreateParticleServer(vector pos, EffecterParameters parameters)
@@ -96,13 +94,13 @@ The manager method:
 
 The same block of the manager holds `ReinitParticleServer` (`P:\scripts\3_game\effectmanager.c:602`), `ReactivateParticleServer` (`P:\scripts\3_game\effectmanager.c:611`), `StartParticleServer` (`P:\scripts\3_game\effectmanager.c:620`), `StopParticleServer` (`P:\scripts\3_game\effectmanager.c:630`) and `DestroyEffecterParticleServer` (`P:\scripts\3_game\effectmanager.c:639`). The parameter classes are `EffecterParameters` (`P:\scripts\3_game\effectmanager.c:675`) and `ParticleEffecterParameters` (`P:\scripts\3_game\effectmanager.c:686`).
 
-Design note: `PlayOnObject` stays client only. Use `CreateParticleServer` when every nearby client must see the same short effect and no client side state change would trigger it.
+`PlayOnObject` stays client only. Use `CreateParticleServer` when every nearby client must see the same short effect and no client side state change would trigger it.
 
 ## Surface particle IDs: SurfaceInfo
 
-Until 1.29, `Surface.GetStepsParticleID(string)` and `Surface.GetWheelParticleID(string)` were the lookups to call (1.29, not yet checked on `P:\`). Since 1.30 both are marked obsolete and only forward to `SurfaceInfo`:
+In 1.29 `Surface.GetStepsParticleID(string)` and `Surface.GetWheelParticleID(string)` were the lookups to call. Since 1.30 both are marked obsolete and only forward to `SurfaceInfo`:
 
-```
+```c
 // P:\scripts\4_world\static\surface.c:64
 	[Obsolete("1.30: use SurfaceInfo.GetStepParticleId directly")]
 	static int GetStepsParticleID(string surface_name) 
@@ -130,9 +128,9 @@ The comment above them says a config entry that is not set gives `ParticleList.N
 
 ## Runtime overrides: ParticleParamsOverrideData and vehicle effects
 
-New in 1.30 (1.29 scripts do not have it; 1.29, not yet checked on `P:\`). `EffectParticle` declares three hooks:
+New in 1.30. `EffectParticle` declares three hooks:
 
-```
+```c
 // P:\scripts\3_game\effects\effectparticle.c:611
 	void SelectFromSurface(string surface);
 	void SelectFromSurface(SurfaceInfo surfaceInfo);
@@ -147,7 +145,7 @@ New in 1.30 (1.29 scripts do not have it; 1.29, not yet checked on `P:\`). `Effe
 
 and the data class that is passed in:
 
-```
+```c
 // P:\scripts\3_game\effects\effectparticle.c:651
 class ParticleParamsOverrideData
 {
@@ -178,9 +176,9 @@ What the vanilla vehicle effects do with it:
 
 ## Effect areas: tick and ground snap
 
-Until 1.29, `EffectArea` ticked from `OnCEUpdate()` and `SpawnParticles` wrote `partPos[1] = g_Game.SurfaceY(...)` (1.29, not yet checked on `P:\`). Since 1.30 the tick hook is `OnCEIterate`:
+In 1.29 `EffectArea` ticked from `OnCEUpdate()` and `SpawnParticles` wrote `partPos[1] = g_Game.SurfaceY(...)`. Since 1.30 the tick hook is `OnCEIterate`:
 
-```
+```c
 // P:\scripts\4_world\classes\contaminatedarea\effectarea.c:190
 	// Through this we will evaluate the resize of particles
 	override void OnCEIterate(float currentTime, float elapsedTime)
@@ -192,7 +190,7 @@ Until 1.29, `EffectArea` ticked from `OnCEUpdate()` and `SpawnParticles` wrote `
 
 and a particle is lowered to the road surface only when it starts above it:
 
-```
+```c
 // P:\scripts\4_world\classes\contaminatedarea\effectarea.c:412
 	protected void SpawnParticles(ParticlePropertiesArray props, vector centerPos, vector partPos, inout int count)
 	{
@@ -202,7 +200,7 @@ and a particle is lowered to the road surface only when it starts above it:
 			partPos[1] = roadY;
 ```
 
-Design note: `OnCEUpdate` is marked obsolete in favour of `OnCEIterate` (`P:\scripts\3_game\entities\entityai.c:4924`), and `EffectArea` no longer calls `Tick()` from it. Whether the engine still calls `OnCEUpdate` is not yet checked on `P:\`, so move a custom area's override to `OnCEIterate`. The road snap keeps gas on a bridge deck instead of on the terrain under it. The particle budget and the vertical band of an area are in `effect-area-particles.md`.
+`OnCEUpdate` is marked obsolete in favour of `OnCEIterate` (`P:\scripts\3_game\entities\entityai.c:4924`), and `EffectArea` no longer calls `Tick()` from it. Whether the engine still calls `OnCEUpdate` is not checked on `P:\`, so move a custom area's override to `OnCEIterate`. The road snap keeps gas on a bridge deck instead of on the terrain under it. The particle budget and the vertical band of an area are in `effect-area-particles.md`.
 
 ## Sandstorm: a postprocess material, not a particle material
 
@@ -232,15 +230,15 @@ The particle the weather config names is an ordinary `.ptc` with one emitter, `s
 
 `DustKickupEffects` (`P:\scripts\3_game\dustkickupeffects.c:43`) maps a surface to a particle and to distance bands. `SurfaceInfo` supplies the IDs through `GetDustKickupEffectId`, `GetDustKickupEffectSmallId` and `GetDustKickupEffectBigId` (`P:\scripts\3_game\surfaceinfo.c:59` to `:61`).
 
-Design note: a custom `CfgSurfaces` class that should raise kickup dust, wheel dust or ceiling dust must fill those config entries, or the getters return `ParticleList.NONE`.
+A custom `CfgSurfaces` class that should raise kickup dust, wheel dust or ceiling dust must fill those config entries, or the getters return `ParticleList.NONE`.
 
 ## New ParticleList constants
 
-All of these are in the catalog (`vanilla-particle-catalog.md`). This list says which ones 1.30 added; line numbers are in `P:\scripts\3_game\particles\particlelist.c`. `STEP_DESERT` and `STEP_SOIL` (`:374`, `:375`) were already in 1.29. What 1.29 had is not yet checked on `P:\`.
+All of these are in the catalog (`vanilla-particle-catalog.md`). This list says which ones 1.30 added; line numbers are in `P:\scripts\3_game\particles\particlelist.c`. `STEP_DESERT` and `STEP_SOIL` (`:374` and `:375`) were already in 1.29.
 
 | Constant | `.ptc` | Line |
 |---|---|---|
-| `TANDOOR_HOUSE_SMALL_FIRE` to `TANDOOR_HOUSE_FIRE_STEAM_2END` | `tandoor_fire_*`, `tandoor_smoke_*`, `tandoor_steam_*` | 49 to 54 |
+| `TANDOOR_HOUSE_SMALL_FIRE` through `TANDOOR_HOUSE_FIRE_STEAM_2END` | `tandoor_fire_*`, `tandoor_smoke_*`, `tandoor_steam_*` | 49 to 54 |
 | `EXPLOSION_GRENADE_SAND`, `EXPLOSION_GRENADE_DESERT_SAND` | `explosion_grenade_sand`, `explosion_grenade_desert_sand` | 145, 146 |
 | `IMPACT_DESERT_SAND_*`, `IMPACT_MUD_BRICK_*` | `impacts/hit_desert_sand_*`, `impacts/hit_mud_brick_*` | 266 to 271 |
 | `CEILING_WOOD` | `dust/dust_ceiling_wood`, registered with `RegisterParticleByFullPath` | 378 |

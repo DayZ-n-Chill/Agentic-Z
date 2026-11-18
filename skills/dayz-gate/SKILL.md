@@ -155,9 +155,9 @@ The gate judges log lines; it cannot tell that the run itself was not a valid te
 
 | The gate shows | Read |
 |---|---|
-| The server or client does not start or connect, a client that dies before it logs, a kick code | `skills/dayz-launch-test/references/troubleshooting.md` |
+| The server or client does not start or connect, a client that dies before it logs, a kick code | `skills/dayz-launch-test/references/troubleshooting.md`; `skills/dayz-launch-test/references/client-startup-failures.md` |
 | A `storage` failure, a PASS that did not test the change (stale or locked PBO, an old signature, storage written by another mod set) | `skills/dayz-launch-test/references/build-and-storage-traps.md` |
-| A scripted check that cannot fail, or a verdict from a run whose `-mod=` line is not what you meant | `skills/dayz-launch-test/references/automated-cells.md` |
+| A scripted check that cannot fail, or a verdict from a run whose `-mod=` line is not what you meant | `skills/dayz-launch-test/references/test-cell-evidence.md` |
 
 ## Limits
 

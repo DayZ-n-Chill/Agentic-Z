@@ -80,4 +80,4 @@ Every vanilla car overrides `EOnPostSimulate` for its engine heat source without
 
 ## Test kits and spawn fuel
 
-What a drive-ready test kit must fill and attach, and why spawn fuel belongs in `EEOnCECreate`, are invariants 16 and 15h in `invariants-engine-fluids-and-handling.md`; invariants 8 and 9 there hold the related field notes.
+What a drive-ready test kit must fill and attach, and why spawn fuel belongs in `EEOnCECreate`, are in `invariants-engine-fluids-and-handling.md`, sections "A test kit fills every fluid and fits the radiator" and "Spawn fuel belongs in `EEOnCECreate`"; its sections "One vital igniter per car" and "An engine that starts and stalls at once" hold the related field notes.

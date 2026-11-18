@@ -1,4 +1,4 @@
-# Pitfalls when studying a packed mod
+# Pitfalls in a packed mod study
 
 What goes wrong in a study of somebody else's PBOs (`study-a-packed-mod.md`): wrong conclusions from names and partial code, an extraction that did not decode the payload, a model read with the wrong reader, and the Linux differences.
 

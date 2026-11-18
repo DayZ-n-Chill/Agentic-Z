@@ -1,77 +1,100 @@
-# Critical rules for a generated model
+# Rules for a generated model
 
-The 21 numbered rules every generated model must meet, and the LOD resolution values they rely on. The other reference files cite these rules by number (Rule 12, Rule 18), so the numbering is kept even where rules were merged.
+The rules every generated model must meet, and the LOD resolution values they use. Other files point at a rule by its heading here.
 
-What is checked and what is not: the rules about what vanilla models carry cite the vanilla file on `P:\` and were opened to confirm. The rules about winding, the axis conversion and engine symptoms are measurements on third-party mods, in game or offline; vanilla models on `P:\` are binarized, so those cannot be checked there.
-
-Evidence labels: `[EXACT]` is measured or read from a file, `[CHANGELOG]` is stated by the official 1.30 changelog only, `[DESIGN]` is a rule derived from the two.
+What vanilla models carry is cited from `P:\`. Winding, the axis map and the engine symptoms were measured on mod models, in game or offline; vanilla models on `P:\` are binarized, so those cannot be checked there.
 
 ## LOD resolution values
 
-A LOD's resolution value is its type. The authoritative table is the Tier 2 one in `_shared/conventions/assets.md`; what vanilla carries, with counts, is in `_shared/models/lods.md`. The values for the LODs this skill writes:
+A LOD's resolution value is its type. The Tier 2 table is in `_shared/conventions/assets.md`, and what vanilla carries, with counts, is in `lods.md`. The values the generator writes:
 
-| LOD type | DayZ resolution value | Notes |
+| LOD | Resolution | Used for |
 |---|---|---|
-| Resolution 0 (full detail) | 0.0 | Visual |
-| Resolution 1 | 1.0 | Visual |
-| Resolution 2 | 4.0 | Visual |
-| Resolution 3 | 8.0 | Visual |
-| Shadow Volume (close) | 10000.0 (1.0e4) | optional; see Rule 4 |
-| Shadow Volume (far) | 11000.0 (1.1e4) | optional; see Rule 4 |
-| Geometry | 1.0e13 | physics and cursor raycast |
-| Memory | 1.0e15 | named points, animation axes |
-| LandContact | 2.0e15 | ground placement contact points |
-| Roadway | 3.0e15 | walkable surface (stack base) |
-| Hitpoints | 5.0e15 | named hit zones for damage |
-| ViewGeometry | 6.0e15 | action cursor and occlusion |
-| FireGeometry | 7.0e15 | ballistic raycast (bullets) |
+| Visual 0 (full detail) | `0.0` | Drawing |
+| Visual 1, 2, 3 | `1.0`, `4.0`, `8.0` | Drawing at distance |
+| Shadow volume, near and far | `10000.0`, `11000.0` | Only when asked for (below) |
+| Geometry | `1.0e13` | Physics and the cursor raycast |
+| Memory | `1.0e15` | Named points and axes |
+| LandContact | `2.0e15` | Ground contact points |
+| Roadway | `3.0e15` | Walkable surface |
+| Hitpoints | `5.0e15` | Hit zones |
+| View Geometry | `6.0e15` | Action cursor and occlusion |
+| Fire Geometry | `7.0e15` | Bullets |
 
-- The visual values are free numbers that only need to rise: the generator here spaces them 0, 1, 4, 8, while most vanilla models number them 1, 2, 3, 4 (`P:\DZ\gear\camping\wooden_case.p3d` carries 1 to 4). Either works.
-- The special values were read from the header of `P:\DZ\gear\camping\wooden_case.p3d`.
-- Do not use `2e13` for Fire Geometry or `3e13` for View Geometry, values some Arma era guides give: the engine does not treat a LOD at those values as Fire or View Geometry. `4e13` is not a dead Arma value either: it is a real DayZ LOD type, GeoPhys, carried by 8 vanilla models, and `2e13` is the buoyancy LOD of the vanilla boat (`_shared/models/lods.md`).
-- When editing an older model that already works, keep the values it has unless there is a verified reason to change them.
+- Visual values only need to rise. The generator spaces them 0, 1, 4, 8; most vanilla models use 1, 2, 3, 4 (`P:\DZ\gear\camping\wooden_case.p3d`). Either works. The special values were read from the header of that same model.
+- Never use `2e13` for Fire Geometry or `3e13` for View Geometry, as some Arma era guides say: the engine does not treat a LOD at those values as Fire or View Geometry. `4e13` is a real DayZ type, GeoPhys, carried by 8 vanilla models, and `2e13` is the buoyancy LOD of the vanilla boat (`lods.md`).
+- A wrong value means the engine does not see the LOD as that type. When you edit an older model that already works, keep its values unless you have a checked reason to change them.
 
-## The rules
+## Collision LODs
 
-1. **Geometry LOD components must be convex.** Non convex geometry causes collision failures.
-2. **The Geometry LOD carries the mass.** Give its components mass, at least 10 for a character to collide with it. Fire Geometry and View Geometry components take no mass: a mass entry on any LOD other than Geometry breaks the binarized centre of mass (`py3d-assembly-rules.md`, "Mass only on the Geometry LOD"), which agrees with `_shared/models/named-properties.md`.
-3. **Fire Geometry thickness matters.** Glass that is too thick becomes bulletproof.
-4. **A shadow LOD must be slightly smaller than the visual LOD**, otherwise the object appears fully shaded. No vanilla model carries a ShadowVolume LOD at all (a scan of the headers of all 8,256 models under `P:\DZ\` finds no resolution from 10000 to 19999), so add one only when the user asks (`_shared/models/lods.md`).
-5. **Memory points are single vertices**, not edges and not faces.
-6. **Animation axes need exactly 2 points**, defining a line in 3D space.
-7. **Named selections must be consistent across LODs**: the same name in the Resolution, Geometry, Fire and View LODs wherever that part must move or be found.
-8. **Texture paths in the p3d must use `.paa`**, not `.png` or `.tga` (generate as `.png`, then convert with `/dayz-pack-texture`).
-    - `[EXACT]` New visible faces need a real `.paa` file as the face texture. A procedural `#(argb,...)` face texture binarizes to section special `0x0000C000` (no hidden selection bits) and the engine never draws the section, while drawn sections carry `0x0002C000` (opaque) or `0x0002C100` (alpha). Verify by reading the section table of the packed ODOL, not the MLOD. The full method and its gate are in `skills/_shared/vehicles/animation-bake-and-odol-sections.md` ("Verify new geometry by its ODOL section", measured 2026-09-14).
-9. **`model.cfg` class names must match p3d filenames**, for example `class MyObject` for `MyObject.p3d`.
-10. **LOD resolution values matter.** With a wrong value the engine does not recognize the LOD type.
-11. **Always verify the `.p3d`**: read it back with py3d after writing to confirm it is intact.
-12. **The Blender Z up to DayZ Y up conversion is mandatory, and it is a reflection (det=-1).** Blender is right handed (Z up); DayZ is left handed (X east, Y up, Z north). A map that preserves the shape between them must flip one axis in the numbers. Two source cases:
-    - **FBX or Blender authored geometry (outward faces and normals):** the axis map `(x,y,z)→(x,z,y)` (det=-1) applied to all vertices and normals in all LODs. The vertex order then lands in the MLOD convention by itself (cross product inward): do **not** reverse faces; **negate** the shading normals (MLOD stores them inward).
-        - `[EXACT]` Measured in game 2026-10-01, DayZDiag 1.29.163709, one chiral model exported three ways: this map renders solid and reads correctly; the old det=+1 recipe renders solid but mirrored; `P3D.transform(py3d.BLENDER_TO_DAYZ)` alone renders inside out and mirrored (`axes-and-winding.md`).
-        - With py3d: `P3D.transform(((1, 0, 0), (0, 0, 1), (0, 1, 0)))` maps points and normals and, because det<0, reverses every face itself. Reverse them back and negate every normal (net: original order, negated normals). From py3d 1.8.0 `py3d.blender_to_dayz(model)` is exactly that call, writing the same bytes as the measured model, and `py3d.BLENDER_TO_DAYZ` is deprecated (same det=+1 value, now `py3d.ROT_X_NEG90`).
-        - Geometry authored directly in DayZ space (collision boxes built in code) does not go through the map.
-        - The old recipe, `(x,y,z)→(x,z,-y)` (det=+1) plus reversed faces and negated normals, was validated on five models of a third-party mod with offline gates only. It passes every winding gate because it is a mirror: the mirror is what turned the faces inside out, so reversing them "fixed" it. It is invisible on symmetric props; text, logos and one sided parts ship reversed, so export those again.
-        - `[EXACT]` Measured the same day with the same map (DayZDiag 1.29.163709, read from the binarized ODOL): Geometry, View Geometry and Fire Geometry components register `scene_raycast` hits in `geom`, `view` and `fire` from both sides, and after the det=+1 map alone they register none. Static proxies drawn in Blender as py3d canonical raw triangles and converted with the model get the same ODOL engine frames as `add_proxy(space="engine")` with the matching rotation, and render in the pose drawn in Blender. The two binarized parents are byte identical, and that engine space path is the one a third-party motorcycle mod was driven with in game, so a crew or wheel proxy drawn this way with the identity frame gets a frame that works. That is an equivalence of the proxy frame, not a drive through this conversion: selections, bones, `model.cfg` bindings and LODs must still match a working model, and only the identity crew frame is known to work in game (a tilted one came out of binarize as asked and the rider turned to the left instead of leaning forward). For proxies drawn another way, compare them in the ODOL against a working model.
-    - **GLB or glTF sourced geometry: the same recipe.** glTF front faces are counter clockwise by spec, as Blender's are, and Blender's glTF importer turns Y up into Z up with a rotation (det=+1) that keeps them so: a GLB brought through Blender converts like the FBX and Blender case above. Use the det=-1 map, keep the face order, negate the normals, and do **not** reverse. `[EXACT]` Measured in game on models of GLB or glTF origin: the kept order rendered correctly on a third-party weapon mod (2026-06-11) and on a third-party car mod (2026-06-24), whose earlier build with its faces reversed after a det=-1 map rendered see through. A glTF read without Blender first bakes its node transforms and takes its own det=-1 map. Detail and the det=+1 history: `axes-and-winding.md`, "GLB and glTF imports". *(Aligned 2026-10-03: this bullet used to treat GLB and glTF as a separate case with an optional pure swap det=-1 plus reversed faces.)*
-    - Never assume either case. Winding gates cannot see a mirror (the old recipe passes all of them): check chirality on an asymmetric feature (text, a logo, a one sided part) in game, or compare the binarized ODOL against a vanilla model through the same reader.
-13. *(Merged into Rule 12: the Blender and FBX map is the det=-1 reflection with negated normals, and a GLB or glTF brought through Blender takes the same one. Aligned 2026-10-03: this note used to end "GLB remains a separate case.")*
-14. **Attachments need the proxy system, three parts.** For an item to show when attached: (a) a proxy face and selection in the visual LODs of the parent p3d, (b) a proxy p3d that the selection names, (c) a `CfgNonAIVehicles` class that maps the `inventorySlot` to the proxy model. With any part missing the attachment is logically present but invisible. See `memory-and-selections-authoring.md`, `model-config-and-packing.md` and `_shared/models/proxies.md`; vanilla's plank proxy class is `Proxysingle_plank` (`P:\DZ\gear\camping\config.cpp:13405`).
-    - Until 1.29 the visual LODs of the parent were enough for the server to read the proxy position. Since 1.30 `[CHANGELOG]`, duplicate the proxy triangle in **View Geometry** so a dedicated server does not fall back to the parent origin (`dayz-1-30-models.md`).
-15. **Proxy selections use special naming**: `proxy:<path to the proxy model>.NNN`, where NNN is a three digit index. The face in this selection sets the position and orientation of the attached model. Write the path without the `.p3d` extension (`memory-and-selections-authoring.md`, "Naming convention"). Vanilla stores both forms and starts the index at 000 or 001: of 17,891 distinct proxy names in the models under `P:\DZ\`, 147 keep `.p3d` in the name (for example in `P:\DZ\structures\military\airfield\mil_aircraftshelter.p3d`) and the rest do not; index `001` is the most common and `000` appears 529 times (`P:\DZ\gear\camping\fence.p3d` uses both). `_shared/models/proxies.md` has the vanilla examples.
-16. **`autocenter=0` named property on every collision LOD**, not just Geometry (measured on third-party mod models). Without it on Fire Geometry, View Geometry, Roadway, Hitpoints or LandContact, the engine recenters that LOD's mesh on the centre of its bounding box, moving the collision mesh away from the visual mesh by half the height (typically 20 to 25 cm in Y). Symptoms seen: bullets pass through, the hologram raycast falls through to the ground when stacking, and the action cursor does not register the object. Detection: `lod.properties.get("autocenter") != "0"` on any collision LOD. Fix: `lod.properties["autocenter"] = "0"` on all collision LODs, then write back. A working third-party model measured for this rule has `autocenter=0` on Geometry, View Geometry and Fire Geometry alike.
-    - What vanilla shows: 2,730 of the 8,256 models under `P:\DZ\` store an `autocenter` property (value `0` in 2,723), and 2,169 of them store it exactly once. In `P:\DZ\gear\camping\wooden_case.p3d` and `P:\DZ\gear\books\book_kniga.p3d` that one copy sits in the Geometry LOD, not in the View or Fire Geometry LOD; `P:\DZ\gear\camping\fence.p3d` stores it seven times, once per LOD. So vanilla does not need it on every collision LOD, and the every LOD rule is this skill's safe default for generated placed objects rather than an engine requirement shown by vanilla.
-    - The rule for when the property and the config key belong on a model at all (placed objects, not kits) is in `_shared/models/named-properties.md`; follow that one when the two differ.
-17. **Every face in the collision LODs needs a penetration `.rvmat`.** Assign `face.material = "dz\\data\\data\\penetration\\<surface>.rvmat"`, for example `wood_desk` for wood, `metalplate` for metal, `plastic` for plastic (all three exist under `P:\DZ\data\data\penetration\`, each with its `.bisurf`). The `.rvmat` names a `.bisurf` that defines the ballistic properties (penetration thickness, deflection, damage). Without it the `ObjIntersectFire` raycast hits the geometry but the engine cannot resolve a surface: bullets pass through and there is no footstep sound. Vanilla: the wooden case stores `dz\data\data\penetration\wood_desk.rvmat` (string in `P:\DZ\gear\camping\wooden_case.p3d`). Detection: `(face.material or "").strip() == ""` on any collision LOD face is a fail. `/dayz-p3d-audit` reports it (`dayz-p3d-audit/references/p3d-killers.md` section 10).
-18. **Verify winding after export with the per component outward check; Check A is not enough.** Faces left in outward order (MLOD wants the cross product inward, Rule 12) pass Check A unnoticed, because Check A (`cross(e1,e2)` against the declared normal) only compares the two and returns UNIFORM_NON_FLIPPED whenever they agree, broken or not. The reliable check is the **per component outward check** (the outward direction from each component's centroid; named so to avoid confusion with the different "Check C" in `/dayz-p3d-audit`).
-    - Prerequisites (`dayz-p3d-audit` killer 1, **Detection**): every non proxy face of the collision LOD belongs to a `ComponentNN` selection, every component is closed and convex (Rule 1), and every face has a reading (no degenerate face). Short of them the check is unresolved and confirms nothing.
-    - The check: for each non proxy face of each component, compute `outward = face_centroid - component_centroid` and `cross_n = normalize(cross(v1-v0, v2-v0))`. On a closed, convex component this reads each face exactly. A face with `dot(outward, cross_n) > 0` is wound outward: the engine's `ObjIntersectFire` raycast treats it as back facing and misses. One such face is an inverted face: read every face, not most. The expected DayZ state is `dot(outward, cross_n) < 0` (cross product inward), as on a working third-party model.
-    - Symptom triplet when the Rule 12 reversal was required and not applied: bullets pass through, the hologram falls to the ground when stacking, and items cannot be placed on top, all three at once. That means the cross product is outward on the collision LODs.
-    - Fix (killer 1, **Fix**): `face.vertices.reverse()` on each face that reads outward and only on those, `proxy:*` faces excluded. This fix targets collision LODs, not the Visual LOD, which has its own winding criterion because per vertex declared normals govern lighting while face winding governs backface culling. A component wound outward reads outward on every face and is reversed whole; a healthy component on the same LOD is left alone. Set the stored normals of the reversed faces as killer 1's **Fix** says, and never reverse a collision LOD to match the Visual LOD (item 7 of the absolute winding check, `dayz-p3d-audit/references/winding-absolute-check.md`).
-    - Implementation: no function in this pipeline runs the check, and `audit_p3d.py` does not either (killer 1, **Detection**). `check_face_winding` in `py3d-generation.md` compares vertex order with stored normals on `model.lods[0]` only, which is Check A's question, and the loop in that file's section "Face Winding Order Fix" reverses every face of every LOD, which is right only to undo a reversal of the whole model.
-    - *(Narrowed 2026-10-02, killer 1: read every face, not most, and reverse only the faces that read outward. Reversing every face of every collision LOD is right only when every face reads outward; on a LOD with one healthy and one outward component it moves the inversion onto the healthy one, measured offline 2026-10-02 on synthetic boxes with py3d 1.8.0. The rule used to say "if `dot(outward, cross_n) > 0` for most faces" and to reverse every face of every collision LOD. `check_face_winding` reads the first LOD only, and only for agreement with the stored normals: on a model whose first LOD is the Memory LOD, with an inward Visual LOD and an outward collision box, it returns no finding, and with that outward box stored first, its normals agreeing, none either, measured offline 2026-10-02 with py3d 1.9.0 on synthetic 2 m boxes.)*
-19. **A wheel proxy `.p3d` must have the five anatomical points in its Memory LOD**: `ce_center`, `ce_radius`, `boundingbox_min`, `boundingbox_max`, `invview`. PhysX uses them to build the wheel collider; without them the engine falls back to the proxy's Geometry LOD (typically a cube of about 0.20 m on procedural wheels). The collider is then the size of the hub cube instead of the wheel: `wheelPresent=N` but `contact=0` for good, the suspension raycast misses the ground when the body lifts more than about 10 cm, the bounce diverges, and in the end the log says `Will delete object with !finite or outside world coords`. The five points follow the convention measured on a third-party quad mod and the vanilla cars (Y vertical and radial, X axial and width, Z radial with an intentional inversion of min and max): copy them literally and scale, do not normalize the Z inversion. The full anatomy and scaling rules are vehicle material: `dayz-p3d-audit/references/vehicle-checks.md` (killer 11) and the wheel proxy anatomy addendum in `skills/_shared/vehicles/vehicle-structural-parity.md`. Bake them with the py3d fork in `scripts/tools/py3d/`, which guards the five historical py3d 1.0.0 write traps listed in `skills/_shared/py3d-mlod-notes.md`; that file's frame check still applies to a script that writes memory points. Audits older than 2026-05-29 may pass a wheel proxy with only `ce_center`. Measured 2026-05-29 on a third-party quad mod whose wheels bounced.
-20. **The wheel slot selection must be the same in the visual LODs, in Fire Geometry and in `CfgSlots.<slot>.selection`.** For PhysX to seat a wheel (`WheelCountPresent()>0`), the selection named by `config.cpp > CfgSlots > <wheel slot>.selection` must exist in the body's **Fire Geometry LOD** and contain the wheel proxy faces, not only in the visual LODs. A procedural pipeline that generates body and config must use one name for all three roles (visual proxy selection, Fire Geometry proxy selection, `CfgSlots.selection`) and never leave the slot selection out of Fire Geometry. If it lives only in the visual LODs the slot binds as inventory but the wheel never simulates: `WheelCountPresent()=0` while `WheelCount()=N`, no traction, no spin (steering still animates), no log error. This is Rule 7 for wheel slots. Detection offline: the wheel-slot selection wiring check in `dayz-p3d-audit/references/vehicle-checks.md`. The mechanism and an additive py3d fix are in the Enforce Script pack (`skills/_shared/enscript/depth/vehicle-scripting.md`, "Wheels and the simulation: `CfgSlots` `selection` must match the Fire Geometry proxy selection"). Measured on a third-party quad mod that reported `wheelPresent=0`.
-    - The general habit of keeping an item attachment proxy (a battery, a headlight) in the Resolution LODs only does not apply to wheel and suspension slot proxies: replicate those in Fire Geometry at the same positions.
-    - Vanilla agrees that slot proxies do not live in the visual LODs alone: on the four cars checked, each wheel proxy name is stored 7 to 9 times in a model with 5 to 7 visual LODs (`P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` stores `sedanwheel.001` 7 times with 6 visual LODs).
-    - Adding the missing wheel proxies to Fire Geometry was needed for parity on that quad mod but did not by itself fix "wheels do not roll" there, which had another cause. Include them; do not assume their absence is the only cause of a wheel that does not simulate.
-21. **Parts contained in another part are recomputed per LOD.** `[DESIGN]` A part derived from a container's geometry (a liquid surface, a layer of content inside a tray) must be recomputed from that LOD's simplified container profile, never from the full detail one: on simplified LOD walls the part derived from full detail pokes through. Gate: every vertex of the contained part lies inside the LOD's wall at its height, checked with a render of the LOD chain read from the p3d, plus a negative control that reproduces the leak. (Added 2026-09-26; caught on a tray's liquid and powder at LODs 2 to 4.)
+### Convex collision components
+
+Every component of Geometry, Fire Geometry and View Geometry is convex and closed and named `ComponentNN`. A concave component breaks collision.
+
+### Mass only on Geometry
+
+Give the Geometry components mass, at least 10 so a character collides with them. Fire Geometry and View Geometry take no mass: a mass entry on any LOD but Geometry breaks the binarized centre of mass (`py3d-assembly-rules.md`, "Mass only on the Geometry LOD"; `named-properties.md`).
+
+Fire Geometry thickness matters as well: glass that is too thick becomes bulletproof.
+
+### `autocenter=0` on every collision LOD
+
+Measured on mod models: without `autocenter=0` on Fire Geometry, View Geometry, Roadway, Hitpoints or LandContact, the engine recentres that LOD on its bounding box and moves it away from the visual mesh by half its height, typically 20 to 25 cm in Y. Bullets pass through, a stacking hologram falls to the ground, and the action cursor misses the object. Find it with `lod.properties.get("autocenter") != "0"` on any collision LOD; fix it with `lod.properties["autocenter"] = "0"` on all of them and write the file back.
+
+Vanilla does not need it everywhere. 2,730 of the 8,256 models under `P:\DZ\` store an `autocenter` property (value `0` in 2,723), and 2,169 store it once: in `P:\DZ\gear\camping\wooden_case.p3d` and `P:\DZ\gear\books\book_kniga.p3d` that copy is in Geometry only, while `P:\DZ\gear\camping\fence.p3d` stores it once per LOD, seven times. Setting it on every collision LOD is this pipeline's safe default for placed objects, not an engine rule. Which models need the property at all (placed objects, not kits) is in `named-properties.md`; follow that file where the two differ.
+
+### A penetration material on every collision face
+
+Give every collision face a penetration `.rvmat`: `face.material = "dz\\data\\data\\penetration\\<surface>.rvmat"`, for example `wood_desk`, `metalplate` or `plastic` (each under `P:\DZ\data\data\penetration\` with its `.bisurf`). The `.bisurf` sets penetration, deflection and damage. Without it the `ObjIntersectFire` raycast hits the geometry but finds no surface: bullets pass through and there is no footstep sound. The wooden case stores `dz\data\data\penetration\wood_desk.rvmat` (`P:\DZ\gear\camping\wooden_case.p3d`). An empty `face.material` on any collision face is a failure, and `/dayz-p3d-audit` reports it (`dayz-p3d-audit/references/p3d-killers.md`).
+
+### The per component winding check
+
+After export, check every collision component for faces wound outward. Comparing the cross product with the stored normal (the audit's Check A) is not enough: it returns `UNIFORM_NON_FLIPPED` whenever the two agree, right or wrong.
+
+- **Before you check.** Every non proxy face belongs to a `ComponentNN`, every component is closed and convex, and no face is degenerate. Short of that the check proves nothing.
+- **The check.** For each non proxy face, `outward = face_centroid - component_centroid` and `cross_n = normalize(cross(v1-v0, v2-v0))`. `dot(outward, cross_n) < 0` is right. A face above zero is wound outward, and `ObjIntersectFire` treats it as a back face and misses it. Read every face, not most.
+- **Symptoms**, all three at once: bullets pass through, the hologram falls to the ground when stacking, and nothing can be placed on top.
+- **The fix.** `face.vertices.reverse()` on the faces that read outward and only those, `proxy:*` faces excluded, with their stored normals set as `p3d-killers.md` section 1 says. A component wound outward reads outward on every face and is reversed whole; a healthy component in the same LOD is left alone. Never reverse a collision LOD to match the visual LOD (`dayz-p3d-audit/references/winding-absolute-check.md`). The visual LOD has its own test, because its stored normals drive lighting while its winding drives culling.
+- **What runs it.** Nothing in this pipeline, and not `audit_p3d.py`. `check_face_winding` in `py3d-shape-checks.md` compares winding with stored normals on `model.lods[0]` only, which is Check A's question; on a model whose first LOD is Memory it finds nothing. The loop under "When to reverse faces" in `py3d-axis-map.md` reverses every face of every LOD, which is right only to undo a reversal of the whole model. Measured offline on 2 m test boxes: reversing every face of a LOD with one healthy and one outward component moves the fault onto the healthy one.
+
+## Visual LODs, memory and selections
+
+- **Shadow LOD.** It must be slightly smaller than the visual LOD, or the object looks fully shaded. No vanilla model has one (no resolution from 10000 to 19999 in the headers of the 8,256 models under `P:\DZ\`), so add one only when the user asks (`lods.md`).
+- **Memory points** are single vertices, never edges or faces. An animation axis is exactly two points.
+- **Named selections match across LODs**: the same name in the visual, Geometry, Fire Geometry and View Geometry LODs wherever the part must move or be found.
+- **Texture paths end in `.paa`**, never `.png` or `.tga`. Generate `.png`, then convert with `/dayz-pack-texture`.
+- **Visible faces need a real `.paa`.** A procedural `#(argb,...)` face texture binarizes to section flags `0x0000C000` and the engine never draws that section, while drawn sections carry `0x0002C000` (opaque) or `0x0002C100` (alpha). Check it in the section table of the packed ODOL, not in the MLOD (`_shared/vehicles/animation-bake-and-odol-sections.md`, "Check new geometry by its ODOL section").
+- **`model.cfg` class names match file names**: `class MyMod_Object` for `MyMod_Object.p3d`.
+- **Read every `.p3d` back with py3d** after writing it.
+
+## The Blender to DayZ map
+
+Blender Z up to DayZ Y up is a reflection. Map every point and normal of every LOD through `(x,y,z)` to `(x,z,y)`, keep the face order and negate the normals; `py3d.blender_to_dayz(model)` does all three. FBX through Blender and GLB or glTF through Blender take the same map. The rule per source, the in-game results and the chirality check are in `axes-and-winding.md`.
+
+## Attachments and proxies
+
+### The three parts of an attachment
+
+An attached item shows only when all three exist: a proxy face and selection in the parent's visual LODs, the proxy `.p3d` that the selection names, and a `CfgNonAIVehicles` class that ties the slot to the proxy model. With one missing the attachment is there in the inventory but invisible. Vanilla's plank proxy class is `Proxysingle_plank` (`P:\DZ\gear\camping\config.cpp:13405`). Since 1.30 also put the proxy triangle in View Geometry, so a dedicated server does not fall back to the parent's origin (`dayz-1-30-models.md`). More in `memory-and-selections-authoring.md`, `model-config-and-packing.md` and `proxies.md`.
+
+### Proxy names
+
+A proxy selection is `proxy:<path to the proxy model>.NNN`, with a three digit index; its face sets the attached model's position and facing. Write the path without `.p3d` (`memory-and-selections-authoring.md`). Vanilla stores both forms: of 17,891 proxy names in the models under `P:\DZ\`, 147 keep `.p3d` (for example in `P:\DZ\structures\military\airfield\mil_aircraftshelter.p3d`). Index `001` is the most common and `000` appears 529 times; `P:\DZ\gear\camping\fence.p3d` uses both.
+
+## Wheels
+
+### Wheel proxy memory points
+
+A wheel proxy `.p3d` needs five points in its Memory LOD: `ce_center`, `ce_radius`, `boundingbox_min`, `boundingbox_max` and `invview`. PhysX builds the wheel collider from them; without them it falls back to the proxy's Geometry LOD, often a hub cube of about 0.20 m on generated wheels. Then `wheelPresent=N` but `contact=0`, the suspension ray misses the ground once the body lifts more than about 10 cm, the bounce grows, and the log ends with `Will delete object with !finite or outside world coords`. Measured on a mod quad whose wheels bounced, and matched against the vanilla cars: Y vertical and radial, X along the axle, Z radial with min and max deliberately swapped. Copy the points as they are and scale them; do not undo the Z swap. The full anatomy is in `dayz-p3d-audit/references/vehicle-checks.md` and `_shared/vehicles/vehicle-structural-parity.md`. Write them with the py3d in `scripts/tools/py3d/`, which guards the old py3d 1.0.0 write traps (`_shared/py3d-mlod-notes.md`).
+
+### The wheel slot selection in Fire Geometry
+
+For PhysX to seat a wheel (`WheelCountPresent()>0`), the selection named by `CfgSlots <wheel slot> selection` must exist in the body's Fire Geometry and hold the wheel proxy faces, not only in the visual LODs. Use one name for all three roles: visual proxy selection, Fire Geometry proxy selection and `CfgSlots` `selection`. With it only in the visual LODs the slot works as inventory but the wheel never simulates: `WheelCountPresent()=0` while `WheelCount()=N`, no traction, no spin, steering still animates, and no log error. Measured on a mod quad that reported `wheelPresent=0`. The offline check is in `dayz-p3d-audit/references/vehicle-checks.md`; the mechanism is in `_shared/enscript/depth/vehicle-scripting.md`.
+
+- Item attachment proxies (a battery, a headlight) can stay in the visual LODs; wheel and suspension slot proxies also go in Fire Geometry at the same positions.
+- Vanilla agrees: on the four cars checked each wheel proxy name is stored 7 to 9 times in a model with 5 to 7 visual LODs, and `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` stores `sedanwheel.001` 7 times with 6 visual LODs.
+- On that quad, adding the missing Fire Geometry proxies was needed but did not alone make the wheels roll; something else was also wrong. Add them, and keep looking if the wheel still does not simulate.
+
+## Parts inside other parts
+
+Recompute a part derived from a container's shape (a liquid surface, a layer of contents in a tray) from each LOD's simplified container, never from the full detail one, or it pokes through the simpler walls. Check that every vertex of the inner part lies inside that LOD's wall at its height, with a render of the LOD chain read from the `.p3d`, plus a deliberate leak as a control. This is a pipeline rule, not checked in game.

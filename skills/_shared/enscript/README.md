@@ -15,7 +15,7 @@ This folder fills the gap between those: the recurring patterns themselves (nets
 Files in this folder are in one of two states:
 
 - **Checked on `P:\`**, every fact cites the vanilla file and line it was read from: all of `references/` except `network_payload_limits.md` (measured in game, not checkable on `P:\`) and the newer API layout in `workbench_api.md` (which `P:\` does not hold; its `P:\` section is checked); in `patterns/`, `modded_class.md` (which marks each of its reported claims as such), `netsync.md`, `persistence.md`, `rpc.md`, `singleton.md` (which marks the `JsonSerializer` behavior it could not read in script), `actions.md`, `json_config_migration.md`, `language_workarounds.md`, `physics_items.md`, `scheduler.md` (which marks each of its reported claims as such) and `server_tick_budget.md` (which cites the vanilla calls and marks the third-party techniques as reported); in `integrations/`, `vanilla_plugins.md`, `central_economy.md` and `input_bindings.md`; in `examples/`, `01` to `10`, the three layouts and `layouts.md`.
-- **Checked against the framework's own scripts**, not vanilla: `integrations/community_framework.md` (`P:\Mods\@CF\Addons\scripts.pbo`), `integrations/dabs_framework.md` (the Dabs scripts PBO) and `integrations/expansion_style.md` (the shipped Expansion PBOs under `P:\Mods\`, and CF's `scripts.pbo` for its CF names).
+- **Checked against the framework's own scripts**, not vanilla: `integrations/community_framework.md` (`P:\Mods\@CF\Addons\scripts.pbo`), `integrations/dabs_framework.md` (the Dabs scripts PBO), `integrations/lbmaster.md` (LBmaster's `LBmaster_Core.pbo`) and `integrations/expansion_style.md` (the shipped Expansion PBOs under `P:\Mods\`, and CF's `scripts.pbo` for its CF names).
 
 - **`depth/`** mixes lines checked on `P:\` with results measured in game on a named build and third-party mod behaviour; each file marks which is which (see `depth/README.md`).
 
@@ -52,7 +52,8 @@ enscript/
 
 | File | Topic |
 |---|---|
-| `community_framework.md` | CF module system, `ModStorage` persistence, `GetRPCManager()` RPCs, event handlers between mods |
+| `community_framework.md` | CF module system, `GetRPCManager()` RPCs, event handlers between mods (CF `ModStorage` is in `_shared/persistence/cf-modstorage.md`) |
+| `lbmaster.md` | LBmaster loot presets (third party): optional `#ifdef` dependency, `SpawnPreset` against `SpawnPresets` chance rules, the order to try loot sources in |
 | `dabs_framework.md` | Dabs Framework (third party): attributes, `ScriptView` MVC, layout bindings, `ScriptViewMenu` |
 | `expansion_style.md` | Expansion targeted work only: prefixes, settings and module patterns, and where they differ from the vanilla style guide |
 | `vanilla_plugins.md` | Registering a plugin in `PluginManager.Init()`, its lifecycle, `GetPlugin()`, `PluginAdminLog.LogPrint` |
@@ -88,7 +89,7 @@ Every file below cites the vanilla file and line on `P:\` for its facts, apart f
 | `native_declarations.md` | Where the `proto native` declarations are, what `owned` and `static` mean on one, calling a native that fills `vector mat[4]` or returns a handle |
 | `entity_components.md` | `GenericComponent`, `ScriptComponent` and `GenericEntity` under the `COMPONENT_SYSTEM` guard (Workbench builds): insert and remove, event order, event masks |
 | `workbench_api.md` | The Workbench scripting API for plugin authors: what `P:\` holds, the newer `workbenchapi\` folder layout, the `#ifdef WORKBENCH` guard, modules, plugin events |
-| `game_builds.md` | Which build `P:\` is, the 1.29 to 1.30.164289 timeline, which line a citation gives, and the porting rules the 1.30 patches taught |
+| `game_builds.md` | Which build `P:\` is, the 1.29 and 1.30 release timeline, which line a citation gives, and the porting rules the 1.30 patches taught |
 
 ### depth/
 

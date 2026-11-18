@@ -110,17 +110,17 @@ If `<ModName>` does not exist:
 
 Before a non-trivial feature is coded, write down what done means and how each part will be checked, so the in-game test is not spent on a spec that could never pass. Skip it for a one-line typo or a trivial reversible tweak.
 
-1. Write `output/<ModName>-plan/spec.md` from `references/spec-template.md`, right after `dayz-mod-architect` writes the plan: Given/When/Then scenarios with in-game repro steps, measurable success criteria, every guess marked `ASSUMED` and settled with the user when it decides correctness, and a forward contract that gives every classname, selection, proxy path and layout key the next phase reads a `path:line` you opened, or `[UNVERIFIED]`.
-2. Run `references/spec-checklist.md` (18 checks) on the spec before writing code. Any fail means fix the spec first.
-3. After the code and task list exist, and before `/dayz-gate ingame`, `behavior` or `visual`, run `references/analyze-gate.md`: a read-only pass over spec, plan, task list and code. A CRITICAL finding (a criterion with no verification path, an `[UNVERIFIED]` symbol the code depends on, a broken hard rule) blocks the in-game session.
+1. Write `output/<ModName>-plan/spec.md` from `references/spec-outline.md`, right after `dayz-mod-architect` writes the plan: Given/When/Then scenarios with in-game repro steps, measurable success criteria, every guess marked `ASSUMED` and settled with the user when it decides correctness, and a forward contract that gives every classname, selection, proxy path and layout key the next phase reads a `path:line` you opened, or `UNVERIFIED`.
+2. Run `references/spec-review.md` (18 checks) on the spec before writing code. Any fail means fix the spec first.
+3. After the code and task list exist, and before `/dayz-gate ingame`, `behavior` or `visual`, run `references/consistency-pass.md`: a read-only pass over spec, plan, task list and code. A finding marked Blocks (a criterion with no verification path, an `UNVERIFIED` symbol the code depends on, a broken hard rule) blocks the in-game session.
 
 | Question | File |
 |---|---|
-| How does the whole method work, including injected objects, push and pull eligibility, raw and derived records, dead-code search hits and decision tests? | `references/feature-spec.md` |
-| What does the spec look like, section by section? | `references/spec-template.md` |
-| Is this spec ready to implement? | `references/spec-checklist.md` |
-| Do spec, plan, task list and code agree before the in-game test? | `references/analyze-gate.md` |
-| Which questions do I settle with the user before writing a placeable or usable object? | `references/pre-implementation-grill.md` |
+| How does the whole method work, including injected objects, push and pull eligibility, raw and derived records, dead-code search hits and decision tests? | `references/scoping-a-feature.md` |
+| What does the spec look like, section by section? | `references/spec-outline.md` |
+| Is this spec ready to implement? | `references/spec-review.md` |
+| Do spec, plan, task list and code agree before the in-game test? | `references/consistency-pass.md` |
+| Which questions do I settle with the user before writing a placeable or usable object? | `references/questions-before-building.md` |
 | How do I write the code once the spec exists: API checks, mini-audit, client and server data map, checkpoints, bug ledger, handoff? | `references/implementation-protocol.md` |
 
 ## Do not

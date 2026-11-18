@@ -1,27 +1,25 @@
-# Mixamo retarget (experimental)
+# Mixamo retarget
 
-**Experimental.** The two modules are unit tested outside Blender only; nothing here has been validated on a fixture inside Blender. Treat every step as untested until the fixture at the end of this file has run.
+How to move a Mixamo or other FBX clip onto a Blender armature with the two retarget modules, and where the result enters the DayZ pipeline. The bone name matching itself is in `mixamo-bone-mapping.md`.
 
-Retargets skeletal animation between armatures inside Blender, driven through the Blender MCP server that is already connected (`execute_blender_code`). It needs no extra add-on and no WebSocket server: the two modules `retargeting.py` and `bone_matching.py` in `skills\dayz-animation-pipeline\scripts\` are plain Blender Python.
+Experimental: the modules `retargeting.py` and `bone_matching.py` in `skills/dayz-animation-pipeline/scripts/` have unit tests outside Blender (`test_bone_matching.py`, and `test_retargeting.py` against a stand-in `bpy`), but nothing here has run inside Blender yet. Treat every step as untested until the two checks in "Before the first real use" pass. Nothing here runs against `P:\`, DayZ Tools or the game.
 
-The tests are `test_bone_matching.py` and `test_retargeting.py` next to the modules, the second against a stand-in `bpy`. Before the first production use, run the fixture at the end of this file and record the result.
+## The functions
 
-Nothing here runs against `P:\`, DayZ Tools or the game.
+Both modules are plain Blender Python. They run through the Blender MCP server already connected (`execute_blender_code`) and need no add-on.
 
-## What it does
-
-| Function | Module | Purpose |
+| Function | Module | Use |
 |---|---|---|
 | `auto_map_bones(source, target)` | `retargeting.py` | Fuzzy bone matching with a Mixamo alias table. Returns `{source_bone: target_bone}`. |
-| `get_preset_bone_mapping("mixamo_to_rigify")` | `retargeting.py` | A preset map. The shipped preset holds ten bones (hips to left hand); extend it before relying on it. |
-| `store_bone_mapping`, `load_bone_mapping` | `retargeting.py` | Keep a reviewed map per armature pair on the scene, so the fuzzy pass runs once and the corrected map is reused. See "Known gaps". |
-| `retarget_animation(source, target, bone_map, preserve_rotation=True, preserve_location=False)` | `retargeting.py` | Adds Copy Rotation constraints from source to target bones (and Copy Location on `Hips` when `preserve_location` is true), then bakes them to keyframes on the target rig over the scene frame range. |
-| `import_fbx`, `import_dae`, `list_armatures`, `get_bones`, `list_animations`, `play_animation`, `stop_animation`, `add_to_nla` | `retargeting.py` | Import, inspect, play and stack. `import_dae` needs Blender 4.x (see "Known gaps"). `list_animations` returns every object-level action in the file, not only the actions of that armature. |
-| `normalize_bone_name`, `calculate_similarity`, `find_best_match`, `fuzzy_match_bones`, `get_match_quality_report` | `bone_matching.py` | The matching engine: pure Python, no `bpy`. |
+| `get_preset_bone_mapping("mixamo_to_rigify")` | `retargeting.py` | A preset map of ten bones, hips to left hand. Extend it before you rely on it. |
+| `store_bone_mapping`, `load_bone_mapping` | `retargeting.py` | Keep a reviewed map per armature pair on the scene. They need scene properties no module registers; see "Known gaps". |
+| `retarget_animation(source, target, bone_map, preserve_rotation=True, preserve_location=False)` | `retargeting.py` | Adds Copy Rotation constraints from source to target bones (and Copy Location on `Hips` when `preserve_location` is true), then bakes them to keys on the target over the scene frame range. |
+| `import_fbx`, `import_dae`, `list_armatures`, `get_bones`, `list_animations`, `play_animation`, `stop_animation`, `add_to_nla` | `retargeting.py` | Import, inspect, play and stack. `list_animations` returns every object level action in the file, not only that armature's. |
+| `normalize_bone_name`, `calculate_similarity`, `find_best_match`, `fuzzy_match_bones`, `get_match_quality_report` | `bone_matching.py` | The matching engine, pure Python with no `bpy`. |
 
-## How to run it (through the Blender MCP)
+## Running it
 
-1. Load both modules once per Blender session. `retargeting.py` imports `fuzzy_match_bones` from `bone_matching`, so the scripts folder has to be importable. Send this through `execute_blender_code`:
+1. Load both modules once per Blender session. `retargeting.py` imports from `bone_matching`, so the scripts folder must be on the path:
 
    ```python
    import sys
@@ -29,67 +27,55 @@ Nothing here runs against `P:\`, DayZ Tools or the game.
    from retargeting import *
    ```
 
-   When Blender cannot read that folder, read the two files and send their source instead, `bone_matching.py` first, with the `from bone_matching import ...` line removed from the `retargeting.py` source so the names already defined are used.
+   When Blender cannot read that folder, send the source of both files instead, `bone_matching.py` first, and drop the `from bone_matching import ...` line from `retargeting.py`.
 
-2. Import the clip and get a first map:
+2. Import the clip, strip the `mixamorig:` prefix and get a first map:
 
    ```python
-   import_fbx(r"<path-to>\Walking.fbx")            # brings in the Mixamo armature and its action
-   print(list_armatures())                          # for example ['Armature', 'MyDayZRig']
-   # A Mixamo FBX names its bones mixamorig:Hips and so on; auto_map_bones only
-   # accepts the bare names (see "Known gaps"), so strip the prefix first.
+   import_fbx(r"<path-to>\Walking.fbx")
+   print(list_armatures())                          # for example ['Armature', 'MyMod_Rig']
    for b in list(bpy.data.objects["Armature"].data.bones):
        b.name = b.name.split(":", 1)[-1]
-   bm = auto_map_bones("Armature", "MyDayZRig")    # fuzzy pass: review this dict
+   bm = auto_map_bones("Armature", "MyMod_Rig")
    print(bm)
    ```
 
-3. **Two phases, always.** Never retarget straight off the fuzzy map. Print it, review and correct it (the user, or a reasoned pass over both bone lists), keep the corrected version, and only then bake:
+3. Review the map before you bake. Print it, correct it by hand or with a reasoned pass over both bone lists, keep the corrected copy, then bake:
 
    ```python
    scene = bpy.context.scene
    scene.frame_start, scene.frame_end = (int(f) for f in bpy.data.objects["Armature"].animation_data.action.frame_range)
-   retarget_animation("Armature", "MyDayZRig", bone_map=bm)
-   baked = bpy.data.objects["MyDayZRig"].animation_data.action
+   retarget_animation("Armature", "MyMod_Rig", bone_map=bm)
+   baked = bpy.data.objects["MyMod_Rig"].animation_data.action
    baked.name = "Walking_retarget"
-   play_animation("MyDayZRig", "Walking_retarget")
+   play_animation("MyMod_Rig", "Walking_retarget")
    ```
 
-   `retarget_animation` has no parameter for the action name and bakes the scene frame range, which is why the example sets the range from the source action first and renames the baked action afterwards.
+   `retarget_animation` has no parameter for the action name and bakes the scene frame range, so set the range from the source action first and rename the baked action after.
 
-## References
+## Match the rest poses first
 
-| File | Question it answers |
-|---|---|
-| `mixamo-bone-mapping.md` | How does the matching algorithm score names, what do the quality ratings mean, which bone names does each rig family (Rigify, Unreal, Unity) use, and how do I fix a bad match? Read it when the fuzzy map comes back with gaps. |
+Mixamo rigs rest in a T pose; most game rigs rest in an A pose or their own pose. A retarget across different rest poses bakes a fixed offset into every frame, and the arms float about 45 degrees off. Line the rest poses up first: apply the rotation on the Mixamo armature, or pose the target's rest to match the source.
 
-## Rest-pose caveat (the classic failure)
+## Known gaps
 
-Mixamo rigs are in T-pose; many targets, game rigs included, are in A-pose or a custom pose. A retarget across mismatched rest poses bakes a permanent offset into every frame. Align the rest poses first (apply the rotation on the Mixamo armature, or pose-match the target's rest to the source) before judging the result. Symptom: arms floating about 45 degrees off on every frame.
+Read from the code, not yet run in Blender. Check each one when the first real run happens.
 
-## Known gaps in the shipped modules
+- Prefixed names. `auto_map_bones` only takes source bones whose names are keys of its alias table (`Hips`, `LeftArm` and so on). A Mixamo FBX imports as `mixamorig:Hips`, which matches nothing, and the call stops with `KeyError: 'critical_bones_mapped'` because the quality report of an empty map lacks that key (`test_retargeting.py` pins this). Any pair of armatures with no match at all gives the same error. Strip the prefix (step 2 above) or build the map by hand.
+- Stored maps. `store_bone_mapping` and `load_bone_mapping` use `scene.bone_mapping_items`, `scene.bone_mapping_source_armature` and `scene.bone_mapping_target_armature`, which neither module registers, so both calls fail. Keep the reviewed map as a Python dict or as JSON next to the `.blend`.
+- DAE import. `import_dae` calls `bpy.ops.wm.collada_import`, which Blender 5.0 removed. Convert the clip to FBX, or import the DAE in Blender 4.x.
+- Empty map. `retarget_animation` accepts an empty `bone_map`, adds no constraints and still bakes a frozen action.
+- Near misses. With the default threshold 0.6, `LeftArm` against `LeftLeg` scores 0.671 in `bone_matching.py`, so an arm can land on a leg bone when the target has no better name. This is why the map is reviewed before baking.
 
-Read from the code, not yet run in Blender. Check each one when the fixture below is run.
+## Where the result goes in DayZ
 
-- **`mixamorig:` prefix.** `auto_map_bones` only takes source bones whose names are keys of its alias table (`Hips`, `LeftArm`, ...). A Mixamo FBX normally imports with prefixed names (`mixamorig:Hips`), and those match no key, so nothing is mapped. The call then stops with `KeyError: 'critical_bones_mapped'`, because the quality report for an empty map has no such entry (`test_retargeting.py` pins this against a stand-in `bpy`). The same error appears for any pair of armatures with no match at all. Rename the source bones to drop the prefix first (step 2 of "How to run it" does this), or build the map by hand.
-- **Stored maps.** `store_bone_mapping` and `load_bone_mapping` use `scene.bone_mapping_items`, `scene.bone_mapping_source_armature` and `scene.bone_mapping_target_armature`. Neither module registers those scene properties, so without that registration both calls fail. Until they are registered, keep the reviewed map as a Python dict, or save it as JSON next to the `.blend`.
-- **DAE import.** `import_dae` calls `bpy.ops.wm.collada_import`. Blender 5.0 removed the Collada importer, so on Blender 5.x the call fails. Convert the clip to FBX and use `import_fbx`, or run the DAE import in Blender 4.x.
-- **Empty map.** `retarget_animation` does not reject an empty `bone_map`: it adds no constraints and still bakes. That is the negative case of the fixture below.
-- **Near misses above the threshold.** With the default threshold 0.6, `LeftArm` against `LeftLeg` scores 0.671 (measured with `bone_matching.py`), so a left arm can land on a leg bone when the target has no better name. This is why the map is reviewed before baking.
+A retarget onto the survivor skeleton (the `player_testing.xob` block at `P:\DZ\anims\cfg\skeletons.anim.xml:110`; zones in `player-skeleton.md`) gives source keys, not a game ready clip. It enters the clip route in `tooling-and-walls.md`: Blender keys, then SEAnim, then DayZATool, then `.anm`. The graph limits still apply when the clip ships in a replacement player or creature graph: two mods that replace the same graph collide, and loading both is reported to crash client and server (not measured on 1.30). Use it to source mocap for creatures, poses and reference motion. When the motion has to look physically right in game, set the acceptance first with `realistic-motion.md`.
 
-## DayZ integration note
+## Before the first real use
 
-A retarget onto the DayZ skeleton (the survivor's bone list is the `player_testing.xob` block at `P:\DZ\anims\cfg\skeletons.anim.xml:110`; zones in `player-skeleton.md`) gives **source keyframes**, not a game-ready animation. It feeds layer 2 of the animation work (`tooling-and-walls.md`: Blender keyframes, then SEAnim, then DayZATool, then `.anm`), and the wall that skill flags still applies when the result ships in a replacement player or creature animation graph: two mods that replace the same graph collide, and loading both is reported to crash client and server (not measured on 1.30). Use it to source mocap for creatures, poses and reference motion, not as a shortcut around the pipeline. For motion that has to look physically right in game, `realistic-motion.md` sets the acceptance contract first.
+Run one good case and one bad case, and record both results before you drop the experimental label:
 
-## Fixture before first real use
+- Good: import any Mixamo FBX and retarget it onto a copy of its own armature with the identity map. The result must match the original; render three frames with the capture helper in `_shared/models/blender-visual-review.md`.
+- Bad: a retarget with an empty bone map must raise or return an error, not bake a frozen action.
 
-The modules are not trusted until one positive and one negative fixture have run.
-
-- **Positive:** import any Mixamo FBX and retarget it onto a copy of its own armature with the identity map. The result must visually match the original (render three frames with the capture helper of `_shared/models/blender-visual-review.md`).
-- **Negative:** a retarget with an empty bone map must raise or return an error, not silently produce a frozen action.
-
-Record both outcomes; only then drop the experimental label.
-
-## Assets
-
-This repo ships no Mixamo or Adobe mocap, FBX or character assets, only the retargeting workflow. Download Mixamo clips yourself; they stay on your machine and are not part of this repo.
+This repo ships no Mixamo or Adobe clips, FBX files or characters, only the workflow. Download Mixamo clips yourself; they stay on your machine.

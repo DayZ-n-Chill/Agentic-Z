@@ -17,7 +17,6 @@ from builders import build_cube_lod, build_memory_lod, build_multilod_v2_p3d
 from helpers import f32, read_p3d, write_bytes
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-AUDIT = os.path.join(REPO, "tools", "audit_p3d.py")
 
 MIRROR_X = ((-1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
 SHEAR = ((1.0, 1.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
@@ -62,12 +61,6 @@ def winding_signs(lod):
 def run_cli(*args):
     env = dict(os.environ, PYTHONPATH=REPO)
     return subprocess.run([sys.executable, "-m", "py3d"] + list(args),
-                          capture_output=True, text=True, env=env, cwd=REPO)
-
-
-def run_audit(path):
-    env = dict(os.environ, PYTHONPATH=REPO)
-    return subprocess.run([sys.executable, AUDIT, str(path)],
                           capture_output=True, text=True, env=env, cwd=REPO)
 
 
@@ -147,28 +140,6 @@ def test_mass_cli_exit1(fork, tmp_path):
     assert r.returncode == 1
     assert any("ERROR ERR_MASS_ONLY_GEOMETRY" in ln
                for ln in r.stdout.splitlines()), r.stdout
-
-
-def test_val_audit_mass_neg(fork, tmp_path):
-    """The audit, delegating to this library, reports
-    CRITICAL [ERR_MASS_ONLY_GEOMETRY] and exits 1 on the negative
-    fixture."""
-    p3d = build_multilod_v2_p3d(fork)
-    for p in p3d.get_lod("firegeo").points:
-        p.mass = 0.0
-    fx = write_file(p3d, tmp_path / "mass_audit.p3d")
-    r = run_audit(fx)
-    assert r.returncode == 1, r.stdout
-    assert any("CRITICAL" in ln and "[ERR_MASS_ONLY_GEOMETRY]" in ln
-               for ln in r.stdout.splitlines()), r.stdout
-
-
-def test_val_audit_mass_pos(fork, tmp_path):
-    """The clean fixture is still ALL PASSED with the new check active."""
-    fx = write_file(build_multilod_v2_p3d(fork), tmp_path / "clean.p3d")
-    r = run_audit(fx)
-    assert r.returncode == 0, r.stdout
-    assert "OVERALL: ALL PASSED" in r.stdout
 
 
 # ---- P3D.transform ----------------------------------------------------

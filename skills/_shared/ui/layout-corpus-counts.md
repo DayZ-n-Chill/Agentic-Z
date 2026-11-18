@@ -1,315 +1,101 @@
-# The `.layout` corpus: what shipped layouts use, and what a static renderer can show
+# What shipped layouts use
 
-Counts of widget classes and attributes over real `.layout` files, a path and branch correction for Dabs Framework, the coverage of a static HTML renderer, and calibration numbers for layout checks.
+Which widget classes and attributes real `.layout` files use and how often, what the less common attributes mean, and which layout checks hold up against shipped files and which only raise false alarms. The full syntax is in `layout-format.md`; an offline preview of a layout is in `layout-html-preview.md`.
 
-The counts were taken over 459 `.layout` files on a `P:\` holding vanilla plus third-party mods unpacked there, with a second sweep of 819 files. They have not been re-counted since, and they include third-party layouts, so they do not match a vanilla-only count. Where a line names an engine fact, it cites the vanilla file on `P:\`, re-read on 1.30.
+The class and attribute counts come from 459 `.layout` files on a `P:\` that held vanilla plus unpacked third party mods, and the check calibration from a second scan of 819 layouts (vanilla, third party and in house mods). Both include third party layouts, so they differ from a vanilla only count. Engine facts cite the vanilla file on `P:\`.
 
-This file complements `layout-format.md`, `widget-prototypes.md` and `dabs-mvc-internals.md`; it does not replace them. Use it when you need:
+## Widget classes
 
-- "What's actually used in production layouts?" → see section 1 + section 2.
-- The Dabs Framework source path and branch → see section 3.
-- The static HTML renderer for previewing layouts outside DayZ → see section 4.
-- Second-sweep calibrations (819 files) → see section 6.
+Over 459 layouts:
 
----
+| Class | Count | Class | Count |
+|---|---|---|---|
+| `TextWidgetClass` | 2,645 | `ItemPreviewWidgetClass` | 65 |
+| `PanelWidgetClass` | 2,090 | `ProgressBarWidgetClass` | 54 |
+| `ImageWidgetClass` | 2,072 | `CanvasWidgetClass` | 29 |
+| `FrameWidgetClass` | 1,341 | `ContentWidgetClass` (use unclear) | 20 |
+| `ButtonWidgetClass` | 1,325 | `SpacerWidgetClass` | 17 |
+| `GridSpacerWidgetClass` | 1,160 | `MapWidgetClass` | 16 |
+| `EditBoxWidgetClass` | 508 | `ThreeStateCheckboxWidgetClass` | 10 |
+| `CheckBoxWidgetClass` | 446 | `MultilineEditBoxWidgetClass` | 9 |
+| `MultilineTextWidgetClass` | 351 | `VideoWidgetClass` | 5 |
+| `WrapSpacerWidgetClass` | 294 | `PlayerPreviewWidgetClass` | 5 |
+| `RichTextWidgetClass` | 244 | `SmartPanelWidgetClass` (use unclear) | 3 |
+| `TextListboxWidgetClass` | 133 | `EmbededWidgetClass` (spelled this way) | 3 |
+| `SliderWidgetClass` | 129 | `HtmlWidgetClass` | 2 |
+| `ScrollWidgetClass` | 95 | `ServerBrowserWidgetClass` | 1 |
+| `XComboBoxWidgetClass` | 81 | `PasswordEditBoxWidgetClass` (masked input) | 1 |
+| `WindowWidgetClass` | 66 | | |
 
-## 1. Widget class frequency (from 459 `.layout` files in P:\)
+Nine classes (text, image, frame, panel, button, grid spacer, wrap spacer, scroll and edit box) make up 87 percent of all widgets, 11,530 of 13,220. Check box, multiline text, rich text, slider, combo box and text list box add about 10 percent more. Item preview, map, player preview, canvas, video and HTML widgets draw game state that a `.layout` alone can't show.
 
-```
-2645 TextWidgetClass
-2090 PanelWidgetClass
-2072 ImageWidgetClass
-1341 FrameWidgetClass
-1325 ButtonWidgetClass
-1160 GridSpacerWidgetClass
- 508 EditBoxWidgetClass
- 446 CheckBoxWidgetClass
- 351 MultilineTextWidgetClass   ← not previously catalogued
- 294 WrapSpacerWidgetClass
- 244 RichTextWidgetClass
- 133 TextListboxWidgetClass     ← not previously catalogued
- 129 SliderWidgetClass
-  95 ScrollWidgetClass
-  81 XComboBoxWidgetClass
-  66 WindowWidgetClass          ← not previously catalogued
-  65 ItemPreviewWidgetClass
-  54 ProgressBarWidgetClass
-  29 CanvasWidgetClass
-  20 ContentWidgetClass         ← not previously catalogued, use unclear
-  17 SpacerWidgetClass
-  16 MapWidgetClass
-  10 ThreeStateCheckboxWidgetClass  ← variant of CheckBox
-   9 MultilineEditBoxWidgetClass
-   5 VideoWidgetClass
-   5 PlayerPreviewWidgetClass   ← not previously catalogued
-   3 SmartPanelWidgetClass      ← not previously catalogued, use unclear
-   3 EmbededWidgetClass         ← (typo of Embedded?) not previously catalogued
-   2 HtmlWidgetClass            ← not previously catalogued
-   1 ServerBrowserWidgetClass   ← not previously catalogued
-   1 PasswordEditBoxWidgetClass ← variant of EditBox with masked input
-```
+## Attributes
 
-### Renderer coverage decisions
+The top attributes over a sample of 300 layouts:
 
-- **v1 must-have:** TextWidgetClass, ImageWidgetClass, FrameWidgetClass,
-  PanelWidgetClass, ButtonWidgetClass, GridSpacerWidgetClass,
-  WrapSpacerWidgetClass, ScrollWidgetClass, EditBoxWidgetClass — 9 classes
-  cover 87% of widget instances in the corpus (11,530 of 13,220).
-- **v2 should-have:** CheckBoxWidgetClass, MultilineTextWidgetClass,
-  RichTextWidgetClass, SliderWidgetClass, XComboBoxWidgetClass,
-  TextListboxWidgetClass — adds ~10% more coverage.
-- **v3 defer:** ItemPreviewWidgetClass, MapWidgetClass, PlayerPreviewWidgetClass,
-  CanvasWidgetClass, VideoWidgetClass, HtmlWidgetClass — these render game
-  state, not parseable from `.layout` alone.
-
----
-
-## 2. Attribute frequency (top 50, across 300 sampled layouts)
-
-```
-10349 size                hexactsize/vexactsize toggle units
-10302 vexactsize          0=fraction, 1=exact (1/1080 of screen height)
-10256 hexactsize          0=fraction, 1=exact (1/1080 of screen height)
-10242 vexactpos           0=fraction, 1=exact (1/1080 of screen height)
-10242 hexactpos           0=fraction, 1=exact (1/1080 of screen height)
- 7778 position
- 7494 ignorepointer       1=transparent to mouse
- 4518 valign              top|center|bottom|*_ref|0|1|2
- 4173 visible
- 4157 halign              left|center|right|*_ref|0|1|2
- 3412 style               ← ref to a style in a .styles file (styles-format.md); renderer best-effort
- 3210 text
- 3074 color               R G B A floats 0-1
- 2833 clipchildren        1=overflow:hidden equiv
- 2350 font
- 1697 mode                ← blend mode; vanilla writes keywords: blend, additive, opaque (see the note below)
- 1440 priority            ← z-order hint; renderer can sort by this
- 1360 image0              path or "#(argb,8,8,3)color(R,G,B,A,CO)"
- 1329 Margin              GridSpacer/WrapSpacer outer margin px
- 1322 Padding             GridSpacer/WrapSpacer inner padding px
- 1129 inheritalpha        1=multiply with parent alpha
- 1069 Rows                GridSpacer rows
- 1060 Columns             GridSpacer columns
-  939 scaled              resolution scaling toggle
-  884 draggable           enables DRAGGABLE flag
-  756 filter              texture filtering
-  694 content_valign      inside-spacer alignment
-  591 content_halign
-  505 wrap                word wrap on text widgets -- NOT a WrapSpacer mode
-  NOTE: the "WrapSpacer wrap mode" label on this line was wrong, and
-  the 505 is a 300-layout sample. Two independent censuses over the full 819-layout
-  corpus -- one with the tooling tokenizer plus a widget stack, one with a separate
-  header rule -- agree that `wrap` sits on text widgets and on ZERO spacer widgets:
-  MultilineText ~355, RichText 236, Html 9, Text 4. Restricting the same census to
-  the `gui\` subtree reproduces this line's 505, which is what identifies the two
-  numbers as the same attribute over different populations.
-  489 scriptclass         "ViewBinding" or custom controller class
-  467 userID              int ID for script-side lookup
-  461 fixaspect           image aspect ratio lock
-  437 text_proportion     text size as fraction of widget height (0-1)
-  NOTE: 437 is this section 2 sample (300 layouts). It is NOT the 1048 from the 819-file sweep in layout-format.md (679 Text + 361 Button + 5 RichText + 3 MultilineText). Keep both; they are different corpora.
-  376 nocache             skip texture cache
-  333 (other widget classes)
-  317 disabled            DISABLED flag
-  268 (other)
-  258 stretch             1 = STRETCH flag, image fills widget
-  173 imageTexture        alt to image0
-  163 keepsafezone        respect TV-safe margins
-  154 Progress            ProgressBarWidget initial value
-```
-
-Checked on `P:\` (1.30, vanilla `gui\layouts` only): `mode` takes a keyword, `blend` 1,721 times, `additive` 144 and `opaque` 4 (`P:\gui\layouts\day_z_ingamemenu.layout:74` and `:551`), never a number. `fixaspect` takes a keyword too: `fixwidth` 488, `inside` 67, `outside` 29, `none` 15 (`P:\gui\layouts\day_z_ingamemenu.layout:72`, `:563`). The earlier "values 0/1/2" and `fixaspect 1` readings below are corrected to match.
-
-### Newly documented attributes (semantics inferred from the corpus)
-
-| Attribute | Semantics | Confidence |
+| Attribute | Count | Meaning |
 |---|---|---|
-| `style <name>` | Reference to a widget style defined in a `.styles` file (vanilla: `P:\gui\looknfeel\dayzwidgets.styles`), written unquoted; the full system is in `styles-format.md`. Common values: `Bold`, `DayZNormal`, `DayZInventoryButtonAll`, `Default`, `Empty`, `Colorable`, `Editor`. | Verified empirically. Engine-side semantics inferred. |
-| `mode blend\|additive\|opaque` | Image blend mode. Vanilla layouts write the keywords, never numeric values (an earlier 0=normal, 1=additive, 2=multiply reading was wrong). | Keywords checked on `P:\` (note above). What each mode draws is not measured. |
-| `priority N` | Z-order hint within parent. Higher = on top. | Inferred. The script side is `SetSort`, which sets the value outright (`P:\scripts\1_core\proto\enwidgets.c:130`); the "adds" comment in that file belongs to `SetFlags` (`:128`). |
-| `image0` ... `image7` | Image slot 0–7 (engine supports 8 textures per widget via `LoadImageFile(int num, ...)`). `image0` is default; switched with `SetImage(int)`. | `LoadImageFile(int num, string name, bool noCache = false)` is at `P:\scripts\1_core\proto\enwidgets.c:257`; the count of 8 slots is not checked on `P:\`. |
-| `inheritalpha 1` | If 1, widget's alpha is multiplied with parent's. | Common in HUDs; verified empirically. |
-| `scaled 1` | Resolution scaling enabled. | Inferred. `SetResolutionScale` exists only on `RenderTargetWidget` (`P:\scripts\1_core\proto\enwidgets.c:240`), so it is not what this attribute calls on an ordinary widget. |
-| `fixaspect fixwidth\|inside\|outside\|none` | Lock image aspect ratio (don't stretch). | Keyword values checked on `P:\` (note above); what each one does is inferred from naming. |
-| `keepsafezone 1` | Respect TV-safe margins (console builds). | Inferred from naming. |
-| `text_proportion 0.5` | Text size as fraction of widget height (0–1). The script side is `SetTextProportion(float)` (`P:\scripts\1_core\proto\enwidgets.c:216`). Measured in game: honored on `TextWidget`, ignored on `MultilineTextWidget` (`hot-iteration.md`, section 6). | Engine API checked on `P:\`. |
-| `nocache 1` | Skip texture cache. Useful for procedural images. | Inferred from naming. |
+| `size` | 10,349 | Unit set by `hexactsize` and `vexactsize` |
+| `vexactsize`, `hexactsize` | 10,302, 10,256 | `0` fraction of the parent, `1` exact units of 1/1080 of the screen height (measured in game) |
+| `vexactpos`, `hexactpos` | 10,242 each | Same units for position |
+| `position` | 7,778 | |
+| `ignorepointer` | 7,494 | `1` passes mouse events through |
+| `valign`, `halign` | 4,518, 4,157 | `top`, `center`, `bottom`, `left`, `right`, a `*_ref` anchor, or `0` to `2` |
+| `visible` | 4,173 | |
+| `style` | 3,412 | A style from a `.styles` file (`styles-format.md`) |
+| `text` | 3,210 | |
+| `color` | 3,074 | R G B A as floats 0 to 1 |
+| `clipchildren` | 2,833 | Clips children to the box |
+| `font` | 2,350 | |
+| `mode` | 1,697 | Image blend mode keyword |
+| `priority` | 1,440 | Draw order hint within the parent |
+| `image0` | 1,360 | A path or `#(argb,8,8,3)color(R,G,B,A,CO)` |
+| `Margin`, `Padding` | 1,329, 1,322 | Spacer outer margin and inner padding |
+| `inheritalpha` | 1,129 | `1` multiplies alpha with the parent's |
+| `Rows`, `Columns` | 1,069, 1,060 | Grid spacer |
+| `scaled` | 939 | Resolution scaling toggle |
+| `draggable` | 884 | Sets the `DRAGGABLE` flag |
+| `filter` | 756 | Texture filtering |
+| `content_valign`, `content_halign` | 694, 591 | Alignment inside a spacer |
+| `wrap` | 505 | Word wrap on text widgets |
+| `scriptclass` | 489 | `"ViewBinding"` or a controller class |
+| `userID` | 467 | Integer for lookup from script |
+| `fixaspect` | 461 | Keeps the image's aspect ratio |
+| `text_proportion` | 437 | Text size as a fraction of the widget height |
+| `nocache` | 376 | Skips the texture cache |
+| `disabled` | 317 | `DISABLED` flag |
+| `stretch` | 258 | `1` makes the image fill the widget |
+| `imageTexture` | 173 | Alternative to `image0` |
+| `keepsafezone` | 163 | TV safe margins |
+| `Progress` | 154 | A progress bar's starting value |
 
----
+`wrap` sits on text widgets and on no spacer widget. Over the full 819 layouts it appears on multiline text about 355 times, rich text 236, HTML 9 and plain text 4; limited to the `gui\` folder the same count gives the 505 above. The 437 for `text_proportion` is the 300 layout sample; over 819 layouts it is 1,048 (679 text, 361 button, 5 rich text, 3 multiline), as `layout-format.md` reports.
 
-## 3. Dabs Framework — path/branch correction
+On `P:\gui\layouts` (vanilla only), `mode` always takes a keyword: `blend` 1,721 times, `additive` 144 and `opaque` 4 (`P:\gui\layouts\day_z_ingamemenu.layout:74` and `:551`), never a number. `fixaspect` takes a keyword too: `fixwidth` 488, `inside` 67, `outside` 29 and `none` 15 (`day_z_ingamemenu.layout:72` and `:563`).
 
-Dabs Framework is a third-party mod; nothing in this section is checked on `P:\`. The full reference is `dabs-mvc-internals.md`.
+## What the less common attributes mean
 
-**Wrong (an older reading):**
-- Path: `DabsFramework/scripts/3_Game/MVC/`
-- Branch: `master` assumed
-
-**Right, as of the `production` branch:**
-- **Path:** `DabsFramework/Scripts/3_Game/DabsFramework/MVC/` (note capitalized `Scripts`, and the extra `DabsFramework/` segment)
-- **Branch:** `production`
-
-**Verified file:line citations:**
-
-| Fact | File | Line |
+| Attribute | Meaning | How sure |
 |---|---|---|
-| `class ViewBinding : ScriptedViewBase` | ViewBinding.c | 1 |
-| `reference string Binding_Name;` | ViewBinding.c | 4 |
-| `reference string Selected_Item;` | ViewBinding.c | 7 |
-| `reference bool Two_Way_Binding;` | ViewBinding.c | 10 |
-| `reference string Relay_Command;` | ViewBinding.c | 13 |
-| `OnWidgetScriptInit` method body | ViewBinding.c | 40-50 |
-| `class ScriptView : ScriptedViewBase` | ScriptView.c | 39 |
-| `static ref array<ScriptView> All` | ScriptView.c | 41 |
-| ScriptView constructor body | ScriptView.c | 45-98 |
-| `CreateWidget(null)` call | ScriptView.c | 55 |
-| `LoadWidgetsAsVariables(this, m_LayoutRoot)` (first call) | ScriptView.c | 60 |
-| `m_LayoutRoot.GetScript(m_Controller)` | ScriptView.c | 62 |
-| `GetControllerType().Spawn()` | ScriptView.c | 74 |
-| `LoadWidgetsAsVariables(m_Controller, m_LayoutRoot)` (second) | ScriptView.c | 81 |
-| `m_Controller.OnWidgetScriptInit(m_LayoutRoot)` | ScriptView.c | 84 |
-| `UseUpdateLoop()` check + queue insert | ScriptView.c | 90-92 |
-| ScriptView destructor body | ScriptView.c | 100-125 |
-| `NotifyPropertyChanged` body | ViewController.c | 80-110 (approx) |
-| `m_DataBindingHashMap[property_name]` lookup | ViewController.c | ~105 |
+| `style <name>` | A style from a `.styles` file (vanilla `P:\gui\looknfeel\dayzwidgets.styles`), unquoted. Common values: `Bold`, `DayZNormal`, `DayZInventoryButtonAll`, `Default`, `Empty`, `Colorable`, `Editor` | Seen in layouts; what the engine does with each is inferred |
+| `mode blend`, `additive`, `opaque` | Image blend mode | Keywords checked on `P:\`; what each draws is not measured |
+| `priority N` | Draw order within the parent; higher is on top | Inferred. From script, `SetSort` sets the value outright (`P:\scripts\1_core\proto\enwidgets.c:130`) |
+| `image0` to `image7` | Image slots, switched with `SetImage(int)`; `image0` is the default | `LoadImageFile(int num, string name, bool noCache = false)` is at `enwidgets.c:257`; eight slots is not checked |
+| `inheritalpha 1` | Alpha multiplied with the parent's | Common in HUDs; seen in game |
+| `scaled 1` | Resolution scaling on | Inferred. `SetResolutionScale` exists only on `RenderTargetWidget` (`enwidgets.c:240`), so it isn't what this attribute calls |
+| `fixaspect fixwidth`, `inside`, `outside`, `none` | Keeps the image's aspect ratio | Keywords checked on `P:\`; behaviour inferred from the names |
+| `keepsafezone 1` | TV safe margins on console | Inferred from the name |
+| `text_proportion 0.5` | Text height as a fraction of the widget height. Script side: `SetTextProportion(float)` (`enwidgets.c:216`). Honoured on `TextWidget`, ignored on `MultilineTextWidget` (measured in game; `preview-text-and-stringtables.md`) | API checked on `P:\` |
+| `nocache 1` | Skips the texture cache, useful for generated images | Inferred from the name |
 
-**`Debug_Logging` field:** not visible in the first 60 lines of `ViewBinding.c`, so this
-file first called it unverified. The later line by line pass found why: it is declared on the
-base class, `ScriptedViewBase` (`MVC\ScriptedViewBase.c:8`), not on `ViewBinding`. It exists and can be set
-from a layout; see `dabs-mvc-internals.md`.
+## Which layout checks are worth writing
 
----
+The 819 layout scan was made to calibrate layout checks, so it shows what is normal in shipped files.
 
-## 4. Static HTML renderer (preview without DayZ)
+- A brace format token parser reads 807 of the 819 files (98.5 percent) without error. The 12 it can't read are XML layouts, which the validator's XML rule already catches (`scripts/tools/dayz-script-validator/scripts/detectors/layout_xml_format.py`). A simple line based parser manages only 469, because of `ScriptParamsClass` blocks (277 files), `{}` on one line (45) and children that open on their own line.
+- Two clickable siblings whose rects overlap: 884 cases in 32 files, vanilla included. Even both declared `visible 1` leaves 768, and identical rects 677. Stacking widgets that script toggles is normal, so overlap is not a file defect; only a runtime tree with real visibility can show a problem.
+- A child overflowing its parent: 18 cases in 12 files, all deliberate. Vanilla's `details_mode_result` is 6.0 tall as scrollable content (`P:\gui\layouts\new_ui\server_browser\pc\server_browser_tab_pages.layout:1406`).
+- A duplicate widget name: 5 files (0.6 percent). A duplicate where at least one is clickable: 1 file, vanilla's `scene_editor`. Rare enough to be a real signal, and it breaks automation, because `FindAnyWidget` returns only one match.
+- A class line name that differs from its `name` attribute: none in 819 files.
 
-The first static renderer (called v1 below) converted a `.layout` file to a static HTML and CSS
-preview. It is not in this repo. The renderer that is in this repo is
-`scripts/tools/dayz-layout-viewer/build_viewer.py`:
-
-```
-python scripts/tools/dayz-layout-viewer/build_viewer.py <input.layout> [-o output.preview.html] [--layout-root DIR]
-```
-
-Open the resulting `.html` in any browser. What the newer tool fixes is listed in
-`plan-to-implementation.md`, section 4.2. The v1 coverage table and limitations are kept because they
-record what a static preview of a `.layout` can and cannot show.
-
-### Coverage
-
-| Aspect | Handled | Notes |
-|---|---|---|
-| 9 core widget classes | yes | Frame/Image/Text/Button/EditBox/Scroll/Grid/Wrap/Panel |
-| Geometry (pixel + fractional) | yes | Both hexactpos/size modes, halign/valign anchors |
-| Color attribute (R G B A floats) | yes | Renders as rgba() background or text color |
-| Procedural color images `#(argb,...)color(...)` | yes | Detected and emitted as flat CSS color |
-| Real PAA texture references | no | Not in v1 — reuse the PAA decoder in `scripts/tools/dayz-3d-viewer/` |
-| `text "..."` literal text | yes | Including `#STR_KEY` → `[loc:#STR_KEY]` placeholder |
-| Dabs `scriptclass "ViewBinding"` | yes | Skipped visually; binding name shown as `{Name}` placeholder when widget has no literal text |
-| `ScriptParamsClass { ... }` metadata | yes | Skipped visually |
-| `Relay_Command` | yes | Surfaced as `[→ Name]` badge overlay |
-| Font weight (Metron vs MetronBook) | yes | Mapped to CSS font-weight 600 vs 400 |
-| Text alignment (`text halign` / `text valign`) | yes | Mapped to CSS text-align + flex |
-| `clipchildren` | yes | CSS `overflow: hidden` |
-| `ignorepointer` | yes | CSS `pointer-events: none` |
-| `visible 0` | yes | CSS `display: none` |
-| Animations / WidgetAnimator | no | Out of v1 — static preview only |
-| Live binding data | no | Bindings shown as placeholders, no runtime resolution |
-| ItemPreview / MapWidget / PlayerPreview | no | Need game state |
-| `style` attribute → a `.styles` file | no | Deferred until the renderer reads `.styles` files |
-
-### Test cases (rendered successfully)
-
-```
-a sorter menu layout            (2470 lines, 196 widgets) yes
-its preview-row layout          (109 lines, 10 widgets)   yes
-its tag layout                  (76 lines, 6 widgets)     yes
-BaseBuildingPlus/Book.layout    (3rd-party)                yes
-CodeLock/enterComboCode.layout  (3rd-party)                yes
-A6_Gunplay/ItemStatsDisplay     (3rd-party)                yes
-```
-
-### Output features (in HTML)
-
-- **Theme toggle** (default on): applies sensible default colors when the layout
-  omits explicit `color` attrs (DayZ mods typically set colors via script
-  `SetColor()` at runtime, not in `.layout`).
-- **Debug outlines toggle:** colored dashed outlines per widget type.
-- **Binding badges:** small overlays showing binding name / relay command.
-- **Hover info:** bottom-right shows widget type, name, position, size.
-
-### Renderer limitations to document
-
-1. **Pixel-perfect color match impossible.** Mods apply colors via script
-   `SetColor(ARGB)` after `CreateWidgets`. The renderer cannot statically infer
-   what those colors are. Theme mode is best-effort approximation by widget
-   name patterns (PanelBg, HeaderBg, etc.).
-2. **Font fallback.** DayZ uses Bohemia's proprietary Metron font. Renderer
-   uses Bahnschrift / Roboto Condensed / Arial Narrow as fallbacks. Widget
-   spacing will differ ~5%.
-3. **No script-side recalculation.** Widgets resized/repositioned at runtime
-   (e.g. `RecalculateLayout` in `interactive-patterns.md`, section 1)
-   won't update in the preview.
-4. **`style` attribute ignored.** Reading the `.styles` files is a separate task.
-
----
-
-## 5. When to expand v1 → v2
-
-Trigger expansion when:
-
-- You start using widgets not in the 9-core set on a regular basis.
-- You want to preview a vanilla DayZ menu (which uses `style` references
-  heavily — needs `.styles` parsing).
-- You need RichText inline `<image>` / `<font>` tag rendering.
-- You want to preview MultilineTextWidget content layout (line breaks).
-
-For each expansion, follow the same discipline:
-1. Add empirical corpus check for new attribute usage.
-2. Verify against engine API doc (`widget-prototypes.md` is engine-protos derived).
-3. Test on at least one layout of your own mod and one third-party layout.
-
----
-
-## 6. Second sweep: 819 `.layout` files
-
-Re-measured with a token parser over every `.layout` in one projects folder
-(vanilla, third-party and in-house mods), not only `P:\`. Purpose was
-calibrating a geometry gate, so the numbers below are about what is normal in
-shipped layouts — which is what decides whether a rule is a detector or a
-false-positive generator.
-
-- **Corpus**: 819 files. A brace-format token parser reads **807 (98.5%)** with
-  zero exceptions; the 12 that yield no widget are the XML dialect that
-  the validator's XML layout rule already owns
-  (`scripts/tools/dayz-script-validator/scripts/detectors/layout_xml_format.py`). A naive line-based parser managed 469 (57%)
-  — the difference is `ScriptParamsClass` blocks (277 files), `{}` on one line
-  (45) and children opening on their own line.
-
-- **Two clickable siblings whose rects OVERLAP: 884 cases across 32 files,
-  vanilla included.** Stacking widgets that a script toggles is standard
-  authoring. Narrowing to "both declared `visible 1`" only drops it to 768, and
-  "identical rect" to 677. **Conclusion: overlap is not a file-level defect.**
-  It only means something with runtime `visible_hierarchy`, i.e. on a `ui_tree`
-  capture — never on the file alone.
-
-- **A child overflowing its parent's box: 18 cases / 12 files, deliberate.**
-  A `compassimage` widget 4.0 wide in a third-party mod layout of the mixed
-  corpus (no vanilla layout has it); vanilla's `details_mode_result` is 6.0 tall
-  (`P:\gui\layouts\new_ui\server_browser\pc\server_browser_tab_pages.layout:1406`,
-  scrollable content). Not a defect either.
-
-- **Duplicate widget name: 5 files (0.6%); duplicate name where at least one is
-  clickable: 1 file (0.1%)** — vanilla's `scene_editor`. Rare enough to be a
-  real signal, and it is the one that breaks automation, because
-  `FindAnyWidget` resolves by name and returns one match.
-
-- **Class identifier vs the `name` attribute: 0 mismatches in 819 files.** The
-  corpus keeps them equal without exception.
-
-These calibrations support four layout rules: `LAYOUT-DUPLICATE-CLICKABLE-NAME`,
-`LAYOUT-CLICKABLE-ZERO-SIZE`, `LAYOUT-DUPLICATE-WIDGET-NAME` and `LAYOUT-NAME-ATTR-MISMATCH`. The validator
-in this repo does not have them yet (its layout detectors in
-`scripts/tools/dayz-script-validator/scripts/detectors/` are `layout_leaf_missing_braces.py`,
-`layout_xml_format.py`, `es_layout_file_missing.py` and `es_layout_path_pboprefix.py`), so treat the four
-names as rules to write, not rules that run. The rules that did not survive calibration (overlap,
-overflow, `ignorepointer` on a clickable) were deliberately not implemented.
+So four checks are worth writing: a duplicate clickable name, a clickable widget with no size, a duplicate widget name, and a name that differs from its class line. The validator does not have them yet; its layout detectors are `layout_leaf_missing_braces.py`, `layout_xml_format.py`, `es_layout_file_missing.py` and `es_layout_path_pboprefix.py`. Overlap, overflow and `ignorepointer` on a clickable widget fail the calibration, so don't write those.

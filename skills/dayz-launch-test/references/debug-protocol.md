@@ -1,93 +1,64 @@
-# Debug and fix protocol
+# Debugging a feature that does not work
 
-How to diagnose a DayZ mod feature that "doesn't work" after it was implemented: six layers checked top down, the rules for probes, and component bisection when the layers do not isolate the cause. The implementation protocol (`skills/dayz-scope-mod/references/implementation-protocol.md`) points here from its "Debug and fix" section. For general debugging method (root cause before fix) see the Superpowers debugging skill.
+How to find out why a DayZ mod feature does nothing after it was built and the log is clean: six layers checked from the top down, how to measure before guessing again, how to place probes, and how to bisect by component when the layers do not find the cause. The implementation protocol (`skills/dayz-scope-mod/references/implementation-protocol.md`, "Debug and fix") points here.
 
-Start from the logs when there are any. `/dayz-gate` and `/dayz-logwatch` triage every error line; a known line already carries its fix and owner, and a new one goes to `dayz-mod-debugger`. This protocol is for what remains: the feature that fails with a clean log.
+Start from the logs when there are any. `/dayz-gate` and `/dayz-logwatch` triage every error line: a known line already carries its fix and owner, and a new one goes to `dayz-mod-debugger`. This file is for what is left, the feature that fails with a clean log. For an RPT, script log or crash log line, use `error-catalog.md` and `_shared/enscript/depth/runtime-traps.md` instead.
 
-## The six layers (in this order)
+## The six layers, top down
 
-**Layer 1: config and engine**
-- [ ] Is the `scope` value in `config.cpp` right?
-- [ ] Does the class inherit from the right parent?
-- [ ] Does the config compile without errors? (`/dayz-lint`, then `/dayz-gate build`)
+Confirm each layer before you look at the next.
 
-**Layer 2: entity setup**
-- [ ] Does the entity spawn in game?
-- [ ] Is `IsTakeable()` what you intended? A ground item that is neither takeable nor `IsActionTargetVisible()` has its action cursor hidden (`P:\scripts\5_mission\gui\actiontargetscursor.c:719`); see `error-catalog.md`, "E12: stopping pickup".
-- [ ] Does the base class provide the behaviour you expect?
+| Layer | Check |
+|---|---|
+| Config and engine | `scope` in `config.cpp` is right; the class has the right parent; the config compiles (`/dayz-lint`, then `/dayz-gate build`). |
+| Entity setup | The entity spawns in game. `IsTakeable()` is what you meant: a ground item that is neither takeable nor `IsActionTargetVisible()` hides its action cursor (`P:\scripts\5_mission\gui\actiontargetscursor.c:719`; `error-catalog.md`, "Stopping pickup (E12)"). The base class gives the behaviour you expect. |
+| Action registration | `AddAction(MyAction)` is in the entity's `SetActions()` override (`AddAction`, `P:\scripts\4_world\entities\itembase.c:255`). The action class is registered in `ActionConstructor.RegisterActions` and compiles (`_shared/enscript/patterns/actions.md`). `CreateConditionComponents` sets the right target and item conditions. |
+| Client conditions | `ActionCondition()` reads only data both sides have, because the server runs it again as the start gate. The target type check is right. The target condition's range or component matches the interaction distance. Since 1.30, `CanBeStarted()` returns true. |
+| Server execution | The server methods (`*Server()`) run, permissions and validation pass, and the data writes succeed. |
+| Response path | The RPC goes back to the client, the client cache updates, and the UI refreshes. |
 
-**Layer 3: action registration**
-- [ ] Is `AddAction(MyAction)` in the entity's `SetActions()` override (`AddAction`, `P:\scripts\4_world\entities\itembase.c:255`)?
-- [ ] Is the action class registered in `ActionConstructor.RegisterActions`, and does it compile? (`skills/_shared/enscript/patterns/actions.md`)
-- [ ] Does `CreateConditionComponents` set the right target and item conditions?
+For a bug that is not about an action, the same order reads: logs (RPT and script log), config, RPC, engine class hierarchy, client and server data, race conditions.
 
-**Layer 4: client conditions**
-- [ ] Does `ActionCondition()` read only data both sides have? The server runs it again as the start gate.
-- [ ] Is the target type check right?
-- [ ] Does the target condition's range or component match the expected interaction distance?
-- [ ] (since 1.30) Does `CanBeStarted()` return true?
+- Never debug a layer until the one above it is confirmed.
+- Propose the fix and say why before you apply it.
+- Under 90 percent confidence, ask the user before applying it.
+- After a fix, run the edge case checklist again (`skills/dayz-build-pbo/references/file-checklists.md`, "Edge cases in logic").
 
-**Layer 5: server execution**
-- [ ] Do the server-side methods (`*Server()`) run?
-- [ ] Do permissions and validation pass?
-- [ ] Do the data writes succeed?
+## Measure before the next guess
 
-**Layer 6: response path**
-- [ ] Is the RPC sent back to the client?
-- [ ] Is the client cache updated?
-- [ ] Is the UI refreshed?
+Once the static layers are confirmed, do not jump to another reading of the code or to a bisection. First prove what the instrument measured and whether the suspect code could have run before the symptom.
 
-For a bug that is not about an action, the same top-down order reads: logs (RPT and script log), config, RPC, engine class hierarchy, client and server data, race conditions.
-
-Rules:
-
-- **Never debug layer N+1 until layer N is confirmed working.**
-- **Propose the fix and explain why before applying it.**
-- **Under 90% confidence, ask the user before applying it.**
-- **After a fix, run the edge-case checklist again** (`skills/dayz-build-pbo/references/file-checklists.md`, section 8).
-
-## Measure before forming another hypothesis
-
-Once the static layers are confirmed, do not jump straight to another reading of the code or to a bisection. First prove what the instrument measured and whether the suspect code could have run before the symptom.
-
-1. **State the question and the instrument.** Before basing a decision on a measurement, write "this command answers X, not Y" and keep three outcomes: `PASS`, `FAIL` and `INCONCLUSIVE/SETUP_FAIL`. Privacy sweeps are case-insensitive and look for variants. A sample ordered by path cannot be used to estimate proportions. A reproduction protocol is not valid until it has produced at least one red result with the fix turned off. A dependency error is reproduced in the known-good environment before it is blamed on the repo. If the first instrument says "it is clean", confirm with a second, independent instrument.
-
-2. **A silent run needs a probe at the receiver.** If the static path is verified end to end and the run is still silent, stop reading code and put a minimal probe on the first line of the receiver, on each side that matters. Every fail-closed guard logs, rate-limited, the reason it dropped the call. First tell "did not arrive" from "arrived and was rejected"; only then go on through the layers.
-
-3. **Prove the change could have run before bisecting.** For a suspected regression, show that the changed code ran before the symptom. With no earlier marker, the build number correlating with the bug proves nothing: instrument the callback where the effect is seen and capture the full stack to name the caller. Print the stack line by line. Measured: the 1.29 retail logger cut long messages at about 255 characters, while on 1.30 neither DayZDiag nor the retail server does (the 1.30 retail client was not measured). Bisect the change only when it is proven to run in time and the cause is still open.
+1. **Say what the instrument answers.** Before you base a decision on a measurement, write "this command answers X, not Y" and keep three outcomes: `PASS`, `FAIL`, and `INCONCLUSIVE` or `SETUP_FAIL`. Search for private data case-insensitively and for its variants. A sample ordered by path cannot estimate proportions. A reproduction is not valid until it has gone red at least once with the fix turned off. Reproduce a dependency error in a known good setup before blaming the repo. If the first instrument says "clean", confirm with a second, independent one.
+2. **A silent run needs a probe at the receiver.** If the static path checks out end to end and the run is still silent, stop reading code and put a minimal probe on the first line of the receiver, on each side that matters. Every guard that drops a call logs why, rate limited. Tell "did not arrive" from "arrived and was refused" first, then go on through the layers.
+3. **Prove the change could have run before you bisect.** For a suspected regression, show that the changed code ran before the symptom. With no earlier marker, a build number that lines up with the bug proves nothing: log the callback where the effect is seen and capture the full stack to name the caller, printing it one line at a time. The 1.29 retail logger cut long messages at about 255 characters; on 1.30 neither DayZDiag nor the retail server does (the 1.30 retail client was not measured). Bisect only when the change is proven to run in time and the cause is still open.
 
 ## Probe rules
 
-- **Both sides from the first cycle.** For any synced-state failure, instrument client and server from the first cycle and confirm the value on the side where the symptom is seen. Treat every difference between the sides as first-class data before proposing a fix.
-- **Payload order and length.** In client-side probes put time, position and state first; leave raw values and flags for the end. Keep each useful payload under about 225 characters so a logger wrapper cannot cut it.
-- **A time stamp on every line.** Start each diagnostic line with `t=GetTickTime()`. Estimate the server-to-client clock offset from the median of RPC request and acknowledge pairs, interpolate one series onto the other, and discard samples with too large a gap. What to do with the aligned series is in `measurement-discipline.md`.
-- **Prove a probe can be reached before adding fields to it.** When a probe has never printed, do not add fields first. Walk up from its call site to the function entry and evaluate every `return`, `continue`, side guard and state guard in the real scenario. Then search for the probe's marker in both the server and the client logs; a probe can be silent only on the side you are looking at. Add instrumentation only after the existing probe is shown to run and its fields fail to tell the cases apart. If a guard exits first, move the probe or exercise a state that reaches it. A probe behind a guard it cannot pass fails because of where it is, not because of what it measures.
-- **Probe independence and time order.** Before settling a bug with a run-time probe, prove that the measured quantity is independent of the transform or constant it is compared with. A world-space point computed by applying the entity's transform to a fixed model point is not an independent observation of that transform. Treat an exactly round ratio, a value equal to a model constant, or a field that is zero in every sample as an alarm about the probe before using it as evidence. Check selection and memory-point names in the source model. Time-series analysis keeps the order: plain "minimum to maximum" arithmetic reports a descent as an ascent when the maximum came first. Report ordered intervals and unrounded values.
-- **Attribute an engine-channel error to its emitter.** An RPT line in `RESOURCES`, `MATERIAL` or `PHYSICS` can come from a diagnostic call in the mod, not from the engine's own asset load. Before using such a line as root-cause evidence:
+- **Both sides from the first run.** For any synced state failure, log client and server from the start and confirm the value on the side where the symptom shows. Treat every difference between the sides as data before you propose a fix.
+- **Order and length.** In client probes put time, position and state first and raw values and flags last. Keep each payload under about 225 characters so a logger wrapper cannot cut it.
+- **A timestamp on every line.** Start each diagnostic line with `t=GetTickTime()`. Estimate the server to client clock offset from the median of request and acknowledge pairs, put one series onto the other, and drop samples with too large a gap. What to do with the aligned series is in `measurement-discipline.md`.
+- **Prove a probe is reached before adding fields.** When a probe has never printed, do not add fields. Walk up from its call site to the function entry and evaluate every `return`, `continue`, side guard and state guard in the real scenario, then search both the server and the client log for its marker; it may be silent only on the side you are reading. If a guard exits first, move the probe or drive a state that reaches it. A probe behind a guard it cannot pass fails because of where it sits, not what it measures.
+- **Keep the probe independent of what it checks.** A world space point made by applying the entity's transform to a fixed model point is not an independent view of that transform. An exactly round ratio, a value equal to a model constant, or a field that is zero in every sample is a warning about the probe before it is evidence. Check selection and memory point names in the source model. Keep time order in a series: "minimum to maximum" reports a fall as a rise when the maximum came first. Report ordered intervals and unrounded values.
+- **Find who wrote an engine channel error.** An RPT line under `RESOURCES`, `MATERIAL` or `PHYSICS` can come from a diagnostic call in the mod, not the engine's own asset load. Before you treat it as the root cause:
   1. Search the mod for every API that can open or inspect the named resource.
-  2. Match the RPT against the script log of the same run. Matching counts, inputs and instance numbers are the emitter's signature.
+  2. Match the RPT against the same run's script log; matching counts, inputs and instance numbers identify the writer.
   3. Compare the delay with the mod's own `CallLater` intervals.
-  4. Find positive proof of the load, such as a non-empty resolved `GetShapeName()` or a later warning that could only come from walking the shape.
+  4. Find positive proof of the load, such as a non-empty `GetShapeName()` or a later warning that only walking the shape can produce.
 
-  A probe that cannot finish logs an explicit inconclusive reason and its input. It must not leave an unexplained engine-channel error that can be mistaken for a product symptom.
+  A probe that cannot finish logs an explicit inconclusive reason and its input, never an unexplained engine channel error that can pass for a product symptom.
 
-## Layer 7: component bisection
+## Component bisection
 
-**When.** The six layers have not isolated the cause, and the symptom is **binary**: pass or fail, visible or invisible, the action shows or does not, a centre of mass of zero or not.
+Use it when the six layers have not found the cause and the symptom is yes or no: it passes or fails, it is visible or not, the action shows or not, the centre of mass is zero or not.
 
-**Procedure** (described for a multi-LOD `.p3d`; it works the same for a mod with several modules or a pipeline with several phases):
+1. List the separable components. A `.p3d`: each LOD (Visual, Geometry, Fire Geometry, View Geometry, LandContact, Memory, Shadow). A mod: each sub-module (a modded class, an RPC, a layout, an animation, a particle). A pipeline: each phase (extract, assemble, bake, binarize, PBO, deploy).
+2. Build a hybrid of the working control and the failing test, half from each. For a `.p3d`, copy the control model and replace its Fire Geometry and View Geometry LODs with the test model's. For a mod, inherit the control module in `config.cpp` and override only the suspect members.
+3. Reproduce on the hybrid. If it fails the bug is in the test half; if it passes it is in the control half. Recurse into that half.
+4. Repeat until one component is left. N components take about log2(N) runs (3 LODs: 2; 8 sub-modules: 3).
+5. Only then read the mechanism inside that component and name the cause as a `path:line`. Bisection finds the component; naming the cause still means reading the code.
 
-1. **List the separable components.**
-   - A `.p3d`: each LOD (Visual, Geometry, Fire Geometry, View Geometry, LandContact, Memory, Shadow).
-   - A mod: each sub-module (a modded class, an RPC, a layout, an animation, a particle).
-   - A pipeline: each phase (extract, assemble, bake, binarize, PBO, deploy).
-2. **Build a hybrid of control and test:** half A from the one that works, half B from the one that fails. For a `.p3d`, copy the control model and replace its Fire Geometry and View Geometry LODs with the test model's, keeping the rest. For a mod, inherit in `config.cpp` from the control module and override only the members of the suspect test module.
-3. **Reproduce the symptom on the hybrid.** If it fails, the bug is in half B; if it passes, the bug is in half A. Recurse into that half.
-4. **Repeat** until one component is isolated. N components take about log2(N) experiments (3 LODs: 2 bisections; 8 sub-modules: 3).
-5. **Only then** read the mechanism inside the isolated component and name the root cause as a `path:line`. Bisection isolates the component; naming the cause still means reading the code, not stopping at "it is in component X".
+Do not vary parameters of the suspect component first ("what if the mass is not uniform?", "what if the faces are triangles?", "what if the material is metal?"). Each variation feels like progress, but if the first suspicion is wrong you spend one run per variation without reaching the bug.
 
-**What to avoid.** Varying parameters of the suspect component ("what if the mass is not uniform?", "what if the topology is triangles?", "what if the material is metal plate?") before bisecting components. Each variation is a concrete experiment and feels like progress, but if the first suspicion is wrong you spend one experiment per variation without reaching the bug. Bisection confirms or refutes the suspicion in log2(N) experiments.
+A quad vehicle's `.p3d` spawned with a centre of mass of (0,0,0) once binarized. Everything pointed at the Geometry LOD, and five trial binarizations ruled out material, mass distribution, topology, skeleton and writer. Two bisection binarizations (a working vehicle with the quad's Geometry LOD, and the quad without its Fire Geometry LOD) found it: a stray all-zero mass tag in the Fire Geometry LOD, which binarize took over the Geometry LOD's mass.
 
-**Measured case** (a quad vehicle mod, closed 2026-06-02). The vehicle's `.p3d` spawned with a centre of mass of (0,0,0) in the deployed binarized model. All the first evidence pointed at the Geometry LOD (mass, topology, material). Five trial-and-error binarizations ruled out material, mass distribution, topology, skeleton and writer; **two bisection binarizations** (a hybrid of a working vehicle with the quad's Geometry LOD, and the quad without its Fire Geometry LOD) isolated the cause to the Fire Geometry LOD: a stray mass tag of zeroes there, which binarize took over the Geometry LOD's mass.
-
-**Use it before the bug, too.** For a new path or pipeline (the first skinned export, the first proxy convention, the first crew selection, a fire mode scope in a new `CfgWeapons` class), run a known-good control through the same pipeline before the first iteration on your own asset. Does a vanilla asset already do it? Read it or round-trip it first: read the vanilla config on `P:\`, debinarize a vanilla `.p3d` where you have a tool for it (`/dayz-import-mod` with its `skills/dayz-import-mod/references/study-a-packed-mod.md`, and the model pack `skills/_shared/models/`, cover that; `/dayz-p3d-audit` itself reads source models only), or pass a vanilla model through your exporter. If the control fails too, the bug is in the pipeline, not in your asset. Two measured cases this would have cut short: a `Mode_FullAuto` whose scope was shadowed by the vanilla class (visible by reading the vanilla config, not by theorizing about the model or the animation), and a mesh mirrored left to right (caught only when the skeleton was compared with a vanilla one, after about eight sessions of iterating against the FBX rig).
+Use a control before the bug, too. For a new path or pipeline (the first skinned export, the first proxy convention, the first crew selection, a fire mode in a new `CfgWeapons` class), pass a known good control through it before the first try with your own asset. If vanilla already does it, read the vanilla config on `P:\` first, and pass a model you know works through your exporter; vanilla `.p3d` files stay closed (`/dayz-import-mod` and `skills/dayz-import-mod/references/study-a-packed-mod.md` cover studying another mod's packed model, and `/dayz-p3d-audit` reads source models only). If the control fails too, the bug is in the pipeline, not your asset. Two cases this would have cut short: a `Mode_FullAuto` whose scope was shadowed by the vanilla class, visible by reading the vanilla config; and a mesh mirrored left to right, found only after comparing the skeleton with a vanilla one.

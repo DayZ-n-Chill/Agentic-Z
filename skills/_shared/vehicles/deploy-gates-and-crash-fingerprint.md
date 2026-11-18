@@ -1,77 +1,55 @@
-# Deploy gates, config syntax and crash fingerprints
+# Deploy checks and crash fingerprints
 
-Gates that prove the packed PBO holds what was approved, the one offline syntax gate for `config.cpp`, and how to compare native crashes.
+How to prove the packed PBO holds the models you approved, how to check `config.cpp` syntax before the game reads it, and how to tell whether two native crashes come from the same place.
 
-> Status: the measurements below were taken on third-party vehicle mods (a helicopter, a sports coupe and a quad), not on vanilla, and are not yet checked on `P:\`. A citation written with its full `P:\` path was opened on the vanilla data.
+The cases below were measured on third-party vehicle mods (a helicopter, a sports coupe and a quad), not on vanilla, and are not checked on `P:\`.
 
-## Vanilla anchors checked on `P:\`
+## Read the property on the packed model
 
-- The nested inheritance a `CfgConvert` base-class canary has to resolve is the vanilla form `class SimulationModule: SimulationModule` (`P:\DZ\vehicles\wheeled\config.cpp:1371`) with `class Axles: Axles` inside it (`P:\DZ\vehicles\wheeled\config.cpp:1431`).
+A manifest that compares file hashes cannot see a fix that adds or changes a property of a `.p3d` (`autocenter`, `class`, `sbsource`, `lodnoshadow`). If the PBO was packed from models built before the fix, it compares the same wrong file on both sides and passes. On a test helicopter, `autocenter=0` was added to the hull's visual LOD in the generator, but the PBO was packed from older models: of the 48 extracted models, the 8 sub-models carried it and all 40 hulls did not.
 
-## Packaging: a fix that lives in the generator and not in the binary does not exist
+After `ExtractPbo`, read the property per LOD on the extracted files. Two rules keep that check usable:
 
-When the fix is *adding or changing a PROPERTY* of a `.p3d` (`autocenter`, `class`, `sbsource`,
-`lodnoshadow`), a SHA-based manifest cannot see it — it compares the same wrong file on both sides
-and reports green. Measured case (a helicopter): `autocenter=0` was added to the hull's visual LOD
-in both assemblers and the PBO was packed minutes later from `.p3d` built before; measured
-afterwards on the **48 extracted** models, the 8 sub-models carried it and **all 40 hulls did
-not**. The post-`ExtractPbo` gate must READ the property, per LOD, on the extracted files.
-Two riders that make the gate survive contact:
+- Write the expected value per model and LOD in a table, with a reason on each row, never as "all LODs". A healthy pack holds control models that are meant not to change, and a blanket check rejects them and gets switched off on its first run.
+- The generator must pass its own check. The Memory LOD has no geometry to re-centre, so it never carries `autocenter`; an "all LODs" rule would fail the generator's own output. Declare exclusions; do not assume them.
 
-- Declare the expectation **in a table with a reason per row, never as "all LODs"**. A healthy pack
-  contains **controls that exist in order NOT to change** (an A/B control arm, a byte-frozen
-  baseline); a blanket gate rejects them and gets switched off on its first run.
-- The producer must satisfy its own gate. Here "all LODs" would have rejected the canonical
-  assembler's own output, because the Memory LOD has no geometry to re-centre and therefore never
-  carries `autocenter`. Exclusions are declared, not assumed.
+## Link the checked model to the one the game loads
 
-## Deployment identity: the artifact a gate validates must be byte-linked to the one the game loads
+A check on a separate ODOL staging folder says nothing about the deployed PBO. `-packonly` packs whatever format sits in the source tree, and matching MLOD and ODOL files by path does not link them. On a test coupe the check passed the ODOL doors (about 2 MB each) while the live PBO carried the MLOD doors from the source tree.
 
-A native-contract gate that consumes a separate ODOL stage says NOTHING about the deployed PBO.
-`-packonly` copies whatever format sits in the compilable tree, and pairing MLOD↔ODOL stage files
-by homonymous path is not closure. Measured case (a sports coupe): the gate validated the ODOL
-stage doors (~2.1 MB each) while the live PBO carried the source MLOD (8.7/8.1 MB, byte-identical
-to the MLOD stage) — nothing in the pipeline linked the two artifacts, and the mismatch surfaced
-only during post-crash analysis. Rule, before ANY deploy of a gated artifact: list the PBO, extract
-or slice every `.p3d` entry by offset, and require (a) the expected signature (`ODOL` where the
-contract is ODOL) and (b) SHA-256 equal to the approved stage — fail on wrong signature, missing
-entry, casefold/slash collision, or hash mismatch. Corollary: record the mounted PBO's SHA-256
-contemporaneously at every runtime launch; without that seal, no post-crash analysis can prove
-which artifact the process actually loaded.
+Before deploying a checked model:
 
-## Native crash fingerprint: compare code bytes, not fault addresses
+1. List the PBO and extract every `.p3d` entry.
+2. Require the expected signature (`ODOL` where the model must be binarized).
+3. Require each entry's SHA-256 to equal the approved staged file.
+4. Fail on a wrong signature, a missing entry, two paths that differ only in case or slash direction, or a hash mismatch.
 
-The RPT's `Fault address` is not an identifier — ASLR moves the module base, so the same code site
-prints different addresses across runs and reads as "different bugs". What identifies the detection
-site is `Prev. code bytes` + `Fault code bytes` (16 bytes each) plus the engine `Version`.
-Measured case (a sports coupe): six `C0000374` crashes split across two addresses (`3523D5F9` and
-`57B5D5F9`) had **byte-identical** code bytes and identical low 16 bits — one code site, one engine
-build. Reading them by address had produced the false claim that the ODOL-era and MLOD-era crashes
-were unrelated; the byte comparison also killed the hypothesis that the artifact FORMAT was the
-discriminating variable, since the crash appeared in both. Report "same/different detection
-signature", never "same/different bug": `C0000374` is detected on free, not where the
-out-of-bounds write happened, so an identical signature still does not prove identical cause.
+Record the SHA-256 of the mounted PBO at every launch. Without it, no crash analysis can prove which file the game loaded.
 
-## config.cpp syntax has two offline gates, and CfgConvert only counts with canaries
+## Compare code bytes, not fault addresses
 
-`-packonly` does NOT rapify, so the config ships as text and the first parser that reads it is
-the game's. The DayZ script validator does not check syntax either. The first gate is the
-`/dayz-lint` rule `config-syntax` (`skills/dayz-lint/SKILL.md`), which uses the grammar of
-`hooks/edit_check.py`: it catches unbalanced braces, a missing `;` or `};`, an array without
-`[]` and `;` between array elements. It does not resolve class inheritance. CfgConvert adds that
-on top: it parses the whole file the way the engine does and resolves every base class,
-including the nested `class X: X` chains. Run it as well:
+The RPT's `Fault address` does not identify a crash site: address space randomisation moves the module base, so the same code prints different addresses on different runs. The site is identified by `Prev. code bytes` and `Fault code bytes` (16 bytes each) together with the engine `Version`.
 
-    "...\DayZ Tools\Bin\CfgConvert\CfgConvert.exe" -bin -dst <tmp>.bin <config.cpp>
+On a test coupe, six `C0000374` crashes printed two different addresses but had identical code bytes and identical low 16 bits: one code site in one build. The same comparison showed the crash appeared with both MLOD and ODOL models, so the model format was not the cause.
 
-Gate it with two canaries that MUST fail, or a green proves nothing:
+Report "same detection signature" or "different detection signature", never "same bug". `C0000374` is heap corruption detected when memory is freed, not where the bad write happened, so an identical signature does not prove an identical cause.
 
-| canary | what CfgConvert answers |
+## Check `config.cpp` syntax offline
+
+`-packonly` does not rapify, so the config ships as text and the game's parser is the first to read it. The script validator does not check config syntax either. Use two checks:
+
+- `/dayz-lint` rule `config-syntax` (`skills/dayz-lint/SKILL.md`) catches unbalanced braces, a missing `;` or `};`, an array without `[]`, and a missing `;` between array items. It does not resolve inheritance.
+- `CfgConvert` parses the whole file as the engine does and resolves every base class, including nested `class X: X` chains such as `class SimulationModule: SimulationModule` (`P:\DZ\vehicles\wheeled\config.cpp:1371`) with `class Axles: Axles` inside it (`:1431`).
+
+```bat
+"<DayZ Tools>\Bin\CfgConvert\CfgConvert.exe" -bin -dst <tmp>.bin <config.cpp>
+```
+
+A pass means nothing until two planted errors fail it:
+
+| Planted error | What `CfgConvert` reports |
 |---|---|
-| remove the brace that closes `CfgVehicles` | `line NNN: /CfgVehicles/: Missing '}'` |
-| misspell a base class inside the new block | `Undefined base class 'ClutchTypo'` |
+| Remove the brace that closes `CfgVehicles` | `line NNN: /CfgVehicles/: Missing '}'` |
+| Misspell a base class inside the new block | `Undefined base class 'ClutchTypo'` |
 
-The second is worth more than it looks: it proves the parser RESOLVES the nested `class X: X`
-chains, which is the real risk when writing variant classes. And one thing that does NOT work as
-a canary: dropping the `;` after a closing `}` - CfgConvert accepts it, so it is not a syntax
-error in that grammar and a gate built on it declares itself vacuous for the wrong reason.
+The second one proves the nested `class X: X` chains are resolved, which is the real risk when you write variant classes. Dropping the `;` after a closing `}` is not a usable planted error: `CfgConvert` accepts it.

@@ -48,7 +48,7 @@ DayZ 1.30 added four firearm script classes whose weapons are not in the vanilla
 
 Each has its hand animation profile registered with `AddItemInHandsProfileIK`: `Luger_Base` at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:395`, `MP18_Base` at `:432`, `SCARL_Base` at `:445` and `LeeEnfield_Base` at `:446`.
 
-But there is no folder for any of them under `P:\DZ\weapons\firearms\` or `P:\DZ\weapons\pistols\`, and no `CfgWeapons` class. A script class is therefore no proof that a weapon can be spawned or that its model can be used as a reference: check the config on `P:\` first, and build on a weapon that ships there (the SCAR-H at `P:\DZ\weapons\firearms\scarh\config.cpp:26` for a rifle like the SCAR-L). Game build 1.30.164200 ships these weapons in `weapons_nasdara.pbo` with config parents that differ from the script parents (`SCARL_Base: Rifle_Base`, `MP18_Base: Rifle_Base`); not yet checked on `P:\`. Details, and the reference weapon to use for each: `dayz-1-30-migration.md`.
+But there is no folder for any of them under `P:\DZ\weapons\firearms\` or `P:\DZ\weapons\pistols\`, and no `CfgWeapons` class. A script class is therefore no proof that a weapon can be spawned or that its model can be used as a reference: check the config on `P:\` first, and build on a weapon that ships there (the SCAR-H at `P:\DZ\weapons\firearms\scarh\config.cpp:26` for a rifle like the SCAR-L). DayZ 1.30 ships these weapons in `weapons_nasdara.pbo` with config parents that differ from the script parents (`SCARL_Base: Rifle_Base`, `MP18_Base: Rifle_Base`); not yet checked on `P:\`. Details, and the reference weapon to use for each: `dayz-1-30-migration.md`.
 
 ## Config base classes
 

@@ -1,6 +1,8 @@
 # Scripted trigger volumes
 
-The script API under every scripted trigger: `ScriptedEntity` and its collision shapes, who is told when something enters or leaves, and the server and client hooks of `TriggerEvents`. Read from source on `P:\` (DayZ 1.30); nothing here was measured in a running game. Underground areas built on this are in `skills/_shared/world/underground-triggers.md`, and hazard areas with a synced trigger in `skills/_shared/world/oil-pits.md`.
+Covers the script API under every scripted trigger: `ScriptedEntity` and its collision shapes, who is told when something enters or leaves, and the server and client hooks of `TriggerEvents`. Every fact here is read from the scripts; none was tested in game.
+
+Underground areas built on this are in `_shared/world/underground-triggers.md`, and hazard areas with a synced trigger in `_shared/world/oil-pits.md`.
 
 ## The class
 
@@ -65,7 +67,7 @@ Four shipped subclasses show what the base is used for:
 
 Together: the base serves as a trigger volume, an effect carrier and a general scripted object, and only the first of those uses the shape API.
 
-## Traps
+## Mistakes to avoid
 
 - `ScriptedEntity` is an `EntityAI`, not a light trigger volume; spawning one costs a full entity.
 - The shape is explicit: each `SetCollision*` setter sets the `TriggerShape` as a side effect, and the default is `BOX`. The wrong setter changes the volume itself, not only its numbers.
@@ -74,6 +76,6 @@ Together: the base serves as a trigger volume, an effect carrier and a general s
 - The `PlayerBase` trigger overrides are debug counters under `DIAG_DEVELOPER` and are absent in retail.
 - Server and client hooks are separate methods picked on each call by `g_Game.IsServer()`. Writing only the server hook leaves clients silent, and the other way round.
 
-## Limits
+## What script does not show
 
-Script shows the declarations, the order of the dispatch and the one check in script. It does not show how the engine detects an overlap, how often insiders are evaluated, or whether a `proto native` shape setter is linked in a given build. Those are engine behavior and are not claimed here.
+Script shows the declarations, the order of the dispatch and the one check in script. It does not show how the engine detects an overlap, how often insiders are evaluated, or whether a `proto native` shape setter is linked in a given build. Those are engine behavior; test them in game before a design depends on them.

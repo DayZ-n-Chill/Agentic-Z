@@ -1,104 +1,38 @@
 # New car, day one
 
-What to measure offline before a new or ported vehicle goes in game for the first time, what each of the three files owns, and the gaps no config review reveals.
+What to measure offline before a new or ported vehicle goes in game for the first time, what each of the three model and config files owns, and the gaps a port inherits that no config review shows.
 
-> Status: the costs and counts below were measured on mod vehicles (a quad bike, two imported cars, a ported quad), not on vanilla ones. A citation written with its full `P:\` path, and a bare `file.c:N` (the vanilla script of that name under `P:\scripts\`), were opened on the vanilla data on `P:\` (a 1.30 build). "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
+## Measure before the first in-game cycle
 
-## Vanilla anchors checked on `P:\`
+Most of the cost of a vehicle build is known kinds of defect found one per rebuild after the car is already in game. Check them offline on day one, before any PBO exists; a check run up front costs minutes, while a missed get-in defect cost dozens of cycles on each of three mod vehicles.
 
-- The refuel action compares each action component name of the targeted component with `transport.GetActionCompNameFuel()`, which returns `"refill"` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\vehicles\actionfillfuel.c:58`), and measures the player against `GetRefillPointPosWS` and `GetActionDistanceFuel` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\vehicles\actionfillfuel.c:60-62`).
-- `Transport` reads the `refill` memory point in its constructor (`P:\scripts\3_game\vehicles\transport.c:112`) and names the action component in `GetActionCompNameFuel` (`P:\scripts\3_game\vehicles\transport.c:459-461`).
+1. Compare against vanilla first. Unpack the `CivilianSedan` once and take the list of structural gaps from the diff (`vehicle-structural-parity.md`). The day one checks fall out of this diff rather than appearing one error at a time in game.
+2. Measure on the imported model and on a working control, never assume. Check where data came from and every constant you rely on, not only API names: a 32768 "ceiling" and an `Izz>=300` threshold both turned out to be wrong. Measure the nose direction (minus Z) in the simulation against the visual, each body proxy's anchor and content (`invariants-import-mesh-and-winding.md`), the directions of the axis memory points, the point count per LOD with py3d (Blender's estimate reads about 1.24 times too high), and which LODs the imported model already has before building a decimation pipeline. Decimation needs the owner's approval.
+3. Put the day one measurements in one script that takes the car `.p3d` and the proxy folder and reports parse health, simulation against visual orientation, the yaw 180 mirror signature of the wheel proxies, anchor and content of each body proxy, the direction of the steering axis, and LOD point counts. Tune it on a broken model and a working one: one run gave three fails on a car before its fix and none on the vanilla sedan. The distance from anchor to hub does not separate them (0.20 to 0.22 m on the correct sedan, 0.147 m on the mirrored car); the exact `(-X, -Z)` mirror signature does.
+4. Write the acceptance list from what reads the model: the exact names, frames and values that `model.cfg`, `config.cpp` and the engine read, and check each exists in the `.p3d`. A model that agreed with itself on 58 checks still broke what the config expected, and offline suites passed on a car that could not spawn.
+5. Run a headless test with a vanilla control in the same run, the vanilla sedan or a working quad. The difference from the control does the diagnosis: a bouncing quad logged wheel contact `0000` against the control's `1111`. The comparison holds only if both cars get the same kit. Kit the mod car through its own `OnDebugSpawn()`, never a partial kit written by hand; a mod car with only fuel and coolant against a sedan with the full vanilla `OnDebugSpawn` compares two different states.
+6. Copy fluids, damage zones and the vital part config from a working car, never invent them (`invariants-engine-fluids-and-handling.md`).
+7. Add reference markers on the first import, before building on top, and judge them in the engine, not a viewer or the modelling tool. A face with an empty texture renders white and hides every frame and UV fault under it, and a mirrored or rotated UV layout is invisible on any surface without readable text; together they hid one such fault on an imported car for months.
+   - Texture marker: one image that no flip or rotation of the square leaves unchanged, with an `F`, labelled +U and +V arrows, four differently coloured corners and a grid. Point every visual face at it, and redirect the `hiddenSelectionsTextures` slots too, or the config paints over the marker and you read a false pass. One look shows mirror, rotation, rotation per UV island, tiling and scale.
+   - Geometry marker: a small gizmo of three differently shaped arms on +X, +Y and +Z, joined at the origin. It catches swapped axes and a reflected transform, such as a frozen `(x, y, -z)`, with no textures involved. Flipping winding to make up for a reflection fixes lighting and culling but not the handedness of the texture.
+   - The texture marker is useless on heavily tiled surfaces: a seat net at u from -14.9 to 25.0 repeats about 40 times and shows only bits of the glyph, which looks like a fault and is not. Measure the UV range per material first and note those surfaces.
 
-## Run before the first in-game cycle
+## What each file owns
 
-Across three vehicle builds (a quad bike and two imported cars, about 180 to 220 in-game cycles in
-all) the dominant cost was defects of a known class, attacked one per rebuild AFTER the car was
-in game. Front-load them on day 1, offline, before any PBO exists. A check applied up front is nearly
-free: the spawn-blocker check found on the first car ran before the second car's structural phase
-and cost minutes, while the get-in defect that was not written down cost dozens of iterations on
-all three:
-
-1. **Parity first**: debinarize `civiliansedan` ONCE and derive the structural gap checklist from it.
-   The preflight #1 to #9 items fall out of this diff instead of error by error in game.
-2. **Measure, never assume, on the imported model AND on a working control.** Verify the
-   origin of the data and every empirical constant, not just API names (one winding investigation ran
-   about 15 sessions on an oracle nobody had verified, and a 32768 "ceiling" and an Izz>=300 gate were
-   both artifacts): nose=-Z markers in the simulation against the visual (#11), EACH body proxy's anchor
-   and content (the #11 trap), the directions of the axis memory points, per-LOD point counts with py3d
-   (Blender estimates read about 1.24 times too high), and the imported model's own inventory of authored
-   LODs BEFORE building a decimation pipeline (decimation needs the user's approval).
-3. **Wrap the day-1 measurements in one preflight script** that takes the car `.p3d` and the proxy
-   folder and reports: parse health, simulation against visual orientation, the yaw-180 MIRROR signature
-   of wheel proxies, anchor and content of each body proxy, the direction class of the steering axis,
-   and LOD point counts. Calibrate it on a broken and a working model: a calibrated run gave three
-   FAILs on a car before its fix and none on the vanilla sedan.
-   Note from that calibration: the distance from anchor to hub is NOT a discriminator (the correct
-   sedan measured 0.20 to 0.22 m, the mirrored car 0.147 m, so the broken car sat closer); the EXACT
-   (-X,-Z) mirror signature is.
-4. **Write the acceptance spec from the CONSUMER**: list the exact names, frames and values that
-   `model.cfg`, `config.cpp` and the engine will read, and assert that each exists in the `.p3d`.
-   Producer-side self-consistency passed 58 asserts while the contract with the consumer was broken, and
-   offline suites passed while the car could not spawn.
-5. **A headless harness with a vanilla control in the same run** (the vanilla sedan, or a working
-   quad): the difference from the control does the diagnosis (a bouncing quad logged wheel contact
-   `0000` against the control's `1111`, which isolated the bug in one run).
-   **The difference is only valid if BOTH cars get the IDENTICAL kit.** Kit the mod car through
-   its own `OnDebugSpawn()` (or an explicitly declared superset), never a hand-written partial kit.
-   One drive test was spent with the mod car on a hand-written kit (fuel and coolant only, so
-   oil and brake fluid were 0) while the control sedan got the full vanilla `OnDebugSpawn`:
-   kits that are not equivalent silently poison the comparison and add a confounded state variable to
-   every symptom.
-6. **Fluids, DamageZones and vitals config from the proven shape** (preflight #8 and #9): copied, never invented.
-
-7. **A reference-frame MARKER pass, before anything is built on top.** Two blind spots compound: a face
-   with an empty `texture` renders **WHITE**, and white masks every frame and UV defect underneath it; and
-   a mirrored or 180-degree-rotated parametrization is **invisible on any surface without legible
-   text**. Together they hid one such defect on an imported car for two months, and it was closed once
-   with the wrong diagnosis ("aliasing", measured 172 to 180 texels/m, 4 px per cycle) because no
-   surface could show handedness. Inject the markers on the FIRST import and judge them **in the
-   engine**, not the viewer and not the modelling tool: the engine defines the convention.
-   - **Texture marker**: one image, asymmetric under every symmetry of the square: an `F`, a labelled
-     +U arrow, a labelled +V arrow, four distinctly coloured corners, and a grid for scale. Point
-     EVERY visual face at it; this is the same single-field pass that repairs an empty `face.texture`,
-     so it costs nothing to build once. **Redirect the `hiddenSelectionsTextures` slots too**, or the
-     config paints over the marker on the host and you read a false pass. Delivers in one
-     look: mirror, rotation, per-island rotation, tiling and scale.
-   - **Geometry marker**: a small tri-axis gizmo, three differently SHAPED arms on +X, +Y and +Z, welded at
-     the origin. Catches axis permutation and a reflected transform with no textures involved. This is
-     the one that flags a frozen `(x, y, -z)` on day 0. Compensating a
-     reflection by flipping winding fixes lighting and culling but NOT texture handedness.
-   - **Caveat**: the texture marker is USELESS on heavily tiled surfaces. A seat net
-     at u in [-14.9, 25.0] repeats about 40 times and shows only fragments of the glyph, which reads as a
-     defect and is not one. Measure the per-material UV range first and annotate those surfaces before
-     looking.
-
-## The three files and what each owns
-
-| File | Owns | Does NOT own |
+| File | Owns | Does not own |
 |---|---|---|
-| `.p3d` | geometry, LODs, named selections, memory points, proxies, **mass + CoM** (Geometry-LOD vertex weights) | physics params, animation values |
-| `config.cpp` | the `CarScript` class, drivetrain / engine / suspension, `Crew`, damage, lights, cargo, attachments, sounds, `AnimationSources` | mass, CoM, animation axes |
-| `model.cfg` | `CfgSkeletons` (bone hierarchy) + `CfgModels.Animations` (how each bone moves) | physics, which sources are user-driven |
+| `.p3d` | Geometry, LODs, named selections, memory points, proxies, mass and centre of mass (vertex weights of the Geometry LOD) | Physics values, animation values |
+| `config.cpp` | The `CarScript` class, drivetrain, engine, suspension, `Crew`, damage, lights, cargo, attachments, sounds, `AnimationSources` | Mass, centre of mass, animation axes |
+| `model.cfg` | `CfgSkeletons` (the bone tree) and `CfgModels` `Animations` (how each bone moves) | Physics, which sources script drives |
 
-Mass is **not** a config field: it is computed from the vertex weights of the Geometry LOD. `p3d-vehicle-killers.md` covers mass tagged in the wrong LOD, and `vehicle-config-and-modelcfg.md` the config and `model.cfg` blocks.
+Mass is not a config key; it comes from the vertex weights of the Geometry LOD. Mass in the wrong LOD is in `p3d-vehicle-killers.md`; the config and `model.cfg` blocks are in `vehicle-config-and-modelcfg.md`.
 
-## Port parity: three gaps no config reveals
+## Three gaps a port inherits
 
-A port copies what it sees in the reference `config.cpp`. These three do not live in any config,
-so they survive any review that reads configs:
+A port copies what it sees in the reference `config.cpp`. These three are not in any config, so a config review misses them:
 
-- **The `refill` anchor.** Without a `refill` selection in Memory and in ViewGeometry, the refuel
-  action **never appears** (`actionfillfuel.c:58`, `:60-62`; `transport.c:112-115`, `:459-462`).
-  Copying the `GetActionDistanceFuel()` override from the reference is not enough: it adjusts the
-  distance of an action that, without an anchor, does not exist.
-- **Custom `CfgSoundSets`.** Inheriting the base class leaves the vehicle **mute**: zero engine
-  sound sets in `soundSetsFilter[]` and none of its own. It emits no error in any log.
-- **A `modded class` with no trace in config.** One reference vehicle shipped a modded
-  `ActionGetInTransport` (it fixes the turn of more than 180 degrees when mounting from the opposite
-  side) and a modded `ModItemRegisterCallbacks` (one-handed wheels). No config mentions them, so they
-  only appear when the **script trees** are compared.
+- The `refill` memory point. The refuel action compares each action component name with `GetActionCompNameFuel()`, which returns `"refill"`, and measures the player against `GetRefillPointPosWS()` and `GetActionDistanceFuel()` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\vehicles\actionfillfuel.c:58` to `:62`; `P:\scripts\3_game\vehicles\transport.c:459` to `:461`). `Transport` reads the `refill` point in its constructor and falls back to `"0 0 0"` (`transport.c:112` to `:115`). Without a `refill` selection in the Memory and View Geometry LODs the refuel action never appears, and copying the `GetActionDistanceFuel()` override does not help.
+- Custom `CfgSoundSets`. Inheriting the base class leaves the vehicle silent, with no engine sound sets in `soundSetsFilter[]` and none of its own, and no error in any log.
+- A `modded class` with no trace in config. One reference vehicle shipped a modded `ActionGetInTransport` (it fixes a turn of more than 180 degrees when mounting from the far side) and a modded `ModItemRegisterCallbacks` (one-handed wheels). They show only when the script folders are compared.
 
-The method that found them is the portable part: do not enumerate what to inspect, but **derive the
-contract from the running reference** ("every selection family the reference has, the
-port has") with a short list of authorized exceptions. One port had 17 gates, 15 of them
-green, and failed to spawn; the complementary sweep found 22 gaps in a single pass.
+Derive the list of what to check from the running reference, with a short list of allowed exceptions: every selection family the reference has, the port has. One port passed 15 of its 17 checks and still failed to spawn; comparing it family by family against the reference found 22 gaps in one pass.

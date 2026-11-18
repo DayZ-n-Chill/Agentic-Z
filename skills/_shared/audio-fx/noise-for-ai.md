@@ -1,6 +1,6 @@
 # Noise for AI: making a sound that infected and animals hear
 
-A sound set is what players hear. What the engine AI hears is a separate thing, a noise, made on the server through the noise system. This file covers the sound designer's side: making a noise to go with a sound, and the 1.30 change to weather damping. How the AI reacts to noise is in the AI pack, `skills/_shared/ai/perception.md`. Line numbers are from the 1.30 files on `P:\`; statements about 1.29 are not yet checked on `P:\`.
+How to make the noise that infected and animals hear alongside a sound players hear, and how 1.30 moved weather damping into the engine. A sound set is what players hear; what the engine AI hears is a separate noise, made on the server through the noise system. How the AI reacts to noise is in the AI pack, `skills/_shared/ai/perception.md`. Line numbers are from the 1.30 files on `P:\`; statements about 1.29 are not yet checked on `P:\`.
 
 ## Contents
 

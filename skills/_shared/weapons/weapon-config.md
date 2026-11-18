@@ -53,7 +53,7 @@ More keys seen in vanilla:
 - `chamberedRound=""` sits next to `chamberSize` on several guns (`P:\DZ\weapons\firearms\b95\config.cpp:40`; SCAR-H at `P:\DZ\weapons\firearms\scarh\config.cpp:39`). Engine key; no vanilla script reads it.
 - `recoilModifier[]={1,1,1}` is the neutral value (`P:\DZ\weapons\firearms\b95\config.cpp:61`).
 - `aiRateOfFire` and `aiRateOfFireDistance` appear on the launchers (`P:\DZ\weapons\launchers\rpg7\config.cpp:37`, `:38`). Engine keys.
-- `reloadAction` is set only on the bow and launcher bases in vanilla (`P:\DZ\data\config.cpp:4592`, `:4756`); third-party weapon packs set it on rifles too (for example `reloadAction = "ReloadAKM"` on an AK; mod config, not on `P:\`). It does not drive the reload; see `_shared/animation/weapon-anim-blender.md`, "The `reloadAction` key is legacy".
+- `reloadAction` is set only on the bow and launcher bases in vanilla (`P:\DZ\data\config.cpp:4592`, `:4756`); third-party weapon packs set it on rifles too (for example `reloadAction = "ReloadAKM"` on an AK; mod config, not on `P:\`). It does not drive the reload; see `_shared/animation/weapon-anim-wiring.md`, "The reloadAction key is legacy".
 
 ## Model path
 
@@ -72,4 +72,4 @@ More keys seen in vanilla:
 
 ## Changing a vanilla gun
 
-Redeclare the vanilla class with its original parent and only the keys you change, and add its addon to `requiredAddons[]`. When you change an array such as `attachments[]` or `magazines[]`, write the whole array with `=` and keep the vanilla entries. The vanilla parent comes from an already compiled PBO, and a child's `+=` onto an array inherited across that PBO boundary is not a safe basis for the merged list (`../vehicles/proxies-and-get-in.md`, rule 2, covers this for `attachments[]`; not yet checked on `P:\` for `magazines[]`). With `=` the effective list is exactly what you wrote.
+Redeclare the vanilla class with its original parent and only the keys you change, and add its addon to `requiredAddons[]`. When you change an array such as `attachments[]` or `magazines[]`, write the whole array with `=` and keep the vanilla entries. The vanilla parent comes from an already compiled PBO, and a child's `+=` onto an array inherited across that PBO boundary is not a safe basis for the merged list (`_shared/vehicles/proxies-and-detachable-parts.md`, section "When a baked part becomes an attachment", covers this for `attachments[]`; not yet checked on `P:\` for `magazines[]`). With `=` the effective list is exactly what you wrote.

@@ -1,45 +1,41 @@
 # Evidence and controls
 
-How to tell real evidence from evidence that only looks real: the deployed build against the source, which code path wrote a log line, positive and negative controls that can actually fail, inventories that are complete, and store constructors that write while they read. Open this in steps 1 and 3 and whenever a check comes back clean.
+How to tell real evidence from evidence that only looks real during a data audit: the deployed build against the source, which code path wrote a log line, controls that can actually fail, inventories that are complete, and checks that report no work. Open it in steps 1 and 3 of `deep-audit.md`, and whenever a check comes back clean.
 
-These are audit lessons; the DayZ facts in the last section were measured in game and cannot be checked on `P:\`.
+These are audit rules. The DayZ facts in the last section were measured in game and cannot be checked on `P:\`.
 
-## Production triage: deployed artifact, path attribution, gates whose name lies, starting auditors
+## Before looking for a cause in the source
 
-Case: a virtual storage mod, five production bugs and a dual audit.
+When the audit starts from a bug on a live server:
 
-- **The deployed artifact is not the source (before step 1 when the trigger is a production bug)**: if the audited code is distributed packaged (as a PBO or another build), compare the artifact's modification time with the modification times of the relevant fix files, and probe inside the artifact (search the binary for class names as strings, without unpacking it) before you look for a root cause in the source. Report drift as its own finding. Case: the PBO was dated 28 May and lacked the 1 June code lock bridge class, so two of the five bugs were partly deployment drift.
-- **Path attribution in log evidence**: before you classify a feature as partial or broken, attribute each log line that "proves X works" to the path that emitted it (synchronous shutdown, action hook or periodic scan). Case: the evidence that "the mod virtualizes" came only from `OnMissionFinish`; the runtime paths showed no activity in the whole session.
-- **Gates whose name lies (add to the auditor prompts)**: for each trigger gate function (`HasX`, `CanY`, `IsZ`), paste and read the body; do not accept the name as evidence of coverage. Case: `HasCargoOrAttachments` checked no attachments at all, so all slot storage was invisible to all four triggers. Nine auditors and the cross-actor pass missed it, and it surfaced only when the user pushed back.
-- **Starting auditors (step 2)**: background agents automatically deny permission prompts outside the working folder, so start the auditors in the foreground, all in a single turn and in parallel. Case: the mechanical-checks agent failed in the background with a permission failure.
+- The deployed build is not the source. If the mod ships packed, as a PBO, compare the PBO's modification time with that of the files holding the relevant fixes, and search inside the PBO for class names as strings, without unpacking it, before you look for a cause in the source. Report drift as its own finding. In one storage mod the PBO predated the fix that added a code lock bridge class, so two of five live bugs were partly old builds.
+- Find which path wrote each log line. Before calling a feature partial or broken, trace every log line that "proves it works" to the path that wrote it: the synchronous shutdown, an action hook or a periodic scan. In the same mod, all the evidence that it stored containers came from `OnMissionFinish`; the run time paths did nothing all session.
+- A gate's name is not its body. For each trigger gate (`HasX`, `CanY`, `IsZ`), paste and read the body; the name proves nothing. In the same mod `HasCargoOrAttachments` checked no attachments, so slot storage was invisible to every trigger, and many reviews missed it.
+- Start the step 2 reviews in the foreground, together. A background agent cannot answer a permission prompt for files outside the working folder, so it fails instead.
 
-## Four standing rules for claims, fakes, locks and verifiers
+## Rules for claims, fakes, locks and checks
 
-- **Scope of a non-causality claim**: bound every claim that something is not a cause to the size, version, fixture and conditions under which it was verified. Do not promote "X does not matter" to a universal conclusion when the corpus does not cover other regimes.
-- **Fakes and fixtures**: make every remote fake or stub emit the same types as the real wire, not just equivalent values. Do not use `is True` or `is False` on serialized data; test `0` and `1`, booleans and missing values explicitly, as the contract defines them. A fixture composes a request the way the producer composes it, never the most complete request "for convenience". When the game shows a defect and the suite is green, first look for the test that already covered the case and compare its inputs with the real ones field by field.
-- **Resource exclusion**: verify every resource exclusion with two real acquisitions on the target operating system, and require the second one to fail. Inspect the defaults of sockets, file sharing and standard-library mutexes, and configure each lock to fail closed.
-- **Verifiers that report zero work**: for every verifier that asserts something was deleted, moved, repaired or restored, require an affected count greater than zero or an independent pre-check proving there was no work to do. Do not accept `{ok:true, count:0}` as proof on its own.
+- A claim that something is not a cause holds only for the size, version, data and conditions it was checked under. Do not turn "X does not matter" into a general rule when the checks did not cover other cases.
+- A fake or stub of a remote side emits the same types as the real one, not just equal values. Never test serialized data with `is True` or `is False`; test `0` and `1`, booleans and missing values as the contract defines them. A test request is built the way the real producer builds it, never the most complete request for convenience. When the game shows a defect and the tests pass, first find the test that should have covered it and compare its inputs with the real ones field by field.
+- Check every lock with two real attempts on the target system and require the second to fail. Look at the defaults of sockets, file sharing and standard library mutexes, and set each lock to refuse when in doubt.
+- A check that says something was deleted, moved, repaired or restored must report a count above zero, or come with a separate check showing there was nothing to do. `{ok:true, count:0}` alone proves nothing.
 
-## A correct citation may not prove what is asked of it (step 3a)
+## A correct citation may not prove the point
 
-An auditor cited an official vanilla test as proof that an API was synchronous: the test measured a counter before and after the call and asserted `== 1` on the next statement. The citation was literal and exact. But a sibling of that API, which is documented as asynchronous, passed the same assert a few lines further down. The test did not discriminate, so it proved nothing about synchrony.
+An auditor cited a vanilla test as proof that an API was synchronous: the test read a counter before and after the call and asserted `== 1` on the next line. The citation was exact. But a sibling API, documented as asynchronous, passed the same assert a few lines further down. The test could not tell the two apart, so it proved nothing about synchrony.
 
-**Rule**: before you accept a third-party test, assert or invariant as proof of a property P, find a case that does not have P and check that the same assert fails there. If this negative control passes, the evidence does not discriminate: it is compatible with the conclusion but does not support it. This is the same idea as "a gate that cannot be turned red is not a gate", applied to third-party evidence instead of your own gates. Checking that the citation exists is the first step; checking that the citation discriminates is the second, and it is the one that gets skipped.
+Before accepting a third party test, assert or rule as proof of a property, find a case without that property and check that the same assert fails there. If it passes, the evidence fits the conclusion but does not support it. Checking that a citation exists is the first step; checking that it tells cases apart is the second, and the one that gets skipped.
 
-## A control that inherits the instrument's convention is born blind
+## A control built the same way as the gate shares its blind spot
 
-The previous section covers a control that does not discriminate. This one covers a control that discriminates perfectly, but inside the very blind spot it was meant to measure.
+A gate checked that proxies were turned 180 degrees about the vertical axis. Its negative control built a model turned 180 degrees about a horizontal axis and required the gate to fail it, which it did. The gate passed the real model and failed the control, and the result in game was still wrong: the weapons were turned about a horizontal axis.
 
-A gate checked that proxies were rotated 180 degrees around the vertical axis. It had a well-designed negative control: it generated a model rotated 180 degrees around a *horizontal* axis and required the gate to flag it red. It did. The gate was green on the good artifact and red on the negative control, and the result in game was **wrong**: the weapons had rotated around a horizontal axis.
+The control applied `R_new = Ry(180) * R_old`, multiplying on the left, while the function that reads the frame returns the axes as rows in world space. Multiplying on the left flips rows, which turns about the proxy's own axis, not the world's. Measured: the local Y axis of those proxies pointed to `(1.0, -0.001, 0.006)`, the world X axis. The control used the gate's own mistaken convention, so it confirmed the convention instead of testing it.
 
-The cause: the control generator applied `R_new = Ry(180) * R_old`, multiplying from the left, and the function that derives the frame returns the axes as rows in world coordinates. Multiplying from the left negates rows, which means it rotates around the proxy's own axis, not around the world's. Measured: the local Y axis of those proxies pointed to `(1.0, -0.001, 0.006)`, which is the world X axis. The control used the same mistaken convention as the gate, so it confirmed the convention instead of testing it.
+When the thing that may be wrong is a convention (multiplication order, rows or columns, local or world frame, axis order, byte order, counting from 0 or 1), never build the control with the same code or convention as the gate. Build it from outside, from something whose value is known another way: a measurement by hand, an external reference file, a visible asymmetric marker. If the control and the gate share a function, module or formula, the control is not independent. If the gate passes while the visible result is wrong, suspect the convention before the threshold.
 
-**Rule**: when the thing that might be wrong is a convention (multiplication order, rows versus columns, local versus world frame, axis order, endianness, 0-based versus 1-based), the control cannot be built with the same code or the same convention as the instrument. Build it from outside: an artifact whose expected value is known by other means, such as a manual measurement, an external reference file or a visible asymmetrical marker, and compare against that. A control that shares the gate's apparatus only proves that the apparatus is self-consistent.
+## Check the inventory before the reviews get it
 
-**Cheap signal**: if the control and the instrument share a function, module or formula, the control is not independent. And if the gate is green while the observable result is wrong, suspect the convention before the threshold.
-
-## Census the inventory before handing it to auditors; compare the deployed PBO with the source
-
-1. A regex-generated inventory is closed with an independent census before auditors see it: a power grid mod's save and load body table listed 11 files while 25 contained `ctx.Read` or `ctx.Write`, missing an entire hook family (the mod's `OnStore*Device` hooks, 10 classes). Auditors treat the handed table as complete.
-2. Design note: "the deployed artifact is not the source" is checked in DayZ by extracting the PBO and comparing by content (EOL-normalized) against each candidate tag: a release tag differed from the published PBO in 51 of 144 scripts.
-3. Do not count entities by searching class names in `storage_1\data\*.bin` (nor in `types.bin`): the positive control returns 0 matches in a world that does contain those classes. Count them in game.
+1. Close a list built by regex with an independent count before reviewers see it. One power grid mod's table of save and load bodies listed 11 files while 25 contained `ctx.Read` or `ctx.Write`, missing a whole hook family (the mod's `OnStore*Device` hooks, 10 classes). Reviewers treat the table they are given as complete.
+2. To check that a deployed PBO matches the source, unpack it and compare file contents, with line endings normalised, against each candidate tag. In one mod a release tag differed from the published PBO in 51 of 144 scripts.
+3. Do not count entities by searching for class names in `storage_1\data\*.bin` or `types.bin`: a search for classes known to be in the world returns 0 matches. Count them in game.

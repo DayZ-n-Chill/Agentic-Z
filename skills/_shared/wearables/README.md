@@ -15,10 +15,11 @@ Every fact cites the vanilla file on `P:\` it came from. Line numbers are from t
 | Which models does a wearable need, how do proxies work, what goes to Object Builder? | `references/models-and-proxies.md` |
 | What must the worn models look like (skeleton name, frame, weights, `model.cfg`), how do I build and check them, and why does my worn item float, explode or stay rigid? | `references/worn-models.md` |
 | The worn item binds but plates sit off the body: how do I fit it in the alignment viewer or hand it to an artist as FBX? | `references/fitting-worn-models.md` |
-| Can a script fit a new garment on the official rig and take its weights from the rig's body, and what did that fail on? | `references/autofit-on-official-rig.md` |
+| Can a script fit a new garment on the official rig and take its weights from the rig's body, and where does that fail? | `references/autofit-on-official-rig.md` |
 | What did DayZ 1.30 change for clothing and gear, and how do I move a 1.29 mod over? | `references/changes-in-1-30.md` |
 | How do I add a new survivor character, and what does every survivor inherit from `SurvivorBase` (animation binding, skinning, surrender, sandstorm protection)? | `references/characters.md` |
-| How do I rig a new body mesh to the vanilla skeleton in Blender and export it with weights? Why does it explode, face backward or render inside-out? | `references/body-rigging.md` |
+| How do I rig a new body mesh to the vanilla skeleton in Blender? Why do all weights land on `Pelvis`, or the body tear across the middle? | `references/body-rigging.md` |
+| How do I write a rigged body to `.p3d` with its weights, and check it? Why does it explode, face backward, render inside-out or light wrong? | `references/body-export.md` |
 | Why does a body that looks fine at rest deform under animation? What does an infected bind to? Is my mesh mirrored? | `references/canonical-bind.md` |
 | How do I unwrap and bake normal and AO maps for a rigged body without noise, black blotches or dark AO? | `references/body-uv-bake.md` |
 | How is the 1.30 survivor ragdoll bound, and what is in `human.ragdoll`? | `references/ragdoll.md` |

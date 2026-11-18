@@ -63,9 +63,9 @@ For a model that is one flat color per part, with no real texture detail, write 
 
 Do not bake such a model into a UV atlas. Baking many flat materials gives tiny islands over a black background, and any small UV drift samples the background: black holes, circles and smudges. Atlas baking is for models with real texture detail. This is modelling practice, not a fact about the game, so it is not checked on `P:\`.
 
-## Faults to avoid
+## Mistakes to avoid when changing the tool
 
-1. **Backslash paths on Linux.** A P3D stores texture paths with Windows backslashes, such as `my_button\data\textures\base_co.paa`. `os.path.basename()` on Linux does not split them. Replace `\` with `/` before taking the base name.
-2. **GLTFLoader inside a sandboxed frame.** A chat artifact frame blocks `fetch()` and `Request.clone()`. Loading a GLB with `loader.load()` or `loader.parse()` fails there, because the loader fetches buffer and image URIs itself. The embedded mode avoids GLTFLoader and builds the geometry from typed arrays.
-3. **The other py3d.** `pip install py3d` installs a point cloud library from PyPI, not the P3D reader. Install the fork from `scripts/tools/py3d` and check `py3d.IS_DAYZ_FORK`.
-4. **LZO on DXT mipmaps.** A PAA from Arma 2 or later compresses its large mipmaps (256 and up) with LZO, marked by the top bit of the width field. Decoding needs `python-lzo`, or `lzokay` plus the shim that `install-lzo-shim` writes.
+1. Backslash paths on Linux. A P3D stores texture paths with Windows backslashes, such as `my_button\data\textures\base_co.paa`. `os.path.basename()` on Linux does not split them. Replace `\` with `/` before taking the base name.
+2. GLTFLoader inside a sandboxed frame. A chat artifact frame blocks `fetch()` and `Request.clone()`. Loading a GLB with `loader.load()` or `loader.parse()` fails there, because the loader fetches buffer and image URIs itself. The embedded mode avoids GLTFLoader and builds the geometry from typed arrays.
+3. The other py3d. `pip install py3d` installs a point cloud library from PyPI, not the P3D reader. Install the fork from `scripts/tools/py3d` and check `py3d.IS_DAYZ_FORK`.
+4. LZO on DXT mipmaps. A PAA from Arma 2 or later compresses its large mipmaps (256 and up) with LZO, marked by the top bit of the width field. Decoding needs `python-lzo`, or `lzokay` plus the shim that `install-lzo-shim` writes.

@@ -1,85 +1,40 @@
-# Distance LODs and the vertex budget: invariants
+# Distance LODs and the vertex budget
 
-How many visual LODs an imported vehicle needs, how far each decimation method goes, and how to tell offline that a model is over the engine's resolved-vertex ceiling.
+How many visual LODs an imported vehicle needs, how far each way of reducing a mesh goes, how to bake far LODs that draw the right side, and how to tell offline that a model is over the engine's vertex ceiling.
 
-> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
+The vanilla car to compare LOD counts against is `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d`; it is binarized, which py3d cannot read, so the face counts below come from a debinarized copy and are not checked on `P:\`. The other numbers were measured on mod vehicles (an imported coupe and helicopter). `binarize.exe` ships with DayZ Tools; `/dayz-preflight` checks DayZ Tools is installed.
 
-## Vanilla anchors checked on `P:\`
+## Build the distance LODs before cutting LOD 0
 
-- The vanilla control for LOD counts is `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d`. It is a binarized ODOL, which py3d cannot read, so the face counts quoted below come from a debinarized copy and are not checked on `P:\`.
-- `binarize.exe` ships with DayZ Tools; `/dayz-preflight` checks that DayZ Tools is installed before any step here that runs it.
+A vehicle with one visual LOD draws its full face count at every distance. The vanilla sedan ships five visual LODs (14,636, 10,364, 3,717, 1,713 and 123 faces); an imported coupe shipped one, 231k faces always, and its freeze in the admin preview and on spawn did not move with de-duplication (18.5 MiB less) or a smaller shadow LOD (32k to 3.5k), because it was bound by faces drawn. Count visual LODs against the sedan on day one; two is the floor to ship. Cutting LOD 0 itself is a last resort, and the user decides it.
 
-## Imported-mesh budget: measure the triple ratio on the geometry you ship (added 2026-07-29, TestHeli HH-60G)
+- Bake distance LODs (resolution 2, 3, 4) flat into the main model, with no proxy references: proxies of LOD 0 render only while LOD 0 renders. Build them from the rip's own LODs and leave the cabin out of far LODs, as vanilla does.
+- Planar dissolve (Blender limited dissolve, which keeps shape, material slots and UVs) stops at a factor of 2 to 2.6, not 5 to 8, because a rip's own LODs are mid-detail meshes. The coupe body went from 58.7k to 34.5k at 15 degrees, 27k at 30 and 22.4k at 45. That gives one good near LOD (about 27k at resolution 2). Reaching the sedan's 3.7k and 1.7k needs collapse decimation, which deforms the mesh and drops slots and UVs, so measure the dissolve ceiling and ask how far to go before promising far LODs.
+- A step that assumes exactly one visual LOD breaks on a set of them. Replace the whole visual block with every working LOD below resolution 100, sorted, and keep every structural LOD. Test it on a copy first: Geometry, Memory, hit points, View Geometry and Fire Geometry must come out bit-identical (get-in depends on them), then check the deployed model against its backup. The flat body source is the shell's LOD 0 minus proxy faces, plus the part models; the cabin lives in the interior proxy. Review the baked LOD in a render before deploying (`_shared/models/blender-visual-review.md`).
 
-**Imported-mesh budget invariant (added 2026-07-29, TestHeli HH-60G):** a **triples/triangle ratio
-measured on a DECIMATED mesh does not extrapolate to an authored one.** `Decimate` collapses edges
-and breaks normal sharing, so it inflates resolved (point, normal, uv) triples per triangle. Measured
-on the same asset: **1.301** on the Decimate-ratio export (0.26-0.6 per group) versus **0.941** on the
-source's own Medium LODs — 28 % apart, and enough to change how many sub-`.p3d` you plan for (2.43
-projected LODs against 1.75 measured). Rule: measure the ratio on the geometry you will SHIP, not on
-whatever export you have lying around. Corollary, and it is the bigger win: **if the source ships an
-authored LOD ladder (GTA `.yft` High/Medium/Low, ripped racing-game, Sollumz-imported `.blend` datablocks), use it
-instead of decimating** — swapping `obj.data` to the `<piece>_medium` datablock is usually better in
-triples AND satisfies the "the agent never decimates visual" clause of a product spec. Re-measure per
-model; never copy a ratio or a resolved ceiling between assets.
+## Far LODs that render black or see-through
 
-## Invariant 13: author the distance LOD ladder before fighting LOD0 decimation
+These are two different failures:
 
-**Distance-LOD ladder: a single-visual-LOD import renders its FULL face count at ANY distance —
-author the ladder BEFORE fighting LOD0 decimation.** (added 2026-07-07, measured on TestCoupe)
-Vanilla civiliansedan ships 5 visual LODs (14,636 → 10,364 → 3,717 → 1,713 → 123 faces); TestCoupe
-shipped 1 (231k always) and the admin-preview/spawn freeze did NOT move with dedup (−18.5 MiB) or
-shadow (32k→3.5k) fixes — it is render/face-bound. Distance LODs res 2/3/4 are baked FLAT into the
-main (no proxy refs: proxies of res-0 only render while res-0 renders) from the rip's authored LODs
-(planar-dissolve measured ceiling = ÷2-2.6); exclude the cabin from far LODs (vanilla does). Day-1 check: count
-visual LODs vs the control — ≥2 is also the floor to ship. LOD0 decimation stays
-user-gated and becomes a LAST resort, not the first.
-**The ladder as built and measured on the deployed TestCoupe:**
-(a) **Planar-dissolve (Blender limited-dissolve, shape+UV preserving) tops out at ÷2-2.6, NOT ÷5-8** —
-the rip's authored LODs are mid-detail racing meshes, not impostors. TestCoupe body 58.7k → 34.5k@15° /
-27k@30° / 22.4k@45°. It yields ONE good near LOD (res2 ~27k, quality intact, no gate). To reach vanilla
-parity (sedan res3/res4 = 3.7k/1.7k) you need COLLAPSE decimation, which deforms and is user-gated — so
-MEASURE the planar ceiling and ask how far to take the ladder BEFORE promising res3/res4.
-Planar dissolve preserves material-slot + UV; collapse does not.
-(b) **Bake far-LOD stored normals OUTWARD — SUPERSEDED in part by (d) for the winding census.**
-The body winding gives +cross INWARD (the build negates paint/lamp classes via `negate_classes`);
-a flat LOD baked with raw +cross renders ~60% inside-out (black). Fix that BLACK failure in the
-stored normals; the `cross·(centroid−carCenter)` winding target comes from (d)'s census against
-the LOD0 control (the corrected TestCoupe far LOD measured ~2%, not 100%), and vertex order is handled
-there. resolved<65535 holds easily (26k for a 27k-face body).
-(c) **A transplant step that assumes exactly ONE visual LOD breaks on a ladder.** A ladder
-needs a multi visual-LOD transplant: replace the deployed visual block with ALL work res<100 LODs
-(sorted), KEEPING every struct LOD. GATE it with a self-test on a COPY: struct LODs
-(Geo/Mem/HP/ViewGeo/FireGeo) must come out BIT-IDENTICAL (get-in), then re-verify real deployed vs
-backup. Flat body source = shell res0 minus proxy faces + the chunk p3ds (cabin already excluded — it
-lives in the intact interior proxy). Render-review the baked LOD before deploy (`_shared/models/blender-visual-review.md`).
-(d) **A far-LOD baked WITHOUT the shell's make-consistent/orient pass ships with its WINDING globally
-INVERTED → the body reads TRANSPARENT (see-through) at mid/far distance — a DISTINCT failure from (b)'s
-BLACK.** (added 2026-07-09, measured and fixed on TestCoupe) Transparent = winding/cull wrong (anti-cross faces
-point INWARD → culled from outside); black = stored normals point inward (shading). Diagnose OFFLINE by
-census: fraction of far-LOD faces with `cross·(centroid−center)>0` vs the LOD0 control that renders fine —
-far-LOD ~98% cross-outward while LOD0 ~17% ⇒ winding inverted. FIX: if stored normals ALREADY point outward
-(`storedN-outward` high, i.e. it reads transparent not black), a GLOBAL vertex-order flip
-(`face.vertices.reverse()` on every face, do NOT touch normals — they ride the vertices) suffices — census
-98%→2%, matching LOD0. Reach for make-consistent+orient (a majority repair per connected component) ONLY
- when the far-LOD is topologically MIXED (low interior-edge consistency), not merely globally inverted (try the
- simple fix first). Root cause on TestCoupe: the ladder assembler took the dissolve winding VERBATIM +
- raw +cross normals and skipped the make-consistent pass the shell goes through → res=2 shipped
- see-through, `outward=38.9%` was printed and ignored, no offline gate. GATE any baked far-LOD by census-vs-LOD0
- BEFORE deploy — Blender cannot judge DayZ winding (right- vs left-handed cull). The measuring
- instrument must follow the engine's ORDER: culling runs BEFORE the depth test, so group the
- hits at t_min+epsilon and ask whether ANY of them faces the camera, and re-read the controls
- whenever a fix changes the class of geometry the instrument resolves.
+- Black: stored normals point inward, a shading fault. The body's winding gives a cross product pointing inward (the build negates paint and lamp classes for this), so a flat LOD baked with raw cross-product normals renders about 60 percent black. Fix the stored normals.
+- See-through: winding inverted, a culling fault. Faces point inward and are culled from outside.
 
+Diagnose offline by counting the fraction of far LOD faces with `cross · (centroid - carCenter) > 0` against LOD 0, which renders correctly. On the coupe the far LOD read about 98 percent against about 17 percent on LOD 0: winding inverted. If stored normals already point outward (it reads see-through, not black), one global vertex order flip fixes it: `face.vertices.reverse()` on every face, leaving normals alone, which took the count from 98 to 2 percent, matching LOD 0. Use a majority repair per connected component only when the far LOD is mixed (low edge consistency), not merely inverted. The cause was a LOD assembler that took the dissolve winding as is with raw cross-product normals and skipped the consistency pass the shell gets; it printed `outward=38.9%` and nothing checked it.
 
-## Invariant 24: binarize is the three-state offline load oracle
+Check every baked far LOD against LOD 0 this way before deploying; Blender cannot judge DayZ winding, because it culls the other side. The measuring tool must follow the engine's order: culling runs before the depth test, so group the hits at the nearest distance plus a small margin and ask whether any of them faces the camera. Re-read the controls whenever a fix changes the kind of geometry the tool sees. Vertex count is no constraint here: 26k resolved vertices for a 27k-face body.
 
-**`binarize` is the three-state offline load oracle; `RESOLVED_LIMIT = 65535` is a false friend (TestHeli HH-60G, 2026-07-29).**
-Measured evidence for this invariant — the three verdict states, the real ceiling in triple
-units, headroom accounting and what does NOT discriminate — is in
-`binarize-vertex-budget.md`.
+## Measure the vertex ratio on what you ship
 
+The ratio of resolved vertex triples (point, normal, UV) per triangle measured on a decimated mesh does not carry over to an authored one. Decimate collapses edges and breaks normal sharing, which inflates the ratio: on one helicopter 1.301 on a Decimate export (ratios 0.26 to 0.6 per group) against 0.941 on the source's own Medium LODs, 28 percent apart, which changed the plan from 2.43 projected sub-models to 1.75 measured. Measure on the geometry you will ship, and re-measure per model; never copy a ratio or a ceiling between assets.
 
-## Invariant 27: a model that passes every offline gate and still will not spawn is usually over the resolved-vertex ceiling
+If the source ships its own LODs (GTA `.yft` High, Medium and Low, a racing-game rip, Sollumz-imported datablocks), use them instead of decimating. Swapping `obj.data` to the `<piece>_medium` datablock is usually better in triples and keeps visual decimation out of the agent's hands.
 
-**A model that passes every offline gate and still refuses to spawn is almost always over the resolved-vertex ceiling, so run `binarize` on it before touching the Geometry LOD (TestHeli HH-60G, 2026-07-29).** `PHYSICS (E): Won't simulate, it has no geometry` is the same defect as `Too many vertices`: the engine aborts while loading the MLOD, so a perfect Geometry LOD does not clear the model. py3d count gates (resolved<65535, normal pool, digest, identical Geometry) do not authorize a spawn. Act on the binarize verdict of invariant 24: `CAPACITY_FAIL` means do not go in game; `OTHER_FAIL` means do not touch geometry; `PASS` while the game still reports no geometry means look at serialization or another cause, and an in-game spawn is the judge. A negative capacity control (`CTL_CAPACITY`) is a control, not a refutation of `binarize`. How to run it, the evidence for the three verdict states, the measured ceiling and headroom, and why reversing corner order is free while minting a normal is not: `binarize-vertex-budget.md`.
+## Let `binarize` decide whether it loads
+
+`binarize` is the offline judge of whether a model loads, with three verdicts; a 65,535 limit counted by py3d is not. A model that passes every offline check and still will not spawn is almost always over the resolved vertex ceiling, so run `binarize` before touching the Geometry LOD. `PHYSICS (E): Won't simulate, it has no geometry` is the same defect as `Too many vertices`: the engine aborts while loading the MLOD, so a perfect Geometry LOD does not clear it. py3d count checks (resolved under 65,535, normal pool, digest, identical Geometry) do not clear a spawn.
+
+- `CAPACITY_FAIL`: do not go in game.
+- `OTHER_FAIL`: do not touch the geometry.
+- `PASS` while the game still reports no geometry: look at serialization or another cause; an in-game spawn judges.
+
+A model built to fail on capacity is a control, not evidence against `binarize`. How to run it, the evidence for each verdict, the measured ceiling and headroom, and why reversing corner order is free while adding a normal is not, are in `binarize-vertex-budget.md`.

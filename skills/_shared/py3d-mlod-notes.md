@@ -114,7 +114,7 @@ frame = detect_frame(p3d) if args.frame == "auto" else args.frame
 flip_z = frame == "minusZ"
 ```
 
-The pose solver asks the same question from the other side (`animation/rider-pose-solver.md`, its frame of reference section). Both must agree.
+The pose solver asks the same question from the other side (`animation/rider-pose-solver.md`, section "The anchors"). Both must agree.
 
 ### Check the output before calling it done
 

@@ -130,7 +130,7 @@ ButtonWidgetClass BtnRefresh {
 }
 ```
 
-When the bound widget also has child widgets, the `ScriptParamsClass` goes in a second block of its own, after the block that holds the children; it is never mixed in with them. In a count over the layouts of shipped third party mods, all 157 `ScriptParamsClass` blocks sat alone like this, and the block holds its fields directly, with no inner braces (a count over third party layouts, not checked on `P:\`; the layout side is in `skills/_shared/ui/layout-format.md`).
+When the bound widget also has child widgets, the `ScriptParamsClass` goes in a second block of its own, after the block that holds the children; it is never mixed in with them. In a count over the layouts of shipped third party mods, all 157 `ScriptParamsClass` blocks sat alone like this, and the block holds its fields directly, with no inner braces (a count over third party layouts, not checked on `P:\`; the layout side is in `skills/_shared/ui/layout-scriptclass.md`).
 
 `ViewBinding` fields you can set there:
 

@@ -1,8 +1,8 @@
 # Getting in from either side of a seat
 
-How to keep a player from spinning more than half a turn when they board a vehicle from the "wrong" side: the native directional get in that 1.30 added, and the scripted snap used before it. Both are script, with no clip and no Workbench.
+How to stop a player spinning more than half a turn when they board a vehicle from the far side: the native directional get in added in 1.30, and the scripted snap that works without it. Both are script, with no clip and no Workbench.
 
-**Choose in this order.** On 1.30 use the native directional hooks first. The rule for a vehicle boarded from both sides is to not add a scripted snap or extra `pos_*_L` and `pos_*_R` points, and instead to copy the vanilla structure (crew proxies, and seat selections and components that exist in the View Geometry and Fire Geometry) and keep the vanilla action. Keep the scripted snap below as a fallback for a case the native route cannot cover; it is a workaround measured on one quad mod, not checked on `P:\`.
+On 1.30 use the native directional hooks first. For a vehicle boarded from both sides, do not add a scripted snap or extra `pos_*_L` and `pos_*_R` points: copy the vanilla structure (crew proxies, and seat selections and components that exist in View Geometry and Fire Geometry) and keep the vanilla action. Keep the scripted snap as a fallback for a case the native route cannot cover; it was measured on one quad mod and is not checked on `P:\`.
 
 ## What goes wrong
 
@@ -43,23 +43,18 @@ For a mod vehicle, override both hooks the same way. Not tested: whether that al
 
 Single track vehicles also get their own third person camera, `DAYZCAMERA_3RD_VEHICLE_MOTORBIKE` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameras.c:20`, registered at `:63`).
 
-## The scripted snap (pre 1.30)
+## The scripted snap
 
 ### Four memory points per seat
 
-```
-pos_driver_L      pos_driver_dir_L
-pos_driver_R      pos_driver_dir_R
-```
+Each seat gets a left and a right pair: `pos_driver_L` with `pos_driver_dir_L`, and `pos_driver_R` with `pos_driver_dir_R`, then the same for the passenger seat with its role name. The `_L` and `_R` points mirror each other across the vehicle's X axis, so the seat does not move; only the snap point and the facing change. An example layout:
 
-and the same for the passenger seat with its role name. The `_L` and `_R` points mirror each other across the vehicle's X axis, so the seat does not move; only the snap point and the facing change. An example layout:
-
-```
-pos_driver_L      = (+0.65, 0.05, -0.58)
-pos_driver_dir_L  = (+0.65, 0.05, +0.42)   // 1.0 m forward of _L
-pos_driver_R      = (-0.65, 0.05, -0.58)   // mirror in X
-pos_driver_dir_R  = (-0.65, 0.05, +0.42)
-```
+| Point | Position | Note |
+|---|---|---|
+| `pos_driver_L` | (+0.65, 0.05, −0.58) | |
+| `pos_driver_dir_L` | (+0.65, 0.05, +0.42) | 1.0 m forward of `_L` |
+| `pos_driver_R` | (−0.65, 0.05, −0.58) | Mirror of `_L` in X |
+| `pos_driver_dir_R` | (−0.65, 0.05, +0.42) | |
 
 Mirror in X only: `(-x, y, z)`. On a vehicle that is not symmetric, measure both sides instead of mirroring. Treat the four points as one decision; changing `_L` without `_R` makes one side feel different.
 
@@ -192,11 +187,11 @@ The action only starts when the player can aim at the seat's action selection (`
 
 ### The crew points must be the ones you wrote
 
-The seat test reads `crewdriver` and `crewcodriver`. If the model was extended from a vanilla one and those points were appended instead of overwritten, the action reads the old positions and the left and right choice degrades (`../py3d-mlod-notes.md`, "Writing a `.p3d` from a script", trap 4).
+The seat test reads `crewdriver` and `crewcodriver`. If the model was extended from a vanilla one and those points were appended instead of overwritten, the action reads the old positions and the left and right choice degrades (`../py3d-mlod-notes.md`, "Writing a `.p3d` from a script", the trap about appended points).
 
-### In-game check
+### Testing in game
 
 1. Board from the left: the player lands on the seat with under 30 degrees of turn and the climb animation plays.
 2. Board from the right: the same, mirrored, with no half turn in the air.
 3. Repeat for the passenger seat.
-4. Board a vanilla car: behaviour is unchanged. If it is not, the early return is wrong; fix it before shipping, because breaking vanilla vehicles is a regression every player sees.
+4. Board a vanilla car: behaviour is unchanged. If it is not, the early return is wrong; fix it before shipping, because every player sees a broken vanilla vehicle.

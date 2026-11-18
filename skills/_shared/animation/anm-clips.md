@@ -1,90 +1,71 @@
-# Skeletal animation through `.anm` (characters, infected, animals, weapons)
+# Clips through `.anm`
 
-Body and weapon animation in DayZ runs on the Enfusion animation system: `.txa` text files compiled to binary `.anm` clips, played by an animation graph. This file is the route from keyframes to a clip the game loads. The graph side is in `anim-graphs.md`; the complete weapon walkthrough is in `weapon-anim-blender.md`.
+How keyframes become a binary `.anm` clip the game plays, for characters, infected, animals and weapons. The graph that plays the clip is in `anim-graphs.md`; the full weapon walkthrough is in `weapon-anim-blender.md`.
 
-Facts about vanilla files cite `P:\`. Results marked "measured" name the build they come from. Nothing about third party tools (DayZATool, the Blender plugins) is checked on `P:\`.
+Body and weapon motion runs on the Enfusion animation system: `.txa` text files compile to `.anm` clips, and an animation graph plays them. Facts about vanilla files cite `P:\`. Nothing about third party tools (DayZATool, the Blender plugins) is checked on `P:\`.
 
-## The wall, first
+## Replacing a graph collides with other mods
 
-A mod that replaces the player graph or a creature graph collides with every other mod that replaces the same graph; two crash client and server (third-party mod behaviour, not checked on `P:\`). Say so on every plan that ships a character or creature animation through a replaced graph. If the user already runs such a mod, a second one conflicts with it.
+A mod that replaces the player graph or a creature graph collides with every other mod that replaces the same graph, and two of them crash client and server (reported for third party mods, not checked on `P:\`). Say so in every plan that ships character or creature motion through a replaced graph, and ask whether the user already runs such a mod.
 
-The wall is about graph replacement only. A weapon or item animation bound through a child `.asi`, and one vehicle class's rider pose through a child `.asi`, replace no graph file and load next to other mods (`anim-graphs.md`, "Which changes collide"; `rider-pose-solver.md`, "A pose for one vehicle class without a graph change").
+This applies to graph replacement only. A weapon or item clip bound through a child `.asi`, and one vehicle class's rider pose through a child `.asi`, replace no graph file and load next to other mods (`anim-graphs.md`, "Which changes collide"; `rider-pose-measured.md`, "The swap, with vanilla steering clips").
 
-## The pipeline
+## Two routes to `.anm`
 
-```
-Blender (keyframes against the DayZ skeleton)
-  -> .txa (text)            a DayZ animation plugin for Blender        or
-  -> SEAnim (open format)   seanim_writer.py, or the SEAnim Blender plugin
-       -> .anm (binary)     DayZATool --generate-anim                  or
-  -> Workbench compiles .txa -> .anm
-       -> name the .anm in an instance file -> pack the PBO -> sign -> test in game
-```
+1. Key the motion in Blender against the DayZ skeleton.
+2. Write an interchange file: a `.txa` from a DayZ animation plugin for Blender, or a SEAnim from `seanim_writer.py` or the SEAnim Blender plugin.
+3. Turn it into `.anm`: Workbench compiles a `.txa`; `DayZATool --generate-anim` converts a SEAnim.
+4. Name the `.anm` in an instance file, pack the PBO, sign it and test in game.
 
-There are two ways to reach `.anm`:
+| Route | Who uses it | How |
+|---|---|---|
+| `.txa` | Bohemia's own tools | Export `.txa` with the DayZ animation plugin (`DayZAnimationPluginDemo` or its maintained fork) and let Workbench compile it. The Workbench step is in `weapon-anim-compile.md`. |
+| SEAnim | An agent | Write SEAnim with `skills/dayz-animation-pipeline/scripts/seanim_writer.py`, the package in `scripts/tools/dayz-animation-formats/`, or the `io_anim_seanim` Blender plugin. The user runs `DayZATool --generate-anim file.seanim`. |
 
-1. **The `.txa` route, the one Bohemia's own tools use.** Author in Blender, export `.txa` with the DayZ animation plugin (`DayZAnimationPluginDemo`, or its maintained fork), and let Workbench compile `.txa` to `.anm`. The tool exists and is in use; the exact Workbench step is described in `weapon-anim-blender.md`.
-2. **The SEAnim route, the one an agent can drive.** Produce a SEAnim file, with the pipeline's `seanim_writer.py` (`skills/dayz-animation-pipeline/scripts/`), with the package in `scripts/tools/dayz-animation-formats/`, or with the SEAnim Blender plugin (`io_anim_seanim`). The user then runs `DayZATool --generate-anim file.seanim` to get the `.anm`. DayZATool converts in both directions.
+SEAnim is an open format with a public specification, so a script can write and edit it. `.anm` is closed, so the conversion is the one step the user runs. DayZATool converts in both directions.
 
-SEAnim matters because it is an open format with a public specification, so a script can write and edit it. `.anm` is closed; the conversion is the one step the user runs.
+The agent keys or edits motion in Blender run from the command line, writes or edits SEAnim, and maps bone names onto the player skeleton. The user, on Windows, runs DayZATool or Workbench, packs, signs and tests.
 
-## Who does what
+## Bone names must match the skeleton
 
-- The agent: authors or edits keyframes in Blender headless, writes or edits SEAnim, and maps bone names to the player skeleton.
-- The user, on Windows: runs DayZATool or Workbench, packs, signs and tests.
+The survivor skeleton is `player_testing.xob` (`skeletonName` in `P:\DZ\characters\data\config.cpp:158`), and its bone list is the block that starts at `P:\DZ\anims\cfg\skeletons.anim.xml:110`. The RPT calls the player skeleton `OFP2_ManSkeleton`; that name also appears inside binary character models such as `P:\DZ\characters\tops\shirt_m_new_anim_system.p3d`.
 
-## Skeleton and bones
+A bone name that does not match exactly logs `Error: Bone X doesn't exist in skeleton OFP2_ManSkeleton` and that bone does not move (game behaviour, not checked on `P:\`). Take names from `player-skeleton.md`, the skeleton XML or Bohemia's public rig (the `DayZ-Misc` repository, "Rig and Animations"). Never guess one.
 
-The survivor's skeleton is `player_testing.xob` (`skeletonName` in `P:\DZ\characters\data\config.cpp:158`), and its bone list is the block that starts at `P:\DZ\anims\cfg\skeletons.anim.xml:110`. RPT messages call the player skeleton `OFP2_ManSkeleton`. A bone name that does not match exactly logs `Error: Bone X doesn't exist in skeleton OFP2_ManSkeleton` in the RPT and that bone does not move. The log message is runtime behaviour, not checked on `P:\`. The name itself appears on `P:\` inside binary character models such as `P:\DZ\characters\tops\shirt_m_new_anim_system.p3d`.
+The vanilla skeleton cannot be restructured: a mod poses the vanilla bones, and adding or removing bones breaks the vanilla clips (not checked on `P:\`).
 
-Take the bone names from `player-skeleton.md`, from the skeleton XML, or from Bohemia's public rig (the `DayZ-Misc` repository, "Rig and Animations"). Never guess one.
-
-Not checked on `P:\`: the vanilla skeleton cannot be restructured. A mod overlays animation on the vanilla bones; adding or removing bones breaks the vanilla clips.
-
-## Editing or retargeting a vanilla `.anm`
+## Editing a vanilla `.anm`
 
 1. `DayZATool --extract-anim file.anm` gives a SEAnim.
-2. Edit it in Blender (the SEAnim plugin) or with a script (`seanim_writer.py`, or the reader in `scripts/tools/dayz-animation-formats/`).
+2. Edit it in Blender with the SEAnim plugin, or in a script (`seanim_writer.py`, or the reader in `scripts/tools/dayz-animation-formats/`).
 3. `DayZATool --generate-anim edited.seanim` gives the new `.anm`.
 
-A rig extracted with DayZATool is not reliable. Treat an extract as a starting point and check the rig. Extraction is worst for empties and IK helper bones, the ones weapon reload and state clips use, and it inverts local bone axes. Use an extract as a reference and author through `.txa`.
+Treat an extracted rig as a reference, not a rig to author on. Extraction is least reliable for empties and IK helper bones, the ones reload and weapon state clips use, and it inverts local bone axes. Author new work through `.txa`.
 
-### Measured: the round trip keeps the values, as an absolute pose
+What the round trip keeps, measured on vanilla 1.30 player clips (the `MOTO2` steering pose with 119 bones, `stand2drive` with 27, and the one handed idle `p_1hd_erc_idle_low.anm` with 65):
 
-Measured on two vanilla 1.30 player clips (the `MOTO2` steering pose, 119 bones, and `stand2drive`, 27 bones), 2026-09-28:
-
-- Extract then generate kept rotations within 0.005 degrees and positions within 0.0021 cm.
-- The generated file is `ANIMSET5`; the originals are `ANIMSET6`. It plays in 1.30.
-- It plays as an absolute pose. A clip that holds differences, as the vanilla transitions do, collapses the skeleton (`rider-pose-solver.md`, "Own clips on the rider").
-- On a Windows host DayZATool runs without a window from a script: `DayZATool.exe --generate-anim f.seanim 100` with stdin closed returned 0 and wrote the file (2026-09-29). An earlier session saw it throw on `Console.ReadKey` after writing. Judge by the output file, not the exit code.
-
-### Measured: DayZATool drops SEAnim bone modifiers when it generates
-
-Measured 2026-10-03 on `p_1hd_erc_idle_low.anm`:
-
-- DayZATool 1.3 marks bones RELATIVE through SEAnim bone modifiers when it extracts a vanilla clip. The extract has an ABSOLUTE header and 60 RELATIVE modifiers on its 65 bones. The five without one (`Scene_Root`, `EntityPosition`, `Collision`, `Pelvis`, `LeftHand_Dummy`) are the only bones with position keys.
-- That SEAnim, unchanged, through `--generate-anim 100` gives an `.anm` of the same 209,300 bytes as the vanilla file with a different hash. It extracts again with no modifier: the same 65 bones, rotations within 0.0035 degrees, positions within 0.0016 cm on any axis (0.0027 cm as a distance).
-- In game (DayZDiag 1.29.163709, 2026-10-02) the regenerated idle looked like the vanilla one. This clip could not show a difference, because its RELATIVE bones carry no position keys. What the loss does to a clip whose RELATIVE bones do carry them was not measured.
-- Until 2026-10-03 `seanim_writer.py` dropped the modifiers too, on read and on write. It now keeps them: that extract read and written back is byte identical, and `test_seanim_writer.py` next to the script checks the same on synthetic clips.
+- Rotations come back within 0.005 degrees and positions within 0.0021 cm.
+- The generated file is `ANIMSET5` where the original is `ANIMSET6`; it plays in 1.30.
+- It plays as an absolute pose. A clip that stores differences, as the vanilla transitions do, collapses the skeleton (`rider-pose-measured.md`, "Own clips on the rider").
+- DayZATool 1.3 marks bones relative through SEAnim bone modifiers when it extracts, and drops those modifiers when it generates. On the idle the regenerated clip looked the same in game, because its relative bones carry no position keys; a clip whose relative bones do carry position keys was not tested. `seanim_writer.py` keeps the modifiers on read and write, and `test_seanim_writer.py` next to it checks that.
+- On Windows, `DayZATool.exe --generate-anim f.seanim 100` runs from a script with stdin closed. It has also been seen to throw on `Console.ReadKey` after writing, so judge success by the output file, not the exit code.
 
 ## Which Blender plugin, which Blender
 
-The `.txa` route is the recommended one for player weapon animation; it is the route the plugin's demo mod uses.
+The `.txa` route is the one to use for player weapon animation; the plugin's demo mod uses it.
 
-- The original plugin (`DayZAnimationPluginDemo`) needs Blender 3.6.8 to 4.0. On 4.1 and later it fails with `AttributeError: 'Mesh' object has no attribute 'calc_normals_split'`.
-- The maintained fork is the opposite: it needs Blender 4.4 or later, including 5.x. Its `bl_info` says `(2, 80, 0)`, which means nothing.
-- Install either one by copying the folder into Blender's addons folder as `DayzAnimationTools`. The download is a plain folder, not a zip, so "Install from file" does not work.
+| Plugin | Blender | Note |
+|---|---|---|
+| `DayZAnimationPluginDemo` (original) | 3.6.8 to 4.0 | On 4.1 and later it fails with `AttributeError: 'Mesh' object has no attribute 'calc_normals_split'`. |
+| The maintained fork | 4.4 or later, 5.x included | Its `bl_info` says `(2, 80, 0)`; ignore that. |
 
-## The tools by name
+Install either by copying the folder into Blender's add-ons folder as `DayzAnimationTools`. The download is a plain folder, not a zip, so "Install from file" does not work.
 
-- DayZATool: the converter between `.anm` and SEAnim.
-- `io_anim_seanim`: the SEAnim Blender plugin; its documentation also defines the SEAnim format.
-- `DayZAnimationPluginDemo`: the DayZ `.txa` Blender plugin with its demo mod.
-- `DayZ-Misc`: Bohemia Interactive's public repository with the skeleton and rig reference.
+The other tools by name: DayZATool converts between `.anm` and SEAnim; `io_anim_seanim` is the SEAnim plugin, and its documentation defines the format; `DayZ-Misc` is Bohemia's public repository with the skeleton and rig reference.
 
 ## What 1.30 changed on this route
 
-- **Sub-graphs are `.agf` files.** The master graph lists them in `GraphFilesResourceNames` (`P:\DZ\anims\workspaces\player\player_main\player_main.agr:1587`): `locomotion.agf`, `actions.agf`, `combat.agf`, `vehicles.agf` and four more. They were text in 1.29 as well (separate `.agr` files in the older `$AnimGraph 7` format, listed by the root graph); 1.30 changed the syntax and the extension, not text against binary. Detail: `anim-graphs.md`, "1.29 and 1.30: both text, different syntax".
-- **The vehicle sub-graph can be read.** `P:\DZ\anims\workspaces\player\player_main\vehicles.agf` holds the rider state machines, `MotorBikeSTM` among them (`:1582`). What 1.30 adds is the motorbike rider; the 1.29 graph had vehicle types 0 to 9 only and no `Jawa_` lines (the stale 1.29 file `P:\DZ\anims\workspaces\player\player_main\vehicles.agr`, still on `P:\` after a 1.30 unpack over a 1.29 one, ends its type list at `"VehicleType == 9"`, `:1741`). Types 10 and 11 are the motorbikes (`vehicles.agf:2992` and `:2999`). Readable does not mean patchable: a new rider state or vehicle type still means replacing vanilla graph files (`tooling-and-walls.md`, "A mod cannot merge into a sub-graph").
-- **Bones.** The 1.30 changelog says the limit of 250 bones is gone and bone indices are worked out at run time from the bone names. What the skeleton XML still carries is in `dayz-1-30-changes.md`, "Bones".
-- **Workbench.** The 1.30 changelog says the animation editor is the 2021 Enfusion one, with live editing against a running game client and event table (`.ae`) files opened directly.
+- Sub-graphs are `.agf` files. The master graph lists them in `GraphFilesResourceNames` (`P:\DZ\anims\workspaces\player\player_main\player_main.agr:1587`): `locomotion.agf`, `actions.agf`, `combat.agf`, `vehicles.agf` and four more. 1.29 sub-graphs were text too, as separate `.agr` files in the older `$AnimGraph 7` syntax; 1.30 changed syntax and extension, not text against binary (`anim-graph-format-1-30.md`, "1.29 and 1.30: both text, different syntax").
+- The vehicle sub-graph `P:\DZ\anims\workspaces\player\player_main\vehicles.agf` holds the rider state machines, `MotorBikeSTM` among them (`:1582`). Types 10 and 11 are the motorbikes (`:2992` and `:2999`); the 1.29 file `vehicles.agr`, still on `P:\` after a 1.30 unpack over 1.29, ends at `"VehicleType == 9"` (`P:\DZ\anims\workspaces\player\player_main\vehicles.agr:1741`). Reading it does not make it patchable: a new rider state or vehicle type still means replacing vanilla graph files (`tooling-and-walls.md`, "A mod cannot merge into a sub-graph").
+- The 1.30 changelog says the 250 bone limit is gone and bone indices are worked out at run time from bone names. What the skeleton XML still carries is in `dayz-1-30-changes.md`, "Bones".
+- The 1.30 changelog says the Workbench animation editor is the 2021 Enfusion one, with live editing against a running client and event table (`.ae`) files opened directly.

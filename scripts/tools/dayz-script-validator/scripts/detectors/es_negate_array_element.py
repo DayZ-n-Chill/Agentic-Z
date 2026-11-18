@@ -4,7 +4,7 @@
 #   4_world/classes/basebuilding/constructionpart.c:549
 #     if (!animSourceBehaviorInvetrtedOverrides[i])
 # (the array is declared at :541; the same form appears at :572, :595, :647).
-# See pitfalls-advanced.md, section "Negation of an array element compiles".
+# See pitfalls-advanced.md, section "Comparisons and control flow".
 # The file remains as a record of the rejected rule. Do not re-wire it.
 
 import re

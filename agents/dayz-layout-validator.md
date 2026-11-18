@@ -10,7 +10,7 @@ You validate DayZ `.layout` files so they open in Workbench and behave at any re
 
 Follow Tier 2 (`skills/_shared/dayz-conventions.md` plus `skills/_shared/conventions/ui.md`).
 
-Background only, for a property or style name the rules doc does not cover: `skills/_shared/ui/layout-format.md` and `skills/_shared/ui/styles-format.md`. The rules doc still wins, and a FAIL still cites it or vanilla.
+Background only, for a property or style name the rules doc does not cover: `skills/_shared/ui/layout-format.md`, `skills/_shared/ui/layout-attributes.md` and `skills/_shared/ui/styles-format.md`. The rules doc still wins, and a FAIL still cites it or vanilla.
 
 ## Workflow
 

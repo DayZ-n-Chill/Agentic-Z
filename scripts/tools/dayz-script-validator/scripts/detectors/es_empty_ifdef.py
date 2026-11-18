@@ -30,7 +30,7 @@ ES_EMPTY_IFDEF_MESSAGE = (
     "holding only a comment compiled and ran on server and client, at file "
     "scope, in a class body and in a method body, with a macro DayZDiag "
     "defines and with one nobody defines (skills/_shared/enscript/depth/"
-    "pitfalls-advanced.md, section 5). Not measured: a block with nothing at "
+    "pitfalls-advanced.md, section 'Empty #ifdef blocks'). Not measured: a block with nothing at "
     "all inside, a retail build, DayZ 1.29. Remove the block if it holds no "
     "code."
 )

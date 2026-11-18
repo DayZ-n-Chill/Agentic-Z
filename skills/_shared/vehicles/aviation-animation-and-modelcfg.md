@@ -1,150 +1,127 @@
-# Control surfaces, model.cfg and damage zones
+# Aircraft animations and damage zones
 
-`AnimationSources` for control surfaces, dials and dampers, the `model.cfg` animation classes behind them (dial source scheme, `sourceAddress`, the propeller spin hack, surface angles), aircraft damage zones, and which vanilla seat animation set each aircraft reuses.
+How a scripted aircraft drives its control surfaces, dials, dampers and propeller through `AnimationSources` and `model.cfg`, which damage zones it adds over a car, and which vanilla seat animation set each airframe reuses.
 
-Third-party mod behaviour (LM_Planes, Workshop `3730564764`), not vanilla. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code. The general `model.cfg` and `AnimationSources` rules are in `skills/_shared/animation/model-cfg-animations.md` and `skills/_shared/animation/animation-sources.md`.
+The examples come from LM_Planes (Workshop `3730564764`), whose configs are the source; they are mod practice, not vanilla, except where a `P:\` line is cited. The general rules are in `_shared/animation/model-cfg-animations.md` and `_shared/animation/animation-sources.md`.
 
-## AnimationSources (in CfgVehicles.<Aircraft>)
+## Animation sources in config
+
+Every flight control is a `"user"` source that script drives. `initPhase = 0.5` puts a surface at neutral; dials use a short `animPeriod` so the needle keeps up:
 
 ```cpp
-class AnimationSources {
-    // Flight controls — all script-driven
-    class elevator_1_1 { source = "user"; initPhase = 0.5; animPeriod = 0.5; };  // initPhase=0.5 = neutral
+class AnimationSources
+{
+    class elevator_1_1 { source = "user"; initPhase = 0.5; animPeriod = 0.5; };
     class elevator_2_1: elevator_1_1 {};
-    class aileron_1_1:  elevator_1_1 {};
-    class aileron_2_1:  elevator_1_1 {};
-    class rudder_1_1:   elevator_1_1 {};
-    class gear_1_1 { source = "user"; initPhase = 0; animPeriod = 2.5; };  // 2.5s retract
-    
-    // Dashboard instruments — short animPeriod for responsive needles
+    class aileron_1_1: elevator_1_1 {};
+    class aileron_2_1: elevator_1_1 {};
+    class rudder_1_1: elevator_1_1 {};
+    class gear_1_1 { source = "user"; initPhase = 0; animPeriod = 2.5; }; // 2.5 s to retract
     class dial_compass { source = "user"; initPhase = 0; animPeriod = 0.05; };
     class dial_horizon_pitch { source = "user"; initPhase = 0; animPeriod = 0.05; };
-    class dial_horizon_bank  { source = "user"; initPhase = 0; animPeriod = 0.05; };
-    class dial_volt          { source = "user"; initPhase = 0; animPeriod = 0.05; };
-    class dial_altitude      { source = "user"; initPhase = 0; animPeriod = 0.05; };
-    
-    // Dampers (suspension) — translation animations
+    class dial_horizon_bank { source = "user"; initPhase = 0; animPeriod = 0.05; };
+    class dial_volt { source = "user"; initPhase = 0; animPeriod = 0.05; };
+    class dial_altitude { source = "user"; initPhase = 0; animPeriod = 0.05; };
     class damper_1_1 { source = "user"; initPhase = 0.5; animPeriod = 1; };
 };
 ```
 
-Every flight-control source is `"user"` (script-driven). The script then calls `SetAnimationPhase("elevator_1_1", value)` from `UpdateControlSurfaceAnimations(dt)`.
+Script sets them with `SetAnimationPhase("elevator_1_1", value)` from `UpdateControlSurfaceAnimations(dt)`; `aviation-script-performance.md` shows how to skip calls that change nothing.
 
-## Model.cfg Animation classes (per-aircraft .cfg)
+## Animation classes in model.cfg
 
-Animations live in `CfgModels.<Aircraft>.class Animations`:
+The classes sit in `CfgModels.<Aircraft>.class Animations`. A dial driven by script, a wheel driven by the engine, and a damper:
 
-```c
+```cpp
 class dial_horizon_bank
 {
     type = "rotation";
-    source = "dial_horizon_bank";  // CUSTOM source string
+    source = "dial_horizon_bank"; // a custom source
     selection = "dial_horizon_bank";
     axis = "dial_horizon_bank_axis";
-    sourceAddress = clamp;          // Critical for dials: don't loop past min/max
+    sourceAddress = clamp;        // a dial stops at the ends
     minValue = -1;
     maxValue = 1;
     angle0 = 3.14;
     angle1 = -3.14;
     memory = true;
 };
-
 class wheel_1_1
 {
     type = "rotation";
-    source = "wheelfrontleft";      // VANILLA engine source
+    source = "wheelfrontleft";    // an engine source
     selection = "wheel_1_1";
     axis = "wheel_1_1_axis";
-    sourceAddress = loop;           // Wheels rotate continuously
+    sourceAddress = loop;         // a wheel turns without end
     minValue = 0.0;
-    maxValue = 6.2831855;           // 2π
+    maxValue = 6.2831855;         // 2 pi
     angle0 = 0.0;
     angle1 = -6.2831855;
     memory = 1;
 };
-
 class damper_1_1
 {
-    type = "translation";           // Suspension: linear motion
-    offset0 = 0.0;
-    offset1 = 0.35;
-    // ...
-};
-```
-
-### Dial source-string scheme
-
-**Vanilla engine sources** (read directly from simulation):
-- `source = "rpm"` (engine RPM, for `dial_rpm`)
-- `source = "fuel"` (for `dial_fuel`)
-- `source = "coolant"` (for `dial_temp`)
-- `source = "speed"` (for `dial_speed`)
-
-**Custom script-driven sources** (script writes via SetAnimationPhase):
-- `source = "dial_altitude"` (matches the bone name when custom)
-- `source = "dial_volt"`, `dial_compass`, `dial_horizon_bank`, `dial_horizon_pitch`
-
-**Pattern**: when source is custom, source string equals bone name (`dial_altitude` → `dial_altitude`). When source is vanilla, source differs (`dial_rpm` → `rpm`).
-
-### sourceAddress patterns
-
-| sourceAddress | Use case |
-|---|---|
-| `clamp` | Dials — don't loop past min/max, needle stops at range edges |
-| `loop` | Wheels, compass — continuous rotation |
-| `mirror` | Ping-pong oscillation (Catalina + Patty_Wagon use heavily — wipers, dial wobble) |
-
-### Propeller spin hack
-
-```c
-class rotor_1_1
-{
-    type = "rotation";
-    source = "wheelfrontright";  // !!! Tied to right-front wheel RPM, not engine !!!
-    ...
-};
-```
-
-Because the aircraft uses `CarScript`, vanilla wheel-RPM sources are easier than custom. Visual prop spin is tied to right-front wheel rotation. To spin the propeller from the engine instead of a wheel, point the bone at a user `AnimationSource` and drive it from script with `SetAnimationPhase`, or keep the wheel source. Do not use `dBodySetAngularVelocity` for this: it sets the angular velocity of the whole rigid body, not of a model animation. `rotor_1_1_blur` bone is for the blurred-prop visual effect, controlled by script (no animation in cfg).
-
-### Multi-engine bone naming inconsistency
-
-- DC-3 uses: `rotor_1_2`, `rotor_center2`
-- Catalina uses: `rotor_2_1`, `rotor_center_2`
-
-Pick one convention for new mods; don't mix.
-
-### Flight surface realistic angles
-
-- Elevator: ±0.40 rad (~23°)
-- Aileron: ±0.40 rad (note: angle0/angle1 swap signs vs elevator)
-- Rudder: ±0.27 rad (~15°)
-- minValue/maxValue: -1 to 1 (script writes normalized)
-
-### Damper translation
-
-```c
-class damper_1_1 {
     type = "translation";
     source = "damper_1_1";
     axis = "damper_1_1_axis";
     offset0 = 0.0;
-    offset1 = 0.35;   // Up movement (suspension travel)
+    offset1 = 0.35;               // upward suspension travel
     memory = 1;
 };
-class damper_2_2 { ...; offset0 = -0.2; offset1 = -0.40; };  // Tail wheel: different range
 ```
 
-Pair this with `damper_susp_X_Y` rotation animations for the spring-mount visual swing.
+The tail wheel damper `damper_2_2` uses a different range, `offset0 = -0.2` and `offset1 = -0.40`. Pair each translation damper with a `damper_susp_X_Y` rotation for the swing of the spring mount.
 
-### isDiscrete flag
+## Dial sources
 
-`isDiscrete` is a flag on the `CfgSkeletons` skeleton class, not on an animation: `1` for mechanical parts (vehicles, aircraft), `0` for organic movement such as a creature. It has nothing to do with `sourceAddress`. See `skills/_shared/animation/model-cfg-animations.md`.
+| Kind | Sources | Naming |
+|---|---|---|
+| Engine sources, read from the simulation | `rpm` (`dial_rpm`), `fuel` (`dial_fuel`), `coolant` (`dial_temp`), `speed` (`dial_speed`) | The source differs from the bone |
+| Script sources, set with `SetAnimationPhase` | `dial_altitude`, `dial_volt`, `dial_compass`, `dial_horizon_bank`, `dial_horizon_pitch` | The source has the bone's name |
 
-## Aviation Damage Zones
+## sourceAddress
 
-```c
-sections[] = {
+| Value | Use |
+|---|---|
+| `clamp` | Dials: the needle stops at the end of its range |
+| `loop` | Wheels and the compass: turning without end |
+| `mirror` | Back and forth motion; the Catalina and Patty Wagon use it for wipers and dial wobble |
+
+`isDiscrete` is not an animation key. It belongs to the `CfgSkeletons` skeleton class, `1` for mechanical parts such as vehicles and `0` for organic movement such as a creature, and has nothing to do with `sourceAddress` (`_shared/animation/model-cfg-animations.md`).
+
+## The propeller
+
+LM_Planes spins the propeller from a wheel source:
+
+```cpp
+class rotor_1_1
+{
+    type = "rotation";
+    source = "wheelfrontright"; // turns with the front right wheel, not the engine
+};
+```
+
+On a `CarScript` aircraft the wheel sources come for free, so the propeller turns with the front right wheel. To drive it from the engine instead, point the bone at a `"user"` source and set it from script. Do not use `dBodySetAngularVelocity` for this: it spins the whole physics body, not a model part (`P:\scripts\1_core\proto\enphysics.c:165`). The `rotor_1_1_blur` bone carries the blurred propeller and is shown or hidden by script, with no animation class.
+
+Twin engine models name their bones differently: the DC-3 uses `rotor_1_2` and `rotor_center2`, the Catalina `rotor_2_1` and `rotor_center_2`. Pick one scheme for a new mod and keep to it.
+
+## Control surface angles
+
+| Surface | Range |
+|---|---|
+| Elevator | plus or minus 0.40 rad, about 23 degrees |
+| Aileron | plus or minus 0.40 rad, with `angle0` and `angle1` signs swapped against the elevator |
+| Rudder | plus or minus 0.27 rad, about 15 degrees |
+
+`minValue` and `maxValue` are -1 and 1; script writes a value in that range.
+
+## Damage zones
+
+The aircraft lists these in `sections[]`:
+
+```cpp
+sections[] =
+{
     "camo1",
     "dmgzone_body", "dmgzone_back", "dmgzone_chassis", "dmgzone_front",
     "dmgzone_flaps_backleft", "dmgzone_flaps_backright",
@@ -157,25 +134,19 @@ sections[] = {
 };
 ```
 
-Aircraft-specific zones beyond standard car damage:
-- 4 wing parts (front/back × left/right) — granular cosmetic damage
-- 4 flap parts (matching wing layout)
-- `wings_rudder` (rudder counts as wing for damage)
-- 4 windows (cockpit canopy damage)
+Over a car it adds four wing parts and four flaps (front and back, left and right), the rudder counted as a wing part, and four cockpit windows. The zone names script reads on every car, `Engine` and `FuelTank`, still apply (`damage.md`).
 
-### VehicleAnimInstances catalog (per-aircraft player anim)
+## Seat animations
 
-`override int GetAnimInstance() { return VehicleAnimInstances.XXX; }` — pick based on cockpit size/shape:
+`GetAnimInstance()` returns one of the vanilla sets in `VehicleAnimInstances` (`P:\scripts\4_world\entities\vehicles\vehicleaniminstances.c:1`): `CIVVAN`, `V3S`, `SEDAN`, `HATCHBACK`, `BUS`, `S120`, `MULTICAR`, `GOLF`, `HMMWV`, `ZODIAC`, `MOTO1` and `MOTO2`. None is made for an aircraft, so pick by cockpit size: tight and small is `GOLF`, a normal cockpit is `SEDAN`, a large cabin is `V3S`.
 
-| Aircraft | AnimInstance | Vanilla DayZ vehicle template |
-|---|---|---|
-| Cessna180 | `GOLF` | Compact car cockpit (small piston single) |
-| Catalina | `SEDAN` | Standard car cockpit (medium plane) |
-| Spitfire | `GOLF` | Fighter cockpit fits GOLF shape |
-| StuntPlane | `SEDAN` | |
-| Tigermoth (all variants) | `SEDAN` (default) | |
-| Z37_Bumblebee | `SEDAN` | |
-| DC-3 | `V3S` | Truck cockpit (large transport) |
-| Patty_Wagon | `V3S` | Truck cockpit |
-
-Vanilla DayZ has these animation instances reusable without authoring custom anims: the `VehicleAnimInstances` enum at `P:\scripts\4_world\entities\vehicles\vehicleaniminstances.c:1` lists `CIVVAN`, `V3S`, `SEDAN`, `HATCHBACK`, `BUS`, `S120`, `MULTICAR`, `GOLF`, `HMMWV`, `ZODIAC`, `MOTO1` and `MOTO2`, and none is made for an aircraft. Pick by character: small + tight = GOLF, standard cockpit = SEDAN, large/truck cabin = V3S.
+| Aircraft | Set |
+|---|---|
+| Cessna180 | `GOLF` |
+| Spitfire | `GOLF` |
+| Catalina | `SEDAN` |
+| StuntPlane | `SEDAN` |
+| Tigermoth, every variant | `SEDAN` |
+| Z37_Bumblebee | `SEDAN` |
+| DC-3 | `V3S` |
+| Patty_Wagon | `V3S` |

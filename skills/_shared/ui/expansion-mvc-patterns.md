@@ -1,33 +1,25 @@
-# Expansion MVC patterns: how DayZ Expansion builds its menus
+# Expansion view classes
 
-How DayZ Expansion structures a menu: its own MVC classes, the menu lifecycle, observable collections, subviews, dialogs and HUD panels. Read it before writing or changing a menu that extends Expansion, or to copy one of its patterns.
+How DayZ Expansion builds its menus: its own view and controller classes, the show and hide lifecycle, the update tick, the menu manager, subviews, dialogs, the settings panel and HUD panels. Read it before you change a menu that extends Expansion or copy one of its patterns; a full worked example is `expansion-market-menu.md`.
 
-Everything here is a DayZ Expansion fact, not a vanilla fact. Expansion is a third-party mod, so none of it is checked on `P:\`. Every path below is a path inside the DayZ Expansion scripts tree, and every `path:line` is for its `release` branch at commit `8f75d554fda209b257c00deb8f01c181e67c980a`; a newer Expansion build can move the lines. One vanilla fact is cited on `P:\`: the `PPEffects` class Expansion uses for menu blur is marked deprecated in vanilla (section 2).
+DayZ Expansion is a third party mod. Every path below is inside the DayZ Expansion scripts (the `release` branch of its source), not vanilla, and none of it is on `P:\`. Line numbers move between releases, so search for the symbol.
 
----
+## Classes
 
-## 1. Class Hierarchy (Expansion Core MVC)
+| Class | Base | Adds |
+|---|---|---|
+| `ExpansionScriptView` | `Managed` | Layout, controller and the update timer |
+| `ExpansionScriptViewMenu` | `ExpansionScriptView` | Input lock, blur and the menu lifecycle; menus such as `ExpansionMarketMenu` and `ExpansionQuestMenu` extend it |
+| `ExpansionViewController` | | The binding hub: collections and `PropertyChanged` |
+| `ObservableCollection<ref T>` | | Tells the controller about `Insert`, `InsertAt`, `Remove` and `Clear` |
 
-```
-Managed
-  └─ ExpansionScriptView              // base: layout + controller + update timer
-       └─ ExpansionScriptViewMenu     // adds: input lock, blur, UIManager lifecycle
-            └─ (concrete menus)       // e.g. ExpansionMarketMenu, ExpansionQuestMenu
-ExpansionViewController               // data binding hub (ObservableCollection, PropertyChanged)
-ObservableCollection<ref T>           // notifies ViewController on Insert/Remove/Clear
-```
+Expansion's MVC lives in `DayZExpansion/Core/`. It looks like Dabs Framework's but is a separate implementation; never mix a Dabs `ScriptView` and an `ExpansionScriptView` in one menu.
 
-Expansion's MVC is its own implementation in `DayZExpansion/Core/` — parallel to Dabs Framework
-but not interchangeable. Do not mix Dabs `ScriptView` and `ExpansionScriptView` in the same menu.
+## Show and hide
 
----
+`DayZExpansion/Core/Scripts/5_Mission/DayZExpansion_Core/MVC/ScriptViews/Bases/ExpansionScriptViewMenu.c:43`:
 
-## 2. ExpansionScriptViewMenu — OnShow/OnHide with blur + ForceDisable loop
-
-**Path:line**: `DayZExpansion/Core/Scripts/5_Mission/DayZExpansion_Core/MVC/ScriptViews/Bases/ExpansionScriptViewMenu.c:43`
-**Confidence**: high.
-
-```
+```c
 override void OnShow()
 {
     super.OnShow();
@@ -36,9 +28,11 @@ override void OnShow()
     SetFocus(GetLayoutRoot());
     CreateUpdateTimer();
 }
+
 override void OnHide()
 {
-    if (!g_Game) return;
+    if (!g_Game)
+        return;
     super.OnHide();
     PPEffects.SetBlurMenu(0.0);
     DestroyUpdateTimer();
@@ -46,27 +40,23 @@ override void OnHide()
 }
 ```
 
-`LockControls()` iterates active inputs, preserves `UAUIBack`, and calls `ForceDisable` on each.
-`CloseMenu()` delegates to `ExpansionUIManager`.
+`LockControls()` walks the active inputs, keeps `UAUIBack`, and calls `ForceDisable` on the rest. `CloseMenu()` hands off to `ExpansionUIManager`.
 
-`PPEffects` still works, but vanilla marks the class deprecated in favor of `PPEManager` (`P:\scripts\3_game\ppeffects.c:1`). Vanilla's own menu blur goes through a PPE requester: see `vanilla-menus-map.md`, section 8.
+- Call `super.OnShow()` and `super.OnHide()` in every subclass; the base owns the blur and the timer.
+- Guard `OnHide()` with `if (!g_Game) return;`, because it also runs during shutdown.
 
-Rules:
-- Always call `super.OnShow()` / `super.OnHide()` — base manages blur state and timer.
-- Always guard `OnHide()` with `if (!g_Game) return` — called during shutdown.
+`PPEffects` still works, but vanilla marks the class "Deprecated; 'PPEManager' used instead" (`P:\scripts\3_game\ppeffects.c:1`). Vanilla's own menus blur through a PPE requester; see `vanilla-menus-map.md`.
 
----
+## The update tick
 
-## 3. ExpansionScriptView — Tick update opt-in (CALL_CATEGORY_GUI timer)
+`ExpansionScriptView` runs `Expansion_Update` on a `CALL_CATEGORY_GUI` timer only when asked (`DayZExpansion/Core/Scripts/5_Mission/DayZExpansion_Core/MVC/ScriptViews/Bases/ExpansionScriptView.c:48`):
 
-**Path:line**: `DayZExpansion/Core/Scripts/5_Mission/DayZExpansion_Core/MVC/ScriptViews/Bases/ExpansionScriptView.c:48`
-**Confidence**: high.
-
-```
+```c
 float GetUpdateTickRate()
 {
-    return -1;   // -1 = no timer (default)
+    return -1; // no timer
 }
+
 protected void CreateUpdateTimer()
 {
     if (!m_UpdateTimer && GetUpdateTickRate() != -1)
@@ -77,18 +67,13 @@ protected void CreateUpdateTimer()
 }
 ```
 
-Override `GetUpdateTickRate()` to return a positive float (seconds between ticks) to opt in.
-Menu subclasses recreate the timer in `OnShow`/`OnHide`. Example: `ExpansionQuestHud` uses a
-1-second tick to poll `GetClientQuestData()`.
+Return a positive number of seconds from `GetUpdateTickRate()` to opt in. Menus create the timer in `OnShow` and destroy it in `OnHide`. `ExpansionQuestHud` ticks once a second to poll `GetClientQuestData()`. `CALL_CATEGORY_GUI` is the vanilla queue that "Runs always (on client)" (`P:\scripts\3_game\tools\tools.c:9`).
 
----
+## The menu manager
 
-## 4. ExpansionUIManager — Singleton menu lifecycle
+`ExpansionUIManager.CreateSVMenu` (`DayZExpansion/Core/Scripts/3_Game/DayZExpansion_Core/ExpansionUIManager.c:101`):
 
-**Path:line**: `DayZExpansion/Core/Scripts/3_Game/DayZExpansion_Core/ExpansionUIManager.c:101`
-**Confidence**: high.
-
-```
+```c
 ExpansionScriptViewMenuBase CreateSVMenu(string viewName)
 {
     ExpansionScriptViewMenuBase viewMenu;
@@ -105,166 +90,69 @@ ExpansionScriptViewMenuBase CreateSVMenu(string viewName)
         viewMenu.Show();
 ```
 
-`CreateSVMenu(viewName)` destroys any existing instance of the same class before creating a new
-one — safe to call repeatedly. `CloseAll(includeVanilla)` closes ScriptViewMenus and
-UIScriptedMenus separately. The range `MENU_EXPANSION_MENU_START..END` protects vanilla menus.
+It destroys any open instance of the same name first, so calling it twice is safe. `CloseAll(includeVanilla)` closes Expansion menus and vanilla `UIScriptedMenu`s separately, and the ID range `MENU_EXPANSION_MENU_START` to `MENU_EXPANSION_MENU_END` keeps Expansion's IDs clear of vanilla's.
 
-Open a menu from module code (e.g. after server-side validation):
-```
-// ExpansionMarketModule.c:4587 — after MoneyCheck() passes:
-CreateSVMenu("ExpansionMarketMenu");
-// Must be called on the client in MissionGameplay phase; workspace must be valid.
-```
+Open a menu from module code on the client during gameplay, once the server has said yes: the Market calls `CreateSVMenu("ExpansionMarketMenu")` after `MoneyCheck()` passes (`ExpansionMarketModule.c:4587`). Never create a view or call `CreateSVMenu` from inside an RPC handler, where the workspace can be null.
 
-Never call `CreateSVMenu` from RPC handler context — workspace may be null mid-RPC.
+## Bindings and subviews
 
----
+The layout root's `scriptclass` names the controller; each child is `scriptclass "ViewBinding"` with a `Binding_Name` that matches a controller property exactly, and `Two_Way_Binding 1` on edit boxes and check boxes. `expansion-market-menu.md`, "Menu, controller and layout", shows the Market's controller and layout.
 
-## 5. ObservableCollection + ViewBinding — Declarative two-way binding
+A complex menu is many small views. Every item row, category panel, tooltip, drop down and dialog is its own `ExpansionScriptView` with its own layout, controller and collections, and the parent holds an `ObservableCollection<ref SubviewType>`:
 
-**Path:line (controller)**: `Scripts/5_Mission/DayZExpansion_Market/Market/ExpansionMarketMenu.c:3620`
-**Path:line (layout root)**: `GUI/layouts/market/expansion_market_menu.layout:12`
-**Path:line (widget binding)**: `GUI/layouts/market/expansion_market_menu.layout:77`
-**Confidence**: high.
-
-```
-class ExpansionMarketMenuController: ExpansionViewController
-{
-    ref ObservableCollection<ref ExpansionMarketMenuCategory> MarketCategories =
-        new ObservableCollection<...>(this);
-    ref ObservableCollection<ref ExpansionMarketMenuDropdownElement> DropdownElements = ...
-    string MarketName;
-    string PlayerTotalMoney;
-    override void PropertyChanged(string property_name)
-```
-
-```
-FrameWidgetClass ExpansionMarketMenu {
- scriptclass "ExpansionMarketMenuController"
- ...
-      TextWidgetClass market_text {
-       scriptclass "ViewBinding"
-       Binding_Name "MarketName"
-       Two_Way_Binding 1
-```
-
-Rules:
-- Layout root: `scriptclass` names the controller class.
-- Child widgets: `scriptclass "ViewBinding"` + `Binding_Name` must match a controller property exactly.
-- Editable/checkbox widgets: `Two_Way_Binding 1` writes back to the controller.
-- `ObservableCollection` auto-notifies the controller on `Insert`/`InsertAt`/`Remove`/`Clear`.
-
----
-
-## 6. Subview composition — each row/element is its own ExpansionScriptView
-
-**Path:line**: `Scripts/5_Mission/DayZExpansion_Market/Market/ExpansionMarketMenuItem.c:13` and `:119-126`
-**Path:line**: `Scripts/5_Mission/DayZExpansion_Market/Market/ExpansionMarketMenuCategory.c:652`
-**Confidence**: high.
-
-```
+```c
 class ExpansionMarketMenuItem: ExpansionScriptView
-    return "DayZExpansion/Market/GUI/layouts/market/expansion_market_menu_item_element.layout";
+{
+    override string GetLayoutFile()
+    {
+        return "DayZExpansion/Market/GUI/layouts/market/expansion_market_menu_item_element.layout";
+    }
+}
 
-// Category controller (line 652):
-ref ObservableCollection<ref ExpansionMarketMenuItem> MarketItems
+// in the category controller
+ref ObservableCollection<ref ExpansionMarketMenuItem> MarketItems;
 ```
 
-Complex menus are not monoliths. Every item row, category panel, tooltip, dropdown, and dialog
-is a separate subview with its own layout, controller, and observable collections.
-The parent menu holds `ObservableCollection<ref SubviewType>` and inserts/removes subview
-instances as data changes. Of the patterns here, this is the one most worth copying for a complex menu.
+Sources: `Scripts/5_Mission/DayZExpansion_Market/Market/ExpansionMarketMenuItem.c:13` and `:119` to `:126`; `ExpansionMarketMenuCategory.c:652`. This is the pattern most worth copying for a large menu.
 
----
+Filter and sort in the model before you touch a collection (`ExpansionMarketMenu.c:436` to `:452` and `:644` to `:663`). The Market sets an `m_ShowInMenu` flag per item, gathers the shown items into a temporary list, and only at the end calls `MarketCategories.InsertAt(...)`. The UI then receives finished, sorted rows and never redraws half a list.
 
-## 7. Intermediate model filter before touching ObservableCollection
+Items that hold a reference back to their controller leak; null the back reference in the item's destructor.
 
-**Path:line**: `Scripts/5_Mission/DayZExpansion_Market/Market/ExpansionMarketMenu.c:436-452` and `:644-663`
-**Confidence**: high.
+## Dialogs
 
-```
-if (!m_TraderMarket.ItemExists(currentItem.ClassName) || m_TraderMarket.IsAttachmentBuySell(...))
-    continue;
-currentItem.m_ShowInMenu = true/false;  // filter in model
-TempInsertItem(displayName, currentItem, tempItems);  // accumulate in temp list
-...
-m_MarketMenuController.MarketCategories.InsertAt(marketCategoryElement, i);  // only at the end
-```
+`ExpansionDialogBase` builds dialogs from two collections (`DayZExpansion/Core/Scripts/5_Mission/DayZExpansion_Core/MVC/ScriptViews/Dialogs/ExpansionDialogBase.c:118`):
 
-Maintain an intermediate model (`m_ShowInMenu` flag, temp lists) before modifying
-`ObservableCollection`. The UI receives only pre-filtered, pre-sorted elements.
-Avoids partial re-renders mid-collection.
-
----
-
-## 8. ExpansionDialogBase — Composable dialogs via ObservableCollection
-
-**Path:line**: `DayZExpansion/Core/Scripts/5_Mission/DayZExpansion_Core/MVC/ScriptViews/Dialogs/ExpansionDialogBase.c:118`
-**Confidence**: high.
-
-```
+```c
 class ExpansionDialogBaseController: ExpansionViewController
 {
-    ref ObservableCollection<ref ExpansionDialogContentBase> DialogContents =
-        new ObservableCollection<ref ExpansionDialogContentBase>(this);
-    ref ObservableCollection<ref ExpansionDialogButtonBase> DialogButtons =
-        new ObservableCollection<ref ExpansionDialogButtonBase>(this);
+    ref ObservableCollection<ref ExpansionDialogContentBase> DialogContents = new ObservableCollection<ref ExpansionDialogContentBase>(this);
+    ref ObservableCollection<ref ExpansionDialogButtonBase> DialogButtons = new ObservableCollection<ref ExpansionDialogButtonBase>(this);
     string DialogTitle;
 };
 ```
 
-Inject content/buttons via `AddContent()` / `AddButton()`. Conditional visibility controlled
-by virtuals `HasHeader()`, `HasFooter()`, `HasCloseButton()`. Layout uses
-`Binding_Name "DialogContents"` and `"DialogButtons"`.
+Add content and buttons with `AddContent()` and `AddButton()`. The virtuals `HasHeader()`, `HasFooter()` and `HasCloseButton()` decide what shows. The layout binds `Binding_Name "DialogContents"` and `"DialogButtons"`.
 
----
+## A settings panel by reflection
 
-## 9. Client settings UI — reflection via EnScript.GetClassVar with dot-path
+Expansion's client settings bind controls to nested fields by a dotted path (`DayZExpansion/Core/Scripts/3_Game/DayZExpansion_Core/Serialization/ExpansionSettingSerializationBase.c:53`):
 
-**Path:line**: `DayZExpansion/Core/Scripts/3_Game/DayZExpansion_Core/Serialization/ExpansionSettingSerializationBase.c:53`
-**Confidence**: high.
-
-```
+```c
 protected bool FindClassInstanceAndVariable()
 {
     array<string> arr = {};
-    m_Variable.Split( ".", arr );
+    m_Variable.Split(".", arr);
     m_ActualInstance = m_Instance;
-    for ( int i = 0; i < arr.Count() - 1; ++i )
+    for (int i = 0; i < arr.Count() - 1; ++i)
     {
-        EnScript.GetClassVar( m_ActualInstance, arr[i], 0, m_ActualInstance );
+        EnScript.GetClassVar(m_ActualInstance, arr[i], 0, m_ActualInstance);
 ```
 
-Accepts dot-path strings like `"Foo.Bar"` — walks the object graph via `EnScript.GetClassVar`.
-`CreateToggle/CreateSlider/CreateEnum` build serialization objects per category. Use for generic
-settings panels that bind UI controls to nested config objects without hardcoded field references.
+A path such as `"Foo.Bar"` walks the object graph with `EnScript.GetClassVar`. `CreateToggle`, `CreateSlider` and `CreateEnum` build one entry per setting, so a generic panel binds controls without naming each field in code.
 
----
+## HUD panels driven by synced state
 
-## 10. HUD multi-pointer — Expansion vehicle HUD registration
+Expansion's vehicles module registers extra HUD panels from a `modded class IngameHud`, keyed by a vehicle type enum (`DayZExpansion/Vehicles/Scripts/5_Mission/DayZExpansion_Vehicles/GUI/IngameHud.c:13`). Each panel is its own `ExpansionScriptView` that reads synced state (`m_IsSync`, `m_HaltPhysics`, `m_IsInvulnerable`) and sets widget visibility in `Expansion_Update()` (`expansionboathud.c:39` and `:169`; layout `DayZExpansion/Vehicles/GUI/layouts/hud/hud_boats.layout:170`). The same shape suits any overlay driven by server state.
 
-**Path:line**: `DayZExpansion/Vehicles/Scripts/5_Mission/DayZExpansion_Vehicles/GUI/IngameHud.c:13`
-**Path:line**: `DayZExpansion/Vehicles/Scripts/5_Mission/DayZExpansion_Vehicles/GUI/expansionboathud.c:39` and `:169`
-**Path:line**: `DayZExpansion/Vehicles/GUI/layouts/hud/hud_boats.layout:170`
-**Confidence**: high.
-
-`modded class IngameHud` registers additional HUD panels keyed by a vehicle/entity type enum.
-Each panel is a self-contained `ExpansionScriptView` subclass. The panel reads synced NetVar state
-(`m_IsSync`, `m_HaltPhysics`, `m_IsInvulnerable`) and updates widget visibility in
-`Expansion_Update()`. Pattern applies to any HUD overlay driven by server-synced state.
-
-Note: legacy and modern HUD paths coexist under `EXPANSION_VEHICLES_HUD_OLD` compile flag.
-Check which path is active in the target build before modifying HUD registration code.
-
----
-
-## Key rules for Expansion MVC (summary)
-
-1. Never instantiate `ExpansionScriptView` subclasses from RPC context — workspace may be null.
-2. Always call `super.OnShow()` / `super.OnHide()` in every Expansion menu subclass.
-3. The controller is an active state hub — `PropertyChanged` may cascade updates across multiple
-   collections and settings simultaneously.
-4. Filter and sort model data into a temp list before any `ObservableCollection` mutation.
-5. `CreateSVMenu` is idempotent — safe to re-call; old instance is destroyed automatically.
-6. `ObservableCollection` items with back-refs to their controller create circular ref leaks —
-   null back-refs in item destructors.
+An older and a newer HUD path sit side by side behind the `EXPANSION_VEHICLES_HUD_OLD` compile flag; check which one the build uses before you change the registration.

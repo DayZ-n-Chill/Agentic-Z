@@ -1,32 +1,19 @@
-# MatPBR and `.emat`: the metallic and roughness route
+# MatPBR and `.emat` materials
 
-A second material route for assets authored as a metallic and roughness set: an `.emat` file holding a `MatPBR` block, a stub `.rvmat` of the same name, and textures imported through Workbench. It sits beside the Super route in `rvmat-cookbook.md`; it does not replace it.
+Covers the second material route, for assets made as a metallic and roughness set: an `.emat` file holding a `MatPBR` block, a stub `.rvmat` of the same name, and textures imported through Workbench. It sits beside the Super route in `rvmat-cookbook.md` and does not replace it.
 
-**Status: not documented by Bohemia, not confirmed by any vanilla file on `P:\`, and not run by this repo.** Everything about `MatPBR` below rests on two example `.emat` and `.rvmat` files and the steps that go with them. Treat each claim as a lead until your own Workbench import and an in-game look confirm it, and prefer the Super route when you need a well trodden path. What vanilla does ship is in the last section.
-
-## Contents
-
-- [When to use it](#when-to-use-it)
-- [Textures it needs](#textures-it-needs)
-- [The three companion files](#the-three-companion-files)
-- [Preparing the ambient occlusion map](#preparing-the-ambient-occlusion-map)
-- [Importing into Workbench](#importing-into-workbench)
-- [Applying it to an object](#applying-it-to-an-object)
-- [Glass and transparency](#glass-and-transparency)
-- [Limits](#limits)
-- [Tips](#tips)
-- [What vanilla ships](#what-vanilla-ships)
+Bohemia does not document this route, no vanilla file on `P:\` uses a `MatPBR` block, and it is unverified here. Everything about `MatPBR` below comes from two example `.emat` and `.rvmat` files and the steps that came with them, so confirm each point with your own Workbench import and a look in game. Prefer Super when you need a well trodden path. What vanilla does ship is in the last section.
 
 ## When to use it
 
 | Use MatPBR when | Use Super when |
 |---|---|
-| The source is an authored metallic and roughness set (Substance, Quixel, a bought pack, a generated set) | The source already has DayZ suffix textures, or you are cloning a vanilla material |
-| The asset is a weapon, clothing, a vehicle or a building | The asset is terrain (no MatPBR terrain path is known) |
+| The source is a metallic and roughness set (Substance, Quixel, a bought pack, a generated set) | The source already has DayZ suffix textures, or you are copying a vanilla material |
+| The asset is a weapon, clothing, a vehicle or a building | The asset is terrain (no MatPBR terrain route is known) |
 | The material needs no damage or destruct look | The item needs `healthLevels[]` damage looks (`config-wiring.md`) |
-| A larger texture footprint is acceptable | Mod size or the texel budget is tight |
+| A larger texture budget is fine | Mod size or texel budget is tight |
 
-It is reported to work on weapons, clothing, vehicles and buildings (not checked here), and is not solved for terrain.
+Reported to work on weapons, clothing, vehicles and buildings; not checked on `P:\`.
 
 ## Textures it needs
 
@@ -34,59 +21,55 @@ Unreal style suffixes, separate from the DayZ suffixes in `suffixes-and-sizes.md
 
 | Suffix | Role | Notes |
 |---|---|---|
-| `_albedo` | Base color | The role `_co` has in the Super route |
-| `_ao` | Ambient occlusion | One per model is usually enough (see Tips) |
-| `_metallic` | Metalness | Works only in a limited way; check per asset |
-| `_normal` | Normal map, DirectX convention | The same Y- convention as `_nohq` (`normal-maps.md`); do not compress it |
+| `_albedo` | Base color | Plays the part `_co` plays in Super |
+| `_ao` | Ambient occlusion | One per model is usually enough |
+| `_metallic` | Metalness | Responds only partly; judge per asset |
+| `_normal` | Normal map, DirectX convention | Same Y- convention as `_nohq` (`normal-maps.md`); leave it uncompressed |
 | `_roughness` | Roughness | The opposite sense of the gloss in `_smdi` blue |
 
-These source names are for Workbench, not ImageToPAA: `/dayz-pack-texture` refuses them.
+These names are for Workbench, not ImageToPAA; `/dayz-pack-texture` refuses them.
 
-## The three companion files
+## The three files per material
 
-The Super route needs one `.rvmat`. This route needs three files per material:
+Super needs one `.rvmat`. MatPBR needs three files:
 
-1. **The `.emat`** holds the `MatPBR { ... }` block and every texture reference, as Workbench resource IDs and not plain paths.
-2. **The `.rvmat`** is a stub with only `PixelShaderID` and `VertexShaderID`. The example files use `CalmWater`. Why that ID works for a solid surface is not known; take it as an observed recipe, not an understood mechanism.
-3. **An environment cube map**: a 256 x 128 image imported as EDDS with `GenerateCubemap` ticked and `TiledTexture` unticked in the import settings. A fully bright map works better than a dark-bottomed one on most surfaces, and a darker one on glass (not checked here).
+1. The `.emat`, holding the `MatPBR { ... }` block. Every texture in it is named by its Workbench resource ID, not a plain path.
+2. The `.rvmat`, a stub with only `PixelShaderID` and `VertexShaderID`. The example files use `CalmWater`; why that works on a solid surface is not known, so treat it as a recipe that works, not a mechanism.
+3. An environment cube map: a 256 x 128 image imported as EDDS with `GenerateCubemap` ticked and `TiledTexture` unticked. A fully bright map suits most surfaces and a darker one suits glass (reported, not checked).
 
-**Naming rule:** the `.emat` and the `.rvmat` have the same file name and differ only in extension. Treat this as a hard requirement.
+The `.emat` and the `.rvmat` share one file name and differ only in extension. Keep it that way.
 
-## Preparing the ambient occlusion map
+## Brightening the ambient occlusion map
 
-A default AO bake renders too dark in game (not checked here). To brighten it in any editor with a Screen blend mode:
+A default AO bake renders too dark in game (reported, not checked). In any editor with a Screen blend mode:
 
 1. Duplicate the AO layer.
-2. Invert the colors of the duplicate.
-3. Set the duplicate's blend mode to Screen.
-4. Flatten to one layer.
+2. Invert the duplicate.
+3. Set the duplicate to Screen.
+4. Flatten.
 
 ## Importing into Workbench
 
-1. Put the files at their final place first, with the `.emat` and the `.rvmat` already sharing a name.
+1. Put the files at their final place first, with the `.emat` and `.rvmat` already sharing a name.
 2. Register and import both in DayZ Workbench.
-3. Click each `.edds` in Workbench and confirm it imported. If one failed, save the source again as a 32-bit PNG and import again. Doing this for every texture up front saves the retry.
-4. Select every `.edds` except the normal map and import again with `DXTCompression` (import settings, bottom right). Select several with Ctrl; a misclick means selecting the batch again.
-5. Open the `.emat` and copy each texture's resource ID (the `{` 16 hex digits `}` identifier Workbench made on import) into its slot.
+3. Click each `.edds` and confirm it imported. If one failed, save its source again as a 32-bit PNG and import again; doing this for every texture first saves the retry.
+4. Select every `.edds` except the normal map (Ctrl click) and import again with `DXTCompression` set in the import settings, bottom right.
+5. Open the `.emat` and paste each texture's resource ID, the `{` 16 hex digits `}` code Workbench made on import, into its slot.
 
-**Resource ID trap:** the ID is derived from the registered file's path and name. Renaming or moving a registered `.edds` breaks it. To move a texture, move the source PNG and import again at the new place. A PNG saved by Blender can fail an import for the reason given in `suffixes-and-sizes.md` ("Images ImageToPAA refuses").
+The resource ID comes from the registered file's path and name, so renaming or moving a registered `.edds` breaks it. To move a texture, move its source PNG and import again at the new place. A PNG saved by Blender can fail the import for the reason in `suffixes-and-sizes.md`, "Images ImageToPAA refuses".
 
-## Applying it to an object
+## Putting it on an object
 
-- Assign the `.rvmat` stub, not the `.emat`, as the material: in Object Builder, in `config.cpp`, or with `SetObjectMaterial`.
-- The face texture field is ignored under MatPBR. Leave it at its default.
+- Assign the stub `.rvmat`, not the `.emat`, as the material: in Object Builder, in `config.cpp` or with `SetObjectMaterial`.
+- MatPBR ignores the face texture field; leave it at its default.
 
-## Glass and transparency
+## Glass and see-through surfaces
 
-Two methods. The resource IDs in the blocks are examples; an ID only exists after your own import, so do not reuse these.
+The resource IDs below are examples. An ID exists only after your own import, so never reuse these. Reported, not checked: overlapping see-through surfaces such as foliage sort badly, and there is no vertex animation like the vanilla tree shader's.
 
-Caveats (not checked here): overlapping see-through surfaces (foliage) sort badly, and there is no vertex animation like the vanilla tree shader's.
+For a pane that is see-through all over, use `Sort translucent` with `BlendMode AlphaBlend` and the darker environment map:
 
-### Whole surface see-through (glass panes)
-
-`Sort translucent` with `BlendMode AlphaBlend`. A darker environment map works better here.
-
-```
+```cpp
 MatPBR {
  AlbedoMap "{107E0EF11826BF98}...glass_ca.edds"
  Sort translucent
@@ -104,11 +87,9 @@ MatPBR {
 }
 ```
 
-### Punch through (mesh, foliage with holes)
+For holes in a mesh or foliage, `AlphaTest` makes pixels under the threshold fully clear. It uses the brighter environment map:
 
-`AlphaTest` makes pixels under a threshold fully see-through. It uses the brighter environment map.
-
-```
+```cpp
 MatPBR {
  AlbedoMap "{CD0D20E47EAAF7B4}...texture_albedo.edds"
  CastShadow 1
@@ -123,31 +104,25 @@ MatPBR {
 }
 ```
 
-## Limits
+## Limits and habits
 
-Not checked here. Treat them as hard limits until shown otherwise.
+Reported, not checked; treat them as limits until a test shows otherwise.
 
-- **No macro or damage overlay.** There are no stages, so the Super pattern of a wear macro in Stage3 does not exist here. Whether `healthLevels[]` can still swap between whole MatPBR materials per health level is a reasonable guess from how that array works, and it is not confirmed. Check it in game before a damage look depends on it.
-- The metallic response is limited and uneven. Judge it per asset, not by the source tool's preview.
-- The textures are usually larger in total than the Super and `_smdi` form.
-- A surface meant to show a clear reflection needs to be darker, or should use the Super route.
-- No terrain path was found.
-
-## Tips
-
-- **Share maps across parts** when the surface is the same. Roughness, metallic and normal change the reflection, so keep them per material. AO is usually the same across a model: one AO map per model cuts the mod size.
-- **Resolution:** 2K as the standard, 1K for small objects. 4K works and costs 16 times the pixels of 1K and 4 times those of 2K, in load time and video memory on every client.
-- **Do not compress the normal map.** Compression loses detail, and the metallic response looks better when the normal is not perfectly flat (not checked here).
-- **Check the license** of a bought texture set before feeding it to a generating or editing tool. Some licenses forbid it.
+- There are no stages, so the Super habit of a wear macro in Stage3 has no place here. Whether `healthLevels[]` can still swap whole MatPBR materials per level is a fair guess from how the array works and is unconfirmed; test it in game before a damage look depends on it.
+- The metallic response is limited and uneven. Judge it on the asset, not in the source tool's preview.
+- The textures usually weigh more in total than a Super set with `_smdi`.
+- A surface meant to show a clear reflection has to be darker, or should use Super.
+- Share maps between parts only where the surface is the same. Roughness, metallic and normal change the reflection, so keep them per material; AO is usually the same across a model, and one AO map per model saves mod size.
+- Use 2K as the standard size and 1K for small objects. 4K works, at 16 times the pixels of 1K and 4 times those of 2K, paid in load time and video memory on every client.
+- Leave the normal map uncompressed: compression loses detail, and the metallic response looks better when the normal is not perfectly flat.
+- Read the licence of a bought texture set before feeding it to a generating or editing tool; some forbid it.
 
 ## What vanilla ships
 
-Checked on `P:\` on 2026-11-17.
+- `.emat` files are plain text, and textures in them use the same `{` hex `}` plus path form. The pond material opens with `MatWaterPool {` (`P:\DZ\water_bliss\ponds\data\enoch_pond.emat:1`) and names its normal map as `NormalMap "{126A7892740C80E0}DZ/water_bliss/ponds/data/enoch_pond_nohq.edds"` (`:4`).
+- The stub pairing is vanilla too. Beside that file sits `enoch_pond.rvmat`, two lines long: `PixelShaderID="CalmWater"` and `VertexShaderID="CalmWater"` (`P:\DZ\water_bliss\ponds\data\enoch_pond.rvmat:1` and `:2`). Fourteen `.rvmat` files under `P:\DZ` use that pair, all water, and eight have an `.emat` of the same name beside them. The lake stub is the same two lines (`P:\DZ\water\ponds\data\water_lake.rvmat:1` and `:2`), with its `.emat` under `P:\graphics\materials\water\`.
+- `P:\DZ` holds 11 `.emat` files: eight `MatWaterPool` and three `MatOceanOld` (`P:\DZ\worlds\sakhal\data\sakhal_sea.emat:1`). None holds a `MatPBR` block.
+- The Workbench data has a class with PBR in its name, `MatPBRBasic {`, with `AlphaTest` and `BlendMode` keys (`P:\system\wbdata\previewwindow\transparentmat.emat:1` to `:4`). No vanilla `.emat` uses a class named plain `MatPBR`, so the block shape above rests on the two example files alone.
+- Particle and postprocess `.emat` files use the same format for something else; the particle classes are in `/dayz-particles`.
 
-- Vanilla ships `.emat` files as text, with texture references in the same `{` hex `}` plus path form. The pond material opens with `MatWaterPool {` (`P:\DZ\water_bliss\ponds\data\enoch_pond.emat:1`) and names its normal map as `NormalMap "{126A7892740C80E0}DZ/water_bliss/ponds/data/enoch_pond_nohq.edds"` (`P:\DZ\water_bliss\ponds\data\enoch_pond.emat:4`).
-- The stub pairing is vanilla too. Next to that file sits `enoch_pond.rvmat`, two lines long: `PixelShaderID="CalmWater"` and `VertexShaderID="CalmWater"` (`P:\DZ\water_bliss\ponds\data\enoch_pond.rvmat:1-2`). Fourteen vanilla `.rvmat` files under `P:\DZ` use that shader pair, all of them water, and eight have an `.emat` of the same name beside them. The lake stub is the same two lines (`P:\DZ\water\ponds\data\water_lake.rvmat:1-2`), with its `.emat` under `P:\graphics\materials\water\`.
-- Under `P:\DZ` there are 11 `.emat` files: eight `MatWaterPool` and three `MatOceanOld` (`P:\DZ\worlds\sakhal\data\sakhal_sea.emat:1`). None holds a `MatPBR` block.
-- A material class with PBR in its name does exist in the Workbench data: `MatPBRBasic {` with `AlphaTest` and `BlendMode` keys (`P:\system\wbdata\previewwindow\transparentmat.emat:1-4`). No vanilla `.emat` on `P:\` uses a class named plain `MatPBR`, so the block shape above rests on the two example files alone.
-- Particle and postprocess `.emat` files are a different use of the same format; the particle classes are covered by the `/dayz-particles` skill.
-
-`rvmat_lint.py` (`rvmat-cookbook.md`) warns when a stub `.rvmat` (no stages, a shader other than Super, Multi or Normal) has no `.emat` beside it, or when that `.emat` lacks a required map or names one by a plain path. A vanilla style water pair with `MatWaterPool` gets no warning.
+`rvmat_lint.py` (`rvmat-cookbook.md`) warns when a stub `.rvmat` (no stages, a shader other than Super, Multi or Normal) has no `.emat` beside it, or when that `.emat` misses a required map or names one by a plain path. A vanilla style water pair with `MatWaterPool` passes without a warning.

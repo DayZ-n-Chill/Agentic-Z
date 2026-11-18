@@ -1,6 +1,6 @@
 """Checks for the ripped car classification viewer: the viewer page, its export script and
-their how-to file in the vehicles pack agree on the GLB data contract, and the family B
-runbook names five symptom files that exist. The export script runs only inside Blender,
+their how-to file in the vehicles pack agree on the GLB data contract, and the ripped car
+file names the five symptom files and they exist. The export script runs only inside Blender,
 so it is parsed, not imported.
 
 Run with: py -m pytest -q skills/dayz-model-tools/scripts/test_classify_viewer.py
@@ -16,15 +16,21 @@ VEHICLES = SCRIPTS.parents[1] / "_shared" / "vehicles"
 EXPORT_SRC = (SCRIPTS / "export_car_glb.py").read_text(encoding="utf-8")
 VIEWER = (SCRIPTS / "classify-viewer" / "index.html").read_text(encoding="utf-8")
 VIEWER_DOC = (VEHICLES / "rip-classify-viewer.md").read_text(encoding="utf-8")
-RUNBOOK = (VEHICLES / "rip-family-b-runbook.md").read_text(encoding="utf-8")
+RUNBOOK = (VEHICLES / "ripped-car-proxy-split.md").read_text(encoding="utf-8")
 
 EXTRAS = ["source_id", "dz_coll", "dz_reason", "dz_review", "dz_movable_group"]
 
 
-def test_runbook_names_five_symptom_files_that_exist():
+def test_ripped_car_file_names_the_five_symptom_files():
     section = RUNBOOK.split("## Symptoms", 1)[1].split("\n## ", 1)[0]
-    named = set(re.findall(r"`(symptom-[\w.-]+\.md)`", section))
-    assert len(named) == 5
+    named = set(re.findall(r"`([\w.-]+\.md)`", section))
+    assert named == {
+        "get-in-guards.md",
+        "wheel-simulation-wiring.md",
+        "binarize-dropped-textures.md",
+        "attachment-proxies.md",
+        "vehicle-door-mechanisms.md",
+    }
     assert [n for n in named if not (VEHICLES / n).is_file()] == []
 
 

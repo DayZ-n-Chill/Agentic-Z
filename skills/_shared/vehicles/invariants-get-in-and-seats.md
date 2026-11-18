@@ -1,174 +1,113 @@
-# Get-in, seats, doors and crew: invariants
+# Get-in, seat and door checks
 
-Why a get-in, seat or door action does not appear on a new or imported car, and the model, config and script contract that makes it appear.
+Why a get-in, seat or door action does not appear on a new or imported car, and the model, config and script rules that make it appear.
 
-> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
+The get-in condition link by link, and which anchor places the occupant, are in `get-in-actions-and-proxy-pose.md`; the step-by-step repair for a missing prompt is in `get-in-guards.md`. Vanilla facts cite `P:\` (DayZ 1.30). Measured cases come from mod vehicles; several were measured against a debinarized copy of the vanilla sedan, which is not on `P:\`, so those positions are not checked there.
 
-Related file in this pack: `get-in-actions-and-proxy-pose.md` (the get-in condition chain link by link, and which anchor places the occupant).
+## The car needs a script class
 
-## Vanilla anchors checked on `P:\`
+A config class with no script class of its own runs as bare `CarScript`, which inherits `Transport.CrewCanGetThrough()`. That returns `false` unless `CFGMODS_DEFINE_TEST` is defined (`P:\scripts\3_game\vehicles\transport.c:724` to `:727`), so the get-in action is filtered out and never appears; no bone, proxy or component fix helps. Write `MyMod_Base extends CarScript` overriding `CrewCanGetThrough`, `GetAnimInstance` and `GetSeatAnimationType`, and register the script module in `CfgMods`. Confirmed in game on three mod vehicles. See also `crew-get-in-geometry.md`.
 
-- `CrewCanGetThrough` returns `false` in `Transport` (`P:\scripts\3_game\vehicles\transport.c:724`), so a car with no script class of its own can never be entered.
-- The get-in action checks `CanGetIn` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:36`), then `CrewCanGetThrough` and `IsAreaAtDoorFreeDiag` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:54`), then `CanReachSeatFromDoors` with a distance of `1.0` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiongetintransport.c:64`).
-- `CrewPositionIndex` maps a hit component to a crew seat (`P:\scripts\3_game\vehicles\transport.c:179`).
-- The base `GetDoorConditionPointFromSelection` pairs `seat_driver` with `seat_con_1_1`, `seat_codriver` with `seat_con_2_1`, `seat_cargo1` with `seat_con_1_2` and `seat_cargo2` with `seat_con_2_2` (`P:\scripts\4_world\entities\vehicles\carscript.c:2141`). Vanilla overrides `GetDoorConditionPointFromSelection` for `OffroadHatchback` (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroadhatchback.c:364`) and `Van_01` (`P:\scripts\4_world\entities\vehicles\inheritedcars\van_01.c:269`).
-- `Sedan_02` keeps `CarBattery` and `SparkPlug` behind `Sedan_02_Trunk` (`P:\scripts\4_world\entities\vehicles\inheritedcars\sedan_02.c:142`) and `CarRadiator` behind `Sedan_02_Hood` (`P:\scripts\4_world\entities\vehicles\inheritedcars\sedan_02.c:156`), and its `CanDisplayCargo` tests the hood (`P:\scripts\4_world\entities\vehicles\inheritedcars\sedan_02.c:203`).
-- `CivilianSedan` overrides `GetSeatAnimationType` for four seats (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:119`) and `CrewCanGetThrough`, comparing each door against `DOORS_CLOSED` (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:226`).
-- The outside door action casts its target to `CarDoor` and reads `GetActionComponentNameList` from that door item (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actioncardoorsoutside.c:34`), then asks the car for `GetAnimSourceFromSelection` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actioncardoorsoutside.c:43`).
-- `CivilianSedan` declares `Cargo1` and `Cargo2` crew seats with `proxyPos` `crewCargo1` and `crewCargo2` (`P:\DZ\vehicles\wheeled\config.cpp:5221-5234`). The only crew proxy models vanilla ships are `P:\DZ\vehicles\wheeled\proxies\crew_cargo.p3d` and `P:\DZ\vehicles\wheeled\proxies\crew_driver.p3d`.
-- `CivSedanDoors_BackLeft` declares no `rotationFlags` of its own (`P:\DZ\vehicles\wheeled\config.cpp:4938-4947`) and inherits `rotationFlags=8` from `CivSedanDoors_Driver` (`P:\DZ\vehicles\wheeled\config.cpp:4813`).
-- `civiliansedan_mlod.p3d`, the sealed vanilla control named below, is a debinarized copy of the vanilla sedan. It is not on `P:\`, so the positions measured on it are not checked on `P:\`.
+The script module must actually load, or the class never binds and nothing reports it. `CfgMods` `files[]` with the wrong slashes, or a path that resolves to `*.p3d.p3d`, leaves the module unloaded: no get-in, no error. The binding notes are in `crew-get-in-geometry.md`, section "The script module must load".
 
-## Before copying a donor: check where the engine is
+## A config parent does not bring its script
 
-**BEFORE copying a donor — verify WHERE the engine is, not how many seats it has (origin 2026-08-08, SUB_WRXSTI).**
-`sedan_02.c` looks like the vanilla 4-seat sedan control and is **rear-engine**: it closes `CarBattery`
-and `SparkPlug` behind the **trunk** and the `CarRadiator` behind the **hood**
-(`scripts\4_world\entities\vehicles\inheritedcars\sedan_02.c:142-160`), and gates `CanDisplayCargo`
-on the hood (`sedan_02.c:203`). Porting that to a front-engine car leaves the engine parts behind
-the wrong lid — a bug that only shows in-game. The correct control for front-engine + 4 seats is
-**`civiliansedan.c`**. Rule: before copying a donor, verify WHERE the engine lives, not only how
-many seats it has. Rear seat on that 4-seater (measured vs `civiliansedan_mlod.p3d`; in-game
-confirmation pending): Memory `pos_cargo1(_dir)`, `pos_cargo2(_dir)`,
-`seat_con_1_2`, `seat_con_2_2`; `GetSeatAnimationType` cases 2/3 → `VEHICLESEAT_PASSENGER_L` /
-`VEHICLESEAT_PASSENGER_R` and **`CrewCanGetThrough` cases 2/3** (`civiliansedan.c:119-131`,
-`:226-256`) — the base returns `false` (`transport.c:724-727`). Distinct `crew_cargo` proxy index
-and seat-box lead: invariants 28 and 30.
+If the config says `class MyMod_Car: OffroadHatchback` but the script class is `MyMod_Car extends MyMod_Base` with `MyMod_Base extends CarScript`, the parent car's script overrides do not come along: they live in the vanilla `inheritedcars\<parent>.c`, which your class never inherits. Every method with a hostile default in `Transport` that all vanilla cars override then bites:
 
-## Four-seat completion
+| Method | Default in `Transport` | Effect |
+|---|---|---|
+| `CrewCanGetThrough` | `false` (`transport.c:724`) | No get-in |
+| `IsVitalGlowPlug` | `true` (`:409` to `:412`) | A petrol car will not start (`invariants-engine-fluids-and-handling.md`) |
+| `GetAnimInstance` | `Error()` (`:665`) | No seat animation |
+| `GetSeatAnimationType` | `Error()` (`:685`) | No seat animation |
+| `Get3rdPersonCameraType` | `Error()` (`:701`) | No camera |
 
-**Four-seat completion rider (added 2026-08-31).** Rear seats also need
-`seat_cargo1/2` boxes dual-tagged to their exact `componentNN` in Geometry and
-ViewGeometry; `crewcargo1/2` proxies in ViewGeometry and FireGeometry using one
-`crew_cargo` path with distinct instance indexes; `Crew.Cargo1/2` entries with
-`actionSel`, `proxyPos`, `getInPos`, and `getInDir`; and the two passenger cases
-in both `GetSeatAnimationType` and `CrewCanGetThrough`. `CarScript` already maps
-all four `seat_*` selections to `seat_con_1_1`, `seat_con_2_1`,
-`seat_con_1_2`, and `seat_con_2_2` (`carscript.c:2141-2156`), so an override of
-`GetDoorConditionPointFromSelection` that only repeats that table is dead code.
+Diff method by method against the parent's `P:\scripts\4_world\entities\vehicles\inheritedcars\<parent>.c` and copy every runtime override, not only the two pose methods. A test helicopter with an `OffroadHatchback` config parent and its own script base had neither get-in nor engine start after two reviews; the first fix restored only the pose methods.
 
-## The base door condition table is the left-hand-drive mapping
+## Check where the engine is before copying a car
 
-**That base table is the LEFT-HAND-DRIVE mapping (added 2026-10-01, SUB_WRXSTI).**
-On a right-hand-drive car whose memory points are named by
-physical side (driver door = `seat_con_2_1`), the base table pairs every seat with the FAR door:
-each seat is evaluated against the opposite door and `CanReachSeatFromDoors` fails the 1.0 m
-plan-distance test from the correct one, so no get-in appears with names, points and `componentNN`
-all correct. Signature in `query_get_in_condition`: `unreachable` from the correct door and
-`available` from the opposite one. Override it crossing the sides (driver->`seat_con_2_1`,
-codriver->`seat_con_1_1`, cargo1->`seat_con_2_2`, cargo2->`seat_con_1_2`), as vanilla does for its
-own layouts (`OffroadHatchback.c:364-379`, `Van_01.c:269-287`, DayZ 1.30.164014 Exp). On RHD cross
-`GetSeatAnimationType` for the rear seats too (vanilla pairs L with the physical left side,
-`CivilianSedan.c:119-134`); the driver keeps `VEHICLESEAT_DRIVER`, whose get-in animation will look
-LHD-sided - an engine limit, not a mod bug.
+`Sedan_02` looks like the four-seat sedan to copy, but it is rear-engined: it keeps `CarBattery` and `SparkPlug` behind `Sedan_02_Trunk` (`P:\scripts\4_world\entities\vehicles\inheritedcars\sedan_02.c:142`) and `CarRadiator` behind `Sedan_02_Hood` (`:156`), and its `CanDisplayCargo` tests the hood (`:203`). Ported to a front-engined car, the engine parts sit behind the wrong lid, a bug that only shows in game. For a front-engined four-seater copy `CivilianSedan`. Check where the engine lives, not only how many seats there are.
 
-## Invariant 1: the get-in radial needs a real script class
+## Four seats
 
-**"Get in" radial needs a real SCRIPT CLASS, not a bare config class.** A `class <Mod>: CarScript`
-with no `.c` runs as bare `CarScript`, which inherits `Transport.CrewCanGetThrough()` → **`false`**
-(`P:\scripts\3_game\vehicles\transport.c:724`) → the get-in action is filtered out and **never appears,
-no bone/proxy/componentNN fix helps**. Author `<Mod>_Base extends CarScript` overriding
-`CrewCanGetThrough` + `GetAnimInstance` + `GetSeatAnimationType` (+ `CfgMods` worldScriptModule).
-Verified in game on TestQuad, TestMercedes and TestCoupe. → `vehicle-structural-parity.md` "Crew get-in".
+Rear seats need, on top of the front pair:
 
-## Invariant 2: the script module must load or the class never binds
+- Memory points `pos_cargo1`, `pos_cargo1_dir`, `pos_cargo2`, `pos_cargo2_dir`, `seat_con_1_2` and `seat_con_2_2`.
+- `seat_cargo1` and `seat_cargo2` boxes tagged into their exact `componentNN` in Geometry and View Geometry.
+- `crewcargo1` and `crewcargo2` proxies in View Geometry and Fire Geometry, on one `crew_cargo` path with distinct instance numbers (below).
+- `Crew` `Cargo1` and `Cargo2` entries with `actionSel`, `proxyPos`, `getInPos` and `getInDir`; `CivilianSedan` declares them with `proxyPos` `crewCargo1` and `crewCargo2` (`P:\DZ\vehicles\wheeled\config.cpp:5221` to `:5234`).
+- The two passenger cases in both `GetSeatAnimationType` (`VEHICLESEAT_PASSENGER_L`, `VEHICLESEAT_PASSENGER_R`) and `CrewCanGetThrough`, as `CivilianSedan` does (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:119`, `:226`).
 
-**The script module must actually LOAD or the class never binds — silent.** `CfgMods` `files[]` with
-back-slashes / a `.p3d` path that resolves to `*.p3d.p3d` → module not loaded → no get-in, no error.
-→ the script binding notes in `rip-import.md`.
+`CarScript` already maps `seat_driver`, `seat_codriver`, `seat_cargo1` and `seat_cargo2` to `seat_con_1_1`, `seat_con_2_1`, `seat_con_1_2` and `seat_con_2_2` (`P:\scripts\4_world\entities\vehicles\carscript.c:2141` to `:2156`), so an override of `GetDoorConditionPointFromSelection` that repeats that table is dead code.
 
-## Invariant 3: wheels not present (moved)
+`CrewCanGetThrough` must compare each door with `DOORS_CLOSED`, as `CivilianSedan` does. A torn-off door reports `DOORS_MISSING`, so the same intent written as `!= DOORS_OPEN` reads right, passes every structural check, and makes a doorless car impossible to enter.
 
-This item now lives in `symptom-wheels-not-present.md`.
+## Right-hand drive
 
-## Invariant 4: seats and wheel hubs need the componentNN dual tag, and each seat must be hit by the view raycast
+The base door table is the left-hand-drive mapping. On a right-hand-drive car whose memory points are named by physical side (driver door `seat_con_2_1`), it pairs every seat with the far door, so `CanReachSeatFromDoors` fails its 1 m distance from the right door and no get-in appears even with names, points and components correct. A condition probe shows "unreachable" from the right door and "available" from the opposite one.
 
-**Seats and wheel hubs must be `componentNN`-tagged (dual-tag) — AND each seat component must be raycast-collidable.** The engine enumerates collision
-components only by `componentNN`; a seat/hub that is a standalone island (0% componentNN overlap) is
-invisible → spawn blocker / no seat. Tag the SAME faces with a `componentNN` too. **Then the ViewGeo seat cube
-must be INWARD-wound with every point flag = `0x0000003F`:** a py3d box left outward + flags 0 passes every
-offline shape/winding/dual-tag check yet `RaycastRV(ObjIntersectView)` does NOT hit it → the get-in cursor
-falls through to component0 → the driver "works" by fallback but the CODRIVER never resolves. The decisive,
-in-game-confirmed copilot blocker on BOTH TestCoupe and TestMercedes (headless `hit=1 comp=6 crewIdx=1`). The TestCoupe patch changed winding and flags together and never isolated the flag as cause; the safe rule is to copy the convention of the sealed vanilla control or of a positive control (a mod car whose get-in works), never py3d's default. → "componentNN DUAL-TAG" + "CRITICAL EXTENSION 2026-06-28" (`vehicle-structural-parity.md`).
-**Resolve the seat's `componentNN`; never hardcode its number (added
-2026-08-31).** Assembly order moves component numbers. For every `seat_*`
-selection, compare both point and face membership against each `componentNN` in
-the same LOD and require exactly one exact 1:1 match. Zero or multiple matches is
-a hard failure. Re-run the equality after any transform or transfer so the
-seat/component dual tag cannot be lost silently.
+Override it with the sides crossed: driver to `seat_con_2_1`, co-driver to `seat_con_1_1`, cargo 1 to `seat_con_2_2`, cargo 2 to `seat_con_1_2`, as vanilla does for its own layouts (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroadhatchback.c:364` to `:379`; `P:\scripts\4_world\entities\vehicles\inheritedcars\van_01.c:269` to `:287`). Cross `GetSeatAnimationType` for the rear seats too, since vanilla pairs L with the physical left (`civiliansedan.c:119` to `:134`). The driver keeps `VEHICLESEAT_DRIVER`, whose get-in animation still looks left-hand-drive; that is an engine limit, not a mod bug.
 
-## Invariant 5: crew and wheel proxies in both View Geometry and Fire Geometry
+## Crew proxies are one model, numbered by instance
 
-**Crew/wheel proxies must exist in BOTH ViewGeometry AND FireGeometry**; the proxy triangle uses the
-engine identity frame (`R=((-1,0,0),(0,0,1),(0,1,0))`, model-space), NOT py3d `rotation=None`. → parity + rip-import.
+Vanilla ships exactly two crew proxy models, `P:\DZ\vehicles\wheeled\proxies\crew_cargo.p3d` and `P:\DZ\vehicles\wheeled\proxies\crew_driver.p3d`; there is no `crew_cargo1.p3d`. The seat comes from the instance number: `crew_cargo.001` is the co-driver, `.002` cargo 1, `.003` cargo 2 (the bone is `crewcodriver` for index 1, else `crewcargo<index - 1>`), which matches the sedan's `Cargo1` and `Cargo2` crew block. The front pair both sit at index 1 because their paths differ (`crew_driver.001`, `crew_cargo.001`). Two rear seats both at index 1 on `crew_cargo` collide: a duplicate selection error if your builder checks, silently missing rear get-in if not. When extending a two-seat rig, continue the `crew_cargo` numbering, and pin it with a test whose failing case is exactly that duplicate.
 
-## Invariant 20: the config inherits a vanilla car but the script class does not
+Crew and wheel proxies must exist in both View Geometry and Fire Geometry. The proxy triangle uses the engine's identity frame, `R=((-1,0,0),(0,0,1),(0,1,0))` in model space, not py3d's `rotation=None` (**model knowledge**).
 
-**Config inherits a vanilla car but your SCRIPT class does not extend that car's script = SWEEP every parent script override.** If the config says `class X: OffroadHatchback` while the script is `class X extends MyBase` (with `MyBase extends CarScript`), the config->script binding does NOT drag in the parent car's script overrides - those live on the vanilla `inheritedcars\<parent>.c`, which your class never inherits. Every method with a hostile default in the base that ALL vanilla cars override then bites: `CrewCanGetThrough` (false in `Transport`, `P:\scripts\3_game\vehicles\transport.c:724` -> get-in impossible; see #1), `IsVitalGlowPlug` (true in `Transport`, `transport.c:409-412` -> engine won't start; see #8), `GetAnimInstance` / `GetSeatAnimationType` (`Error()` in `Transport`, `transport.c:665,685`), `Get3rdPersonCameraType` (`Error()`, `transport.c:701`). Procedure: diff method-by-method against the parent config's `.c` (`4_world\entities\vehicles\inheritedcars\<parent>.c`) and replicate EVERY runtime-contract override, not just the two pose ones - this is the rule "sweep the invariant to all call-sites" in config form. Origin: TestHeli - `TestHeli_Placeholder: OffroadHatchback` (config) + `extends TestHeli_Base` (script) had no get-in and no engine start after passing two reviews; the first fix restored only the two pose methods.
+## Seats and hubs need their `componentNN`, and must be hit by the view ray
 
-## Invariant 20b: a working control's skeleton is baked into its ODOL
+The engine lists collision components only by `componentNN`. A seat or wheel hub that is a separate island with no `componentNN` overlap is invisible to it: the car will not spawn or the seat is missing. Tag the same faces with a `componentNN` as well (**model knowledge**).
 
-**A working control's skeleton is baked into its ODOL; inherited config must be
-audited by EFFECTIVE value (added 2026-08-31).** Shipped controls often
-have no loose `model.cfg`. Read the baked skeleton and selection names through
-an external ODOL→MLOD converter (not part of this repo), and validate
-the reader first on a model whose `model.cfg` is available: name, `isDiscrete`,
-bone count and every bone/parent pair must match. Binarized bone names are
-lower-case. A uniform zero from both control and candidate is a tool-failure
-signal; confirm known bytes directly before drawing a conclusion.
-For a vehicle that inherits from the working vanilla control, an undeclared
-property has the parent's effective value and cannot be a differential by
-itself. Keep only differences where both independent controls agree and the
-candidate differs, then inspect: candidate-only declarations; model-bound
-skeleton/animation/selection data; and values both controls override but the
-candidate neither declares nor inherits. Finally resolve every inherited model
-name (`animDamper`, `wheelHub`, and peers) against the candidate `.p3d`; the
-reference is inherited even when the named bone or selection is absent.
+The View Geometry seat box must also be hit by `RaycastRV(ObjIntersectView)`: wound inward, with every point flag `0x0000003F`. A py3d box left outward with flags 0 passes every offline shape, winding and tag check, but the ray misses it, the cursor falls through to `component0`, the driver works by fallback and the co-driver never resolves. That blocked the co-driver in game on two test cars; the fix changed winding and flags together, so copy the convention of the vanilla sedan or of a mod car whose get-in works, never py3d's default.
 
-## Invariant 21: attached part is invisible (moved)
+Find each seat's `componentNN`; never hardcode its number, because assembly order moves component numbers. For every `seat_*` selection, compare point and face membership against each `componentNN` in the same LOD and require exactly one exact match; zero or several is a hard failure. Run it again after any transform.
 
-This item now lives in `symptom-attachment-invisible.md`.
+When a model fails with both `seat_* not found` and `wheel ... no proper selection`, the confirmed fix is the `componentNN` tag. Sorting LODs by resolution matches vanilla and is fine as tidy authoring, but it is not a proven cause: sorted without the tag still failed, sorted with it spawned, and the tag without sorting was never tried. `binarize` accepts either order silently.
 
-## Invariant 22: an attached part with its own actions needs a raycast-visible View Geometry
+## A seat box is a get-in volume, not the cushion
 
-**An attached item with its OWN radial actions (CarDoor open/close, hood, trunk) needs a raycast-visible ViewGeometry — point flags 0x0000003F — or the action NEVER appears (TestCoupe).** The action chain resolves the TARGET by raycast: `ActionCarDoorsOutside.ActionCondition` casts `target.GetObject()` to CarDoor and reads the selections of the hit VG COMPONENT of the ITEM (`actioncardoorsoutside.c:34-46`); a VG whose points carry flags 0x0 is not hit by `RaycastRV(ObjIntersectView)` — the same mechanism as the seat-cube blocker (preflight #4, verified in game on TestCoupe and TestMercedes) — so the item under the cursor never resolves and the radial is silently filtered, with config, script overrides, slots, bones and anim sources all CORRECT. Contract for the item's VG: (a) componentNN dual-tagged with a selection named EXACTLY what the vehicle's `GetAnimSourceFromSelection` expects (e.g. `doors_driver`); (b) every VG point flags 0x0000003F; (c) inward winding (copy a fixed seat cube as control). Symptom signature: attachment renders/attaches/damages fine, `GetCarDoorsState` works, but no open/close radial (and hence no get-in-through-door). Diagnose offline in seconds: census the item's VG point flags vs a working control BEFORE touching config or scripts. Origin: TestCoupe; the door fix's own in-game gate closed 2026-08-24 (the radial action DOES appear on the attached panel), but the raycast mechanism is the twice-verified #4 one.
+The cursor resolves seats by raycast against View Geometry, so the seat box must sit in the door opening, while the body that occupies the seat sits further back against the backrest. Vanilla keeps them apart: on the debinarized sedan, the crew proxy is at z -0.173 and the seat box at -0.358 in front, +0.675 against +0.531 in the rear, so the box leads the proxy toward the nose by 0.185 and 0.144 m.
 
-## Invariant 23: the componentNN dual tag fixes seat and wheel selection failures; LOD order is hygiene
+A rig that puts both at one point looks fine on a two-seater and, on a four-seater, puts the rear boxes inside the C-pillar. One imported car reached only 43 percent on both rear seats (21 of 49 rays; the 28 blocked were exactly those at z 0.876 or more, against a pillar starting at +0.881) while the front pair read 100 percent.
 
-**`componentNN` dual-tag is the confirmed fix for simultaneous seat/wheel selection failures; ascending LOD order is match-vanilla practice, not a proven cause (TestHeli OH-1 v2, 2026-07-17).** Sorted-without-dual-tag still failed; sorted-plus-dual-tag spawned; dual-tag-without-sort was never isolated. Therefore a py3d/hand-assembled model with `seat_* not found` / `wheel ... no proper selection` must be checked for collision-selection dual-tag first. `model.lods.sort(key=resolution)` may remain as deterministic authoring hygiene, but no gate may report that sorting fixed the defect. `binarize` accepts either order silently.
+- The pillar is correct; do not carve the body or refine the occlusion grid to free a seat. Leftover door skin in the shell was ruled out by measurement.
+- Move the box, never the crew proxy; the passenger must stay on the cushion.
+- Calibrate the offset against the vanilla four-seater and cross-check by sweeping the box along z against the car's own pillar. On that car the vanilla-derived 0.740 landed inside the swept clear window of 0.700 to 0.800, and the sweep reproduced the 43 percent at the shipped z.
 
+## Derive the seat list from the crew bones
 
-## Invariant 28: one crew_cargo model, numbered by its instance index
+Seat checks written as a literal front pair go blind when a car gets a rear row, and report "2/2 100%" while doing it: one checker listed only `seat_driver` and `seat_codriver` in its ray fan, component overlap and presence checks, with a hardcoded "/2", and printed green over two seats it never scanned, one at 43 percent. Derive the list from the crew bones (`crewdriver` to `seat_driver`, `crewcargo1` to `seat_cargo1` and so on), not from the seat boxes present; deriving from the boxes is blind the other way, because a car that loses a box has one fewer thing to check. Do the same for the `pos_*` memory points. The vanilla four-seater measures 4 of 4 at 100 percent, which is what makes 43 percent a defect.
 
-**A 4-seat car numbers ONE `crew_cargo` model 1/2/3 — the index is the instance suffix, and two rear seats both at index 1 collide (added 2026-08-16, SUB_WRXSTI).** There is no `crew_cargo1.p3d`: `P:\DZ\vehicles\wheeled\proxies\` ships exactly `crew_cargo.p3d` + `crew_driver.p3d`, and the seat identity comes from the INDEX. The mapping the consumer actually applies is `bone = "crewcodriver" if index == 1 else "crewcargo%d" % (index - 1)`, so `crew_cargo.001→crewcodriver`, `.002→crewcargo1`, `.003→crewcargo2` (corroborated by CivilianSedan's own Crew Cargo1/Cargo2 block at `P:\DZ\vehicles\wheeled\config.cpp:5221-5234`). Consequences: the front pair legitimately BOTH sit at index 1 because their PATHS differ (`crew_driver.001` and `crew_cargo.001`) — that is not the bug; adding two REAR seats at index 1 on the shared `crew_cargo` path is, and it fails as a duplicate-selection `ValueError` at authoring time if your builder checks, or as silently missing rear get-in if it does not. Extending a 2-seat rig: continue the `crew_cargo` index, never restart it, and pin the mapping with a test whose RED case is exactly the duplicate pair.
+## Parts with their own actions
 
-## Invariant 30: a seat box is a get-in volume, not the cushion
+The outside door action casts its target to `CarDoor` and reads `GetActionComponentNameList` from the door item itself (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\vehicles\actioncardoorsoutside.c:34`), then asks the car for `GetAnimSourceFromSelection` (`:43`). The selection names come from the attached door's own `.p3d`, not the shell. If the door model does not carry `doors_<role>`, every component returns `""` and open or close never appears from outside, with no error.
 
-**A seat box is a GET-IN VOLUME, not the cushion — vanilla leads it ~0.15 m toward the nose of the crew position, and collapsing the two onto one point makes rear seats unenterable (added 2026-08-16, SUB_WRXSTI).** The engine resolves the get-in cursor by raycast against the ViewGeometry, so the seat box has to sit inside the DOOR APERTURE; the body that occupies the seat sits further back, against the backrest. Vanilla keeps them apart deliberately — measured on the sealed control `civiliansedan_mlod.p3d`: crew proxy z −0.173 vs seat box z −0.358 in front, +0.675 vs +0.531 in the rear, i.e. the box leads the crew proxy by 0.185 and 0.144. A rig that places both at the same declared point looks correct on a 2-seat car — there is open flank ahead of the front seat either way — and puts the box of a 4-seat car inside the C-pillar: the WRX measured **43% reach on BOTH rear seats** (21/49 rays; the 28 blocked were exactly those with z ≥ 0.876, against a pillar occluder starting at +0.881) while the front pair read 100%. Three riders. (a) The pillar occluder is CORRECT — do not carve the body or refine the occlusion grid to make a seat reachable; the tempting diagnosis "residual door skin left in the shell" was refuted by measurement (the rip's `doorhandlelr_a` carries 1970 `carpaint` faces of the rear PANEL — the rip names the skin after the handle — and it was already owned by the rear door roles). (b) Move the BOX, never the crew proxy: the passenger must stay on the cushion. (c) Calibrate the offset against a sealed vanilla 4-seater and cross-check it by sweeping the box along z against the car's own occluder — on the WRX the vanilla-derived 0.740 landed inside the independently swept 100%-clear window [0.700, 0.800], and the sweep reproduced the measured 43% at the shipped z, which is what makes the simulation admissible. The matching detector is invariant 31.
+So an attached part with its own actions (door, hood, trunk) needs, in its own model:
 
-## Invariant 31: derive the seat roster from the crew bones
+- A View Geometry `componentNN` tagged with a selection named exactly what the car's `GetAnimSourceFromSelection` expects, such as `doors_driver`.
+- Every View Geometry point flag `0x0000003F`; a View Geometry with flags 0 is not hit by the ray, the item under the cursor never resolves, and the action is filtered out with config, scripts, slots, bones and sources all correct.
+- Inward winding; copy a working seat box as the control.
 
-**Seat/crew checks written as a literal front pair go blind the day a car grows a rear row, and report `2/2 100%` while doing it (added 2026-08-16, SUB_WRXSTI).** The car verifier listed `("seat_driver", "seat_codriver")` in the reach ray fan, the componentNN overlap targets and the ViewGeo presence check, plus a hardcoded `/2` denominator in two report strings. On a 2-seat car that IS the whole roster, so the blindness never shows; on a 4-seat car it printed green over two seats it never scanned, one of which was 43% reachable. Derive the roster from the **crew bones** (`crewdriver→seat_driver`, `crewcargo1→seat_cargo1`, …), not from the seat boxes present: deriving from the boxes is blind in the other direction — a car that LOSES a seat box simply has one fewer thing to check and stays green. Same derivation for the `pos_*(_dir)` memory points. Calibrate against the sealed vanilla 4-seater (it measures 4/4 at 100%), which is what turns a 43% into a defect rather than a strict gate.
+On two imported cars the name lives in the door's Geometry and View Geometry LODs; Fire Geometry carries only `Component01`, `Component02`, `dmgzone_*` and `glass_<role>`. The symptom is a part that attaches, renders and takes damage, with `GetCarDoorsState` working, but no open or close action and so no get-in through that door. Count the part's View Geometry point flags against a working control before touching config or script. A check that only measures the shell never opens the door models; when verifying that doors open, the evidence is the door model.
 
-## Invariant 32: the open-door action reads the door proxy, and vanilla parity is not a behaviour spec
+## Vanilla behaviour that is wrong for a mod
 
-**Two halves of a car that a name-existence gate cannot see: the open-door action reads the DOOR PROXY, and vanilla parity is not a behaviour spec (added 2026-08-16, SUB_WRXSTI).** (a) `ActionCarDoorsOutside.ActionCondition` does `CarDoor.Cast(target.GetObject())` and then `carDoor.GetActionComponentNameList(...)` — the selection names come from the **attached door item's own `.p3d`**, not from the shell (`4_world\classes\useractionscomponent\actions\interact\vehicles\actioncardoorsoutside.c:30-58`). If the proxy does not carry `doors_<role>`, `GetAnimSourceFromSelection` returns `""` for every one of its components and the open/close action never appears from outside — no error, no log. Measured placement on both the WRX and the shipped BRZ: the name lives in the proxy's **Geometry and ViewGeometry** LODs; FireGeo carries only `Component01/02`, `dmgzone_*` and `glass_<role>`. A gate that measures only the SHELL never opens the six door proxies. When verifying "the doors open", the evidence is the proxy — the shell only proves the model references it and that the animation axis exists. (b) Three behaviours are **correct vanilla ports and still wrong for a mod**: `OnDebugSpawn` creates the wheels, doors, hood and trunk with `CreateInInventory` (`civiliansedan.c:415-437`), which may put a part in cargo instead of its slot (`P:\scripts\3_game\systems\inventory\inventory.c:876-893`), so a freshly spawned car can need up to ten manual attachments before it moves; `CarScript.EEOnCECreate` fills `Math.RandomFloat(0.0, capacity*0.35)` (`carscript.c:2412-2419`) so a CE-spawned car can arrive dry; `CanDisplayCargo` opens the cargo on the boot alone (`civiliansedan.c:174-183`). All three ship a car that loads, drives and looks right, and every structural gate passes them by construction because the criterion is "does it match vanilla". Declare behaviour PER CAR in the profile (`vehicle_script_policy {cargo_access, debug_spawn, ce_spawn_fuel}`) and measure the script against that declaration; derive the attachable roster from the config's own `inventorySlot[]` blocks so a renamed class reds by itself. Rider on the silent one: `CrewCanGetThrough` must compare against `DOORS_CLOSED`, because a torn-off door reports `DOORS_MISSING` — writing the same intent as `!= DOORS_OPEN` reads correctly, passes every structural check, and makes a doorless car unenterable.
+Three behaviours are faithful vanilla ports, pass every check that compares with vanilla, and can still be wrong for your car:
 
-## Invariant 34: an absent config key is a question about the parent
+- `OnDebugSpawn` creates wheels, doors, hood and trunk with `CreateInInventory` (`civiliansedan.c:415` to `:437`), which may put a part in cargo instead of its slot (`P:\scripts\3_game\systems\inventory\inventory.c:876` to `:893`), so a fresh car can need up to ten parts fitted by hand before it moves.
+- `CarScript.EEOnCECreate` fills a random 0 to 35 percent of fuel (`carscript.c:2412` to `:2419`), so a Central Economy spawn can arrive almost dry.
+- `CanDisplayCargo` opens cargo through the boot alone (`civiliansedan.c:174` to `:183`).
 
-**An absent key in a config class is NOT a value — it is a question about the parent (added
-2026-08-21).** Reading `config.cpp` by grepping for a
-key and treating "no hit" as "the default" gets the answer backwards whenever the class
-extends another that sets it. Measured case: `CivSedanDoors_BackLeft` declares no
-`rotationFlags` at all — four lines of body (`P:\DZ\vehicles\wheeled\config.cpp:4938-4947`) —
-and extends `CivSedanDoors_Driver`, which sets `8` (`:4813`). Reading
-the absence as `4` leads to the conclusion that the sedan REFUTES the left-8/right-4 rule;
-it does not, it is the rule's own prediction. Four other parts do declare `4` (CoDriver
-`:4936`, BackRight `:4957`, Hood `:4972`, Trunk `:5049`), which is exactly what makes the
-back left door look like an outlier instead of an inheritance. **Resolve the chain before quoting a
-value, and say which link you read it from.** The same trap applies to every inherited
-config key, not just `rotationFlags`.
+Decide each per car, write the decision down, and check the script against it. Take the list of attachable parts from the config's own `inventorySlot[]` blocks, so a renamed class fails on its own.
 
-## Get-in absent: the step by step repair
+## Inherited config
 
-The ordered guards of the get-in action and how to name the one that blocks are in `symptom-get-in-missing.md`.
+An absent key in a config class is not a default; it is a question about the parent. `CivSedanDoors_BackLeft` declares no `rotationFlags` (`P:\DZ\vehicles\wheeled\config.cpp:4938` to `:4947`) and inherits `rotationFlags=8` from `CivSedanDoors_Driver` (`:4813`). Reading the absence as 4 makes the sedan look like it breaks the "left 8, right 4" rule; it is the rule's own prediction. The co-driver door (`:4936`), back right door (`:4957`), hood (`:4972`) and trunk (`:5049`) declare 4. Resolve the chain before quoting a value, and say which link you read it from.
+
+Shipped vanilla cars usually have no loose `model.cfg`; their skeleton is baked into the binarized model. Read the baked skeleton and selection names with an outside ODOL to MLOD converter, after validating the reader on a model whose `model.cfg` you have: name, `isDiscrete`, bone count and every bone and parent pair must match. Binarized bone names are lower case. A uniform zero from both control and candidate means the tool failed; confirm known bytes directly before concluding anything.
+
+For a car that inherits a working vanilla car, an undeclared property has the parent's value and cannot by itself be the difference. Keep only differences where two independent controls agree and the candidate differs, then look at: what only the candidate declares; skeleton, animation and selection data tied to the model; and values both controls override but the candidate neither declares nor inherits. Finally resolve every inherited model name (`animDamper`, `wheelHub` and the like) against the candidate `.p3d`; the reference is inherited even when the named bone or selection is missing.
+
+## Moved elsewhere
+
+Wheels that do not simulate: `wheel-simulation-wiring.md`. An attached part that does not render: `attachment-proxies.md`.

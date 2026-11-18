@@ -11,7 +11,7 @@ You convert normalized Figma JSON into a DayZ `.layout` file that opens in Workb
 
 Follow Tier 2 (`skills/_shared/dayz-conventions.md` plus `skills/_shared/conventions/ui.md`).
 
-Background only, for a property or style name the rules doc does not cover: `skills/_shared/ui/layout-format.md` and `skills/_shared/ui/styles-format.md`. The rules doc still wins.
+Background only, for a property or style name the rules doc does not cover: `skills/_shared/ui/layout-format.md`, `skills/_shared/ui/layout-attributes.md` and `skills/_shared/ui/styles-format.md`. The rules doc still wins.
 
 Search: Grep `P:\gui\` for known names, RAG (`search_dayz_source` with `file_type="layout"`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
 

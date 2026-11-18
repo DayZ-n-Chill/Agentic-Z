@@ -37,7 +37,7 @@ Five vanilla files spell the block `EmitterDef` instead of `EmitorDef` (for exam
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `ShapeType` | string | Point | Emission shape: `Point`, `Box`, `Ellipse`, `Cone`, `Sphere`, `OnSphere` (one vanilla file per value is cited in `standalone-particle-reference.md`, "Emitter shapes") |
+| `ShapeType` | string | Point | Emission shape: `Point`, `Box`, `Ellipse`, `Cone`, `Sphere`, `OnSphere` (one vanilla file per value is cited in `ptc-layout-and-cloudlets.md`, "Emitter shapes") |
 | `ShapeSize` | vec3 | 0 0 0 | Dimensions of emission shape (x y z meters) |
 | `ConeAngle` | vec3 | 0 0 0 | Emission cone spread (yaw pitch roll degrees) |
 | `MaxNum` | int | — | Maximum simultaneous alive particles |
@@ -275,7 +275,7 @@ Emitter roles:
 
 Key insight: complex effects are built by layering simple emitters.
 Each emitter handles one visual aspect independently.
-Larger layered examples (a 4, a 7 and a 12 emitter effect), the `Mast` curves in use and script that turns single emitters on and off are in `standalone-particle-reference.md`.
+Larger layered examples (a 4, a 7 and a 12 emitter effect) and the `Mast` curves in use are in `layered-effects.md`; script that turns single emitters on and off is in `effects-from-script.md`.
 
 ---
 

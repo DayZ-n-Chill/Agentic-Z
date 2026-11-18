@@ -1,6 +1,6 @@
-# Rider poses: what places a driver's body and hands
+# Rider poses
 
-How the vanilla graph poses a player on a vehicle, what that means for a mod vehicle whose shape differs, and the one way to change the pose for a single vehicle class without replacing the player graph. Solving a pose from anchors on the model, the tools and every measured result are in `rider-pose-solver.md`. The vehicle's own config and seats belong to the vehicles pack.
+What places a driver's body and hands: how the vanilla graph poses a player on a vehicle, what that means for a mod vehicle whose shape differs, and the one way to change the pose for a single vehicle class without replacing the player graph. Solving a pose from anchors on the model is in `rider-pose-solver.md`, and what was measured in game in `rider-pose-measured.md`. The vehicle's own config and seats belong to the vehicles pack.
 
 ## The pose comes from clips, not from the vehicle model
 
@@ -17,7 +17,7 @@ None of the ten IK nodes in `vehicles.agf` reads a vehicle memory point, a bone 
 
 A steering pose is one clip read at a time worked out from the steering variable:
 
-```
+```c
 AnimSrcNodePose AnimNodePose {
  Source "Vehicle.DriverSteeringMain"
  Time "clamp((VehicleSteering + 0.785) * 0.63694267515923566878980891719745, 0.0, 1.0)"
@@ -49,7 +49,7 @@ Replacing `vehicles.agf`, the template or the base instance replaces the player 
 2. The file registered as a profile in the mod callback `RegisterCustom` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:329`, class at `:305`, called by vanilla at `:1570`), the way vanilla registers `SurrenderDummyItem` and `"Empty"` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1543`, `:1548`; the comment at `:1546` says `Empty` exists so the character can switch back with `SetAnimationInstanceByName`).
 3. The switch in script while the player rides that class: `EnableAutoAnimInstUpdateOnHandsChange(false)` and `SetAnimationInstanceByName` with the child's path, as surrender does (`P:\scripts\4_world\entities\manbase\playerbase.c:2087`, `:2088`); back to `player_main.asi` with the automatic switch on again when the player gets out (`P:\scripts\4_world\entities\manbase\playerbase.c:2104` to `:2107`). `PlayerBase` has the hooks `OnCommandVehicleStart` and `OnCommandVehicleFinish` (`P:\scripts\4_world\entities\manbase\playerbase.c:4342`, `:4375`).
 
-That the mechanism exists is checked above. That a mod's child instance changes the rider's pose on one class only, on a dedicated server and the owning client, is measured in game on 1.30, not checked on `P:\` (`rider-pose-solver.md`); remote observers, late join, a held item, unconsciousness and death were not tested. The native's own comment warns that the switch can desync when misused (`SetAnimationInstanceByName`, `P:\scripts\3_game\human.c:1383` to `:1384`).
+That the mechanism exists is checked above. That a mod's child instance changes the rider's pose on one class only, on a dedicated server and the owning client, is measured in game on 1.30, not checked on `P:\` (`rider-pose-measured.md`); remote observers, late join, a held item, unconsciousness and death were not tested. The native's own comment warns that the switch can desync when misused (`SetAnimationInstanceByName`, `P:\scripts\3_game\human.c:1383` to `:1384`).
 
 ## Boarding side and falling off
 
@@ -60,4 +60,4 @@ That the mechanism exists is checked above. That a mod's child instance changes 
 
 ## Reading the real steering angle
 
-To compare the hands with the bars in a test, read the animated part, not the input: find the bones the steering source moves and read their rotation. The calls and their vanilla use are in `script-hooks.md`, "Reading a pose back from script"; the motorbike recipe is in `rider-pose-solver.md`.
+To compare the hands with the bars in a test, read the animated part, not the input: find the bones the steering source moves and read their rotation. The calls and their vanilla use are in `script-hooks.md`, "Reading a pose back from script"; the motorbike recipe is in `rider-pose-measured.md`, "Probes for a test".

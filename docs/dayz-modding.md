@@ -50,7 +50,7 @@ Most skills gate on `/dayz-preflight` first per the L2 convention `skills/_share
 - `/dayz-animation-pipeline` (its scripts only read and write the model, image or JSON files named on the command line, or run inside Blender through the Blender MCP server; none needs DayZ Tools or the game).
 - `/dayz-model-tools` (its proxy scripts `proxy_extract.py`, `proxy_canon.py`, `proxy_viewer.py` and `proxy_apply.py`, and its p3d inspector scripts, only read and write the `.p3d`, JSON and HTML files named on the command line, and `install_py3d.py` only runs pip on the wheel inside the repo; its `worn_overlay.py` reads vanilla clothing and does gate on preflight when its `--dz` folder is on `P:\`).
 
-Reference-only skills such as `/dayz-particles` run no scripts, so they have no gate. `/dayz-import-mod`, `/dayz-launch-test` and `/dayz-p3d-audit` gate through their main script; their offline helpers (`pbo_inventory.py`, `scripts/drive_ladder.py`, the three vehicle checks) read only the files or the local server they are given.
+Reference-only skills such as `/dayz-particles` run no scripts, so they have no gate. `/dayz-import-mod`, `/dayz-launch-test` and `/dayz-p3d-audit` gate through their main script; their offline helpers (`pbo_inventory.py`, `skills/dayz-launch-test/scripts/run_vehicle_checks.py`, the three vehicle checks) read only the files or the local server they are given.
 
 ## Reference and tool skills
 
@@ -63,7 +63,7 @@ Beside the workflow skills above, the repo carries reference and tool skills for
 | Recording a correction from a work session | `/dayz-record-correction` | none; you run it yourself |
 | Enforce Script | pack `skills/_shared/enscript/` (depth index `depth/README.md`) | `dayz-script-specialist` |
 | UI | `/dayz-layout-preview`, pack `skills/_shared/ui/` | `dayz-ui-specialist` |
-| Vehicles | `/dayz-p3d-audit` (vehicle checks), pack `skills/_shared/vehicles/` (a ripped car: `rip-family-b-runbook.md`) (cars, motorbikes, aircraft) | `dayz-vehicle-specialist` |
+| Vehicles | `/dayz-p3d-audit` (vehicle checks), pack `skills/_shared/vehicles/` (a ripped car: `ripped-car-proxy-split.md`) (cars, motorbikes, aircraft) | `dayz-vehicle-specialist` |
 | Weapons | pack `skills/_shared/weapons/` | `dayz-weapon-specialist` |
 | Clothing | `/dayz-model-tools`, pack `skills/_shared/wearables/` | `dayz-wearables-specialist`, `dayz-object-builder` |
 | Models | `/dayz-model-tools`, pack `skills/_shared/models/` (generated model pipeline, 3D viewer tool, Blender building and review, AI generation, the gated build harness) | `dayz-object-builder`, `dayz-asset-specialist` |

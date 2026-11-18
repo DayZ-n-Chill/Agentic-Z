@@ -1,270 +1,143 @@
-# Memory points and named selections
+# Selections and proxies when you author a model
 
-Which memory points and named selections a generated model needs, how to create them, how proxy selections make an attachment show, and the memory point convention of a power grid mod's electrical ports.
+Which LODs each named selection of a new model must sit in, how the three parts of a proxy make an attachment show, and the memory point names a power grid mod uses for its cable ports.
 
-What is checked and what is not: lines that cite `P:\` were opened and confirmed against vanilla. The Object Builder and Blender steps are tool knowledge. The proxy findings marked as measured are measurements on third-party mods, and the port convention is the power grid mod's own (third-party mod behaviour, not vanilla); none of that can be checked on `P:\`. The vanilla side of each topic is in the model pack: `_shared/models/memory-points.md`, `selections.md`, `building-selections.md`, `proxies.md` and `proxy-frames.md`.
+The vanilla side of each topic is in `memory-points.md`, `selections.md`, `building-selections.md`, `proxies.md` and `proxy-frames.md`; this file is the authoring checklist. Lines that cite `P:\` are checked there. The Object Builder and Blender steps are tool knowledge, the proxy findings marked as measured come from in game tests on mod items, and the port names are the power grid mod's own, not vanilla.
 
-Evidence labels: `[CHANGELOG]` is stated by the official 1.30 changelog only.
+## Where a named selection must be
 
-## Memory points (Memory LOD)
+A named selection is a set of the points and faces of one LOD. Who reads each kind is in `selections.md`. For an animated part, such as a lever:
 
-Memory points are **single vertices** in the Memory LOD. They are not faces or edges, just isolated points in 3D space with a name (a vertex group, which is a named selection).
-
-### How to create memory points
-
-In Object Builder:
-
-- Switch to the Memory LOD.
-- Create single vertices at the positions wanted.
-- Assign them to named selections.
-
-In Blender (for automation):
-
-- Create Empty objects or single vertex meshes at the required positions.
-- Assign them to vertex groups with the correct names.
-- The Arma 3 Object Builder addon exports them to the Memory LOD.
-
-Workaround for outside tools that have no plugin:
-
-- Create a triangle and put one or two of its vertices where the points are needed.
-- Import it into Object Builder.
-- Delete the extra vertex or vertices of the triangle.
-
-With py3d the points are written directly: `py3d-generation.md`, "Memory LOD Pattern".
-
-### Common memory point types
-
-#### Animation axes
-
-Two vertices define a line (an axis) around which a selection rotates or along which it moves.
-
-| Points | Purpose | Example |
+| LOD | Needed | Why |
 |---|---|---|
-| `door1_axis` (2 points) | Rotation axis for `door1` | Two points on the hinge line |
-| `lever_axis` (2 points) | Rotation axis for a lever | Two points at the pivot |
-| `switch_axis` (2 points) | Rotation axis for a switch | Two points at the toggle point |
-| `slide_axis` (2 points) | Translation axis for sliding parts | Two points that set the slide direction |
+| Resolution LODs | yes | The visible mesh moves |
+| Geometry | yes | Collision follows the part |
+| Fire Geometry | yes | Bullets hit the part where it is |
+| View Geometry | yes | Sight blocking and the action cursor follow the part |
+| Memory | yes | The axis points |
+| Shadow volume | when the model has one | The shadow follows the part |
 
-The axis is the line between the two vertices. Rotation happens around this line, translation along it. These names are examples for a mod's own object: the name is free, because the animation class in `model.cfg` names its own `axis`. Vanilla building doors use the plural, `doors1_axis` (`_shared/models/building-selections.md`); a vanilla item example is `lid_axis` in `P:\DZ\gear\camping\wooden_case.p3d`.
+Give the selection the same name in every LOD it is in. Matching ignores letter case (the barrel model stores `lid` and its config says `class Lid`, `P:\DZ\gear\containers\config.cpp:101`), but spell a name the way the config or script that uses it does.
 
-Placement rules:
+A collision LOD needs the selection only where its collision should move with the part. A fixed collision box under a moving lever does not.
 
-- For a door hinge: both points on the vertical edge where the hinge is, one at the top and one at the bottom.
-- For a lever pivot: both points at the pivot, separated along the pivot axis.
-- The order of the two points decides the direction of rotation (right hand rule).
+## Common selection names
 
-#### Interaction points
-
-Single vertices where the player's action widget appears.
-
-| Point | Purpose |
+| Name | Use |
 |---|---|
-| `actionPos` | Where the interaction prompt appears |
-| `doorX_action` | Action point for door X |
-| `soundPos` or `doorX_soundPos` | Where door and interaction sounds play |
+| `door1`, `door2` | A moving door on a mod's own object. Vanilla buildings use `doors1`, `doors2` (below) |
+| `lever`, `switch` | Moving mechanical parts |
+| `Component01`, `Component02` | Pieces of the Geometry, Fire Geometry and View Geometry LODs |
+| `camo` | A texture swap, listed in `hiddenSelections[]` |
+| `zbytek` | Czech for "the rest": everything in no other selection |
+| `liquid_source` | Since 1.30, the View Geometry component that the liquid actions of a well or pump look for, `LIQUID_SOURCE_SELECTION` (`P:\scripts\4_world\classes\useractionscomponent\actions\actionconstants.c:180`); see `dayz-1-30-models.md` |
 
-`actionPos` and `soundPos` are names the mod's own script or config reads; no vanilla script under `P:\scripts\` looks up a point called `actionPos`. Vanilla building doors use one point for both jobs: `soundPos` in `class Doors` names the door's `_action` point (`soundPos="doorsTwin1_action"`, `P:\DZ\structures\residential\config.cpp:7363`).
+## Doors and ladders on a building
 
-#### Central economy points
+Vanilla buildings name their parts this way (read from vanilla models such as `garage_small`, `barn_wood1`, `farm_cowsheda` and six ladders converted back to MLOD; the full account with the file each name comes from is `building-selections.md`):
 
-| Point | Purpose |
-|---|---|
-| `ce_center` | The object's center. Vanilla script reads it as the center for actions, vicinity and the code lock (`P:\scripts\3_game\entities\object.c:1363`, `_shared/models/memory-points.md`) |
-| `ce_radius` | A single point; its distance from `ce_center` sets the radius |
+- Doors. The selection is `doorsN`, plural (`doors1`, `doors2`), not `door1`. The Memory LOD holds `doorsN_axis` (the hinge) and `doorsN_action` (the action point). Twin doors are `doorstwinN` with `twinN_action`. Put `doorsN` in every LOD that matters: visual, Geometry, Memory, View Geometry, Fire Geometry and Hit points. The Geometry LOD carries the named properties `class=house`, `map=building` and `damage=no`.
+- A ladder that is a loose prop (`ladder.p3d`) has the Memory points `start` and `end` (or `start1` and `end1`) and a Roadway LOD under it.
+- A ladder built into a building (lighthouse, watchtower, silo) has `ladderN` (its base, also a View Geometry component) and the Memory points `ladderN_bottom_front`, `ladderN_top_front`, `ladderN_middle_X` (with `_align`, for floors in between), `ladderN_con`, `ladderN_con_dir` and `ladderN_dir`, plus a Roadway.
+- The Paths LOD for AI holds `posXX` (stop points, usable by `buildingpos`), `inXX` (entries) and `actionbeginN` with `actionendN`.
 
-#### Bounding override
+## In Blender
 
-If animated parts move outside the default bounding sphere (common with doors):
+Named selections are vertex groups. Create each group with the exact name and assign its vertices with weight 1.0; the Arma 3 Object Builder add-on writes vertex groups as named selections. A vertex can sit in several groups, for example `Component01` and `lever`.
 
-- Create a named selection in the Memory LOD that covers the full area the object occupies when animated.
-- Reference it in `config.cpp`: `bounding = "selection_name";`.
-- Without it, the raycast for actions may fail at certain angles.
+## Device selections of a power grid mod
 
-Not checked on `P:\`: `bounding` is a real config key, but vanilla gear sets it to `"BSphere"` (`P:\DZ\gear\camping\config.cpp:44`), and no vanilla file read here gives it a memory selection name (`model-config-and-packing.md`).
+Names one power grid mod uses on its devices (its own convention): `cable_attach_point` where cables connect, `status_indicator` for an LED that changes with the power state, `switch_handle` for the switch, and `panel_door` for an opening cover.
 
-#### Weapon points (for reference)
+## Proxies: the three parts
 
-| Point | Purpose |
-|---|---|
-| `usti hlavne` | Muzzle end of the barrel (`P:\scripts\4_world\static\miscgameplayfunctions.c:728`) |
-| `konec hlavne` | The other end of the barrel, at the breech (`P:\scripts\4_world\static\miscgameplayfunctions.c:729`) |
-| `eye` | Iron sight eye position, named by `memoryPointCamera` (`P:\DZ\weapons\firearms\AKM\config.cpp:169`) |
-| `nabojnicestart`, `nabojniceend` | Ejection port: where a spent casing and chamber smoke start, and their direction (`overridePoint="Nabojnicestart"`, `P:\DZ\weapons\firearms\AKM\config.cpp:236`). They are not the magazine well |
-| `recoil` | Recoil application point (no vanilla script read here looks it up) |
-| `optics` | Optics attachment point (not checked on `P:\`) |
+A proxy tells the engine where to draw an attached item, for example a `CarBattery` in the cradle of a battery adapter. An attachment shows only when all three parts exist:
 
-The full weapon table, with every vanilla reader, is `_shared/weapons/model-selections.md`.
+1. The proxy triangle and its selection in the parent `.p3d`, in every visual LOD, and since 1.30 in View Geometry as well.
+2. The proxy `.p3d`, a minimal model at the path the selection names.
+3. A `CfgNonAIVehicles` class in `config.cpp` that ties the `inventorySlot` to the proxy model (`proxy-attachment-config.md`).
 
-### Memory points can be animated
+With any one missing, the item is attached in the inventory and invisible on the model.
 
-Memory LOD selections can be animated through `model.cfg` like those of any other LOD. This is useful to move an interaction point with an animated part.
+Binarize does not merge the proxied model into the parent. Binarizing and converting back through an outside ODOL to MLOD converter shows only that the proxy survived, with its frame and anchor; whether the attached model sits right shows only in game, with a ray cast or a capture.
 
----
+## Proxy names
 
-## Named selections
+A proxy selection is named `proxy:<addon path>\<proxy model>.NNN`.
 
-Named selections are vertex groups that identify parts of the model by name. They serve different purposes in different LODs (`_shared/models/selections.md` has the table of who reads each kind).
+- Write the path without `.p3d`. Vanilla stores both spellings but almost always the one without: 147 of 17,891 proxy names under `P:\DZ\` keep `.p3d`. On a mod vehicle in game, a proxy whose name kept `.p3d` was silently absent (`proxies.md`), so check this first when a proxy does not show. The power grid mod's own name, `proxy:PowerMod\data\battery_adapter\PM_BatterySlot.p3d.001`, keeps it. py3d refuses it: `LOD.add_proxy` raises "proxy path must omit the .p3d suffix".
+- `.NNN` is a three digit index. Vanilla starts at `001` or `000` (`P:\DZ\gear\camping\fence.p3d` uses both).
+- The index does not pick an entry of `inventorySlot[]`. `P:\DZ\gear\camping\territory_flag.p3d` stores `proxy:\dz\gear\consumables\stone.001` for the stones of the flag pole, which is the second slot of `ProxyStone` (`P:\DZ\gear\consumables\config.cpp:4573`, slots `Stones` and `Material_FPole_Stones`). A class with several slots is tied to each through the selection that slot's `CfgSlots` entry names (`selection="Material_FPole_Stones"`, `P:\scripts\config.cpp:2496`).
+- The config class is `Proxy` plus the model's file name: `ProxyPM_BatterySlot` for the power grid example (`proxy-attachment-config.md`).
 
-### Where a named selection must be present
+## Which LODs hold the proxy
 
-For an animated part (for example a lever):
-
-| LOD | Required? | Why |
+| LOD | Needed | Why |
 |---|---|---|
-| Resolution LODs | Yes | So the visual mesh animates |
-| Geometry LOD | Yes | So collision follows the animation |
-| Fire Geometry LOD | Yes | So bullet interaction follows the animation |
-| View Geometry LOD | Yes | So occlusion and the action cursor follow the animation |
-| Memory LOD | Yes | For the axis points and bone definitions |
-| Shadow volume | Optional | Shadows follow the animation (recommended when the model has one) |
+| Resolution LODs | yes | The engine reads the proxy's position from the visual LODs |
+| Geometry | no | The triangle is not a collision surface |
+| Fire Geometry | no for an item attachment; yes for a vehicle wheel or suspension slot | A wheel slot is seated through this LOD (below) |
+| Memory | no | The position comes from the triangle, not from memory points |
+| View Geometry | yes since 1.30, for a dedicated server | Up to 1.29, a proxy missing from the last visual LOD could make the server report the parent's origin. Since 1.30 the server reads an inventory attachment's position from View Geometry (official 1.30 changelog; `dayz-1-30-models.md`) |
 
-**The selection must have the same name in every LOD where it appears.** Matching ignores letter case (the barrel model stores `lid` and its config says `class Lid`, `P:\DZ\gear\containers\config.cpp:101`), but spell a name the way the config or script that uses it does.
+Wheel and suspension slots are the exception for Fire Geometry. On four vanilla cars (`civiliansedan`, `hatchback_02`, `offroadhatchback`, `offroad_02`) the wheel proxies sit in the resolution LODs and in Fire Geometry at the same positions; `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` stores each wheel proxy 7 times (`proxies.md`). Adding them to Fire Geometry was needed to match vanilla, but on a mod quad it did not by itself fix wheels that never simulated, so do not treat their absence as the only cause. What decides wheel simulation is the link between `CfgSlots.selection` and the Fire Geometry selection (`generated-model-rules.md`, "The wheel slot selection in Fire Geometry"; the wheel slot check in `dayz-p3d-audit/references/vehicle-checks.md`).
 
-A collision LOD needs the selection only where the collision should move with the part; a static collision box under a moving lever does not need it.
+## What a proxy selection holds
 
-### Selection naming conventions
+- One tiny triangle (3 vertices) where the attachment should appear.
+- The triangle sets position and facing by its shape, not its vertex order: the corner with the widest angle is the position and the other two give the axes, so a triangle with two equal angles is ambiguous (`proxy-frames.md`). py3d's `LOD.add_proxy` writes an unambiguous triangle.
+- An empty texture and material (`""`) on the face.
+- Weight 1 for all three vertices and the face.
 
-| Pattern | Purpose |
+## An entity made only of proxies
+
+An entity whose visual LOD holds only proxy triangles (written with py3d `LOD.add_proxy`, all inside a selection declared as a bone in `CfgSkeletons`, as mod gun racks do), plus Memory, View Geometry and Fire Geometry box LODs and no Geometry LOD, was measured in game on a mod's test item:
+
+- It draws the attached item at the proxy, shows in the vicinity panel, takes drag in and out, and keeps its attachments across restarts without a `types.xml` entry.
+- It needs `autocenter = 0` in its `CfgVehicles` class; without it the engine recentres the model and the memory points and bounding centre shift.
+- It still blocks the player: its bounding volume stops movement even with no Geometry, View Geometry or Fire Geometry (four variants tried). Put proxies and cursor boxes inside geometry that blocks anyway, or try the placement without a physics body before you accept it.
+- Test it both as an instance loaded from storage and as one created at run time: attachments created in `EEInit` or in the creation tick never reach clients (`skills/_shared/enscript/depth/`).
+
+## Vanilla attachment models
+
+| Item | Model |
 |---|---|
-| `door1`, `door2` | Animated door selections on a mod's own object (vanilla buildings: `doors1`, `doors2`, see below) |
-| `lever`, `switch` | Animated mechanical parts |
-| `Component01`, `Component02` | Geometry, Fire Geometry and View Geometry components |
-| `camo` | Texture swap selection (for `hiddenSelections`) |
-| `zbytek` | "Remainder": everything not in another selection |
-| `liquid_source` | Since 1.30: View Geometry component for the liquid actions of a well or pump, `LIQUID_SOURCE_SELECTION` (`P:\scripts\4_world\classes\useractionscomponent\actions\actionconstants.c:180`). See `dayz-1-30-models.md` |
+| `CarBattery` | `\dz\vehicles\parts\battery_car.p3d` (`P:\DZ\vehicles\parts\config.cpp:152`) |
+| `TruckBattery` | `\dz\vehicles\parts\battery_truck.p3d` (`P:\DZ\vehicles\parts\config.cpp:24`) |
 
-### Doors and ladders: the scheme vanilla buildings use
+The proxy selection does not name the vanilla model. Make your own proxy `.p3d` and tie the vanilla slots to it through `CfgNonAIVehicles`; the engine then draws the attached item's own model at the proxy. Code that writes proxy triangles and proxy models is in `py3d-proxies.md`.
 
-Read on 2026-07-06 from nine vanilla models converted back to MLOD (`garage_small`, `barn_wood1`, `farm_cowsheda` and six ladders), and checked again on `P:\` for the model pack. It refines the tables above, which use the singular `door1`:
+## Electrical port convention
 
-- **Doors.** The selection is `doorsN`, plural, in every vanilla building read (`doors1`, `doors2` ...), not `door1`. In the Memory LOD: `doorsN_axis` (the rotation axis) and `doorsN_action` (the action point). Twin doors are `doorstwinN` with `twinN_action`. The `doorsN` selection goes in every LOD that matters (visual, Geometry, Memory, View Geometry, Fire Geometry, Hit points). Named properties of the Geometry LOD: `class=house`, `map=building`, `damage=no`.
-- **Ladders**, two schemes: (a) a climbable **loose prop** (`ladder.p3d`) has Memory points `start` and `end` (or `start1` and `end1`) and a Roadway LOD underneath; (b) a ladder **built into a building** (lighthouse, watchtower, silo) has `ladderN` (the base, and a View Geometry component) with Memory points `ladderN_bottom_front`, `ladderN_top_front`, `ladderN_middle_X` (with `_align`, for floors in between), `ladderN_con`, `ladderN_con_dir` and `ladderN_dir`, plus a Roadway. The `ladderN_*` names belong to the building case.
-- **Paths LOD (AI).** `posXX` (stop vertices, usable by `buildingpos`), `inXX` (entry) and `actionbeginN` with `actionendN`.
+A power grid mod's own convention, not vanilla. Its devices connect by cables that the framework finds by name: the device script calls `AddPort("input_1", ...)` and `AddPort("output_1", ...)` in its constructor, and the framework looks up memory points with matching prefixed names at run time.
 
-The full account, with the vanilla files each name was read from and the table of LOD resolution values, is `_shared/models/building-selections.md` and `_shared/models/lods.md`.
-
-### In Blender
-
-Named selections are vertex groups in Blender.
-
-- Create vertex groups with the correct names.
-- Assign vertices to them with weight 1.0.
-- The Arma 3 Object Builder addon exports vertex groups as named selections.
-- A vertex can belong to several selections (for example to both `Component01` and `lever`).
-
-### Selections of power grid devices
-
-Names a power grid mod uses on its devices (third-party convention):
-
-- `cable_attach_point`: where cables connect
-- `status_indicator`: an LED or indicator that changes with the power state
-- `switch_handle`: the interactive switch part
-- `panel_door`: an openable panel cover
-
----
-
-## Proxy selections (attachment rendering)
-
-Proxy selections tell the engine where to draw attached items (for example a `CarBattery` sitting in the cradle of a battery adapter). Without proxies the attachment exists in the inventory but is invisible on the 3D model.
-
-- Binarize does not compose the proxied sub models into the parent's ODOL; composition can only be observed in game. An offline "composition canary" (binarize, then convert back through an outside ODOL to MLOD converter) only verifies survival, meaning the sub model's own selections and the proxy's frame and anchor. It does not verify the posed result, which takes a raycast or a capture in game. (Measured 2026-07-21.)
-
-### Naming convention
-
-```
-proxy:<addon path>\<proxy model>.NNN
-```
-
-- `<addon path>\<proxy model>` is the path of a minimal proxy `.p3d`. Write it without the `.p3d` extension. The power grid mod's own name, `proxy:PowerMod\data\battery_adapter\PM_BatterySlot.p3d.001`, is spelled with it. Vanilla stores both spellings, almost always the one without: 147 of 17,891 proxy names under `P:\DZ\` keep `.p3d`. On a third-party vehicle mod in game, a proxy whose name kept `.p3d` was silently absent (`_shared/models/proxies.md`), so the form without it is the one to write, and a proxy that does not show is first checked for this. py3d enforces it: `LOD.add_proxy` raises "proxy path must omit the .p3d suffix".
-- `.NNN` is a three digit index. Vanilla starts it at `001` or `000` (`P:\DZ\gear\camping\fence.p3d` uses both). The index does not pick an entry of the class's `inventorySlot[]`: vanilla `P:\DZ\gear\camping\territory_flag.p3d` stores `proxy:\dz\gear\consumables\stone.001` for the stones of the flag pole, which is the second slot of `ProxyStone` (`P:\DZ\gear\consumables\config.cpp:4573`, slots `Stones` and `Material_FPole_Stones`). Vanilla ties the proxies of a class with several slots to their slots through the selection each slot's `CfgSlots` entry names (`selection="Material_FPole_Stones"`, `P:\scripts\config.cpp:2496`).
-- The class of the power grid example is `ProxyPM_BatterySlot` (`model-config-and-packing.md`: the class name is `Proxy` plus the model's file name).
-
-### Where proxy selections must exist
-
-| LOD | Required? | Why |
+| Memory point | Port name in script | Use |
 |---|---|---|
-| Resolution LODs | **Yes** | The engine reads the proxy face position from the visual LODs |
-| Geometry LOD | No | The proxy face is not a collision surface |
-| Fire Geometry LOD | No for an item attachment, **yes for a vehicle wheel or suspension slot** (below) | The proxy face is not a ballistic surface, but a wheel slot is seated through this LOD |
-| Memory LOD | No | The proxy position comes from the face, not from memory points |
-| View Geometry LOD | **Yes on a dedicated server, since 1.30** | Until 1.29, if the proxy was missing from the last visual LOD the server could report the parent's origin. Since 1.30 `[CHANGELOG]` the server uses the View Geometry LOD for the position of an inventory attachment proxy |
+| `port_input_N` | `input_N` | Where an incoming cable attaches |
+| `port_output_N` | `output_N` | Where an outgoing cable attaches |
+| `port_input_N_dir` | paired | The line from `port_input_N` to this point sets how the cable leaves |
+| `port_output_N_dir` | paired | The same for the output |
 
-**Wheel and suspension slot proxies (vehicles).** The "No" for Fire Geometry applies to item attachment proxies only (a battery, a headlight torch and so on). For vehicle wheel and suspension slot proxies it is wrong: on four vanilla cars (civiliansedan, hatchback_02, offroadhatchback, offroad_02) the wheel proxies appear in the Resolution LODs and in the Fire Geometry LOD, at the same positions. On `P:\`, `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` has 6 visual LODs and stores each wheel proxy 7 times (`_shared/models/proxies.md`). A caveat on cause: adding the wheel proxies to Fire Geometry was required for parity, but it did not by itself fix a third-party quad mod's "wheels never simulate". Do not present their absence as the single cause of that bug; the gate for wheel simulation is the wiring between `CfgSlots.selection` and the Fire Geometry selection (`generated-model-rules.md` rule 20; the wheel-slot selection wiring check in `dayz-p3d-audit/references/vehicle-checks.md`).
+`N` counts from 0 (`port_input_0`) on the mod's older devices (`switch_v1`, the sprinkler) and from 1 (`port_input_1`) on newer ones (`ceiling_light`, `wall_lamp`). Match the numbering of the script's `AddPort` calls; with names that do not match, the cable cannot attach.
 
-Since 1.30 `[CHANGELOG]`: duplicate the proxy triangles of item attachments in **View Geometry** as well as in the Resolution LODs, so that a dedicated server does not fall back to the parent's origin. Detail: `dayz-1-30-models.md`.
+Other memory points the mod's devices set:
 
-### What a proxy selection contains
-
-- **One tiny triangle** (3 vertices) placed where the attachment should appear.
-- The triangle sets the attachment's position and orientation. The frame is not read from the vertex order (vertex 0 the origin, vertex 1 forward, vertex 2 up); it is read from the triangle's shape: the corner with the widest angle is the position and the other two give the axes, so a triangle with two equal angles is ambiguous (`_shared/models/proxy-frames.md`). py3d's `LOD.add_proxy` writes an unambiguous triangle.
-- The face has an **empty texture and material** (`""`).
-- All 3 vertices and the face have weight 1 in the selection.
-
-### The complete proxy system (three required parts)
-
-For an attachment to show, all three parts must be present:
-
-1. **The proxy face and selection in the parent `.p3d`**, in all visual LODs (and in View Geometry since 1.30).
-2. **The proxy `.p3d` file**, a minimal model at the path the selection names.
-3. **A `CfgNonAIVehicles` class** in `config.cpp` that maps the `inventorySlot` to the proxy model.
-
-With any one of the three missing, the attachment is attached in the inventory and invisible.
-
-### A proxy carrier with no mesh: an invisible `Inventory_Base` can hold and draw attachments (measured 2026-09-10)
-
-An entity whose visual LOD contains only proxy triangles (py3d `LOD.add_proxy`, all inside a selection declared as a bone in `CfgSkeletons`, the pattern third-party gun rack mods use), plus Memory, View Geometry and Fire Geometry box LODs and no Geometry LOD:
-
-- draws the attached item at the proxy, shows in the vicinity panel and accepts drag in and out (a probe entity of a third-party mod, checked in game), and persists with its attachments across restarts without a `types.xml` entry;
-- needs `autocenter = 0` in its `CfgVehicles` class: without it the engine recenters the model (memory points and the bounding center shift);
-- still collides with the player: its bounding volume blocks movement even with no Geometry, no View Geometry and no Fire Geometry (four variants measured). Design proxies and cursor boxes inside geometry that already blocks, or prototype without a physics body before accepting the placement;
-- must be verified with both an instance loaded from storage and one created at runtime: attachments created in `EEInit` or in the creation tick never reach clients (the Enforce Script pack (`skills/_shared/enscript/depth/`)).
-
-### Vanilla attachment model paths
-
-Vanilla item models often used in proxy systems:
-
-| Item | Model path |
-|---|---|
-| `CarBattery` | `DZ\vehicles\parts\battery_car.p3d` (`P:\DZ\vehicles\parts\config.cpp:152`) |
-| `TruckBattery` | `DZ\vehicles\parts\battery_truck.p3d` (`P:\DZ\vehicles\parts\config.cpp:24`) |
-
-For proxy rendering you do not reference the vanilla model directly in the proxy selection name. You create your own proxy `.p3d` and link the vanilla attachment slots to it through `CfgNonAIVehicles`. The engine then draws the attached item's own model at the proxy position.
-
-See `py3d-generation.md` for code that creates proxy faces and proxy `.p3d` files, and `model-config-and-packing.md` for the `CfgNonAIVehicles` class.
-
-### Electrical port convention (Memory LOD)
-
-Third-party convention, from a power grid mod. Its devices connect to each other with cables that the framework resolves by name. The device script calls `AddPort("input_1", ...)` and `AddPort("output_1", ...)` in its constructor, and the framework looks up memory points with the matching prefixed names at runtime.
-
-Required memory point names per port:
-
-| Memory point | Script port name | Purpose |
+| Memory point | Needed | Use |
 |---|---|---|
-| `port_input_N` | `input_N` | Anchor point where an incoming cable attaches |
-| `port_output_N` | `output_N` | Anchor point for an outgoing cable |
-| `port_input_N_dir` | (paired) | Direction: the line from `port_input_N` to `port_input_N_dir` sets how the cable exits |
-| `port_output_N_dir` | (paired) | The same for the output |
+| `light` | if the device gives light | Where the point light starts; also a target for `CreateLightAtObjMemoryPoint` (`P:\scripts\4_world\entities\scriptedlightbase.c:215`) |
+| `light_emit` | optional | A visual anchor paired with the glowing selection, seen in the mod's `ceiling_light.p3d` |
+| `ce_center` | yes | The object's centre |
+| `ce_radius` | yes | One point whose distance from `ce_center` is the radius |
+| `boundingbox_min`, `boundingbox_max` | yes | The box that frames the inventory preview (`P:\scripts\3_game\gameplay.c:293`) |
+| `invview` | optional | The camera point of the inventory preview, forward of the model |
 
-`N` is a small integer, counted from 0 (`port_input_0`) on older items (switch_v1, sprinkler) and from 1 (`port_input_1`) on newer ones (ceiling_light, wall_lamp). **Match the indexing the script's `AddPort` calls use.** With mismatched names the cable cannot attach.
-
-Other memory points power grid mod devices commonly set:
-
-| Memory point | Required? | Purpose |
-|---|---|---|
-| `light` | If the device emits light | Origin of the point light (also the target of `CreateLightAtObjMemoryPoint`, `P:\scripts\4_world\entities\scriptedlightbase.c:215`) |
-| `light_emit` | Optional | Paired visual anchor for the emissive selection (a convention seen in the mod's `ceiling_light.p3d`) |
-| `ce_center` | Yes | Geometric center of the object |
-| `ce_radius` | Yes | A single point whose distance from `ce_center` sets the radius |
-| `boundingbox_min`, `boundingbox_max` | Yes | Tight box corners used to frame the inventory preview (`P:\scripts\3_game\gameplay.c:293`) and by some collision logic |
-| `invview` | Optional | Camera anchor for the inventory preview (offset forward from the model) |
-
-Example: the port layout of a wall mounted device (Z+ is the back, the wall side; cables exit through the wall):
+The ports of a wall mounted device, with Z+ as the back toward the wall so cables leave through it:
 
 ```python
-port_input_1      = (+0.0, cy + 0.04, z_back)        # upper port
-port_input_1_dir  = (+0.0, cy + 0.04, z_back + 0.03) # 3 cm behind the wall
-port_output_1     = (+0.0, cy - 0.04, z_back)        # lower port
+port_input_1      = (+0.0, cy + 0.04, z_back)         # upper port
+port_input_1_dir  = (+0.0, cy + 0.04, z_back + 0.03)  # 3 cm behind the wall
+port_output_1     = (+0.0, cy - 0.04, z_back)         # lower port
 port_output_1_dir = (+0.0, cy - 0.04, z_back + 0.03)
 ```
 
-Inspect the Memory LOD of a sibling device with the p3d inspector of the `dayz-model-tools` skill before designing your own: placement relative to the visible mesh is what makes cables look attached instead of floating, and it varies by device.
+Before placing your own, open the Memory LOD of a similar device with the p3d inspector of `/dayz-model-tools` (`tools-p3d-inspector.md`): where the points sit against the visible mesh is what makes a cable look attached rather than floating, and it differs from device to device.

@@ -71,8 +71,8 @@ Exit code 0 means no error line was seen, 1 means at least one was, and 2 means 
 ## What the watch cannot see
 
 - A refusal the client shows only as a modal. `0x00020017` (a diag client on a server that is not diag) was measured with nothing in the RPT, so the watch stays quiet; paste the modal's text into `triage.py --text` to get its fix.
-- A client that dies with an RPT that holds only its header (measured when Steam was running but no user was signed in). `/dayz-launch-test` checks only that `steam.exe` runs; `skills/dayz-launch-test/references/troubleshooting.md` has the rest.
-- A mod that did not load. No error line is printed for a mod that was never mounted, so read the `-mod=` line of the session's RPT before trusting a quiet watch (`skills/dayz-launch-test/references/automated-cells.md`).
+- A client that dies with an RPT that holds only its header (measured when Steam was running but no user was signed in). `/dayz-launch-test` checks only that `steam.exe` runs; `skills/dayz-launch-test/references/client-startup-failures.md` has the rest.
+- A mod that did not load. No error line is printed for a mod that was never mounted, so read the `-mod=` line of the session's RPT before trusting a quiet watch (`skills/dayz-launch-test/references/test-cell-evidence.md`).
 
 ## Do not
 

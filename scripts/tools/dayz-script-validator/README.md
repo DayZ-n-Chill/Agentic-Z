@@ -417,7 +417,7 @@ under:
 
 | Cited as | Skill folder |
 |---|---|
-| `SKILL.md rule N`, `enforce-script-reference SKILL.md`, `pitfalls-advanced.md`, `networking.md`, `memory-management.md` | `skills/_shared/enscript/depth/` (rule N is in `hard-rules.md`) |
+| `SKILL.md rule N`, `enforce-script-reference SKILL.md`, `pitfalls-advanced.md`, `networking.md`, `memory-management.md` | `skills/_shared/enscript/depth/`. The numbered rules are now named sections of `hard-rules.md` and `action-and-input-rules.md`, and the line numbers predate the split into topic files, so find the cited rule by its subject; the folder `README.md` indexes the files |
 | UI pack `README.md`, `layout-format.md` | `skills/_shared/ui/` |
 | error catalog and debug protocol | `skills/dayz-launch-test/references/` |
 | `dayz-p3d-audit/SKILL.md` | `skills/dayz-p3d-audit/` |

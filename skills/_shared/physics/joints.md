@@ -27,7 +27,7 @@ A joint that breaks raises `EOnJointBreak(IEntity other, int extra)` on the enti
 
 What the vanilla comments say about the values:
 
-- Cone twist `softness` runs 0 to 1, about 0.8 to 1 recommended, and is the share of the limit where movement is free; `biasFactor` about 0.3; `relaxationFactor` near 1 (`P:\scripts\1_core\proto\enphysics.c:229-239`).
-- 6DOF limits: upper below lower is free, equal is locked, upper above lower is limited; the first three axes are linear and the next three angular (`P:\scripts\1_core\proto\enphysics.c:244-249`).
+- Cone twist `softness` runs 0 to 1, about 0.8 to 1 recommended, and is the share of the limit where movement is free; `biasFactor` about 0.3; `relaxationFactor` near 1 (`P:\scripts\1_core\proto\enphysics.c:229` to `:239`).
+- 6DOF limits: upper below lower is free, equal is locked, upper above lower is limited; the first three axes are linear and the next three angular (`P:\scripts\1_core\proto\enphysics.c:244` to `:249`).
 - A 6DOF spring with stiffness -1 and damping -1 is switched off (`P:\scripts\1_core\proto\enphysics.c:254`).
 - A slider motor with force 0 is off (`P:\scripts\1_core\proto\enphysics.c:266`).

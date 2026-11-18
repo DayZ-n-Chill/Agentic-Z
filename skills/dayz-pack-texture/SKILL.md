@@ -86,7 +86,7 @@ Three offline scripts in `scripts\` check and draft the material side. They only
 |---|---|---|
 | `rvmat_lint.py` | Lints one or more `.rvmat` files (and a companion `.emat`), standard library only | `skills/_shared/textures/rvmat-cookbook.md`, "The template writer and the linter" |
 | `rvmat_template.py` | Writes a starter `super`, `damage`, `emissive`, `multi` or `penetration` `.rvmat`, standard library only | the same section |
-| `normal_convention.py` | Proposes whether a normal map is DirectX (Y-) or OpenGL (Y+) from the normal and its albedo; needs numpy and Pillow | `skills/_shared/textures/normal-maps.md`, "Measuring a source map's convention" |
+| `normal_convention.py` | Proposes whether a normal map is DirectX (Y-) or OpenGL (Y+) from the normal and its albedo; needs numpy and Pillow | `skills/_shared/textures/normal-maps.md`, "Measuring a source map" |
 
 ```cmd
 python "<skill-dir>\scripts\rvmat_lint.py" <file.rvmat> [<more.rvmat> ...] [--pdrive-root P:\] [--warnings-as-errors] [--json]

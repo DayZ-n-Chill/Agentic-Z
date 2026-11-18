@@ -1,0 +1,68 @@
+# Door open and lock code in 1.30
+
+How vanilla 1.30 script decides whether a building door may open, how the one sided door check works, and why combination and code locks are not `EBuildingLockType` values. The config keys these rules read are in `door-config-and-locks.md`; the lock slots on a mod building are in `building-door-locks.md`.
+
+## The open check takes a parameter object
+
+1.30 has two `CanDoorBeOpened` signatures on `Building`. The vanilla open action uses the one that takes a `DoorManipulationParams`:
+
+```c
+// P:\scripts\3_game\entities\building.c:5
+class DoorManipulationParams
+{
+	int m_DoorIndex;
+	bool m_CheckIfLocked;
+	Object m_Caller;
+}
+```
+
+`CanDoorBeOpened(notnull DoorManipulationParams params)` (`P:\scripts\3_game\entities\building.c:141`) returns false when the door is already open. With `m_CheckIfLocked` set it returns false for a locked door; without it, false for a door that is not locked. The older `CanDoorBeOpened(int doorIndex, bool checkIfLocked = false)` (`building.c:160`) only builds a params object without `m_Caller` and calls the first one.
+
+Before 1.30 the `int` form was the only one, `ActionOpenDoors` called it directly, and `GetLockCompatibilityType` always returned `1 << EBuildingLockType.LOCKPICK`. That build is not on `P:\`, so this is not checked there.
+
+So a mod that changes when a door may open overrides the params form and calls `super`. An override of the `int` form alone is never reached by the vanilla action.
+
+## What the open action checks
+
+`ActionOpenDoors` finds the door index from the aimed component, checks reach, runs the one sided check, then fills the params and asks the building:
+
+```c
+// P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionopendoors.c:36
+		BuildingBase building;
+		if (Class.CastTo(building, target.GetObject()))
+		{
+			DoorManipulationParams doorParams = new DoorManipulationParams();
+			doorParams.m_DoorIndex = building.GetDoorIndex(target.GetComponentIndex());
+			if (doorParams.m_DoorIndex != -1)
+			{
+				if (!IsInReach(player, target, UAMaxDistances.DEFAULT)) 
+					return false;
+				
+				if (!building.DoorsDirectionalCheck(player,target.GetComponentIndex()))
+					return false;
+				
+				doorParams.m_CheckIfLocked = CheckIfDoorIsLocked();
+				doorParams.m_Caller = player;
+
+				return building.CanDoorBeOpened(doorParams);
+			}
+		}
+```
+
+`BuildingBase` then refuses the open while any slot in the door's `m_RelatedInventorySlotNames` holds a locked `DigitalCodeLock` or `CombinationLock` (`P:\scripts\4_world\entities\game\super\building.c:307` to `:333`).
+
+## Doors that open from one side
+
+`DoorsDirectionalCheck` (`P:\scripts\4_world\entities\game\super\building.c:336`) reads the door's `m_InteractLimitingPositionPoint` and `m_InteractLimitingDirPoint` and passes them to `MiscGameplayFunctions.MemPointDirectionalCheck` (`P:\scripts\4_world\static\miscgameplayfunctions.c:942`). The vanilla comment says: "some doors can only be operated from one side".
+
+The helper compares the direction from the player's head to the start point with the direction from the start point to the end point, within a default tolerance of `Math.PI_HALF`. It only runs that test when both names are set and both points exist in the model; otherwise it returns true (`:944` to `:967`). The vanilla comment above it says so: "Intentionally returns true (no restriction) when the check cannot be performed" (`:940`). So a door with no points opens from both sides, and a typo in a point name silently does the same.
+
+## Lock types are not the lock items
+
+`EBuildingLockType` lists only engine lock keys (`P:\scripts\3_game\enums\ebuildinglocktypes.c:7`): `NONE` (the vanilla comment says "unlockable only via script"), `LOCKPICK`, and `SHIP_CONTAINER_0` to `SHIP_CONTAINER_4`. There is no combination lock or code lock value.
+
+Combination locks and code locks are inventory items whose `IsExternalLockType()` returns true (`P:\scripts\4_world\entities\itembase\codelock.c:542`; `P:\scripts\4_world\entities\itembase\combinationlock.c:779`; the base method at `P:\scripts\4_world\entities\itembase.c:4848`).
+
+`GetLockCompatibilityType` returns the door's `m_LockCompatibilityBitMask` (`P:\scripts\3_game\entities\building.c:193` to `:196`). `ActionLockDoors` still tests that mask against the tool's `GetKeyCompatibilityType()`, but first returns false when any related slot already holds an external lock item (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionlockdoors.c:40` to `:57`).
+
+The native engine lock calls are unchanged: `IsDoorLocked`, `LockDoor` and `UnlockDoor` (`P:\scripts\3_game\entities\building.c:55` to `:70`).

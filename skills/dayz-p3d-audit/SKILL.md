@@ -209,7 +209,7 @@ Use it when a section passes the gate above and still does not show: a vertex bo
    j. No needle triangle in a    → If the audit names one: build that hull again
       component?                    without the point it names, the corner
                                     opposite the needle's longest edge
-                                    (references/killers-detail.md)
+                                    (references/collision-mesh-hygiene.md)
    k. Vehicle: wheels attach but → Run with --config. A wheel-slot selection
       never simulate?               missing from the Fire Geometry LOD is the
                                     silent cause (references/vehicle-checks.md)
@@ -234,7 +234,8 @@ Deep material lives in `<skill-dir>\references\`. Open only the file the questio
 | Question | Open |
 |---|---|
 | Which model faults break a `.p3d` with no engine error, and what does each finding mean? Blender export pitfalls and script-side gotchas. | `references/p3d-killers.md` |
-| What was measured in game for the winding, component and coverage killers? How are needle triangles detected and fixed? What goes wrong in source meshes used for collision? | `references/killers-detail.md` |
+| What was measured in game for the winding, component and coverage killers, and what else is worth knowing about the other model killers? | `references/killers-detail.md` |
+| How are needle triangles detected and fixed, and what goes wrong in source meshes used for collision? | `references/collision-mesh-hygiene.md` |
 | Which config.cpp and .rvmat checks apply (`P:\` paths, placed-object properties, AnimationSources, hiddenSelections, the Super shader stage layout)? | `references/config-rvmat-checks.md` |
 | How do I verify face winding by hand (Check A, B, C), which heuristics mislead, and what is the Blender import checklist? | `references/winding-methodology.md` |
 | How does each winding state read on measured models, and how do I turn a Check B result into a safe fix? Where do offline checks stop (the in-game spawn gate)? | `references/winding-diagnostics.md` |

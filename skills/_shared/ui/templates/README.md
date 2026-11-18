@@ -1,47 +1,44 @@
 # UI layout templates
 
-Four `.layout` files to copy as a starting point, the stringtable their text keys need, and the four construction mistakes they exist to prevent.
+Four `.layout` files to copy as a starting point, the stringtable their keys need, how to check them offline, and the four construction mistakes they are built to avoid. Vanilla counts are over the 227 layouts under `P:\gui\layouts` (9,525 widgets).
 
-**How facts are marked here.** A `P:\` path with a line was opened and checked on `P:\` (DayZ 1.30). "Measured" means measured on a running client (DayZ 1.29) and not yet repeated on 1.30. Counts of vanilla use are over the 227 layouts under `P:\gui\layouts` (9,525 widgets).
+The three preview panels in this folder, `chat_feed.layout`, `info_panel.layout` and `mini_hud.layout`, are not starting points; their widget names and defaults are in `panel-contract.md`.
 
-## How to use them
+## Which template
 
-Copy a template, rename the widgets, and put the `#STR_` keys in your stringtable. `stringtable.csv` in this folder defines the seven keys the templates use; copy its rows into your addon's own `stringtable.csv` (in the addon root, next to `config.cpp`).
-
-- Without those rows the layouts show the key itself (`STR_UI_YES` instead of `Yes`), which looks like a broken template. The engine logs nothing about it (measured: zero RPT lines for `STR_UI_`).
-- The CSV holds the key without the leading `#`. The `#` belongs only to the reference in the layout.
-- A stringtable belongs to an addon: it is read from the PBO at load, so unlike a layout in `$profile:` it does not hot reload.
-
-`Message` in `modal_panel.layout` draws very large glyphs because its box is 0.58 of a panel that is 0.70 of the screen tall (292 px at 720p), and glyph height was measured to follow the widget height. `text_proportion` is honored on `TextWidgetClass` and `ButtonWidgetClass` (glyph height = 0.74 x value x box height, measured to within 2%) and ignored on `MultilineTextWidgetClass`, which is why a sweep of six values changed nothing. On a multiline widget, size the box; the attribute does nothing. The `TextWidgetClass` and `MultilineTextWidgetClass` numbers and controls are in `../hot-iteration.md`, section 6. The button numbers (values 0.20 and 0.60 in an 86.4 px box, +1.6% and -1.0%) are in the comment on `BtnYes` in `modal_panel.layout`.
-
-Iterate from `$profile:` with `ui_reload_layout`; the loop is described in [`../hot-iteration.md`](../hot-iteration.md).
-
-The `*.rects.1920.json` and `*.rects.1280.json` files next to each template are the offline prediction of every widget's rectangle at those resolutions. Compare a live `ui_tree` or `ui_reload_layout` result against them. Matching rectangles do not prove anything is drawn.
-
-| File | Use when | Do not use when |
+| File | Use for | Not for |
 |---|---|---|
-| `modal_panel.layout` | A centered confirm, yes or no, or blocking prompt | A persistent HUD, a form (see `form_row`), a list (see `scroll_list`) |
+| `modal_panel.layout` | A centred confirm, yes or no, or blocking prompt | A lasting HUD, a form (`form_row`), a list (`scroll_list`) |
 | `hud_overlay.layout` | A corner readout that must not take the mouse | Anything clickable, a menu, a modal |
-| `form_row.layout` | One label plus an `EditBoxWidget`; stack rows by parenting copies | A finished dialog (compose the rows into `modal_panel`) |
-| `scroll_list.layout` | A viewport whose content is taller than the box | A short fixed list (a `GridSpacerWidget` with no `ScrollWidget` is enough) |
+| `form_row.layout` | One label and an `EditBoxWidget`; stack rows by parenting copies | A finished dialog (put the rows into `modal_panel`) |
+| `scroll_list.layout` | A view whose content is taller than its box | A short fixed list (a `GridSpacerWidget` with no `ScrollWidget` is enough) |
 
-## Offline check (tool in this repo)
+Copy a template, rename its widgets, and copy the rows of `stringtable.csv` in this folder into your addon's `stringtable.csv`, next to `config.cpp`. It defines the seven keys the templates use.
 
-Run from the repo root:
+- Without those rows the layouts show the key itself (`STR_UI_YES` instead of `Yes`), and the engine logs nothing about it (measured: no RPT line).
+- The CSV holds keys without the `#`; only the reference in the layout has it.
+- The CSV has the seven column header `Language`, `original`, `english`, `spanish`, `german`, `russian`, `chinesesimp`, which the engine needs (`../localization.md`). The `spanish` column holds real Spanish; the other languages repeat the English.
+- A stringtable is read from the PBO at load, so unlike a layout in `$profile:` it does not reload while you iterate.
 
+`Message` in `modal_panel.layout` draws large glyphs because its box is 0.58 of a panel that is 0.70 of the screen tall (292 px at 720p), and glyph height follows the widget height (measured). `text_proportion` is honored on `TextWidgetClass` and `ButtonWidgetClass`, where glyph height is 0.74 x value x box height to within 2%, and ignored on `MultilineTextWidgetClass`: size a multiline box instead (`../preview-text-and-stringtables.md`, "`text_proportion` works on TextWidget only"). The button readings are in the comment on `BtnYes` in `modal_panel.layout`.
+
+Iterate from `$profile:`; the loop and its four traps are in `../hot-iteration.md`. End every loop by looking at a frame.
+
+## Checking a template offline
+
+From the repo root:
+
+```text
+python scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py skills/_shared/ui/templates/<file>.layout --check
+python scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py skills/_shared/ui/templates/<file>.layout --canvas-width 1920 --canvas-height 1080
+python scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py skills/_shared/ui/templates/<file>.layout --canvas-width 1280 --canvas-height 720
 ```
-python scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py skills/_shared/ui/templates/<this.layout> --check
-python scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py skills/_shared/ui/templates/<this.layout> --canvas-width 1920 --canvas-height 1080
-python scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py skills/_shared/ui/templates/<this.layout> --canvas-width 1280 --canvas-height 720
-```
 
-`--check` tests that the file parses and has a sound structure (it prints OK and a widget count). It is not a geometry lint. The JSON dump is that parser's geometry, including `right_ref` and `bottom_ref`, which subtract the offset inward (`parse.py:791-792` for `right_ref`, `parse.py:803-804` for `bottom_ref`).
+`--check` tests that the file parses and is sound, printing OK and a widget count; it is not a geometry check. The JSON is the parser's geometry, with `right_ref` and `bottom_ref` subtracting the offset inward (`parse.py:791` and `:792`, `:803` and `:804`; `../layout-geometry.md`).
 
-## Reading the `.rects` files
+The `*.rects.1920.json` and `*.rects.1280.json` files beside each template are the predicted rect of every widget at those sizes. Compare a live widget tree against them; matching rects do not prove anything is drawn. Each node carries its rect, `ignore_pointer` and `clickable`, which is true only for buttons, edit boxes, check boxes, sliders and combo boxes.
 
-Each node carries its predicted screen rectangle, `ignore_pointer`, and `clickable`. `clickable` is true only for the widget types that take a click: Button, EditBox, CheckBox, Slider and Combo.
-
-`hud_overlay` (a Panel, an Image and two Text widgets) and `scroll_list` (a Panel, a Scroll and a Spacer) have no clickable widget. **A check that looks only at clickable widgets says nothing about those two templates.** Someone who copies `hud_overlay`, moves the badge off screen, runs such a check and deploys has checked nothing. Compare these widgets by name:
+`hud_overlay` and `scroll_list` have no clickable widget, so a check that looks only at clickable widgets says nothing about them. Check these names are on screen:
 
 | File | Widgets that must be on screen |
 |---|---|
@@ -50,62 +47,36 @@ Each node carries its predicted screen rectangle, `ignore_pointer`, and `clickab
 | `form_row.layout` | `RowEdit` |
 | `scroll_list.layout` | `ScrollListPanel`, `ScrollList`, `ScrollContent` |
 
-Two things in the files look like defects and are the contract:
+Two things look like defects and are the contract. In `hud_overlay` every widget has `ignore_pointer` 1, because a HUD must not take the aim; there, a zero size or an off screen rect is the real mistake. In `scroll_list`, `ScrollContent` has `ignore_pointer` 1 and height 0 because the engine grows it at runtime (`"Size To Content V" 1`); do not give it a height, or mistake 4 comes back. A zero size on `ScrollListPanel` is a real mistake.
 
-- In `hud_overlay` every widget has `ignore_pointer` 1, because a HUD must not take the aim. A zero size or an off screen rectangle is what shows a real mistake there.
-- In `scroll_list`, `ScrollContent` has `ignore_pointer` 1 and a height of 0. The spacer is authored with height 0 and the engine grows it at runtime (`"Size To Content V" 1`). **Do not "fix" it by giving the spacer a height**; that brings back mistake 4 below. A zero size on `ScrollListPanel` itself is a real mistake.
+The vanilla lines the template comments cite: `BadgesPanel` at `P:\gui\layouts\day_z_hud.layout:514`, the `Wetness` badge icon at `:534`, and an `ignorepointer 1` example at `:446`.
 
 ## The four construction mistakes
 
-These are the defects the templates stop you paying for in deploys. Each has a style or attribute that looks right and is not.
+### Invisible panel
 
-### 1. Invisible panel
+The widget tree is right, the rects match, the tree reports the right color, and the panel is not on screen; text floats over the world. A `PanelWidgetClass` draws only through a style whose `Normal` state has a non-empty `Center` image, and style names belong to one widget type.
 
-**Symptom.** The widget tree is correct, the rectangles match, `ui_tree` shows the right color, and the panel is not on screen. Text floats over the world.
-
-**Cause.** A `PanelWidgetClass` paints only through a style whose `Normal` state has a non-empty `Center` image. Style names are scoped per widget type.
-
-| Style | Widget type it belongs to | What `Normal` draws |
+| Style | Belongs to | What `Normal` draws |
 |---|---|---|
-| `Colorable` | `WindowWidget` (set at `P:\gui\layouts\dialog.layout:16`) | WhitePixel (a window) |
-| `ColorablePanel` | `PanelWidget` (`P:\gui\looknfeel\dayzwidgets.styles:3388`) | `Center=""`, nothing |
-| `rover_sim_colorable` | `PanelWidget` (`P:\gui\looknfeel\dayzwidgets.styles:3284`) | `Center="WhitePixel"` |
+| `Colorable` | `WindowWidget` (`P:\gui\layouts\dialog.layout:16`) | `WhitePixel` |
+| `ColorablePanel` | `PanelWidget` (`P:\gui\looknfeel\dayzwidgets.styles:3388`) | Nothing, `Center=""` |
+| `rover_sim_colorable` | `PanelWidget` (`P:\gui\looknfeel\dayzwidgets.styles:3284`) | `WhitePixel` |
 
-Vanilla sets `rover_sim_colorable` on 641 panels under `P:\gui\layouts`; it is the most used panel style. `ColorablePanel` exists (6 uses) and is the wrong guess. That a style exists is not enough: open `P:\gui\looknfeel\dayzwidgets.styles`, find `<Widget Name="PanelWidget">` (line 3233) and read the `Center` image of the `Normal` state. Detail: [`../styles-format.md`](../styles-format.md).
+Vanilla sets `rover_sim_colorable` on 641 panels; `ColorablePanel` (6 uses) is the wrong guess. Open `P:\gui\looknfeel\dayzwidgets.styles`, find `<Widget Name="PanelWidget">` (line 3233) and read the `Center` of the `Normal` state (`../styles-format.md`).
 
-### 2. Title clipped on both sides
+### Title clipped on both sides
 
-**Symptom.** A centered title longer than its box loses characters on the left and on the right.
+A centred title longer than its box loses letters on both ends: a `TextWidgetClass` with `"text halign" center` does not wrap, and `text_proportion` sizes text by height, not width. The templates use `MultilineTextWidgetClass` with `wrap 1`, as 337 of 339 vanilla multiline text widgets do. `wrap` on a `TextWidgetClass` appears on none of 1,403 vanilla text widgets and does nothing in game (`../text-sizing-and-rendering.md`).
 
-**Cause.** `TextWidgetClass` with `"text halign" center` and no wrapping. `text_proportion` sizes text by height; it does not fit a long string to the width.
+### White button, white label
 
-**Fix in these templates.** `MultilineTextWidgetClass` with `wrap 1` (337 of 339 vanilla MultilineText widgets). `wrap` on a `TextWidgetClass` appears on 0 of 1,403 vanilla widgets and does nothing at runtime: `wrap 1` and `wrap 0` draw the same clipped single line (measured in game, see `../text-sizing-and-rendering.md`). Never rely on it.
+An `EmptyHighlight` button looks fine until it takes focus; then its body fills white and the white label disappears. Its `Focus` state has `Center="WhitePixel"` (style at `P:\gui\looknfeel\dayzwidgets.styles:2224`, `Focus` at `:2236`, the item at `:2238`). The templates set the body `color 1 0 0 1` (not `"text color"`) and `inheritalpha 0`, as `P:\gui\layouts\dialog.layout:31` to `:42` does; 14 of the 28 vanilla `EmptyHighlight` buttons set `inheritalpha 0`.
 
-### 3. White button, white label
+### List does not scroll
 
-**Symptom.** An `EmptyHighlight` button looks fine until it has focus; then its body fills white and the label disappears.
+The content is taller than the box, the wheel does nothing, and there is no scrollbar: the `ScrollWidgetClass` has no spacer child. The first child of the 54 vanilla scroll widgets is a `GridSpacer` 25 times, a `WrapSpacer` 12, a `Panel` 8, a `Frame` 4 and something else or nothing 5. The template uses a direct `GridSpacerWidgetClass` child with `size 1 0`, `vexactsize 1` and `"Size To Content V" 1`, as `P:\gui\layouts\new_ui\options\keybindings_selectors\keybinding_container.layout:35` to `:54` does. That vanilla spacer has no children in the file; script fills it. Do not add sample rows under it.
 
-**Cause.** The `Focus` state of the `ButtonWidget` style `EmptyHighlight` has `Center="WhitePixel"` (the style starts at `P:\gui\looknfeel\dayzwidgets.styles:2224`; its `Focus` state starts at line 2236 and the `Center` item is at line 2238). The default label is white. With no body `color`, the pixel stays white.
+## How far they are checked
 
-**Fix in these templates.** `color 1 0 0 1` (the body color, not `"text color"`) plus `inheritalpha 0`, copied from `P:\gui\layouts\dialog.layout:31-42`. 14 of the 28 vanilla `EmptyHighlight` buttons set `inheritalpha 0`.
-
-### 4. List does not scroll
-
-**Symptom.** The content is taller than the box, the wheel does nothing, and there is no scrollbar.
-
-**Cause.** A `ScrollWidgetClass` with no spacer child. The first child of the 54 vanilla scroll hosts: `GridSpacer` 25, `WrapSpacer` 12, `Panel` 8, `Frame` 4, another type or no child 5.
-
-**Fix in these templates.** A direct child `GridSpacerWidgetClass` with `size 1 0`, `vexactsize 1` and `"Size To Content V" 1`, copied from `P:\gui\layouts\new_ui\options\keybindings_selectors\keybinding_container.layout:35-54`. That vanilla spacer has no children in the file; script fills it at runtime. The template does the same. Do not author sample rows under it.
-
-## Hot iteration mistakes (runtime, not authoring)
-
-The four measured failures of the `$profile:` loop are in [`../hot-iteration.md`](../hot-iteration.md), section 4: a missing path kills `CreateWidgets`; a second load stacks on the first; a missing texture paints flat white and logs nothing; perfect rectangles say nothing about what is painted. End every loop by looking at a frame.
-
-## What these files are not
-
-They are not fully verified in game. The geometry of `modal_panel` and `form_row` was seen on screen in game on DayZ 1.29; `hud_overlay` and `scroll_list` have not been loaded in game; none of the four has been re-checked on 1.30. The parser of the offline UI tool in `scripts/tools/dayz-ui-lab/` checks format and geometry offline. Load a template with `ui_reload_layout` and look at the frame before you trust a color or a wrap.
-
-## Notes on the files
-
-- `stringtable.csv` has the seven column header (`Language`, `original`, `english`, `spanish`, `german`, `russian`, `chinesesimp`); `../localization.md` explains why all seven are needed. The `spanish` column holds real Spanish text as sample localization data; the other languages repeat the English text.
-- Line numbers of vanilla files and counts of vanilla use in the template comments were checked on `P:\` (DayZ 1.30). In `hud_overlay.layout`, `BadgesPanel` is at `P:\gui\layouts\day_z_hud.layout:514`, the `Wetness` badge icon at `P:\gui\layouts\day_z_hud.layout:534`, and the `ignorepointer 1` example at `P:\gui\layouts\day_z_hud.layout:446`.
+The geometry of `modal_panel` and `form_row` was seen in game on 1.29; `hud_overlay` and `scroll_list` have not been loaded in game, and none has been loaded on 1.30. The offline parser checks format and geometry only. Load a template from `$profile:` and look at a frame before you trust a color or a wrap.

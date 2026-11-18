@@ -1,75 +1,66 @@
-# Evidence and integration
+# Motion evidence and handoff
 
-The evidence ladder from contract to in-game proof, the visual review set, what to hand the DayZ pipeline, and what each output state means. Vanilla facts cite `P:\`. Lines marked "1.30 changelog" state 1.30 engine changes that are not yet checked on `P:\`.
+What counts as proof at each step from contract to in game, which renders to capture, what to hand the DayZ pipeline, and what each result state means. The workflow that uses them is in `realistic-motion.md`.
 
-## Evidence ladder
+Lines that say "1.30 changelog" give Bohemia's stated 1.30 engine changes that are not checked on `P:\`.
 
-1. **Contract evidence:** authoritative source, route, timeline, channels, events and acceptance criteria.
-2. **Blocking evidence:** golden-pose renders in measured on-axis and oblique views.
-3. **Motion evidence:** full-speed preview plus contact, extreme and recovery frames.
-4. **Numeric evidence:** sampled report and audit JSON, including failed checks and worst frames.
-5. **Artifact evidence:** the exported file exists, is non-trivial and carries the intended channel and event mask. In DayZ 1.30, check that graphs are `.agf` subgraph files listed by an `AnimSrcGraph` index under `GraphFilesResourceNames` (`P:\DZ\anims\workspaces\player\player_main\player_main.agr:1587`) and that `.asi` instances are `AnimSetInstanceSource` configs (`P:\DZ\anims\workspaces\player\player_main\player_main.asi:1`).
-6. **Build and deploy evidence:** the compiled or packed artifact is the one actually deployed, with hash and path when stale copies are possible. 1.30 changelog: named mod filesystems and the `-resolveFilePatchingUsingEnfusion=1` launch parameter let the game mount unbinarized `.agf` subgraphs, so they can be checked directly.
-7. **In-game evidence:** target states exercised, RPT reviewed and visual behaviour confirmed. 1.30 changelog: the Workbench Animation Editor (now on Enfusion 2021) supports Live Editing of running graphs, so parameters such as `VehicleSteering`, `SlopeAngleX` and blend weights can be tuned on a running client.
+## Kinds of evidence, weakest first
 
-Never promote evidence upward. A clean script run is not a clean animation; an offline render is not an exported artifact; an exported artifact is not the deployed PBO; a deployed PBO is not an in-game PASS.
+1. Contract: the source, route, timeline, channels, events and acceptance are written down.
+2. Blocking: the key poses are rendered in measured straight on and oblique views.
+3. Motion: a full speed preview plus the contact, extreme and recovery frames.
+4. Numbers: the sampled report and the checker's JSON, failures and worst frames included.
+5. File: the export exists, is not trivial, and carries the intended channels and events. In 1.30 the graph is `.agf` subgraph files listed under `GraphFilesResourceNames` in an `AnimSrcGraph` index (`P:\DZ\anims\workspaces\player\player_main\player_main.agr:1587`), and `.asi` instances are `AnimSetInstanceSource` configs (`P:\DZ\anims\workspaces\player\player_main\player_main.asi:1`).
+6. Build and deploy: the packed file is the one actually deployed; give the path and a checksum when stale copies are possible. 1.30 changelog: named mod filesystems and `-resolveFilePatchingUsingEnfusion=1` let the game mount unbinarized `.agf` subgraphs, so they can be checked directly.
+7. In game: the target states played, the RPT was read and the motion looked right. 1.30 changelog: the Workbench Animation Editor, now on Enfusion 2021, can Live Edit a running graph, so `VehicleSteering`, `SlopeAngleX` and blend weights can be tuned on a running client.
 
-## Visual review set
+Never count a lower kind as a higher one. A clean script run is not a clean animation, a render is not an export, an export is not the deployed PBO, and a deployed PBO is not an in game pass.
 
-At minimum capture:
+## Renders to capture
 
-- entry pose;
+- the start pose;
 - first contact;
-- maximum load or effort;
-- mechanical extreme or locomotion support extreme;
+- the moment of most load or effort;
+- the mechanical or support extreme;
 - release;
 - clearance and return;
-- final pose;
-- full-speed video.
+- the end pose;
+- a full speed video.
 
-Use an on-axis view for orientation claims. Add top, side and end-on close-ups for fingers, grips, feet or mechanical clearances.
+Use a straight on view for any claim about orientation. Add top, side and end on close ups for fingers, grips, feet and mechanical clearances.
 
-For vehicle interactions in DayZ 1.30, such as the motorbikes on `MOTO1` and `MOTO2`, capture the review set during get-in, get-out and seat switching, the three cases `IsTransitioning` covers (`P:\scripts\3_game\human.c:735-738`). Check the two-bone IK hand lock on the handlebars and the foot placement on the footpegs across the whole transition.
+For a vehicle such as a motorbike on `MOTO1` or `MOTO2`, capture the set during get in, get out and seat switch, the three cases `IsTransitioning` covers (`P:\scripts\3_game\human.c:735` to `:738`). Check the hand lock on the bars and the feet on the pegs through the whole transition.
 
-## Integration handoff
+## Handing the clip to the DayZ pipeline
 
-Hand over to the DayZ integration (compile, wiring, build; `anm-clips.md` and `weapon-anim-blender.md`):
+The compile, wiring and build steps are in `anm-clips.md` and `weapon-anim-blender.md`. Hand over:
 
-- source scene and version, and the immutable donor;
-- chosen route and the target state name supplied by the pipeline;
-- exported artifact path (including the `.agf` files and `AnimSetInstanceSource` `.asi` mappings);
-- FPS, frame range and events or notetracks;
-- included and excluded channels;
-- audit and render paths;
-- current evidence state.
+- the source scene, its version and the untouched copy;
+- the route and the target state name the pipeline gave;
+- the export path, with the `.agf` files and `AnimSetInstanceSource` `.asi` mappings;
+- frame rate, frame range and events or notetracks;
+- the channels included and left out;
+- the checker and render paths;
+- which kind of evidence above the clip has reached.
 
-Then follow its current compile, wiring, build and test procedures. In DayZ 1.30 the test workflow can use Workbench Live Editing, the Ragdoll Editor for `.ragdoll` files and `-resolveFilePatchingUsingEnfusion=1` (all three: 1.30 changelog). Do not reproduce those procedures here.
+Then follow those files' own steps. 1.30 testing can use Workbench Live Editing, the Ragdoll Editor for `.ragdoll` files and `-resolveFilePatchingUsingEnfusion=1` (all from the 1.30 changelog). Do not repeat those steps here.
 
-## Output states
+## Result states
 
-### `FAIL`
+| State | Means | Report |
+|---|---|---|
+| `FAIL` | A required check failed or an input was invalid. | Check ids, measured values, worst frames, and whether the failure is in the numbers, the picture, the game or missing data. |
+| `OFFLINE_PASS` | Blocking, motion, numbers, renders and the offline file all pass. | Say plainly that the game has not confirmed it. |
+| `MANUAL_REQUIRED` | The next step needs a GUI action, credentials, hardware, a human judgement or a test setup that is not available. | The exact action and the evidence it must produce; never present the previous state as success. |
+| `IN_GAME_PASS` | The deployed build played right in the required states, cameras and stances, the RPT was clean and the visual and mechanical contract passed. | The build that was tested and the evidence. |
 
-At least one required gate failed or an input was invalid. Report check IDs, measured values, worst frames and whether the failure is numeric, visual, runtime or missing data.
+## When a pass turns out wrong
 
-### `OFFLINE_PASS`
+When the user or the game shows a passed clip is wrong:
 
-Blocking, motion, numeric audit, visual review and the relevant offline artifact pass. State explicitly that the DayZ runtime has not been confirmed.
-
-### `MANUAL_REQUIRED`
-
-The next gate requires unavailable GUI interaction, credentials, hardware, human judgment or an unsupported runtime harness. Give the exact action and evidence needed; do not present the previous state as final success.
-
-### `IN_GAME_PASS`
-
-The deployed build played correctly in the required states, cameras and stances, the RPT showed no relevant errors and the visual and mechanical contract passed. Record the build identity and the evidence.
-
-## Regression closeout
-
-If the user or the game refutes a prior PASS:
-
-- mark the prior claim stale immediately;
-- preserve the failing artifact;
-- add a negative fixture;
-- prove a corrected positive fixture can pass;
-- update the project validation matrix, bug ledger and handoff;
-- promote only the cross-project invariant, not project-specific coordinates or timing.
+- mark the earlier pass as no longer valid at once;
+- keep the failing file;
+- add a case that fails for that reason;
+- show a corrected case passes;
+- update the project's test list, bug list and handoff;
+- carry over only the rule that holds across projects, never one project's coordinates or timing.

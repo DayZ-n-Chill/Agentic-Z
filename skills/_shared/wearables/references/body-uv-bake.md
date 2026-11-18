@@ -1,16 +1,14 @@
-# UV unwrap and normal and AO bake for a rigged body
+# UV unwrap and bake for a rigged body
 
-Covers unwrapping the low-poly body and baking the high-poly detail into a tangent-space `_nohq` normal map and an ambient occlusion map in the new UV, with the traps a rigged mesh adds, and how to weight internal decorative geometry.
+Covers unwrapping the low poly body and baking the high poly detail into a tangent space `_nohq` normal map and an ambient occlusion map, the traps a rigged mesh adds, and how to weight internal decorative geometry such as a ribcage.
 
-How to read the marks: this file is Blender and texture tool behaviour, measured on a custom giant infected test build (the "giant infected build") in Blender headless (2026-06-25). None of it can be checked on `P:\`. The one vanilla fact, the texture suffixes, is cited.
+All of this is Blender and texture tool knowledge, measured headless on a custom test infected body, and none of it can be checked on `P:\`. The suffixes the result ships under are the vanilla ones: a vanilla infected material names its normal map `hermit_nohq.paa` in `Stage1` (`P:\DZ\characters\zombies\data\hermit.rvmat:11`) and its specular map `hermit_smdi.paa` in `Stage5` (`:59`). Suffix rules are in `_shared/textures/suffixes-and-sizes.md`.
 
-After the mesh is rigged (`body-rigging.md`) you unwrap the low-poly and bake the high-poly surface into two maps. The suffixes the result ships under are the vanilla ones: a vanilla infected material names its normal map `hermit_nohq.paa` in `Stage1` (`P:\DZ\characters\zombies\data\hermit.rvmat:11`) and its specular map `hermit_smdi.paa` in `Stage5` (`P:\DZ\characters\zombies\data\hermit.rvmat:59`). Suffix rules are in `skills/_shared/textures/suffixes-and-sizes.md`.
+The test of a bake is not "the map looks purple". It is a lit preview of the low poly with the normal map on, compared with the high poly, plus numbers: the spread of UV stretch, no black pixels, and an AO mean of about 200 of 255 on the surface. Render and look; the raw map is not the test.
 
-The deciding gate is not "the map looks purple". It is a lit preview of the low-poly with the normal map applied, compared with the high-poly, plus numeric checks: UV stretch spread, the share of black pixels (zero), and the AO mean on the surface (about 200 of 255). Render and look; the raw map is not the test.
+## Unwrap on quads, then triangulate
 
-## 1. Unwrap: Smart UV on quads, then triangulate
-
-Unwrap on the quad mesh (cleaner islands), pack to fill the square, then triangulate. Triangulation adds no vertices, so the rig weights are untouched, and it makes the bake tangents equal the shipped tangents (no shading seams in game). Ship the triangulated mesh.
+Unwrap the quad mesh (cleaner islands), pack to fill the square, then triangulate. Triangulating adds no vertices, so the rig weights are untouched, and it makes the bake tangents equal the shipped ones, so there are no shading seams in game. Ship the triangulated mesh.
 
 ```python
 bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='SELECT')
@@ -20,35 +18,35 @@ bpy.ops.uv.pack_islands(rotate=True, scale=True, margin=0.008)           # fill 
 bpy.ops.mesh.quads_convert_to_tris(quad_method='BEAUTY', ngon_method='BEAUTY')
 ```
 
-`island_margin=0.02` packs row by row and wastes about 40 % of the square. A small smart-project margin plus an explicit rotating `pack_islands` fills about 97 % of the bounding box.
+`island_margin=0.02` packs row by row and wastes about 40 % of the square. A small margin plus a rotating `pack_islands` fills about 97 % of it.
 
-Verify with numbers. Per triangle, `uv_area / world_area` normalized to its median should sit in a tight band (10th to 90th percentile about 0.8 to 1.15 times, which is uniform texel density), with no zero-area UV faces. Render a `COLOR_GRID` flat lit (Workbench render engine, `light='FLAT'`, `color_type='TEXTURE'`): checker squares stay square and nothing smears. Rasterize the UV layout (dump loop UVs and draw them with Pillow) to confirm there is no clumping or overlap.
+Check it with numbers. Per triangle, `uv_area / world_area` divided by its median should sit in a tight band, about 0.8 to 1.15 times from the 10th to the 90th percentile, with no zero area UV faces. Render a `COLOR_GRID` flat lit (Workbench engine, `light='FLAT'`, `color_type='TEXTURE'`): squares stay square and nothing smears. Draw the UV layout from the loop UVs with Pillow to see clumping or overlap.
 
-## 2. The alignment trap: bake from a proxy in the pose before the conform
+## Bake from the pose before the conform
 
-The rig step conforms the low-poly's limbs to the canonical bind (`body-rigging.md`, section 3; on the giant infected build the arms opened about 8 cm). The high-poly was never conformed, so after rigging the low and high no longer occupy the same space in the conformed regions. The tell: `low.dims.x` differs from `high.dims.x`. Baking high to low directly there gives rainbow noise (rays hit the wrong surface) and flat misses.
+The rig step conforms the low poly's limbs to the canonical bind (`body-rigging.md`, section "Conform the mesh to the bind pose"); on the test body the arms opened about 8 cm. The high poly was never conformed, so low and high no longer share the same space in those regions. The tell: `low.dims.x` differs from `high.dims.x`. Baking straight across gives rainbow noise where rays hit the wrong surface, and flat misses.
 
-A tangent-space normal map does not depend on the pose when topology and UV are identical. So bake in a pose where low and high do align (the retopology pose from before the conform), using the shipped low's topology and new UV, then apply the result to the conformed shipped low.
+A tangent space normal map does not depend on the pose when topology and UV are the same. So bake in the pose where low and high line up (the retopology pose from before the conform), with the shipped low's topology and new UV, then use the result on the conformed shipped low.
 
 ```python
 # co3 = world positions of the retopo low from BEFORE the conform (it matches the high; check the dims)
 proxy = duplicate(shipped_low); proxy.matrix_world = Identity
-for i, v in enumerate(proxy.data.vertices): v.co = co3[i]    # topology and UV of the shipped low, aligned positions
-# check the index correspondence first: median |co3[i] - shipped[i]| is about 0 in the regions that were not
-# conformed (torso, legs) and large only in the conformed limbs. Confirm proxy.dims == high.dims before baking.
+for i, v in enumerate(proxy.data.vertices): v.co = co3[i]    # shipped topology and UV, aligned positions
+# check the index match first: median |co3[i] - shipped[i]| is about 0 where nothing was
+# conformed (torso, legs) and large only in the conformed limbs. Confirm proxy.dims == high.dims.
 ```
 
-The same misalignment corrupts a colour bake: on the giant infected build the in-game "camo" or black and grey facet noise was in the baked `_co` texture, not the normal map, and stayed after `_nohq` was removed. Open the baked `_co` image and look at it.
+The same mismatch spoils a colour bake. On the test body the "camo" or black and grey facet noise seen in game was in the baked `_co`, not the normal map, and stayed after `_nohq` was removed. Open the baked `_co` and look at it.
 
-## 3. Do not recalculate normals on a generated high-poly that is not watertight
+## Keep a generated high poly's normals
 
-Recalculating normals "outside" (`normals_make_consistent`) on a non-manifold generated mesh can flip whole shells inward, which shows as large coherent black blotches in the lit preview. Mesh generators output normals that are already consistent for rendering. Use them as they are and only call `shade_smooth()`. Recalculating is safe on the clean retopology target (section 5).
+Recalculating normals outside (`normals_make_consistent`) on a generated mesh that is not watertight can flip whole shells inward, which shows as large black blotches in the lit preview. Generators output normals that are already consistent; use them and only call `shade_smooth()`. Recalculating is safe on the clean retopology target (next sections).
 
-## 4. Bake misses stay neutral, never black
+## Misses stay neutral, never black
 
-Cycles with `use_clear=True` clears the target to black `(0, 0, 0)`. A Normal Map node decodes that as a normal pointing inward, and the texel renders black under light. Where the low has no high counterpart within the ray distance (thin fingers, the rim of a cavity, a conformed limb the proxy did not fully cover) you get black holes.
+Cycles with `use_clear=True` clears the target to black `(0, 0, 0)`. A Normal Map node reads that as a normal pointing inward, and the texel renders black under light. Wherever the low has no high within the ray distance (thin fingers, the rim of a cavity, a conformed limb the proxy did not cover) you get black holes.
 
-Fill the image with the neutral value first and switch the clear off:
+Fill the image with the neutral value first and turn the clear off:
 
 ```python
 nrm = bpy.data.images.new("normal_ogl", 2048, 2048, float_buffer=True)
@@ -59,14 +57,14 @@ bpy.ops.object.bake(type='NORMAL', normal_space='TANGENT', use_selected_to_activ
                     margin=16, margin_type='EXTEND', use_clear=False)       # keep the neutral fill
 ```
 
-Confirm that the share of pixels equal to `(0, 0, 0)` is about zero after the bake. Save 16-bit raw (`view_transform='Raw'`, depth `'16'`, `img.save_render`).
+After the bake the share of pixels equal to `(0, 0, 0)` should be about zero. Save 16 bit raw (`view_transform='Raw'`, depth `'16'`, `img.save_render`).
 
-## 5. AO: the target is the only occluder, and its normals are clean
+## AO: only the target occludes, with clean normals
 
-Two separate causes of an AO bake that is too dark:
+An AO bake comes out too dark for two separate reasons:
 
-- **The high-poly occludes.** AO uses all scene geometry as occluders; the high-poly sits on the same space and shadows the low. Hide every mesh except the target (`hide_render=True`) before the AO bake.
-- **The target's own normals are inconsistent.** Voxel remesh, decimate and conform leave custom split normals or flipped faces, AO rays go into the surface, and the result is dark and noisy. Clean them first:
+- **The high poly occludes.** AO uses every mesh in the scene, and the high poly sits in the same space as the low. Hide every mesh but the target (`hide_render=True`) before the AO bake.
+- **The target's normals are inconsistent.** Voxel remesh, decimate and conform leave custom split normals or flipped faces, so AO rays go into the surface. Clean them first:
 
 ```python
 bpy.ops.mesh.customdata_custom_splitnormals_clear()
@@ -74,34 +72,34 @@ bpy.ops.mesh.normals_make_consistent(inside=False)
 bpy.ops.object.shade_smooth()
 ```
 
-Bake AO on the conformed shipped low, low only: `bake(type='AO', use_selected_to_active=False, samples=256, margin=16, use_clear=True)`. Sanity: the AO mean on surface pixels (mask out the black gaps) should be about 180 to 210. Keep the cleaned normals on the shipped mesh; the normal map was baked against the same convention.
+Bake AO on the conformed shipped low alone: `bake(type='AO', use_selected_to_active=False, samples=256, margin=16, use_clear=True)`. The AO mean on surface pixels, with the black gaps masked out, should be about 180 to 210. Keep the cleaned normals on the shipped mesh; the normal map was baked against them.
 
-## 6. `_nohq` orientation: invert green for DayZ
+## Invert green for `_nohq`
 
-Tool knowledge, not a vanilla file: DayZ reads `_nohq` in the DirectX convention (Y down). Blender bakes the OpenGL convention (Y up). Invert the green channel of the Blender result for the DayZ source. Keep the 16-bit OpenGL map as the master and derive `_nohq` from it, not from an 8-bit intermediate. `skills/_shared/textures/checking-the-look.md` gives the in-game symptom of a flipped green channel.
+DayZ reads `_nohq` in the DirectX convention (Y down), while Blender bakes OpenGL (Y up); this is tool knowledge, not a vanilla file. Invert the green channel of the Blender result. Keep the 16 bit OpenGL map as the master and make `_nohq` from it, not from an 8 bit copy. `_shared/textures/checking-the-look.md` gives the symptom of a flipped green channel in game.
 
 ```python
 r, g, b = Image.open("normal_ogl.png").convert("RGB").split()
 Image.merge("RGB", (r, ImageOps.invert(g), b)).save("nohq.png")
 ```
 
-## 7. Internal decorative geometry (ribcage, organs): bone-heat fails
+## Weighting internal geometry
 
-Thin, self-intersecting internal meshes such as a ribcage break Blender bone-heat (`ARMATURE_AUTO`) entirely, leaving every vertex without a weight. Two alternatives, in order:
+Thin, self intersecting inner meshes such as a ribcage break Blender bone heat (`ARMATURE_AUTO`) completely, leaving every vertex without a weight. Two routes, in order:
 
-- **Weight by height along the spine chain.** For each vertex take the two nearest of `Pelvis`, `Spine`, `Spine1`, `Spine2`, `Spine3`, `Neck`, `Neck1` by world Z and blend by inverse distance. Ribs hang from the spine, not the arms.
-- **`DATA_TRANSFER` weights from the body mesh** (`POLYINTERP_NEAREST`, `layers_vgroup_select_src='ALL'`). A wide ribcage picks up shoulder and arm weights from the chest skin near it, and the ribs swing with the arms. Use it only when you then strip the groups that are not spine and normalize again.
+- **Weight by height along the spine.** For each vertex take the two nearest of `Pelvis`, `Spine`, `Spine1`, `Spine2`, `Spine3`, `Neck` and `Neck1` by world Z and blend by inverse distance. Ribs hang from the spine, not the arms.
+- **`DATA_TRANSFER` from the body mesh** (`POLYINTERP_NEAREST`, `layers_vgroup_select_src='ALL'`). A wide ribcage picks up shoulder and arm weights from the chest skin near it, and the ribs then swing with the arms. Use it only if you then strip every group that is not spine and normalize again.
 
-Decimate first (`DECIMATE` collapse to about 15,000 faces; the giant infected build's ribcage went from 95,000 to 15,800), parent with `type='ARMATURE'` (a modifier, no automatic weights), assign weights, then `vertex_group_limit_total(4)` and `normalize_all`. Pose test: pose the spine and confirm the ribs follow the torso (the dot product of the displacement direction with the chest skin's is about 1; the giant infected build measured 0.823) and stay inside the cavity. Set `arm.data.pose_position = 'POSE'` for the test (the mesh ships at rest, which is the bind).
+Decimate first (collapse to about 15,000 faces; the test ribcage went from 95,000 to 15,800), parent with `type='ARMATURE'` (a modifier, no automatic weights), assign the weights, then `vertex_group_limit_total(4)` and `normalize_all`. Pose the spine and confirm the ribs follow the torso and stay inside the cavity: the dot product of their movement with the chest skin's should be close to 1 (the test body gave 0.823). Set `arm.data.pose_position = 'POSE'` for the test; the mesh ships at rest, which is the bind.
 
-## Symptoms
+## Symptom to cause
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Rainbow or garbage normal map | Low conformed after retopology, so low and high differ in the conformed regions | Bake from the proxy in the pose before the conform (section 2) |
-| Large black blotches in the lit preview | Misses cleared to black, or high-poly shells flipped by a recalculation | Neutral fill and `use_clear=False` (section 4); do not recalculate the generated high (section 3) |
-| AO dark and muddy everywhere | The high-poly occludes, or the target's normals are inconsistent | Section 5 |
-| `_nohq` lights inverted in game | OpenGL green shipped as DayZ green | Invert green (section 6) |
-| Shading seams along UV islands in game | Baked on quads, shipped triangulated | Triangulate before the bake (section 1) |
-| Internal mesh has no weights | Bone-heat failed on thin self-intersecting geometry | Weights by height along the spine (section 7) |
-| Wasted UV resolution | `island_margin` too big, no rotating pack | Section 1 |
+| Rainbow or garbage normal map | Low conformed after retopology, so low and high differ in those regions | "Bake from the pose before the conform" |
+| Large black blotches in the lit preview | Misses cleared to black, or high poly shells flipped by a recalculation | "Misses stay neutral, never black"; "Keep a generated high poly's normals" |
+| AO dark and muddy everywhere | The high poly occludes, or the target's normals are inconsistent | "AO: only the target occludes, with clean normals" |
+| `_nohq` lights inverted in game | OpenGL green shipped as DayZ green | "Invert green for `_nohq`" |
+| Shading seams along UV islands in game | Baked on quads, shipped triangulated | Triangulate before the bake |
+| Internal mesh has no weights | Bone heat failed on thin self intersecting geometry | "Weighting internal geometry" |
+| Wasted UV space | `island_margin` too big, no rotating pack | "Unwrap on quads, then triangulate" |

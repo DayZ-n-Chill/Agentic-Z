@@ -1,7 +1,7 @@
-# First-party animation fixture origins
+# Animation test fixtures
 
-Both binary files were generated from literal first-party semantic values on
-2026-07-25. They contain no game asset content.
+Both binary files are test fixtures generated from literal semantic values.
+They contain no game asset content.
 
 ## `seanim-v1-full.seanim`
 

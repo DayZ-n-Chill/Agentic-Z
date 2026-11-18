@@ -37,14 +37,14 @@ BACKEND_ROOT = os.environ.get("DAYZ_ODOL_BACKEND_ROOT")
             "ccdb62e78661f2a0d98e5d5ca8844a8a7f0ae5242c2e1f403530d01d0ef037f9",
         ),
         (
-            "odol-v55-lfquad-body.p3d",
+            "odol-v55-vehicle-body.p3d",
             55,
             5,
             "9dd2b16a70001b5e6513bf26da0b24db6c2a92c09f6fa09ae9aab20f77ef19d3",
         ),
     ],
 )
-def test_authorized_real_fixture_is_complete_and_schema_valid(
+def test_real_fixture_is_complete_and_schema_valid(
     filename, version, lod_count, sha256
 ):
     jsonschema = pytest.importorskip("jsonschema")

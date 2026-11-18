@@ -41,7 +41,7 @@ The game builds the list of playable characters when it starts. `DayZGame` walks
 
 A character with a new face needs a new head model and textures, which is art work for the Object Builder and asset specialists. A character that reuses a vanilla head with new skin textures needs only config: a new `SurvivorM_` or `SurvivorF_` class plus body part classes that inherit the vanilla `_Base` parts and set their own `hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]`. Say which kind the request is before starting, because the first is several times the work.
 
-A third kind is a whole new body: a custom survivor, human NPC or infected mesh. That is a rigging project, several times the work of a new head again. The mesh has to be weighted to the vanilla bone names in the vanilla bind pose: the workflow and the export are in `body-rigging.md`, why a body deforms under animation in `canonical-bind.md`, and the texture bake in `body-uv-bake.md`. The infected class side is in `skills/_shared/ai/custom-infected.md`. Vanilla has no human AI to drive an NPC (`skills/_shared/ai/patrols-and-guards.md`).
+A third kind is a whole new body: a custom survivor, human NPC or infected mesh. That is a rigging project, several times the work of a new head again. The mesh has to be weighted to the vanilla bone names in the vanilla bind pose: the workflow is in `body-rigging.md` and the export in `body-export.md`, why a body deforms under animation in `canonical-bind.md`, and the texture bake in `body-uv-bake.md`. The infected class side is in `skills/_shared/ai/custom-infected.md`. Vanilla has no human AI to drive an NPC (`skills/_shared/ai/patrols-and-guards.md`).
 
 ## What every survivor inherits from `SurvivorBase`
 

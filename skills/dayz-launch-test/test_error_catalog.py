@@ -21,7 +21,7 @@ CITING = [
     SKILLS_DIR / "dayz-launch-test" / "references" / "audit-escalation.md",
     SKILLS_DIR / "dayz-build-pbo" / "references" / "file-checklists.md",
     SKILLS_DIR / "dayz-scope-mod" / "references" / "implementation-protocol.md",
-    SKILLS_DIR / "dayz-scope-mod" / "references" / "pre-implementation-grill.md",
+    SKILLS_DIR / "dayz-scope-mod" / "references" / "questions-before-building.md",
 ]
 SPANISH_RE = re.compile(r"\b(?:Úsala|cuando|según|Ejes|Plantilla|Reglas|Referencia cruzada|Mantenimiento|Caso real)\b")
 MACHINE_PATH_RE = re.compile(r"[A-Za-z]:\\Users\\|/home/\w+|<vault>|<claude-home>")

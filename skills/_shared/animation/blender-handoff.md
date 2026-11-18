@@ -42,6 +42,6 @@ A rig or a clip is skeletal work, not a moving part. Each rule lives in one file
 | Which plugin needs which Blender, and how to install it. | `anm-clips.md` |
 | Export only what the clip owns (IK type for a grip, Additive with only its bones for reload and fire); never key bone scale. | `blender-txa-export.md` |
 | Bohemia's rig FBX holds mesh and armature in two spaces, and 17 helper empties hide their world matrix. | `weapon-anim-viewer.md` |
-| Workbench drops nearly equal keys when it compiles `.txa` to `.anm`. | `weapon-anim-blender.md` |
+| Workbench drops nearly equal keys when it compiles `.txa` to `.anm`. | `weapon-anim-compile.md` |
 | Driving Blender itself through the MCP server. | `blender-mcp-workflow.md` |
 | Mocap from Mixamo onto a rig (experimental). | `mixamo-retarget.md` |

@@ -32,7 +32,8 @@ The short pattern file `_shared/enscript/patterns/persistence.md` shows the basi
 | What is the exact call chain from crafting the kit to a base that survives a restart? Which hook do I override? | `base-building-lifecycle.md` |
 | How does the vanilla Fence add a gate, a lock, barbed wire damage and extra saved fields? | `base-building-fence-gate.md` |
 | How are parts saved, what is the 93 part cap, and what must be checked before a save change ships? | `base-building-save-checklist.md` |
-| What did 1.30 change (class hierarchy, `*ServerEx`, Rebuilding on map buildings, masonry, code lock), and how do I port a 1.29 mod? | `base-building-1-30.md` |
+| What did 1.30 change for player built objects (class tree, `*ServerEx`, build collision, masonry, fence code lock), and how do I port a 1.29 mod? | `base-building-1-30.md` |
+| How does a rebuildable map building save its parts, which config keys do its parts read, and what does 1.30 ship for it? | `base-building-rebuildable.md` |
 | Why does the build action never appear, why is the hologram not tinted, why is my item carried in one hand, how do I place on a wall? | `base-building-placement.md` |
 
 ### Data loss audit
@@ -41,13 +42,13 @@ The short pattern file `_shared/enscript/patterns/persistence.md` shows the basi
 |---|---|
 | How do I run the audit before release, and what does the report look like? | `data-audit.md` |
 | A bug would lose player progression: what is the full audit, step by step? | `deep-audit.md` |
-| What do I paste into each of the eight angle reviews and the cross-actor pass? | `deep-audit-prompts.md` |
+| What does each of the eight review angles look for, how are the claims checked, and what does the cross-actor pass trace? | `deep-audit-angles.md` |
 | Mechanical check 1: do all path helpers agree on file names and suffixes? | `deep-audit-path-naming.md` |
 | Mechanical check 2: does every written file or marker have a cleanup on delete and reset? | `deep-audit-sidecar-cleanup.md` |
-| Mechanical check 3: does every entry point (sync shortcut, admin, shutdown, boot) keep the invariant? | `deep-audit-entry-points.md` |
+| Mechanical check 3: does every entry point (synchronous shortcut, admin command, shutdown, boot) keep the rule the main path keeps? | `deep-audit-entry-points.md` |
 | Mechanical check 4: do a flag and the file it mirrors always move together? | `deep-audit-flag-lifecycle.md` |
 | Which state transitions are legal, and is any state counted twice? | `deep-audit-state-machine.md` |
-| What goes wrong when an atomic operation is rebuilt in phases? | `deep-audit-incremental-rebuild.md` |
+| What goes wrong when a rebuild that ran in one call is split over several ticks? | `deep-audit-incremental-rebuild.md` |
 | Does this engine event deliver what the code assumes, and does every class in the chain call `super`? | `deep-audit-hooks-and-super.md` |
 | A fix hardened a contract, reuses another actor's id, or was applied to generated output: what must be checked again? | `deep-audit-fix-traps.md` |
 | Is this evidence real: deployed build against source, log lines, positive and negative controls, inventories? | `deep-audit-evidence-controls.md` |

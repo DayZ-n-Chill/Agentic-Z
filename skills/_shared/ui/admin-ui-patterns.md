@@ -1,398 +1,181 @@
-# Admin UI patterns: floating windows, ESP overlays, extended widget calls
+# Admin tool UI
 
-Patterns for admin style tools: resizable floating windows, world to screen labels, skeleton drawing on a `CanvasWidget`, box selection, runtime scaling to the screen, a numpad menu, an orbit camera preview and looking around with a menu open.
+How admin style tools build their screens: floating windows you drag and resize, labels that follow objects in the world, a skeleton drawn on a canvas, box selection, a numpad menu, an orbiting camera preview and looking around while a menu stays open. Scaling script pixel values to the screen is in `screen-scaling.md`.
 
-**How facts are marked here.** The patterns are not yet checked on `P:\` or in game: treat each code block as a sketch and check every call before you copy it. Names that start with `My` (`MyWidgetUtils`, `MyAdminMenuFrame`, `MyGapHandler`) are helper classes of the sketches that you write yourself, not vanilla. The vanilla calls the sketches lean on were checked on `P:\` (DayZ 1.30):
+The code here is a pattern taken from admin tools, not a vanilla excerpt, and it is not checked in game. Check each call against the source column before you copy it. Names that start with `My` (`MyWidgetUtils`, `MyAdminMenuFrame`) are helper classes you write yourself.
 
-- `SetSort(int sort, bool immedUpdate = true)` is at `P:\scripts\1_core\proto\enwidgets.c:130`, `SetScreenPos` and `SetScreenSize` at `P:\scripts\1_core\proto\enwidgets.c:142-143`, and `SetRotation(float roll, float pitch, float yaw, ...)` at `P:\scripts\1_core\proto\enwidgets.c:146`.
-- `GetWidgetUnderCursor()`, `CancelWidgetDragging()` and `GetDragWidget()` are global functions at `P:\scripts\1_core\proto\enwidgets.c:184-186`. `GetMousePos(out int x, out int y)` and the global `GetScreenSize(out int x, out int y)` are at `P:\scripts\1_core\proto\ensystem.c:329-331`, and `GetMouseState(MouseState index)` at `P:\scripts\1_core\proto\ensystem.c:326`.
-- `CanvasWidget` (`DrawLine`, `Clear`) is at `P:\scripts\1_core\proto\enwidgets.c:341-345`.
-- `SliderWidget` is at `P:\scripts\1_core\proto\enwidgets.c:358-367`, `XComboBoxWidget` at `P:\scripts\1_core\proto\enwidgets.c:407-416`, `BaseListboxWidget` at `P:\scripts\1_core\proto\enwidgets.c:425-433` and `TextListboxWidget` at `P:\scripts\1_core\proto\enwidgets.c:439-458`.
-- `PlayerPreviewWidget` (`UpdateItemInHands`, `SetPlayer`, `GetDummyPlayer`, `Refresh`) is at `P:\scripts\3_game\gameplay.c:305-313`.
-- `GetScreenPos(vector world_pos)` is at `P:\scripts\3_game\global\game.c:963`, `SceneGetEntitiesInBox` at `P:\scripts\4_world\entities\dayzplayerutils.c:75`, `GetBonePositionWS(int pivot)` at `P:\scripts\3_game\entities\object.c:238` and the player's `GetBoneIndexByName(string pBoneName)` at `P:\scripts\3_game\human.c:1417`.
-- `MissionGameplay` overrides `OnKeyPress(int key)` at `P:\scripts\5_mission\mission\missiongameplay.c:742` and handles `WindowsResizeEventTypeID` at `P:\scripts\5_mission\mission\missiongameplay.c:788`. `RemoveActiveInputExcludes` and `AddActiveInputExcludes` are declared on `Mission` at `P:\scripts\3_game\gameplay.c:798-800`, and `ShowUICursor(bool visible)` at `P:\scripts\3_game\tools\uimanager.c:244`.
+## Floating windows
 
-Rule numbers below ("rule 3") point at `checklist-and-troubleshooting.md` in this folder.
+Each panel (player info, ESP, item spawner) is one subclass of a `MyAdminMenuFrame` base. Each frame loads its own layout into a shared container that carries the header and the resize handles. A main menu class registers frames by class name and creates them with `typename.Spawn()`. The player can reorder frames by drag and drop, and the order is saved.
 
----
+Resize works from all eight edges and corners. Find which handle is under the cursor, then move that edge by the mouse delta every frame and clamp to a minimum size and the screen:
 
-## Contents
-
-- [1. Resizable floating window system](#1-resizable-floating-window-system)
-- [2. ESP: world to screen every frame](#2-esp-world-to-screen-every-frame)
-- [3. Skeleton rendering on a CanvasWidget](#3-skeleton-rendering-on-a-canvaswidget)
-- [4. Box selection](#4-box-selection)
-- [5. Widget calls, extended](#5-widget-calls-extended)
-- [6. Scaling to the screen resolution](#6-scaling-to-the-screen-resolution)
-- [7. PIN and numpad menu](#7-pin-and-numpad-menu)
-- [8. Camera preview in a menu](#8-camera-preview-in-a-menu)
-- [9. Looking around without closing the menu](#9-looking-around-without-closing-the-menu)
-
-## 1. Resizable floating window system
-
-IDE like windowing with drag, resize from every edge, pin to stay and z priority:
-
-**Architecture:**
-- `MyAdminMenuFrame` base class — one per panel (PlayerInfo, ESP, ItemSpawner, etc)
-- Each frame: own layout loaded into shared frame container with header/resize handles
-- `MyAdminMenuMain` registers frames by classname → `typename.Spawn()` instantiation
-- Frame order user-configurable via drag & drop with persistent save
-
-**Resize from 8 edges/corners:**
-```
-// Detect which edge is under cursor
+```c
 if (MyWidgetUtils.IsUnderMouse(resize_bottom_right)) { resizeBottom = true; resizeRight = true; }
-// Per-frame update:
-if (resizeBottom) {
+
+// every frame while dragging
+if (resizeBottom)
+{
     int diffY = dragStartY - mouseY;
     dragStartY = mouseY;
     float w, h;
     frame.GetScreenSize(w, h);
     frame.SetScreenSize(w, h - diffY);
 }
-// Clamp to min size + screen bounds
 ```
 
-**Window persistence:**
-- Save: position/size normalized by `heightScale` (DPI scaling)
-- Restore: multiply by `heightScale` on load
-- 9 preset slots: each stores all window positions/sizes → hotkey switch
+`SetScreenSize` and `SetScreenPos` take screen pixels (`P:\scripts\1_core\proto\enwidgets.c:142` and `:143`). Save window positions and sizes divided by the screen scale and multiply them back on load, so a saved layout survives a resolution change (`screen-scaling.md`). The tools keep nine preset slots, each holding every window's rect, switched by hotkey.
 
-**Z-priority:** `frame.SetSort(120)` for focused, `frame.SetSort(0)` for unfocused.
-Exception: frames that hold a `MapWidget` or an `ItemPreviewWidget` get a lower sort (a workaround for a render bug; not checked in game).
+Bring the focused frame to the front with `frame.SetSort(120)` and send the others back with `SetSort(0)` (`SetSort(int sort, bool immedUpdate = true)`, `enwidgets.c:130`). Frames holding a `MapWidget` or an `ItemPreviewWidget` get a lower sort; the tools do this to dodge a render bug, which is not checked in game.
 
----
+## Labels that follow objects
 
-## 2. ESP: world to screen every frame
+Collect the objects once, then place one label per object every frame. `GetScreenPos(vector world_pos)` (`P:\scripts\3_game\global\game.c:963`) returns screen x and y plus a depth; a depth of zero or less means the point is behind the camera:
 
-Render labels for thousands of entities in world space:
-
-```
-// Setup: scan all entities
+```c
 DayZPlayerUtils.SceneGetEntitiesInBox("0 -1000 0", Vector(mapSize, 10000, mapSize), allItems);
 
-// Per frame:
+// every frame
 vector camPos = g_Game.GetCurrentCameraPosition();
-for (int i = 0; i < allItems.Count(); i++) {
-    EntityAI item = allItems.Get(i);
+foreach (EntityAI item : allItems)
+{
     vector pos = item.GetPosition();
-
-    // Use head bone for living entities
     PlayerBase pb = PlayerBase.Cast(item);
-    if (pb) {
+    if (pb)
+    {
         int bone = pb.GetBoneIndexByName("Head");
-        if (bone != -1) pos = pb.GetBonePositionWS(bone);
+        if (bone != -1)
+            pos = pb.GetBonePositionWS(bone);
     }
-
     float distance = vector.Distance(pos, camPos);
     vector screen = g_Game.GetScreenPos(pos);
-
-    if (screen[2] > 0 && screen[0] > 0 && screen[1] > 0) { // Behind camera check
+    if (screen[2] > 0 && screen[0] > 0 && screen[1] > 0)
+    {
         widget.SetScreenPos(screen[0], screen[1]);
         widget.Show(true);
-        widget.SetSort(1000 - ((int)Math.Clamp(distance, 0, 1000))); // Nearer = higher z
-        distanceText.SetText("(" + ((int)distance) + "m)");
-    } else {
+        widget.SetSort(1000 - (int)Math.Clamp(distance, 0, 1000)); // nearer draws in front
+        distanceText.SetText("(" + (int)distance + "m)");
+    }
+    else
         widget.Show(false);
-    }
 }
 ```
 
-**Entity registration pattern:**
-- Each entity class (`ItemBase`, `PlayerBase`, `AnimalBase`, `ZombieBase`, `CarScript`, `BoatScript`) has modded constructor that adds to ESP if enabled
-- `EEHealthLevelChanged` updates health indicator
-- `EEItemLocationChanged` re-adds/removes when item moves to/from ground
+Sources: `SceneGetEntitiesInBox` (`P:\scripts\4_world\entities\dayzplayerutils.c:75`), `GetBonePositionWS(int pivot)` (`P:\scripts\3_game\entities\object.c:238`), the player's `GetBoneIndexByName(string pBoneName)` (`P:\scripts\3_game\human.c:1417`).
 
----
+To register objects, the tools give `ItemBase`, `PlayerBase`, `AnimalBase`, `ZombieBase`, `CarScript` and `BoatScript` a modded constructor that adds the object when the overlay is on. `EEHealthLevelChanged` refreshes the health mark, and `EEItemLocationChanged` adds or removes an item as it moves to or from the ground.
 
-## 3. Skeleton rendering on a CanvasWidget
+## A skeleton on a canvas
 
-```
-CanvasWidget canvas; // Cleared each frame with canvas.Clear()
+Clear the `CanvasWidget` every frame and draw a line between each pair of visible bones (`DrawLine` and `Clear`, `P:\scripts\1_core\proto\enwidgets.c:341` to `:345`):
 
-void DrawBones(PlayerBase player, int thickness, TStringArray boneNames) {
-    vector lastScreen; bool lastVisible = false;
-    foreach (string boneName : boneNames) {
+```c
+void MyMod_DrawBones(CanvasWidget canvas, PlayerBase player, int thickness, int color, TStringArray boneNames)
+{
+    vector lastScreen;
+    bool lastVisible = false;
+    foreach (string boneName : boneNames)
+    {
         int bone = player.GetBoneIndexByName(boneName);
-        if (bone < 0) continue;
-        vector world = player.GetBonePositionWS(bone);
-        vector screen = g_Game.GetScreenPos(world);
+        if (bone < 0)
+            continue;
+        vector screen = g_Game.GetScreenPos(player.GetBonePositionWS(bone));
         if (screen[2] <= 0) { lastVisible = false; continue; }
-        if (lastVisible) {
+        if (lastVisible)
             canvas.DrawLine(screen[0], screen[1], lastScreen[0], lastScreen[1], thickness, color);
-        }
-        lastScreen = screen; lastVisible = true;
+        lastScreen = screen;
+        lastVisible = true;
     }
 }
 ```
 
-Bone chains for players: pelvis→spine→spine1→spine2→spine3→neck→neck1→head→face_forehead
-Arms: lefthand→leftforearmroll→leftforearm→leftarmroll→leftarm→neck→rightarm...
-Legs: righttoebase→rightfoot→rightlegroll→rightleg→rightupleg→pelvis
+The bone chains the tools draw, each in order:
 
-Adaptive thickness: 3px at <10m, 2px at <100m, 1px beyond.
+| Chain | Bones |
+|---|---|
+| Spine | `pelvis`, `spine`, `spine1`, `spine2`, `spine3`, `neck`, `neck1`, `head`, `face_forehead` |
+| Arms | `lefthand`, `leftforearmroll`, `leftforearm`, `leftarmroll`, `leftarm`, `neck`, `rightarm`, and on down the right arm |
+| Legs | `righttoebase`, `rightfoot`, `rightlegroll`, `rightleg`, `rightupleg`, `pelvis` |
 
----
+Thickness drops with distance: 3 pixels under 10 m, 2 under 100 m, 1 beyond.
 
-## 4. Box selection
+## Box selection
 
-```
-// On shift+drag start:
-GetMousePos(selectX, selectY);
-panel_selection.Show(true);
+On shift and drag, remember the start with `GetMousePos(out int x, out int y)` (`P:\scripts\1_core\proto\ensystem.c:329`), then every frame stretch a panel from the start to the cursor, flipping when the drag goes left or up:
 
-// Per frame during drag:
-int mouseX, mouseY; GetMousePos(mouseX, mouseY);
-int w = mouseX - selectX, h = mouseY - selectY;
+```c
+int mouseX, mouseY;
+GetMousePos(mouseX, mouseY);
 int x = selectX, y = selectY;
+int w = mouseX - selectX, h = mouseY - selectY;
 if (w < 0) { x = mouseX; w = -w; }
 if (h < 0) { y = mouseY; h = -h; }
 panel_selection.SetScreenPos(x, y);
 panel_selection.SetScreenSize(w, h);
-
-// Hit test all ESP widgets:
-foreach widget: if (x < wX && y < wY && x+w >= wX && y+h >= wY) → selected
 ```
 
----
+A label is selected when its screen position falls inside `x`, `y`, `x + w`, `y + h`.
 
-## 5. Widget calls, extended
+## Widget calls the tools lean on
 
-### TextListboxWidget (full API)
-```
-list.AddItem(text, data, column, row)  // data = Param1<Class> for object storage
-list.SetItem(row, text, data, column)  // Update existing
-list.SetItemColor(row, column, ARGB)   // Per-cell color
-list.GetItemData(row, column, out data) // Read stored data
-list.GetSelectedRow()                   // -1 if none
-list.GetNumItems()                      // Total count
-list.SelectRow(int)                     // Programmatic selection
-list.ClearItems()                       // Clear all
-```
+| Widget | Calls | Source |
+|---|---|---|
+| `TextListboxWidget` | `AddItem(text, userData, column, row = -1)`, `SetItem(position, text, userData, column)`, `GetItemData(row, column, out data)`, `SetItemColor(row, column, color)` | `P:\scripts\1_core\proto\enwidgets.c:439` to `:458` |
+| Any list box | `ClearItems()`, `GetNumItems()`, `SelectRow(row)`, `GetSelectedRow()` (`-1` when nothing is selected) | `enwidgets.c:425` to `:433` |
+| `SliderWidget` | `SetMinMax(min, max)`, `SetStep(step)`, `SetCurrent(value)`, `GetCurrent()` | `enwidgets.c:358` to `:367` |
+| `XComboBoxWidget` | `ClearAll()`, `AddItem(text)`, `SetCurrentItem(n)`, `GetCurrentItem()` | `enwidgets.c:407` to `:416` |
+| `ImageWidget` | `LoadImageFile(num, name, noCache = false)` | `enwidgets.c:257` |
+| `TextWidget` | `SetTextExactSize(size)`, `SetOutline(outlineSize, argb)`, `GetOutlineSize()`, `GetOutlineColor()` | `enwidgets.c:193` to `:198` |
+| `Widget` | `SetSort(sort)` (higher draws in front), `SetRotation(roll, pitch, yaw)` in degrees, `Update()` to recalculate the layout now | `enwidgets.c:130`, `:146`, `:164` |
+| Global | `GetWidgetUnderCursor()`, `CancelWidgetDragging()`, `GetDragWidget()` | `enwidgets.c:184` to `:186` |
+| Global | `SetFocus(Widget w)`, `null` clears focus | `enwidgets.c:698` |
+| Global | `GetMouseState(MouseState.LEFT) & MB_PRESSED_MASK` for the raw button | `P:\scripts\1_core\proto\ensystem.c:326` |
+| `PlayerPreviewWidget` | `SetPlayer`, `UpdateItemInHands`, `GetDummyPlayer`, `Refresh` | `P:\scripts\3_game\gameplay.c:305` to `:313` |
 
-### SliderWidget (full API)
-```
-slider.SetMinMax(min, max)
-slider.SetStep(step)
-slider.SetCurrent(value)
-float val = slider.GetCurrent()
-```
+## A numpad menu
 
-### XComboBoxWidget
-```
-combo.ClearAll()
-combo.AddItem(text)
-combo.SetCurrentItem(index)
-int idx = combo.GetCurrentItem()
-```
+Catch keys in `MissionGameplay.OnKeyPress(int key)` (`P:\scripts\5_mission\mission\missiongameplay.c:742`) and pass them to the open menu:
 
-### ImageWidget
-```
-image.LoadImageFile(0, "path/to/icon.paa")
-image.SetColor(ARGB(255, 0, 255, 0))
-```
-
-### TextWidget extras
-```
-txt.SetTextExactSize(int pixelSize)  // Exact pixel font size
-txt.SetOutline(size, ARGB_color)     // Outline with separate alpha
-int outlineColor = txt.GetOutlineColor()
-int outlineSize = txt.GetOutlineSize()
-```
-
-### Widget extras
-```
-widget.SetSort(int)              // Z-order (higher = in front)
-widget.SetRotation(x, y, z)     // Degrees
-Widget.Update()                  // Force layout recalculate
-```
-
-### Global functions
-```
-Widget GetWidgetUnderCursor()    // Hit test at mouse pos
-GetMousePos(out int x, out int y)
-SetFocus(Widget)                 // null = clear focus
-CancelWidgetDragging()
-Widget GetDragWidget()
-GetMouseState(MouseState.LEFT) & MB_PRESSED_MASK  // Raw mouse state
-```
-
-### PlayerPreviewWidget
-```
-m_CharacterPanelWidget.SetPlayer(player)       // Set displayed player
-m_CharacterPanelWidget.UpdateItemInHands(item)  // Update held item
-m_CharacterPanelWidget.GetDummyPlayer()         // Get preview dummy
-m_CharacterPanelWidget.Refresh()                // Force refresh
-```
-
----
-
-## 6. Scaling to the screen resolution
-
-Design base: **1920x1080**. Everything scales proportionally at runtime. This approach is for values set from script in screen pixels; it is not needed for exact values written in a `.layout` (see "What does not need scaling" below).
-
-### Core variables
-
-```
-static int screenWidth, screenHeight;
-static float heightScale;    // screenHeight / 1080.0
-static float widthScale;     // screenWidth / 1920.0
-
-static void UpdateScreenDimensions() {
-    GetScreenSize(screenWidth, screenHeight);
-    heightScale = ((float) screenHeight) / 1080.0;
-    widthScale  = ((float) screenWidth) / 1920.0;
-}
-```
-
-Called once in the `DayZGame` constructor and again on the `WindowsResizeEventTypeID` event.
-
-### The rule: heightScale for everything
-
-`heightScale` is used for **all** dimensions — including widths. This keeps elements
-square/proportional on any resolution. `widthScale` exists but is almost never used.
-
-```
-// Text: "16px at 1080p"
-float realSize = 16 * MyWidgetUtils.heightScale;
-txt.SetTextExactSize(realSize);
-
-// Image: "300×200 at 1080p"
-img.SetScreenSize(300 * heightScale, 200 * heightScale);
-
-// Gap/margin: "10px at 1080p"
-float gap = 10.0 * heightScale;
-
-// Position: "place at 500,300 in 1080p coords"
-widget.SetScreenPos(500 * heightScale, 300 * heightScale);
-```
-
-### Saving and restoring window properties
-
-Normalize to 1080p-space when saving, scale back when restoring:
-
-```
-// SAVE — divide out the scale
-entry.windowX = x / MyWidgetUtils.heightScale;
-entry.windowY = y / MyWidgetUtils.heightScale;
-entry.windowW = w / MyWidgetUtils.heightScale;
-entry.windowH = h / MyWidgetUtils.heightScale;
-
-// RESTORE — multiply back
-widget.SetScreenPos(entry.windowX * heightScale, entry.windowY * heightScale);
-widget.SetScreenSize(entry.windowW * heightScale, entry.windowH * heightScale);
-```
-
-This means saved positions work correctly if the user changes resolution between sessions.
-
-### Dynamic gaps (MyGapHandler pattern)
-
-`ScriptedWidgetEventHandler` for margins that adapt to resolution:
-
-```
-// gapHorizontal/gapVertical come from layout via 'reference' keyword
-float newW = width - ((float) gapHorizontal) * MyWidgetUtils.heightScale / parentW;
-float newH = height - ((float) gapVertical) * MyWidgetUtils.heightScale / parentH;
-root.SetSize(newW, newH);
-```
-
-### Image fit that keeps the aspect ratio
-
-Scale image to fit container while maintaining aspect ratio:
-
-```
-// Get image natural size + container size
-float imgW, imgH, containerW, containerH;
-// Calculate scale factors
-float scaleW = containerW / imgW;
-float scaleH = containerH / imgH;
-// If fits at natural size → use it. Otherwise scale by limiting axis
-float min = Math.Min(scaleW, scaleH);
-img.SetScreenSize(imgW * min, imgH * min);
-```
-
-### Auto fitting text size
-
-Loop to find largest font that fits within parent width:
-
-```
-void FitText(TextWidget txt, int maxSize, int minSize) {
-    float w, h, parentW, parentH;
-    txt.GetParent().GetScreenSize(parentW, parentH);
-    int current = maxSize;
-    while (current >= minSize) {
-        txt.SetTextExactSize(current);
-        txt.Update();  // Force layout recalc
-        txt.GetScreenSize(w, h);
-        if (w < parentW * 0.9)
-            break;
-        --current;
+```c
+modded class MissionGameplay
+{
+    override void OnKeyPress(int key)
+    {
+        super.OnKeyPress(key);
+        MyMod_PinMenu pinMenu;
+        if (Class.CastTo(pinMenu, g_Game.GetUIManager().GetMenu()))
+            pinMenu.OnKeyNumpadPressed(key);
     }
 }
 ```
 
-### What does not need scaling
+This calls `super` first because it only listens. When the mod consumes a key that vanilla also binds and prompts for (F is the vanilla action key), return without calling `super.OnKeyPress`, or the mod and the vanilla action manager both act on the same press (seen in a mod, not checked on `P:\`).
 
-- **Layout coordinates in 0.0–1.0 range** (relative/proportional) — engine handles these
-- **SpacerWidget/WrapSpacerWidget children** — auto-flow is resolution-independent
-- **Widget.SetSize(w, h)** with values 0.0–1.0 — these are proportional to parent
-- **Exact-flag layout values, and `SetSize` on an exact widget** — the engine already draws
-  them at height/1080 (rule 3, measured in game; added). A script that multiplies them again
-  scales them twice (`SetSize` 480 rendered 320 at 720p).
+The `KeyCode` names to map are `KC_0` to `KC_9`, `KC_NUMPAD0` to `KC_NUMPAD9`, `KC_BACK` (`P:\scripts\1_core\proto\ensystem.c:171`), `KC_RETURN` (`:185`) and `KC_NUMPADENTER` (`:253`).
 
-**Only pixel-absolute values need the multiplier:** `SetScreenSize`, `SetScreenPos`,
-`SetTextExactSize`, pixel gaps, and any hardcoded distances used in hit-testing or
-screen-space math. *(: the layout key `"exact text size"` N on an SDF face already
-scales with the screen height (`text-sizing-and-rendering.md`); whether `SetTextExactSize` does the
-same was not measured.)*
+## An orbiting camera preview
 
----
+A garage style menu shows a vehicle or item from a camera that circles it:
 
-## 7. PIN and numpad menu
-
-Keyboard intercept via `MissionGameplay.OnKeyPress(int key)`:
-```
-override void OnKeyPress(int key) {
-    super.OnKeyPress(key);
-    UIScriptedMenu menu = g_Game.GetUIManager().GetMenu();
-    MyPinMenu pinMenu;
-    if (Class.CastTo(pinMenu, menu))
-        pinMenu.OnKeyNumpadPressed(key);
-}
-```
-
-This calls `super` first because it only listens. When the mod consumes a key that vanilla also binds and shows its own prompt for it (F is the vanilla action key), return without calling `super.OnKeyPress`; otherwise both the mod and the vanilla action manager act on the same press (measured in a mod).
-
-`KeyCode` names to map: `KC_NUMPAD0` to `KC_NUMPAD9`, `KC_0` to `KC_9`, `KC_BACK`, `KC_NUMPADENTER`, `KC_RETURN` (the enum is in `P:\scripts\1_core\proto\ensystem.c`; `KC_BACK` is at line 171 and `KC_NUMPAD0` at line 239).
-
----
-
-## 8. Camera preview in a menu
-
-Orbital camera for showing vehicles/items in garage-style UI:
-
-```
-// Calculate orbital position:
+```c
 float height = Math.Sin(Math.DEG2RAD * angle) * distance;
-float cos = Math.Cos(Math.DEG2RAD * rotation) * distance;
-float sin = Math.Sin(Math.DEG2RAD * rotation) * distance;
-vector cameraPos = center + Vector(sin, height, cos);
+float cosR = Math.Cos(Math.DEG2RAD * rotation) * distance;
+float sinR = Math.Sin(Math.DEG2RAD * rotation) * distance;
+vector cameraPos = center + Vector(sinR, height, cosR);
 ```
 
-Blackbox pattern for a garage style preview (not checked in game): spawn an invisible building at y=109, show the items inside it, and set the world time to noon every frame.
+One tool hides the scene by spawning an invisible building at a height of 109 m, showing the items inside it and setting the world time to noon every frame. Not checked in game.
 
----
+## Looking around with a menu open
 
-## 9. Looking around without closing the menu
+Drop the menu's input excludes and hide the cursor to let the player turn the camera, then put both back (`RemoveActiveInputExcludes` and `AddActiveInputExcludes`, `P:\scripts\3_game\gameplay.c:798` to `:800`; `ShowUICursor(bool visible)`, `P:\scripts\3_game\tools\uimanager.c:244`):
 
-Toggle cursor visibility + input exclusions for camera control inside UI:
-```
-// Start looking around:
+```c
 Mission mission = g_Game.GetMission();
 mission.RemoveActiveInputExcludes({"menu", "movement", "aiming"}, true);
 g_Game.GetUIManager().ShowUICursor(false);
 
-// Stop:
+// back to the menu
 mission.AddActiveInputExcludes({"movement", "aiming", "menu"});
 g_Game.GetUIManager().ShowUICursor(true);
 ```

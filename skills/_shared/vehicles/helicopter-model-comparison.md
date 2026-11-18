@@ -1,214 +1,83 @@
 # Helicopter flight models compared
 
-SIB, RFFS, MH6, DayZ Expansion and LM_Planes side by side: what all five share, monolithic flight loop against modular aerofoil system, kinematic against force based integration, a table of differences, which one to build from, and how players say each one feels. Open it when choosing a flight model or explaining a trade-off; the per-mod detail is in `helicopter-rffs.md`, `helicopter-mh6.md`, `helicopter-sib.md`, `helicopter-expansion.md` and `aviation-fixed-wing.md`.
+How the SIB, RFFS, MH6 and Expansion helicopters and the LM_Planes fixed-wing mod compare: what they share, a single flight loop against a module system, kinematic against force-based flight, which one to build from, and how players say each feels.
 
-Third-party mod behaviour (SIB, RFFS, MH6, DayZ Expansion, LM_Planes), not vanilla. Not yet checked on `P:\`. Every fact describes the five mods' own scripts as read for the per-mod files; the mod named in a bracket (`[RFFS ...]`, `[SIB ...]`, `[MH6 ...]`) says whose scripts hold the cited line, and `[UNVERIFIED]` and the `file:line` citations mean what they mean there. The player feel section is subjective opinion, not a measurement.
+The detail per mod is in `helicopter-rffs.md`, `helicopter-mh6.md`, `helicopter-sib.md`, `helicopter-expansion.md` and `aviation-fixed-wing.md`; the `file:line` citations here point into those mods' scripts, named in brackets. These are third-party mods, not vanilla. The section on feel is player opinion, not measurement.
 
-## Four monolithic implementations
+There are five flight models from four code bases: SIB, RFFS, MH6 with LM_Planes (one mod family, the two force-based ones), and Expansion.
 
-**Four flight-model implementations with a single flight loop** are covered here: the **SIB** heli, the
-**RFFS** heli, the **MH6** heli, and the **LM_Planes** fixed-wing. All four use the
-**CarScript-as-aviation** hack, which pins that down as **the** way to do aviation in DayZ today. Three
-separate code bases stand behind the four: MH6 and LM_Planes come from one mod family, and they are the
-two force-based ones.
+## What they share
 
-## What is common to all four
+- `CarScript` is the base. Vanilla's own helicopter class, `HelicopterScript` (`P:\scripts\4_world\entities\vehicles\helicopterscript.c:4`), is unused by all of them. Each inherits `CarScript`, keeps a ground `SimulationModule` (wheels, axles, gearbox) as a taxi fallback, and overrides the physics in script: [RFFS `Core_config.cpp:517`], [SIB `HeliTest_SIB:Heli_sib_cript:CarScript`], [MH6 `class MH6 extends CarScript`, `MH6_flightmodel.c:112`], [LM_Planes `LlamaPlaneScript extends CarScript`]. Expansion's current classes do the same; its older `Transport`-based stack is obsolete.
+- Custom `UA*` inputs declared in a modded `Inputs.xml`, read with `GetInputInterface().SyncedValue(...)` or `GetUApi()` (SIB `UASIBHeli*`, RFFS `UARFFS*`, MH6 `UAKTHeli*`) or through the Pawn move (LM_Planes).
+- Rotors animated by `SetAnimationPhase` as a swap between a static and a blurred mesh driven by rotor state, not geometry tied to RPM (SIB `rot_h_start`, `rot_h_blur_end`; RFFS `rotorN_speed`, `rotorN_blur_hide`; MH6 `rotor_1_1`, `rotor_1_1_hide`, `rotor_1_1_rotate_hide`). LM_Planes animates control surfaces the same way.
+- Damage zones per component with transfer coefficients (engine, rotors, fuel) and part health tied to attachments.
+- Physics owned by the server, gated on `IsServer()` or `IsServerOrOwner()`. A client never owns the true velocity: RFFS's client pump runs only animation and input sync, while MH6, LM_Planes and Expansion predict on the owner and correct from the server.
 
-- **`CarScript` is the aviation base.** DayZ has no flight class; all four inherit `CarScript`, keep a full
-  ground `SimulationModule` (wheels/axles/gearbox) as a taxi fallback, and override the physics in script.
-  [RFFS `Core_config.cpp:517`] · [SIB `HeliTest_SIB:Heli_sib_cript:CarScript`] ·
-  [MH6 `class MH6 extends CarScript`, `MH6_flightmodel.c:112`] ·
-  [LM_Planes `LlamaPlaneScript extends CarScript`].
-- **Custom `UA*` inputs** drive flight, read via `GetInputInterface().SyncedValue(...)` / `GetUApi()`
-  (SIB `UASIBHeli*`, RFFS `UARFFS*`, MH6 `UAKTHeli*`) or the Pawn move pipeline (LM_Planes), declared in a
-  modded `Inputs.xml`.
-- **Rotor/prop animation via `SetAnimationPhase`** — a static↔blur mesh swap driven by rotor state, not
-  RPM-bound geometry (SIB `rot_h_start`/`rot_h_blur_end`; RFFS `rotorN_speed`/`rotorN_blur_hide`; MH6
-  `rotor_1_1`/`rotor_1_1_hide`/`rotor_1_1_rotate_hide`); LM_Planes animates control surfaces the same way.
-- **Per-component DamageZones** with cross-transfer coefficients (engine/rotor(s)/fuel/etc.) and
-  attachment-tied part health.
-- **Server-authoritative physics** gated on `IsServer()` / `IsServerOrOwner()`; state pushed to clients.
-  A client never owns the authoritative velocity: RFFS's client pump runs only animations and input
-  sync (see `helicopter-rffs.md` section 2), while MH6, LM_Planes and Expansion
-  predict on the owner and reconcile with the server.
+## One flight loop or a module system
 
-## All five implementations, on two axes
+This axis is about how the tick is organised, not how it is integrated.
 
-With Expansion added there are **five flight-model implementations from four separate code bases**:
-**SIB**, **RFFS**, **MH6** + **LM_Planes**, and **DayZ Expansion**. All five use **CarScript-as-aviation** (Expansion's modern path does; its *legacy* `Transport`-based
-`ExpansionVehicleBase` is the one exception, and it was superseded). Two orthogonal axes now organise them.
+- One loop (SIB, RFFS, MH6, LM_Planes): one large method (`Simulate()`, `FlightSimulation()`, `ApplyHelicopterPhysics()`) computes the whole aircraft with hard-coded constants and applies one result at the end, `SetVelocity` or one `dBodyApplyForce` and `dBodyApplyTorque`.
+- Modules (Expansion): each aerofoil, the rotor, each wheel and engine computes its own force at its own position and adds it to `ExpansionPhysicsState` (`pState.m_Torque += position * force`, [Expansion `ExpansionVehicleAerofoil.c:229` to `:230`]); the sum is applied once ([Expansion `ExpansionPhysicsState.c:216` to `:217`]).
 
-### Monolithic flight loop vs modular aerofoil system
+| Modules win | One loop wins |
+|---|---|
+| A new aircraft is a config block and a thin subclass; one base flies the Gyrocopter, Merlin and MH-6 ([Expansion `ExpansionGyrocopter.c:25`, `:256`]) | Using the aerofoil means taking the whole scaffold: Expansion's `CarScript.c` alone is 3,815 lines and the rotor module 3,234. MH6 is a complete force-based helicopter in one script of about 48 KB |
+| Moments come from geometry: torque is position times force, so a tail rudder yaws because it is at the tail ([Expansion `ExpansionVehicleAerofoil.c:230`]); the others fake the lever arm with constants | One method reads top to bottom; a module force has to be traced from config through two hooks and the accumulator |
+| Stall, air density, ground effect, translational lift, vortex ring state, blade stall and autorotation come from one model, where SIB fakes lift with a constant +0.25 m/s and a 1,500 m ceiling | A wrong memory point name for an aerofoil's `min` or `max` gives a wrong area and a subtly wrong aircraft with no error ([Expansion `ExpansionVehicleAerofoil.c:80` to `:111`]); a constant cannot be mis-wired |
+| One core serves car, boat, plane and helicopter; the helicopter reuses the aerofoil unchanged | Real lift, drag, stall and rotor effects make the aircraft twitchy and spinnable, good for a sim and worse for casual servers |
+| Each module has a `CF_OnDebugUpdate` window showing angle of attack and coefficients live ([Expansion `ExpansionVehicleAerofoil.c:137` to `:149`]) | Many modules doing trigonometry and a matrix multiply every tick cost more than one inlined loop; one `thrust_rate` knob (RFFS's percent-of-baseline JSON) is easier to tune than lift coefficients and blade pitch |
 
-This is a **different axis** from kinematic-vs-force (§"The new axis" below) — it is about *how the
-per-tick calculation is organised*, not how it is integrated.
+Expansion does not model each blade as an aerofoil, which would be far too costly. The rotor is its own module, sampling blade elements over 8 azimuth sectors ([Expansion `ExpansionVehicleHelicopter.c:2300` to `:2320`]). The aerofoil system is strongest on fixed wings and control surfaces; a helicopter is the rotor module plus body aerofoils.
 
-- **Monolithic** (SIB, RFFS, MH6, LM_Planes): one large flight method computes the whole aircraft's motion
-  inline — `Simulate()`/`FlightSimulation()`/`ApplyHelicopterPhysics()` — with **hard-coded constants**,
-  reading orientation/velocity, computing lift/drag/attitude in one pass, and applying **one result at the
-  end** (`SetVelocity` or a single `dBodyApplyForce`/`Torque`).
-- **Modular** (Expansion): the aircraft is a **bag of auto-configured physics modules** (aerofoils + a
-  rotor module + wheels/axles/engines). Each module, in `PreSimulate`/`Simulate`, computes **its own force
-  at its own position** and adds it to a shared `ExpansionPhysicsState` accumulator
-  (`pState.m_Force += ...`, `pState.m_Torque += (position × force)...`,
-  `ExpansionVehicleAerofoil.c:229-230`); the framework commits the sum once via
-  `dBodyApplyForce`/`dBodyApplyTorque` (`ExpansionPhysicsState.c:216-217`).
+## Kinematic or force-based
 
-**Advantages of modular:**
-- **(a) Data-driven.** A new aircraft is a config block + a thin subclass, not new code — that is exactly
-  why one Expansion base flies the Gyrocopter, Merlin, MH-6, etc. (`ExpansionGyrocopter.c:25,256`). The
-  monolithic mods each hand-write (or copy-paste) a flight method per model.
-- **(b) Moments emerge from geometry.** Torque is `r × F` at the module's real airframe position
-  (`ExpansionVehicleAerofoil.c:230`): a tail rudder yaws *because it sits at the tail*. The monolithic
-  models fake the lever arm with tuned constants (SIB nudges Euler angles by literals; MH6 multiplies by
-  `CYCLIC_PITCH_RATE·80`).
-- **(c) Real physics that generalises.** Stall, per-altitude air density (`Expansion_GetDensity`), ground
-  effect, ETL, VRS, RBS, autorotation all fall out of one model — where SIB fakes "lift" with a constant
-  `+0.25 m/s` and a hard 1500 m ceiling.
-- **(d) One core, every vehicle type.** The same module system + accumulator serves car, boat, plane and
-  heli; the aerofoil is literally reused by the heli (`ExpansionVehicleHelicopterAerofoil` is an empty
-  subclass).
-- **(e) Live introspection.** Each module has a `CF_OnDebugUpdate` debug window
-  (`ExpansionVehicleAerofoil.c:137-149`) — per-surface AoA/Cl/Cd on screen. Monolithic models debug by
-  Print.
+Kinematic flight sets the velocity directly with `SetVelocity` (`P:\scripts\1_core\proto\enphysics.c:111`); force-based flight applies `dBodyApplyForce` and `dBodyApplyTorque` (`:146`, `:153`) and lets the body integrate.
 
-**Advantages of monolithic / costs of modular:**
-- **(a) Weight and coupling.** Using the aerofoil means swallowing the whole scaffold — the module base +
-  event dispatcher + `ExpansionPhysicsState` + Expansion's `modded CarScript`
-  (`CarScript.c` alone is 3815 lines; the rotor module 3234). MH6 is a competent, complete force-based heli
-  self-contained in one ~48 KB script. If you want *one* aircraft, the framework is mostly overhead.
-- **(b) Debuggability.** A monolithic loop reads top-to-bottom — one method is the whole truth. The modular
-  path scatters the physics across N modules × 3 hooks + an accumulator + the CarScript integration; to
-  follow one force you trace it from config → `PreSimulate` → `Simulate` → accumulator → apply.
-- **(c) Config surface = silent-failure surface.** A wrong memory-point name for an aerofoil's `min`/`max`
-  yields a wrong area and a subtly wrong flight model with **no compile error**
-  (`ExpansionVehicleAerofoil.c:80-111`) — the price of data-driven. A hard-coded constant can't be
-  mis-wired.
-- **(d) Realism is less forgiving.** Real Cl/Cd/stall/VRS/RBS make the aircraft twitchy, stallable, and
-  spinnable — great for a sim, worse for a pick-up-and-fly server. The kinematic arcade feel (RFFS) is more
-  accessible; sometimes that is the *desired* design, not a deficiency.
-- **(e) Per-frame cost.** N modules each doing trig + a matrix multiply every tick > one inlined loop.
-- **(f) Intuitive tuning.** Turning one `thrust_rate` knob (RFFS's %-of-baseline JSON) is easier than
-  reasoning about lift coefficients, blade pitch `theta0`, and advance-ratio thresholds.
-
-**Honest caveat — Expansion does not model every blade as an aerofoil.** That would be prohibitively
-expensive. The **rotor is its own dedicated module** (`ExpansionVehicleHelicopter`, a rotor-disc /
-blade-element-*sampling* model over 8 azimuth sectors, `ExpansionVehicleHelicopter.c:2300-2320`), not a
-swarm of per-blade aerofoils. The aerofoil system shines on **fixed wings and control surfaces**; on a heli
-it is **rotor-module + body aerofoils**, not aerofoils-all-the-way-down.
-
-### Decision framework — which model to build from (skill default)
-
-The two axes give a clean picking rule. **Default recommendation:**
-
-1. **Custom heli, ship it now, arcade feel, code you can read end-to-end → monolithic.**
-   - Predictable kinematic handling → **build from RFFS** (clean, DRM-free, physically-grounded but
-     `SetVelocity`; discrete 0-20 collective; typed JSON config; flight HUD).
-   - Real momentum/inertia + PD stability + autohover, still one legible script → **build from MH6**
-     (force-based `dBodyApplyForce`/`Torque`, ISA density, rotor-RPM authority).
-2. **A multi-aircraft vehicle *framework* with realistic, config-tunable physics → Expansion**
-   (modular aerofoil + rotor-disc). You pay its architecture and a steeper tuning curve (memory-point
-   config, blade-element coefficients) but you get data-driven aircraft, geometry-derived moments, the most
-   complete rotor model (VRS/RBS/ETL/autorotation), and one core across car/boat/plane/heli.
-3. **Fixed-wing with real aerodynamics → LM_Planes** (monolithic, custom Pawn) **or Expansion** (modular
-   aerofoil — this is where the aerofoil system is strongest).
-4. **Do not build from SIB.** Its simple model is a minimal kinematic hack (fake `+0.25 m/s` lift, hard
-   1500 m ceiling) and its advanced/force model is **DRM-locked with the core integrator missing**. Use SIB
-   only as a corroborating third data point.
-
-Rule of thumb: **one aircraft, want it flying and hackable → monolithic (RFFS kinematic / MH6 force).
-A fleet, want config-tunable real physics → Expansion modular.** The other axis (kinematic vs force) is
-now a *sub*-choice inside "monolithic".
-
----
-
-## The new axis that matters most: kinematic vs force-based
-
-A buildable DayZ aircraft does not have to be kinematic: **MH6** is force-based, legible, and buildable.
-The real split is:
-
-| Implementation | Integration | Source state | So the takeaway is… |
+| Model | Integration | Source | Use it as |
 |---|---|---|---|
-| **SIB — simple** | **Kinematic** — `SetVelocity`/`SetOrientation`, `dBodyApplyImpulse` commented out | Readable, legible (buildable) | Arcade heli, minimal code — the simplest teachable loop |
-| **SIB — advanced** | **Force** — `dBodyApplyForce`/`Torque` in the applicator `qmdkldkpqpmlsib` | **DRM-locked + core integrator missing** | Proof force was *used*, but unbuildable (lost + license-gated) |
-| **RFFS** | **Kinematic** — `SetVelocity`/`SetOrientation`, `dBodyApplyImpulse` only as a commented line (`Core.c:272`) | Clean, complete, DRM-free | The clean **kinematic** reference: physically-grounded (attitude-rotated lift vector, ground effect, ETL, governors, drag, weathervaning), discrete 0-20 collective, typed JSON config, flight HUD |
-| **MH6** | **Force** — real `dBodyApplyForce(this, totalForce)` + `dBodyApplyTorque(this, totalTorque)` every tick (`MH6_flightmodel.c:1165-1166`) | **Readable, clean, complete** | The **force-based** reference: full PD flight controller, ISA air density, rotor-RPM authority, autohover/autoland — buildable today |
-| **LM_Planes** | **Force** — real aerodynamic lift/drag/stall forces summed and applied through `dBodyApplyForce`; engine thrust is taken at `axis_thruster` | Clean (public workshop) | The fixed-wing reference (real aerodynamics + custom Pawn) |
+| SIB simple | Kinematic: `SetVelocity`, `SetOrientation`, `dBodyApplyImpulse` commented out | Readable | The simplest loop to learn from |
+| SIB advanced | Force: `dBodyApplyForce` and `dBodyApplyTorque` in an obfuscated applicator | DRM-locked, core integrator missing | Proof force was used; cannot be built |
+| RFFS | Kinematic: `SetVelocity`, `SetOrientation`; `dBodyApplyImpulse` only commented out ([RFFS `Core.c:272`]) | Clean, complete, no DRM | The kinematic reference: lift vector rotated with attitude, ground effect, translational lift, governors, drag, weathervaning, 0 to 20 collective, typed JSON, flight HUD |
+| MH6 | Force every tick ([MH6 `MH6_flightmodel.c:1165` to `:1166`]) | Readable, complete | The force reference: PD controller, ISA density, rotor speed gating, auto hover and auto land |
+| LM_Planes | Force: lift, drag and stall summed and applied; thrust at `axis_thruster` | Clean, public Workshop | The fixed-wing reference |
 
-**Conclusion:** a buildable DayZ *helicopter* can be **either** kinematic (RFFS) or
-force-based (MH6) — both are clean and complete on disk. The impression the SIB mod gave — that the
-force-based model is always license-gated and out of reach — was an artifact of *that one mod's DRM*,
-not a property of DayZ. MH6 shows real `dBodyApplyForce`/`Torque` rotor physics is fully viable in
-plaintext Enforce. (The force-based heli and the force-based fixed-wing share a mod family: LM_Planes
-already applied real forces, and MH6 carries the same approach onto a rotor.)
+A buildable helicopter can be either; that SIB's force model is locked is a property of that mod, not of DayZ.
 
-## What differs (all four)
+## How they differ
 
-| Axis | RFFS | SIB | MH6 | LM_Planes |
+| | RFFS | SIB | MH6 | LM_Planes |
 |---|---|---|---|---|
-| Aircraft type | Helicopter | Helicopter | Helicopter | Fixed-wing (+ 1 amphib car) |
-| Integration | **Kinematic** (`SetVelocity`) | **Kinematic** (simple); force (advanced, lost) | **Force** (`dBodyApplyForce`/`Torque`) | **Force** (aerodynamic) |
-| Source state | **Clean, complete** | Obfuscated; simple readable, **advanced DRM-gated + integrator missing** | **Readable, clean & complete** (config.bin not readable) | Clean (public workshop) |
-| Flight model | High-kinematic: attitude-rotated lift vector, ground effect, ETL, speed+climb governors, aero drag, weathervaning | Low-kinematic: pitch attitude → scalar forward speed; bank → yaw; passive +0.25 m/s hover | **PD controller**: RPM-gated authority, ISA-density lift, translational lift, ground effect, per-axis quadratic drag, overspeed + climb limiters | Real aerodynamics: lift/drag/stall, ISA atmosphere, PID auto-stab, NaN-safe forces |
-| Collective / thrust | **Discrete 0-20 detent** × `c_thrust_rate` | `m_rotorTurn` ±2.8 momentary + passive baseline | Analog `m_ThrottleTarget` 0-1 → lift force `= mass·g·1.65 · collective · rotorSpeed² · density · …` | Throttle smoothed via Pawn move |
-| Attitude stability | Recovery mode (level-to-velocity) | Attitude auto-recenter | **PD**: proportional (memory-point tilt) + derivative (angular-rate damping) | PID auto-stabilization |
-| Autohover / autoland | none | Autohover **yes** (license-gated `AutopilotState` bot-map, DRM only) | **Autohover** (hold loop on the control channels, force flight keeps running) **+ autoland FSM** (kinematic `SetVelocity`, replaces the force call) | n/a |
-| Config store | **Typed named JSON** (`MasterConfig` + `HeliConfig`, `get*` accessors, %-of-baseline) | Positional `map<string,float>` from `$profile` JSON | **Hard-coded const literals** (`:141-176`); config.bin not readable | ~60 `Get*` methods per aircraft (config-as-code) |
-| Replication | Sync vars + `EOnFrame` client pump (animations and input sync only) | Sync vars + `EOnSimulate` mirror | **Custom Pawn** (`MH6OwnerState`/`MH6Move`, prediction + rewind) + 2 sync vars for toggles | **Custom Pawn** (`PlaneOwnerState`/`PlaneMove`, prediction + rewind) |
-| Atmosphere | none (fixed ceiling clamp) | none (hard 1500 m literal) | **ISA `StandardAtmosphere`** density falloff (shared `Heli_Core` helper) | ISA atmosphere |
-| HUD | **Full flight HUD** (airspeed/altimeter/collective/fuel/hydraulics/warning lights) | Config dials only | [UNVERIFIED] (config/model not readable) | Cockpit dials |
-| Openness | Fully open | DRM (HTTP license check to the mod's own server) | Readable (JAPM, no live DRM in the flight script) | Open |
+| Aircraft | Helicopter | Helicopter | Helicopter | Fixed wing, plus one amphibious car |
+| Flight model | Lift vector rotated with attitude, ground effect, translational lift, speed and climb governors, drag, weathervaning | Pitch to forward speed, bank to yaw, passive +0.25 m/s hover | PD controller, rotor speed gating, density, translational lift, ground effect, quadratic drag, overspeed and climb limits | Lift, drag, stall, ISA atmosphere, PID auto-stabilisation, NaN-safe forces |
+| Collective | Discrete 0 to 20 steps times `c_thrust_rate` | `m_rotorTurn` plus or minus 2.8 while held, plus a passive baseline | Analog 0 to 1 into lift `mass * g * 1.65 * collective * rotorSpeed² * density` | Throttle smoothed through the Pawn move |
+| Stability | Recovery mode that levels to the velocity | Attitude recentre | P from memory-point tilt, D from angular rate | PID |
+| Assists | None | Auto hover, only in the locked variant | Auto hover as a hold loop; auto land as a kinematic state machine | None |
+| Config | Typed JSON (`MasterConfig`, `HeliConfig`, percent of baseline) | Positional `map<string,float>` from `$profile` JSON | Constant literals ([MH6 `:141` to `:176`]) | About 60 `Get*` methods per aircraft |
+| Replication | Sync variables plus an `EOnFrame` client pump for animation and input | Sync variables plus an `EOnSimulate` mirror | Pawn owner state and move, plus two sync variables for toggles | Pawn owner state and move |
+| Atmosphere | Fixed ceiling clamp | Hard 1,500 m literal | ISA `StandardAtmosphere` | ISA |
+| HUD | Full flight HUD | Config dials | Unknown | Cockpit dials |
+| Openness | Open | Licence check over HTTP to the mod's server | Readable, no live DRM in the flight script | Open |
 
-## Recommendation — pick by feel, not by "what's possible"
+## Which to build from
 
-Both are now buildable; the choice is a design decision:
+1. One custom helicopter, flying soon, code you can read end to end: a single loop. For predictable handling build from RFFS (kinematic, no momentum surprises, the helicopter goes where the model says each tick). For real momentum, inertia, PD stability and auto hover build from MH6 (it carries its velocity, swings under the rotor and needs anticipation; more alive, more to tune).
+2. Several aircraft on realistic physics tuned by config: Expansion. You pay its architecture and a steeper tuning curve, and get data-driven aircraft, moments from geometry and the most complete rotor model.
+3. Fixed wing with real aerodynamics: LM_Planes, or Expansion, where the aerofoil system is strongest.
+4. Not SIB: its simple model is a minimal hack and its force model is locked with the core missing. Use it only as a third data point; it confirms the `CarScript` route, baked blur rotors and per-component damage, and its config bitfield sync idea is worth a look.
 
-- **Want arcade / minimal code / predictable handling → kinematic. Build from RFFS.** It is clean,
-  complete, DRM-free, and physically-grounded while staying kinematic (attitude-rotated lift, ground
-  effect, ETL, governors, drag, weathervaning), with a discrete collective, typed JSON config, and a flight
-  HUD. `SetVelocity` means no momentum surprises — the heli goes where the model says each tick.
-- **Want realism / momentum / inertia / autohover → force-based. Build from MH6.** Real
-  `dBodyApplyForce`/`Torque` gives genuine momentum and inertia (the heli carries its velocity, pendulums
-  under the rotor, needs anticipation), a full PD stability controller, ISA-density performance falloff,
-  rotor-RPM authority (no control until spun up), an autohover hold loop on the control channels, and a
-  kinematic `SetVelocity` autoland that replaces the force call while it runs. More
-  physically alive, more to tune.
-- Use **SIB** only as a corroborating third data point (it independently confirms CarScript-as-aviation +
-  baked-blur rotors + per-component damage, and its config-bitfield sync idea is worth mining) — do **not**
-  build from its advanced model; that core is missing and license-locked.
-- For **fixed-wing**, **LM_Planes** remains the reference (real aerodynamics + custom Pawn). For
-  **rotary-wing**, you now have both a kinematic reference (RFFS) and a force-based one (MH6).
+## How players say each feels
 
-## Player-reported feel (subjective)
-
-How players on a live server describe each mod's handling. **Not measured** —
-treat as subjective player impression, not a benchmark. It is the "feel" axis the code cannot show, and
-it maps cleanly onto the verified mechanisms above:
-
-| Mod | Player-reported feel | Most likely cause (code-verified) |
+| Mod | Feel | Likely cause in the code |
 |---|---|---|
-| **RFFS** | Strongest stabilization; most arcade; **best/easiest handling** | Heaviest assist stack on a kinematic base — speed + climb governors, trainer clamps, `UARFFSRecover` auto-level. Forgiving → easy to fly, but feels "managed"/on-rails. |
-| **SIB** | **Most fluid** handling | Continuous collective (`m_rotorTurn`) vs RFFS's *discrete* 0-20 steps; weak ±0.1/tick recenter; direct `SetVelocity`, no governors → smooth and free, nothing fights the stick. Less forgiving. |
-| **MH6** | **Lackluster — not fluid and poor recovery** ("worst of both") | Force-based momentum removes the direct/fluid feel, but its PD stabilizer (`PITCH_STABILITY 0.85`) + FSM autoland are not tuned strong enough for RFFS-grade recovery → the drag of force without the payoff of assistance. |
-| **Expansion** | **Complex** for some players | Force-based + real rotor-disk aero (momentum, VRS/RBS, air-density falloff) + least arcade hand-holding → highest skill floor. |
+| RFFS | Strongest stabilisation, most arcade, easiest to fly | The heaviest assists on a kinematic base: governors, trainer clamps, `UARFFSRecover` auto level. Forgiving but on rails |
+| SIB | Most fluid | Continuous collective against RFFS's steps, a weak 0.1 per tick recentre, direct `SetVelocity` with no governors. Nothing fights the stick; less forgiving |
+| MH6 | Neither fluid nor good at recovering | Momentum removes the direct feel, and the PD stabiliser (`PITCH_STABILITY 0.85`) and auto land are not tuned strong enough to give RFFS-grade recovery |
+| Expansion | Complex | Forces plus real rotor disc aerodynamics and the least hand-holding, the highest skill floor |
 
-**Design insight (the gap none of the five fill):** *fluidity* and *recoverability* are in tension because
-both come from the stabilization system — strong constant stabilization (RFFS) is recoverable but not
-fluid; weak stabilization (SIB) is fluid but not recoverable; force-based (MH6), under-tuned, loses
-fluidity up front and gains no recovery. **No implementation decouples them.** The open improvement: a
-fluid kinematic base (SIB-style continuous, direct response) + an *envelope-protection* stabilizer that
-stays soft in normal flight (preserves fluidity) and firms up only near loss-of-control (provides
-recovery) — fly-by-wire "normal law" instead of always-on correction. That is the one thing that would
-feel better than all five, and it is a tuning problem, not new physics. Also confirmed from feel: strong
-stabilization is not strictly "better" — RFFS wins controllability for the average player but that same
-assist is what costs it the fluidity players praise in SIB. Pick by target audience, not by "strongest".
+Fluidity and recovery pull against each other because both come from stabilisation: strong constant stabilisation (RFFS) recovers but is not fluid, weak (SIB) is fluid but does not recover, and an under-tuned force model (MH6) loses fluidity and gains no recovery. None of the five separates them. What would beat all five is a fluid kinematic base with SIB's direct response plus envelope protection that stays soft in normal flight and firms up only near loss of control, like fly-by-wire normal law. That is a tuning problem, not new physics. Pick by audience, not by strongest stabilisation.
 
+## An older helicopter with attachable blades
 
-## An earlier community helicopter with attachable blades
-
-A different mod, kept for contrast: `HelicopterSIB_Hommade_LF` (a reskin of `HelicopterModhommade`) showed
-an [INFERRED] `CarScript` derived base with **attachable** rotor blades (`hommade_blade1/2`, tail
-`hommade_bladem1/2`) and a `c_rotorSound` / `c_engineSound` / `c_warningSound` / `c_crashSound` hook
-contract. Its flight model lived in the base addon, which was not available. The SIB mod in
-`helicopter-sib.md` supersedes it as the documented flight pattern. Its own PBO holds one `.c` file of
-1,177 bytes and is not the SIB source (`helicopter-mod-sources.md`).
+`HelicopterSIB_Hommade_LF`, a reskin of `HelicopterModhommade`, appears to use a `CarScript`-derived base (inferred, not read) with attachable rotor blades (`hommade_blade1`, `hommade_blade2`, tail `hommade_bladem1`, `hommade_bladem2`) and sound hooks `c_rotorSound`, `c_engineSound`, `c_warningSound`, `c_crashSound`. Its flight model lives in a base addon that was not available, and its own PBO holds one `.c` file of 1,177 bytes (`helicopter-mod-sources.md`). The SIB mod in `helicopter-sib.md` is the documented pattern instead.

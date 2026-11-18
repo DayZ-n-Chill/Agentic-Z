@@ -1,12 +1,12 @@
-# Config wiring for textures and materials
+# Textures and materials in config
 
-How textures and materials are connected in `config.cpp`: hidden selection textures and materials, health level materials when a model carries more than one material, and the vehicle light material pairs. The asset worker writes the `.paa` and `.rvmat` files; the config entries belong to the worker who owns the item's class (`rvmat-stages.md`, "Damage and destruct materials", names who).
+How `config.cpp` connects an item to its textures and materials: hidden selection textures, hidden selection materials, health level materials on a model with more than one material, and the light material pairs of a vehicle.
 
-How to read it: a `P:\` citation was checked on the vanilla files. Blocks with `MyMod` paths are shapes to adapt, not vanilla text.
+The asset worker writes the `.paa` and `.rvmat` files. The config entries belong to whoever owns the item's class; `rvmat-stages.md`, "Damage and destruct materials", says who. Blocks with `MyMod` paths are shapes to adapt, not vanilla text.
 
-## Texture only: hidden selection textures
+## A new color only: `hiddenSelectionsTextures[]`
 
-Use `hiddenSelectionsTextures[]` when only the color changes and the surface response stays the same.
+When only the color changes and the surface responds the same way, swap the texture:
 
 ```cpp
 hiddenSelections[]=
@@ -19,12 +19,12 @@ hiddenSelectionsTextures[]=
 };
 ```
 
-- Check the selection name in the model and in the config before using it.
-- An empty string hides a selection on purpose: `runtime-material-swaps.md`. One texture per color, for clothing, is in `_shared/wearables/references/color-variants.md`; for vehicles in `vehicle-materials.md`.
+- Check that the selection name exists in the model and matches the config before you use it.
+- An empty string hides a selection on purpose; see `runtime-material-swaps.md`. One texture per color is covered for clothing in `_shared/wearables/references/color-variants.md` and for vehicles in `vehicle-materials.md`.
 
-## Material swap through config
+## A new surface: `hiddenSelectionsMaterials[]`
 
-Use `hiddenSelectionsMaterials[]` when the material itself changes: specular, normal, emissive, glass or a damage look. The vanilla AKM sets both arrays, one entry per hidden selection, `hiddenSelectionsTextures[]` then `hiddenSelectionsMaterials[]` (`P:\DZ\weapons\firearms\akm\config.cpp:208-217`):
+When the material itself changes (highlight, relief, glow, glass or a damage look), swap the material too. The vanilla AKM sets both arrays, one entry per hidden selection, textures first (`P:\DZ\weapons\firearms\akm\config.cpp:208` to `:217`):
 
 ```cpp
 hiddenSelectionsTextures[]=
@@ -39,7 +39,7 @@ hiddenSelectionsMaterials[]=
 };
 ```
 
-The shape for a mod item:
+The same shape for a mod item:
 
 ```cpp
 hiddenSelections[]=
@@ -56,11 +56,11 @@ hiddenSelectionsMaterials[]=
 };
 ```
 
-The arrays line up with the model's selections by position. Do not add a material path for a selection that does not exist.
+The arrays match the model's selections by position. Never add a material path for a selection that does not exist.
 
-## Health levels with more than one material
+## Health levels on a model with several materials
 
-The one material case (three materials, which level gets which) is in `rvmat-stages.md`. When the model uses several materials, each level lists one material per material, in the same order. The vanilla AKM lists two per level, the body and the grip (`P:\DZ\weapons\firearms\akm\config.cpp:301-347`):
+The single material case, three materials and which level gets which, is in `rvmat-stages.md`. When the model carries several materials, every level lists one path per material, always in the same order. The AKM lists the body and the grip at each level (`P:\DZ\weapons\firearms\akm\config.cpp:301` to `:347`):
 
 ```cpp
 healthLevels[]=
@@ -75,14 +75,14 @@ healthLevels[]=
 
 For a mod asset:
 
-- Keep the stage layout of the normal, damage and destruct materials the same.
-- Change Stage3 to a damage or destruct macro texture (`rvmat-cookbook.md`, "Damage and destruct Stage3").
-- Keep the Stage1 normal and the Stage5 `_smdi` unless the damage should change those maps too.
+- Keep the same stage layout in the pristine, damage and destruct materials.
+- Put a damage or destruct macro texture in Stage3 (`rvmat-cookbook.md`, "Damage and destruct Stage3").
+- Keep the Stage1 normal map and the Stage5 `_smdi` unless the damage should change them too.
 - Check that the class tree gives the asset a `DamageSystem`.
 
 ## Vehicle light material pairs
 
-Vehicles name on and off material pairs in config. The vanilla sedan sets `dashboardMatOn`, `dashboardMatOff`, `frontReflectorMatOn` and `frontReflectorMatOff` (`P:\DZ\vehicles\wheeled\config.cpp:14045-14048`):
+Vehicles name an on and an off material for each lit part. The vanilla sedan sets `dashboardMatOn`, `dashboardMatOff`, `frontReflectorMatOn` and `frontReflectorMatOff` (`P:\DZ\vehicles\wheeled\config.cpp:14045` to `:14048`):
 
 ```cpp
 dashboardMatOn="dz\vehicles\wheeled\sedan_02\data\sedan_02_int2e.rvmat";
@@ -91,12 +91,10 @@ frontReflectorMatOn="dz\vehicles\wheeled\sedan_02\data\sedan_02_chrome_e.rvmat";
 frontReflectorMatOff="dz\vehicles\wheeled\sedan_02\data\sedan_02_chrome.rvmat";
 ```
 
-When adapting:
-
-- These keys are vehicle keys. Do not assume they work on another class.
-- Clone the nearest vehicle family.
-- Keep each on and off path as a pair and check every path against the packed files.
+- These are vehicle keys; don't expect them to work on another class.
+- Start from the nearest vanilla vehicle family.
+- Keep each on and off path together and check every path against the packed files.
 
 ## Swaps from script
 
-Prefer a config driven swap. When the behaviour has to come from script, read `runtime-material-swaps.md` first: it lists the calls, the two index spaces, what health levels do to a material set from script, and what was measured on worn clothing.
+Prefer a swap in config. When the change has to come from script, read `runtime-material-swaps.md` first: it lists the calls, their two index spaces, what health levels do to a material set from script, and what happens on worn clothing.

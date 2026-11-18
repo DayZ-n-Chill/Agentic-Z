@@ -1,170 +1,119 @@
-# Combat aviation: weapons, projectiles and hitscan
+# Aircraft weapons
 
-Optional weapons on an aircraft: a tracer projectile with no engine physics, hitscan damage with a visual tracer, the full Spitfire fire pipeline (RPC, ammo, damage zone resolution), and camera shake.
+How a plane fires: a tracer projectile with no engine physics, instant raycast damage with a visible tracer, the pilot only check, the client to server request, and impact effects timed to the tracer.
 
-Third-party mod behaviour (LM_Planes, Workshop `3730564764`), not vanilla. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code.
+The pattern is the Spitfire's in LM_Planes (Workshop `3730564764`), whose scripts are the source; it is mod practice, not vanilla, except where a `P:\` line is cited. The server side code is in `aviation-weapon-fire-code.md`. Of the LM_Planes fleet only the Spitfire fires; the Catalina's Browning M2 is a model with no firing code.
 
-## Combat Aviation (optional)
+## The approach
 
-### Custom projectile (zero-physics tracer)
+The server casts a 1500 m ray for the damage and, at the same time, spawns a tracer that flies along the same line for the look. Hits are instant, and players still see a round travel. Every asset is vanilla except the mod's own impact particle:
+
+| Piece | Where vanilla declares it |
+|---|---|
+| Tracer model | `P:\DZ\weapons\projectiles\tracer_red.p3d` |
+| `Ammo_308Win` and `Ammo_308WinTracer` ammunition | `P:\DZ\weapons\ammunition\config.cpp:100` and `:164` |
+| `RGD5Grenade_Ammo` damage profile | `P:\DZ\weapons\explosives\config.cpp:24` |
+| `Grenade_explosion_SoundSet` | `P:\DZ\sounds\hpp\config.cpp:338734` |
+| `ParticleList.GUN_IZH18`, the IZH-18 muzzle flash (`weapon_shot_izh18_01`) | `P:\scripts\3_game\particles\particlelist.c:176` |
+| `DayZPhysics.RaycastRV` | `P:\scripts\3_game\global\dayzphysics.c:199` |
+| `ProcessDirectDamage` and `ProcessDirectDamageFlags.ALL_TRANSFER` | `P:\scripts\3_game\entities\object.c:1138` and `:3` |
+| `GetDamageZoneNameByComponentIndex` and `GetDamageZones` | `object.c:1164` and `:1153` |
+| `ImpactEffectsData` and `ImpactTypes` | `P:\scripts\3_game\impacteffects.c:10` and `:1` |
+| `ThrowPhysically` | `P:\scripts\3_game\entities\inventoryitem.c:26` |
+| `SetLifetime` | `P:\scripts\3_game\entities\entityai.c:3377` |
+
+`ParticleList.PLANES_IMPACT` is the mod's own particle, not vanilla.
+
+The Spitfire takes rifle rounds from its cargo but deals damage with the `RGD5Grenade_Ammo` profile, so rifle ammunition does explosive damage without a new damage type.
+
+## A tracer with no physics
 
 ```cpp
-class CfgVehicles {
+class CfgVehicles
+{
     class Inventory_Base;
-    class LM_Planes_Tracer: Inventory_Base
+    class MyMod_Tracer: Inventory_Base
     {
         scope = 2;
-        displayName = "Bombardment!";
+        displayName = "Tracer";
         model = "\DZ\weapons\projectiles\tracer_red.p3d";
-        gravityCoef    = 0;
-        linearDamping  = 0;
+        gravityCoef = 0;
+        linearDamping = 0;
         angularDamping = 0;
-        gravity        = 0;
-        airFriction    = 0;
-        weight         = 0.001;
+        gravity = 0;
+        airFriction = 0;
+        weight = 0.001;
     };
 };
 ```
 
-For script-driven projectiles where you want zero engine physics interference (visual only).
+Script then calls `dBodySetDamping(proj, 0, 0)`, `dBodyEnableGravity(proj, false)` and `SetLifetime(4)`, so the round flies straight with no drop or drag for four seconds. The same works for any energy round: lasers, plasma, tracers.
 
-### Hitscan + visual tracer (Spitfire pattern)
+## Settings
 
-```cpp
-class LM_Spitfire extends LlamaPlaneScript
+```c
+static const int SHOT_TIMEOUT = 240;          // ms between shots, about 4.2 a second
+static const float PROJECTILE_SPEED = 350.0;
+static const string PROJECTILE_CLASS = "MyMod_Tracer";
+static const string AMMO_TYPE = "RGD5Grenade_Ammo";       // grenade damage, not bullet damage
+static const string SHOT_SOUNDSET = "MyMod_Plane_Shot_SoundSet";
+static const string IMPACT_SOUNDSET = "Grenade_explosion_SoundSet";
+static const int MUZZLE_PARTICLE = ParticleList.GUN_IZH18;
+static ref array<string> ALLOWED_AMMO = {"Ammo_308Win", "Ammo_308WinTracer"};
+```
+
+Give the mod's RPCs IDs in a range of its own so they do not collide with vanilla or other mods. The Spitfire uses `RPC_SHOT_FIRED = 937081` (client to server) and `RPC_SYNC_SHOT_FX = 937091` (server to clients).
+
+## Only the pilot fires
+
+```c
+private bool IsLocalPilot()
 {
-    protected bool m_canShoot;
-    static const string SPIT_PROJECTILE_CLASS = "LM_Planes_Tracer";
-    
-    static const string SPIT_AMMO_TYPE        = "RGD5Grenade_Ammo";
-    
-    override void EOnPostSimulate(IEntity other, float timeSlice)
-    {
-        super.EOnPostSimulate(other, timeSlice);
-        // ... pilot-seat and air-mode checks
-        Input inp = GetGame().GetInput();
-        if (inp.LocalHold("UALlamaPlaneShoot") && m_canShoot)
-        {
-            // Client asks the server to fire; the server runs DoFire in OnRPC
-            GetGame().RPCSingleParam(this, SPIT_RPCserver.RPC_SHOT_FIRED, new Param1<bool>(true), true);
-            m_canShoot = false;
-            // cooldown re-enables m_canShoot via CallLater(ShotReady, ...)
-        }
-    }
-    
-    protected void DoFire()  // server only
-    {
-        vector mw = /* muzzle world position */;
-        vector axis = /* forward axis */;
-        vector hitPos;
-        Object hitObj;
-        DayZPhysics.RaycastRV(mw, mw + axis * 1500, hitPos, null, hitComp, m_HitObjects,
-                              null, this, false, false, ObjIntersectFire);
-        // Use up one Ammo_308Win or Ammo_308WinTracer round from inventory
-        // Spawn LM_Planes_Tracer at mw, accelerating along axis
-        // Apply SPIT_AMMO_TYPE (RGD5Grenade_Ammo) damage at hitPos if raycast hit
-    }
-}
-```
-
-Hitscan (1500m raycast) does damage, visual tracer is the projectile spawn — combo gives instant hits with visible bullet trail. The full pattern below shows the RPC, ammo and damage steps in detail.
-
-### Combat aviation: Spitfire shooting pattern (full)
-
-Heavy combat pattern. Only the Spitfire among the LM_Planes aircraft has a full firing implementation. Catalina has visible Browning M2 .50 cal rvmats but no firing logic — gun mounts are cosmetic.
-
-**Custom RPC enum convention** (avoid vanilla DayZ RPC collisions):
-
-```cpp
-enum SPIT_RPCserver { RPC_SHOT_FIRED  = 937081 };
-enum SPIT_RPCclient { RPC_SYNC_SHOT_FX = 937091 };
-```
-
-Magic constants in 937xxx range to avoid colliding with vanilla DayZ + other mods. Pick a unique range for the mod's own RPCs.
-
-**Constants and config**:
-
-```cpp
-class LM_Spitfire extends LlamaPlaneScript
-{
-    protected bool m_canShoot;
-    protected int m_NextMuzzle;
-    protected ref array<EntityAI> m_AmmoSearchItems = new array<EntityAI>();
-    protected ref set<Object> m_HitObjects = new set<Object>();
-    protected ref array<Man> m_PlayerCache = new array<Man>();
-    protected ref array<string> m_DmgZoneCache = new array<string>();
-    
-    static const int SPIT_SHOT_TIMEOUT       = 240;     // ms between shots (~4.16 shots/sec)
-    static const float SPIT_PROJECTILE_SPEED = 350.0;
-    static const string SPIT_PROJECTILE_CLASS = "LM_Planes_Tracer";
-    static const string SPIT_AMMO_TYPE        = "RGD5Grenade_Ammo";       // !!! grenade damage, not bullet
-    static const string SPIT_SHOT_SOUNDSET    = "LM_Spitfire_Shot_SoundSet";
-    static const string SPIT_IMPACT_SOUNDSET  = "Grenade_explosion_SoundSet";
-    static const int SPIT_IMPACT_PARTICLE     = ParticleList.PLANES_IMPACT;
-    static const int SPIT_MUZZLE_PARTICLE     = ParticleList.GUN_IZH18;   // reuse the vanilla IZH-18 muzzle flash
-    
-    static ref array<string> SPIT_ALLOWED_AMMO = {
-        "Ammo_308Win",
-        "Ammo_308WinTracer"
-    };
-    
-    void LM_Spitfire() { m_canShoot = true; m_NextMuzzle = 0; }
-```
-
-**Damage Type hack** — uses rifle ammo as inventory source but applies grenade damage profile (gets explosive damage from rifle bullets without creating new damage types). Reuses vanilla `ParticleList.GUN_IZH18` (the IZH-18 muzzle flash, particle `weapon_shot_izh18_01`) and `Grenade_explosion_SoundSet` for impact. Zero new assets created for combat.
-
-**IsLocalPilot** check (gate weapons to pilot seat only):
-
-```cpp
-private bool IsLocalPilot() {
     DayZPlayer p;
     Transport t;
     if (!Class.CastTo(p, GetGame().GetPlayer())) return false;
     if (!Class.CastTo(t, p.GetParent())) return false;
-    return (t == this && CrewMemberIndex(p) == 0);  // CrewMemberIndex 0 = pilot
+    return t == this && CrewMemberIndex(p) == 0; // seat 0 is the pilot
 }
 ```
 
-Copilots / cargo seats can't fire — only seat index 0. Critical when aircraft has multiple seats (Catalina with 5).
+Co-pilots and cargo seats cannot fire, which matters on an aircraft with several seats such as the five seat Catalina.
 
-**Input → server → broadcast pattern**:
+## Fire request and effects
 
-```cpp
+The pilot's client asks, the server fires, and the server tells every client what to show:
+
+```c
 override void EOnPostSimulate(IEntity other, float timeSlice)
 {
     super.EOnPostSimulate(other, timeSlice);
     if (!CrewDriver() && !EngineIsOn()) return;
     if (!IsLocalPilot()) return;
     if (m_PlaneMode != PlaneMode.PLANE_MODE_AIR) return;
-    
     Input inp = GetGame().GetInput();
     if (!inp) return;
-    
-    if (inp.LocalHold("UALlamaPlaneShoot") && m_canShoot) {
-        // RPC to server: please fire
-        GetGame().RPCSingleParam(this, SPIT_RPCserver.RPC_SHOT_FIRED, new Param1<bool>(true), true);
+    if (inp.LocalHold("UAMyModPlaneShoot") && m_canShoot)
+    {
+        GetGame().RPCSingleParam(this, MyMod_RPC.SHOT_FIRED, new Param1<bool>(true), true);
         m_canShoot = false;
-        GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(ShotReady, SPIT_SHOT_TIMEOUT, false);
+        GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(ShotReady, SHOT_TIMEOUT, false);
     }
 }
 
 override void OnRPC(PlayerIdentity sender, int rpc_type, ParamsReadContext ctx)
 {
     super.OnRPC(sender, rpc_type, ctx);
-    
-    // Server: receive shot request, execute
-    if (GetGame().IsServer() && rpc_type == SPIT_RPCserver.RPC_SHOT_FIRED) {
+    if (GetGame().IsServer() && rpc_type == MyMod_RPC.SHOT_FIRED)
+    {
         Param1<bool> p;
         if (ctx.Read(p) && p.param1) DoFire();
     }
-    
-    // Clients: receive FX sync, play effects with tracer-aware delay
-    if (rpc_type == SPIT_RPCclient.RPC_SYNC_SHOT_FX && !GetGame().IsServer()) {
+    if (rpc_type == MyMod_RPC.SYNC_SHOT_FX && !GetGame().IsServer())
+    {
         Param3<Object, ImpactEffectsData, vector> fx;
-        if (ctx.Read(fx)) {
-            PlayMuzzleFX(fx.param3);  // immediate muzzle flash
-            
-            // Tracer-aware impact delay: calculate real flight time
+        if (ctx.Read(fx))
+        {
+            PlayMuzzleFX(fx.param3); // muzzle flash at once
             float dist = vector.Distance(fx.param2.m_Position, fx.param3);
             float inSpeedLen = fx.param2.m_InSpeed.Length();
             int delayMs = 0;
@@ -177,185 +126,12 @@ override void OnRPC(PlayerIdentity sender, int rpc_type, ParamsReadContext ctx)
 }
 ```
 
-The tracer-aware impact delay is a key polish detail: impact FX appears after the tracer reaches the target (matches visual trajectory). Without this, hits would visually appear simultaneous with muzzle flash even when target is 1500m away.
+The impact effect waits for the tracer's flight time, so the hit shows when the tracer arrives. Without the delay, a hit 1500 m away would flash at the same moment as the muzzle.
 
-**Server-side DoFire (consume ammo + spawn projectile + damage + broadcast FX)**:
+In `PlayImpactFX`, shake the camera when the local player is the one hit:
 
-```cpp
-protected void DoFire()
-{
-    if (!GetGame().IsServer()) return;
-    
-    // 1) Find ammo in inventory
-    Magazine mag = FindAmmoInCargo();
-    if (!mag) return;
-    mag.ServerSetAmmoCount(mag.GetAmmoCount() - 1);
-    if (mag.GetAmmoCount() <= 0) mag.Delete();
-    
-    // 2) Pick alternating muzzle (cannon_muz_1 / cannon_muz_2)
-    string muzzleName = (m_NextMuzzle == 0) ? "cannon_muz_1" : "cannon_muz_2";
-    string vectorName = (m_NextMuzzle == 0) ? "cannon_dir_1" : "cannon_dir_2";
-    m_NextMuzzle = 1 - m_NextMuzzle;
-    
-    // 3) Position + direction from named selections
-    vector mw = ModelToWorld(GetSelectionPositionMS(muzzleName));
-    vector vw = ModelToWorld(GetSelectionPositionMS(vectorName));
-    vector dirRaw = vw - mw;
-    float dirLen = dirRaw.Length();
-    if (dirLen < 0.001) return;
-    vector dir = dirRaw * (1.0 / dirLen);
-    
-    // 4) Bullet velocity inherits vehicle velocity (Galilean relativity)
-    vector vehVel = GetVelocity(this);
-    vector bulletVel = dir * SPIT_PROJECTILE_SPEED + vehVel;
-    float bulletSpeed = bulletVel.Length();
-    if (bulletSpeed < 0.1) return;
-    vector axis = bulletVel * (1.0 / bulletSpeed);
-    
-    // 5) Spawn custom-physics tracer (no gravity, no damping, autodestroy 4s)
-    EntityAI proj = EntityAI.Cast(
-        GetGame().CreateObjectEx(SPIT_PROJECTILE_CLASS, mw + axis, ECE_CREATEPHYSICS));
-    if (proj) {
-        dBodySetDamping(proj, 0, 0);
-        dBodyEnableGravity(proj, false);
-        proj.SetDirection(dir);
-        InventoryItem ii = InventoryItem.Cast(proj);
-        if (ii) ii.ThrowPhysically(null, bulletVel);
-        SetVelocity(proj, bulletVel);
-        proj.SetLifetime(4);
-    }
-    
-    // 6) Hitscan damage (raycast 1500m)
-    vector hitPos;
-    int hitComp;
-    m_HitObjects.Clear();
-    DayZPhysics.RaycastRV(mw, mw + axis * 1500, hitPos, null, hitComp, m_HitObjects, null, this, false, false, ObjIntersectFire);
-    
-    Object directHit = null;
-    if (m_HitObjects.Count() > 0) directHit = m_HitObjects.Get(0);
-    
-    if (directHit && directHit.IsInherited(EntityAI)) {
-        string zone = ResolveDamageZone(directHit, hitComp);
-        if (zone != "")
-            directHit.ProcessDirectDamage(DamageType.FIRE_ARM, this, zone, SPIT_AMMO_TYPE, hitPos, 1.0, ProcessDirectDamageFlags.ALL_TRANSFER);
-    }
-    
-    // 7) Broadcast FX to all clients
-    ImpactEffectsData ie = new ImpactEffectsData();
-    ie.m_DirectHit = directHit;
-    ie.m_ComponentIndex = hitComp;
-    ie.m_Surface = "Hit_Gravel";
-    ie.m_Position = hitPos;
-    ie.m_ImpactType = ImpactTypes.STOP;
-    ie.m_AmmoType = SPIT_AMMO_TYPE;
-    ie.m_InSpeed = bulletVel;
-    
-    m_PlayerCache.Clear();
-    GetGame().GetPlayers(m_PlayerCache);
-    foreach (Man man : m_PlayerCache)
-        GetGame().RPCSingleParam(this, SPIT_RPCclient.RPC_SYNC_SHOT_FX,
-            new Param3<Object, ImpactEffectsData, vector>(directHit, ie, mw), true, man.GetIdentity());
-}
-```
-
-**FindAmmoInCargo helper**:
-
-```cpp
-protected Magazine FindAmmoInCargo()
-{
-    m_AmmoSearchItems.Clear();
-    GetInventory().EnumerateInventory(InventoryTraversalType.INORDER, m_AmmoSearchItems);
-    foreach (EntityAI item : m_AmmoSearchItems) {
-        if (!item) continue;
-        string itemType = item.GetType();
-        for (int i = 0; i < SPIT_ALLOWED_AMMO.Count(); i++) {
-            if (itemType == SPIT_ALLOWED_AMMO[i]) {
-                Magazine mag = Magazine.Cast(item);
-                if (mag && mag.GetAmmoCount() > 0) return mag;
-            }
-        }
-    }
-    return null;
-}
-```
-
-Iterates vehicle inventory, matches against whitelist, returns first non-empty Magazine. Reused `m_AmmoSearchItems` array (`.Clear()` first) avoids allocations every shot.
-
-**Alternating muzzles for twin-gun aircraft**:
-
-`m_NextMuzzle` 0/1 toggle, selection names `cannon_muz_1` / `cannon_muz_2` + `cannon_dir_1` / `cannon_dir_2`. Each shot picks next muzzle. Real Spitfire had 8 wing-mounted Browning .303 machine guns; mod simplifies to 2 alternating cannons. Pattern works for any multi-mount weapon (chainguns, torpedo bays, missile pods).
-
-**Custom-physics tracer projectile**:
-
-```cpp
-// In CfgVehicles (config.cpp):
-class LM_Planes_Tracer: Inventory_Base
-{
-    scope = 2;
-    displayName = "Bombardment!";
-    model = "\DZ\weapons\projectiles\tracer_red.p3d";  // vanilla DayZ tracer model
-    gravityCoef    = 0;
-    linearDamping  = 0;
-    angularDamping = 0;
-    gravity        = 0;
-    airFriction    = 0;
-    weight         = 0.001;
-};
-```
-
-Plus script-side `dBodySetDamping(proj, 0, 0)` + `dBodyEnableGravity(proj, false)` + `SetLifetime(4)`. Bullet flies straight without gravity/drag for 4 seconds. Pattern for any "energy projectile" (lasers, plasma, tracers).
-
-### Helper: ResolveDamageZone (defensive damage attribution)
-
-```cpp
-protected string ResolveDamageZone(Object hitObj, int componentIdx)
-{
-    string zone = hitObj.GetDamageZoneNameByComponentIndex(componentIdx);
-    if (zone != "") return zone;
-    
-    if (hitObj.IsMan() || hitObj.IsInherited(DayZInfected))
-        return "Torso";
-    
-    if (hitObj.IsInherited(DayZCreatureAI))
-        return "Torso";
-    
-    m_DmgZoneCache.Clear();
-    hitObj.GetDamageZones(m_DmgZoneCache);
-    if (m_DmgZoneCache.Count() > 0)
-        return m_DmgZoneCache[0];
-    
-    return "";  // No damage applicable
-}
-```
-
-Chained fallback prevents crashes when damaging unknown target types. Apply this anywhere you call `ProcessDirectDamage` against arbitrary hit objects.
-
-### Camera shake on damage receipt
-
-```cpp
+```c
 DayZPlayer localPlayer = DayZPlayer.Cast(GetGame().GetPlayer());
 if (directHit && localPlayer && directHit == localPlayer)
     localPlayer.GetCurrentCamera().SpawnCameraShake(0.4);
 ```
-
-In client-side `PlayImpactFX`, shake camera when local player IS the target. Visual feedback patch for weapons in vehicles.
-
-## Vanilla pieces the pattern reuses
-
-Checked on `P:\`, so a mod can name them without shipping new assets:
-
-| Piece | Where vanilla declares it |
-|---|---|
-| Tracer model | `P:\DZ\weapons\projectiles\tracer_red.p3d` |
-| `Ammo_308Win` and `Ammo_308WinTracer` magazines | `P:\DZ\weapons\ammunition\config.cpp:100` and `:164` |
-| `RGD5Grenade_Ammo` damage profile | `P:\DZ\weapons\explosives\config.cpp:24` |
-| `Grenade_explosion_SoundSet` | `P:\DZ\sounds\hpp\config.cpp:338734` |
-| `ParticleList.GUN_IZH18` muzzle flash | `P:\scripts\3_game\particles\particlelist.c:176` |
-| `DayZPhysics.RaycastRV` | `P:\scripts\3_game\global\dayzphysics.c:199` |
-| `ProcessDirectDamage` and `ProcessDirectDamageFlags.ALL_TRANSFER` | `P:\scripts\3_game\entities\object.c:1138` and `:3` |
-| `GetDamageZoneNameByComponentIndex` and `GetDamageZones` | `P:\scripts\3_game\entities\object.c:1164` and `:1153` |
-| `ImpactEffectsData` and `ImpactTypes` | `P:\scripts\3_game\impacteffects.c:10` and `:1` |
-| `ThrowPhysically` | `P:\scripts\3_game\entities\inventoryitem.c:26` |
-| `SetLifetime` | `P:\scripts\3_game\entities\entityai.c:3377` |
-
-`ParticleList.PLANES_IMPACT` is LM_Planes's own registration, not a vanilla particle.

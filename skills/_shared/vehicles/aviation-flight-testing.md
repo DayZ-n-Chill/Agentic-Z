@@ -1,42 +1,46 @@
-# Flight testing and measurement
+# Flight testing
 
-Working rules for testing a scripted flight model in game and judging the result from logs: replay and handshake rules for a predicted aircraft, how to judge a control loop, phase gates, why a diagnostic probe may be blind to stutter, and how to score time windows across client and server logs.
+How to test a scripted flight model in game and judge it from logs: replay state and handshakes for a predicted aircraft, judging a control loop, phase checks, why a diagnostic probe can miss stutter, and how to line up client and server logs.
 
-The numbers below were measured in game on a scripted `CarScript` helicopter that predicts on the owner with the Pawn pipeline. They are not vanilla behaviour and are not yet checked on `P:\` except where a `P:\` path is cited.
+The numbers here were measured in game on a scripted `CarScript` helicopter that predicts on the owner with the Pawn classes (`aviation-networking.md`). They are not vanilla behaviour and not checked on `P:\` except where a `P:\` line is cited.
 
-## Rules from flight campaigns
+## Replay, handshakes and reconciliation
 
-- **Replay state.** List every field the solver or state machine reads during a replay and class it as restored, recomputed after the handshake, or always initialised. Never initialise gain values or derived tables only inside an `IsServer` branch.
-- **Handshakes.** Do not use a one shot handshake when it depends on crew, possession or spawn state that is still asynchronous. Retry from the client until it is acknowledged, or push from the server when the state is ready. Compare identities by a stable ID, not by instance.
-- **Reading reconciliation.** Diagnose reconciliation with aligned series. Sawteeth mean corrections followed by new divergence. Steady growth or a plateau without resets means the transform is not being corrected. Find the event that triggers convergence before changing the solver.
-- **Pulses behind a threshold.** For each pulse that fires only past a threshold, list every writer of the same variable in that window and work out whether the precondition can be reached when the pulse fires. If a continuous actuator converges the error before the pulse (here dead reckoning blending at about `0.35` per frame against a required pre-error of at least 0.5 m/s), open a coast window that suspends the actuator. A pulse that does not fire is recorded as data with its own reason and does not invalidate the whole window.
-- **Judge the loop by output, target and difference.** The shape of the control law alone proves nothing. Log per tick the raw law output, the target, the output actually applied and `out - target`; inspect the clamps after the law before touching the law. A residue equal to a tuning constant is saturation, not dynamics: here a residue of 9.0 degrees was an auto hover tilt limit of 9 degrees capping the target before the roll tracking law ran.
-- **Calibrate the pre-state gate against a real pilot.** Before adding a prohibition, read how the previous clean windows were obtained, copy their conditions literally, and do not add an axis "just in case", because that changes the physics being measured. Here a manual hover reaches 3.5 degrees or less, and 1 degree or less only after a recover; an extra forward speed ban cost a whole measurement cell.
-- **The scripted gate matches the registered one, and "settled" is read from height.** The gate in script must be byte identical to the one registered before the test. Detect "settled" by height above ground, not by velocity. Do not add a forward speed limit of 0.5 m/s when the registration asks only for roll and sideways speed. Do not use the owner's `GetVelocity()` (declared at `P:\scripts\1_core\proto\enphysics.c:104`) on the ground: there it can report the commanded velocity (measured -1.96 m/s with the helicopter still and a contact distance of 0.0003). Use a sustained, independent height above ground condition and release the collective below 1 m.
-- **The Pawn move is already the scripted pilot channel.** When the server consumes the owner's move, inject the axes between the local read and the move write inside `ObtainMove`. Keep the normal path byte identical while the override is inactive, and log entry and exit. Do not add an RPC or clock sync for data that already travels that frame.
-- **Normalise replay and clocks before judging.** Rewind and replay can emit several samples with the same tick and make flags flicker on edges: keep the first sample per tick (here 8 to 21 percent were duplicates). Client and server timestamps do not share an origin; measure the offset with pairs of the same event (`LEVEL` and `RECGATE`, `EXIT` and `EXIT`, here 31 to 34 s) and align them. Publish the authority series beside the aggregate and use it for the verdict.
-- **Phase gates are decided by the authority.** The owner's presentation is supporting evidence (this refines the height rule above). When the server has published `GROUND_READY` or `PARKED`, that state closes the landing. The owner's height above ground can bounce through interpolation over a still authority; it is a fallback and a witness, and must not reopen a confirmed phase. Record both signals over the same interval and apply the same authority review to `LEVEL` and `PRESTATE`.
+- List every field the solver or state machine reads during a replay, and mark each as restored, recomputed after the handshake, or always set up. Never set up gains or derived tables only inside an `IsServer` branch.
+- Do not use a one shot handshake that depends on crew, possession or spawn state that is still arriving. Retry from the client until it is acknowledged, or push from the server when the state is ready. Compare identities by a stable ID, not by instance.
+- Read reconciliation from aligned series. Sawteeth mean a correction followed by new drift. Steady growth, or a flat line with no resets, means the transform is not being corrected. Find what makes it converge before you change the solver.
+- For a pulse that fires only past a threshold, list every writer of the same variable in that window and check whether the threshold can still be reached when the pulse is due. If a continuous actuator closes the error first (here dead reckoning blending about `0.35` per frame against a needed error of at least 0.5 m/s), open a coast window that pauses the actuator. A pulse that does not fire is recorded with its reason and does not spoil the whole window.
 
-## A diagnostic probe is not a smoothness instrument
+## Judging a control loop
 
-Before using any existing probe to judge "smooth", "no stutter" or "no lag", and before freezing a baseline computed from it, open the probe's emission site and answer three questions.
+- The shape of the control law proves nothing alone. Log each tick the raw law output, the target, the output actually applied and `out - target`, and look at the clamps after the law before you touch the law. A leftover equal to a tuning constant is saturation, not dynamics: a 9.0 degree residue was a 9 degree hover tilt limit capping the target before the roll law ran.
+- Set the starting condition of a test from how a real pilot gets there. Read how earlier clean runs were started, copy those conditions, and add no extra limits "just in case", since that changes what is measured. A manual hover reaches 3.5 degrees or less, and 1 degree or less only after a recovery; an added ban on forward speed ruled out a whole run.
+- The check in script must match, character for character, the one written down before the test. Detect "settled" by height above ground, not speed, and do not add a 0.5 m/s forward speed limit when the plan asks only for roll and sideways speed. Do not trust the owner's `GetVelocity()` (`P:\scripts\1_core\proto\enphysics.c:104`) on the ground: it can report the commanded velocity, -1.96 m/s with the helicopter still and a contact distance of 0.0003. Use a sustained height above ground condition and release the collective below 1 m.
+- The Pawn move already carries a scripted pilot's input. When the server consumes the owner's move, inject the axes inside `ObtainMove`, between the local read and the move write. Keep the normal path unchanged while the override is off, and log entry and exit. Do not add an RPC or clock sync for data that already travels in that frame.
 
-1. **What is its emission period?** A probe written to measure a constant (an offset, a drift, a steady residual) is normally throttled to seconds. The reference state probe on the measured helicopter emitted when `refProbeNow - m_RefProbeLastPeriodicLog >= 2.0`, which is 0.5 Hz, with a cap of 10 lines per 1 s window.
-2. **What threshold makes it fire out of turn?** That probe broke its period only when the distance between the reference state and the body exceeded 6.0 m. The stutters under investigation measured 2.3 to 3.9 m, so they pass under the trigger and never fire the probe.
-3. **Can it resolve the thing being judged at all?** A jolt that lasts one frame, sampled every 2 s, is invisible by construction. The same caveat holds for a 5 Hz probe: it does not show whether a change happens in one frame or several.
+## Phases are decided by the server
 
-**The frozen baseline inherits the blindness.** The flight baseline here was computed over 70 samples in 159 s, which is exactly that throttled probe. An A/B against it is a fair comparison (same instrument on both sides) and still cannot answer "did the jolts go away", which is the product question. Both statements are true at once, and a review that picks only one of them judges wrongly.
+The owner's view supports the verdict; the server decides it. When the server has published `GROUND_READY` or `PARKED`, the landing is over. The owner's height above ground can bounce through interpolation while the server is still; use it as a fallback and a witness, and never let it reopen a confirmed phase. Log both over the same interval, and judge `LEVEL` and `PRESTATE` the same way.
 
-**Rule.** Run both streams in a measurement cell: the original probe at its original cadence, so the A/B against the frozen baseline stays valid, and a per frame continuity stream (position and angle delta and jerk per frame) that can see a one frame discontinuity. Do not make the second stream conditional on the first one's outcome: when the first is blind to the problem, its outcome cannot be the gate that allows measuring properly.
+## A diagnostic probe is not a smoothness test
 
-**Measurement mode against release mode.** Raising a probe's cadence and lowering its trigger for a measurement cell is a parameter change, not new instrumentation; a "no new instrumentation" boundary should not block it. The reverse also holds: never strip diagnostic probes from a build before the measurement campaign that reads them has closed, or the campaign silently loses its instrument.
+Before you use a probe to judge "smooth", "no stutter" or "no lag", or freeze a baseline from it, open the code that emits it and answer three questions.
 
-## Scoring an attitude window across client and server logs
+1. How often does it emit? A probe written to measure a constant (an offset, a drift) is usually throttled to seconds. The reference state probe on the test helicopter emitted when `refProbeNow - m_RefProbeLastPeriodicLog >= 2.0`, so 0.5 Hz, capped at 10 lines per second.
+2. What makes it fire early? That probe broke its period only when the reference state and the body were more than 6.0 m apart. The stutters measured 2.3 to 3.9 m, so they never triggered it.
+3. Can it see the problem at all? A one frame jolt sampled every 2 s is invisible. A 5 Hz probe cannot tell whether a change happens in one frame or several either.
 
-A parser that checks owner time windows against server events (`RECGATE`, `TDGATE`, `GND`) must move the server clock onto the client clock before scoring the band.
+A baseline built from that probe is just as blind: 70 samples over 159 s. Comparing against it is fair, since both sides use the same probe, and still cannot answer whether the jolts went away. Both are true at once.
 
-1. **Clock offset.** Measure it from pairs of the same event: `EXIT` and `EXIT`, or `LEVEL` on the client and the first `RECGATE` on the server. Here it was about 31 to 34 s. Without the offset a correct window comes out invalid, and a real violation can fall outside the band.
-2. **Remove the owner's replay samples.** An owner that predicts with the Pawn pipeline (rewind and replay) emits the probe several times per frame with the same time `t` (8 to 21 percent of the samples). On hold flanks the roll activity flag flickers across those copies and the parser reports a false "pre-state has roll active" or "reactivation at +0.001 s". Keep the first sample per tick (or within 20 ms): that one is the present, the rest are replays.
-3. **Judge on the authority first.** Prefer the authority series, which has no replays, and treat the owner series as secondary. After changing the parser, run the historical cells again and check that they do not move; here two earlier cells stayed identical.
+Run two streams in each test: the original probe at its original rate, so the comparison with the baseline stays valid, and a per frame stream of position and angle change and jerk that can see a single frame jump. Do not make the second stream depend on the first's result.
 
-A parser that scores these windows needs two things: a clock offset argument and the duplicate removal.
+Raising a probe's rate and lowering its trigger for a test is a setting change, not new code. Never strip probes from a build before the tests that read them are finished.
+
+## Lining up client and server logs
+
+A parser that checks owner time windows against server events (`RECGATE`, `TDGATE`, `GND`) needs two things before it scores anything:
+
+1. A clock offset. Client and server times do not share a zero. Measure the offset from pairs of the same event, `EXIT` on both sides or `LEVEL` on the client against the first `RECGATE` on the server; it was about 31 to 34 s. Without it a good window scores as invalid and a real fault can fall outside the band.
+2. Duplicate removal. An owner that rewinds and replays emits the probe several times per frame with the same time `t`; 8 to 21 percent of samples were copies. On the edges of a hold the roll flag flickers across the copies, and the parser reports a false "roll active before the hold" or "reactivated at +0.001 s". Keep the first sample per tick, or within 20 ms: that one is the present, the rest are replays.
+
+Score the server series first, since it has no replays, and treat the owner series as secondary. After changing the parser, run the earlier tests again and check that their results do not move.

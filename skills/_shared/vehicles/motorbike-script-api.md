@@ -1,203 +1,89 @@
-# Motorbike script API (`motorbike.c` and `motorbikescript.c`)
+# Motorbike script API
 
-The native interface (`proto native`) of `motorbike.c`, the simulation callbacks, the `motorbikescript.c` lifecycle, the net sync variables, and what a motorbike lacks compared with `carscript.c`. Short citations: `config.cpp:N` is `P:\DZ\vehicles\singletrack\config.cpp`, and a bare script file name is the file of that name under `P:\scripts\` (`motorbike_01.c` and `motorbike_02.c` are the ones in `4_world\entities\vehicles\inheritedmotorbikes\`). Line numbers match the 1.30 data on `P:\` at the time of writing; when a line has moved, Grep for the symbol.
+What the native `Motorbike` class offers script, which callbacks the simulation raises, what the `MotorbikeScript` constructor sets up and syncs, and what a motorbike lacks compared with `CarScript`. In this file `motorbike.c` is `P:\scripts\3_game\vehicles\motorbike.c`, `motorbikescript.c` is `P:\scripts\4_world\entities\vehicles\motorbikescript.c`, and `config.cpp` alone is `P:\DZ\vehicles\singletrack\config.cpp`.
 
----
+## Native methods
 
-## 1. Proto native Signatures of motorbike.c
+Every method below is `proto native` in `motorbike.c`; each pair of a getter and a setter sits three lines apart.
 
-All native functions declared in `P:\scripts\3_game\vehicles\motorbike.c`:
+| Group | Methods | Lines |
+|---|---|---|
+| Controls | `float GetSteering()`, `SetSteering(float)`; `float GetThrottle()`, `SetThrottle(float)`; `int GetClutch()`, `SetClutch(float)` | `:100`, `:103`; `:118`, `:121`; `:124`, `:127` |
+| Brakes | `float GetBrake()`, `SetBrake(float)` (rear); `float GetHandbrake()`, `SetHandbrake(float)` (front) | `:130`, `:133`; `:136`, `:139` |
+| Falling and standing | `bool CanPickUp()`, `PickUp()`; `bool IsFallen()`, `bool FallOver()`; `float GetKickstand()`, `SetKickstand(float)` | `:106`, `:109`; `:112`, `:115`; `:142`, `:145` |
+| Engine | `EngineGetRPMMin()`, `EngineGetRPMIdle()`, `EngineGetRPMMax()`, `EngineGetRPMRedline()`, `EngineGetRPM()`, `bool EngineIsOn()`, `EngineStart()`, `EngineStop()`; `vector GetEnginePos()`, `SetEnginePos(vector)` | `:148` to `:169`; `:172`, `:175` |
+| Gears | `GetCurrentGear()`, `GetGear()`, `GetNeutralGear()`, `GetGearCount()`, `ShiftUp()`, `ShiftTo(int)`, `ShiftDown()`; `CarGearboxType GearboxGetType()`, `CarAutomaticGearboxMode GearboxGetMode()` | `:178` to `:196`; `:199`, `:202` |
+| Wheels | `bool WheelIsAnyLocked()`; per wheel `WheelGetAngularVelocity`, `WheelHasContact`, `WheelGetContactPosition`, `WheelGetPositionLS`, `WheelGetContactNormal`, `WheelGetDirection`, `WheelGetSurface` (`SurfaceInfo`), `WheelGetWaterState` (`CarWheelWaterState`), `WheelGetEntity`, `WheelIsLocked`; `WheelCount()`, `WheelCountPresent()` | `:205`; `:212` to `:275`, seven lines apart; `:278`, `:281` |
+| Fluids | `GetFluidCapacity`, `GetFluidFraction`, `Leak`, `LeakAll`, `Fill`, each taking a `MotorbikeFluid` | `:288`, `:296`, `:299`, `:302`, `:305` |
+
+## Script methods and callbacks on `Motorbike`
+
+| Member | What it does | Lines in `motorbike.c` |
+|---|---|---|
+| `GetOwnerStateType()`, `GetMoveType()` | Protected events returning `MotorbikeOwnerState` and `MotorbikeMove` | `:33` to `:36`, `:39` to `:42` |
+| `float GetSpeedometer()` | Speed along the bike's forward axis, times 3.6, in km/h | `:45` to `:52` |
+| `float GetSpeedometerAbsolute()` | `Math.AbsFloat(GetSpeedometer())` | `:55` to `:58` |
+| `IsAreaAtDoorFree(...)` | Always `true`; a bike has no doors | `:60` to `:68` |
+| `bool OnBeforeEngineStart()` | Asked before the engine starts; `MotorbikeScript` requires `EMotorbikeOperationalState.OK` (`motorbikescript.c:1558` to `:1564`) | `:312` to `:316` |
+| `void OnEngineStart()` | Empty; `MotorbikeScript` updates the headlights and plays the start sound (`motorbikescript.c:1003` to `:1024`) | `:321` |
+| `void OnEngineStop()`, `OnGearChanged(int newGear, int oldGear)` | Empty hooks | `:326`, `:334` |
+| `void OnFluidChanged(MotorbikeFluid fluid, float newValue, float oldValue)` | Called on the owner when a fluid changes | `:344` |
+| `float OnSound(MotorbikeSoundCtrl ctrl, float oldValue)` | Sets the sound controllers `ENGINE`, `RPM`, `SPEED`, `PLAYER` | `:354` to `:358` |
+| `void OnStabilityStart()`, `OnStabilityStop()` | Empty hooks for when the bike regains balance and when it falls | `:363`, `:368` |
+
+## What the `MotorbikeScript` constructor sets up
+
+The constructor (`motorbikescript.c:105` to `:148`) does, in order:
+
+1. `SetEventMask(EntityEvent.POSTSIMULATE|EntityEvent.POSTFRAME)` (`:111`).
+2. Creates `m_LightsComponent` and registers the selections `FrontOn`, `FrontOff`, `BrakeOn`, `BrakeOff`, `TailOn`, `TailOff`, `DashboardOn` and `DashboardOff` (`:113` to `:122`), then the lights `Front` with `VehicleLightProfileFront` and `Rear` with `VehicleLightProfileRear` (`:124`, `:125`).
+3. Creates `m_HornComponent` in mode `OFF` (`:127`).
+4. Calls `InitializeParticles()` (`:139`; the effects are registered at `:174` to `:205`).
+5. Puts the kickstand down with `SetKickstand(1)` (`:141`).
+6. Registers the synced variables (`:143` to `:147`):
 
 ```c
-// P:\scripts\3_game\vehicles\motorbike.c:100
-proto native float GetSteering();
-// P:\scripts\3_game\vehicles\motorbike.c:103
-proto native void SetSteering(float value);
-
-// P:\scripts\3_game\vehicles\motorbike.c:106
-proto native bool CanPickUp();
-// P:\scripts\3_game\vehicles\motorbike.c:109
-proto native void PickUp();
-
-// P:\scripts\3_game\vehicles\motorbike.c:112
-proto native bool IsFallen();
-// P:\scripts\3_game\vehicles\motorbike.c:115
-proto native bool FallOver();
-
-// P:\scripts\3_game\vehicles\motorbike.c:118
-proto native float GetThrottle();
-// P:\scripts\3_game\vehicles\motorbike.c:121
-proto native void SetThrottle(float value);
-
-// P:\scripts\3_game\vehicles\motorbike.c:124
-proto native int GetClutch();
-// P:\scripts\3_game\vehicles\motorbike.c:127
-proto native void SetClutch(float value);
-
-// P:\scripts\3_game\vehicles\motorbike.c:130
-proto native float GetBrake();
-// P:\scripts\3_game\vehicles\motorbike.c:133
-proto native void SetBrake(float value);
-
-// P:\scripts\3_game\vehicles\motorbike.c:136
-proto native float GetHandbrake();
-// P:\scripts\3_game\vehicles\motorbike.c:139
-proto native void SetHandbrake(float value);
-
-// P:\scripts\3_game\vehicles\motorbike.c:142
-proto native float GetKickstand();
-// P:\scripts\3_game\vehicles\motorbike.c:145
-proto native void SetKickstand(float value);
-
-// P:\scripts\3_game\vehicles\motorbike.c:148
-proto native float EngineGetRPMMin();
-// P:\scripts\3_game\vehicles\motorbike.c:151
-proto native float EngineGetRPMIdle();
-// P:\scripts\3_game\vehicles\motorbike.c:154
-proto native float EngineGetRPMMax();
-// P:\scripts\3_game\vehicles\motorbike.c:157
-proto native float EngineGetRPMRedline();
-// P:\scripts\3_game\vehicles\motorbike.c:160
-proto native float EngineGetRPM();
-// P:\scripts\3_game\vehicles\motorbike.c:163
-proto native bool EngineIsOn();
-// P:\scripts\3_game\vehicles\motorbike.c:166
-proto native void EngineStart();
-// P:\scripts\3_game\vehicles\motorbike.c:169
-proto native void EngineStop();
-
-// P:\scripts\3_game\vehicles\motorbike.c:172
-proto native vector GetEnginePos();
-// P:\scripts\3_game\vehicles\motorbike.c:175
-proto native void SetEnginePos(vector pos);
-
-// P:\scripts\3_game\vehicles\motorbike.c:178
-proto native int GetCurrentGear();
-// P:\scripts\3_game\vehicles\motorbike.c:181
-proto native int GetGear();
-// P:\scripts\3_game\vehicles\motorbike.c:184
-proto native int GetNeutralGear();
-// P:\scripts\3_game\vehicles\motorbike.c:187
-proto native int GetGearCount();
-// P:\scripts\3_game\vehicles\motorbike.c:190
-proto native void ShiftUp();
-// P:\scripts\3_game\vehicles\motorbike.c:193
-proto native void ShiftTo(int gear);
-// P:\scripts\3_game\vehicles\motorbike.c:196
-proto native void ShiftDown();
-
-// P:\scripts\3_game\vehicles\motorbike.c:199
-proto native CarGearboxType GearboxGetType();
-// P:\scripts\3_game\vehicles\motorbike.c:202
-proto native CarAutomaticGearboxMode GearboxGetMode();
-
-// P:\scripts\3_game\vehicles\motorbike.c:205
-proto native bool WheelIsAnyLocked();
-// P:\scripts\3_game\vehicles\motorbike.c:212
-proto native float WheelGetAngularVelocity(int wheelIdx);
-// P:\scripts\3_game\vehicles\motorbike.c:219
-proto native bool WheelHasContact(int wheelIdx);
-// P:\scripts\3_game\vehicles\motorbike.c:226
-proto native vector WheelGetContactPosition(int wheelIdx);
-// P:\scripts\3_game\vehicles\motorbike.c:233
-proto native vector WheelGetPositionLS(int wheelIdx);
-// P:\scripts\3_game\vehicles\motorbike.c:240
-proto native vector WheelGetContactNormal(int wheelIdx);
-// P:\scripts\3_game\vehicles\motorbike.c:247
-proto native vector WheelGetDirection(int wheelIdx);
-// P:\scripts\3_game\vehicles\motorbike.c:254
-proto native SurfaceInfo WheelGetSurface(int wheelIdx);
-// P:\scripts\3_game\vehicles\motorbike.c:261
-proto native CarWheelWaterState WheelGetWaterState(int wheelIdx);
-// P:\scripts\3_game\vehicles\motorbike.c:268
-proto native EntityAI WheelGetEntity(int wheelIdx);
-// P:\scripts\3_game\vehicles\motorbike.c:275
-proto native bool WheelIsLocked(int wheelIdx);
-// P:\scripts\3_game\vehicles\motorbike.c:278
-proto native int WheelCount();
-// P:\scripts\3_game\vehicles\motorbike.c:281
-proto native int WheelCountPresent();
-
-// P:\scripts\3_game\vehicles\motorbike.c:288
-proto native float GetFluidCapacity(MotorbikeFluid fluid);
-// P:\scripts\3_game\vehicles\motorbike.c:296
-proto native float GetFluidFraction(MotorbikeFluid fluid);
-// P:\scripts\3_game\vehicles\motorbike.c:299
-proto native void Leak(MotorbikeFluid fluid, float amount);
-// P:\scripts\3_game\vehicles\motorbike.c:302
-proto native void LeakAll(MotorbikeFluid fluid);
-// P:\scripts\3_game\vehicles\motorbike.c:305
-proto native void Fill(MotorbikeFluid fluid, float amount);
+RegisterNetSyncVariableBool("m_BrakesArePressed");
+RegisterNetSyncVariableBoolSignal("m_PlayCrashSoundLight");
+RegisterNetSyncVariableBoolSignal("m_PlayCrashSoundHeavy");
+RegisterNetSyncVariableInt("m_HornComponent.m_Mode", VehicleHornMode.OFF, VehicleHornMode.COUNT);
 ```
 
----
+When the economy creates a bike, `EEOnCECreate` fills a random amount of fuel up to 35 percent of capacity (`motorbikescript.c:440` to `:447`):
 
-## 2. Engine-Script Events and Callbacks in motorbike.c
+```c
+float maxVolume = GetFluidCapacity( MotorbikeFluid.FUEL );
+float amount = Math.RandomFloat(0.0, maxVolume * 0.35 );
+Fill( MotorbikeFluid.FUEL, amount );
+```
 
-- `protected override event typename GetOwnerStateType()` (`motorbike.c:33-36`): Returns `MotorbikeOwnerState`.
-- `protected override event typename GetMoveType()` (`motorbike.c:39-42`): Returns `MotorbikeMove`.
-- `float GetSpeedometer()` (`motorbike.c:45-52`): Returns longitudinal speed by multiplying projection by 3.6 (km/h).
-- `float GetSpeedometerAbsolute()` (`motorbike.c:55-58`): `Math.AbsFloat(GetSpeedometer())`.
-- `override bool IsAreaAtDoorFree(...)` (`motorbike.c:60-68`): Unconditionally returns `true` (motorbikes have no doors).
-- `bool OnBeforeEngineStart()` (`motorbike.c:312-316`): Callback evaluated before allowing engine start. `motorbikescript.c:1558-1564` checks that operational state is `EMotorbikeOperationalState.OK`.
-- `void OnEngineStart()` (`motorbike.c:321`, empty): invoked upon starting. The override in `motorbikescript.c:1003-1024` updates headlights and plays `START_OK`.
-- `void OnEngineStop()` (`motorbike.c:326`): Invoked upon engine stopping.
-- `void OnGearChanged(int newGear, int oldGear)` (`motorbike.c:334`): Invoked upon changing gear.
-- `void OnFluidChanged(MotorbikeFluid fluid, float newValue, float oldValue)` (`motorbike.c:344`): Invoked on the owner upon fluid changes.
-- `float OnSound(MotorbikeSoundCtrl ctrl, float oldValue)` (`motorbike.c:354-358`): Modulates sound controllers (`ENGINE`, `RPM`, `SPEED`, `PLAYER`).
-- `void OnStabilityStart()` (`motorbike.c:363`): Invoked when the motorbike regains balance.
-- `void OnStabilityStop()` (`motorbike.c:368`): Invoked when the motorbike falls to the ground.
+`motorbikescript.c` has no `OnStoreSave` or `OnStoreLoad` of its own, so saving is left to `Transport` and `EntityAI`.
 
----
+## Constants
 
-## 3. Lifecycle and Synchronization in motorbikescript.c
+In `P:\scripts\3_game\constants.c`:
 
-### Constructor (`motorbikescript.c:105-148`)
-1. Activates event mask: `SetEventMask(EntityEvent.POSTSIMULATE | EntityEvent.POSTFRAME);` (`motorbikescript.c:111`).
-2. Instantiates `m_LightsComponent = VehicleLightsComponent(this);` and registers selections:
-   - `"FrontOn"`, `"FrontOff"`, `"BrakeOn"`, `"BrakeOff"`, `"TailOn"`, `"TailOff"`, `"DashboardOn"`, `"DashboardOff"`.
-   - Registers base profiles: `VehicleLightProfileFront` and `VehicleLightProfileRear`.
-3. Instantiates `m_HornComponent = VehicleHornComponent(this);` in `OFF` mode.
-4. Initializes particles via `InitializeParticles()` (`motorbikescript.c:174-205`).
-5. Deploys kickstand: `SetKickstand(1);` (`motorbikescript.c:141`).
-6. Registers network synchronization:
-   ```c
-   RegisterNetSyncVariableBool("m_BrakesArePressed");
-   RegisterNetSyncVariableBoolSignal("m_PlayCrashSoundLight");
-   RegisterNetSyncVariableBoolSignal("m_PlayCrashSoundHeavy");
-   RegisterNetSyncVariableInt("m_HornComponent.m_Mode", VehicleHornMode.OFF, VehicleHornMode.COUNT);
-   ```
-
-### Central Economy and Persistence
-- `override void EEOnCECreate()` (`motorbikescript.c:440-447`): Assigns random initial fuel between 0.0 and 35% of capacity:
-  `float maxVolume = GetFluidCapacity( MotorbikeFluid.FUEL );`, `float amount = Math.RandomFloat(0.0, maxVolume * 0.35 );` and `Fill( MotorbikeFluid.FUEL, amount );` (`motorbikescript.c:443-446`).
-- **Persistence (`OnStoreSave`/`OnStoreLoad`)**: `motorbikescript.c` does not implement these methods; it has no `OnStoreSave` or `OnStoreLoad` of its own (0 occurrences in the file), so saving is left to `Transport` and `EntityAI`.
-
----
-
-## 4. Relevant Global Constants (`constants.c`)
-
-Located in `P:\scripts\3_game\constants.c`:
-- `ENVIRO_HEATCOMFORT_MOTORBIKE_SPEED_MIN = 20.0;` (`constants.c:792`)
-- `ENVIRO_HEATCOMFORT_MOTORBIKE_SPEED_MAX = 100.0;` (`constants.c:793`)
-- `ENVIRO_HEATCOMFORT_MOTORBIKE_TARGET_MAX = 0.8;` (`constants.c:794`)
-- `MOTORBIKES_CONTACT_DMG_THRESHOLD_SMALL = 25.0;` (`constants.c:898`)
-- `MOTORBIKES_CONTACT_DMG_THRESHOLD_MID = 40.0;` (`constants.c:899`)
-- `MOTORBIKES_CONTACT_DMG_MIN = 10.0;` (`constants.c:900`)
-- `MOTORBIKES_CONTACT_DMG_KILLCREW = 80.0;` (`constants.c:901`)
-
----
-
-## 5. What does not exist in motorbikes compared with CarScript
-
-| Car Subsystem | Status in Motorbike (`MotorbikeScript`) | Alternative or Behavior |
+| Constant | Value | Line |
 |---|---|---|
-| `class Axles` | **Nonexistent** | Flat `class Wheels { class Front; class Rear; }` |
-| Doors (`CarDoor`) | **Nonexistent** | No doors; `IsAreaAtDoorFree` always returns `true` (`motorbike.c:60-68`) |
-| Radiator / Coolant circuit | **Nonexistent / Non-vital** | `IsVitalRadiator()` returns `false` (`motorbikescript.c:321-324`). No temperature gauge in HUD (`motorbikehud.c:191-194`) |
-| Oil / Brake fluid circuit | Declared in config, unused in script | `MotorbikeScript` declares capacities (`config.cpp:30-33`), but `motorbikescript.c` only uses `MotorbikeFluid.FUEL` |
-| Battery mandatory for ignition | **Depends on override** | `Transport.NeedElectricitySourceDevice()` returns `true` (`transport.c:821-824`) and `MotorbikeScript` does not change it; `Motorbike_01`/`_02` override it to `false` (`motorbike_01.c:33-36`, `motorbike_02.c:34-37`). A bike inheriting from `MotorbikeScript` must override it |
-| Door actions (`ActionOpenCarDoors`) | **Nonexistent** | In `Motorbike_01` flip-up seat `SeatDriver` exists |
-| Parking handbrake | **Nonexistent** | Handbrake channel actuates front brake (`SetHandbrake`, `motorbike.c:135-139`; `Brakes.Front.input = 1`, `config.cpp:292`); handbrake indicator light is hidden in HUD (`motorbikehud.c:196`) |
-| Symmetrical 4-wheel steering | **Nonexistent** | Simulation with dynamic lean (`maxLeanAngle[]`) and `tipoverAngle` |
-| Dismount in gear without stalling | **Nonexistent** | If driver exits in gear, engine stops (`OnDriverExit` → `EngineStop()`, `motorbikescript.c:217-222`) |
+| `ENVIRO_HEATCOMFORT_MOTORBIKE_SPEED_MIN` | `20.0` | `:792` |
+| `ENVIRO_HEATCOMFORT_MOTORBIKE_SPEED_MAX` | `100.0` | `:793` |
+| `ENVIRO_HEATCOMFORT_MOTORBIKE_TARGET_MAX` | `0.8` | `:794` |
+| `MOTORBIKES_CONTACT_DMG_THRESHOLD_SMALL` | `25.0` | `:898` |
+| `MOTORBIKES_CONTACT_DMG_THRESHOLD_MID` | `40.0` | `:899` |
+| `MOTORBIKES_CONTACT_DMG_MIN` | `10.0` | `:900` |
+| `MOTORBIKES_CONTACT_DMG_KILLCREW` | `80.0` | `:901` |
+
+What the contact constants do is in `motorbike-invariants.md`.
+
+## What a motorbike lacks compared with `CarScript`
+
+| Car part | On a motorbike | Source |
+|---|---|---|
+| `class Axles` | None; `class Wheels` holds `Front` and `Rear` directly | `config.cpp:73` to `:91` |
+| Doors (`CarDoor`) and door actions | None; `IsAreaAtDoorFree` is always `true`. `Motorbike_01` has a flip-up seat, `SeatDriver`, instead | `motorbike.c:60` to `:68` |
+| Radiator and coolant | Not vital: `IsVitalRadiator()` returns `false`, and the HUD hides the temperature gauge, `m_VehicleTemperatureIndicator` | `motorbikescript.c:321` to `:324`; `P:\scripts\5_mission\gui\vehicles\motorbikehud.c:165` to `:194` |
+| Oil and brake fluid | Capacities declared in config, but the script uses only `MotorbikeFluid.FUEL` | `config.cpp:30` to `:33` |
+| Battery for ignition | `Transport.NeedElectricitySourceDevice()` returns `true` and `MotorbikeScript` keeps it; both vanilla bikes return `false`. A bike on `MotorbikeScript` must override it | `P:\scripts\3_game\vehicles\transport.c:821` to `:824`; `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:33` to `:36`, `motorbike_02.c:34` to `:37` |
+| Parking brake | None; the handbrake channel is the front brake, and the HUD hides the handbrake light | `motorbike.c:136` to `:139`; `config.cpp:292`; `motorbikehud.c:196` |
+| Four-wheel steering | Lean (`maxLeanAngle[]`) and `tipoverAngle` in the native simulation | `config.cpp:266` to `:278` |
+| Leaving in gear | The engine stops when the driver gets off in gear (`OnDriverExit` calls `EngineStop()`) | `motorbikescript.c:217` to `:222` |

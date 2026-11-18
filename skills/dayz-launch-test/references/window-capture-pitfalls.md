@@ -1,0 +1,26 @@
+# Window capture pitfalls
+
+How grabbing the client window from outside the game misleads: brightness and exposure that differ from diag, a hidden window, a grab that misses UI changes, and runs that never load their textures while their logs look normal.
+
+Measured on retail and diag servers and clients with a camera bridge and one window grab per camera position, and on a motorbike import with a dedicated server and a windowed client on one PC, grabbed with Windows Graphics Capture at 3841x2160, one JPEG a second (ffmpeg `-q:v 3`). None of it is vanilla script, so none is checked on `P:\`. How dayz-mcp's `capture_screenshot` behaves is in `mcp/captures.md`.
+
+## Retail capture
+
+- Brightness band. The retail world draws brighter (about 109 to 126) than the diag band of 48 to 86, so an "in world and ready" check by brightness gives a false negative on retail and captures only after its timeout. Use a retail band (for example 110 to 175), or judge by content.
+- Glint. In direct sun (clear weather) some weapons and materials burn to white and hide the hand or the detail. `overcast=1.0` gives diffuse light and removes it.
+- Exposure drift. In long runs the exposure drifts between the first capture and the last, even with a frozen scene. Capture all variants quickly, in one short cycle, for even exposure.
+- Wrong labels in multi-config cycles. If the "ready" timeout per configuration is longer than the period at which the mission switches configuration, the capture falls into the next one and the labels are wrong. Keep the timeout shorter than the period, and start the cycle only after boot.
+- RPT error filter. Do not include `"Can't load"` in the failure pattern: it matches the harmless `Can't load @Mod/Anims/cfg/skeletons.anim.xml` warning that every mod produces. Look for real errors (`Unknown type`, `Cannot create`, `compile mission`) and leave out `skeletons.anim.xml`.
+- The DayZDiag client window hides itself. The process is alive and responding, but the window turns `visible=False`, `Get-Process().MainWindowHandle` returns 0, and any script that depends on it fails with "bad window rect 0 x 0". The window still exists: find it with `EnumWindows` filtered by process id and skip the server window by its title (`*Console*`).
+- `PrintWindow` with `PW_RENDERFULLCONTENT` is doubtful for the UI layer. It refreshes the 3D scene, but over 49 frames the HUD region changed by exactly 0.00 while the user saw the element change on screen. An exact zero in a compressed JPEG is the same pixel, not "almost equal": suspect the instrument. Measure animated UI with the user's eye and keep `PrintWindow` for static composition. dayz-mcp's `capture_screenshot` is no replacement, because it is the same kind of host window grab, not a bridge command.
+
+## Runs that never load their textures
+
+Some runs draw the scene flat for most or all of the run: terrain, sky and vegetation as plain blocks, the mod's own model too, sometimes with part of it arriving late. Lighting and shadows still draw and the run ends normally. On DayZDiag 1.30 this hit 7 of 19 runs over two days. The next run with the same server and client command line came back textured after 5 of the 7 flat runs (once three flat runs came in a row), and two textured runs opened with 4 and 11 s of flat frames. Flat clients were also seen on an earlier 1.30 build, in part, and on 1.29 (`skills/_shared/wearables/references/body-rigging.md`).
+
+No error flags it: the client RPT and script log hold as many error lines as a textured run's. In all 24 captured runs of that probe on Chernarus, though, every textured run's client RPT had three warnings and no flat run's had all three: `MatMulti` on `atcbig_multi_5metal_plates_old_co.paa`, and `No components in` on `cl_rock1.p3d` and on `muzzle_flash_pistol_fnp.p3d`. Two mostly flat runs had one or two of them; other maps were not checked. This warning set is specific to that probe.
+
+The cause is unknown. Window focus was not recorded, so it is not ruled out (`test-cell-evidence.md`, "An unfocused client runs at about 20 fps"). One observation points at it, not reproduced: a client started by the managed launcher stayed flat for about 3 minutes and loaded its textures as soon as the user clicked into its window, and the managed tools do not give that window focus. Until focus is ruled out, log the foreground window, or have a person click the client window, before you judge frames.
+
+- Judge the run by its median JPEG size, not by one frame: 0.36 to 0.45 MB for the 7 flat runs against 1.46 to 1.61 MB for the 13 textured runs whose view filled the window (MB here is 10^6 bytes). Runs drawn in about 72 % of the window's width and height read lower, a textured one 0.63 MB, so compare runs with the same framing. Single frames overlap (night, late textures).
+- For anything judged on its frames, such a run is `SETUP_FAIL` (`test-cell-evidence.md`, "What makes a run valid"): relaunch. Do not tune a material, LOD or closure on it, and do not fail a model for missing textures while the vanilla terrain and sky in the frame are flat too (`mcp/captures.md`). Its script-side readings still count; two of the eye readings in `vehicle-first-person-eye.md` come from flat runs.

@@ -76,7 +76,7 @@ Since 1.30 a map building (`BuildingBase`) can carry a construction component to
 | Written by | the class's own `OnStoreSave`, after `super` | `SerializeConstructionData`: `REBUILDING_STORAGE_VERSION`, then the ten ints (`rebuilding.c:501` to `:514`), through the `EntityAI` construction block at the start of the stream |
 | Own version | none; gated on the game's storage version | `REBUILDING_STORAGE_VERSION = 1` (`rebuilding.c:3`) |
 
-Do not write the ten int block from a `BaseBuildingBase` subclass, and do not apply the 93 part cap to a rebuildable building. On the `P:\` build only script classes for rebuildable houses were found (`Land_House_1M1` at `P:\scripts\4_world\entities\building\rebuildable\house_1m1.c:1`); their configs are not in the unpacked `P:\DZ` data, so the config side is not checked here. The keys such a building's `Construction` class reads are listed in `base-building-1-30.md`.
+Do not write the ten int block from a `BaseBuildingBase` subclass, and do not apply the 93 part cap to a rebuildable building. On the `P:\` build only script classes for rebuildable houses were found (`Land_House_1M1` at `P:\scripts\4_world\entities\building\rebuildable\house_1m1.c:1`); their configs are not in the unpacked `P:\DZ` data, so the config side is not checked here. The keys such a building's `Construction` class reads are listed in `base-building-rebuildable.md`.
 
 ## Territory flag
 
@@ -101,4 +101,4 @@ Base decay and base damage can be turned off by the server owner. `CfgGameplayHa
 
 ## Where the deep material is
 
-The rest is in the `base-building-*.md` files of this pack: the classes, the kit to base flow and quick triage (`base-building-structures.md`), every `Construction` config field with its reader (`base-building-config.md`), the call chain from kit to saved base (`base-building-lifecycle.md`), the Fence as a worked example (`base-building-fence-gate.md`), the hand-off checklist before a save change ships (`base-building-save-checklist.md`), the 1.30 changes with the vanilla code (`base-building-1-30.md`) and placement, materials and hologram traps (`base-building-placement.md`).
+The rest is in the `base-building-*.md` files of this pack: the classes, the kit to base flow and quick triage (`base-building-structures.md`), every `Construction` config field with its reader (`base-building-config.md`), the call chain from kit to saved base (`base-building-lifecycle.md`), the Fence as a worked example (`base-building-fence-gate.md`), the hand-off checklist before a save change ships (`base-building-save-checklist.md`), the 1.30 changes for player built objects (`base-building-1-30.md`), rebuildable map buildings (`base-building-rebuildable.md`) and placement, materials and hologram traps (`base-building-placement.md`).

@@ -100,7 +100,7 @@ Only the changed key is written; the simulation, crew and damage zones come from
 
 ## A config parent is not a script parent
 
-When the config says `class X: OffroadHatchback` but the script says `class X extends MyBase` with `MyBase extends CarScript`, none of the script overrides of `OffroadHatchback` reach `X`: they live in `inheritedcars\offroadhatchback.c`, which `X` never inherits. Every hostile default listed under "Overrides a new vehicle must implement" then applies again, plus `IsVitalGlowPlug` (see `fluids-and-engine.md`). Diff your class method by method against the parent car's script file and repeat every override. Field notes: invariant 20 in `invariants-get-in-and-seats.md`.
+When the config says `class X: OffroadHatchback` but the script says `class X extends MyBase` with `MyBase extends CarScript`, none of the script overrides of `OffroadHatchback` reach `X`: they live in `inheritedcars\offroadhatchback.c`, which `X` never inherits. Every hostile default listed under "Overrides a new vehicle must implement" then applies again, plus `IsVitalGlowPlug` (see `fluids-and-engine.md`). Diff your class method by method against the parent car's script file and repeat every override. Field notes: `invariants-get-in-and-seats.md`, section "A config parent does not bring its script".
 
 ## What DayZ 1.30 changed in the tree and in `CarScript`
 
@@ -127,4 +127,4 @@ Opened on this repo's `P:\`, which is a 1.30 build. The port blockers in detail,
 - `ToggleHeadlights` is gone from `P:\scripts\4_world\entities\vehicles\carscript.c` with no `[Obsolete]` stub, so a mod class that still declares `override void ToggleHeadlights()` stops the `4_World` compile.
 - Contact data is `VehicleContactData` with `m_Impulse` (`P:\scripts\3_game\vehicles\transport.c:1144-1148`), read in `CheckContactCache` as `data[0].m_Impulse` (`P:\scripts\4_world\entities\vehicles\carscript.c:1291`).
 
-The other 1.30 changes are in `dayz-1-30-vehicles.md`: `NO_BATTERY` and the electricity source methods, the `_Ruined` wheel twin and the tyre fields, the horn actions, `GetWeightCoef`, `HasGangedTailAndBrakeLights`, the `UAToggleVehicleLights` key, the get-in condition and the script module path in `CfgMods`.
+The other 1.30 changes are in `dayz-1-30-vehicles.md` and the three files it indexes (`dayz-1-30-lights-and-battery.md`, `dayz-1-30-get-in-and-boats.md`, `dayz-1-30-wheels.md`): `NO_BATTERY` and the electricity source methods, the `_Ruined` wheel twin and the tyre fields, the horn actions, `GetWeightCoef`, `HasGangedTailAndBrakeLights`, the `UAToggleVehicleLights` key, the get-in condition and the script module path in `CfgMods`.

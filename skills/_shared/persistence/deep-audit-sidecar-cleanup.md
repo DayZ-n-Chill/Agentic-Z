@@ -1,80 +1,73 @@
-# Sidecar cleanup symmetry: mechanical check 2
+# Cleanup of marker and side files
 
-Catches the bug class where a writer creates a sidecar or marker file and the matching cleanup site fails to remove it. The file stays, later boots misread the container's state, and recovery silently misroutes. Open this in step 1 for any mod that writes marker or sidecar files next to its save files.
+Covers mechanical check 2 of the deep audit (`deep-audit.md`): code writes a marker or side file next to a save file, and the matching cleanup does not remove it. The file stays, a later boot misreads the container's state, and recovery takes the wrong branch without a word. Run it for any mod that writes such files.
 
-Reasoning agents miss this because each writer looks correct in isolation: the bug is the missing entry on the deleter side, which is a different file.
+Each writer looks right on its own; the bug is a missing line in the cleanup code, which sits in another file. The function names, suffixes and `file:line` values in the tables come from a third-party virtual storage mod. They show the shape of each table and are not vanilla facts. The search lines are patterns for the agent's own search tool.
 
-The function names, suffixes and `file:line` values in the tables are from the virtual storage example (third-party mod); they show the shape of each table and are not vanilla facts. The search lines in the code blocks are recipes for the agent's search tool.
+## Example: a marker that outlived an admin reset
 
-## Worked example: VULN-008 (virtual storage mod)
+In the virtual storage mod `StartRestore` wrote `.restoring` and `WriteManifest` wrote `.manifest.json`. Both writers were right. `DeleteContainerFiles(sid)` removed `.lfv`, `.lfv.bak1`, `.lfv.bak2`, `.tmp`, `.virtualizing` and `.quarantine.json`, but not `.restoring` or `.manifest.json`. After an admin reset of a container that was being restored, the marker stayed. At the next boot recovery found a `.restoring` with no `.lfv`, took the container for one that crashed during a restore, and blocked the slot.
 
-`StartRestore` wrote `.restoring`. `WriteManifest` wrote `.manifest.json`. Both writers were correct. `DeleteContainerFiles(sid)` removed `.lfv`, `.lfv.bak1`, `.lfv.bak2`, `.tmp`, `.virtualizing` and `.quarantine.json`, but not `.restoring` and not `.manifest.json`. After an admin reset of a container in the middle of a restore, the marker survived. On the next boot, recovery saw a `.restoring` with no `.lfv` and treated the container as crashed during restore, blocking the slot.
+## List every writer
 
-## Procedure
-
-### Step 1: inventory every sidecar and marker writer
-
-Search for every site that writes a recognized sidecar or marker extension:
+Find every place that writes a file or a known marker:
 
 ```text
-Grep "FileWrite|FileSave|JsonFileLoader\.SaveFile|JsonSaveFile|MakeDirectory" --type c --output_mode content -n true
+Grep "FileWrite|FileSave|JsonFileLoader\.SaveFile|JsonSaveFile|MakeDirectory|OpenFile|FPrint|CopyFile|FileSerializer" --type c --output_mode content -n true
 Grep "\.virtualizing|\.restoring|\.manifest\.json|\.quarantine\.json|\.partial|\.locked" --type c --output_mode content -n true
 ```
 
-`FileWrite` and `FileSave` are names a mod may give its own wrappers; a search of `P:\scripts\1_core` and `P:\scripts\3_game` finds neither. The vanilla calls that put a file on disk are `OpenFile` with a write mode (`P:\scripts\1_core\proto\ensystem.c:417`) followed by `FPrint` or `FPrintln` (`ensystem.c:462`, `ensystem.c:481`), `CopyFile` (`ensystem.c:531`), `MakeDirectory` (`ensystem.c:525`), the `JsonFileLoader` calls `SaveFile` (`P:\scripts\3_game\tools\jsonfileloader.c:42`) and `JsonSaveFile` (`jsonfileloader.c:134`), and a `FileSerializer` (`P:\scripts\1_core\proto\serializer.c:103`). Add `OpenFile|FPrint|CopyFile|FileSerializer` to the first pattern so a writer that calls them directly is not missed.
+`FileWrite` and `FileSave` are names a mod may give its own wrappers; neither exists in `P:\scripts\1_core` or `P:\scripts\3_game`. The vanilla calls that put a file on disk are:
 
-Build the table:
+| Call | Source |
+|---|---|
+| `OpenFile` with a write mode, then `FPrint` or `FPrintln` | `P:\scripts\1_core\proto\ensystem.c:417`, `:462`, `:481` |
+| `CopyFile`, `MakeDirectory` | `ensystem.c:531`, `:525` |
+| `JsonFileLoader` `SaveFile` and `JsonSaveFile` | `P:\scripts\3_game\tools\jsonfileloader.c:42` and `:134` |
+| A `FileSerializer` | `P:\scripts\1_core\proto\serializer.c:103` |
 
-| Sidecar | Writer site | File:Line | Lifecycle owner |
+| File | Written by | File:Line | Lives as long as |
 |---|---|---|---|
-| `.virtualizing` | `Virtualize_BeginBatch` | persistence.c:340 | virtualize state |
-| `.restoring` | `StartRestore` | restore.c:88 | restore state |
-| `.manifest.json` | `WriteManifest` | manifest.c:42 | per container |
-| `.quarantine.json` | `WriteQuarantineSidecar` | quarantine.c:66 | per failure |
+| `.virtualizing` | `Virtualize_BeginBatch` | persistence.c:340 | the virtualize state |
+| `.restoring` | `StartRestore` | restore.c:88 | the restore state |
+| `.manifest.json` | `WriteManifest` | manifest.c:42 | the container |
+| `.quarantine.json` | `WriteQuarantineSidecar` | quarantine.c:66 | the failure |
 
-### Step 2: inventory every consumer site
+## Three places each file must be removed
 
-For each sidecar, three obligations exist downstream:
+Every file in the writer table must be handled in three places:
 
-1. **Successful completion path**: the success branch must remove or rotate the marker.
-2. **`DeleteContainerFiles(sid)` (or the equivalent reset)**: an admin reset or a purge of the `.lfv` must remove the sidecar.
-3. **Boot orphan cleanup**: the first-boot scan that handles "marker exists, owner state unknown".
+1. The success path removes or rotates it.
+2. The reset (`DeleteContainerFiles(sid)` or its equivalent), run by an admin or a purge of the `.lfv`, removes it.
+3. The scan at boot handles it when the file exists and its owner's state is unknown.
 
-For each row in the writer table, walk these three:
+Find the deletes:
 
 ```text
 Grep "DeleteFile|RemoveFile" --type c --output_mode content -n true
 ```
 
-The vanilla delete is `DeleteFile` (`P:\scripts\1_core\proto\ensystem.c:528`); `RemoveFile` is in the pattern only to catch a mod's own wrapper.
+The vanilla delete is `DeleteFile` (`P:\scripts\1_core\proto\ensystem.c:528`); `RemoveFile` is in the pattern only to catch a mod's own wrapper. Find the success path delete and the reset, and confirm the boot scan in the recovery code lists this file.
 
-Find the success-path delete and `DeleteContainerFiles` (or your project's equivalent). Confirm that the boot scan in the recovery module enumerates this sidecar.
-
-### Step 3: cross table
-
-| Sidecar | Success-path delete? | DeleteContainerFiles? | Boot orphan scan? |
+| File | Success path deletes it | Reset deletes it | Boot scan handles it |
 |---|---|---|---|
 | `.virtualizing` | yes (persistence.c:412) | yes (cleanup.c:55) | yes (recovery.c:140) |
-| `.restoring` | yes (restore.c:188) | **no: VULN-008** | yes (recovery.c:155) |
-| `.manifest.json` | n/a (overwritten in place) | **no: VULN-008** | n/a |
-| `.quarantine.json` | n/a (admin only) | yes (cleanup.c:60) | yes (recovery.c:170) |
+| `.restoring` | yes (restore.c:188) | no, the defect | yes (recovery.c:155) |
+| `.manifest.json` | not applicable, rewritten in place | no, the defect | not applicable |
+| `.quarantine.json` | not applicable, admin only | yes (cleanup.c:60) | yes (recovery.c:170) |
 
-Any "no" in any column is a finding. Severity:
+Every "no" is a finding:
 
-- Boot scan missing: P0 (orphans accumulate forever, slot wedged)
-- `DeleteContainerFiles` missing: P0 or P1 (an admin reset leaves stale state)
-- Success-path delete missing: P1 (the next operation sees a stale marker)
+- Boot scan missing: data loss, because orphans pile up and the slot stays blocked.
+- Reset missing: data loss or needs recovery, because an admin reset leaves stale state.
+- Success path delete missing: needs recovery, because the next operation sees a stale marker.
 
-### Step 4: the "n/a" trap
+"Not applicable" in the success column does not carry over to the reset column. A manifest rewritten in place needs no delete on success, but a purged container must not leave a `.manifest.json` that points at nothing.
 
-`.manifest.json` shows `n/a` for the success-path delete because manifests are overwritten in place. That is fine for the success path, but the `DeleteContainerFiles` column still requires a yes. A purged container must not leave behind a `.manifest.json` that points to nothing. Do not let "n/a" leak into the reset and cleanup column.
+## What to keep in mind
 
-## Heuristics
+- A writer of a file with a fixed suffix must be cleaned up in all three places.
+- A marker (it carries state) and a side file (it carries data) follow the same rules. Data that is "just metadata" still needs cleanup.
+- Admin commands and synchronous shortcuts often write files the main path cleans up and they do not (`deep-audit-entry-points.md`).
 
-- A writer that produces a file with a fixed suffix has a cleanup obligation in three places. Always.
-- A "marker" (carries state) and a "sidecar" (carries data) follow the same rules. Do not skip sidecars on the assumption that "the data is just metadata".
-- Watch for sidecars written by **alternative entry points** (admin commands, synchronous paths). Often the canonical path cleans up and the shortcut does not. See `deep-audit-entry-points.md`.
-
-## Time budget
-
-About 5 minutes per sidecar (4 sidecars in that mod, so about 20 minutes). Worth it: this is the single highest-leverage check by bugs found per minute.
+Allow about 5 minutes per file; the virtual storage mod had four, so about 20 minutes. No other check finds as many bugs per minute.

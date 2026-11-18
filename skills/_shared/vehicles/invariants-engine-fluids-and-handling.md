@@ -1,270 +1,109 @@
-# Engine start, fluids, test kits and handling: invariants
+# Engine start, fluids and handling checks
 
-Why an engine will not start or will not stay on, what a test kit must fill and attach, and measured rules for rolling, steering, mass, grip and drivetrain ratios.
+Why an engine will not start or will not stay running, what a test kit must fill and attach, and measured rules for rolling away, steering, mass, grip and drivetrain ratios.
 
-> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
+Vanilla facts cite `P:\` (DayZ 1.30). The measured cases come from mod vehicles (a ported quad, imported cars) and from vanilla cars driven in a diag session; they say so where they apply. Engine damage zones themselves are in `damage.md`, fluids in `fluids-and-engine.md`.
 
-## Vanilla anchors checked on `P:\`
+## One vital igniter per car
 
-- `CarScript.EOnPostSimulate` stops a running engine when `m_EngineHealth <= 0` (`P:\scripts\4_world\entities\vehicles\carscript.c:850`), and `m_EngineHealth` is read from the `Engine` damage zone (`P:\scripts\4_world\entities\vehicles\carscript.c:2135`). A ruined `FuelTank` zone ruins the `Engine` zone when `IsVitalFuelTank` is true (`P:\scripts\4_world\entities\vehicles\carscript.c:861`).
-- `CheckOperationalRequirements` sets `NO_IGNITER` for a missing vital spark plug (`P:\scripts\4_world\entities\vehicles\carscript.c:1780`) and for a missing vital glow plug (`P:\scripts\4_world\entities\vehicles\carscript.c:1787`). `CivilianSedan` turns `IsVitalGlowPlug` off (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:370`) and `Offroad_02` turns `IsVitalSparkPlug` off (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroad_02.c:415`).
-- `FillUpCarFluids` fills `CarFluid.FUEL`, `CarFluid.COOLANT` and `CarFluid.OIL` and nothing else (`P:\scripts\4_world\entities\vehicles\carscript.c:2561-2566`). `brakeFluidCapacity` is `1` on `CarScript` (`P:\DZ\vehicles\wheeled\config.cpp:244`).
-- `SpawnUniversalParts` puts bulbs, battery and radiators in with `CreateInInventory` (`P:\scripts\4_world\entities\vehicles\carscript.c:2500`).
-- `CarScript.EEOnCECreate` fills `Math.RandomFloat(0.0, maxVolume * 0.35)` of fuel (`P:\scripts\4_world\entities\vehicles\carscript.c:2412-2418`); the base `EEOnCECreate` is documented as called for an entity created as new by CE or debug (`P:\scripts\3_game\entities\entityai.c:1414`) and `AfterStoreLoad` for one loaded from storage (`P:\scripts\3_game\entities\entityai.c:1419`).
-- Healthy vanilla wheels carry `tyreRollResistance` from 0.008 to 0.018 (`P:\DZ\vehicles\wheeled\config.cpp:876`, `P:\DZ\vehicles\wheeled\config.cpp:4782`, `P:\DZ\vehicles\wheeled\config.cpp:18144`) and `tyreGrip` from 0.80 to 1.0 (`P:\DZ\vehicles\wheeled\config.cpp:877`, `P:\DZ\vehicles\wheeled\config.cpp:18145`).
-- Every vanilla `Brake` class sets `driverless=0.1` (`P:\DZ\vehicles\wheeled\config.cpp:460`); `SetBrakesActivateWithoutDriver` is native on `Car` (`P:\scripts\3_game\vehicles\car.c:212`) and the push action switches it off (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionpushcar.c:95`).
-- `OffroadHatchback` steers with `maxSteeringAngle=30` and `increaseSpeed[]={0,40,30,20,100,5}` (`P:\DZ\vehicles\wheeled\config.cpp:1375-1376`).
-- Vanilla `maxTorqueTransfer` runs from 165 (`P:\DZ\vehicles\wheeled\config.cpp:14125`) to 720 (`P:\DZ\vehicles\wheeled\config.cpp:779`).
-- Crash damage uses the cached `m_Impulse` of the first contact (`P:\scripts\4_world\entities\vehicles\carscript.c:1291`), and the damage system reads a zone's `componentNames` from config (`P:\scripts\3_game\damagesystem.c:63`).
+`CheckOperationalRequirements` sets `NO_IGNITER` when a vital spark plug is missing or ruined (`P:\scripts\4_world\entities\vehicles\carscript.c:1776` to `:1780`) and again for a vital glow plug (`:1783` to `:1787`). Every `IsVital*` defaults to `true`: plugs and fuel tank on `Transport` (`P:\scripts\3_game\vehicles\transport.c:404` to `:416`), belt and radiator on `CarScript` (`carscript.c:2201` to `:2209`). So a bare `CarScript` car needs both plugs.
 
-## Invariant 8: one vital igniter per car
+A petrol car keeps the spark plug and turns the glow plug off: `CivilianSedan` overrides `IsVitalGlowPlug()` to `false` (`P:\scripts\4_world\entities\vehicles\inheritedcars\civiliansedan.c:370`). A diesel does the opposite: `Offroad_02` overrides `IsVitalSparkPlug()` (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroad_02.c:415`). Declare only the vital plug in `attachments[]` and attach that one in `OnDebugSpawn`.
 
-**One vital igniter per car — vanilla defaults BOTH SparkPlug AND GlowPlug to vital, so a bare
-`CarScript` car silently demands BOTH.** `CheckOperationalRequirements` sets `NO_IGNITER` if either
-vital plug is missing (`carscript.c:1776` SparkPlug / `:1783` GlowPlug); every `IsVital*` defaults true
-(`transport.c:404-416` plugs and fuel tank, `carscript.c:2201-2209` belt and radiator; 1.29 `carscript.c:2734-2762`). A PETROL car (CivilianSedan) keeps SparkPlug vital and
-overrides `IsVitalGlowPlug()→false` (`civiliansedan.c:370`; on 1.29 also `IsVitalTruckBattery()→false`, 1.29 `:358`, which 1.30 replaced with `GetElectricitySourceDevice()`, `civiliansedan.c:64-69`);
-a DIESEL car (Offroad_02) mirrors it — `IsVitalSparkPlug()→false` (`offroad_02.c:415`). `attachments[]`
-must declare ONLY the vital plug and `OnDebugSpawn` must attach THAT part. "Engine won't start" with a
-SparkPlug already attached = the un-overridden GlowPlug, **NOT** a removed requirement — `IsVitalGlowPlug→false`
-IS the vanilla petrol pattern (the car still requires its SparkPlug). Seen on TestCoupe (a petrol car defaulted
-to needing a GlowPlug it had no slot for; framing the fix as "remove the check" gets it backwards). → `vehicle-config-and-modelcfg.md` §15 (engine will not start).
+An engine that will not start with a spark plug fitted usually means the glow plug was never turned off. The fix is the vanilla petrol override, not removing the check: the car still needs its spark plug. Full start conditions: `vehicle-parts-and-start.md`, section "Engine won't start".
 
-## Invariant 9: the engine starts then stalls when the Engine and FuelTank damage zones are missing
+## An engine that starts and stalls at once
 
-**Engine STARTS then immediately STALLS (eng=1 for one tick → eng=0 rpm=0) with fuel + ALL vital parts
-attached → the car is missing its `Engine` (and `FuelTank`) DamageZone.** `CarScript` stops a running
-engine EVERY tick when `m_EngineHealth <= 0` (`carscript.c:850`), and `m_EngineHealth =
-GetHealthLevelValue(GetHealthLevel("Engine"), "Engine")` (`carscript.c:2134-2135`) — a `DamageSystem.
-DamageZones` with no `class Engine` resolves "Engine" health to RUINED → perpetual `EngineStop()`. A
-missing `class FuelTank` compounds it (`carscript.c:861` ruins the Engine zone when FuelTank reads
-RUINED). EVERY vanilla car ships BOTH zones; an imported/regen car declaring only body zones
-(chassis/front/back/roof) LOOKS configured but the engine never sustains. Fix: add `class Engine` +
-`class FuelTank` to `DamageZones` — the proven shape (vanilla/TestCoupe) points `componentNames[]` at a
-FireGeo `dmgzone_engine`/`dmgzone_fueltank` selection; a config-only health zone (empty `componentNames[]`/
-`memoryPoints[]`) is the minimal variant (verify it registers). DISTINCT from #8: #8 gates whether the
-engine STARTS (vital igniter parts); #9 gates whether a STARTED engine STAYS ON (engine-health zone).
-Seen on TestMercedes (stalled with SparkPlug+CarBattery+CarRadiator+fuel+coolant ALL present; TestCoupe ran
-only because it carried both zones). Verified vs `carscript.c` source + TestCoupe in-game parity.
+With fuel and every vital part fitted, an engine that runs for one tick and drops to 0 rpm is missing its `Engine` damage zone, and usually `FuelTank` too. `EOnPostSimulate` stops a running engine every tick while `m_EngineHealth <= 0` (`carscript.c:850`), and `m_EngineHealth` is read from the `Engine` zone's health level (`:2134`, `:2135`); with no `class Engine` that reads as ruined. A ruined `FuelTank` zone also ruins `Engine` when `IsVitalFuelTank` is true (`:861`).
 
-## Invariant 15c: a vehicle that drifts on its own has a tyreRollResistance defect
+Every vanilla car has both zones. An imported car that declares only body zones (chassis, front, back, roof) looks configured, but its engine never stays on. Add `class Engine` and `class FuelTank` to `DamageZones`, with `componentNames[]` pointing at Fire Geometry selections `dmgzone_engine` and `dmgzone_fueltank`, as vanilla does. A zone with empty `componentNames[]` and `memoryPoints[]` is the minimal variant; check that it registers. The igniter rule decides whether an engine starts; this one decides whether a started engine stays on.
 
-**A ported vehicle that "drifts on its own, even on flat ground" is a `tyreRollResistance`
-defect, and the roll-away threshold is `tan(slope) > tyreRollResistance` (measured
-2026-09-09, Arma2Quad; closed by telemetry).** The quad's healthy wheels carried
-**0.0015** against **0.008-0.018 on every vanilla wheel**
-(`P:\DZ\vehicles\wheeled\config.cpp:876`, `:4782`, `:9000`, `:13426`, `:18108`, `:18144`, `:20557`), and its ruined ones
-0.03 against 0.2-0.85. That moves the threshold from 0.86 deg to **0.086 deg**: no DayZ
-terrain is that flat, so the vehicle creeps everywhere and the report reads as a physics
-or sync bug. Three things this invariant exists to stop, all of which cost cycles here:
-**(a) mass is irrelevant** - gravity and rolling resistance both scale with weight and
-cancel, so "it is too heavy / too light" explains nothing; **(b) vanilla vehicles do not
-hold still through friction, they hold still because they are BRAKED** - every vanilla
-config carries `Brake.driverless = 0.1` and `Car.c:212` declares
-`SetBrakesActivateWithoutDriver`, which `actionpushcar.c:95` disables to push a car, so a
-vanilla car with a driver seated and the engine off ALSO rolls downhill; **(c) the
-ground is never flat** - `surface_query` returns the normal, and spots that look level
-measured 0.72-4.8 deg. Day-1 check on any port: diff the whole wheel class against the
-nearest vanilla wheel, not just `radius`. Discriminating rolling from sliding is one
-line of telemetry: rolling satisfies `omega == v / r` (here 0.051 measured against 0.048
-predicted, 6 %); a mismatch means slip or a decoupled animation.
+## Missing zone memory points do not cause jerks
 
-## Invariant 15f: raising maxSteeringAngle without scaling increaseSpeed turns less, not more
+Missing `memoryPoints[]` in damage zones, or missing `dmgzone_*` points in the Memory LOD, do not explain collision jerks or stutter while driving. Script never reads `memoryPoints[]`:
 
-**Raising `maxSteeringAngle` without scaling `increaseSpeed[]` makes the vehicle turn LESS
-in practice, not more (measured 2026-09-10, Arma2Quad).**
-`increaseSpeed[]` and `decreaseSpeed[]` inside `class Steering` are {km/h, deg/s} pairs: the
-RATE at which the steering ramps toward the requested lock. Time to full lock is
-`angle / rate`, so the ramp only makes sense relative to the angle it was written for.
-Arma2Quad carried `{0,40,30,20,100,5}` - byte-identical to vanilla `OffroadHatchback`
-(`P:\DZ\vehicles\wheeled\config.cpp:1376`), whose `maxSteeringAngle` is **30**. Taking ours from
-50 to 60 while leaving 20 deg/s at 30 km/h moved time-to-lock from 2.5 s to **3.0 s**, against
-the donor car's 1.5 s. In a real corner nobody holds the key that long, so the ceiling went up
-and the usable steering went DOWN. The user's report was exactly right and worth quoting as
-the symptom: *"it still does not turn as much as I would expect, and I no longer think it is the turning
-radius of the wheels"*: the steering still felt short, and it was no longer the wheels'
-angle. Rule: whenever you copy a vanilla `Steering` block, the ramp belongs to the DONOR's
-lock angle; rescale it with the angle, and state the resulting time-to-lock in the commit so
-the next reader can check it in one division.
-**Before blaming the steering at all, check the MASS - and it is not in config.cpp.** In DayZ
-the vehicle mass lives in the **Geometry LOD of the p3d** (`resolution 1e13`) as a PER-POINT
-table: py3d exposes it as `Point.mass` on every point of that LOD, and `lod.mass` is only
-their SUM. Read the table before saying anything about how the mass is distributed. A first
-reading of Arma2Quad as "1500 kg on one point" was wrong; the
-per-point read refuted it in one line - all 214 points carried mass (1.2-46.2 kg), with the
-centre of mass centred laterally (X -0.0001) and low (23 % of the hull height). The
-distribution was sound; only the TOTAL was wrong: 1500 kg against 250-320 kg for a real ATV,
-four to five times the yaw inertia the tyres must overcome. Changing it is coordinated work,
-not a tweak - see 15g. What does not change either way is the roll-away threshold: mass
-cancels there (15c).
+- `Transport.OnContact` caches the first contact of the tick with the momentum change as its impulse (`P:\scripts\3_game\vehicles\transport.c:315`), and `CheckContactCache` applies `ProcessDirectDamage(..., zoneName, "EnviroDmg", "0 0 0", dmg)` from the cached `m_Impulse` (`carscript.c:1291`, `:1364`).
+- `DamageSystem.GetDamageZoneMap` reads only `componentNames` (`P:\scripts\3_game\damagesystem.c:63`). Grep `memoryPoints` in the scripts and you find nothing; it appears only in vehicle configs.
+- The vanilla `OffroadHatchback` `Chassis` zone has `componentNames[]` and no `memoryPoints[]` (`P:\DZ\vehicles\wheeled\config.cpp:1579` to `:1593`).
+- `m_VFXComponent.ConvertMemPointToPosition("dmgZone_*")` in the constructor (`carscript.c:369` to `:375`) feeds `GetEnginePointPosWS`, `GetFrontPointPosWS` and the rest (`:314` to `:340`), which nothing calls.
 
-## Invariant 15g: changing a vehicle's mass
+The Geometry LOD is the contact mesh; a working car can carry `dmgzone_*` only in Fire Geometry, plus Memory for config parity. Do not spend a game session adding Memory points as a jerk fix. What the native `OnContact` does with zone positions is not visible in script; even if it used memory points, that would change which zone loses health, not the impulse.
 
-**Changing a vehicle's mass: scale every `Point.mass` by one factor, and scale `stiffness`,
-`damping` and `compression` by the SAME factor - never `travelMaxUp/Down` (measured
-2026-09-10, Arma2Quad 1500 -> 750 kg).** A uniform factor leaves the centre of mass and the
-front/rear split exactly where they were, so the only thing that changes is inertia. Ride
-height comes out of `u = -travelMaxDown + F/k`: holding `k/F` holds the stance, so
-`stiffness` scales with the mass. `damping` and `compression` scale the same way because the
-damping ratio is `c / (2*sqrt(k*m))`, and halving both k and m halves `sqrt(k*m)`. Travel is
-geometry and stays. Result: front `u` -0.00005 m before and after, rear -0.00470 vs -0.00469,
-and in game a freshly prepared quad settled at `y = 139.97918701171875` at BOTH masses, bit
-for bit. Gate the mass INSIDE the PBO, not in the source: pull the packed `.p3d` out and sum
-`Point.mass` with py3d. Keep `.p3d` backups out of the addon folder - AddonBuilder packs them.
-Traps surfaced by halving the mass. (a) The user reported *"it turns less than before, nothing more"*:
-no slide and no bounce, and the lock angle had not changed. Suspected
-cause, NOT confirmed: the same corner is now taken faster, where `increaseSpeed[]` is lower.
-Flattening the ramp above the speed the driver had already approved (35 -> 60 deg/s at
-60 km/h) drew "still improvable", not a clean yes. (b) Do NOT read `centeringSpeed >
-increaseSpeed` at speed as the defect: in `DZ/vehicles/wheeled/config.cpp` centering is
-higher at 60 km/h in 8 of the 10 `Steering` blocks (up to 6.5x, `:14085-14087`) and equal in
-the other 2 (`:741-743`, `:18513-18515`) - it is the vanilla norm. (c) Check
-`Clutch.maxTorqueTransfer` against the `torqueCurve` peak before adding torque: Arma2Quad had
-140 against a 320 peak, below every vanilla car (165 at `P:\DZ\vehicles\wheeled\config.cpp:14125` to 720 at `:779`). On
-`DRIVE_FWD`, a first-order Coulomb estimate (not measured in game) says first gear was already
-asking 6307 N of the 4749 N of front grip at 750 kg, so torque past that becomes wheelspin on
-the steering axle, which works against turning.
+## A test kit fills every fluid and fits the radiator
 
-## Invariant 15h: spawn fuel belongs in EEOnCECreate, not EEInit
+A kit that fills only fuel leaves oil, coolant and brake fluid empty: the oil light goes red and the engine breaks while driving, which looks like a drivetrain bug. A drive-ready kit fills `FUEL`, `OIL`, `COOLANT` and `BRAKE` and calls `CreateAttachment("CarRadiator")`, because coolant needs the radiator.
 
-**To change the fuel a vehicle spawns with, override `EEOnCECreate`, not `EEInit`
-(source-verified; a script spawn does NOT reach it - measured, see below).** Vanilla
-`CarScript.EEOnCECreate` fills a random 0-35 % of `GetFluidCapacity(CarFluid.FUEL)`
-(`scripts/4_world/entities/vehicles/carscript.c:2412-2419`). It runs when the entity is
-created as new by CE/debug (`scripts/3_game/entities/entityai.c:1413-1416`), while a load
-from storage goes through `AfterStoreLoad` (`:1418-1421`) - so a fill there cannot turn into
-free fuel on every restart, which the same code in `EEInit` would. `Fill` ADDS
-(`scripts/3_game/vehicles/car.c:371-372`), so top up rather than pour the whole capacity into
-a tank that may not be empty:
-`Fill(CarFluid.FUEL, GetFluidCapacity(CarFluid.FUEL) * (1.0 - GetFluidFraction(CarFluid.FUEL)))`.
-`OnDebugSpawn` is a separate path and fills on its own. **Measured 2026-09-11 with a vanilla
-`Hatchback_02` as the control**, which must land in 0-35 % if the path runs: neither a plain
-script spawn (`ECE_PLACE_ON_SURFACE`, which is also what the debug spawner's vehicle path
-`SpawnEntityOnGroundPos` passes when no player is given, or `ECE_KEEPHEIGHT` for a boat in
-DEVELOPER builds, `4_World/plugins/pluginbase/plugindeveloper.c:478-505`) nor the fuller set
-`ECE_PLACE_ON_SURFACE|ECE_INITAI|ECE_EQUIP_ATTACHMENTS` (the AI spawn path `SpawnAI`,
-`plugindeveloper.c:454`) fire `EEOnCECreate`: both controls
-read `fuel_fraction` 0, and so did the modded vehicle. Only a real Central Economy spawn
-exercises the override, so observing it needs a `types.xml` entry plus an event. Without a
-vanilla control in the same run, that zero reads as "my override is broken".
+Vanilla helpers do not do all of it:
 
-## Invariant 16: a drive-ready test kit fills every fluid and attaches the radiator
+- `FillUpCarFluids()` fills `FUEL`, `COOLANT` and `OIL` with 200.0 each and nothing else (`carscript.c:2561` to `:2566`). It has one definition and no override, so no vanilla car fills brake fluid this way.
+- `SpawnUniversalParts()` creates the radiators, when `IsVitalRadiator()`, with `CreateInInventory` (`:2500` to `:2515`), which may put them in cargo instead of the slot.
 
-**Drive-ready TEST KIT: fill ALL fluids + attach the radiator, not just FUEL (recurring: TestQuad and TestCoupe).** An admin/harness kit that only `Fill(CarFluid.FUEL,...)` leaves OIL/COOLANT/BRAKE empty → the oil
-gauge goes RED and the engine BREAKS while driving (looks like a physics/drivetrain bug, it is NOT). A
-drive-ready kit must `Fill` FUEL + OIL + COOLANT + BRAKE **and** `CreateAttachment("CarRadiator")` (coolant
-needs the radiator). Vanilla `FillUpCarFluids()` does NOT do all of it, and mirroring `OnDebugSpawn` is not
-enough either. It fills exactly FUEL, COOLANT and OIL — **BRAKE is not among them**
-(`scripts/4_world/entities/vehicles/carscript.c:2561-2566`; a single
-definition in the tree, every other hit is a call, so no subclass overrides it). The
-radiator does not come from it either: that is `SpawnUniversalParts()`
-(`carscript.c:2511-2515`), gated on `IsVitalRadiator()`, via `CreateInInventory` — which
-searches `CARGO | ATTACHMENT` and may land in either (`inventory.c:876-893`), so a debug
-spawn does not guarantee an ATTACHED radiator. Fill BRAKE and attach the radiator
-explicitly; a hand-rolled `KitManual` in the mission `init.c` has to do both. `CarFluid` enum = FUEL/OIL/BRAKE/COOLANT
-(on 1.30 an alias of `ETransportFluid`, `scripts/3_game/vehicles/car.c:18`, values at `transport.c:52-57`); `Fill`/`GetFluidCapacity` at `car.c:372/355`.
+So a mod car whose `OnDebugSpawn` calls `FillUpCarFluids()` and stops, the obvious vanilla-faithful code, spawns with an empty brake reservoir. Add `Fill(CarFluid.BRAKE, GetFluidCapacity(CarFluid.BRAKE))`, taking the capacity from config rather than a copied 200.0: `brakeFluidCapacity` is `1` on `CarScript` (`P:\DZ\vehicles\wheeled\config.cpp:244`) unless the car redeclares it. A hand-written kit in the mission `init.c` must also fill brake fluid and attach the radiator. `CarFluid` (`FUEL`, `OIL`, `BRAKE`, `COOLANT`) is an alias of `ETransportFluid` (`P:\scripts\3_game\vehicles\car.c:18`); `Fill` adds rather than sets (`car.c:371`, `:372`).
 
-**How the gap shows (SUB_WRXSTI, 2026-08-19).** `FillUpCarFluids()` alone does not satisfy this invariant. A mod car whose `OnDebugSpawn` calls it and stops — which is the obvious, vanilla-faithful thing to write, and what both TestCoupe and
-SUB_WRXSTI shipped — spawns its test car with the brake reservoir EMPTY. That is the exact state
-this invariant says breaks the engine while driving, reached by following vanilla. Add the fourth
-fill explicitly: `Fill(CarFluid.BRAKE, GetFluidCapacity(CarFluid.BRAKE))` — capacity from the
-declared value, not a copied `200.0`, since `brakeFluidCapacity` is `1` unless the car redeclares
-it (`P:\DZ\vehicles\wheeled\config.cpp:244`, the only declaration in that file). Corollary worth more than the fix: an invariant that names the right requirement AND
-names a vanilla call as satisfying it will be read as "call that and you are done". Verify the
-call, not the claim.
+## Spawn fuel belongs in `EEOnCECreate`
 
-## Invariant 17: raise tyre grip with a CarWheel subclass, without touching the wheel binding
+To change the fuel a vehicle spawns with, override `EEOnCECreate`, not `EEInit`. Vanilla fills a random 0 to 35 percent (`Math.RandomFloat(0.0, maxVolume * 0.35)`, `carscript.c:2412` to `:2418`). `EEOnCECreate` runs for an entity created new by the Central Economy or debug (`P:\scripts\3_game\entities\entityai.c:1414`), while a load from storage goes through `AfterStoreLoad` (`:1419`), so a fill there does not hand out free fuel on every restart as `EEInit` would. Top up rather than pour: `Fill(CarFluid.FUEL, GetFluidCapacity(CarFluid.FUEL) * (1.0 - GetFluidFraction(CarFluid.FUEL)))`. `OnDebugSpawn` is a separate path and fills on its own.
 
-**Raise tyre grip WITHOUT touching the wheel binding: a `CarWheel` subclass of the vanilla wheel.** To add
-grip to a car that slides, do NOT rewire slots/proxies (risks re-opening the freeze/wheel-bind). Declare
-`class <Mod>_Wheel : CivSedanWheel { scope=2; tyreGrip=0.98; };` — it INHERITS the vanilla `inventorySlot[]`
-(`P:\DZ\vehicles\wheeled\config.cpp:4768` lists CivSedanWheel_1_1.._2_2 + Spare) so it drops into the same
-`CivSedanWheel_*` slots and reuses the sedanwheel proxy; only tyreGrip changes. Then `OnDebugSpawn`/kit
-create `<Mod>_Wheel`. Grip is DECOUPLED from the visual wheel model (custom source-game rim = separate visual job). Measured on TestCoupe.
+A script spawn does not reach `EEOnCECreate`. With a vanilla `Hatchback_02` as the control (it must land between 0 and 35 percent if the path runs), neither `ECE_PLACE_ON_SURFACE` (also what the debug spawner's vehicle path passes without a player) nor `ECE_PLACE_ON_SURFACE | ECE_INITAI | ECE_EQUIP_ATTACHMENTS` (the AI spawn path) fired it: both controls and the mod vehicle read fuel 0 (`P:\scripts\4_world\plugins\pluginbase\plugindeveloper.c:454`, `:478` to `:505`). Only a real Central Economy spawn, a `types.xml` entry plus an event, exercises the override. Without a vanilla control in the same run, that zero reads as a broken override.
 
-## Invariant 18: diagnose a sliding car by axis
+## A vehicle that rolls away on its own
 
-**Diagnose "the car slides" BY AXIS — longitudinal (accelerating) vs lateral (cornering) need different
-fixes.** Sliding when you FLOOR it (power-oversteer, RWD) → tyreGrip + throttle/torque down. Sliding when
-you TURN (body roll unloads the inside tyre) → tyreGrip + LOW CoM + downforce + roll stiffness. A low CoM
-helps the CORNERING slide (less lateral weight transfer) but NOT the accelerating slide — in RWD a very low
-CoM even transfers LESS weight rearward under throttle (slightly less traction). Never sell "lower the CoM"
-as the fix for wheelspin. On TestCoupe the accel-slide dropped with grip 0.95→0.98 + throttle 0.8→0.72; corner-slide needed CoM/downforce.
+A port that "drifts on its own, even on flat ground" has a `tyreRollResistance` defect. It rolls when `tan(slope) > tyreRollResistance`. A ported quad's healthy wheels carried 0.0015 against 0.008 to 0.018 on every vanilla wheel (`P:\DZ\vehicles\wheeled\config.cpp:876`, `:4782`, `:9000`, `:13426`, `:18108`, `:18144`, `:20557`), and its ruined wheels 0.03 against 0.2 to 0.85. That moved the threshold from 0.86 to 0.086 degrees; no DayZ terrain is that flat, so it crept everywhere and the report read like a physics or sync bug.
 
-## Invariant 19: transplanting a donor mod's drivetrain
+- Mass does not matter here: gravity and rolling resistance both scale with weight and cancel.
+- Vanilla cars stand still because they are braked, not because of friction. Every vanilla `Brake` class sets `driverless=0.1` (`config.cpp:460`), `SetBrakesActivateWithoutDriver` is native on `Car` (`P:\scripts\3_game\vehicles\car.c:212`), and the push action turns it off (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionpushcar.c:95`). A vanilla car with a driver seated and the engine off also rolls downhill.
+- Ground is never flat: spots that look level measured 0.72 to 4.8 degrees from the surface normal.
 
-**Transplanting a donor mod's drivetrain: match (gear x central x final) / wheel-radius, never
-the ratios verbatim.** (added 2026-07-10, TestCoupe) Wheel force per engine-Nm = total_reduction /
-wheel_radius and per-gear road speed = rpm x radius / reduction, so a donor running a different
-wheel radius shifts EVERY gear by r_donor/r_yours. Compare radii FIRST; the CentralDifferential
-ratio is the compensation lever. Case: TestCoupe (CivSedanWheel 0.34) adopting the Gelenvagen
-drivetrain (0.48 wheels, central 1.4) keeps central 1.0 — 0.34/0.48 ~= 1/1.4 cancels the donor's
-central, reproducing its per-gear speeds AND per-Nm force <1% off; copying central 1.4 verbatim
-would run 29% shorter than the donor feel. The failure class cost a full session first (an
-offroad central 1.5 compounded ratios authored for central 1.0 → gears ~50% short, 6th
-unreachable). Corollaries: (a) donor force on half the mass = ~2x the acceleration — scale
-expectations by mass before judging "too much/too little power"; (b) engine `frictionTorque` is
-calibrated to the donor's mass/curve — engine-braking decel scales as fT x reduction / (radius x
-mass), and when the radius/reduction terms cancel (as above) the mass-equivalent value is simply
-fT x m_yours/m_donor; adopt the donor value for its cruise character but pre-compute that fallback
-before the in-game cycle.
+Diff the whole wheel class against the nearest vanilla wheel on any port, not just `radius`. To tell rolling from sliding, check `omega == v / r` (0.051 measured against 0.048 predicted, 6 percent); a mismatch means slip or an animation detached from the wheel.
 
-Promote an invariant into this pack the day it is confirmed on one vehicle, into the check that the next vehicle reads at the start, not into triage after a failure; get-in was re-derived on three vehicles in a row because the first result stayed in one project's notes.
+## Steering angle and its ramp
 
-## Invariant 35: missing damage zone memory points do not explain collision jerks or driving stutters
+`increaseSpeed[]` and `decreaseSpeed[]` in `class Steering` are pairs of km/h and degrees per second: how fast steering moves toward the requested lock. Time to full lock is angle divided by rate, so the ramp only fits the angle it was written for. `OffroadHatchback` steers with `maxSteeringAngle=30` and `increaseSpeed[]={0,40,30,20,100,5}` (`config.cpp:1375`, `:1376`).
 
-**Missing DamageZone `memoryPoints[]` / Memory `dmgzone_*` points do NOT explain collision jerks or driving stutters (added 2026-08-30, TestQuad2).** The script contact path never reads `memoryPoints[]`. `Transport.OnContact` caches the first contact of the tick, with the momentum change as its impulse (`P:\scripts\3_game\vehicles\transport.c:315`; on 1.29 `CarScript.OnContact`, 1.29 `carscript.c:1454-1478`); `CheckContactCache` applies `ProcessDirectDamage(..., zoneName, "EnviroDmg", "0 0 0", dmg)` (`carscript.c:1291`, `:1364`). `DamageSystem.GetDamageZoneMap` only `ConfigGetTextArray(... componentNames)` (`P:\scripts\3_game\damagesystem.c:63`). Zero `memoryPoints` hits in `scripts/**/*.c`; the same grep finds them in vehicle configs. Vanilla OffroadHatchback `class Chassis` has `componentNames[]` and no `memoryPoints[]` (`P:\DZ\vehicles\wheeled\config.cpp:1579-1593`). `m_VFXComponent.ConvertMemPointToPosition("dmgZone_*")`, called from the ctor (`carscript.c:369-375`; 1.29 `GetMemoryPointPos`, 1.29 `carscript.c:393-406`), feeds `GetEnginePointPosWS` / `GetFrontPointPosWS` / … (`:314-340`) which have **zero callers**. Geometry is the contact mesh; a working referent can carry `dmgzone_*` only in FireGeometry (+ Memory for config parity). Do not spend an in-game cycle adding Memory `dmgzone_*` as a jerk fix. DISTINCT from #9 (missing `class Engine`/`FuelTank` stalls a started engine). Native `OnContact.zoneName` / `GetDamageZonePos` remain C++-opaque — even if they used memory points, that would change which zone loses HP, not the impulse.
+A ported quad carried that exact ramp with a lock of 50, raised to 60. At 20 degrees per second at 30 km/h, time to lock went from 2.5 s to 3.0 s, against 1.5 s on the hatchback. Nobody holds a key that long in a corner, so the ceiling rose and usable steering fell; the player reported that it still did not turn as much as expected and that it no longer seemed to be the wheels' angle. When you copy a vanilla `Steering` block, rescale the ramp with the angle, and write the resulting time to lock in the commit.
 
-## A sliding car is almost never fixed by lowering grip: weigh wheel force against grip (added 2026-09-11, Arma2Quad)
+`centeringSpeed` above `increaseSpeed` at speed is not a defect: in 8 of the 10 vanilla `Steering` blocks centring is faster at 60 km/h, up to 6.5 times (`config.cpp:14085` to `:14087`), and equal in the other two (`:741` to `:743`, `:18513` to `:18515`).
 
-A first-order Coulomb estimate is not a simulation, but it RANKS layouts, and the ranking is the
-decision. First gear asks `clutch cap x gear x final drive / tyre radius` at the wheels; the
-driven axle holds `mass x 9.81 x its share of the weight x tyreGrip`. On a 750 kg quad with a
-180 Nm cap, 4.3 x 3.667 / 0.35 m, front/rear split 65.2/34.8:
+## Mass lives in the Geometry LOD
 
-| layout | asked | held | over | what the driver said |
+Check mass before blaming steering, and look in the model, not `config.cpp`. Vehicle mass is a per-point table in the Geometry LOD (resolution `1e13`); py3d exposes `Point.mass` on each point and `lod.mass` is only their sum (**model knowledge**). Read the table before describing the distribution. A ported quad first read as "1,500 kg on one point" had mass on all 214 points (1.2 to 46.2 kg), centred sideways (X -0.0001) and low (23 percent of hull height). Only the total was wrong: 1,500 kg against 250 to 320 kg for a real ATV, four to five times the yaw inertia the tyres must turn.
+
+To change mass, scale every `Point.mass` by one factor and scale `stiffness`, `damping` and `compression` by the same factor; never `travelMaxUp` or `travelMaxDown`. One factor keeps the centre of mass and the front to rear split, so only inertia changes. Ride height is `u = -travelMaxDown + F/k`, so holding `k/F` holds the stance. Damping ratio is `c / (2 * sqrt(k * m))`, so halving k and m halves `sqrt(k * m)` and c follows. Travel is geometry and stays. Halving the quad from 1,500 to 750 kg left front `u` at -0.00005 m and rear at -0.00470 against -0.00469, and in game it settled at the same height to the last bit at both masses.
+
+Check the mass inside the packed PBO: extract the `.p3d` and sum `Point.mass`. Keep `.p3d` backups out of the addon folder, because AddonBuilder packs them.
+
+## Grip against wheel force
+
+A first-order friction estimate is not a simulation, but it ranks layouts, which is the decision. First gear asks `clutch cap * gear * final drive / tyre radius` at the wheels; the driven axle holds `mass * 9.81 * its weight share * tyreGrip`. On a 750 kg quad with a 180 Nm clutch cap, 4.3 times 3.667 over a 0.35 m radius, 65.2 percent of weight on the front:
+
+| Layout | Asked | Held | Ratio | What the driver said |
 |---|---|---|---|---|
-| RWD | 8109 N | 2535 N | 3.2x | "they slide a lot" |
-| AWD, open diffs | 8109 N | 7284 N, less in a corner: the inner wheel spins first | - | "they slide a lot" |
-| AWD, locked rear | 8109 N | 7284 N | 1.11x | "least bad, but it cannot go straight at full throttle without skidding" |
-| FWD (shipped) | 8109 N | 4749 N | 1.7x | stable, but "it turns less" |
+| RWD | 8,109 N | 2,535 N | 3.2 | "they slide a lot" |
+| AWD, open differentials | 8,109 N | 7,284 N, less in a corner as the inner wheel spins first | | "they slide a lot" |
+| AWD, locked rear | 8,109 N | 7,284 N | 1.11 | "least bad, but it cannot go straight at full throttle without skidding" |
+| FWD | 8,109 N | 4,749 N | 1.7 | stable, but "it turns less" |
 
-That arithmetic predicted the exact order the driver reported. Lowering `tyreGrip` moves every
-row the wrong way: at 0.85 the locked-rear AWD goes from 1.11x to 1.30x and the FWD from 1.7x to
-2.0x. It agrees with invariant 18 from the other side - the TestCoupe accel-slide was fixed with
-grip UP and throttle DOWN.
+The arithmetic predicted the driver's order. Lowering `tyreGrip` moves every row the wrong way: at 0.85 the locked-rear AWD goes to 1.30 and the FWD to 2.0. On `DRIVE_FWD` the wheels that spin are the wheels that steer, so excess torque reaches the driver as "it will not turn", never as wheelspin. Halving mass halves the grip budget and leaves the torque, which alone turns a car that steered into one that pushes. Check `Clutch.maxTorqueTransfer` against the `torqueCurve` peak before adding torque: the quad had 140 against a 320 peak, below every vanilla car (165 at `config.cpp:14125` to 720 at `:779`).
 
-Vanilla `tyreGrip` census for healthy wheels, so no one calls a value "too high" again without
-one: 0.80 (`P:\DZ\vehicles\wheeled\config.cpp:877`), 0.82 (`:13427`), 0.85 (`:4783`), 0.89 (`:9001`), 0.95 (`:18109`, `:20558`),
-1.0 (`:18145`); ruined wheels sit at 0.2-0.5. A 0.99 is inside the vanilla band.
+Vanilla `tyreGrip` on healthy wheels: 0.80 (`config.cpp:877`), 0.82 (`:13427`), 0.85 (`:4783`), 0.89 (`:9001`), 0.95 (`:18109`, `:20558`), 1.0 (`:18145`); ruined wheels sit at 0.2 to 0.5. A value of 0.99 is inside the vanilla range.
 
-Corollary for a wheel-driven steering axle: on `DRIVE_FWD` the wheels that spin are the wheels
-that steer, so excess torque reaches the driver as "it will not turn", never as "wheelspin".
-Halving a vehicle's mass halves the grip budget while leaving the torque where it was, which on
-its own turns a vehicle that steered into one that pushes - the trap behind 15g(a).
+Diagnose a sliding car by axis. Sliding under full throttle (power oversteer on RWD) wants more grip and less throttle or torque. Sliding in a turn, as body roll unloads the inside tyre, wants grip, a lower centre of mass, downforce and roll stiffness. A low centre of mass helps the cornering slide but not the throttle slide; on RWD it even moves less weight rearward under power. On an imported coupe the throttle slide dropped with grip 0.95 to 0.98 and throttle 0.8 to 0.72, while the cornering slide needed the centre of mass and downforce.
 
-## CivilianSedan on a straight: what torque, tyreGrip and the gear ratios did, measured (added 2026-09-24)
+To add grip without touching the wheel binding, subclass the vanilla wheel: `class MyMod_Wheel: CivSedanWheel { scope=2; tyreGrip=0.98; };`. It inherits the vanilla `inventorySlot[]` (`config.cpp:4768`, `CivSedanWheel_1_1` to `_2_2` and the spare), so it fits the same slots and proxy; create it from `OnDebugSpawn` or the kit. Grip is separate from the wheel's look; a custom rim is a separate job.
 
-Measured 2026-09-13 in DayZDiag: NWAF concrete, standing start at full throttle through the MCP
-drive controller, one config field changed per variant on `CivilianSedan` / `CivSedanWheel`,
-`vehicle_trace` at 19-20 Hz. The samples are small and the n is given per result: these are
-measurements, not general law. The controller of that build skipped gears above ~33 km/h
-(see `skills/dayz-launch-test/references/mcp/`), so the launch figures stop there.
+## Taking another mod's drivetrain
 
-- **Torque drives the launch almost proportionally.** Acceleration over the first 3 s scales as
-  torque^0.93-0.95 (torque ×0.7 → ×0.72, n = 1; ×1.3 with clutch 520 → ×1.28, n = 3; baseline
-  n = 5), and the 0-30 km/h time as torque^-1.17. First gear does not slip (rear slip p90
-  ≈ 0.001): the torque reaches the ground.
-- **tyreGrip between 0.70 and 1.00 changed neither the straight launch (≤ 2 %) nor braking
-  (5.7-6.0 m/s²).** At 0.30 the car braked 22-30 % less and launched 10 % faster with almost no
-  slip (n = 1, unexplained). In this regime tyreGrip does not act as a simple longitudinal
-  friction coefficient.
-- **First upshift at 9.20 m/s**, against 9.33 m/s predicted by
-  `0.8 × redline × 2πr / (60 · i_1 · i_final)` (n = 5): the formula holds for wheel radius and
-  gear ratios.
-- **Steady arc at steering 0.3** (~20 m circles): drift angle falls from 8.3° at 14 km/h to 3.4°
-  at 32 km/h, lateral acceleration reaches 7.2 m/s² (≈ 0.73 g), no slide (n = 1).
+Match `(gear * central * final) / wheel radius`, never the ratios as written. Wheel force per engine Nm is total reduction over wheel radius, and road speed per gear is `rpm * radius / reduction`, so a different wheel radius shifts every gear by the ratio of radii. Compare radii first; the central differential ratio is the lever that compensates. A coupe on `CivSedanWheel` (radius 0.34) taking a drivetrain built for 0.48 m wheels with a central ratio of 1.4 keeps its central at 1.0: 0.34 / 0.48 is about 1 / 1.4, so the per-gear speeds and force per Nm come out under 1 percent off. Copying 1.4 would make every gear 29 percent short, and a central of 1.5 on ratios written for 1.0 made gears about 50 percent short with sixth unreachable.
 
-Rule of thumb: to change the launch, change the torque. Above ~0.7, tyreGrip does not change the
-vanilla sedan's straight launch or braking; look for its effect in cornering and drift, which is
-not measured yet.
+The same force on half the mass gives about twice the acceleration, so scale expectations by mass before judging power. Engine `frictionTorque` is tuned to the source car's mass: engine braking scales as `frictionTorque * reduction / (radius * mass)`, so when radius and reduction cancel the equivalent is `frictionTorque * yourMass / sourceMass`. Work out that fallback before testing in game.
+
+## Measured launch of the vanilla sedan
+
+On airfield concrete, a standing start at full throttle under automated driving, changing one config field per run on `CivilianSedan` and `CivSedanWheel`, traced at 19 to 20 Hz. The runs are few and the count is given per result; read them as measurements, not laws. The automated driver skipped gears above about 33 km/h, so launch figures stop there.
+
+- Torque drives the launch almost in proportion: acceleration over the first 3 s scales as torque to the power 0.93 to 0.95 (torque times 0.7 gave 0.72, one run; times 1.3 with clutch 520 gave 1.28, three runs; baseline five runs), and the 0 to 30 km/h time as torque to the power -1.17. First gear does not slip (rear slip 90th percentile about 0.001).
+- `tyreGrip` from 0.70 to 1.00 changed neither the straight launch (2 percent or less) nor braking (5.7 to 6.0 m/s²). At 0.30 the car braked 22 to 30 percent less and launched 10 percent faster with almost no slip (one run, not explained). Here `tyreGrip` does not act as a simple friction coefficient along the car.
+- The first upshift came at 9.20 m/s against 9.33 m/s predicted by `0.8 * redline * 2πr / (60 * i_1 * i_final)` (five runs), so the formula holds for radius and ratios.
+- In a steady arc at steering 0.3 (circles of about 20 m), drift angle fell from 8.3 degrees at 14 km/h to 3.4 at 32 km/h, lateral acceleration reached 7.2 m/s² (about 0.73 g), with no slide (one run).
+
+To change the launch, change torque. Above about 0.7, `tyreGrip` does not change the sedan's straight launch or braking; its effect in cornering and drift is not measured.

@@ -31,7 +31,7 @@ A slot can sit inside a slot. On a custom SMG (confirmed in game; not vanilla, s
 
 - `P1907_Bayonet` (`P:\scripts\4_world\entities\itembase\inventory_base\p1907_bayonet.c:1`) is an attachment and a melee tool at once. Its `CanPutAsAttachment` refuses the parent when the `suppressorImpro` or `weaponMuzzle` slot is reserved or occupied (`P:\scripts\4_world\entities\itembase\inventory_base\p1907_bayonet.c:13-26`), so a bayonet and a muzzle device cannot be fitted together.
 - `OnWasAttached` and `OnWasDetached` tell the weapon with `SetBayonetAttached` when the parent `IsWeapon()` (`P:\scripts\4_world\entities\itembase\inventory_base\p1907_bayonet.c:28-46`); `Weapon_Base` stores it and answers `HasBayonetAttached()` (`P:\scripts\4_world\entities\firearms\weapon_base.c:2089`, `:2095`).
-- Its slot is `weaponBayonetLeeEnfield` (`P:\scripts\config.cpp:243`). No config class under `P:\DZ` uses that slot or defines `P1907_Bayonet`; both are in `weapons_nasdara.pbo` of game build 1.30.164200 (not yet checked on `P:\`). Copy the pattern, not the class, on data that lacks it.
+- Its slot is `weaponBayonetLeeEnfield` (`P:\scripts\config.cpp:243`). No config class under `P:\DZ` uses that slot or defines `P1907_Bayonet`; both are in `weapons_nasdara.pbo` of DayZ 1.30 (not yet checked on `P:\`). Copy the pattern, not the class, on data that lacks it.
 
 How the proxy triangle on the weapon model places each attachment is in `skills/_shared/models/proxy-frames.md` ("Weapon attachment proxies").
 

@@ -1,75 +1,66 @@
-# Contract: UI panels on demand
+# Preview panel contract
 
-Layouts made to be loaded from `$profile:` with `ui_reload_layout` and filled at runtime with `ui_set_text` (which finds a widget with `FindAnyWidget` by `name`). Every text is authored empty (`text ""`). `#STR_` keys are not allowed: a stringtable does not travel with a loose `.layout`.
+The widget names, defaults and command line of the generated preview panels: `chat_feed.layout`, `info_panel.layout` and `mini_hud.layout` in this folder. They are loaded from `$profile:` and filled at runtime, so every text starts empty (`text ""`) and no `#STR_` key appears: a stringtable does not travel with a loose `.layout`.
 
-`ui_reload_layout` and `ui_set_text` are commands of the in-game test harness described in `../hot-iteration.md`; they are tool behaviour, not vanilla script, and are not yet checked on `P:\`.
+`ui_reload_layout` and `ui_set_text` are calls of the test bridge (`../ui-test-bridge.md`); `ui_set_text` finds a widget by name, like `FindAnyWidget` (`P:\scripts\1_core\proto\enwidgets.c:169`), which searches the whole tree. Show one panel at a time: unlink it, or call `ui_reload_layout(mode="close")`, before loading the next.
 
-`FindAnyWidget` searches the whole tree, so show only one of these panels at a time (`Unlink` it, or call `ui_reload_layout(mode="close")`, before loading the next one).
+## Widget names
 
-## Widget names by panel kind
+`feed`, a chat or log:
 
-Every TextWidget starts at `text ""`. The caller sets the string.
-
-### `feed` (chat or log)
-
-| name | class | set with `ui_set_text` |
+| Name | Class | Set with `ui_set_text` |
 |---|---|---|
-| `FeedRoot` | FrameWidgetClass | no (full screen host, `size 1 1`, `ignorepointer 1`, `priority 2000`) |
-| `FeedPanel` | PanelWidgetClass | no (`style rover_sim_colorable`) |
-| `TitleText` | TextWidgetClass | yes (always present) |
-| `FeedLine0` to `FeedLine{N-1}` | TextWidgetClass | yes, one line per row |
+| `FeedRoot` | `FrameWidgetClass` | No; full screen host, `size 1 1`, `ignorepointer 1`, `priority 2000` |
+| `FeedPanel` | `PanelWidgetClass` | No; `style rover_sim_colorable` |
+| `TitleText` | `TextWidgetClass` | Yes, always present |
+| `FeedLine0` to `FeedLine<N-1>` | `TextWidgetClass` | Yes, one per row |
 
-### `info` (label and value)
+`info`, labels and values:
 
-| name | class | set with `ui_set_text` |
+| Name | Class | Set with `ui_set_text` |
 |---|---|---|
-| `InfoRoot` | FrameWidgetClass | no |
-| `InfoPanel` | PanelWidgetClass | no |
-| `TitleText` | TextWidgetClass | yes (always present) |
-| `Label0` to `Label{N-1}` | TextWidgetClass | yes |
-| `Value0` to `Value{N-1}` | TextWidgetClass | yes |
+| `InfoRoot` | `FrameWidgetClass` | No |
+| `InfoPanel` | `PanelWidgetClass` | No |
+| `TitleText` | `TextWidgetClass` | Yes, always present |
+| `Label0` to `Label<N-1>` | `TextWidgetClass` | Yes |
+| `Value0` to `Value<N-1>` | `TextWidgetClass` | Yes |
 
-### `hud` (minimal HUD)
+`hud`, a small HUD:
 
-| name | class | set with `ui_set_text` |
+| Name | Class | Set with `ui_set_text` |
 |---|---|---|
-| `HudRoot` | FrameWidgetClass | no (`priority 100`, whole tree `ignorepointer 1`) |
-| `HudPanel` | PanelWidgetClass | no (`halign left` and `valign top`) |
-| `TitleText` | TextWidgetClass | only when `--title` is passed |
-| `FeedLine0` to `FeedLine{N-1}` | TextWidgetClass | yes |
+| `HudRoot` | `FrameWidgetClass` | No; `priority 100`, whole tree `ignorepointer 1` |
+| `HudPanel` | `PanelWidgetClass` | No; `halign left`, `valign top` |
+| `TitleText` | `TextWidgetClass` | Only when `--title` is given |
+| `FeedLine0` to `FeedLine<N-1>` | `TextWidgetClass` | Yes |
 
-`--title` does not write its text into the widget (the widget stays `text ""`); the text goes into the comment at the top of the file. Set the visible title with `ui_set_text` on `TitleText`.
+`--title` writes its text into the comment at the top of the file, not into the widget, which stays `text ""`. Set the visible title with `ui_set_text` on `TitleText`.
 
-## Command line
+## The generator
 
-```
-python gen_panel_layout.py <feed|info|hud> --rows N [--title TEXT] --out FILE
-                           [--width W] [--height H] [--x X] [--y Y]
+The generator is `skills/dayz-layout-preview/gen_panel_layout.py`:
+
+```text
+python gen_panel_layout.py <feed|info|hud> --rows N [--title TEXT] --out FILE [--width W] [--height H] [--x X] [--y Y]
 python gen_panel_layout.py --self-test
 ```
 
-Units are fractions of the screen (the four `hexact*` and `vexact*` flags are 0). `--x` and `--y` place the top left corner of the panel.
+Units are fractions of the screen (all four exact flags 0); `--x` and `--y` place the panel's top left corner.
 
-Defaults:
-
-| kind | --width | --height | --x | --y |
+| Kind | `--width` | `--height` | `--x` | `--y` |
 |---|---|---|---|---|
-| feed | 0.32 | 0.45 | 0.02 | 0.50 |
-| info | 0.28 | 0.40 | 0.02 | 0.04 |
-| hud  | 0.22 | 0.10 | 0.76 | 0.04 |
+| `feed` | 0.32 | 0.45 | 0.02 | 0.50 |
+| `info` | 0.28 | 0.40 | 0.02 | 0.04 |
+| `hud` | 0.22 | 0.10 | 0.76 | 0.04 |
 
-The grammar and the attribute set are those of a ladder panel layout that was tested in game with `ui_reload_layout`. The extra HUD chrome comes from `hud_overlay.layout` in this folder. Files are written as UTF-8 without a BOM, with LF line ends. A `.layout` holds no absolute paths.
+The grammar and attributes follow a panel layout tested in game with `ui_reload_layout`; the extra HUD chrome comes from `hud_overlay.layout`. Files are UTF-8 with no byte order mark and LF line ends, and hold no absolute paths. The three panels in this folder came from:
 
-The generator is `skills/dayz-layout-preview/gen_panel_layout.py`. Examples (the three results are in this folder; `--self-test` writes fresh copies next to the generator):
-
-```
+```text
 python gen_panel_layout.py feed --rows 10 --title "CHAT" --out chat_feed.layout
 python gen_panel_layout.py info --rows 6 --title "STATUS" --out info_panel.layout
 python gen_panel_layout.py hud --rows 2 --out mini_hud.layout
 ```
 
-## Checking
+`--self-test` writes the three panels next to the script and checks that braces balance, every name is unique and each `FeedLineK` or `ValueK` appears once, then prints `SELFTEST PASS` or `SELFTEST FAIL`.
 
-`python gen_panel_layout.py --self-test` writes the three example layouts next to the script and checks each one: `{` and `}` counts match, every `name` is unique, and each declared `FeedLineK` or `ValueK` appears exactly once. It prints `SELFTEST PASS` or `SELFTEST FAIL`.
-
-To see a panel in game, copy the `.layout` to `$profile:`, call `ui_reload_layout(path="$profile:<file>.layout")` (unlink the previous panel first), then call `ui_set_text` with the names above.
+To see a panel in game, copy it to `$profile:`, unlink the previous one, call `ui_reload_layout(path="$profile:<file>.layout")`, then `ui_set_text` with the names above.

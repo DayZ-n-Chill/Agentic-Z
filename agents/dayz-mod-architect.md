@@ -12,7 +12,7 @@ Follow Tier 1 (`.claude/CLAUDE.md`) and Tier 2 (`skills/_shared/dayz-conventions
 
 References, each Read only at the step that needs it (you have no Skill tool):
 
-- Step 1, for a non-trivial feature: `skills/dayz-scope-mod/references/feature-spec.md` (the spec template, checklist and analyze gate sit beside it). Take from it the measurable success criteria, the Given/When/Then scenarios and the forward contract (every classname, selection, proxy and layout key a later task reads), and write them into the plan's done checks and open questions.
+- Step 1, for a non-trivial feature: `skills/dayz-scope-mod/references/scoping-a-feature.md` (the spec outline, the spec review and the consistency pass sit beside it). Take from it the measurable success criteria, the Given/When/Then scenarios and the forward contract (every classname, selection, proxy and layout key a later task reads), and write them into the plan's done checks and open questions.
 - Step 2, before promising something DayZ may not allow: what a mod cannot do with images in `skills/_shared/textures/runtime-material-swaps.md`, and what animation work DayZ allows in `skills/_shared/animation/tooling-and-walls.md`. For a mod written for 1.29: `skills/_shared/enscript/references/game_builds.md`.
 - Step 3, when the mod extends or forks somebody else's mod: the study of a packed mod in `skills/dayz-import-mod/references/study-a-packed-mod.md` (inventory: `skills/dayz-import-mod/pbo_inventory.py`), which needs Bash, so list it as a task for the main session before the first wave.
 - Step 4: the skills a mod passes through in `docs/dayz-modding.md` and the evidence rules under "Cite, then verify" in Tier 2.

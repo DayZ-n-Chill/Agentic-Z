@@ -1,6 +1,6 @@
 # The 3D viewer tool: .p3d to .glb and an HTML page
 
-Converts a mod's model, textures and materials into something a browser can show: a binary glTF file and an HTML page with orbit controls. The converter is the Python tool in `scripts/tools/dayz-3d-viewer`; this file is how to use it. It was tested on a push button model (328 vertices, 640 faces, 4 materials, DXT1 textures with LZO mipmaps).
+Converts a mod's model, textures and materials into something a browser can show: a binary glTF file and an HTML page with orbit controls. The converter is the Python tool in `scripts/tools/dayz-3d-viewer`; this file is how to use it. Its test model is a push button with 328 vertices, 640 faces, 4 materials and DXT1 textures with LZO mipmaps.
 
 Follow `skills/_shared/dayz-conventions.md`. The tool reads only the files you pass, so nothing here gates on `/dayz-preflight`. To convert a vanilla texture, pass its `P:\` path like any other file.
 
@@ -58,9 +58,9 @@ The same input gives the same `.glb` and `.html` bytes: neither file carries a t
 
 ## Two viewer modes
 
-**Embedded** (`--mode embedded`, the default) is for a chat artifact or any sandboxed frame. Geometry is baked into the HTML as typed arrays and textures as base64 PNG, because such a frame blocks `fetch()`, `XMLHttpRequest` and blob URLs. One file, nothing to load beside it.
+Embedded mode (`--mode embedded`, the default) is for a chat artifact or any sandboxed frame. Geometry is baked into the HTML as typed arrays and textures as base64 PNG, because such a frame blocks `fetch()`, `XMLHttpRequest` and blob URLs. One file, nothing to load beside it.
 
-**Web** (`--mode web`) is for a page that will be hosted. The HTML loads the separate `.glb` with `GLTFLoader`, so the two files stay apart and can be cached.
+Web mode (`--mode web`) is for a page that will be hosted. The HTML loads the separate `.glb` with `GLTFLoader`, so the two files stay apart and can be cached.
 
 Both load Three.js 0.185.1 from the jsDelivr CDN as ES modules through an importmap. Three.js is not embedded, so a page needs a network to render. Before pinning another version or another way of loading it, read `tools-threejs-viewers.md`.
 
@@ -82,7 +82,7 @@ for f in ['housing.rvmat', 'button.rvmat', 'led_off.rvmat']:
     rvmat_data[os.path.splitext(f)[0]] = parse_rvmat(f)
 
 # 3. Geometry with materials and textures baked in
-texture_map = {'base_co': 'base_co.png'}  # texture stem -> png path
+texture_map = {'base_co': 'base_co.png'}  # texture stem to png path
 geo = extract_geometry_for_viewer('model.p3d', texture_map=texture_map, rvmat_data=rvmat_data)
 
 # 4. The embedded page
@@ -113,12 +113,12 @@ The web page (`mode='web'`) has the same orbit controls, camera reset, count pan
 
 ## Limits
 
-- **MLOD only.** A binarized (ODOL) model, which every vanilla `.p3d` is, has to go through an external ODOL to MLOD converter first. Agentic-Z ships none.
-- **Color texture only.** Normal and specular maps are parsed from the RVMAT but not applied in the page.
-- **One LOD.** The page shows the best visual LOD; there is no LOD switcher.
-- **Proxy triangles show** as geometry, and a pilot view LOD (resolution 1100) is never chosen as the mesh.
-- **No PNG to PAA.** Use `/dayz-pack-texture` for that direction.
-- **No states or animations yet.** The plan for sliders and LED toggles is in `tools-3d-viewer-states.md`.
+- MLOD only. A binarized (ODOL) model, which every vanilla `.p3d` is, has to go through an external ODOL to MLOD converter first. Agentic-Z ships none.
+- Colour texture only. Normal and specular maps are parsed from the RVMAT but not applied in the page.
+- One LOD. The page shows the best visual LOD; there is no LOD switcher.
+- Proxy triangles show as geometry, and a pilot view LOD (resolution 1100) is never chosen as the mesh.
+- No PNG to PAA. Use `/dayz-pack-texture` for that direction.
+- No states or animations yet. What the data for them is lies in `tools-3d-viewer-states.md`, and the plan for sliders and LED toggles in `tools-3d-viewer-states-build.md`.
 
 ## References
 
@@ -130,6 +130,7 @@ The web page (`mode='web'`) has the same orbit controls, camera reset, count pan
 | Which Three.js version and loading method can a generated page use, and why does it fail from `file://` or in a chat frame? | `tools-threejs-viewers.md` |
 | How to build a page for placing crew proxies and memory points offline, and what makes such a page lose the user's work? | `tools-threejs-viewers.md`, "The fit editor pattern" and "Two defects that lose the user's placement" |
 | How to test a generated page without downloading a headless browser? | `tools-threejs-viewers.md` |
-| How would the viewer play `model.cfg` animations and swap LED materials? | `tools-3d-viewer-states.md` |
+| Where a model's moving parts and material states come from, and the maths of each animation | `tools-3d-viewer-states.md` |
+| How the viewer would play `model.cfg` animations and swap LED materials (planned, not built) | `tools-3d-viewer-states-build.md` |
 | What is wrong with the converter today? | `scripts/tools/dayz-3d-viewer/KNOWN-ISSUES.md` |
 | The tool's own install notes and tests. | `scripts/tools/dayz-3d-viewer/README.md` |

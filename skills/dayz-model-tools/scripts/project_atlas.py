@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""LFQuad paint-atlas projector: orthographic photos per piece, not unwrap.
+"""Paint-atlas projector: orthographic photos per piece, not unwrap.
 
 Headless Blender:
   blender -b retopo_final.blend --python project_atlas.py -- <assignment.json> <outdir>
@@ -10,7 +10,7 @@ write assignment_SMOKE.json). The SMOKE split is NOT the paint/mechanical
 classification; that classification is made separately and passed in as the
 assignment file.
 
-This is the projector as it was run on one mesh, the LFQuad quad-bike body.
+This is the projector as it was run on one mesh, a quad-bike body.
 It is tied to that mesh: main() exits with code 2 unless the opened .blend
 hashes to EXPECTED_BLEND_SHA256, the face invariant expects
 EXPECTED_FACE_COUNT faces, the two controls read shells S06 and S03

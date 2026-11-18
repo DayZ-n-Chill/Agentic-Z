@@ -1,224 +1,86 @@
-# Rip geometry: retopo, winding and face surgery
+# Rip geometry and winding
 
-Geometry work on a ripped vehicle mesh: automatic retopology with Quadriflow, the winding rules for proxy triangles and visual faces, the scope of `autocenter=0` on host and sub-models, how to gate and fix winding per connected component, and how to delete faces from a `.p3d` without breaking selections.
+Geometry work on a ripped vehicle mesh: automatic retopology, winding rules for proxy triangles and visual faces, where `autocenter=0` belongs, how to check and fix winding per connected part, and how to delete faces from a `.p3d` without breaking selections.
 
-> Status: measured on worked vehicle builds, each named in its entry (TestCoupe, TestHeli OH-1, TestQuad v2, and a working Landrover build as the control). The offline measurements and in-game results are not yet checked on `P:\`. A citation written with its full `P:\` path was opened on vanilla data. Script names such as `c1_bvh_classify.py` and paths that start `<vehicle-import>\` are the tooling of those builds, which this repo does not ship. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number. Other skills are named by skill name, each a folder under `skills/` (dayz-model-tools, dayz-launch-test); the Enforce Script pack is `skills/_shared/enscript/`, the texture pack is `skills/_shared/textures/`.
+The vanilla reference is `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` with its interior proxy `P:\DZ\vehicles\wheeled\civiliansedan\proxy\prox_int.p3d`. Both are binarized and py3d cannot read them, so the winding and normal figures here were measured on converted copies and on test vehicles, a car and a helicopter (**model knowledge**). The winding rule for an imported car (keep the raw glTF winding) is in `invariants-import-mesh-and-winding.md`; the import route is `rip-import.md`.
 
-## Vanilla anchors checked on `P:\`
+## Retopology of a dense rip
 
-- The vanilla control the winding notes compare against is `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` with its interior proxy `P:\DZ\vehicles\wheeled\civiliansedan\proxy\prox_int.p3d`. Both are binarized ODOL, which py3d cannot read, so the winding and normal statistics below were measured on debinarized copies and are not yet checked on `P:\`.
-- `autocenter=0` on a vehicle part proxy: vanilla also sets `autocenter=0` on the `ProxyVehiclePart` config class (`P:\DZ\vehicles\wheeled\config.cpp:23901-23905`). That config setting is separate from the per-LOD `autocenter=0` property that the section below measures on the host and sub-model LODs.
+To turn a dense rip into a clean low poly mesh for baking and UVs:
 
-Nothing in this file is superseded: these are active lessons, ordered by topic instead of by date. The one winding rule for an imported car (keep the raw glTF winding) is invariant 7 and invariant 10 in `invariants-import-mesh-and-winding.md`; the rip import path is `rip-import.md`.
+- Voxel remesh does not work for hard surfaces: it melts panels into blobs and loses holes and edges (seen on a 37k triangle car body). Quadriflow per panel does: split by loose parts, mark sharp edges at 35 degrees, then remesh each part with `use_preserve_sharp` and `use_preserve_boundary`. Remeshing the whole body at once gives worse flow.
+- `bpy.ops.object.quadriflow_remesh` reporting "Remeshing failed" on a clean mesh (no boundary, no non-manifold edges, Euler number 2) means the target is too low, not that the geometry is dirty. The solver gives up when `target_faces` cannot place singularities for the detail. Sweep the target upward on throwaway copies (Quadriflow is destructive) and keep the leanest target that gives quads with at least about 0.4 times the faces you want. An 8972 triangle fender failed at targets 100 to 1800 and worked from 2600. `remove_doubles`, making manifold and dissolving degenerates do not help on a mesh that is already clean.
+- Quadriflow gives an even grid; it does not follow edges like hand retopology. That is right for baking to a low poly mesh, because the normal map carries the detail, and a vehicle panel does not deform.
+- Leave pieces under about 200 triangles (clips, bolts) as they are. Recalculate normals outward on join, and watch panels modelled with thickness: the inner face goes dark, and the game mesh wants a single face.
 
----
+On a test vehicle seat this took 36899 triangles to 10502 quads, 72% fewer. The solver behaviour is measured; the full automatic retopology route has not been checked in game. Check mesh and UVs afterwards (`invariants-import-mesh-and-winding.md`) and map UVs as `_shared/models/uv-mapping.md` describes.
 
-## RIPPED RACING-GAME IMPORT (added 2026-06-23)
+## Rewriting a proxy triangle
 
-Importing a car ripped from a racing game (the Grub container:
-`.modelbin` / `.swatchbin` / `.carbin`) into a DayZ `CarScript` vehicle is covered in
-`rip-import.md`. It documents Manifest.xml INCLUDE/EXCLUDE (the `__slod`, `bumperfcustom`,
-and stock-vs-widebody traps), RF right-side reconciliation (a LHD rip ships the driver side; passenger
-doors/seats/skirt are mirror-gaps generated by X-mirror), data-driven dimensions from the `Locators.xml`
-wheel locators (wheelbase cross-checked against the real car validates the transform read), the
-GameDB-gated drivetrain/mass that the rip does not carry (mark `[UNVERIFIED]`, never guess-parse the
-binary), and the `verify_<mod>.py` parity-verifier pattern (synthetic self-test as the non-vacuity proof).
-Worked example: the TestCoupe (Subaru BRZ FE '22) build, 2026-06-23.
+Moving the three points of a proxy triangle to change its orientation flips the geometric winding while the stored vertex normals stay as they were: on a test helicopter `dot(geometric, stored)` went from `+1.0` to `-1.0` on all three proxies. A pure translation keeps the winding.
 
-## Auto-retopo of a dense rip = Quadriflow PER-PANEL + ASCENDING target sweep (added 2026-07-14)
+So a check of a `.p3d` edit asserts `dot(geometric, stored) > 0.9` on proxy triangles only. A hull built with reversed winding on purpose has a negative dot on every visual face by design: on the test helicopter one door had 7227 dots per LOD, none above 0.9, median `-0.942910`. Applying the proxy rule to visual faces fails every valid face, and "fixing" that by flipping normals breaks the model. For edited visual faces, compare the resolved normal with the original corner by corner, within 1e-6.
 
-For retopologizing a dense vehicle rip to get a clean bake->UV low-poly (domain invariant; saves ~3 discovery cycles):
-- **Voxel-remesh does NOT work for hard-surface** (melts panels into organic blobs, loses holes/edges - verified on a Banshee body 37k tris). **Quadriflow PER-PANEL does**: split by loose parts -> remesh each with `use_preserve_sharp` + `use_preserve_boundary`, marking sharp by 35 deg angle first. Whole-bucket gives worse flow than per-panel.
-- **`bpy.ops.object.quadriflow_remesh` "Remeshing failed" on a CLEAN mesh (boundary=0, non-manifold=0, euler=2) is NOT dirty geometry - it is a TARGET TOO LOW.** The solver aborts when `target_faces` cannot place singularities for the feature density. Fix = ASCENDING target sweep (not descending): try on THROWAWAY copies (QF is destructive), accept the leanest target that gives quads with `faces >= ~0.4 x desired`. Measured: a 8972-tri fender fails at target 100-1800, engages at >=2600. `remove_doubles` / make-manifold / dissolve-degenerate do NOT help if the mesh is already clean.
-- **Quadriflow = ISOTROPIC remesh** (uniform grid, does not align loops to edges like manual retopo). Right for bake-source->low-poly->UV (detail carried by the normal map). A vehicle panel does not deform, so the deform caveat does not apply.
-- **Pieces < ~200 tris = detail (clips/bolts): leave un-remeshed.** Recalc normals outside on join; watch thin/double-wall panels (a fender modelled with thickness goes dark on the inner face - the game low-poly wants a single face).
+## Where `autocenter=0` belongs
 
-Compose with invariant #0 (Gate #0 mesh+UV, in `invariants-import-mesh-and-winding.md`) and the UV mapping note of the models pack (`skills/_shared/models/uv-mapping.md`). CAVEAT: the full auto-retopo pipeline is still user-gated (visual) and not in-game validated; the VERIFIED durable fact is the Quadriflow solver behaviour (target-sweep). Measured on: the TestQuad v2 auto-retopo experiment (2026-07-06), SEAT.001 36899 tris -> 10502 quads (-72%).
+Vanilla sets `autocenter=0` on the `ProxyVehiclePart` config class (`P:\DZ\vehicles\wheeled\config.cpp:23901` to `:23905`). That config key is separate from the per-LOD `autocenter=0` property measured below.
 
-## Rewriting a proxy triangle: corrected rule for proxies and visual faces
+On a working reference vehicle all five sub-models with geometry carry the LOD property on their visual LOD and their Geometry LOD. The host model has no properties on its visual LOD. So the property belongs on the sub-models, not on the host. Two limits on what it does:
 
-Rewriting the 3 points of a proxy triangle to change its ORIENTATION flips the geometric winding
-while the stored vertex normals stay as they were. Measured on OH-1: `dot(geometric, stored)` went
-from `+1.0` to `-1.0` on all three proxies. A pure TRANSLATION preserves winding.
+- The usual sign, `model_info.bounding_center` not zero after binarize, can be absent while the visual LOD property is missing: an empty Geometry LOD carrying `autocenter=0` already stops binarize from re-centring.
+- Binarizing with and without the property on the visual LODs gave the same result in all 66 `model_info` fields and the same face counts per LOD; only the property block differs. The property reaches the ODOL and can be checked there, but any effect happens at run time. Settling it needs an in-game A and B test: two PBOs that differ only in the property, with a repeatable camera pose.
 
-The earlier form of this rule said any parity check of a .p3d edit must assert `dot(geometric, stored) > 0.9` on every
-touched face. That is right for proxy triangles and WRONG as a general rule: on a hull authored with
-reversed winding on purpose (`FLIP_VISUAL_WINDING = True` in the OH-1 assembler), every visual face
-has a negative dot BY DESIGN. Measured on the deployed OH-1: `door_1` = 7227 dots per LOD, **zero**
-above 0.9, median `-0.942910`; `door_2` median `-0.939892`. A gate applying the proxy rule to migrated
-visual faces fails 100% of valid input, and "fixing" it by flipping normals is the regression.
+## What a winding check must cover
 
-Rule: proxy triangles -> `dot > 0.9`. Migrated/edited visual faces -> equality of the RESOLVED
-normal vector against the baseline, corner by corner, within 1e-6.
+1. The whole part, not the part you touched. A fix that flipped only the paint material and checked only paint read 97.9% to 99.5% correct, while two other materials (4,460 and 315 faces per door) stayed inverted. Count every material of the part, faces agreeing and disagreeing with their stored normals.
+2. Every LOD that draws, including 1100. The View Pilot LOD is a copy of LOD 1, so fixing LOD 1 and skipping 1100 leaves first person broken: one driver door still had 4,341 faces to flip, almost all in its 1100.
+3. Double-sided pairs have three states. A healthy pair has both faces agreeing with their own stored normals. A group where all faces disagree was inverted whole by an earlier global flip; flip all its faces, which keeps the two sides opposite. A mixed group cannot be settled offline: skip it and warn. Skipping every pair leaves the all-disagreeing pairs broken and the count still reads clean.
 
-## `autocenter=0`: corrected scope by LOD, host, and submodel
+A count after the fix that reruns the same test as the fix can only fail if the flip did nothing. Compare the flipped counts per material against a prediction made before the fix; whether the stored normals themselves are right can only be settled in game.
 
-Measured control vs OH-1: all five geometry-bearing Landrover sub-models carry `autocenter=0` on
-their visual LOD **and** Geometry (5/5); the three OH-1 proxied sub-models carry it only on an empty
-Geometry (0/3 on visual). But the HOST of the control has `props={}` on its visual LOD, exactly like
-ours - **the host is exculpated, the sub-models are the gap.** The earlier form of this rule did not make that split.
+## Game winding is the reverse of MLOD winding
 
-Two further measurements bound the claim, so do not sell the property as a fix:
-- The canonical symptom (`model_info.bounding_center != 0` after binarize) can be ABSENT while the
-  visual-LOD property is missing: the deployed OH-1 shell and sub-models all read `(0,0,0)`, because
-  an empty Geometry LOD carrying `autocenter=0` is already enough to stop binarize re-centring.
-- An A/B binarize with and without the property on the visual LODs produced identical semantics -
-  66/66 `model_info` fields equal, same face counts per LOD; only the property block differs. So the
-  property travels to the ODOL and is verifiable there, but any effect is RUNTIME and cannot be
-  predicted offline. Adjudicating it needs an isolated in-game A/B: two PBOs differing only in the
-  property, with a reproducible camera pose.
+Measured twice in game against a known good part: a face draws when its MLOD geometric winding looks into the blocked side of its shell. The import transform is a reflection, so the rasterizer sees mirrored winding, while stored normals pass through unchanged for lighting. The body of the test car worked only because its rip normals came out mirrored too and the body builder aligned winding to them, which cancelled out. A part built another way, such as doors from a later cut, breaks that, and flips by material, by stored normal or per face never converge.
 
-## A winding gate must measure the WHOLE piece, ALL render LODs, and twin pairs (added 2026-08-06, TestCoupe)
+Fix winding per connected part:
 
-Three blind spots, each one bit us in the same door:
+1. Classify each face by casting rays both ways from its centroid against the part's own mesh: open, blocked, rim or enclosed. A face is right when it looks into the blocked side. Prove the classifier on a part known good in game first.
+2. Group faces into connected parts by shared edges and vote within each part over open and blocked faces only; rim and enclosed faces carry no signal. A healthy mesh splits cleanly, skins near 1.00 or near 0.00. If a large part mixes both, stop: flipping it would also flip a good skin.
+3. Flip whole parts that are 60% or more open, reversing faces and negating normals into new copies, never in place. Leave parts at 40% or less. Leave tiny parts (fewer than 8 judged faces) that read 50/50 alone. Any real ambiguity stops the run before saving.
+4. Before writing, assert that the verdict still fits the model (face counts, index ranges). A stale verdict silently flips the wrong faces.
+5. Export, classify and count again: no part may remain to flip on any LOD that draws.
 
-1. **Whole piece, not the touched subset.** A first fix flipped only
-   `brz_paint` and its gate measured only paint (97.9-99.5% green) while
-   `brz_black` (4,460/door) and `brz_mirror` (315/door) stayed inverted. A
-   winding gate censuses EVERY material of the piece (b1_door_census.py
-   pattern: per-material concord/discord vs stored normals).
-2. **All render LODs, including 1100.** The 1100 is a copy of LOD1: fixing
-   LOD1 and skipping 1100 leaves first-person still broken (measured: 4,341
-   paint flips pending in driver door, almost all in its 1100).
-3. **Twin (double-sided) groups have three states.** Healthy pair = BOTH faces
-   concordant with their OWN stored normals (each side owns its normals). A
-   group where ALL faces are discordant is a pair inverted WHOLESALE by an
-   earlier global flip -> flip ALL its faces (preserves opposite parity).
-   Mixed group -> skip + WARN (not adjudicable offline). A blanket twin-skip
-   leaves all-discord pairs broken and the census that skips twins reports
-   green (measured: codriver brz_cab_plastic pair all-discord in LOD1/2/1100).
+Concave pieces such as mirror housings defeat ray classification. Restore them to their last state known good in game, and check the restored count against the count recorded when they broke.
 
-Post-fix census that re-runs the SAME predicate as the fix is tautological for
-the oracle (it can only fail if reverse() did not mutate). Make it
-non-tautological at the mechanism level: contrast flipped-per-material counts
-against an INDEPENDENT pre-fix census prediction; the oracle itself (stored
-normals sane) is only adjudicated in-game.
+A grey band over the windshield in first person was the sun visor's edge, seen because the seated camera rides high; it was real geometry. Check what the camera sees with a fan of rays before cutting anything. The fix there was the seat pose (crew proxy 5 mm lower), not a trim.
 
-## Game winding is the INVERSE of MLOD geometric winding; fix winding per CONNECTED COMPONENT, never per face (added 2026-08-07, TestCoupe; refines the section above)
+## Deleting faces by side
 
-Measured twice in-game with a positive control: a face renders in game when
-its MLOD geometric winding looks into the BLOCKED side of its shell (the
-pipeline transform is a reflection; the rasterizer sees mirrored
-winding, while stored normals pass through UNCHANGED for lighting). The body
-works because its rip normals came out mirrored too and the body builder aligned
-winding to them - an accidental double compensation. Any part built by a
-different path (the doors came from a later cut) breaks the compensation and
-no per-material / per-stored-normal / per-face flip converges: TestCoupe burned
-FOUR in-game cycles (by material, by stored-normal concordance, per-face BVH,
-per component) before the method below closed it.
+Classifying faces by the sign of their X centroid works for faces wholly on one side and silently breaks any surface crossing the axis. A flat panel is usually a quad of two triangles; if it crosses X=0, one triangle's centroid falls on each side and half the panel goes. In game the panels show as half triangles and half gaps. On a test helicopter 9 canopy panels of 2 faces each kept 1 face each, while the island count did not change.
 
-The method that converges (script names are those of the TestCoupe build's tooling):
-1. `c1_export_meshes_json.py` + `c1_bvh_classify.py` (Blender BVH
-   self-occlusion): per face, ray both ways from the centroid against the
-   piece's own mesh -> open / blocked / rim / enclosed. A face is RIGHT when
-   it looks into the blocked side. Validate the classifier on an
-   in-game-correct piece FIRST (positive control).
-2. `d1_comp_census.py`: union-find components by shared edges, vote per
-   component over ADJUDICATED faces only (open+blocked; rim/enclosed carry no
-   signal). A healthy mesh is bimodal (skins ~1.00 vs ~0.00). If a big
-   component mixes both, STOP - per-component flipping would swap a good skin.
-3. Flip whole components >=60% open (reverse + negate normals via NEW pool
-   copies, never in place); leave <=40%; micro-components (<8 adjudicated)
-   with 50/50 reads are left untouched; any REAL ambiguity aborts before save.
-4. Verdict->p3d integrity asserts (face counts, index ranges) - a stale
-   verdict silently flips foreign faces (this bit us).
-5. Convergence gate: re-export, re-classify, re-census -> flip candidates
-   must be ZERO on every render LOD.
+1. Before deleting by side, check whether any island of the selection crosses the symmetry plane (`min_x < 0 < max_x`). If one does, decide per island or leave crossing islands out.
+2. A test along one axis catches everything that shares it. A band of 0.85 m around each door anchor along Z also covered the canopy. Add a second axis (height) or compare face to face against the sub-model that holds that geometry.
+3. Check offline that each island keeps its face count, or loses none or all. An island going from 2 faces to 1 is a split quad. Totals do not show it.
+4. When the geometric test is doubtful, open a viewer and let the user pick. A small Three.js page with clickable islands costs less than a lost in-game cycle. Show two layers, deployed faces (click to delete) and deleted faces (click to restore), over a wireframe hull, since a solid hull hides the panels to pick, and export two id lists. Before handing it over, confirm the page loads and take a screenshot of it.
 
-Concave sub-objects (mirror housings) defeat ray classification: restore them
-to their last in-game-good state and ASSERT the reverted count against the
-recorded count of the pass that broke them (664/666 here).
+Vertices of a selection that no face uses are evidence, not garbage: on the test helicopter 357 such points on one side were the trace of 619 lost faces. Measure before cleaning.
 
-A related lesson: a grey band over the windshield in 1PP was the interior's
-sun-visor edge seen because the seated camera rides high - legitimate
-geometry. Adjudicate WHAT the camera sees with a ray fan (d2_band_probe.py)
-BEFORE cutting anything; the fix was posture (crew proxy -5mm), not trimming.
+## Deleting faces with py3d
 
-## Face surgery on a .p3d: a criterion along ONE axis splits quads crossing that axis (added 2026-08-07, TestHeli)
+In py3d (`scripts/tools/py3d/py3d/__init__.py`, class `Selection`), `Selection.all_faces` is a reference to the `lod.faces` list, not a copy, and `Selection.write()` checks its keys by identity against that list and raises `RuntimeError` on a foreign one.
 
-When deleting faces of a selection by side ("remove duplicate port-side glass"), the natural
-criterion is to classify each FACE by the sign of its X centroid. It is correct for faces living
-entirely on one side and **silently destructive** for any surface CROSSING the axis: a
-flat panel is usually a quad of 2 triangles, and if the quad crosses X=0, one triangle's centroid
-falls on one side and the other's on the other. The criterion removes half the panel and leaves half a quad.
+- `lod.faces = [f for f in lod.faces if ...]` makes a new list. Every selection stays bound to the old one, and writing the LOD raises `RuntimeError` for a stale binding (`LOD.write`). Mutate in place instead, or recreate the selection with `lod.new_selection(name)`.
+- Delete in place from the highest index down: `for i in reversed(cut): del lod.faces[i]`.
+- First remove those faces from each `Selection.faces` (a dict keyed by face), or `write()` stops on a foreign key.
 
-Exact visual signature in game: the panels look half triangles, half triangular gaps.
-Measured afterwards (TestHeli 2026-08-07): 9 canopy panels with 2 faces each; in the deployed
-file 1 of each pair remained. The ISLAND count does not betray it (still was 17); only the
-FACE count per island.
+After saving, read the file back and check every named selection's count: the old count minus the faces removed from it. In one case 187 deleted faces left `glass` at 5910 of 6022, `interior` at 4383 of 4458 and `trim` untouched at 4072. A count that does not match means the deletion took something it should not have.
 
-Rules:
+Before deleting, ask which selections the faces belong to. `glass` drives glass breaking, unlike a decorative selection, and losing 2% of a selection is not the same as losing 90%. Leave unused vertices in place: removing them reindexes the whole LOD and throws away evidence. And check how many LODs the part has: a headliner fix had to go into the visual LOD and the 1100, or it came back in first person.
 
-1. Before deleting by side, check whether the selection has islands CROSSING the symmetry plane
-   (min_x < 0 < max_x on the island). If so, the face centroid criterion DOES NOT work: decide at
-   ISLAND level, or explicitly exclude islands that cross.
-2. A ONE-dimensional criterion captures everything sharing that dimension. The Z band of the two
-   OH-1 doors (+-0.85 m around each anchor) covered z from -3.68 to -0.62, which is where
-   the canopy also lives. Add the second discriminating dimension (height Y) or compare face-to-face
-   against the sub-p3d replicating that geometry.
-3. Gate that catches it offline and that no aggregate count replaces: **each island preserves its number of
-   faces**, or if it loses, it loses 0 or ALL. An island going from 2 faces to 1 is the signature of a split
-   quad. Total area does not betray it either if you measure by unique vertex set.
-4. When geometric criterion is doubtful, do not guess: **bring up a viewer and let the user
-   select**. Measured cost: ~40 min of self-contained viewer (Three.js UMD r147 + clickable islands +
-   list export) versus a lost flight cycle and a visible model regression.
-   The pattern that worked on TestHeli: two layers, DEPLOYED
-   (click = delete) and what WAS ALREADY DELETED (click = restore), hull wireframe silhouette (a solid
-   context mesh hides precisely the panels to be picked), and export as two ID
-   lists. Mandatory self-test before handing off: CDN 200, DOM marker only
-   written at the end of the script, and headless screenshot READ.
+## Comparing two builds
 
-Corollary of the same case: **orphan vertices of a selection (selection members without
-any face using them) are EVIDENCE, not garbage.** The 357 starboard orphans on the OH-1 were the
-exact trace of 619 faces that the pipeline had lost; "cleanup" deletes them and with them the
-only clue that something was missing. Measure and understand before cleaning.
+To check that a build changed only what it should:
 
-## Deleting faces from a .p3d with py3d: mutate `lod.faces` IN PLACE or break selections silently (added 2026-08-07, TestCoupe windshield; extends the face-surgery section above)
-
-The face-surgery section above covers WHICH faces to choose. This covers HOW to remove them without corrupting the model, and is the step where
-a correct deletion turns into a broken `.p3d`.
-
-**The mechanism, read from source before writing a byte** (`py3d/__init__.py` under `scripts/tools/py3d/`, class
-`Selection`): `Selection.all_faces` **is a REFERENCE to the `lod.faces` list**, not a copy; and
-`Selection.write()` validates its keys **by identity** against that list and throws `RuntimeError` if
-any is "foreign". Consequences:
-
-- `lod.faces = [f for f in lod.faces if ...]` creates a NEW list. Every `Selection` remains
-  bound to the old one, and writing the LOD raises `RuntimeError` ("stale binding") for each such
-  selection (`py3d/__init__.py`, `LOD.write`); recreate it with `lod.new_selection(name)` or mutate in place.
-- The correct way is mutating **in place** from highest to lowest index: `for i in reversed(cut): del
-  lod.faces[i]`.
-- Before that you must **remove those faces from each `Selection.faces`** (they are dicts with Face as
-  key), or `write()` aborts due to foreign key.
-
-**Mandatory gate, and it is cheap**: re-read the file after saving and check the count of EACH
-named selection. Expected = previous count minus those removed from that selection. Measured in
-the real case: `glass` 6022→5910 (−112), `interior` 4458→4383 (−75), `trim` 4072 intact, with 187
-faces deleted. If a selection does not match, the deletion swallowed something it shouldn't have.
-
-**Before deleting, ask which selections the condemned faces belong to.** Touching a
-decorative selection is not the same as `glass`, which governs glass shattering. A 2% of a
-selection is manageable; 90% turns it into something else.
-
-**Orphan vertices are left.** Deleting vertices no longer used by any face forces reindexing
-the entire LOD, and orphans are EVIDENCE, not garbage (the corollary of the section above).
-
-**Check how many LODs the part has BEFORE considering deletion done.** The headliner fix
-on the same car had to be applied in visual LOD AND in ViewPilot 1100, or it reappeared in first
-person. In the case of this windshield the chunk had A SINGLE LOD and did not apply — but that is
-checked, not assumed.
-
-### Corollary for inter-build PBO gate
-
-When verifying that a build only changed what it was supposed to:
-
-1. **An "order-free" key CANNOT contain section indices.** Reimplementing it with
-   `face_index_start` / `face_index_end` gives a gate that declares 7 out of 10 untouched models as
-   DIFFERENT, because those indices are exactly what AddonBuilder reorders. The valid key
-   is the multiset of `(material, texture, face vertex indices, lighting bit)`
-   resolved by NAME tables, with a VOID guard if sections do not cover all faces.
-2. **Adding a new texture changes `texHeaders.bin`** — it is the PBO texture index. It is
-   mechanical and expected; if not in the allowed deltas list, the gate gives a false red.
-3. Separate delta by entry type: `.p3d` is compared **semantically**, everything else by
-   **bytes**. A gate that parses every changed entry as ODOL blows up as soon as the batch
-   includes a texture.
+1. A key meant to ignore order cannot hold section indices. A key built on `face_index_start` and `face_index_end` marked 7 of 10 untouched models as changed, because AddonBuilder reorders exactly those. Use the multiset of material, texture, face vertex indices and lighting bit, resolved through the name tables, and void the result if the sections do not cover every face.
+2. Adding a texture changes `texHeaders.bin`, the PBO's texture index. Expect it, or the check fails falsely.
+3. Compare `.p3d` entries by content and every other entry by bytes. A check that parses every changed entry as ODOL breaks as soon as a texture changes.

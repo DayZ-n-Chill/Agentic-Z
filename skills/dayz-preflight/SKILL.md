@@ -100,7 +100,7 @@ These hold checks and notes that `preflight.py` does not run.
 |---|---|
 | Object Builder's Buldozer preview never opens. Is the external viewer path valid? | `references/object-builder-viewer.md` |
 | What does DayZ 1.30 change for the environment (`-cacheP3D`, an unpacked `-mod` folder, the new Workbench editors)? | `references/dayz-1-30.md` |
-| What replaces each check on Linux? | `skills/_shared/linux-proton.md`, section 3, "What replaces each `/dayz-preflight` check" |
+| What replaces each check on Linux? | `skills/_shared/linux-proton.md`, "What replaces each `/dayz-preflight` check" |
 
 When the work has to end in a mod that builds, loads and ships (`config.cpp` and `CfgMods`, `requiredAddons`, the PBO and its signature, a boot on a local server, the Workshop), follow `skills/dayz-launch-test/references/mod-loop.md`.
 

@@ -107,15 +107,22 @@ Deep material lives in `<skill-dir>\references\`. `build.py` runs none of it bey
 
 | Question | File |
 |---|---|
-| What should I check in the mod folder before packing (config, `model.cfg`, textures, LODs, stringtable, scripts, wheel slots), and what does `$PBOPREFIX$` have to hold? | `references/pre-build-checks.md` |
+| What should I check in the mod folder before packing, and what does `$PBOPREFIX$` have to hold? | `references/pre-build-checks.md` |
+| Is `config.cpp` sound, and does `model.cfg` match the models? | `references/config-and-model-checks.md` |
+| Do texture and material paths resolve, are the LODs complete, and do a vehicle's wheel slots simulate? | `references/asset-checks.md` |
+| Is every `#STR_` key in a `stringtable.csv` DayZ reads, and do the scripts avoid what Enforce Script rejects? | `references/stringtable-and-script-checks.md` |
+| Which boxes do I tick by hand before and after a build? | `references/manual-build-checklist.md` |
 | A check failed: what is the usual cause and fix? | `references/common-validation-failures.md` |
-| How do AddonBuilder and binarize behave: source tree, staging, where binarize looks for cited files, `-temp`, where the ODOL lands, `-packonly` against a binarized build? | `references/addonbuilder-rules.md` |
-| The build said "Build Successful": is the PBO really the one I meant (scripts inside, entries match, two builds compared, the right one deployed, a gate that can fail)? | `references/post-build-gates.md` |
+| How does AddonBuilder behave: the command line, `-temp`, the real source tree, where the ODOL lands, a result code that lies, `-packonly` against a binarized build? | `references/addonbuilder-rules.md` |
+| Where does binarize look for the materials and textures a model cites, and how do I stage a build and check the ODOL? | `references/binarize-file-lookup.md` |
+| The build said "Build Successful": are the scripts, stringtable and models inside, and can my content gate fail? | `references/post-build-gates.md` |
+| What changed between two builds, and which entries can I compare by bytes? | `references/comparing-builds.md` |
+| Is the PBO the game loads the one I built, from the sources I meant, and why does a mounted mod run nothing? | `references/deployed-pbo-checks.md` |
 | How do I run the script validator before packing, what does green prove, and how do I show the deployed mod compiles? | `references/script-linter-and-compile-gate.md` |
 | What did DayZ 1.30 change for packing (duplicate members, unpacked mods, `fsShadowing`)? | `references/dayz-1-30-pbo-build.md` |
 | How do I sign the PBO and publish it to the Workshop with the Publisher or SteamCMD? | `references/workshop-publish.md` |
 | How do I build, sign and publish on Linux with dayzmake? | `references/dayzmake-linux.md` |
-| Is there validator code I can adapt for a CI pipeline? | `references/validation-scripts.md` |
+| Is there validator code I can adapt for a CI pipeline? | `references/validation-scripts.md`, with the code in `references/config-validator-script.md` and `references/texture-path-checker-script.md` |
 | What do I check in each kind of file (`config.cpp`, script, networking, layout, action, `.rvmat`, persistence, refactor) before it counts as written? | `references/file-checklists.md` |
 
 To study a PBO somebody else built, use `/dayz-import-mod` (its `pbo_inventory.py` lists what a PBO holds). Building is one step of the mod loop in `skills/dayz-launch-test/references/mod-loop.md` (look up, write, build, boot on a local server, verify, publish).

@@ -1,88 +1,47 @@
-# Unconfirmed findings: model pipeline
+# Unconfirmed model faults
 
-Two open faults and one tool note, recorded 2026-05-17. None is checked on `P:\` and none was reproduced here; confidence is medium. Use them as red flags during a model audit and say so in the report; do not present them as settled behavior.
+Which Binarize and proxy faults are reported by modders but not confirmed, what to do when an audit meets one, and a third party Object Builder replacement for Maya. None of the faults is checked on `P:\` or reproduced here. Treat them as warning signs in a model audit, name them as unconfirmed in the report, and never present them as settled behaviour.
 
-| Finding | Status | Use it when |
+| Fault | Status | Suspect it when |
 |---|---|---|
-| Binarize misaligns meshes tagged `personality` | Open bug, unresolved | Clothing or an accessory lines up in Object Builder and shifts after binarizing |
-| Nested proxies on binarized models can disappear | Open bug or engine limit | A mod model has missing parts and uses a binarized vanilla model as a proxy |
-| Object Builder alternative for Maya | Third-party tool, alpha | The user models in Maya and wants to skip Object Builder |
+| Binarize moves meshes tagged `personality` | Open, unresolved | Clothing or an accessory lines up in Object Builder and shifts after binarizing |
+| Proxies of binarized models vanish inside an unbinarized parent | Open fault or engine limit | A mod model has missing parts and uses a binarized vanilla model as a proxy |
 
----
+## Binarize moves meshes tagged personality
 
-## Binarize misaligns p3d meshes tagged as `personality`
+Reported on a bracelet in the glove slot:
 
-**Open bug, unresolved, not reproduced here.**
+- The mesh is attached to the glove slot and marked `personality` in the `.p3d`'s named selections.
+- Unbinarized, in Object Builder and Buldozer, it looks right.
+- After DayZ Tools binarize it, the mesh no longer lines up with the arm: it is moved or turned against its unbinarized position.
+- The `model.cfg` extracted from the binarized `.p3d` matches the original, so the fault lies after `model.cfg`, in the binarizer itself.
 
-Symptom (a bracelet in the glove slot):
+Suspected causes: a regression in the DayZ 1.29 Tools binarizer, or bone weight or pivot data recomputed wrongly during binarizing.
 
-- The mesh is attached to the glove slot and marked as `personality` in the p3d's named selections.
-- It looks correct unbinarized (in Object Builder and Buldozer).
-- After DayZ Tools binarize the mesh no longer lines up with the arm: it is translated or rotated relative to its unbinarized position.
-- The `model.cfg` extracted from the binarized p3d matches the original, so the fault is downstream of `model.cfg`, in the binarizer itself.
+When auditing a misaligned clothing or accessory mod:
 
-Likely candidates:
-
-- A regression in the 1.29 DayZ Tools binarizer.
-- Bone weight or pivot data recomputed wrongly during binarization.
-
-**What to do when auditing a misaligned clothing or accessory mod:**
-
-1. Open the binarized `.p3d` through an external ODOL to MLOD converter and compare bone weights against the source. Agentic-Z ships no debinarizer.
-2. Try packing with an older DayZ Tools build. The 14 August experimental patch is the baseline to try first; that detail is low confidence.
+1. Open the binarized `.p3d` through an outside ODOL to MLOD converter and compare the bone weights with the source. Agentic-Z ships no debinarizer.
+2. Try packing with an older DayZ Tools build. The experimental patch of 14 August is the one reported to try first; that detail is uncertain.
 3. Repack with Addon Builder (`/dayz-build-pbo`) if the mod was packed with another packer such as pboProject.
 
----
+## Proxies of binarized models vanish
 
-## Nested proxies on binarized models can disappear in game
+Reported on a car part armour system:
 
-**Open bug or engine limitation, not reproduced here.**
+- The car door `.p3d` is binarized, as vanilla ships it.
+- A custom armour `.p3d`, unbinarized, uses the binarized car door as a proxy.
+- In game the proxy is missing: only the armour draws, and the door has no physics.
 
-The case, a modded car part armor system:
+What did not fix it: a `proxy:` selection in the unbinarized model, or the door `.p3d` as a proxy placed by hand. What worked, with a cost: using the car door's attachment slot and declaring the armour as an attachment. The armour then carries none of the door's physics or collision; it behaves as a cosmetic attachment. How to bake a proxy into a new `.p3d` without an attachment slot is unknown.
 
-- The car door `.p3d` is binarized (shipped by vanilla).
-- A custom armor `.p3d` (unbinarized) declares the binarized car door as a proxy.
-- In game the proxy disappears: only the armor renders, and the door has no physics.
+The suspected cause is an engine limit on proxies that point at binarized models from an unbinarized parent, perhaps because the binarized child cannot rebuild its bounding and collision data inside that parent.
 
-Workarounds that did not fix it:
+Every model vanilla ships is binarized: a scan of all 8,256 `.p3d` files under `P:\DZ\` finds the `ODOL` signature in each one (for example `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d`). Any proxy that points at a vanilla model therefore points at a binarized one, so flag this fault whenever a mod with missing visual parts uses vanilla models as proxies.
 
-- Using a `proxy:` declaration in the unbinarized model.
-- Attaching the door `.p3d` as a proxy with manual placement.
+## Object Builder replacement for Maya
 
-Workaround that did work, with caveats:
+An open source Object Builder replacement exists for Autodesk Maya 2027, with a PySide 6 interface. It is in alpha and may not handle every vanilla LOD case. Agentic-Z does not ship or drive it. It suits a modeler whose main tool is Maya and who wants to skip the Blender add-on and Object Builder round trip.
 
-- Use the car door's attachment slot system and declare the armor as an attachment.
-- This does not carry over the physics or collision of the original door; the armor behaves as a cosmetic attachment.
-
-**Open question:** how to bake a proxy into a new `.p3d` without an attachment slot. No resolution.
-
-**Hypothesis:** the engine restricts nested proxies that reference binarized roots, likely because the binarized child cannot rebuild its bounding and collision data when wrapped in an unbinarized parent.
-
-**What to do when auditing:** if a mod has missing visual parts and uses proxies on binarized vanilla models, flag this issue. Every model vanilla ships is binarized: a scan of all 8,256 `.p3d` files under `P:\DZ\` found the `ODOL` signature in each one (for example `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d`), so any proxy that points at a vanilla model points at a binarized one.
-
----
-
-## Object Builder alternative for Maya
-
-**Third-party tool for Autodesk Maya 2027, alpha.**
-
-An open source Object Builder replacement exists for Autodesk Maya 2027, with a PySide 6 interface. It is useful for modelers who already work in Maya and want to skip the Object Builder round trip. Agentic-Z does not ship or drive it.
-
-Key design choices:
-
-- **Memory points** are Maya Locators, converted to MLOD Memory points on export. Maya has no native equivalent of Object Builder memory points.
-- **Named selection to bone assignment** goes through Maya groups, one group per selection.
-- **No Workbench dependency** for the p3d export step.
-
-Status as of 2026-05: alpha, with bugs being fixed. It may not handle every vanilla LOD edge case yet.
-
-Useful when:
-
-- The user's main 3D software is Maya (for example modelers coming from the game industry).
-- The user wants to avoid the Blender add-on and Object Builder round trip.
-
----
-
-## How to use these in an audit
-
-The binarize misalignment and the disappearing nested proxies are red flags during a p3d audit: if a user reports misalignment after binarize, or missing proxies on binarized models, name the matching finding and state that it is not yet checked on `P:\`.
+- Memory points are Maya Locators, converted to MLOD memory points on export; Maya has no native equivalent.
+- Named selections map to bones through Maya groups, one group per selection.
+- The `.p3d` export does not need Workbench.

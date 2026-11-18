@@ -1,6 +1,6 @@
 # Item and player sounds: the vanilla handlers
 
-The sound systems vanilla already runs for items and players: the item sound handler that lets the server start a sound on every client, the player sound handlers, step sounds, player sound events and the step sounds of bushes. Use them before writing your own sync. Line numbers are from the 1.30 scripts on `P:\`; statements about 1.29 are not yet checked on `P:\`.
+Which sound systems vanilla already runs for items and players: the item sound handler that lets the server start a sound on every client, the player sound handlers, step sounds, player sound events and the step sounds of bushes. Use them before writing your own sync. Line numbers are from the 1.30 scripts on `P:\`; statements about 1.29 are not yet checked on `P:\`.
 
 ## Contents
 
@@ -15,11 +15,11 @@ The sound systems vanilla already runs for items and players: the item sound han
 
 `ItemSoundHandler` (`P:\scripts\4_world\classes\soundhandlers\itemsoundhandler.c:23`) is the official way to start an item sound on the server and hear it on every client. Its header comment gives the steps (`P:\scripts\4_world\classes\soundhandlers\itemsoundhandler.c:12`): add a sound ID, link the ID to a sound set in `InitItemSounds()`, then start it from the server.
 
-### 1. The ID
+### Pick an ID
 
 IDs are plain numbers in `SoundConstants` (`P:\scripts\3_game\constants.c:423`), from `ITEM_PLACE = 1` to `ITEM_ARMY_FLASHLIGHT_TURN_OFF = 61`. The largest ID an item may use is `ITEM_SOUNDS_MAX = 63` (`P:\scripts\4_world\entities\itembase.c:116`). For your own sound, add a constant in a `modded class SoundConstants` with a free number up to 63, or reuse a vanilla ID your item does not use.
 
-### 2. Link the ID to a sound set
+### Link the ID to a sound set
 
 The vanilla barrel is the model (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:532`):
 
@@ -42,7 +42,7 @@ override void InitItemSounds()
 - `SoundParameters` has three fields: `m_FadeIn`, `m_FadeOut` and `m_Loop` (`P:\scripts\4_world\classes\soundhandlers\itemsoundhandler.c:1`).
 - The base `InitItemSounds()` already links the place, deploy and deploy loop IDs when the item overrides `GetPlaceSoundset()`, `GetDeploySoundset()` or `GetLoopDeploySoundset()` (`P:\scripts\4_world\entities\itembase.c:4416`). For those three sounds, overriding the getter is enough.
 
-### 3. Start and stop from the server
+### Start and stop from the server
 
 ```c
 StartItemSoundServer(SoundConstants.ITEM_BARREL_OPEN);     // one shot

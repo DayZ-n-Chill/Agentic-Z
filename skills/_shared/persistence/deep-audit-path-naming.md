@@ -1,84 +1,80 @@
-# Path-naming matrix: mechanical check 1
+# File name helpers that disagree
 
-Catches the bug class where a path helper and a recovery or cleanup site disagree on the file name on disk: the reader looks for a file the writer never wrote, or the other way round. Open this in step 1 for any mod that builds file names for its own save files.
+Covers mechanical check 1 of the deep audit (`deep-audit.md`): a path helper and a recovery or cleanup site that build different names for the same file, so the reader looks for a file the writer never wrote. Run it for any mod that builds names for its own save files.
 
-Reasoning agents miss this because each helper looks correct in isolation: the bug is the inconsistency, not any one site.
+Each helper looks right on its own; the bug is that two of them disagree. The helper names, suffixes and `file:line` values in the tables come from a third-party virtual storage mod. They show the shape of each table and are not vanilla facts. The search lines are patterns for the agent's own search tool: a regular expression, limited to `.c` files, printing matching lines with numbers.
 
-The helper names, suffixes and `file:line` values in the tables are from the virtual storage example (third-party mod); they show the shape of each table and are not vanilla facts. The search lines in the code blocks are recipes for the agent's search tool: a regular expression, limited to `.c` files, printing matching lines with numbers.
+## Example: `.tmp` against `.lfv.tmp`
 
-## Worked example: VULN-003 (virtual storage mod)
+In the virtual storage mod `GetContainerTmpPath(sid)` returned `container_<sid>.tmp`, while the recovery scan at boot looked for `container_<sid>.lfv.tmp`. Either name would have worked; the bug was that they differed. A crash in the middle of a write left a `.tmp` file that recovery never saw. Six reviews read both functions and passed them.
 
-`GetContainerTmpPath(sid)` returned `container_<sid>.tmp`. The recovery boot scan looked for `container_<sid>.lfv.tmp`. Either naming was defensible; the bug was that they disagreed. Result: a crash in the middle of a virtualize left a `.tmp` on disk that recovery never noticed. Six reasoning agents read both functions and signed off.
+## List the path helpers
 
-## Procedure
-
-### Step 1: inventory the path helpers
-
-Search for every function that returns a string ending in a recognized extension. Record name, signature and exact return template.
+Find every function that returns a string ending in a known extension, and record its name, signature and the exact name it returns.
 
 ```text
 Grep "function.*Path" --type c --output_mode content -n true
 Grep "return.*\.lfv|return.*\.tmp|return.*\.bak|return.*\.json|return.*\.manifest" --type c --output_mode content -n true
 ```
 
-Enforce Script has no `function` keyword, so the first pattern only finds comments. For helpers written as methods, also search for the declaration shape, for example `string\s+Get\w*Path\s*\(`.
+Enforce Script has no `function` keyword, so the first pattern finds only comments. For helpers written as methods, also search for the declaration, for example `string\s+Get\w*Path\s*\(`.
 
-Build the table:
-
-| Helper | Signature | Returns template | File:Line |
+| Helper | Signature | Returns | File:Line |
 |---|---|---|---|
 | `GetContainerLfvPath` | `(string sid)` | `<dir>/container_<sid>.lfv` | persistence.c:120 |
 | `GetContainerTmpPath` | `(string sid)` | `<dir>/container_<sid>.tmp` | persistence.c:128 |
 | `GetContainerBak1Path` | `(string sid)` | `<dir>/container_<sid>.lfv.bak1` | persistence.c:135 |
 | `GetContainerBak2Path` | `(string sid)` | `<dir>/container_<sid>.lfv.bak2` | persistence.c:142 |
 
-Inconsistency in the third column is a flag. In the example above, `.tmp` breaks the `.lfv.<suffix>` pattern.
+A name in the third column that breaks the pattern is a flag. Here `.tmp` breaks the `.lfv.<suffix>` pattern.
 
-### Step 2: inventory every extension concatenation
+## List every name built inline
 
-Search for every literal that ends in one of the recognized extensions. This finds places that build the path inline without going through a helper.
+Find every string literal that ends in a known extension. This catches code that builds a path without the helper.
 
 ```text
 Grep "\".*\.lfv\"|\".*\.tmp\"|\".*\.bak1\"|\".*\.bak2\"|\".*\.manifest\.json\"|\".*\.virtualizing\"|\".*\.restoring\"|\".*\.quarantine\.json\"" --type c --output_mode content -n true
 ```
 
-For each hit, record the file and line and which extension is being built. Compare against the helper table. Any mismatch is a finding.
+Record the file, the line and the extension of each hit, and compare it with the helper table. Every mismatch is a finding.
 
-### Step 3: cross-reference reader sites against writer paths
+## Match each reader to its writer
 
-For each helper, find every call site. Group by intent: writers against readers (recovery, cleanup, admin commands, boot scan).
+Find every call of each helper and sort the calls into writers and readers (recovery, cleanup, admin commands, the boot scan).
 
 ```text
 Grep "GetContainerTmpPath|GetContainerLfvPath|GetContainerBak1Path|GetContainerBak2Path" --type c --output_mode content -n true
 ```
 
-For each writer and reader pair, the path they build must be byte-identical. If the writer uses `helper_A` and the reader uses an inline literal, that is a flag.
+A writer and its reader must build exactly the same string. A writer that uses a helper while the reader uses an inline literal is a flag.
 
-On the vanilla side, a path a mod builds ends up as the path argument of a vanilla file function. The common ones are `FileExist` (`P:\scripts\1_core\proto\ensystem.c:397`), `OpenFile` (`ensystem.c:417`), `FindFile` for directory scans (`ensystem.c:520`), `MakeDirectory` (`ensystem.c:525`), `DeleteFile` (`ensystem.c:528`), `CopyFile` (`ensystem.c:531`), `BeginParse` (`ensystem.c:392`), `FileSerializer.Open` (`P:\scripts\1_core\proto\serializer.c:108`), and the `JsonFileLoader` calls `LoadFile` (`P:\scripts\3_game\tools\jsonfileloader.c:7`), `SaveFile` (`jsonfileloader.c:42`), `JsonLoadFile` (`jsonfileloader.c:105`) and `JsonSaveFile` (`jsonfileloader.c:134`). This list is not exhaustive: a mod can also reach files through its own wrappers or a framework, so add those names too. Searching for these names finds inline paths the suffix search missed, on both the writer and the reader side.
+Every path a mod builds ends up as the argument of a vanilla file function, so search for those calls too; they show inline paths the suffix search missed, on both sides.
 
-### Step 4: output
+| Function | Source |
+|---|---|
+| `BeginParse` | `P:\scripts\1_core\proto\ensystem.c:392` |
+| `FileExist`, `OpenFile` | `ensystem.c:397`, `:417` |
+| `FindFile` (folder scan), `MakeDirectory` | `ensystem.c:520`, `:525` |
+| `DeleteFile`, `CopyFile` | `ensystem.c:528`, `:531` |
+| `FileSerializer.Open` | `P:\scripts\1_core\proto\serializer.c:108` |
+| `JsonFileLoader` `LoadFile`, `SaveFile`, `JsonLoadFile`, `JsonSaveFile` | `P:\scripts\3_game\tools\jsonfileloader.c:7`, `:42`, `:105`, `:134` |
 
-Findings table:
+The list is not complete: a mod can also reach files through its own wrappers or a framework, so add those names.
 
-| Site | Path constructed | Expected (per helper) | File:Line |
+## Report
+
+| Site | Path built | Expected from the helper | File:Line |
 |---|---|---|---|
-| RecoverFromTmp | `container_<sid>.lfv.tmp` | `container_<sid>.tmp` | recovery.c:84 |
-| ... | | | |
+| `RecoverFromTmp` | `container_<sid>.lfv.tmp` | `container_<sid>.tmp` | recovery.c:84 |
 
-Each row is a P0 if the path is on the data-loss recovery branch, P1 otherwise.
+A mismatch on the recovery path is data loss; anywhere else it needs recovery.
 
-## Heuristics for what counts as an "extension"
+Run the tables once per family of extensions:
 
-Treat as one extension family per file (so the helper table groups them):
+- Main data: `.lfv`, or the mod's own main format.
+- Temp files: `.tmp`, `.lfv.tmp`, `.partial`.
+- Backups: `.bak`, `.bak1`, `.bak2`, `.lfv.bak1`.
+- Markers: `.virtualizing`, `.restoring`, `.locked`, `.in-progress`.
+- Side files: `.manifest.json`, `.quarantine.json`, `.meta`, `.health`.
 
-- **Authoritative data**: `.lfv` (or your equivalent main format)
-- **Atomic temp**: `.tmp`, `.lfv.tmp`, `.partial`
-- **Backups**: `.bak`, `.bak1`, `.bak2`, `.lfv.bak1`
-- **Markers**: `.virtualizing`, `.restoring`, `.locked`, `.in-progress`
-- **Sidecars**: `.manifest.json`, `.quarantine.json`, `.meta`, `.health`
-
-Pick the family for your codebase and run the matrix once per family.
-
-## Time budget
-
-About 5 to 10 minutes per family on a mod of that size (30 path call sites or fewer). If it takes longer, the codebase has too many inline path constructions: the audit finding is then "consolidate path construction through helpers", before consistency is even checked.
+Allow 5 to 10 minutes per family for a mod with 30 path call sites or fewer. When it takes longer, the mod builds too many paths inline, and the finding is to route them all through helpers before checking them for agreement.

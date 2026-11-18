@@ -71,10 +71,10 @@ Headings are for the reader, not the model; their case doesn't change behavior. 
 
 When a skill documents a system that shares a family with a better documented one (Arma 3 and DayZ, SQF and Enforce Script, Python 2 and 3, Vue 2 and 3, React classes and hooks), the main risk is carrying knowledge over from the better documented relative without checking it again. The author assumes the two share values when they only share a lineage.
 
-Cases recorded on 2026-05-12, each checked against the files rather than against a written audit:
+Cases each checked against the files rather than against a written audit:
 
 - LOD type values. Earlier versions of a `.p3d` audit script classified ViewGeometry and FireGeometry with `2e13`, `3e13` and `7e13`, values quoted in Arma guides; they were wrong for DayZ and were corrected. The DayZ values and their vanilla evidence are in `skills/_shared/conventions/assets.md`.
-- Base class lists. A validation list mixed base classes that DayZ has with names taken from Arma 3. Checked on `P:\` (2026-11-17): `HouseNoDestruct` exists (`P:\DZ\data\config.cpp:3119`); `Helicopter` exists too, as an engine config class (`P:\bin\config.cpp:1563`), although an earlier note called it Arma 3 only; no `class Motorcycle` is declared in `P:\bin\config.cpp`, and the vanilla motorbike script class is `Motorbike` (`P:\scripts\3_game\vehicles\motorbike.c:30`). A list like that is checked name by name against the vanilla configs before it goes into a skill.
+- Base class lists. A validation list mixed base classes that DayZ has with names taken from Arma 3. Checked on `P:\`: `HouseNoDestruct` exists (`P:\DZ\data\config.cpp:3119`); `Helicopter` exists too, as an engine config class (`P:\bin\config.cpp:1563`), although an earlier note called it Arma 3 only; no `class Motorcycle` is declared in `P:\bin\config.cpp`, and the vanilla motorbike script class is `Motorbike` (`P:\scripts\3_game\vehicles\motorbike.c:30`). A list like that is checked name by name against the vanilla configs before it goes into a skill.
 - The audit that went looking for this contamination made the same mistake in the other direction. It reported concrete findings (a ShadowVolume range of `9e9..1.1e10`, a line in the audit script) that did not exist in the code it named; the bug it described belonged to an older version that was already fixed. Audits invent details too, so check an audit finding against the file it names before acting on it.
 
 Before writing a number, a base class list or a language restriction into a skill for a poorly documented system:
@@ -83,7 +83,7 @@ Before writing a number, a base class list or a language restriction into a skil
 2. Or does it come from a related engine (Arma 3, SQF, an older version) and is assumed to apply? Then mark it "needs DayZ verification" until it is confirmed.
 3. For a language such as Enforce Script, the authority is the compiler and the vanilla scripts. Cite them. Do not trust a community post without checking it against a real `.c` file.
 
-A case that was "refuted" and then corrected (2026-05-12, updated 2026-07-06): an audit claimed that `?:`, `++`, `foreach` and `+=` are valid Enforce Script. The first check concluded that none of the four is supported, because four or five skills said so. The final result was split:
+A case with a split answer: an audit claimed that `?:`, `++`, `foreach` and `+=` are valid Enforce Script. The first check concluded that none of the four is supported, because four or five skills said so. The final result was split:
 
 - `?:` (the ternary operator) does not compile. It stays forbidden (`skills/_shared/enscript/patterns/language_workarounds.md`).
 - `++`, `foreach` and `+=` are valid. Vanilla uses them, for example `foreach (string s: types)` at `P:\scripts\3_game\billboardset.c:108`. The skills that listed them as forbidden were wrong and were corrected.
@@ -127,7 +127,7 @@ Words the user sets the level with:
 
 Once the level is set, keep it for the whole session unless the user changes it.
 
-Where the rule came from: in a session on 2026-05-12 a "look this up for me" request got an answer that was too shallow, and the user had to ask for a broader search and a mathematical analysis. That failure was real, but the fix is not a deeper default everywhere. It is reading the context the session has built up: a complex subject with a history of iteration calls for depth, and a scoped request with no history does not.
+Where the rule came from: a "look this up for me" request got an answer that was too shallow, and the user had to ask for a broader search and a mathematical analysis. That failure was real, but the fix is not a deeper default everywhere. It is reading the context the session has built up: a complex subject with a history of iteration calls for depth, and a scoped request with no history does not.
 
 ## Editing skills: list the copies first
 
@@ -147,7 +147,7 @@ a plugin install or app copy         a real copy of its own; it does not follow 
 
 `/sync-skills` makes symlinks, or junctions when symlinks need elevation, so those entries follow the repo by themselves. Write to every real copy; the links are already covered. When you finish, compare by sha256, not by modification time. Check that an entry is a link; do not assume it.
 
-Measured in the Claude desktop app (2026-09-01), for skills installed there instead of in a repo:
+Measured in the Claude desktop app, for skills installed there instead of in a repo:
 
 - The app keeps its skills in a plugin tree (`...\skills-plugin\<guid>\<guid>\skills\<name>`). There can be several GUIDs, and they are different plugins. A projection for another tool (`~\.grok\skills\<name>` on that machine) was a junction into the plugin copy, so one write covered both views, but that was checked, not assumed.
 - A folder does not say what governs it. The plugin's `manifest.json` does: for each skill it holds a `skillId`, `enabled`, `creatorType` and `updatedAt`. Open it before concluding that a skill is orphaned. On that date six skills were taken for orphans that were registered and enabled, and the "rescue" left the fix in a copy nothing read while the served copy stayed broken.
@@ -158,13 +158,13 @@ Measured in the Claude desktop app (2026-09-01), for skills installed there inst
 1. In the app's plugin tree, write straight to disk with PowerShell, never with the harness's Edit or Write tools: there they go to an overlay view that drifts from the real disk. Reading through the harness to package a skill is fine.
 2. Make a backup before the write, and read the file back after it, every time.
 3. Give a sweep a positive control. When your final check finds nothing, run it on the version from before the fix. If it finds nothing there either, the detector is broken, not the file clean.
-4. In PowerShell, text you write goes in single quotes (`'...'` or a here-string `@'...'@`), never in double quotes. Inside `"..."` and `@"..."@` the backtick is the escape character and `$` interpolates, so a Markdown code span whose text starts with `0`, `a`, `b`, `e`, `f`, `n`, `r`, `t` or `v` is corrupted with no error: writing `` "see `references/x.md` and" `` puts a carriage return followed by `eferences/x.md` in the file, and the closing backtick disappears. Measured on 2026-09-15 with PowerShell 7.6.5: `` "[`0][`a][`b][`e][`f][`n][`r][`t][`v]" `` gives the bracketed codes 0, 7, 8, 27, 12, 10, 13, 9 and 11; `` "`q" `` gives just `q`; `` 'x`ry' `` is written as it stands. It has happened: a section written that way on 2026-09-02 carried two stray carriage returns where the source said `` `references/routing.md` ``, and they stayed for 13 days. For a whole file, use `Copy-Item` from a checked copy. Reading the file back does not catch this, because the sha only proves the disk holds what you sent, not that you sent the right thing; also search for carriage returns that are not followed by a line feed (`\r(?!\n)`).
+4. In PowerShell, text you write goes in single quotes (`'...'` or a here-string `@'...'@`), never in double quotes. Inside `"..."` and `@"..."@` the backtick is the escape character and `$` interpolates, so a Markdown code span whose text starts with `0`, `a`, `b`, `e`, `f`, `n`, `r`, `t` or `v` is corrupted with no error: writing `` "see `references/x.md` and" `` puts a carriage return followed by `eferences/x.md` in the file, and the closing backtick disappears. Measured with PowerShell 7.6.5: `` "[`0][`a][`b][`e][`f][`n][`r][`t][`v]" `` gives the bracketed codes 0, 7, 8, 27, 12, 10, 13, 9 and 11; `` "`q" `` gives just `q`; `` 'x`ry' `` is written as it stands. A section written that way carries a stray carriage return wherever the source said `` `references/routing.md` ``, and nothing flags it. For a whole file, use `Copy-Item` from a checked copy. Reading the file back does not catch this, because the sha only proves the disk holds what you sent, not that you sent the right thing; also search for carriage returns that are not followed by a line feed (`\r(?!\n)`).
 
 ### When a `.skill` is packaged
 
 Packaging is not the normal way to deliver a change. It is for taking a skill to a machine or a store that has no copy of it. When you package:
 
-1. Run `python scripts/dev/pack_skill.py <skill folder> <destination directory>`. The second argument is a directory; without it the package goes to `output/skill-packages/`. Do not use skill-creator's `package_skill.py` on Windows: it reads `SKILL.md` without an encoding, falls back to cp1252 and stops with `UnicodeDecodeError` on any em dash, arrow or accent (3 of 8 skills failed there on 2026-07-27).
+1. Run `python scripts/dev/pack_skill.py <skill folder> <destination directory>`. The second argument is a directory; without it the package goes to `output/skill-packages/`. Do not use skill-creator's `package_skill.py` on Windows: it reads `SKILL.md` without an encoding, falls back to cp1252 and stops with `UnicodeDecodeError` on any em dash, arrow or accent (3 of 8 skills failed there).
 2. Installing a package replaces the whole folder; it does not merge. Package from the most complete copy, or the install deletes what the package lacks. In one measured case, a skill's app copy held six scripts that its own `SKILL.md` calls and that another copy did not have.
 3. Package the whole skill: `SKILL.md`, `references/`, `scripts/` and `assets/`. A `SKILL.md` on its own installs a skill with its references missing, and a loose `.md` fragment does not install at all (`SKILL.md must start with YAML frontmatter (---)`).
 4. The script leaves out `__pycache__`, `.git`, `.ipynb_checkpoints`, `.pyc` and `.pyo` (`EXCLUDE_DIRS` and `EXCLUDE_EXT` in the script), but not backup files such as `SKILL.md.bak`. When the folder holds backups, package from a scratch copy with the same folder name and delete them there.

@@ -38,7 +38,7 @@ taskkill's error output is captured and dropped only for errorlevel 128 (its "pr
 
 ## Before you stop a session you did not start
 
-`taskkill /IM` ends every `DayZDiag_x64.exe` on the machine, whoever started it. The test machine has one game port and one Steam client, so another session (the user's own play session, a second agent, a dayz-mcp run) may hold it. The measured cases are in `skills/dayz-launch-test/references/session-findings.md`, "Pre-launch ownership check".
+`taskkill /IM` ends every `DayZDiag_x64.exe` on the machine, whoever started it. The test machine has one game port and one Steam client, so another session (the user's own play session, a second agent, a dayz-mcp run) may hold it. The measured cases are in `skills/dayz-launch-test/references/test-machine-sharing.md`, "Check who holds the machine before any kill or launch".
 
 - **See who is running first** when the session is not clearly yours. List the processes with their command lines and read each `-mod=` and `-profiles=` value:
 

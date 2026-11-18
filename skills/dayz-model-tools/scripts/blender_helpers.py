@@ -246,11 +246,11 @@ def loft_profile(name, profile, path, scales=None, close_caps=True):
 
 
 # ============================================================
-# v2 helpers — bake pass (Rule 11)
+# v2 helpers — bake pass (blender-assembly.md, "Fine detail goes to the bake")
 # ============================================================
 
 def smart_uv(obj, angle=66, margin=0.02):
-    """Rule 11 — Smart UV Project the whole object (acceptable for hard surface)."""
+    """Bake pass — Smart UV Project the whole object (acceptable for hard surface)."""
     bpy.ops.object.select_all(action='DESELECT')
     bpy.context.view_layer.objects.active = obj; obj.select_set(True)
     bpy.ops.object.mode_set(mode='EDIT')
@@ -260,10 +260,10 @@ def smart_uv(obj, angle=66, margin=0.02):
 
 
 def bake_map(high, low, kind='NORMAL', size=2048, ray=0.01, path=None):
-    """Rule 11 — bake kind ('NORMAL' or 'AO') from high onto low's UVs.
-    Low MUST have UVs (unwrap first, blender-assembly.md Rule 11 step 2). Blender bakes OpenGL-convention (Y+)
+    """Bake pass — bake kind ('NORMAL' or 'AO') from high onto low's UVs.
+    Low MUST have UVs (unwrap first, blender-assembly.md, "Fine detail goes to the bake", step 2). Blender bakes OpenGL-convention (Y+)
     tangent normals; DayZ _nohq is DirectX-convention (Y-), so invert the
-    green channel before export (blender-assembly.md Rule 11)."""
+    green channel before export (blender-assembly.md, "Fine detail goes to the bake")."""
     scene = bpy.context.scene
     img = bpy.data.images.new(f"{low.name}_{kind.lower()}", size, size, alpha=False)
     if kind == 'NORMAL':

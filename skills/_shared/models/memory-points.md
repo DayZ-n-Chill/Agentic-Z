@@ -12,6 +12,19 @@ What goes in the Memory LOD (`1.0e+15`), the names vanilla script looks up, and 
 - A memory selection is a set of points, and tools can lose the set while keeping the name. After any conversion or rebuild, check that each memory selection still holds its points (`selections.md`, "Membership lost by tools").
 - Two models of the same family can be authored in frames that differ by a quarter turn. Before copying a rotation offset or a point from one model to its sibling, compare their memory points one by one (`dayz-p3d-audit/references/manual-checks.md`, "Sibling-model frame parity").
 
+## Making the points
+
+- In Object Builder: switch to the Memory LOD, add single vertices where the points go, and put each in its named selection.
+- In Blender: an Empty or a one vertex mesh per point, in a vertex group with the exact name; the Arma 3 Object Builder addon writes them to the Memory LOD.
+- From a tool with no exporter for points: build a triangle with a vertex on each point, import it into Object Builder, and delete the vertices you do not need.
+- With py3d the points are written directly (`py3d-generation.md`, "Memory LOD points").
+
+Placing an axis: for a door hinge put one point at the top and one at the bottom of the hinge edge; for a lever, both on the pivot, apart along the pivot line. A slide uses the same two point selection, and the part moves along the line instead of turning around it.
+
+`ce_radius` is a single point; its distance from `ce_center` is the radius.
+
+An animated part that swings outside the object's bounding sphere can make the action raycast miss at some angles. A Memory selection that covers the whole swept area, named in `config.cpp` as `bounding = "<selection>";`, is the usual fix in modelling guides. Not checked on `P:\`: vanilla gear sets `bounding` to `"BSphere"` (`P:\DZ\gear\camping\config.cpp:44`), and no vanilla file read here gives it a selection name (`model-config-and-packing.md`).
+
 ## Names vanilla looks up
 
 | Point | Used for | Where vanilla reads it |

@@ -1,117 +1,59 @@
-# Visual metrics: what can be asserted from a screenshot
+# Visual metrics and screenshots
 
-When a pose complaint is a perspective artifact, where a HUD marker ray must be anchored, and how to validate a visual metric on a control before trusting it.
+When a complaint about a part's position is only perspective, where to anchor a HUD marker ray, and how to prove a visual metric on a known good part before trusting it.
 
-> Status: field notes measured in game and offline on third-party mods, each named in its entry (TestHeli OH-1, TestHeli B-4, TestCoupe). This is third-party mod behaviour, not vanilla, and the measurements were not repeated on `P:\`. Every vanilla citation is written with its full `P:\` path and was opened on the vanilla data on `P:\` (a 1.30 build). Labels such as s42 number the work sessions in date order.
+The cases below were measured offline and in game on test vehicles, a helicopter and a car, not on vanilla models.
 
-Nothing in this file is repealed: these are active lessons, ordered by topic and not by date.
+## A pose complaint can be perspective
 
-## Vanilla anchors checked on `P:\`
+When the user reports that a part on an imported model sits some centimetres off or tilted (a rotor against its ring, a wheel against its arch, a part against its socket), do not write a correcting offset from the screenshot.
 
-- The third-person vehicle camera `DayZPlayerCamera3rdPersonVehicle` is declared at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:18`.
-- It reads `GetTransportCameraOffset` at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:49`.
-- The default `GetTransportCameraOffset` is declared at `P:\scripts\3_game\vehicles\transport.c:657` and returns `"0 1.3 0"` two lines below.
-- `GetCurrentCameraPosition` is declared at `P:\scripts\3_game\global\game.c:731`.
-- `GetScreenPos` is declared at `P:\scripts\3_game\global\game.c:963`.
+1. Measure the deployed model, not the source. Convert the deployed ODOL back to MLOD with an outside converter and measure the part against its reference in engine space: a least-squares circle fit of the ring or arch rim, a plane fit of a blade or wheel disc, the bounding box of a socket. Compare the part's centre and disc normal with the fitted reference.
+2. If it measures centred (offset of millimetres, tilt near 0 degrees), the complaint is perspective. A ring with depth along its axis is seen at an angle, so a centred part looks off centre, and the apparent offset changes direction with the camera. Confirm it by recreating the illusion: a flat colour render from the user's camera angle against a straight-on orthographic render.
+3. Apply an offset only when the deployed model's measurement calls for it. An offset judged by eye on a model that is already centred moves what was right and costs an in-game cycle to discover.
 
----
-## An in-game GEOMETRIC POSE complaint can be a PERSPECTIVE artifact - measure the DEPLOYED ODOL before applying any offset (added 2026-07-20)
+Bounding box against bounding box never proves containment, because a protrusion is local. On a test helicopter an interior that sat "inside the glass" by bounding box still poked 7.25 cm through the canopy roof; only a grid comparing the interior's top surface with the glass surface cell by cell found it, and the user's eye was right. Measure surface against surface, per cell, before calling a pose complaint perception. A complaint about feel is settled with player data; a complaint about position is settled by measuring the deployed model. Watch the units too: a ring fit of 9.7 mm was once reported as 0.9 mm.
 
-When the user reports "piece X sits N cm off / tilted" on an imported model (rotor vs its housing ring, wheel vs arch, part vs socket), do NOT author a corrective offset/rotation from the capture:
+## Anchor a HUD marker ray at the camera
 
-1. **Measure the DEPLOYED artifact, not the source**: debinarize the deployed ODOL (an external ODOL→MLOD converter, not part of this repo) and measure the piece against its geometric reference in engine frame - circle-fit (least-squares) of the ring/arch rim, plane-fit (PCA) of a blade/wheel disc, bbox of the socket. Compare piece center / disc normal against the fitted reference.
-2. **If the measurement says centered (offset ~mm, tilt ~0 deg), the complaint is PERSPECTIVE**: a ring/aperture with depth along its axis projects obliquely, so a geometrically centered piece LOOKS off-center from an angle - and the apparent offset direction changes with camera angle. Confirm by reproducing the illusion: flat-color render (piece magenta / hull grey) from the user's capture angle vs an orthographic front-on render.
-3. **Apply an offset ONLY if the deployed-artifact measurement demands it.** An eyeballed offset on an already-centered model is a REGRESSION (it moves what was right) and burns an in-game cycle to discover it.
+A heading marker drawn by projecting the vehicle origin plus `GetDirection()` times a distance reads skewed sideways against the airframe from any third-person camera off the centre plane. At 300 m the world point projects about 0.2 degrees off the vanishing point while the nearby nose projects about 7 degrees off, so the marker sits left or right of the hull even though the point is exactly on axis.
 
-Measured case (TestHeli OH-1 round 3, AMENDED same day): user reported tail rotor "10 cm low" + interior "10 cm high, pokes through the canopy". First pass measured global bboxes and called it all perspective - WRONG on two counts: (a) "interior inside the glass" by global bbox missed a REAL 7.25 cm LOCAL protrusion through the canopy roof (per-cell interior-maxY vs glass-surface-Y grid found it; the user's eye was right); (b) the ring fit gave 9.7 mm misreported as 0.9 mm (units slip). CAVEAT the rule accordingly: bbox-vs-bbox NEVER proves containment - protrusion is LOCAL, measure per-cell surface-vs-surface before declaring a pose complaint perceptual. The split is: a complaint about subjective feel is settled with player data; a measurable pose complaint is settled by measuring the deployed artifact.
+Anchor the ray at the camera instead. That is the flight director pattern and removes the parallax for every camera, orbiting third person or first person:
 
-## HUD reticle/marker: anchor the ray at the CAMERA, never at the vehicle (added 2026-08-07, TestHeli B-4)
+```c
+vector nose = GetGame().GetCurrentCameraPosition() + veh.GetDirection() * D;
+vector screen = GetGame().GetScreenPos(nose);
+// draw only when screen[2] > 0
+```
 
-A direction reticle drawn by projecting vehicle_origin + GetDirection()*D reads laterally skewed
-against the airframe from any 3PP camera sitting off the symmetry plane: at D=300 the world point
-projects ~0.2 deg off the vanishing point while the nearby nose projects ~7 deg off (parallax) -
-the reticle appears left/right of the hull even though the world point is exactly on axis.
-Camera-anchored is the flight-director pattern and kills the parallax for every camera (3PP
-orbited, 1PP): nose = GetGame().GetCurrentCameraPosition() + veh.GetDirection() * D, then
-GetGame().GetScreenPos(nose), keep the projZ>0 gate. Verified in-game fix path (TestHeli
-TestHeliHUD.c 2026-08-07); the previous bone-anchored origin was a no-op built on a misattributed
-probe (see next paragraph).
+`GetCurrentCameraPosition` is declared at `P:\scripts\3_game\global\game.c:731` and `GetScreenPos` at `:963`. Fixed this way in game on a test helicopter.
 
-Two measurement traps that produced that dead fix, worth one line each:
-- A stable camMS reading across two boots is NOT proof of a systematic engine offset when the
-  probe is a one-shot: it can be the fingerprint of WHEN the one-shot fires (same approach walk,
-  same inherited camera yaw). Adjudicate camera geometry from the vanilla camera code
-  (DayZPlayerCamera3rdPersonVehicle pivots at vehicle origin + GetTransportCameraOffset, default
-  0 1.3 0; both opened on `P:\`, see the anchors above) before hypothesizing an offset.
-- Selection membership can be PHANTOM: points in a named selection with zero faces referencing
-  them (TestHeli glass carried 357 such points on one side). Any per-side point count over a
-  selection must count only face-referenced points or the asymmetry measurement lies.
+Two measurement traps:
 
-## Diagnose before re-authoring, and validate every visual metric on an in-game-verified control (added 2026-08-07, TestCoupe)
+- A camera offset that reads the same across two boots does not prove a fixed engine offset when the probe fires once: it can just record when the probe fires (the same walk up, the same inherited camera yaw). Settle camera geometry from the vanilla code first. `DayZPlayerCamera3rdPersonVehicle` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercameravehicles.c:18`) pivots at the vehicle origin plus `GetTransportCameraOffset` (`:49`), which by default returns `"0 1.3 0"` (`P:\scripts\3_game\vehicles\transport.c:657` to `:659`).
+- A named selection can hold points no face uses: the test helicopter's glass held 357 such points on one side. Count only points that faces reference when comparing sides, or the comparison lies.
 
-TestCoupe was one session away from re-assembling both doors from the raw rip, on
-the premise that the s42-cut mesh was rotten (five winding passes, 74.7% orphan
-verts). Measured first: all six visual factory groups were ALREADY present face
-for face in the shipped proxy - skin 2043, card 3344, handle 1176, speaker 18,
-wing mirror 4721, mirror base 1174, every one at 100% centroid match <=1 mm. The
-re-assembly would have reproduced identical geometry and fixed nothing.
+## Check a ripped part before rebuilding it
 
-Day-0 check before any re-import/re-assembly of a ripped part:
+A test car was one step away from rebuilding both doors from the raw rip because the cut mesh looked rotten (many winding passes, 74.7% loose vertices). Measured first, all six visual groups were already in the shipped proxy face for face, every face within 1 mm by centroid: skin 2043, card 3344, handle 1176, speaker 18, mirror 4721, mirror base 1174. Rebuilding would have reproduced the same geometry.
 
-1. **Face-level completeness, matched by CENTROID** (invariant to vertex order
-   and to winding, so it measures presence and never orientation). Point-level
-   presence is not enough: a cut can keep every vertex and still drop faces.
-2. **Gaps: exact point-to-triangle, never centroid-to-centroid.** The "missing"
-   door jamb read 17.2 mm median by centroids and 0.7 mm by exact distance
-   (p95 7.1 mm, max 16.2 mm, ZERO faces beyond 30 mm). It was not a hole; adding
-   it would have z-fought skin that is already there. A large triangle's centroid
-   sits far from a small one while the surfaces touch.
+Before re-importing or rebuilding a ripped part:
 
-**Offline in-game visibility oracle** (this is what pays for itself - the same
-question had cost five in-game cycles):
+1. Check completeness by faces, matched by centroid. That ignores vertex order and winding, so it measures presence only. Vertex presence is not enough: a cut can keep every vertex and still drop faces.
+2. Measure gaps point to triangle, never centroid to centroid. A door jamb that looked missing read a 17.2 mm median by centroids and 0.7 mm by exact distance (95th percentile 7.1 mm, maximum 16.2 mm, no face beyond 30 mm). It was not a hole, and adding faces there would have fought with skin already present. A large triangle's centroid sits far from a small one even where the surfaces touch.
 
-- A face is DRAWN when its MLOD normal points AWAY from the camera. This is
-  the rule of `rip-geometry-and-winding.md` ("Game winding is the INVERSE of MLOD
-  geometric winding") stated per camera; calibrate it, do not assume it.
-- Occlusion counts only DRAWN opaque triangles. A culled face cannot occlude, so
-  a plain ray test overstates occlusion badly (mirror glass: 0/315 "visible" with
-  raw rays, 238/315 once culling is applied to the occluders).
-- **Every run re-validates on a piece confirmed visible in game** and declares
-  itself VOID otherwise. Two metrics did exactly that in this session and were
-  discarded rather than reported. A visual metric with no self-check is not
-  evidence.
-- **Judge a part only from cameras that can physically see it.** The mirror glass
-  scores 0% from abeam and from the front three-quarter - correct, a rear-facing
-  mirror is not visible from in front - and 75.6% from the rear three-quarter.
-  A badly chosen camera condemns healthy geometry.
-- To inspect a seam, raster the view with the culling rule and colour the PART
-  apart from the BODY; both are the same material and one colour per material
-  hides the very seam under inspection. Blender's viewport culling is a shading
-  flag and has misled this project before - use the calibrated rule.
+## An offline visibility check
 
-**A symmetric piece cannot vote on a sign or mirror fit.** Fitting the
-blend->DayZ transform, the X-sign discrimination test scored 5.5% for BOTH signs
-on a body panel and read as green while measuring nothing: the panel is
-mirror-symmetric about x=0, so flipping X maps it onto itself. Report each
-control's SELF-MIRROR score and make symmetric pieces ABSTAIN explicitly. Here
-only the steering wheel could witness (23.6% vs 0.0%), and it settled that the
-pipeline transform is a REFLECTION (det=-1), as `rip-geometry-and-winding.md` states. Corollary:
-never take a part's side from its NAME - adjudicate it against an asymmetric
-piece whose in-game position is already measured.
+The same question had cost five in-game cycles; an offline check answers it.
 
-**A flat placeholder _co reads in game as a MISSING part.** brz_mirror_co.paa is
-a 16x16 DXT1, 307 bytes, whose AVGC and MAXC taggs are the SAME value
-(RGB 38,40,44) - proof of a single near-black colour. The glass geometry,
-material and winding were all healthy and it still read as "the mirror has no
-glass". Check the PAA taggs (AVGC == MAXC means flat) before hypothesising
-geometry; an unswatched piece is a texture bug wearing a geometry costume.
+- A face is drawn when its MLOD normal points away from the camera (`rip-geometry-and-winding.md`, section "Game winding is the reverse of MLOD winding"). Calibrate this rule; do not assume it.
+- Only drawn opaque triangles block sight. A culled face cannot hide anything, so a plain ray test overstates blocking badly: mirror glass scored 0 of 315 faces visible with raw rays and 238 of 315 once culling was applied to the blockers.
+- Every run checks itself on a part confirmed visible in game, and reports itself void otherwise. A visual metric with no self check is not evidence.
+- Judge a part only from cameras that can see it. Mirror glass scores 0% from the side and the front three-quarter view, which is right for a rear-facing mirror, and 75.6% from the rear three-quarter view.
+- To inspect a seam, render the view with the culling rule and colour the part apart from the body. Both share one material, so one colour per material hides the seam. Blender's viewport culling is a shading setting and does not match the game.
 
-**A defect can survive N winding passes by never entering the adjudicated set.**
-The mirror was 315/315 ENCLOSED in the BVH verdict - a category the fixer is told
-to skip - and separately excluded from the component census by material. When a
-defect outlives several passes, first check whether its faces are even in the set
-those passes adjudicate; rim/enclosed are blind spots, not clean bills of health.
+## Traps in fitting and texture checks
 
-The checks above were each a small parametrised script on the TestCoupe build, not part of
-this repo: face completeness, exact surface gap, the self-validating visibility oracle,
-the culling-correct seam raster, and the transform fit with abstention.
+- A symmetric part cannot tell a sign or a mirror apart. When fitting the Blender to DayZ transform, a body panel scored 5.5% for both signs of X and read as a pass while measuring nothing, because the panel maps onto itself when mirrored. Report each part's self-mirror score and have symmetric parts abstain. Here only the steering wheel could decide (23.6% against 0.0%), and it showed the import transform is a reflection with a determinant of -1 (`rip-geometry-and-winding.md`). Never take a part's side from its name; decide it with an asymmetric part whose in-game position is known.
+- A flat placeholder `_co` texture reads in game as a missing part. A mirror texture was a 16 by 16 DXT1 whose `AVGC` and `MAXC` tags held the same value (RGB 38, 40, 44), so a single near-black colour. Geometry, material and winding were fine and the mirror still looked as if it had no glass. Check the PAA tags first: `AVGC` equal to `MAXC` means a flat texture.
+- A fault can survive many winding passes by never entering the set they judge. The mirror's 315 faces were all classed as enclosed, a class the fixer skips, and were also left out of the component count by material. When a fault outlives several passes, first check that its faces are in the set the passes look at.

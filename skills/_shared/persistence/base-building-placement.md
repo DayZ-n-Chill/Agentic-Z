@@ -1,29 +1,62 @@
 # Placement, hologram and material slots
 
-Facts that decide whether a kit can be placed and whether its recipe can ever be built: slot stack sizes, the hologram tint, the carry pose and custom wall placement. Open this when a build action never appears, the hologram is not tinted, or an item is carried in the wrong pose.
+Which facts decide whether a kit can be placed and whether its recipe can ever be built: how much material a slot holds, how the hologram gets its green and red tint, what picks the carry pose and what a custom wall placement needs. Open it when a build action never appears, the hologram is not tinted, or an item is carried in the wrong pose.
 
-Line numbers are from the vanilla scripts and configs on `P:\` (game storage version 144).
+## The slot decides how much material fits
 
-## A slot's `stackMax` decides how much material fits, not the item's `varQuantityMax`
+For an item that can be split, `GetTargetQuantityMax` asks the slot first, through `InventorySlots.GetStackMaxForSlotId`, and only then falls back to the item's `varStackMax` and then to `varQuantityMax` (`P:\scripts\4_world\entities\itembase.c:3449` to `:3468`). An item that cannot be split skips the slot and uses `varQuantityMax`.
 
-For a splitable item, `GetTargetQuantityMax` asks `InventorySlots.GetStackMaxForSlotId` first and only falls back to `varStackMax`, then to `varQuantityMax` (`P:\scripts\4_world\entities\itembase.c:3449-3468`). Vanilla declares the cap per slot in `CfgSlots`: `Material_WoodenPlanks` and `Material_MetalSheets` are `stackMax=20` (`P:\scripts\config.cpp:2285-2300`), `Material_Nails` is `99` (`P:\scripts\config.cpp:2277-2284`). A non-splitable item skips that branch entirely and lands on `varQuantityMax`. `MetalWire` is splitable (`canBeSplit=1`, `varQuantityMax=50`, `varStackMax=1`, `P:\DZ\gear\crafting\config.cpp:376-381`), but neither of its base building slots declares `stackMax`: the fence's `Material_MetalWire` (`P:\scripts\config.cpp:2309-2315`, used at `P:\DZ\gear\camping\config.cpp:3273`) and the territory flag pole's `Material_FPole_MetalWire` (`P:\scripts\config.cpp:2508-2514`, used at `P:\DZ\gear\camping\config.cpp:12494,12752`), so the slot lookup returns nothing and the cap falls back to `varStackMax=1` (`itembase.c:3460-3461`): one wire per slot, not 50. Reading the item class instead overstates plank capacity five times (100 against 20) and makes any recipe above the slot cap silently unbuildable: the player fills the slot and never reaches the threshold, so the build action simply never appears. Derive slots per material as `ceil(default_qty / slot stackMax)` and get that number from `CfgSlots`, not from the item. Any design promising a uniform configurable range ("1..100 of each material") is broken before it is written. The item's ceiling exists; it is just not the one that governs.
+Vanilla sets the cap per slot in `CfgSlots`:
 
-## The same fallback sets a crop's harvest yield
+| Slot | `stackMax` | Source |
+|---|---|---|
+| `Material_WoodenPlanks` | 20 | `P:\scripts\config.cpp:2285` to `:2300` |
+| `Material_MetalSheets` | 20 | `config.cpp:2285` to `:2300` |
+| `Material_Nails` | 99 | `config.cpp:2277` to `:2284` |
+| `Material_MetalWire` (fence) | none | `config.cpp:2309` to `:2315`, used at `P:\DZ\gear\camping\config.cpp:3273` |
+| `Material_FPole_MetalWire` (flag pole) | none | `P:\scripts\config.cpp:2508` to `:2514`, used at `P:\DZ\gear\camping\config.cpp:12494` and `:12752` |
 
-Raising a crop's `varStackMax` changes the vanilla yield. `PlantBase.Harvest` creates each crop pile with `SetQuantity(GetQuantityMax())` (`P:\scripts\4_world\entities\gardenbase\plantbase.c:574-575`), and for a splitable item `GetQuantityMax` resolves to `varStackMax` when the slot declares no stack max (`itembase.c:3434-3468`). `SetQuantity` clamps to `[min, max]` (`itembase.c:3352`), so a scripted yield above the stack size is silently clipped unless the mod replaces the harvest quantity.
+`MetalWire` can be split (`canBeSplit=1`, `varQuantityMax=50`, `varStackMax=1`, `P:\DZ\gear\crafting\config.cpp:376` to `:381`). Its two slots set no `stackMax`, so the cap falls back to `varStackMax=1` (`itembase.c:3460` and `:3461`): one wire per slot, not 50.
 
-## A green and red placement hologram needs two declarations
+Read the cap from `CfgSlots`, not from the item. The item's class overstates plank capacity five times (100 against 20). A recipe that asks for more than the slot holds can never be built: the player fills the slot, never reaches the amount, and the build action never appears. Work out how many slots a material needs as the amount divided by the slot's `stackMax`, rounded up. A design that promises the same configurable range for every material, such as 1 to 100 of each, cannot work.
 
-Neither is the one the name suggests. `Hologram.RefreshVisual` tints by calling `SetObjectTexture`/`SetObjectMaterial` on a **hidden-selection index** (`P:\scripts\4_world\classes\hologram.c:1546-1565`). That index comes from `GetHiddenSelection`, which **falls back to 0 when the name is absent** (`:1523-1531`), so a model with no `hiddenSelections[]` in config silently renders the ghost in its normal material, with no error anywhere. And the config entry alone is not enough: the model must expose that selection as retexturable via `sections[]` in `model.cfg`, or the swap has nothing to bind to. Declare `hiddenSelections[]` + `hiddenSelectionsTextures[]` + `hiddenSelectionsMaterials[]` with the values the model **already uses** (so normal rendering is unchanged), and put the same selection in `sections[]`. The hologram looks up the hidden selection named `placing` (when the model has a `Placing` animation) or `inventory` (`:40-43,178-194`) and tints that selection's real index when the config declares it; vanilla traps declare `hiddenSelections[]={"placing"}` for this (`P:\DZ\gear\traps\config.cpp:106-109`). Index 0, the first entry of `hiddenSelections[]`, is used only when no hidden selection named `placing` or `inventory` exists. Also declare `hologramMaterial` + `hologramMaterialPath`; the engine appends `_deployable.rvmat` / `_undeployable.rvmat` (`:14-16`).
+## The same fallback sets a crop's harvest
 
-## `itemBehaviour` does not choose the carry pose in hands
+`PlantBase.Harvest` creates each crop with `SetQuantity(GetQuantityMax())` (`P:\scripts\4_world\entities\gardenbase\plantbase.c:574` and `:575`). For an item that can be split, `GetQuantityMax` resolves to `varStackMax` when the slot sets no cap (`itembase.c:3434` to `:3468`), so raising a crop's `varStackMax` changes the vanilla yield. `SetQuantity` clamps to the item's range (`itembase.c:3352`), so a scripted yield above the stack size is cut without a message unless the mod sets the harvest quantity itself.
 
-The int drives behaviour rules and the deploy command (`m_ItemBehaviour`, `P:\scripts\4_world\entities\itembasetype.c:33`: 0 heavy, 1 one-handed, 2 two-handed), but the pose comes from **class registration in the anim graph**. Vanilla registers every heavy object explicitly by calling `pType.AddItemInHandsProfileIK(class, … player_main_heavy.asi, heavyItemBehaviour, … .anm)` directly, `Barrel_ColorBase` at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:841`, `WoodenCrate` at `dayzplayercfgbase.c:854`. A mod adds its own registration in `ModItemRegisterCallbacks.RegisterHeavy`, an empty hook declared at `dayzplayercfgbase.c:317` and called after the vanilla list at `:1567`, by making the same `AddItemInHandsProfileIK` call there. With no registration the item falls back to the `Inventory_Base` one-handed default and is carried in one hand no matter what `itemBehaviour` says. The `.anm` is an IK pose, not a class binding, so reusing a vanilla one for a different class is fine and needs no new animation. Pick the value from the object family you are imitating, not from a mod that ships a different shape: a cabinet is `0` like the barrel, not `2` like a small kit box. `SetActions` adds `ActionTogglePlaceObject` + `ActionPlaceObject` only in the deployable subclass (`P:\scripts\4_world\entities\itembase\container_base.c:32,48-54`), which is what `Barrel_ColorBase` inherits from (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:1`). A storage entity extending `Container_Base` gets no placement at all, and `IsDeployable()` is `false` by default (`itembase.c:4348-4351`). Adding the two actions to the single class that needs them is cheaper than reparenting a shared base and cannot regress its siblings. The ghost material comes from `hologramMaterial` + `hologramMaterialPath` (`hologram.c:1554-1557`) plus the suffixes `_deployable.rvmat` / `_undeployable.rvmat` (`:14-16`); declare both keys or the hologram renders untextured.
+## A tinted hologram needs two declarations
 
-## A custom wall placement hologram needs four things vanilla does not give you
+`Hologram.RefreshVisual` tints by calling `SetObjectTexture` and `SetObjectMaterial` on a hidden selection index (`P:\scripts\4_world\classes\hologram.c:1546` to `:1565`). `GetHiddenSelection` returns 0 when the name is missing (`:1523` to `:1531`), so a model with no `hiddenSelections[]` shows the ghost in its normal material, with no error.
 
-This is for a modded `Hologram.UpdateHologram`. (1) The wall normal: neither `RaycastRVProxy.dir` nor `RaycastRV.contactDir` is a face normal for object hits, both are the ray direction, so a yaw taken from them faces the camera and the ghost's box collides with the wall at any angle. Take it from `DayZPhysics.RayCastBullet` on `PhxInteractionLayers.BUILDING` and keep the fire-geometry ray for identity (the raycast notes of the Enforce Script pack (`skills/_shared/enscript/depth/`)). (2) The ground: pick the nearest support at or below the aimed point (Y ≤ aimY + 2 mm); a ray started 2 m above the point selects sills, ledges and the floor above. (3) The collision box: lift its bottom 5 cm like `IsCollidingBBox` (`hologram.c:547,556`) or every building floor blocks placement, and trim the back so the support wall does not count. (4) One diagnostic line per cause bit (wall/ground/spacing/ player/water/box), emitted on change and rate-limited, each line under 255 chars, with the unlifted box queried only when logging, that is what turned "the hologram is grey" into a named cause in one cycle. Points (2) to (4) were measured in game over three test cycles; point (1) was not yet exercised in game. This is custom mod code, not vanilla behaviour, and is not checked on `P:\` beyond the cited vanilla lines.
+The hologram looks for a hidden selection named `placing` when the model has a `Placing` animation, otherwise `inventory` (`hologram.c:40` to `:43` and `:178` to `:194`), and tints that selection's index when the config declares it. Vanilla traps declare `hiddenSelections[]={"placing"}` for this (`P:\DZ\gear\traps\config.cpp:106` to `:109`). Index 0, the first entry, is used only when neither name exists.
 
-## Each placeable config class needs a script class of the same name
+To get the tint:
 
-Create a script class with the same name as each placeable config class and inherit from the kit or static base that provides `SetActions`, `IsDeployable` and the link between the kit and the static object. Verify both halves before diagnosing the hologram or textures.
+- Declare `hiddenSelections[]`, `hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]` with the values the model already uses, so normal rendering does not change.
+- Put the same selection in `sections[]` in `model.cfg`, or the swap has nothing to bind to.
+- Declare `hologramMaterial` and `hologramMaterialPath`. The engine appends `_deployable.rvmat` and `_undeployable.rvmat` (`hologram.c:14` to `:16`), and reads both keys at `:1554` to `:1557`; without them the hologram has no texture.
+
+## The carry pose comes from the animation graph
+
+`itemBehaviour` (`m_ItemBehaviour`, `P:\scripts\4_world\entities\itembasetype.c:33`: 0 heavy, 1 one handed, 2 two handed) drives behaviour rules and the deploy command, not the pose in hands. The pose comes from registering the class in the player's animation setup. Vanilla registers each heavy object with `pType.AddItemInHandsProfileIK(...)`, using `player_main_heavy.asi` and the `heavyItemBehaviour`: `Barrel_ColorBase` at `P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:841`, `WoodenCrate` at `:854`.
+
+A mod makes the same call in `ModItemRegisterCallbacks.RegisterHeavy`, an empty hook declared at `dayzplayercfgbase.c:317` and called after the vanilla list at `:1567`. With no registration the item falls back to the one handed `Inventory_Base` default whatever `itemBehaviour` says. The `.anm` file is an IK pose, not tied to a class, so reusing a vanilla one needs no new animation. Pick the value from the vanilla object you imitate: a cabinet is `0` like the barrel, not `2` like a small kit box.
+
+## Placement actions come from the deployable subclass
+
+`Container_Base` adds `ActionTogglePlaceObject` and `ActionPlaceObject` only in its deployable subclass (`P:\scripts\4_world\entities\itembase\container_base.c:32` and `:48` to `:54`), which `Barrel_ColorBase` inherits (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:1`). A storage object that extends `Container_Base` directly gets no placement, and `IsDeployable()` is `false` by default (`itembase.c:4348` to `:4351`). Add the two actions to the one class that needs them rather than changing a shared parent, which could change its siblings.
+
+## Each placeable config class needs a script class
+
+Give each placeable config class a script class of the same name that inherits from the kit or static base providing `SetActions`, `IsDeployable` and the link between kit and placed object. Check both halves before you look at the hologram or textures.
+
+## A custom wall placement hologram
+
+This is for a modded `Hologram.UpdateHologram`. It is mod code, not vanilla behaviour; only the cited vanilla lines are checked on `P:\`.
+
+1. The wall normal. For an object hit, neither `RaycastRVProxy.dir` nor `RaycastRV.contactDir` is a face normal; both are the ray direction, so a yaw taken from them faces the camera and the ghost's box hits the wall at any angle. Take the normal from `DayZPhysics.RayCastBullet` on `PhxInteractionLayers.BUILDING`, and keep the fire geometry ray to identify the object (`_shared/enscript/depth/` covers raycasts). Not tested in game.
+2. The ground. Take the nearest support at or below the aimed point, no more than 2 mm above it. A ray started 2 m above the point lands on sills, ledges and the floor above.
+3. The collision box. Lift its bottom 5 cm as `IsCollidingBBox` does (`hologram.c:547` and `:556`), or every building floor blocks placement, and trim the back so the wall the object hangs on does not count.
+4. Logging. Write one line per failure cause (wall, ground, spacing, player, water, box) when it changes, rate limited and under 255 characters, and query the unlifted box only while logging. That turns "the hologram is grey" into a named cause.
+
+Points 2 to 4 were measured in game on a test object.

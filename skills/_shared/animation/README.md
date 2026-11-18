@@ -11,11 +11,13 @@ Vanilla ships `model.cfg` only inside the packed `.p3d` files, so there is no va
 | How do I write the skeleton bones and the `Animations` block? Which keys, units, engine sources and names? | `model-cfg-animations.md` |
 | What goes in `config.cpp` so an animation can be driven: `AnimationSources`, building `Doors`? Why does a source read a phase but not move? | `animation-sources.md` |
 | Which script call plays the animation, on which side, and how do clients see it? How do I read a pose back? | `script-hooks.md` |
-| A door, hatch or lid on a building or static prop, a door opened by a button or lever, the 1.30 lock rules | `building-doors.md`, then `door-config-and-locks.md` (keys and lock code), `door-lods.md` (what each LOD holds) and `door-patterns.md` (three worked patterns, locks on building doors) |
+| A door, hatch or lid on a building or static prop, a door opened by a button or lever, the 1.30 lock rules | `building-doors.md`, then `door-config-and-locks.md` (the `model.cfg` and `config.cpp` keys), `door-lods.md` (what each LOD holds), `door-patterns.md` (three worked patterns), `door-open-and-lock-code.md` (the 1.30 open check and one sided doors) and `building-door-locks.md` (combination and code locks on building doors, moving a 1.29 door mod) |
 | A handlebar or steering wheel that turns with the steering | `handlebar-and-steering.md` |
 | A get in that puts the player on the correct side of a seat | `get-in-sides.md` |
 | Named selections precise enough for action raycasts (seat, grip, door handle) | `selections-for-actions.md` |
-| Worked `model.cfg` examples for a generated device (switch, lever, button, LED, panel door): skeleton, animation types, sources, script control, common mistakes | `model-cfg-device-examples.md` |
+| The `model.cfg` of a small device (switch, button, dial, lid, LED): skeleton, animation types, memory axes and travel, which LODs need the selection | `device-model-cfg.md` |
+| Config sources, script control and worked patterns for a device: toggle, push button, lid, dial, drawer, linked animations | `device-animation-patterns.md` |
+| A complete switch box in `model.cfg`, `config.cpp` and script, and the two ways to light a screen | `device-switch-box.md` |
 | What must the user keep straight when the model comes from Blender? | `blender-handoff.md` |
 | What does a door need inside the `.p3d` (bones, axes, components, action points), and who writes each part? | `doors.md` (the model side is `dayz-object-builder` work) |
 
@@ -26,7 +28,9 @@ Vanilla ships `model.cfg` only inside the packed `.p3d` files, so there is no va
 | Which tool does what, what the agent delivers and what the user runs, the walls, signing, Linux | `tooling-and-walls.md` |
 | Where does DayZ use `.rtm`, how is that different from character animation, the `.rtm` format and tools | `rtm-and-character-animation.md` |
 | The `.anm` route from keyframes to a clip the game loads, DayZATool, which Blender plugin | `anm-clips.md` |
-| Graph, template and instance files, `CMD_` commands, variables, tags, weapon state names, the 1.29 to 1.30 graph port, names tutorials get wrong, which mod changes collide | `anim-graphs.md` |
+| Graph files, `CMD_` commands, variables, terrain alignment, tags, names tutorials get wrong, which mod changes collide | `anim-graphs.md` |
+| Instance (`.asi`) and template (`.ast`) files, the player's instances, weapon state names, what a weapon states clip stores | `anim-instances-and-templates.md` |
+| The 1.30 graph syntax and node types, opening the player graph in Workbench, porting a 1.29 graph | `anim-graph-format-1-30.md` |
 | What a scripted player command can make the vanilla graph do: locomotion, foot events, `Raised` | `scripted-commands.md` |
 | Player bones by zone, hand and IK helpers, twist bones, the frame an IK pose is keyed in | `player-skeleton.md` (measured parent table: `player-skeleton-parents.txt`) |
 | A custom animal, infected or other creature from a Blender rig to the game | `creature-rig-to-game.md`; the commands and variables are in `anim-graphs.md`; the config wiring and the two engine bones are in `_shared/ai/creature-animation.md` |
@@ -39,33 +43,48 @@ Vanilla ships `model.cfg` only inside the packed `.p3d` files, so there is no va
 |---|---|
 | How does an item get its pose in the hands, how do parts show or hide with attach state, how does script switch the animation instance? | `items-in-hands.md` |
 | How a custom weapon sits in the hands and in the sights, and why the grip fix is geometry | `weapon-in-hands.md` |
-| A complete custom player weapon animation from Blender to the game | `weapon-anim-blender.md` |
+| A custom player weapon animation from Blender to the game: what it is, the two routes, plugin setup, the rig and its IK helpers, starting from a vanilla pose | `weapon-anim-blender.md` |
+| Authoring each kind of weapon clip: IK pose, fire, weapon states, reload, hold actions with loop notes, helper bone rules | `weapon-anim-authoring.md` |
+| Exporting `.txa`, events, the plugin's coordinate changes, compiling in Workbench and what the compile loses | `weapon-anim-compile.md` |
+| The weapon's instance file, state names, script registration and bone remap, its `model.cfg` and `config.cpp`, mod layout | `weapon-anim-wiring.md` |
+| Building and testing a weapon animation, the elbow, failure catalogue, checklist, AKM frame budget, open questions | `weapon-anim-testing.md` |
 | A weapon clip posed in the interactive viewer and exported as SEAnim | `weapon-anim-viewer.md` |
 | What places a driver's or rider's hands and body, and how do I change the pose for one vehicle class without replacing the graph? | `rider-poses.md` |
-| A rider pose solved from seat, grip and footpeg anchors, and what was measured with own clips on a rider | `rider-pose-solver.md` |
+| A rider pose solved from seat, grip and footpeg anchors, and how it becomes clips | `rider-pose-solver.md` |
+| What was measured in game with a per class rider pose and with own clips on a rider: the steering clip's 45 degree span, absolute transitions, the grip hole | `rider-pose-measured.md` |
 
 ## Blender
 
 | Question | Open |
 |---|---|
 | Driving Blender through the MCP server: preflight probe, the 4.4 and 5.0 API break, runtime rules, the authoring stages, checks before delivery | `blender-mcp-workflow.md` |
-| What a Blender clip must be to enter the DayZ pipeline: routes, what to key, coordinate maps, loop notetracks | `blender-txa-export.md` |
+| What a Blender clip must be to enter the DayZ pipeline: the two export routes, what to deliver, the plugin setup, Export Type | `blender-txa-export.md` |
+| Which bones a `.txa` export keys or leaves out, and the axis maps of the plugin and the SEAnim exporter | `txa-bones-and-axes.md` |
+| `LoopStart` and `LoopEnd` for an action a script timer ends, such as an unjam | `loop-notetracks.md` |
 | Keyframes authored with Blender run from the command line, axis and handedness maps | `blender-headless-authoring.md` |
-| Bones, pose spaces, keyframing, Actions, IK, cycles and baking in `bpy` | `blender-bpy-armatures.md` |
-| F-curves, easing, modifiers, cameras, constraints, materials, shape keys and drivers in `bpy` | `blender-bpy-objects-camera.md` |
-| Rigid bodies, cloth, soft bodies, particles, baking and export in `bpy` | `blender-bpy-physics.md` |
-| The animation principles in F-curve terms, the self-audit, previews and the review loop | `blender-realism-and-review.md` |
+| Bone matrices, pose spaces and rotation modes in `bpy` | `blender-bpy-armatures.md` |
+| Key types, inserting keys, Actions, the NLA and cycles in `bpy` | `blender-bpy-keyframes-and-actions.md` |
+| IK constraints, baking constrained motion and operator context in `bpy` | `blender-bpy-ik-and-baking.md` |
+| F-curves, Action slots, interpolation and easing in `bpy` | `blender-bpy-fcurves.md` |
+| Noise, Cycles, Smooth and the other F-curve modifiers | `blender-bpy-fcurve-modifiers.md` |
+| Camera lens and aim, paths, orbit rigs, constraints, parenting, motion paths in `bpy` | `blender-bpy-objects-camera.md` |
+| Material keys, drivers and shape keys in `bpy` | `blender-bpy-materials-drivers.md` |
+| Rigid bodies, constraints, throwing, scale and gravity in `bpy` | `blender-bpy-physics.md` |
+| Cloth, soft bodies and particles in `bpy` | `blender-bpy-cloth-and-particles.md` |
+| Baking simulations to keys, FBX and Alembic export | `blender-bpy-sim-baking-export.md` |
+| The animation principles in F-curve terms, fixes for robotic motion, frame counts, camera feel | `blender-realism-and-review.md` |
+| The numeric self-audit, stills and previews, which frames to review, the stages from blocking to polish | `blender-review-loop.md` |
 
 ## Realistic motion
 
 | Question | Open |
 |---|---|
-| Motion that must look believable, or that clips, stutters, loops badly, or looks right in Blender and wrong in game: the gated workflow and evidence states | `realistic-motion.md` |
+| Motion that must look believable, or that clips, stutters, loops badly, or looks right in Blender and wrong in game: the steps, checks and result states | `realistic-motion.md` |
 | Which file or skill decides what, and what each side hands the other | `motion-authority-and-routing.md` |
 | The report and contract formats and every check type of the motion checker | `motion-contract.md` |
 | Anatomy, contact, relative lock and collision rules for hands and held objects | `motion-biomechanics.md` |
 | Extra checks per kind of animation: player action, weapon, locomotion, creature, vehicle occupant, prop | `motion-domain-gates.md` |
-| The evidence ladder, the visual review set and the integration handoff | `motion-evidence.md` |
+| What counts as evidence at each step, the renders to capture, the handoff to the DayZ pipeline and the result states | `motion-evidence.md` |
 
 ## Experimental
 

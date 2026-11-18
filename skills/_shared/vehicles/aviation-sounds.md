@@ -1,106 +1,103 @@
 # Aircraft engine sounds
 
-The `CfgSoundShaders` and `CfgSoundSets` layout LM_Planes uses for engines: the RPM band crossfade formula, volume modulation by thrust, speed, doors and camera, offload variants, ranges, and which aircraft own their sounds. The general sound config keys are in `skills/_shared/audio-fx/sound-config.md`.
+How a plane mod lays out its engine sound shaders and sound sets: the crossfade between RPM bands, volume shaped by thrust, speed, doors and camera, the coasting variants, the ranges, and when to share sounds between aircraft.
 
-Third-party mod behaviour, not vanilla: patterns read in the LM_Planes mod (Workshop `3730564764`), whose files are not in this repo. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code.
+The layout comes from LM_Planes (Workshop `3730564764`), whose configs are the source; it is mod practice, not vanilla, except where a `P:\` line is cited. The general sound config keys are in `_shared/audio-fx/sound-config.md`.
 
-## Two-tier architecture
+## Shaders and sets
 
-**CfgSoundShaders** (low-level, ~700 classes):
+LM_Planes has about 700 `CfgSoundShaders` classes and about 300 `CfgSoundSets` classes. Each aircraft has a base shader with its range, and one shader per RPM band:
 
 ```cpp
-class baseEngineLM_Tigermoth_SoundShader { range = 780; };  // Base per aircraft
+class baseEngineMyMod_Plane_SoundShader { range = 780; };
 
-class LM_Tigermoth_Engine_Ext_Rpm2_SoundShader: baseEngineLM_Tigermoth_SoundShader
+class MyMod_Plane_Engine_Ext_Rpm2_SoundShader: baseEngineMyMod_Plane_SoundShader
 {
-    samples[] = {{"LM_Planes\Sounds\Tigermoth\sc_Engine_Ext_Rpm2",1}};
+    samples[] = {{"MyMod\Sounds\Plane\sc_Engine_Ext_Rpm2",1}};
     frequency = "0.80 * (850 + ((rpm - 850)/(8000/5600))) / 1700";
     volume = "0.99 * 1 * (thrust factor[0.1,0.45]) * (0.7 + 0.3 * (speed factor [10,60])) * engineOn * 0.85 * ((850 + ((rpm - 850)/(8000/5600))) factor [(((1200+1700)/2) - 2.5*150),(((1200+1700)/2) + 150)]) * ((850 + ((rpm - 850)/(8000/5600))) factor [(((1700+2300)/2) + 2.5*150),(((1700+2300)/2) - 150)]) * ((1 - 0.25*doors) max campos)";
 };
 ```
 
-**CfgSoundSets** (high-level, ~300 classes):
+Each sound set points at one shader and inherits a shared base:
 
 ```cpp
-class baseEngine_EXT_SoundSet
+class MyMod_Engine_EXT_SoundSet
 {
     sound3DProcessingType = "Vehicle_Ext_3DProcessingType";
-    distanceFilter        = "softVehiclesDistanceFreqAttenuationFilter";
-    volumeCurve           = "vehicleEngineAttenuationCurve";
-    volumeFactor          = 1;
-    occlusionFactor       = 0;
-    obstructionFactor     = 0;
-    spatial               = 1;
-    loop                  = 1;
-    positionOffset[]      = {0,0,0.3};
+    distanceFilter = "softVehiclesDistanceFreqAttenuationFilter";
+    volumeCurve = "vehicleEngineAttenuationCurve";
+    volumeFactor = 1;
+    occlusionFactor = 0;
+    obstructionFactor = 0;
+    spatial = 1;
+    loop = 1;
+    positionOffset[] = {0,0,0.3};
 };
 
-class LM_Tigermoth_Engine_Ext_Rpm2_SoundSet: baseEngine_EXT_SoundSet
+class MyMod_Plane_Engine_Ext_Rpm2_SoundSet: MyMod_Engine_EXT_SoundSet
 {
-    soundShaders[] = {"LM_Tigermoth_Engine_Ext_Rpm2_SoundShader"};
+    soundShaders[] = {"MyMod_Plane_Engine_Ext_Rpm2_SoundShader"};
 };
 ```
 
-## Range design (engineering choices)
+LM_Planes names its base `baseEngine_EXT_SoundSet`, which redeclares a vanilla class of that name (`P:\DZ\sounds\hpp\config.cpp:379546`). Give a new mod's base its own prefixed name, as above.
 
-| Event | Range (m) | Rationale |
+## The RPM band crossfade
+
+Each engine has five or six RPM bands, each with its own sample. The frequency maps the real RPM onto the sample's recorded RPM:
+
+```cpp
+frequency = "0.80 * ((850 + ((rpm - 850)/(8000/5600))) max 850) / TARGET_RPM";
+```
+
+`TARGET_RPM` is the band's recorded RPM, for example 1200, 1700, 2300, 3250 and 4400 for five bands.
+
+The volume chains two `factor [low, high]` terms per band, each a 0 to 1 ramp: one fades in on entering the band, one fades out on leaving it. `lower_mid` is halfway between this band's RPM and the band below, and `upper_mid` halfway to the band above; for the 1700 band that is `(1200+1700)/2` and `(1700+2300)/2`, with a spread of 150:
+
+```cpp
+// ... * ((rpm_remapped) factor [(lower_mid - 2.5*spread), (lower_mid + spread)])
+//     * ((rpm_remapped) factor [(upper_mid + 2.5*spread), (upper_mid - spread)])
+```
+
+The bands overlap smoothly, with no click at the edges. This is the vanilla car engine formula with other numbers: vanilla's `Offroad_Engine_Ext_Rpm1_SoundShader` uses the same `thrust factor[0.1,0.45]`, `speed factor [10,60]`, `engineOn` and `doors` terms (`P:\DZ\sounds\hpp\config.cpp:310700`).
+
+## Shaping the volume
+
+Shader formulas can read `rpm`, `thrust`, `speed`, `engineOn`, `doors` and `campos`.
+
+| Term | Effect |
+|---|---|
+| `thrust factor[0.1,0.45]` | Louder with throttle |
+| `0.7 + 0.3 * (speed factor [10,60])` | Louder with speed, for wind noise |
+| `engineOn` | 0 or 1: silent with the engine off |
+| `(1 - 0.25*doors) max campos` | Closed doors muffle the sound, but the inside camera always hears it clearly |
+
+## Load and coasting variants
+
+Each RPM band has two shaders, with different samples (`sc_Engine_Ext_RpmN` and `sc_Engine_Ext_Offload_RpmN`):
+
+| Shader | Load | Thrust term |
 |---|---|---|
-| Aircraft engine | 780 | Audible from far in open ambient |
-| Patty_Wagon car engine | 80 | Standard ground vehicle |
-| Spitfire shot (bombing) | 2000 | Combat awareness |
-| Plane Boom (crash) | 1000 | Loud event, attract players |
-| Ignition (start/stop) | 50-200 | Local action |
-| Stall warning | 10-50 | Intimate cockpit warning |
-| Patty_Wagon horn | 250 | Standard car horn |
+| `Engine_Ext_RpmN_SoundShader` | Pulling, accelerating | `thrust factor[0.1,0.45]`, louder with throttle |
+| `Engine_Offload_Ext_RpmN_SoundShader` | Coasting, slowing | `thrust factor[0.6,0.2]`, quieter with throttle |
 
-## RPM-band crossfade formula
+The engine note changes when the pilot lets go of the throttle.
 
-For each engine, 5-6 RPM bands with samples per band. Frequency maps actual RPM to sample's design RPM:
+## Ranges
 
-```
-frequency = 0.80 * ((850 + ((rpm - 850)/(8000/5600))) max 850) / TARGET_RPM
-```
+| Sound | Range |
+|---|---|
+| Aircraft engine | 780 m, heard from far off in open country |
+| Patty Wagon car engine | 80 m, a normal ground vehicle |
+| Spitfire weapon | 2000 m |
+| Crash | 1000 m, loud enough to draw players |
+| Ignition, start and stop | 50 to 200 m |
+| Stall warning | 10 to 50 m, inside the cockpit |
+| Patty Wagon horn | 250 m |
 
-Where `TARGET_RPM` is the band's design RPM (e.g., 1200, 1700, 2300, 3250, 4400 for the 5 bands).
+## Sounds each aircraft needs
 
-Volume uses chained `factor [low, high]` calls (each returns 0→1 lerp). Two factors per band: one ramps up entering the band, one ramps down leaving. `lower_mid` is the midpoint between this band's design RPM and the band below, `upper_mid` the midpoint with the band above (for the 1700 band above: `(1200+1700)/2` and `(1700+2300)/2`, spread 150):
+A stall warning; an engine start in four forms (success, and failures for battery, plug and fuel); and an engine stop in two forms (normal and out of fuel). Script returns them from `GetSoundEngineStartOK()`, `GetSoundEngineStartBattery()` and the matching getters.
 
-```
-... * ((rpm_remapped) factor [(lower_mid - 2.5*spread), (lower_mid + spread)])
-  * ((rpm_remapped) factor [(upper_mid + 2.5*spread), (upper_mid - spread)])
-```
-
-Creates smooth crossfade with no audible band-edge clicks.
-
-The formula is the vanilla car engine formula with other numbers. Vanilla's `Offroad_Engine_Ext_Rpm1_SoundShader` at `P:\DZ\sounds\hpp\config.cpp:310700` has the same `thrust factor[0.1,0.45]`, `speed factor [10,60]`, `engineOn` and `doors` terms, and the parent sound set `baseEngine_EXT_SoundSet` is vanilla too (`P:\DZ\sounds\hpp\config.cpp:379546`). LM_Planes declares its own `baseEngine_EXT_SoundSet` with `positionOffset[] = {0,0,0.3}`; give a new mod's base class its own prefixed name instead of redeclaring the vanilla one.
-
-## Multi-factor volume modulation
-
-Variables available in sound shader formulas: `rpm`, `thrust`, `speed`, `engineOn`, `doors`, `campos`.
-
-Patterns:
-- `thrust factor[0.1,0.45]` — volume rises with throttle
-- `0.7 + 0.3 * (speed factor [10,60])` — boost with velocity (wind/road noise)
-- `engineOn` — 0/1 hard mute when engine off
-- `(1 - 0.25*doors) max campos` — closed doors muffle, but interior camera boosts (use `max` so interior view always hears clearly)
-
-## Offload vs Normal load variants
-
-For each RPM band, two variants:
-- `Engine_Ext_RpmN_SoundShader` — normal/accel load: `thrust factor[0.1,0.45]` (volume rises with throttle)
-- `Engine_Offload_Ext_RpmN_SoundShader` — coast/decel load: `thrust factor[0.6,0.2]` (inverse — volume falls with throttle)
-
-Plus different sample files (`sc_Engine_Ext_RpmN` vs `sc_Engine_Ext_Offload_RpmN`). Gives realistic engine tone change when player releases throttle.
-
-## Required sounds per aircraft
-
-Stall warn, engine start (OK + battery + plug + fuel error variants), engine stop (normal + fuel variant). Specified in script via `GetSoundEngineStartOK()`, `GetSoundEngineStartBattery()`, etc.
-
-## Sound asset ownership patterns
-
-Per-aircraft pattern observed:
-- **Full own sound set**: Catalina, Cessna180, DC_3, Patty_Wagon, Spitfire, Tigermoth, Z37_Bumblebee — each defines `LM_<aircraft>_engine_start_SoundSet` + 5 broken/stop variants
-- **Total reuse Tigermoth sounds**: StuntPlane (all 6 sound configs reference `LM_Tigermoth_*_SoundSet`)
-- **Partial reuse**: Cessna180 reuses only `LM_Tigermoth_Engine_StallWarn_SoundSet` (stall warn is generic beep, OK to share)
-
-Rule: **define your own sounds if the aircraft has identity. Reuse template (Tigermoth) sounds for variants of the same airframe.**
+Give an aircraft its own sounds when it has its own character, and share them across variants of one airframe. In LM_Planes the Catalina, Cessna180, DC-3, Patty Wagon, Spitfire, Tigermoth and Z37 each define `LM_<aircraft>_engine_start_SoundSet` and five failure and stop variants; the StuntPlane reuses all six Tigermoth sound sets; the Cessna180 reuses only `LM_Tigermoth_Engine_StallWarn_SoundSet`, a generic beep.

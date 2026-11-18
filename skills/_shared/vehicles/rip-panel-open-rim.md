@@ -1,67 +1,31 @@
-# Rip-imported panels have an open rim
+# Open rims on ripped panels
 
-Why a door, hood or tailgate taken from a game rip shows a see-through edge when it opens, what does not close it, and the gate that proves a real cap.
+Why a door, hood or tailgate taken from a game rip shows a see-through edge when it opens, which fixes do not close it, and how to check a real cap.
 
-> Status: measured on the TestCoupe build, offline and in game, and not yet checked on `P:\`. A citation written with its full `P:\` path was opened on vanilla data. `build_detachable_doors` is a step of that build's own pipeline, which this repo does not ship.
+Everything here was measured offline and in game on a test car built from a rip. `doors-and-panel-edges.md` covers measuring a missing door edge and hoods against doors; its section "Close the edge by script" does not fix the rim in game, so close it as this file describes.
 
-Related file in this pack: `doors-and-panel-edges.md` (measuring a missing door edge; hood and trunk against a door). Its scripted perimeter band ("The recipe that works") is refuted in game: do not apply it, and close the rim as this file describes.
+## A ripped panel is two skins with an open rim
 
-## Vanilla anchors checked on `P:\`
+Any door, hood, tailgate or flap from a game rip is an outer skin and an inner card that never meet at the edge. The source game never shows that edge, so it was never modelled; every DayZ door opens, so every imported door shows it. The vanilla sedan door (`P:\DZ\vehicles\wheeled\civiliansedan\proxy\sedandoors_driver.p3d`) is a closed volume: on a debinarized copy its free edge length is 0 (**model knowledge**; the file on `P:\` is binarized and py3d cannot read it).
 
-- The vanilla control for a closed door volume is the sedan door model, `P:\DZ\vehicles\wheeled\civiliansedan\proxy\sedandoors_driver.p3d`. It is a binarized ODOL, which py3d cannot read, so the free edge length of 0 quoted for vanilla was measured on a debinarized copy and is not yet checked on `P:\`.
+Count a free edge over all faces of the LOD, not within one material. An edge the skin shares with glass or trim is covered, not open; counting within a material inflates the count and aims the fix at edges that were never exposed.
 
-## A rip-imported panel is two parallel skins with an open rim; a vanilla panel is a closed volume (added 2026-08-15; TestCoupe doors, corrected the same day)
+## What does not close it
 
-Any door, hood, tailgate or flap coming out of a game rip is a pair of surfaces — outer skin and
-inner card — that are never joined at the edge. The source game never shows that edge, so it was
-never modelled; every DayZ door OPENS, so every imported door shows it. This is the same defect as
-the end-cap section of `doors-and-panel-edges.md`, measured a week earlier on the same car (leading-edge cap 25 cm² against the ~710 cm² a
-real cap needs, 77 mm of thickness available). **Its fix is not the same:** the scripted perimeter band
-and the edge-render parity gate that `doors-and-panel-edges.md` presents as "The recipe that works"
-(15.0% → 25.4% against 26.8% vanilla) are the ones refuted in game below; this file's verdict supersedes
-that recipe. The fact that this entry was first written without
-reading that one is itself the lesson: **before authoring a fix, grep this pack for the defect, not just
-for the car.**
+- An extruded skirt. Welding a band to the rim closes that edge and opens a new one at the band's inner boundary. On the test door the true free edge went from 4455 mm to 5036 mm: the hole moved inward.
+- The extruded vertices also copy the rim vertex's UV, so every new quad has 3D area and zero UV area: 235 of 235 quads at 0.00000 UV per 3D area, against 0.18 for the skin beside them. The faces draw, so a solid colour render scores them as closed, while the game samples a collapsed mapping and the player sees smeared texture. Near glass the skirt shows as a mark on the glass: 39 quads lay within 5 cm of a pane, the closest at 6.1 mm.
+- Re-importing. All six visual groups of the door were already present face for face in the shipped proxy (every face centroid matched within 1 mm), and rebuilding the door from the rip gives 684 mm of free leading edge against the live door's 743 mm and the sedan's 0. The open sandwich is in the source, and rebuilding reproduces it.
 
-- **Count a free edge over ALL faces of the LOD, not within the material.** An edge the skin shares
-  with glass or trim is covered, not open; skirting it pokes through the neighbour. Counting
-  within-material inflates the census and aims the fix at edges that were never exposed.
+## How to cap it
 
-- **⚠ REFUTED — do NOT close the rim with an extruded skirt, and do NOT calibrate on the edge-on
-  silhouette.** The first version of this entry canonized both, on the strength of an edge-on render
-  going 15.0% → 25.4% of frame against a vanilla control at 26.8%. The game falsified it the
-  same day: the edge was still see-through in game, plus two new defects. Two mechanisms, both
-  measured afterwards, and either one alone is fatal:
-  1. **An extrusion is a flange, not a cap.** Welding a band to the rim closes that edge and opens
-     a new one at the band's inner boundary. Measured on the shipped door: true free edge went
-     **4455 → 5036 mm**. The operation moved the hole inward; it never closed it.
-  2. **The extruded vertices inherited the rim vertex's UV, so every quad has 3D area and ZERO UV
-     area** — 235 of 235 quads measured at 0.00000 UV/3D against 0.18 for the skin beside them. The
-     faces draw (same pixel count cull ON and OFF), which is exactly why a solid-colour offline
-     render scored them as closed, while the engine samples a degenerate mapping and the player
-     reads smeared garbage. A skirt that lands anywhere near glass reads as an artifact ON the
-     glass: 39 quads within 5 cm of a pane, closest 6.1 mm.
-  The silhouette percentage was measuring the patch, not the defect — the exact failure the
-  corollary below warns about, committed in the bullet above it.
+Author the rim as a cap on the vertical leading and trailing edges only. Weld skin edge to card edge with its own UV strip, or give it its own opaque edge material. Do not sweep the whole free perimeter: most of it is never exposed. On the test car only 31.5% of an automatic perimeter skirt landed on the two edges the complaint was about, while 17.4% (663 cm²) landed on the window top and became a new texture fault.
 
-- **The rim has to be AUTHORED as a cap, on the vertical leading and trailing edges only.** Weld
-  skin edge to card edge with its own UV strip (or a dedicated opaque edge material); do not sweep
-  the whole free perimeter, because most of it is not exposed — measured on TestCoupe, only 31.5% of
-  an automatic perimeter skirt landed on the two edges that were actually the complaint, while 17.4%
-  (663 cm²) landed on the window top and became a new texture defect.
+## Checking the fix
 
-- **RE-IMPORTING DOES NOT FIX THIS — measured twice.** An earlier comparison found all six visual factory groups
-  already present face-for-face in the shipped proxy (100% centroid match ≤1 mm), and the pipeline's
-  own `build_detachable_doors` output measures **684 mm** of free leading edge against the live
-  door's 743 and vanilla's **0**. The open sandwich is in the source. Re-assembly reproduces it.
+Check with a textured render and an in-game capture with the panel open, at the angle of the complaint. A silhouette percentage and a solid colour render both miss the UV fault that decides whether the fix shows at all.
 
-- **Gate: a TEXTURED render plus an in-game capture with the panel OPEN, at the angle of the
-  complaint.** Never the silhouette percentage, and never a solid-colour render — both are blind to
-  the UV failure that decides whether the fix is visible at all.
+A number that improves while the symptom stays is measuring the fix, not the fault. On the test door "56 of 63 quads face the edge", "cap area from 25 to 40 cm²" and "edge-on silhouette from 15.0% to 25.4% against 26.8% for vanilla" all improved while the rim stayed see-through. Go back to the view the complaint came from.
 
-- **Corollary on gates (same family as the free-edge-length section of `doors-and-panel-edges.md`).** "56 of 63 quads face the edge", "cap 25→40 cm²"
-  and "silhouette 15.0→25.4%" all improved while the defect was untouched. A metric that improves
-  without the symptom moving is measuring the fix, not the defect — go back to the artifact of the
-  complaint.
+When three visible improvements each make a metric worse (here 5.2 mm, then 3.4 mm, then 0.5 mm toward negative), the reference is wrong, not the threshold. Check what it measures against: the outer rail must sit on the sheet edge, while the inner rail rightly rises to the glass, so judging the inner rail against the sheet asks it not to do its job.
 
-- **Stale reference, not threshold.** If three visible improvements make the metric monotonically worse (here `5.2` -> `3.4` -> `0.5 mm` toward negative), the reference is stale — do not negotiate the threshold. Review what it measures against: the exterior rail must sit on the sheet edge, the interior rail correctly rises to the glass; qualifying the interior against the sheet demands it not do its job.
+Before writing a fix for a panel, Grep this pack for the fault itself, not only for the car's name; `doors-and-panel-edges.md` already measured the same rim.

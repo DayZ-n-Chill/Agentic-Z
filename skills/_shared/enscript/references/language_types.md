@@ -74,7 +74,7 @@ Values count up from 0 unless set. An enum can extend another enum with `:` (`P:
 
 A template class casts the same way: `PlayerStat<float>.Cast(...)` (`P:\scripts\4_world\entities\manbase\playerbase.c:8201`).
 
-A cast between two classes where neither derives from the other is a compile error, not a `null`: `IngameHud.Cast(mission)` with `Mission mission` stopped the Mission module with `Types 'IngameHud' and 'Mission' are not related` (measured, DayZDiag 1.29). Cast from an ancestor or a descendant: `IngameHud extends Hud` (`P:\scripts\5_mission\gui\ingamehud.c:1`) and the mission returns a `Hud` from `GetHud` (`P:\scripts\3_game\gameplay.c:720`), so `IngameHud.Cast(mission.GetHud())` compiles. In the same way, passing an `Object` where a `proto` method takes an `EntityAI` fails with `Unsafe down-casting, use 'EntityAI.Cast' for safe down-casting` (measured, DayZDiag 1.30.164289); cast first, then pass the result.
+A cast between two classes where neither derives from the other is a compile error, not a `null`: `IngameHud.Cast(mission)` with `Mission mission` stopped the Mission module with `Types 'IngameHud' and 'Mission' are not related` (measured, DayZDiag 1.29). Cast from an ancestor or a descendant: `IngameHud extends Hud` (`P:\scripts\5_mission\gui\ingamehud.c:1`) and the mission returns a `Hud` from `GetHud` (`P:\scripts\3_game\gameplay.c:720`), so `IngameHud.Cast(mission.GetHud())` compiles. In the same way, passing an `Object` where a `proto` method takes an `EntityAI` fails with `Unsafe down-casting, use 'EntityAI.Cast' for safe down-casting` (measured, DayZDiag 1.30); cast first, then pass the result.
 
 ## Parameters
 
@@ -164,7 +164,7 @@ Use them with concrete types: `new Param1<int>(55)` (`P:\scripts\1_core\param.c:
 
 | Method | Behaviour | Source |
 |---|---|---|
-| `Length()` | Length in bytes: equal to the character count for ASCII, but a two-byte UTF-8 character counts 2 (measured, DayZDiag 1.30.164289). `LengthUtf8()` counts characters. | `enstring.c:199`, `:212` |
+| `Length()` | Length in bytes: equal to the character count for ASCII, but a two-byte UTF-8 character counts 2 (measured, DayZDiag 1.30). `LengthUtf8()` counts characters. | `enstring.c:199`, `:212` |
 | `Substring(start, len)` | Part of the string. | `enstring.c:113` |
 | `IndexOf(s)`, `LastIndexOf(s)`, `IndexOfFrom(start, s)` | Position or -1. | `enstring.c:240`, `:253`, `:271` |
 | `Contains(s)` | Substring test. | `enstring.c:286` |

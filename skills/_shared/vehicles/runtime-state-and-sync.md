@@ -1,122 +1,61 @@
-# Runtime state, per-tick events and sync
+# Runtime state and sync
 
-Which per-tick event a car runs, what a non-owner client reads, why script visual state is missing on a fresh spawn, and how to probe a vehicle that draws or exits in the wrong place.
+Which per-tick event a car runs, what a passenger's client reads for engine state, why script visual state is missing on a fresh spawn, and how to probe a vehicle that draws or gets out in the wrong place.
 
-> Status: measured in game on worked vehicle builds, each named in its entry (TestHeli OH-1, TestCoupe), and not yet checked on `P:\`. A citation written with its full `P:\` path was opened on vanilla data (a 1.30 build); a bare `file.c:N` repeats a full citation from the anchors list below. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
+Facts measured in game were taken on test vehicles built on `CarScript`, a helicopter and a car; they say so where they apply.
 
-## Vanilla anchors checked on `P:\`
+## Per-tick events
 
-- The `CarScript` constructor registers `EntityEvent.POSTSIMULATE` and `EntityEvent.POSTFRAME` and no other event (`P:\scripts\4_world\entities\vehicles\carscript.c:207-208`); its per-tick work is in `EOnPostSimulate` (`P:\scripts\4_world\entities\vehicles\carscript.c:807`).
-- `EOnSimulate` is an empty stub on the base entity (`P:\scripts\1_core\proto\enentity.c:201-203`).
-- `BoatScript` overrides both `EOnPostSimulate` (`P:\scripts\4_world\entities\vehicles\boatscript.c:355`) and `EOnSimulate` (`P:\scripts\4_world\entities\vehicles\boatscript.c:393`).
-- `EngineIsOn` is native on `Car` (`P:\scripts\3_game\vehicles\car.c:230`).
-- `RemoteObjectTreeDelete` and `RemoteObjectTreeCreate` are native on the game object (`P:\scripts\3_game\global\game.c:708-710`).
+The `CarScript` constructor registers `EntityEvent.POSTSIMULATE` and `EntityEvent.POSTFRAME` and nothing else (`P:\scripts\4_world\entities\vehicles\carscript.c:207` and `:208`), and its per-tick work runs in `EOnPostSimulate` (`:807`). `EOnSimulate` is an empty stub on the base entity (`P:\scripts\1_core\proto\enentity.c:201` to `:203`), so `super.EOnSimulate` does nothing on a car. Hook `EOnPostSimulate` for per-tick logic on a car.
 
-## Per-tick events: CarScript has no EOnSimulate (added 2026-07-29, TestHeli OH-1)
+`BoatScript`, unlike `CarScript`, overrides both `EOnPostSimulate` (`P:\scripts\4_world\entities\vehicles\boatscript.c:355`) and `EOnSimulate` (`:393`).
 
-Which events a `CarScript` registers, why `super.EOnSimulate` does nothing on a car, and where
-the car's per-tick work runs are written once, in `aviation-carscript-base.md` ("Events: where the
-flight loop runs"), together with the custom solvers that add `SetEventMask(EntityEvent.SIMULATE)`
-and pump it by hand. On a car, hook `EOnPostSimulate` for per-tick logic. Two points that file
-does not cover: `BoatScript`, unlike `CarScript`, overrides both events (`boatscript.c:355` and
-`:393`); and although vanilla runs much of the `EOnPostSimulate` work on the owner client too, a
-mod's checks that depend on replicated items (`CheckVitalItem`) must stay server-only.
-(These are 1.30 line numbers; `dayz-1-30-vehicles.md` covers what 1.30 changed.)
+Vanilla runs much of its `EOnPostSimulate` work on the owner client too, but a mod's checks that depend on replicated items, such as `CheckVitalItem`, must stay on the server.
 
-## Engine state on a non-owner occupant
+A custom flight loop that needs `EOnSimulate` must add `SetEventMask(EntityEvent.SIMULATE)` itself; see `aviation-carscript-base.md`, section "Where the flight loop runs". What 1.30 changed for vehicles is in `dayz-1-30-vehicles.md`.
 
-**Crew / engine state on a non-owner occupant (measured on TestHeli):**
-`Car.EngineIsOn()` on a client that is not the Pawn owner returns **false** even when the
-authority has the engine running — no exception, no warning. Measured on the occupant of
-seat 1 with a two-component probe in the same frame (`natEng=false syncEng=true`) and the
-server log showing no stop. Any client subsystem gated on `EngineIsOn()` shuts itself off
-(the thermal camera died instantly). Remedy: replicate the state
-(`RegisterNetSyncVariableBool` written in `OnEngineStart/Stop`) and have **every** client
-path read `native OR replicated`; an `m_EngineOnAuthority` (OwnerState) snapshot does NOT
-serve passengers. When a client check decides to turn something off, print BOTH sources in
-the same frame.
+## Engine state on a passenger's client
 
-## A mesh drawn in the wrong place is invisible to every script transform: qualify the probe first (added 2026-07-29)
+`EngineIsOn()` is native on `Car` (`P:\scripts\3_game\vehicles\car.c:230`). On a client that does not own the vehicle it returns `false` even while the server has the engine running, with no warning. Measured in game on a passenger seat: in the same frame the native value read `false` and a replicated copy read `true`, and the server log showed no stop. Any client feature gated on `EngineIsOn()` switches itself off; a thermal camera died the moment the passenger sat down.
 
-When the user reports that a vehicle **draws** somewhere the entity is not — body on the ground while
-the vehicle climbs, a part left behind, a piece floating — the reflex is to instrument the transforms
-and compare. **That reflex has already been paid for and it returns nothing.**
+Replicate the state yourself: a `RegisterNetSyncVariableBool` written in `OnEngineStart` and `OnEngineStop`, and have every client path read the native value or the replicated one. A snapshot held only on the owner does not reach passengers. When a client check decides to turn something off, print both values in the same frame.
 
-Measured on TestHeli OH-1 over a 26 m climb: root position, `GetRenderTransform`, both bones, the
-physics body (`dBodyGetWorldTransform`) and the pilot's world position **agreed digit-for-digit**
-while the hull was drawn on the ground. The consequence is the general rule:
+## A vehicle drawn where it is not
 
-> **Any probe derived from the entity root inherits the root's blind spot.** A drawing-position defect
-> lives downstream of every transform Enforce exposes, so no amount of transform logging can see it.
+When a vehicle draws somewhere the entity is not (the body on the ground while the vehicle climbs, a part left behind, a piece floating), logging transforms finds nothing. Measured in game over a 26 m climb: root position, `GetRenderTransform`, both bones, the physics body (`dBodyGetWorldTransform`) and the pilot's position all agreed to the digit while the hull was drawn on the ground. Any probe derived from the entity's root shares the root's blind spot, because the drawing fault lies after every transform script can read.
 
-**What does work** — a marker the engine projects from a WORLD point without consulting the entity's
-transform, read off a screenshot: `Debug.DrawSphere` at `GetPosition()` plus a ladder of rungs at
-fixed spacing below it. The rung spacing is what makes the defect **quantitative** (gap in metres =
-rungs × spacing) instead of an eye report.
+What works is a marker the engine places from a world point without the entity's transform, read off a screenshot: `Debug.DrawSphere` at `GetPosition()` plus a column of markers at fixed spacing below it. The spacing turns the gap into metres (markers times spacing) instead of an impression.
 
-**Probe qualification, mandatory before any number adjudicates:** read the magnitude in the regime
-where the drawing is CORRECT (on the ground) and in the regime where it is WRONG (airborne). If it
-does not change while the eye sees a difference, that magnitude is **blind** — stop using it. A delta
-of exactly `0.000` is a tautology signal, not precision.
+Check a probe before you trust it. Read it where the drawing is right (on the ground) and where it is wrong (in the air). If the value does not change while the eye sees a difference, the value is blind; stop using it. A difference of exactly `0.000` means the probe measures itself, not that it is precise.
 
-**The companion trap, on the inference side.** Over flat ground, "the visual Y is frozen at its
-take-off value" and "the transform is computed from a ground-referenced magnitude" produce **the same
-two signatures**: gap grows with height, gap returns to zero on landing. This is plain
-arithmetic. So the flat-ground signature must never be used to EXCLUDE a family of causes — it
-identifies nothing. Discriminate by changing the regime, not by reasoning:
+Over flat ground, "the drawn height is frozen at take-off" and "the transform is computed from a height above ground" give the same two signs: the gap grows with height and goes back to zero on landing. So the flat ground result rules nothing out. Change the situation instead:
 
-- horizontal traverse at constant world Y over terrain ≥15 m lower — ground-referenced tracks the
-  terrain, frozen-Y does not;
-- descend without touching down and climb again — a replication/state split shows hysteresis, a pure
-  function of height does not.
+- Fly level at a constant height over ground at least 15 m lower. A height above ground follows the terrain; a frozen height does not.
+- Descend without touching down, then climb again. A split between replicated and local state lags behind; a pure function of height does not.
 
-- Status honesty: the blind-spot measurement and the flat-ground ambiguity are **verified**; the two
-  discriminant manoeuvres above were designed on 2026-07-29 and **had not been run in-game** at the
-  time of writing. Treat them as an untested procedure until a cycle closes it.
+These two manoeuvres have not been run in game yet; treat them as an untested procedure.
 
-## Get-out desync: a one-shot OnDriverExit probe on both sides
+## Getting out at the wrong place
 
-- **The ex-owner proxy is frozen until re-registered.** With `NetworkMoveStrategy.PHYSICS`, on get-out the former owner falls back to the last proxy snapshot received before possession and receives no further server transform. A client `SetPosition`/teleport or a server pose nudge cannot repair it (client `SetPosition` had no effect at 50 ms; 10 cm server lift had not arrived in 25 s). After a short server-side delay (~500 ms after `OnDriverExit`) and only when every crew seat is empty, rebuild the remote representation with `RemoteObjectTreeDelete/Create` (`scripts/3_game/global/game.c:708-710`): `3/3` re-entries, `|Δ| 0.12/0.11 m`. Schedule it from the surviving server object and cancel on deletion; a `CallLater` owned by the destroyed client replica cannot complete safely.
+With `NetworkMoveStrategy.PHYSICS`, the former owner falls back on get-out to the last proxy snapshot it received before it took the seat, and gets no further server transform. A client `SetPosition` or a server nudge does not repair it: a client `SetPosition` had no effect, and a 10 cm server lift had not arrived 25 seconds later (measured in game).
 
-For "invisible/desync on exit" bugs, a one-shot probe in `OnDriverExit` that prints on BOTH
-sides `playerPos`, `heliPos`, `crewEntryWS`, `dPH`, `dPC` adjudicates in one flight what
-hypotheses do not: good exit = client == server; bad exit = client with the vehicle at the
-spawn pose (sunk) and the player underground, server correct. Align client/server clocks by
-PAIRS of twin events (the two EXIT lines gave a stable 33,99 s offset) and correlate with
-the owner's position series (FRAME p0) to date the divergence. Complements the Pawn ladder
-in `network-physics-ownership.md`.
+What repairs it: about 500 ms after `OnDriverExit`, on the server and only when every crew seat is empty, rebuild the remote copy with `RemoteObjectTreeDelete` and `RemoteObjectTreeCreate` (`P:\scripts\3_game\global\game.c:708` and `:710`). Measured in game: 3 of 3 re-entries clean, the vehicle within 0.12 m. Schedule it from the server object that survives and cancel it if that object is deleted; a `CallLater` owned by the client copy that gets destroyed cannot finish safely.
 
-## Script visual state is not applied to a newly spawned vehicle, and the config default looks like a result (added 2026-09-10, TestCoupe)
+To find the fault in one flight, add a one-shot probe in `OnDriverExit` that prints, on both client and server, the player position, the vehicle position, the crew entry point and the distances between them. A good exit has client equal to server. A bad exit has the client showing the vehicle at its spawn pose, sunk, and the player underground, while the server is right. Line up the client and server clocks with a pair of events both sides log (the two exit lines gave a steady offset), then compare against the owner's position log to find when they split. The ownership side is in `network-physics-ownership.md`.
 
-Visual code running from `OnVariablesSynchronized` **never executes** on a
-vehicle created with a bare spawn, because that vehicle has not synchronized anything yet. Car paints
-`hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]` entries from `config.cpp` and
-nothing else, so all script `SetObjectTexture` / `SetObjectMaterial` calls are missing.
+## Script visual state on a fresh spawn
 
-It is a silent trap because **config default is usually a plausible version of
-what script would have painted**: an almost black screen, unlit indicator light, blank panel.
-Reading those pixels as result of scripted branch gives a confident and false verdict.
+Visual code run from `OnVariablesSynchronized` never runs on a vehicle created with a bare spawn, because that vehicle has not synchronized anything yet. The car shows only what `config.cpp` gives in `hiddenSelectionsTextures[]` and `hiddenSelectionsMaterials[]`, and every script `SetObjectTexture` and `SetObjectMaterial` is missing.
 
-**What does synchronize, measured:** mounting parts. A debug-spawn fixture attaching battery,
-spark plug, radiator, four wheels, and doors is a large attachment synchronization and triggers
-visual update. Seating a player and starting engine also works, with cost
-detailed below.
+The trap is that the config default often looks like a plausible script result: a near black screen, an unlit indicator, a blank panel. Reading those pixels as the script's output gives a confident wrong answer.
 
-**The discriminant: carry a control IN THE SAME FRAME.** Choose a SECOND selection whose
-script state is distinguishable at a glance from its config default, and read it in same
-capture as subject:
+What does synchronize: attaching parts. A debug spawn that attaches battery, spark plug, radiator, four wheels and doors is a large attachment sync and triggers the visual update (measured in game). Seating a player and starting the engine also works, at the cost below.
 
-- instrument cluster: config gives it OFF material, script gives it ON.
-- any indicator light: OFF in config, ON only from script.
+Keep a control in the same capture. Pick a second selection whose script state is easy to tell from its config default, and read it in the same shot:
 
-Thus frame answers two questions at once. Lit control => scripted branch
-ran, therefore subject appearance **is** the result. Unlit control => script did not run
-and subject says nothing, whatever it looks like.
+- the instrument cluster: config gives the off material, script the on one;
+- any indicator light: off in config, on only from script.
 
-Compare `emmisive[]` of the two materials before trusting the eye: scale difference of
-0.3 vs 1.1 is unmistakable in broad daylight; 0.9 vs 1.0 is not.
+A lit control means the script ran, so the subject shows the real result. An unlit control means the script did not run, and the subject tells you nothing. Compare the `emmisive[]` values of the two materials first (vanilla spells the key `emmisive`): 0.3 against 1.1 is clear in daylight, 0.9 against 1.0 is not.
 
-**Cost of alternative route (DayZ-MCP harness, measured 2026-09-10):** starting the engine requires
-client-side vehicle ownership, and taking it leaves free camera unusable for the entire
-lifetime of client process. Framing dashboard and having engine running become mutually
-exclusive on the same client. Prefer synchronization via attachments.
+Through the dayz-mcp test bridge (`test-stand-and-mcp.md`), starting the engine needs client ownership of the vehicle, and taking it leaves the free camera unusable until the client restarts. Framing the dashboard and running the engine then exclude each other on one client, so prefer the attachment sync.

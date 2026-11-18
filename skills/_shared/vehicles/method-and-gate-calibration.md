@@ -1,151 +1,49 @@
-# Working method and gate calibration
+# Working method and check calibration
 
-Process rules that cost more iterations than any config fact: the iteration budget, calibrating a gate before trusting it, what a PASS covers, and the habits that stop re-deriving known causes.
+How to spend in-game cycles on a vehicle build, how to make sure an offline check can fail before trusting it, and what a pass actually covers. These rules cost more iterations than any config fact when skipped. Negative test cases for import checks are in `process-gates.md`.
 
-> Status: the measurements below were taken in game or offline on mod vehicles, named in each entry; they describe those mods, not vanilla, unless a vanilla citation backs them. Every citation of a vanilla file was opened on `P:\` (a 1.30 build), whether it is written with its full `P:\` path or with the file name alone. A citation marked `1.29` gives the line in a 1.29 build, which is not on `P:\` and is not checked. "Invariant N", "preflight #N" and "#N" all mean the numbered invariants; `README.md` lists which file holds each number.
+## Count the cycles on one goal
 
-Related file in this pack: `process-gates.md` (negative fixtures for import gates and the promoted process rules).
+- Track how many build and test cycles one objective has taken, and make the count stop you. At three, choose before touching code: change strategy, hand it to a person, or drop the objective. A rule like "after two rebuilds without progress, change strategy" does nothing when nobody counts.
+- Two failed rebuilds on one symptom means build a probe, not a third rebuild. List the candidate causes, read the real mechanism in the vanilla scripts, log both client and server, and confirm the hook fires at all (a silent log is a signal; `OnUpdate` is not an engine callback). Then make one directed fix. If two probes also fail, review the real files with several agents at once.
+- Keep test tooling out of the product task. If a product task is blocked twice by its own test tooling, stop and decide: make the tooling its own project, or run that one test by hand and move on.
+- When the judge is the eye or the feel of driving, offline analysis gets one round to rule out cheap causes; then go to the game. Green offline checks do not predict the in-game result, and more offline rounds only delay the answer.
+- A visual fault that survives several rounds is a reason to involve a person, not to run one more round. A decimated rip mesh, for example, may never reach game-ready quality and needs an artist.
 
-## Vanilla anchors checked on `P:\`
+## Habits that stop re-deriving known causes
 
-- The crew probe of the method below dumps `CrewPositionIndex` for each component index (`P:\scripts\3_game\vehicles\transport.c:179`).
+1. Compare against vanilla first. Unpack a known-good vanilla car (the `CivilianSedan`; the copy on `P:\` has version 56 in its header) once, and diff your model against it: LODs, named selections, crew proxies, wheel hubs, `componentNN`, memory points. Fix every gap in one pass. See `vehicle-structural-parity.md`.
+2. The game is the only check that counts; offline results are hints. A metric that is `0.000` or 100 percent by construction, such as winding measured against the model's own normals, proves the model agrees with itself, not that DayZ renders, spawns or seats it. Never close a step on such a check.
+3. When a get-in action does not appear for a seat, probe the crew before any rebuild. Spawn the car and a control car whose get-in works, dump `CrewPositionIndex` for component indices 0 to 79 (`P:\scripts\3_game\vehicles\transport.c:179`), and cast a View Geometry ray (`ObjIntersect.View`, `P:\scripts\3_game\constants.c:34`) per seat from `pos_driver` and `pos_codriver`. This finds inward-facing seat geometry without guessing.
+4. Re-aim an old probe before believing its negative. A probe carries the coordinates of the model it was written for; run unchanged on a newer model, a `hit=0` can be a miss, not a verdict. Take the aim point from what produced the current model, compute the ray's margin against the target box (less than about one half-extent means the result is not evidence), and log the aim point next to the result. On a test car an old probe still hit, but only 3.7 cm inside the box.
 
-## Iteration budget: check this before opening a front (added 2026-07-27)
+## Make a check able to fail before trusting it
 
-Measured over one month of vehicle work (125 session handoffs: TestMercedes 46, TestCoupe 38,
-TestHeli 37): **26 sessions ended in STOP/BLOCKED/FALSIFIED against 24 green**. The three failure
-modes below are process gates, not config facts — and each burned dozens of sessions on a
-different project before being named. They cost more iterations than any invariant below.
+These apply to every check: render and winding, capacity, parity, telemetry and policy. The common ways a check lies:
 
-1. **Count the cycles spent on one objective, and make the count block.** The rule
-   "after 2 rebuilds without progress, STOP and change strategy" does not bite when nobody
-   tracks N. Carry `cycles_on_this_objective: N` in the HANDOFF `LIVE-STATE`, and at N>=3 the
-   re-entry gate must pick one of three exits before touching code: change strategy, escalate to a
-   human, or drop the objective. Evidence: one TestMercedes task reached **64 builds across 29 sessions**,
-   and what finally closed it was shifting 28 proxy triangles by -0.240 m in X.
+| Shape | What happened |
+|---|---|
+| A threshold copied, not measured | An assembler used 65535 as the resolved vertex limit; `binarize` rejected the model at 46,133, about 30 percent lower. The ratio differs by model (1.4205 on one test helicopter, 1.46 on another), so re-measure with `binarize` for each model; see `binarize-vertex-budget.md`. |
+| A policy that changes nothing | Two winding policies were the same in maths (`dot(-cross,-n) == dot(cross,n)`), and four variants were built on them before anyone checked. |
+| A check that shares the builder's assumption | Seat parity compared under pure translation, the same assumption the sub-model was built with. A delta of `0.000` proved the two agreed, not that either was right. |
+| One field read from a larger output | `attachment_count=2` was read as a pass while the regression sat in the same output. |
+| A LOD matched by its round resolution | On disk Fire Geometry reads `6999999976046592`, not `7e15`. An exact match finds nothing, so the check reports a selection as missing when it is there. Match with a relative tolerance: `abs(res - nominal) <= nominal * 1e-3`. This one shows up as a confident fail about missing data, not a suspicious pass. |
 
-2. **Keep the test harness OUT of the product task.** That task mixed "align the Mercedes proxies"
-   (product) with "build an automated live verifier" (daemon, broker, lease, preflight, camera
-   contract, JPEG SHA) — the harness silently took the bulk of the time and became the project.
-   If a product task is blocked TWICE by the harness, stop the product and decide explicitly: scope
-   the harness as its own project, or run that one test by hand and move on.
+Before trusting a check:
 
-3. **When the judge is the eye, offline analysis gets ONE round.** Green offline gates do not
-   predict the live result. One build of it reported `263/263 global + verifier 35/35 hard PASS` plus
-   every SHA, and then: `Visual: FAIL of evidence, client hung`. The TestHeli "six fronts" night
-   spent ~25 agent sessions to produce refutations only (binding intact, re-bake refuted, clock and
-   interpolation refuted) and concluded the discriminator was the user's own screenshot. If the
-   discriminator is visual or feel, spend one offline round ruling out cheap causes, then go to the
-   game — extra offline rounds postpone the verdict, they do not replace it.
+- Run it on a known-bad case. A pass on a known-bad case means the check is the bug.
+- Name in one line the assumption the model was built with, and confirm the check does not reuse it. A check only ever seen passing is unmeasured.
+- Make every check catch at least one real fault already seen in game, not only a synthetic test. Keep a short list of known in-game faults per car and confirm the checks catch each one; a mixed-winding rear window, for example, showed as 18.2 percent of the glass area failing a winding consistency check.
+- A check that stays red stops telling you anything. If a known failure is accepted on purpose, record its exact signature (entities and measurements) and report it apart from new failures. Any change in it, including an improvement, is new information.
 
-Corollary already paid twice: TestCoupe needed 30+ sessions to conclude that a decimated rip mesh
-cannot reach game-ready quality (pivot to a human artist), and the TestHeli HH-60G reached the same
-verdict independently weeks later. A visual red that survives N rounds is a signal to escalate to a
-human, not to run round N+1.
+## Scope of a pass
 
-The absent door radial is covered by `symptom-door-action-missing.md`.
+- Say what a pass covers, never a bare "clean". "No see-through faces in `color` and `glass`" is not "winding is clean"; reporting the second when only the first was checked is a false pass the player finds in game.
+- Take the measurement window from where the defect shows (the viewing angles, what the user pointed at), not from the area the fix touched. A fail dismissed as a window artifact needs a separate control that proves the instrument wrong.
+- Choose the comparison by where new faces came from. Invented points and UVs compare against a calibrated reference such as the material median. Geometry made from one face (a mirrored twin, a displaced panel) compares against that exact source face; an exact twin needs exact equality. A twin cannot fail a UV check, because it copies the UVs. A failure inherited unchanged from the source does not show the edit caused it.
+- If a detector rejects about half of all entities, assume a structural cause, such as double-sided construction, until shown otherwise. Prefer measures inside one entity, such as the three vertex normals of a triangle more than 90 degrees apart, and re-measure the whole remainder after a fix: on a test car, flipping opposite normals fixed about 59 percent and the rest needed flattening against the face normal.
+- Print the model's modification time with every analysis and flag a change since the last run; the deployed `.p3d` can change under you. Only the session working on a shared model edits it.
 
-## Before any numbered invariant: calibrate the gate itself (added 2026-07-29; TestHeli HH-60G and OH-1)
+## Check names before writing them
 
-**BEFORE any numbered gate below — calibrate the gate itself (added 2026-07-29; TestHeli HH-60G + OH-1).**
-Two rules in this file already cover this — the "Calibration and scope" section
-below and habit 2 of the "Method" section ("never close a phase on a tautological gate"). Both were live and **neither
-fired across four gates in one week**, because both read as being about *car render/winding* gates. They
-are not: they govern every item below, and capacity, parity, telemetry and policy gates alike. The four
-shapes, so they are recognizable on sight:
-- **A threshold copied instead of measured.** An assembler carried `RESOLVED_LIMIT = 65535`;
-  the engine's real resolved-vertex ceiling on that model is **46,133** (about 30% lower), so the gate passed
-  models `binarize` rejects with `Too many vertices`. The cap is model-dependent (×1.4205 on HH-60G,
-  ×1.46 on OH-1) — never copy it between models, re-measure with binarize.
-- **A policy that is a mathematical no-op.** `uniform` and `keepdot` were geometrically inert
-  (`dot(-cross,-n) == dot(cross,n)`); four variants were built on them before the identity was checked.
-- **A gate that shares the producer's frame.** OH-1 seat parity compared under pure translation — the
-  same assumption the sub-model was generated with. `delta 0.000` proved producer and gate agreed, not
-  that either was right.
-- **A field read selectively.** `attachment_count=2` was signed PASS because that one field matched
-  expectation; the regression sat in the same output 20 min before the user hit it in-game.
-
-**A fifth shape, and it fakes an ABSENCE rather than a green (added 2026-08-19, SUB_WRXSTI): matching
-a LOD by its nominal resolution.** LOD resolutions on disk are not the round numbers the docs use —
-FireGeometry reads `6999999976046592`, not `7e15`. A bucket keyed on `round(7e15)`, or any `==`
-against the nominal, comes back EMPTY, and a gate built on it reports "the selection is absent" about
-something that is present. Measured cost: a cross-check of the config's `componentNames[]` against the
-`.p3d` reported all six damage zones missing, and they were all there in FireGeo — the report reached
-the user as a red before the control against vanilla caught it. Always match with a RELATIVE tolerance
-(`abs(res - nominal) <= nominal * 1e-3`), and note the direction of the failure: this one does not
-show up as a suspicious green you might question, but as a confident red about missing data, which is
-the shape people act on fastest.
-
-**One minute, before trusting any gate:** (a) run it against a KNOWN-BAD case — green on a known-bad
-means the bug is the gate, not the artifact; (b) name in one line the assumption the artifact was BUILT
-with, and confirm the gate does not reuse it. A gate that has only ever been seen green is unmeasured,
-not verified.
-
-- **Gates that stay red stop being sensors.** If a known failure is deliberately accepted, pin its exact signature — entities and measurements — and report `KNOWN_RED` separately from `NEW_RED`. Any drift, including an improvement, is new evidence because the pin describes a state, not a ceiling. A gate that returns the same verdict for N runs without making a new red distinguishable has become a constant.
-
-## Calibration and scope, so a gate is trustworthy and not a false green
-
-- **Draw the window from the defect, not the fix.** Derive the measurement window from where the defect is visible, the viewing angles and the user's referent, never from the area the repair touched. A red dismissed as a window artifact needs an independent control proving the instrument lies.
-- **Classify new faces before choosing a comparator.** Invented points/UVs -> independent calibrated reference (material median); geometry derived from one face (twin, displaced panel) -> that exact source face — stricter, here `0 of 7,205 deviate >5%`; exact twin -> exact equality only. A failure inherited unchanged from the source does not prove the edit introduced it. A twin cannot fail a UV gate — it inherits UVs literally.
-- **Half the model failing is structure, not defect.** If a detector rejects ~50% of entities, presume a structural property such as double-sided construction until refuted. Here `13,260` vertices in `brz_black` / `12,986` in `brz_paint` flagged as "normal opposite face" = the design. Prefer invariants internal to one entity — e.g. the three normals of the same triangle >90° apart (112 of 618 glass faces) — then remeasure the whole residual after the repair: negating opposite normals fixed ~59%, the remaining ~41% needed flattening against the face normal.
-
-- **Every rung must catch at least one KNOWN in-game bug, not just a synthetic self-test.** The
-  self-test proves the MECHANICS; a real known-bad case proves COVERAGE. Keep a short per-car list of
-  known in-game defects and confirm the ladder catches each: BRZ backlight mixed-winding -> caught by
-  rung 2 (`winding_consistency`: glass 18.2% of area); TestMercedes left tail-lamp inverted -> caught
-  by rung 4 (`gate_car` see-through, L-vs-R 310/0). (both 2026-07-01)
-- **A PASS states its SCOPE — never a bare "clean".** "clean of see-through in `color`/`glass`" is NOT
-  "clean of winding". `gate_car` reporting "BRZ clean" while rung 2 (per-piece uniformity) was
-  unchecked was a FALSE GREEN the user caught in-game (2026-07-01). Name what each gate covered and did not.
-- **Freshness:** the analysis prints model SHA+mtime and flags changes vs the last run
-  — the deployed `.p3d` can change under you between sessions (on TestCoupe a
-  de-dup removed 20320 faces mid-analysis; a stale golden then misleads). Owner of a shared artifact
-  (a car's `.p3d`) = the session working it; edit append-only + verify.
-
-## Method: habits that stop the re-derivation (apply before the per-invariant fixes)
-
-Not invariants but the working method that would have saved most of the TestQuad→TestCoupe→TestMercedes
-iterations. They are otherwise diffuse across the references; they live here at the front on purpose:
-
-1. **Parity-first.** Debinarize a known-good vanilla vehicle (`civiliansedan`; ODOL v54 when this was first done, version 56 in the header of the copy on `P:\`) ONCE and diff your
-   model against it — LODs, named selections, crew proxies, wheel hubs, componentNN, memory points — into a
-   single master gap checklist. Fix every gap in one pass instead of discovering them error-by-error in-game.
-   → `vehicle-structural-parity.md` "Parity-first method".
-2. **In-game is the ONLY gate; offline is a hint.** Offline parity / frame / winding / render checks repeatedly
-   passed GREEN while the car still failed in-game (proxy frame, body winding, seat collidability). A metric that
-   is `0.000`/`100%` *by construction* (winding-vs-its-own-normals, frame=py3d-identity) proves internal
-   consistency, NOT that DayZ renders / spawns / seats correctly. Never close a phase on a tautological gate.
-3. **Crew-probe headless FIRST** when a get-in / radial action will not appear for a seat. BEFORE any rebuild
-   cycle: spawn the car + a known-good control (a mod car whose get-in works) headless, dump `CrewPositionIndex(0..79)`, and run
-   `RaycastRV(ObjIntersectView)` per seat anchored at `pos_driver`/`pos_codriver`. This is what caught the
-   inward-winding blocker (#4) without eyeballing and broke the blind-rebuild loop. → `vehicle-structural-parity.md` crew-probe.
-   - **(added 2026-07-28) A probe you INHERIT carries the coordinates of the artifact of THEN —
-     re-derive its targets from source before believing a negative.** The probe is not the thing that
-     rots; a hardcoded seat centre is. Re-running it verbatim yields a `hit=0` that is **aim, not
-     mechanism**, and it is indistinguishable from the real verdict — while being exactly the
-     "interesting" answer nobody re-questions. Measured on TestCoupe: the old probe mission
-     aims at engine `(-0.40, 0.72, -0.12)` / `(0.54, 0.72, -0.12)`,
-     while today's boxes come from the car profile's seat parameters at
-     py3d `(±0.357, 0.55, 0.12)` with half-extents `(0.22, 0.25, 0.25)` — the codriver ray passes
-     **3.7 cm** from the box face in X. Still inside, zero margin. Procedure: (a) re-derive the aim
-     point from the profile + generator that produced TODAY's artifact, never from the handoff that
-     described it; (b) compute the ray's margin against the target box — margin below ~one half-extent
-     means the negative is not evidence, fix the literal first; (c) log the aim point used next to the
-     verdict, so a later reader can tell a real `hit=0` from a miss. Same family as METHOD #2
-     (measure, never assume) applied to the instrument instead of the artifact.
-4. **Two failed rebuilds on ONE symptom = HARD STOP — build the probe, do not fire cycle #3.** The rule
-   predated the failures and still got skipped (2026-07-03 review: copilot get-in ~7 days of serial wrong
-   hypotheses; handlebar ~2 sessions of parameter sweeps settled by ONE GetSteering log; BRZ get-in 3
-   bottom-up sessions when the gate was one script override) — while EVERY time the discipline ran
-   (both-sides log line, crew-probe, headless harness, field-diff vs a working referent) the issue
-   closed in a single pass. Before the 3rd in-game cycle on the same symptom: enumerate candidate causes,
-   read the actual mechanism (engine source / wiki, not intuition), instrument BOTH client and server
-   (verify the hook actually fires — a silent log IS a signal, `OnUpdate` is not an engine callback), then
-   ONE directed fix. If two probes also fail, escalate to a multi-agent audit over the REAL files — that
-   escalation resolved the TestQuad wheelsim stall (4 sessions serial) in one session.
-
-## Cite, then verify
-
-Vehicle config and model values are easy to half-remember. Before writing a class name, property, or
-named selection, grep it in vanilla (`P:\DZ\vehicles\`), and mark what is not yet checked as
-`[TBD-verify]`. Anchor any new vehicle lesson to a `path:line`, never to memory.
+Vehicle config and model values are easy to half remember. Before writing a class name, property or named selection, Grep it under `P:\DZ\vehicles\` and cite the `P:\` file and line. Mark a value you could not check as not yet checked on `P:\`.

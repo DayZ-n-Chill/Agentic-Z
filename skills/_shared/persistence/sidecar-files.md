@@ -1,6 +1,6 @@
 # Files of the mod's own
 
-How to keep mod data in its own file under the server profile: the file functions vanilla offers, the load rules, a save sequence that can be recovered at every step, and why it is never atomic. Open this for server wide data, or anything an admin must read or repair outside the game. The table of loaders and the `$profile:` prefix are in `versioning-and-migration.md`, "Data outside the object store".
+How to keep mod data in its own file under the server profile: the file functions vanilla offers, the load rules, a save sequence that can be recovered at every step, and why it is never atomic. Open it for server wide data, or anything an admin must read or repair outside the game. The table of loaders and the `$profile:` prefix are in `versioning-and-migration.md`, "Data outside the object store".
 
 ## What script can do with files
 
@@ -67,9 +67,9 @@ Judge `<file>.tmp` by its content, never by its modification time; the time says
 
 `BunkerBroadcastPersistenceStorage` writes `$mission:BunkerBroadcastPersistenceStorage.bin` (`STORAGE_PATH` at `P:\scripts\4_world\classes\bunkerbroadcasthandler.c:18`) with a `FileSerializer`:
 
-* It holds two objects: the bunker report time (`m_LastReportHour`, `m_LastReportMinute`) and `m_LastActiveBunkers`, a map from bunker ID to lock code (`bunkerbroadcasthandler.c:5-14`).
-* `Save` opens it for writing and writes both objects (`:73-81`). There is no version header, no temp file and no check after writing.
-* `Load` returns `true` once `Open` succeeds and ignores what `Read` returns (`:56-68`), although `Serializer.Read` returns `bool` (`P:\scripts\1_core\proto\serializer.c:58`). A missing file leaves the defaults the constructor set (`:29-34`).
+* It holds two objects: the bunker report time (`m_LastReportHour`, `m_LastReportMinute`) and `m_LastActiveBunkers`, a map from bunker ID to lock code (`bunkerbroadcasthandler.c:5` to `:14`).
+* `Save` opens it for writing and writes both objects (`:73` to `:81`). There is no version header, no temp file and no check after writing.
+* `Load` returns `true` once `Open` succeeds and ignores what `Read` returns (`:56` to `:68`), although `Serializer.Read` returns `bool` (`P:\scripts\1_core\proto\serializer.c:58`). A missing file leaves the defaults the constructor set (`:29` to `:34`).
 * `DeleteFile` and `CopyFile` do not work on `$mission:`, so the recoverable save above cannot be done there.
 
 A mod that keeps similar state puts it under `$profile:` or `$saves:`, with a version header and a check on every read. If it must sit next to the mission, document that it cannot be rotated and that a failed read is invisible.

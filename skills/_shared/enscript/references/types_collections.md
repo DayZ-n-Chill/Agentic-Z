@@ -215,7 +215,7 @@ More of the same kind, each opened on `P:\`:
 | `TStringStringMap`, `TStringMap` | Both are `map<string, string>`. | `P:\scripts\1_core\proto\enscript.c:1004`, `P:\scripts\3_game\tools\tools.c:988` |
 | A `map` keyed by `Widget` | Valid; vanilla has `map<Widget, float> m_RadialItemCards`. | `P:\scripts\3_game\gui\effects\radialmenu.c:17` |
 
-Generic classes of your own use the containers' syntax, `class Box<Class T>` (measured on a 1.30.164289 server as `Box<int>` and `Box<string>`), and a method takes at most 16 parameters (`language_compile.md`, "Compiler traps"). Why two `Replace` calls cannot be chained is in the same table.
+Generic classes of your own use the containers' syntax, `class Box<Class T>` (measured on a DayZ 1.30 server as `Box<int>` and `Box<string>`), and a method takes at most 16 parameters (`language_compile.md`, "Compiler traps"). Why two `Replace` calls cannot be chained is in the same table.
 
 ---
 

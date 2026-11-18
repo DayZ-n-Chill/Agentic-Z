@@ -12,7 +12,7 @@ FrameWidgetClass ModalRoot {
 	position 0 0
 	size 1 1
 	// All four flags 0: fraction of the screen. hexact* 1 would be units of
-	// 1/1080 of the screen height, measured in game (checklist-and-troubleshooting.md rule 3, corrected
+	// 1/1080 of the screen height, measured in game (checklist-and-troubleshooting.md "Declare all four unit flags", corrected
 	// 2026-10-03; this comment called them physical pixels that break 1280x720).
 	// Vanilla (227 layouts, 9525 widgets): hexactsize 0 is 6167x vs 3265x for 1.
 	hexactpos 0
@@ -28,7 +28,7 @@ FrameWidgetClass ModalRoot {
 			// game on 2026-08-19. rover_sim_colorable tints WhitePixel with this.
 			color 0.1176 0.1176 0.1176 0.9608
 			// center_ref + position 0 0: under center_ref both the offline parser and
-			// the engine ADD position to the centred spot (layout-format.md,
+			// the engine ADD position to the centred spot (layout-geometry.md,
 			// Zeroing +0.06). This template keeps the offset at 0 0 so the panel sits
 			// exactly in the centre.
 			position 0 0
@@ -68,7 +68,7 @@ FrameWidgetClass ModalRoot {
 					// SetTextProportion (:216); inheriting the method does not make the
 					// layout attribute work. Until 2026-08-21 this file shipped
 					// text_proportion 0.36 here, which did nothing. On a multiline,
-					// size the BOX. hot-iteration.md section 6.
+					// size the BOX. preview-text-and-stringtables.md.
 					ignorepointer 1
 					color 1 1 1 1
 					position 0.04 0.025

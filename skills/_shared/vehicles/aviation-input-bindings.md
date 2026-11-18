@@ -1,26 +1,26 @@
 # Flight input bindings
 
-How LM_Planes registers its flight inputs in `Inputs.xml` (shown with a `MyPlane` placeholder tag), its keyboard and Xbox scheme, the stringtable and `config.cpp` tie-in, and aircraft variants in one config. The traps that make a custom vehicle input read zero are in `skills/_shared/vehicles/aviation-inputs-and-actions.md`; the `inputs.xml` format itself is in `skills/_shared/enscript/integrations/input_bindings.md`.
+How a plane mod registers its flight inputs in `Inputs.xml`, which keyboard and gamepad keys it binds by default, and how the stringtable and `config.cpp` tie in.
 
-Third-party mod behaviour, not vanilla: patterns read in the LM_Planes mod (Workshop `3730564764`), whose files are not in this repo. Not yet checked on `P:\` except where a `P:\` path is cited. Use it to learn the pattern and write the mod's own code.
+The scheme comes from LM_Planes (Workshop `3730564764`), whose files are the source; it is mod practice, not vanilla, except where a `P:\` line is cited. The `inputs.xml` format itself is in `_shared/enscript/integrations/input_bindings.md`, and the faults that make a custom input read zero are in `aviation-inputs-and-actions.md`.
 
-## XML registration
+## Registering the inputs
 
-In `scripts/data/Inputs.xml`:
+In `scripts/data/Inputs.xml`, with a `MyPlane` tag:
 
 ```xml
 <modded_inputs>
     <inputs>
         <actions>
             <input name="UAMyPlanePitchForward" loc="myplane_pitch_forward"/>
-            <!-- ... 11 actions total -->
+            <!-- eleven actions in all -->
         </actions>
         <sorting name="myplane" loc="myplane_controls">
+            <!-- shows these inputs together in the key binding menu -->
             <input name="UAMyPlanePitchForward"/>
-            <!-- groups inputs in keybind menu under "myplane_controls" category -->
         </sorting>
         <exclude name="MyPlane_Controls">
-            <!-- named exclude group: while script has called GetUApi().ActivateExclude("MyPlane_Controls"), these inputs read zero (vanilla groups: P:\bin\specific.xml:81 onward) -->
+            <!-- while script has called GetUApi().ActivateExclude("MyPlane_Controls"), these inputs read zero -->
         </exclude>
     </inputs>
     <preset>
@@ -28,52 +28,57 @@ In `scripts/data/Inputs.xml`:
             <btn name="kW"/>
             <btn name="x1LeftThumbUp"/>
         </input>
-        <!-- ... -->
     </preset>
 </modded_inputs>
 ```
 
-## Standard aviation binding scheme
+Vanilla's own exclude groups start at `P:\bin\specific.xml:81`.
 
-| Action | Keyboard | Xbox |
+## Default keys
+
+| Action | Keyboard | Gamepad |
 |---|---|---|
-| Pitch forward (nose down) | W | LeftThumb Up |
-| Pitch back (nose up) | S | LeftThumb Down |
-| Roll left | A | LeftThumb Left |
-| Roll right | D | LeftThumb Right |
-| Rudder left | Q | Shoulder Left (LB) |
-| Rudder right | E | Shoulder Right (RB) |
-| Throttle up | LShift | Trigger Right (RT) |
-| Throttle down | LCtrl | Trigger Left (LT) |
-| Toggle mode (Air/Ground) | G | LeftThumb click |
-| Free look | LAlt | RightThumb click |
-| Shoot (weapons) | Space | A |
+| Pitch forward, nose down | W | Left stick up |
+| Pitch back, nose up | S | Left stick down |
+| Roll left | A | Left stick left |
+| Roll right | D | Left stick right |
+| Rudder left | Q | Left shoulder |
+| Rudder right | E | Right shoulder |
+| Throttle up | Left Shift | Right trigger |
+| Throttle down | Left Ctrl | Left trigger |
+| Switch air and ground mode | G | Left stick click |
+| Free look | Left Alt | Right stick click |
+| Fire weapons | Space | A |
 
-Key prefix convention: `k` for keyboard (`kW`, `kSpace`, `kLShift`, `kLControl`, `kLMenu`), `x1` for Xbox (`x1LeftThumbUp`, `x1A`, `x1ShoulderLeft`, `x1TriggerRight`). Vanilla declares the button names in `P:\bin\constants.xml`: `kW` at `P:\bin\constants.xml:475` and `x1LeftThumbUp` at `P:\bin\constants.xml:660`.
+Button names start with `k` for keyboard (`kW`, `kSpace`, `kLShift`, `kLControl`, `kLMenu`) and `x1` for the gamepad (`x1LeftThumbUp`, `x1A`, `x1ShoulderLeft`, `x1TriggerRight`). Vanilla declares them in `P:\bin\constants.xml`: `kW` at `:475` and `x1LeftThumbUp` at `:660`.
 
-## Stringtable + config.cpp tie-in
+## Stringtable and config
 
-`Stringtable.csv` defines display strings for each `loc="..."` key. LM_Planes sets all 13 locales to identical English (no real i18n) — pragmatic, leaves the structure ready for translation later.
+`Stringtable.csv` gives the display text for each `loc="..."` key. LM_Planes fills all 13 language columns with the same English text, which leaves the structure ready for real translations.
 
-`config.cpp` root references the XML:
+The root mod's `CfgMods` class points at the file:
 
 ```cpp
-class CfgMods {
-    class LM_Planes {
-        inputs = "LM_Planes/scripts/data/Inputs.xml";
-        // ...
+class CfgMods
+{
+    class MyMod_Planes
+    {
+        inputs = "MyMod_Planes/scripts/data/Inputs.xml";
     };
 };
 ```
 
-## Multi-aircraft variants in one config
+## Variants in one config
+
+A family of variants sits in one `CfgVehicles`, each with its own model file in a shared folder:
 
 ```cpp
-class CfgVehicles {
-    class LM_Tigermoth: CarScript { /* base biplane */ };
-    class LM_Tigermoth_MK2: CarScript { /* sport variant, top wing removed */ };
-    class LM_Tigermoth_MK3: CarScript { /* seaplane variant with Buoyancy */ };
+class CfgVehicles
+{
+    class MyMod_Biplane: CarScript { /* the base biplane */ };
+    class MyMod_Biplane_Sport: CarScript { /* top wing removed */ };
+    class MyMod_Biplane_Float: CarScript { /* seaplane, with class Buoyancy */ };
 };
 ```
 
-Family of variants share `LM_Planes\LM_Tigermoth\*.p3d` directory but each has its own model file. Reduces config duplication while allowing visual + behavior differences.
+LM_Planes does this for the Tigermoth MK1, MK2 and MK3 under `LM_Planes\LM_Tigermoth\`. Floats are in `aviation-seaplanes.md`.

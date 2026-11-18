@@ -1,121 +1,83 @@
 # Checks the audit script does not run
 
-Faults that `/dayz-p3d-audit` cannot see from one `.p3d`, with how to measure each by hand, and rules for trusting any new gate you build. Open this when the audit passes and the model still misbehaves, or before copying numbers between sibling models.
+Covers the faults `/dayz-p3d-audit` cannot see from one `.p3d`, how to measure each by hand, and how to trust a new check you build. Open it when the audit passes and the model still misbehaves, or before copying numbers between sibling models.
 
-**Not yet checked on `P:\`**, except the vanilla LOD counts in the performance section: these are measured results from mod projects (TestPowerGrid, TestQuad, TestDucati, an HH-60G helicopter) and tool behaviour (binarize, an ODOL to MLOD converter).
+Except the vanilla LOD counts in "Resolution LOD count", these are results measured on mod projects (power grid kits, a quad, a motorbike, a helicopter) and on tool behaviour (binarize, an ODOL to MLOD converter); they are not checked on `P:\`.
 
-**Contents**
+## Sibling-model frame parity
 
-- Sibling-model frame parity (before copying rotation offsets)
-- UV audit step
-- Resolution LOD count (performance)
-- Resolve every face index
-- Trusting a FAIL from a new gate on a binarized model
-- The resolved-vertex budget
-- Which channel did a "vanilla value" arrive through
-- On Linux
+Two `.p3d` files of the same family can be authored in frames a quarter turn apart. Before copying rotation offsets from one model to another, compare their Memory LOD (`1e15`) points one by one. If the coordinates match through a swap of axes, for example `(x, y, z)` to `(x, -z, y)`, the models do not share a frame and their config rotation offsets are not interchangeable.
 
-## Sibling-model frame parity, before copying rotation offsets
+What tells how a model mounts is the thin axis of its Geometry LOD (`1e13`): that axis sits perpendicular to the mounting surface, and the pitch follows from it, not from the family or the model name. The Visual LOD's bounding box tells nothing: two kits with opposite long axes (Y about 2 and Z about 1.16, against Y 1 and Z about 2) take the same pitch of 90. "The two kits are identical except this override" is a claim about the config; measure the models before acting on it.
 
-Two `.p3d` of the SAME family can differ 90° in authorship frame. Before copying
-rotation offsets from one kit to another, verify frame parity. Compare Memory LOD
-(res `1e15`) selections point-to-point between the two models. If the coordinates
-correspond by an **axis permutation** — measured here `(x, y, z) → (x, -z, y)` —
-the models do NOT share a frame and their config rotation offsets are **not
-interchangeable**. The discriminator of "which way it mounts" is the **thin axis
-of the Geometry LOD** (`1e13`): that axis must sit perpendicular to the mounting
-surface, and pitch comes from there, not from the family or the model name.
-**The visual LOD bbox is NOT a signal** — measured counterexample in the same
-session: `gate_and.p3d` (Y≈2, Z≈1.16, pitch 90) and `switch_v2.p3d` (Y=1, Z≈2,
-pitch 90) have opposite long axes and the SAME pitch. Corollary: "the two kits
-are identical except this override" is a hypothesis about CONFIG; measure the
-model before acting on it.
+Measured on two switch models of a power grid mod, a plain and a remote version:
 
-Measured 2026-08-10 on TestPowerGrid (a batch reorientation of placed kits). `switch_v2.p3d`
-vs `switch_v2_remote.p3d`, memory points: `switch_axis` (-0.0407, 0.0288, -0.1472)
-→ (-0.0407, 0.1472, 0.0288); `ce_center` (0.0001, 0.0366, -0.1286) → (0.0001,
-0.1286, 0.0366); `boundingbox_max` (0.1833, 0.1039, -0.3665) → (0.1833, 0.3665,
-0.1039); Geometry LOD 0.293/0.0911/0.4185 → 0.293/0.4185/0.0911. It refuted a review finding that a pitch had been
-forgotten on one kit: applying the "forgotten" pitch would have PRODUCED the symptom it was meant to cure. The
-comparison needs only the memory points and the extents per LOD, which any MLOD
-reader gives (py3d included). See also the generated model pipeline (`_shared/models/generated-model-pipeline.md`).
+| Point or extent | First model | Second model |
+|---|---|---|
+| `switch_axis` | (-0.0407, 0.0288, -0.1472) | (-0.0407, 0.1472, 0.0288) |
+| `ce_center` | (0.0001, 0.0366, -0.1286) | (0.0001, 0.1286, 0.0366) |
+| `boundingbox_max` | (0.1833, 0.1039, -0.3665) | (0.1833, 0.3665, 0.1039) |
+| Geometry LOD extents | 0.293, 0.0911, 0.4185 | 0.293, 0.4185, 0.0911 |
 
-## UV audit step (added 2026-07-06)
+A review had flagged a pitch as forgotten on one of them; applying it would have caused the fault it meant to cure. The comparison needs only the memory points and the extents per LOD, which any MLOD reader gives, py3d included. See also `_shared/models/generated-model-pipeline.md`.
 
-`audit_p3d.py` reads no UVs. A UV audit beyond out-of-range values was run with a project-local
-script (`uv_audit.py` of the TestQuad project, not shipped here). Its checks: zero-uv%, NaN, bounds vs ODOL int16 quantization
-(range ≤ ~32 on 2048 tex — min/max over the WHOLE LOD), degenerate faces, mirrored islands
-(signed UV area — breaks _nohq), Monte-Carlo overlap per group and cross-group, island count
-(union-find) + texel density (px/m; healthy reference ≈ 292 px/m TestQuad wheels; 27 px/m =
-measured cause of bake artifacts). Gotchas: whitelist `proxy:*` faces (degenerate by design),
-exclude full-frame tris (UV area > 0.2) from cross-group overlap, classic raster misses
-subpixel islands. Which in-game symptom points at which UV fault is in `skills/_shared/models/uv-mapping.md`; the repair workflow is the clean UV atlas of `dayz-model-tools` (`skills/_shared/models/tools-uv-atlas.md`).
+## UV checks
 
-## Resolution LOD count: a performance check (added 2026-07-14)
+`audit_p3d.py` reads no UVs. A fuller UV check, built as a script local to one project and not shipped here, looks at:
 
-WARN (performance, not a correctness killer): flag any model that ships with only ONE
-resolution LOD. With a single LOD the engine loads the full mesh at any distance (no
-distance-based decimation), inflating client/server load; stutter and random disconnects are reported when many
-such models are near the player (not measured here). Vanilla
-reference: the plate carrier's ground model `P:\DZ\characters\vests\plate_carrier_g.p3d` has four visual LODs
-and its holster and pouches models five each (LOD lists read from the file headers); most vanilla gear ships
-three to five (`_shared/models/lods.md`).
+- the share of zero UVs, and NaN values;
+- the range against ODOL int16 quantization (about 32 at most on a 2048 texture), taken as the min and max over the whole LOD;
+- degenerate faces;
+- mirrored islands (signed UV area), which break `_nohq` maps;
+- overlap within a group and across groups (Monte Carlo sampling);
+- the island count (union find) and the texel density in pixels per metre: healthy wheels read about 292 px/m, and 27 px/m was the measured cause of bake artifacts.
 
-- Heuristic: `resolution_LOD_count >= 2` for any non-trivial visible model; a genuinely
-  low-poly prop (a few hundred faces) may legitimately keep one.
-- Manual (not automated in `audit_p3d.py`): open in Object Builder / py3d and count
-  Resolution LODs; or compare face counts across LODs (identical counts = the ladder is a
-  copy, not a decimation; see `_shared/models/lods-authoring.md`).
-- Fix: author decimated LODs (the user decides, per the decimation gate of the model pipeline skill).
+Leave `proxy:*` faces out (they are degenerate by design), leave full frame triangles (UV area over 0.2) out of the cross-group overlap, and remember that a plain raster misses islands smaller than a pixel. Which in-game symptom points at which UV fault is in `_shared/models/uv-mapping.md`; the repair is the clean UV atlas of `dayz-model-tools` (`_shared/models/tools-uv-atlas.md`).
 
-Related cap: 30 or more LODs in total can crash the binarizer (not checked here).
+## Resolution LOD count
 
-## Resolve every face index (added 2026-08-31)
+A performance WARNING, not a correctness killer: flag a model that ships with only one resolution LOD. With one LOD the engine draws the full mesh at every distance, which loads client and server; stutter and random disconnects are reported when many such models are near the player (reported, not measured here).
 
-Counts, selection names, proxy centroids, and material pairs live in a different space from
-face indices. A freshly assembled or surgically edited `.p3d` must have a gate that
-dereferences every face corner's `point_index` and `normal_index` against the live pools.
-Fail on the first out-of-range value and name the LOD, face, corner, index, and pool length.
-Do not treat matching cardinalities as an equivalent check.
+Vanilla gear ships three to five (`_shared/models/lods.md`): the plate carrier's ground model `P:\DZ\characters\vests\plate_carrier_g.p3d` has four Visual LODs, and its holster and pouches models five each (read from the file headers).
 
-Run `binarize` as the authoritative serialization check, with the previous known-good model
-as a control in the same run. This separates a product failure from a broken test bench and
-makes pre-existing log noise comparable. A binarize pass proves that this index/serialization
-gate passed; it still does not replace the in-game spawn gate (`winding-diagnostics.md`, "How to verify: Check A and the spawn gate", item 2).
+- Aim for at least two resolution LODs on any visible model of some size; a low poly prop of a few hundred faces may keep one.
+- `audit_p3d.py` does not count them. Open the model in Object Builder or py3d and count the resolution LODs, and compare face counts across them: identical counts mean the LODs are copies, not reductions (`_shared/models/lods-authoring.md`).
+- Fix: author reduced LODs; the user decides, at the decimation step of the model pipeline.
 
-## Trusting a FAIL from a new gate on a binarized ODOL: run the control piece first (added 2026-09-28)
+30 or more LODs in total can crash the binarizer (reported, not checked here).
 
-Before trusting a FAIL from a new ODOL gate, run the gate on a piece that already works in game (here `drivewheel`): if the control also fails, the gate is wrong, not the model — two rebuild cycles stopped on a bad gate while the model was fine. In a binarized ODOL the named selections of the VISUAL LODs are stored as faces (also `drivewheel` and `damper_1`, which do move in game); read their vertices through the face corner indices. Memory and Geometry LOD selections list vertices. And write gate expressions against the tool's real output, not its vocabulary: the anatomy dump writes animation types as numbers (0 rotation, 4 translation), so an expression matching the string `rotation` never fires.
+## Resolve every face index
 
-## The resolved-vertex budget
+Counts, selection names, proxy centroids and material pairs live apart from face indices. A `.p3d` freshly assembled or edited by script needs a check that looks up every face corner's `point_index` and `normal_index` in the live pools. Fail on the first value out of range and name the LOD, face, corner, index and pool length. Matching counts are not the same check.
 
-A `.p3d` can pass this entire audit with 0 CRITICAL and still be rejected by the engine when it
-loads the MLOD with `Too many vertices`, which surfaces in-game as
-`PHYSICS (E): Won't simulate, it has no geometry` even when the Geometry LOD is perfect.
+Run `binarize` as the final word on serialization, with the last known good model as a control in the same run; that separates a broken model from a broken test bench and makes old log noise comparable. A binarize pass shows this check passed; it still does not replace the spawn in game (`winding-diagnostics.md`, "Offline checks do not clear a spawn").
 
-What the script does today (`check_lod0_vertex_budget`): it counts the `(point, normal, uv)` triples of the most detailed
-Visual LOD and fails only past 65,535. A per-LOD count with a warning past 90 % of the ceiling measured for that
-model is not built.
+## Trusting a FAIL from a new check on a binarized model
 
-The ceiling is per-model, not a constant — `RESOLVED_LIMIT = 65535` is a false friend. Measured
-cliff on the HH-60G: 46,133 triples load, 46,134 do not (25 in-game verdicts, zero false).
+Before trusting a FAIL from a new check on an ODOL, run it on a piece that already works in game, such as a drive wheel. If the control fails too, the check is wrong, not the model.
 
-The authoritative gate is `binarize.exe`, not this count, and it has three states: PASS /
-CAPACITY_FAIL / OTHER_FAIL. CAPACITY_FAIL means do not go in-game to "fix" Geometry; OTHER_FAIL
-means do not touch geometry at all. Evidence and the measured cliff: `skills/_shared/vehicles/binarize-vertex-budget.md`.
-One `OTHER_FAIL` measured since is a size limit of the collision LODs that prints nothing; its
-two checks and its fix, which moves pieces to another model and changes none of them, are in
-that file, item 3.
+- In a binarized ODOL the named selections of the Visual LODs are stored as faces, `drivewheel` and `damper_1` among them, which do move in game. Read their vertices through the face corner indices. Memory and Geometry LOD selections list vertices.
+- Write check expressions against the tool's real output, not its vocabulary: the anatomy dump writes animation types as numbers (0 rotation, 4 translation), so an expression that matches the string `rotation` never fires.
 
-## Which channel did a "vanilla value" arrive through
+## The resolved vertex budget
 
-Before citing "vanilla equals N" for a field, ask THROUGH WHAT CHANNEL that N arrived. If material is distributed in derived format (ODOL) and the number was produced by a converter, the right question is not what it is worth but whether field survives conversion: an ODOL to MLOD converter (`odol_to_mlod.py`, an external tool) writes bare `face.flags = 0`, so any "vanilla uses flags=N" measured there is the instrument answering itself. Measured 2026-08-24 via round-trip: `binarize.exe` DISCARDS MLOD per-face `flags` field — three MLODs differing only in it binarize to a byte-for-byte identical model, while two positive controls (point moved 1 cm, texture cleared on same faces) do change output. And a neighboring field in derived format carrying same bit (`Section.special`, per section) is NOT the same field.
+A `.p3d` can pass this whole audit with no CRITICAL and still be refused when the engine loads the MLOD with `Too many vertices`, which shows in game as `PHYSICS (E): Won't simulate, it has no geometry` even when the Geometry LOD is perfect.
+
+`check_lod0_vertex_budget` counts the `(point, normal, uv)` triples of the most detailed Visual LOD and fails only past 65,535. There is no per LOD count with a warning near the limit measured for a model. The limit is per model, not a constant, so `RESOLVED_LIMIT = 65535` misleads: on one helicopter, 46,133 triples load and 46,134 do not (25 in-game verdicts, none contradicting).
+
+`binarize.exe` decides, not this count, and it has three results: PASS, CAPACITY_FAIL and OTHER_FAIL. On CAPACITY_FAIL do not go in game to fix the Geometry LOD; on OTHER_FAIL do not touch geometry at all. The record and the measured limit are in `_shared/vehicles/binarize-vertex-budget.md`. One OTHER_FAIL measured since is a size limit of the collision LODs that prints nothing; its two checks and its fix, which moves pieces to another model and changes none of them, are in item 3 of that file.
+
+## Where a "vanilla value" came from
+
+Before citing "vanilla uses N" for a field, ask how that N reached you. Vanilla models ship as ODOL, so a number read through a converter answers whether the field survives conversion, not what vanilla uses. An ODOL to MLOD converter (`odol_to_mlod.py`, an outside tool) writes `face.flags = 0` on every face, so any "vanilla uses flags=N" read from its output is the tool answering itself.
+
+Measured by round trip: `binarize.exe` drops the per face `flags` field of an MLOD. Three MLODs that differ only in it binarize to the same file byte for byte, while two positive controls (a point moved 1 cm, the texture cleared on the same faces) do change the output. The per section `Section.special` of the ODOL can carry the same bit, but it is not the same field.
 
 ## On Linux
 
-Everything above is the Windows workflow and stays valid there. On Linux, the Proton setup, the measured tool matrix and the pitfalls are in the shared Linux and Proton notes (`_shared/linux-proton.md`); this section only says what changes for this skill.
+The Windows workflow above still holds there. The Proton setup, the tools that work and their pitfalls are in `_shared/linux-proton.md`; this section says only what changes for this skill.
 
-- Pack, sign and binarize with dayzmake, the DayZ build of armake2, at a pinned release; which version to pin and how to install it are in `skills/dayz-build-pbo/references/dayzmake-linux.md`, "Get the right dayzmake". Use `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. The original armake2 is no substitute: it is built for Arma, its V3 file hash omits `*.c` files (dayzmake includes them) and it lacks the DayZ-only functions of dayzmake. `scripts/tools/dayz-linux/dayz-mod-pack.sh` wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`; its notes are in that same file). A textured cube binarized with dayzmake `v1.0.0` on 2026-11-03 matched BI binarize from a `P:` root byte for byte; this is not an in-game ODOL check. See the shared Linux and Proton notes (`skills/_shared/linux-proton.md`) for setup and limits.
-- `P:\` is a plain directory mapped by `dayz-proton.sh init <dir>` (the script is `scripts/tools/dayz-linux/dayz-proton.sh`); a `P:\<Mod>\...` path in this skill is `<dir>/<Mod>/...`.
-- Object Builder and TexView run under Proton: `dayz-proton.sh gui ObjectBuilder <p3d>`, `gui TexView <paa>`. Object Builder opened and displayed a model; editing in it was not exercised. Offline checks (`py3d`, the model preflight tool under `scripts/tools/dayz-model-preflight/`, the 3D viewer tool under `scripts/tools/dayz-3d-viewer/`) are Python and run natively.
-- In-game checks: the Linux notes of the `/dayz-launch-test` skill (`skills/dayz-launch-test/references/linux.md`).
+- Pack, sign and binarize with dayzmake, the DayZ build of armake2, at a pinned release; which version and how to install it are in `skills/dayz-build-pbo/references/dayzmake-linux.md`, "Get the right dayzmake". Use `dayzmake build`, `keygen`, `sign`, and `build --proton-binarize` where needed. The original armake2 is no substitute: it is built for Arma, its V3 file hash leaves out `*.c` files (dayzmake includes them), and it lacks dayzmake's DayZ functions. `scripts/tools/dayz-linux/dayz-mod-pack.sh` wraps them (`init`, `keygen`, `build [--binarize-models]`, `check`, `publish-hint`; its notes are in that same file). A textured cube binarized with dayzmake 1.0.0 matched Bohemia's binarize from a `P:` root byte for byte; that is not a check of the ODOL in game.
+- `P:\` is a plain folder mapped by `dayz-proton.sh init <dir>` (`scripts/tools/dayz-linux/dayz-proton.sh`); a `P:\<Mod>\...` path in this skill is `<dir>/<Mod>/...`.
+- Object Builder and TexView run under Proton: `dayz-proton.sh gui ObjectBuilder <p3d>`, `gui TexView <paa>`. Object Builder opens and shows a model; editing in it is not tested. The offline checks (py3d, the model preflight tool under `scripts/tools/dayz-model-preflight/`, the 3D viewer under `scripts/tools/dayz-3d-viewer/`) are Python and run natively.
+- In-game checks: the Linux notes of `/dayz-launch-test` (`skills/dayz-launch-test/references/linux.md`).

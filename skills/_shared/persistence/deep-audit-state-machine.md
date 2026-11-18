@@ -1,34 +1,21 @@
-# State machine matrix: structural check
+# State machine table
 
-Catches illegal transitions, state that is counted twice, and "should never happen" branches that can in fact happen. Open this in step 1 for any mod that keeps a state per container or per entity, and again after every change to that state machine.
+How to find illegal transitions, state counted twice, and "should never happen" branches that can happen, by laying every transition out in one table. Run it in step 1 of `deep-audit.md` for any mod that keeps a state per container or per entity, and again after every change to that state machine.
 
-The state names and transition functions are from the virtual storage example (third-party mod); replace them with the audited mod's own. The search lines in the code blocks are recipes for the agent's search tool.
+The state names and functions come from a third-party virtual storage mod; put the audited mod's own in their place. The search lines are patterns for the agent's own search tool.
 
-## Procedure
+## Build the table
 
-### Step 1: list every state
-
-Read the state enum or constant table. Build the column headers:
-
-```
-states = [IDLE, VIRTUALIZING, VIRTUALIZED, RESTORING, RESTORED, QUARANTINE, QUARANTINE_ORPHANED]
-```
-
-Adapt to your project's actual state names.
-
-### Step 2: list every transition function
+1. Read the state enum or constant table. These become the columns, for example `IDLE`, `VIRTUALIZING`, `VIRTUALIZED`, `RESTORING`, `RESTORED`, `QUARANTINE`, `QUARANTINE_ORPHANED`.
+2. Find every place that changes the state, and record the state before, the state after, the function and its conditions:
 
 ```text
 Grep "SetState|TransitionTo|m_State\s*=" --type c --output_mode content -n true
 ```
 
-For each call site, record (from_state, to_state, function, conditions).
+3. Fill the table: one row per state before, one column per state after, and the functions that make that change in the cell. `QO` stands for `QUARANTINE_ORPHANED`.
 
-### Step 3: build the matrix
-
-Rows are the from_state, columns the to_state, cells the list of functions that perform that transition. `QO` is `QUARANTINE_ORPHANED`.
-
-|  | IDLE | VIRTUALIZING | VIRTUALIZED | RESTORING | RESTORED | QUARANTINE | QO |
+| From \ To | IDLE | VIRTUALIZING | VIRTUALIZED | RESTORING | RESTORED | QUARANTINE | QO |
 |---|---|---|---|---|---|---|---|
 | IDLE | - | StartVirt | - | - | - | OnLoadCorrupt | OnLoadOrphan |
 | VIRTUALIZING | OnVirtCancel | - | OnVirtComplete | - | - | OnVirtFail | - |
@@ -38,39 +25,27 @@ Rows are the from_state, columns the to_state, cells the list of functions that 
 | QUARANTINE | OnAdminRecover | - | - | - | - | - | - |
 | QO | OnAdminRecover | - | - | - | - | - | - |
 
-### Step 4: validate
+## Read each cell
 
-For each cell:
+- **Empty.** The change must never happen. Confirm no code makes it: search for `m_State = <target>` and check that every hit belongs to a function in the table.
+- **Several functions.** Audit each one. Several functions making the same change should become one.
+- **One function.** The normal case. Confirm its conditions match the spec.
 
-- **Empty**: the transition should not happen. Confirm no code path performs it. Search for `m_State = TARGET` and verify that every site is covered by a transition function in the matrix.
-- **Multiple functions**: audit each individually. Several functions performing the same transition is a smell; they should converge to one.
-- **One function**: the canonical case. Confirm the function's preconditions match the spec.
+The diagonal (a state to itself) stays empty unless the spec allows it; entering the same state again means two jobs overlap. A state with no way in is never reached, and a state with no way out traps whatever enters it. Both are findings.
 
-### Step 5: identify illegal transitions
-
-Diagonal cells (state X to state X) should be empty unless the spec explicitly allows self-transitions. Re-entry on the same state means work overlap.
-
-Disconnected cells: if a state has no incoming transitions, no entity ever reaches it. If it has no outgoing transitions, entities are stuck.
-
-Both are findings.
-
-### Step 6: validate "should never happen" branches
-
-Search:
+## Branches that "should never happen"
 
 ```text
 Grep "should not happen|should never|impossible|unreachable|TODO.*remove" --type c --output_mode content -n true
 ```
 
-For each comment claiming impossibility: identify the precondition that makes it impossible. If you cannot identify a precondition (and the comment is just self-assurance), treat the branch as a finding: it can happen.
+For each comment that says a branch cannot run, name the condition that stops it. When there is none and the comment only reassures, treat the branch as a finding: it can run.
 
 ## Common findings
 
-- A state reachable only by a fail path with no recovery transition out
-- Two functions performing the same transition with different preconditions (a race window where both fire)
-- An EE hook that writes `m_State` without going through a transition function (bypasses validation). The EE hooks are the `EntityAI` events, for example `EEDelete` (`P:\scripts\3_game\entities\entityai.c:946`) and `EEItemAttached` (`entityai.c:1159`).
-- An admin command that sets `m_State` directly, bypassing the transition functions
+- A state reached only from a failure, with no way out.
+- Two functions making the same change under different conditions, so both can fire in the same window.
+- An engine hook that writes `m_State` without going through a transition function. The hooks are the `EntityAI` events, for example `EEDelete` (`P:\scripts\3_game\entities\entityai.c:946`) and `EEItemAttached` (`entityai.c:1159`).
+- An admin command that sets `m_State` directly.
 
-## Time budget
-
-About 10 minutes for a machine of 7 states. Run it again after each state machine change.
+Allow about 10 minutes for a machine of seven states, and run it again after each change to the machine.

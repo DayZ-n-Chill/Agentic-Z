@@ -112,7 +112,7 @@ and trailing bytes are rejected.
 
 ## Fixtures
 
-The fixtures in `tests/fixtures/` contain first-party literal animation data.
+The fixtures in `tests/fixtures/` hold literal animation data.
 Each binary was written and read back by an independent tool, so the tests
 compare this package against a second implementation of the format:
 

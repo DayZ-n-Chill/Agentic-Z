@@ -1,10 +1,10 @@
 # Checklists by file type
 
-What to verify in each kind of file before a DayZ mod file counts as written. The implementation protocol (`skills/dayz-scope-mod/references/implementation-protocol.md`, "Per-file protocol") runs the matching checklist after every file. This file says what to check; the protocol says when.
+What to verify in each kind of file before a DayZ mod file counts as written. The implementation protocol (`skills/dayz-scope-mod/references/implementation-protocol.md`, "For each file") runs the matching checklist after every file. This file says what to check; the protocol says when.
 
-A `P:\` citation means the item was read in that vanilla file. Where an item only restates a rule the Agentic-Z packs already hold, the pack file is named and wins on detail. Items that rest on a project's own measurement say so. The recurring mistakes behind many items are in `skills/dayz-launch-test/references/error-catalog.md` (the `E` numbers).
+A `P:\` citation means the item was read in that vanilla file. Where an item restates a rule a pack already holds, the pack file is named and wins on detail. Items measured on a mod project say so. The recurring mistakes behind many items are in `skills/dayz-launch-test/references/error-catalog.md` (the `E` numbers).
 
-## 1. `config.cpp`
+## `config.cpp`
 
 ### Script compile order and load order
 
@@ -41,9 +41,9 @@ The usual split:
 - [ ] `inventorySlot` is a string for one slot and `inventorySlot[]` an array for several; mixing the forms silently breaks the attachment. The rule and the vanilla examples are in `skills/_shared/conventions/config.md`.
 - [ ] `ghostIcon` is `"set:setname image:imagename"`, and the imageset exists (`/dayz-build-imageset` builds one).
 - [ ] `imageSets` sits inside `CfgMods > <Mod> > defs > imageSets`, not at the root and not in `CfgSlots` (E02).
-- [ ] A vehicle or custom wheel class declares `DamageSystem` with `GlobalHealth` (E35), and the other engine minimums in `skills/dayz-launch-test/references/audit-escalation.md`, "Severity of absence".
+- [ ] A vehicle or custom wheel class declares `DamageSystem` with `GlobalHealth` (E35), and the other engine minimums in `skills/dayz-launch-test/references/audit-escalation.md`, "Grade what is missing by what its absence does".
 
-## 2. Enforce Script, general
+## Enforce Script, general
 
 The full rules are in `skills/_shared/enscript-style.md` (the style guide, which wins on style) and in `skills/_shared/enscript/depth/`. The restrictions that bite most often:
 
@@ -58,7 +58,7 @@ The full rules are in `skills/_shared/enscript-style.md` (the style guide, which
 - [ ] A `modded` or derived class does not declare a member its base already has (E30), and an override copies the base signature, parameter names included (E31).
 - [ ] `CreateAttachment` and `CreateInInventory` get the item's class name, not a slot name (E34).
 
-## 3. Networking
+## Networking
 
 Pattern file: `skills/_shared/enscript/patterns/netsync.md`. Who owns what: `skills/_shared/conventions/scripts.md`.
 
@@ -69,7 +69,7 @@ Pattern file: `skills/_shared/enscript/patterns/netsync.md`. Who owns what: `ski
 - [ ] Side guards: `IsDedicatedServer()` in early init and to skip client-only work, `IsServer()` for authority work after load (E18).
 - [ ] `SetSynchDirty()` (`P:\scripts\3_game\entities\entityai.c:3064`) after a server-side write. One call after a coherent batch of writes is enough.
 
-## 4. UI and layout
+## UI and layout
 
 Read `skills/_shared/conventions/ui.md` first; depth is in `skills/_shared/ui/`.
 
@@ -81,13 +81,13 @@ Read `skills/_shared/conventions/ui.md` first; depth is in `skills/_shared/ui/`.
 - [ ] Cursor: `ShowUICursor(true)` on open (`P:\scripts\3_game\tools\uimanager.c:244`), reversed on close.
 - [ ] Cleanup in the destructor or `OnHide`: remove handlers, null the references.
 
-## 5. Actions
+## Actions
 
 Pattern file: `skills/_shared/enscript/patterns/actions.md` (registering the action class, condition components, stopping pickup).
 
 The order of checks in `ActionBase.Can` (`P:\scripts\4_world\classes\useractionscomponent\actionbase.c:929-966`):
 
-```
+```text
 1. Condition mask    bitwise: in vehicle, on ladder, swimming, restrained, raised ...   (:931)
 2. Stance            IsFullBodyEx / IsPlayerInStance / IsRolling                        (:931)
 3. Target owner      the target sits in another player's hierarchy: reject              (:938-943)
@@ -104,20 +104,20 @@ The server runs the same `Can` before it accepts a client's action (`pickedActio
 - [ ] (since 1.30) Water, wash and fill on sea or pond use `CCTLiquid` (as `ActionWashHandsWater` does, `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionwashhandswater.c:28`) unless you mean to differ.
 - [ ] `ActionCondition` reads only data both client and server have (the data map in `skills/dayz-scope-mod/references/implementation-protocol.md`).
 - [ ] Target type: `GetType()` for an exact class, `IsKindOf()` to include subclasses.
-- [ ] Pickup is blocked on purpose, with one of the two recipes in `skills/dayz-launch-test/references/error-catalog.md`, "E12: stopping pickup", knowing what each does to the vicinity list and the action cursor.
+- [ ] Pickup is blocked on purpose, with one of the two recipes in `skills/dayz-launch-test/references/error-catalog.md`, "Stopping pickup (E12)", knowing what each does to the vicinity list and the action cursor.
 - [ ] `CanPutInCargo()` and `CanPutIntoHands()` are overridden when the item must not be stored.
 - [ ] The stringtable key exists, or a hard-coded string is used while testing.
 
-## 6. `.rvmat` materials
+## `.rvmat` materials
 
 Pack files: `skills/_shared/textures/rvmat-stages.md` and `skills/_shared/textures/surface-recipes.md`. They win on values.
 
 - [ ] Start from a working vanilla `.rvmat` of the same shader and compare every stage against it.
-- [ ] `Stage2` (detail), `Stage4` (ambient shadow) and `forcedDiffuse[]`: keep what the vanilla material you copied uses. `color(0.5,0.5,0.5,0.5,DT)`, `color(0,1,1,1)` with no `AS` suffix, and `forcedDiffuse` alpha 1 are not the only correct values; vanilla ships those and the pack defaults both (`skills/dayz-launch-test/references/error-catalog.md`, "The three `.rvmat` rows").
+- [ ] `Stage2` (detail), `Stage4` (ambient shadow) and `forcedDiffuse[]`: keep what the vanilla material you copied uses. `color(0.5,0.5,0.5,0.5,DT)`, `color(0,1,1,1)` with no `AS` suffix, and `forcedDiffuse` alpha 1 are not the only correct values; vanilla ships those and the pack defaults both (`skills/dayz-launch-test/references/error-catalog.md`, "The three material rows").
 - [ ] `Stage6` fresnel: copied from a vanilla reference of the same shader type (E06).
 - [ ] Damage and destruct materials use the vanilla macro textures `generic_damage_mc.paa` and `generic_destruct_mc.paa` (E07).
 
-## 7. Persistence (`OnStoreSave`, `OnStoreLoad`)
+## Persistence: `OnStoreSave` and `OnStoreLoad`
 
 Pack files: `skills/_shared/enscript/patterns/persistence.md` and `skills/_shared/persistence/save-load-contract.md`. They win on detail.
 
@@ -129,7 +129,7 @@ Pack files: `skills/_shared/enscript/patterns/persistence.md` and `skills/_share
 - [ ] `AfterStoreLoad` (`P:\scripts\3_game\entities\entityai.c:1419`) for work after the load, not `OnStoreLoad`.
 - [ ] Test: delete the persistence files and check that a clean start works.
 
-## 8. Edge cases: logic patterns
+## Edge cases in logic
 
 Run this for any feature with collections, state or a lifecycle:
 
@@ -140,7 +140,7 @@ Run this for any feature with collections, state or a lifecycle:
 - [ ] **Player reconnection.** The client cache is lost on disconnect. How is it rebuilt (an RPC on connect, a sync variable re-sync)?
 - [ ] **Concurrent operations.** Two players acting on the same entity at the same moment.
 
-## 9. Refactor: state coherence
+## Refactor: state coherence
 
 Mandatory when a refactor consolidates logic across calls that have side effects.
 
@@ -153,14 +153,14 @@ For every `return` or early exit in the refactored function, list:
 
 If the second answer is no, the guard is in the wrong place. Move it before the irreversible call.
 
-Orphan patterns measured on a virtual-storage mod:
+Orphan patterns measured on a virtual storage mod:
 
-- **ORPHAN-1: a rate limit or validation after `super.OnStartServer` of an open or toggle action.** The `super` call already flipped `IsOpen()`; rejecting the follow-up restore leaves the container physically open with its cargo still virtualized in the project's storage file. Symptoms: an empty open container in game, the storage file not consumed. Fix: rate-limit before `super`, gated on the inferred intent (the state before was CLOSED for a toggle; asserted CLOSED for a split open hook).
-- **ORPHAN-2: a sync variable written between unrelated `SetSynchDirty()` calls**, out of step with the constructor's registration order. The client's values look stale but correctly typed. Fix: register and write in one fixed order; one `SetSynchDirty()` after a coherent batch of writes.
-- **ORPHAN-3: destroying an entity inside a `foreach` over a registry**, then continuing the loop. The next iteration holds a stale reference: a null pointer or a crash. Fix: collect the entities to delete in a temporary array and delete them after the loop.
+- **A rate limit after an open action's `super` call.** A rate limit or validation placed after `super.OnStartServer` of an open or toggle action. The `super` call already flipped `IsOpen()`; rejecting the follow-up restore leaves the container physically open with its cargo still virtualized in the project's storage file. Symptoms: an empty open container in game, the storage file not consumed. Fix: rate-limit before `super`, gated on the inferred intent (the state before was closed for a toggle, and is asserted closed for a split open hook).
+- **A sync variable written between unrelated `SetSynchDirty()` calls**, out of step with the constructor's registration order. The client's values look stale but correctly typed. Fix: register and write in one fixed order; one `SetSynchDirty()` after a coherent batch of writes.
+- **An entity destroyed inside a `foreach` over a registry**, then continuing the loop. The next iteration holds a stale reference: a null pointer or a crash. Fix: collect the entities to delete in a temporary array and delete them after the loop.
 
 Process rules:
 
 - **"Preserves the original behaviour" is not a goal** when the original is buggy. Treat each preserved behaviour as a hypothesis to check, not a fact to defend. For every "preserved" line in your audit, ask whether it should be preserved (E26).
-- **"Pre-existing, not introduced by the refactor" is not an exemption.** If the audit notes a sketchy pattern with that label, stop and get an explicit decision from the user (fix now, or flag for later). Quietly continuing is the worst option (E27).
-- **When an auditor or the user catches one orphan-state bug, grep the sibling files for the same pattern at once.** It rarely lives in one place. Measured: after the auditor caught ORPHAN-1 in one toggle hook, the sibling grep found two more open actions with the same pattern, which should have been fixed in the same pass.
+- **"Pre-existing, not introduced by the refactor" is not an exemption.** If the audit notes a doubtful pattern with that label, stop and get an explicit decision from the user (fix now, or flag for later). Quietly continuing is the worst option (E27).
+- **When an auditor or the user catches one orphan-state bug, grep the sibling files for the same pattern at once.** It rarely lives in one place. On one mod, after the auditor caught the open action case in one toggle hook, the sibling grep found two more open actions with the same pattern, which should have been fixed in the same pass.

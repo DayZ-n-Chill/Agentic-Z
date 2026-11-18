@@ -279,7 +279,7 @@
     "meaning": "The mission's persistence storage is half written, usually after a server was killed while saving. The server dies before it binds its port, which looks like a mod bug and is not one.",
     "fix": "Ask the user first: renaming the storage resets their world and characters. Only after they agree, and with the server stopped, rename .server/<instance>/mission/storage_1 (for example to storage_1_corrupt-<date>); the server writes a fresh one on the next start.",
     "owner_agent": "dayz-server-admin",
-    "source": "dayz-launch-test references/troubleshooting.md and references/session-findings.md (measured, not on P:\\)"
+    "source": "dayz-launch-test references/troubleshooting.md and references/test-machine-sharing.md (measured, not on P:\\)"
   },
   {
     "id": "storage-modstorage-unreadable",

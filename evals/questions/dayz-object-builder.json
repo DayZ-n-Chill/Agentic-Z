@@ -17,7 +17,7 @@
         "re:door_1_axis",
         "re:two points|2 points|exactly two|pair of points"
       ],
-      "verified": "P:/DZ/structures/Residential/HouseBlocks/houseblock_3f_corner1.p3d stores bone doors5 with axis doors5_axis; audit_p3d.py check_visual_lod matches <name>_axis to <name>; skills/_shared/animation/doors.md"
+      "verified": "P:/DZ/structures/Residential/HouseBlocks/houseblock_3f_corner1.p3d stores bone doors5 with axis doors5_axis; the py3d axis-name check (_check_axis_selections in scripts/tools/py3d/py3d/__init__.py), or /dayz-p3d-audit check_animations with --model-cfg, matches <name>_axis to <name>; skills/_shared/animation/doors.md (model rule 2)"
     },
     {
       "id": "door-needs-view-geometry-component",

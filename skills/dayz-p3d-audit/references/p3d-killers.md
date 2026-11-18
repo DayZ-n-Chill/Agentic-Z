@@ -6,7 +6,8 @@ missing animations, or broken textures.
 
 Killers 1 to 10 apply to any model. Killers 11 to 13 apply to wheeled vehicles and
 are detailed in `vehicle-checks.md`. The in-game measurements behind killers 1, 2
-and 8, and the needle triangle fault, are in `killers-detail.md`.
+and 8 are in `killers-detail.md`; the needle triangle fault is in
+`collision-mesh-hygiene.md`.
 
 **Contents**
 
@@ -35,7 +36,7 @@ pass through it: no action targeting, no ballistic hit. A correct MLOD winds eve
 of a collision component INWARD and stores its normals inward too. Measured in game on
 DayZDiag 1.29: a box wound inward took every ray in `geom`, `view` and `fire`; the same
 box wound outward took none, yet its physics body still stopped a walking player and
-held one standing on it (`killers-detail.md` section 1). So a walk test does not show
+held one standing on it (`killers-detail.md`, "Collision LOD wound outward"). So a walk test does not show
 this fault, and a player walking through an object is not evidence of it.
 
 This section once said the opposite ("normals pointing INWARD" was named as the fault).
@@ -61,7 +62,7 @@ checks are in `winding-methodology.md` (same folder).
 (proxy triangles excluded). Do not swap `vertices[1]` and `vertices[2]`: that inverts a
 triangle but turns a quad `[0,1,2,3]` into `[0,2,1,3]`, a crossed face. Do not reverse
 a collision LOD to make it match the Visual LOD. Then set the stored normals of the
-reversed faces as `killers-detail.md` section 1 says.
+reversed faces as `killers-detail.md`, "Collision LOD wound outward", says.
 
 **Why Visual LOD may not be affected**: Visual and Geometry LODs have independent face
 data, so one can be right while the other is inverted. DayZ renders Visual LODs
@@ -77,7 +78,7 @@ NOTE. Another spelling such as `COMPONENT01` is a WARNING (it does not fail the 
 rename it to `Component01` to match vanilla. A Geometry LOD with no component selection
 at all is CRITICAL, since it has no collision.
 
-Measured in game (`killers-detail.md` section 2): a box with no `ComponentNN` selection
+Measured in game (`killers-detail.md`, "No component selection"): a box with no `ComponentNN` selection
 in its Geometry, View and Fire LODs took no ray, no physics ray, and the player walked
 through it, with no log line. `component01` collided exactly like `Component01`, and
 binarize writes both as `component01`, so never rename lowercase to repair collision.
@@ -160,7 +161,7 @@ non-convex shape is split into several convex components (Object Builder's Find 
 so do not merge them into one. A closed part left out of every component gets no
 collision: its faces do not register raycasts.
 
-Measured in game (`killers-detail.md` section 8): a closed part left out of every
+Measured in game (`killers-detail.md`, "Parts left out of every component"): a closed part left out of every
 component collided with nothing in the LODs it was left out of, even beside covered
 parts (0 of 46 rays, and the player walked through), and the one non-convex component
 measured collided only in part. A part left out only in part was not measured. With
@@ -241,7 +242,7 @@ A triangle that is almost a line, inside a `ComponentNN` of the Geometry, View o
 Geometry LOD. In game a convex hull holding one took no ray at all, and binarize said
 nothing. The audit fails a triangle under 1e-6 m², or whose area over the square of
 its longest edge is under 1e-4, and names the point to drop. Detail and the measured
-limits: `killers-detail.md`, "Needle triangles in a collision component".
+limits: `collision-mesh-hygiene.md`, "Needle triangles".
 
 ---
 
@@ -258,7 +259,7 @@ limits: `killers-detail.md`, "Needle triangles in a collision component".
 4. **Addon Builder binarizes MLOD → ODOL**: mesh defects persist into builds. The
    winding sign does not: on the one path measured it inverted in every triangle pair,
    so never reuse a winding check calibrated on the MLOD to audit the built ODOL
-   (`winding-absolute-check.md`, "MLOD to ODOL is a winding-sign boundary").
+   (`winding-absolute-check.md`, "The sign flips between MLOD and ODOL").
 5. **Keep selection names as vanilla spells them**: `Component01` in the MLOD source
    (binarized vanilla models store `component01`, which also works)
 6. **Memory LOD must have zero faces**: only single-vertex points. Faces in Memory LOD

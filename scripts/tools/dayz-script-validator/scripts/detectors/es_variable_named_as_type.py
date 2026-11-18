@@ -44,8 +44,8 @@ ES_VARIABLE_NAMED_AS_TYPE_RULE_ID = "ES-VARIABLE-NAMED-AS-TYPE"
 # Parameters, and names that are an enum or a typedef rather than a class,
 # have no failure on record; they are judged the same way because the error
 # names a type, not a class. The match is exact case: Enforce identifiers are
-# case-sensitive (skills/_shared/enscript/depth/compiler-traps.md, "A method named exactly
-# like a vanilla class"), and no failure with a case-only match is on record,
+# case-sensitive (skills/_shared/enscript/depth/compiler-traps.md, "A method named like a
+# vanilla class"), and no failure with a case-only match is on record,
 # so a member `debug` is not reported.
 #
 # Type names come from the addon, every --external-scripts root and the

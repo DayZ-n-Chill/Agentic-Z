@@ -1,10 +1,10 @@
-# Motion quality contract
+# Motion contract and checks
 
-The report and contract formats the two scripts share, every check type the validator knows, what a result means, and how tolerances are chosen.
+What the motion report and contract look like, every check type the validator knows, what a result means, and where tolerances may come from. The workflow that uses them is in `realistic-motion.md`; the commands are in `skills/dayz-animation-pipeline/SKILL.md`.
 
-The contract separates sampling from judgment. `sample_blender_motion.py` evaluates scene data into a neutral report. `validate_motion_contract.py` evaluates that report against checks. This lets unit fixtures run without Blender and prevents a scene-specific script from silently defining its own success.
+Sampling and judging are separate. `sample_blender_motion.py` reads the scene into a neutral report; `validate_motion_contract.py` judges that report against the checks. So the unit tests run without Blender, and no scene script can quietly define its own success.
 
-## Report schema v1
+## The report
 
 ```json
 {
@@ -25,111 +25,56 @@ The contract separates sampling from judgment. `sample_blender_motion.py` evalua
 }
 ```
 
-Units are metres, degrees and seconds. JSON quaternions are always `[x,y,z,w]`.
+Units are metres, degrees and seconds. Quaternions in JSON are always `[x, y, z, w]`.
 
-## Blender sampling fields
+## What the sampler reads
 
-Top-level sampler fields:
+| Field | Meaning |
+|---|---|
+| `sample_frames` | Single frames for isolated poses, rising and unique. |
+| `sample_ranges` | Inclusive `{start, end, step}` ranges; use `step: 1` for contact, lock and collision windows. |
+| `action_bindings` | Optional `{object, action}` pairs, assigned for the run and restored after. |
+| `landmarks` | Named points: `bone_head`, `bone_tail`, `bone_point` (with `factor` 0 to 1), `object_origin`, `mesh_vertex_centroid` (with evaluated mesh vertex indices), `average` (of named `sources`); any of them may add `offset_world`. |
+| `transforms` | Named transforms: `pose_bone_world`, `pose_bone_local` (`matrix_basis`, for joint limits against the rest and parent chain), `object_world`. |
+| `segments` | Named capsule centre lines, each with a `radius_m` of 0 or more. |
+| `checks` | Skipped by the sampler and read by the validator, so one file holds the whole contract. |
 
-- `sample_frames`: increasing unique integer frames for isolated poses;
-- `sample_ranges`: inclusive `{start,end,step}` ranges; use `step: 1` for continuous contact, lock and collision windows;
-- `action_bindings`: optional `{object, action}` pairs temporarily assigned and restored;
-- `landmarks`: named point specifications;
-- `transforms`: named world transforms;
-- `segments`: named capsule centre-lines with a mandatory non-negative `radius_m`;
-- `checks`: ignored by the sampler and consumed by the validator, so one file can hold the full task contract.
+A missing object, bone, vertex, frame, Action or radius, a value that is not finite, or a frame outside the scene timeline is invalid input and exits with `2`; it never drops a channel quietly.
 
-Landmark types:
+Bone names in `transforms` and `landmarks` must match the exported skeleton letter for letter. Per the 1.30 changelog (not checked on `P:\`) the engine finds bones by a hash of the name, so the name is the only key; the skeletons added in 1.30 carry an `index` only on `EntityPosition` (`P:\DZ\anims\cfg\skeletons.anim.xml:988`).
 
-- `bone_head`, `bone_tail`, `bone_point` (`factor` in `0..1`);
-- `object_origin`;
-- `mesh_vertex_centroid` with explicit evaluated-mesh vertex indices;
-- `average` with named `sources`;
-- optional `offset_world` on any landmark.
+## Check types
 
-Transform types:
+| Check | Measures | Notes |
+|---|---|---|
+| `timeline` | Exact frame rate, scene start and end, inclusive frame count | With `require_action_range: true` every bound Action must have the same range. Take the values from the DayZ route. |
+| `point_distance_band` | `surface_gap = distance(point_a, point_b) - radius_a_m - radius_b_m` against `min_m` and `max_m` | Negative is sinking in; above the maximum is a miss. |
+| `segment_clearance` | Smallest capsule surface distance | Use explicit `segment_pairs` for anatomy so segments of one chain are never compared by accident; `segments_a` against `segments_b` suits separate object groups. |
+| `ordered_projection` | Point groups projected on a fixed `axis` or a per frame `axis_from_points` | Use several groups along a chain: roots, middle joints, tips. Tips alone are not enough. |
+| `relative_transform_lock` | The target in actor space every frame against the first contact frame | Needs two frames or more. Declare translation and rotation drift limits and a consecutive `frame_range`; split windows around a slip or release. |
+| `joint_angle_range` | Quaternion angle from a reference | A single swing angle cannot tell twist from bending; a coarse guard only. |
+| `joint_swing_twist_range` | Twist about a local `twist_axis` and the swing left over | Signed twist limits and a maximum swing. Feed it `pose_bone_local`. |
+| `continuity_limit` | Point speed, acceleration and jerk | Only limits backed by the action or a reference. Leave impact or snap windows out, or give them their own contract. |
+| `rotation_continuity_limit` | Angular speed, acceleration and jerk as shortest path rotation vectors | Local transforms for body stutter, world or object transforms for mechanical stutter. |
+| `endpoint_match` | Named points and transforms at two frames | Matching poses alone do not prove a seamless loop. |
+| `seam_derivative_match` | Velocity coming into the loop end against velocity leaving the loop start | Point linear velocity, or transform linear and angular velocity. Pair it with `endpoint_match`. |
 
-- `pose_bone_world`;
-- `pose_bone_local` (`matrix_basis`, for joint limits relative to the rest and parent chain);
-- `object_world`.
+## What a result says
 
-Missing objects, bones, vertices, frames, Actions, radii or non-finite values are invalid input. Frames outside the scene timeline are invalid. They produce exit `2`, never an omitted channel.
+Each check returns `pass`, `required`, `worst_frame`, `measured`, `limit` and a message. `overall_pass` is true only when every required check passes; optional checks stay visible but cannot hide a required failure. The result also repeats `contract_mode` and gives `eligible_for_offline_pass`, which is true only when a production contract passes every required check.
 
-Bone names in `transforms` and `landmarks` must match the exported skeleton character for character. In 1.30 (not yet checked on `P:\`) the 250-bone limit is gone and the engine resolves bone indices from a hash of the bone name, so the name is the only key; on `P:\` the skeletons added in 1.30 carry an `index` only on `EntityPosition` (`P:\DZ\anims\cfg\skeletons.anim.xml:988`).
+## Where tolerances come from
 
-## Check catalog
+In this order:
 
-### `timeline`
-
-Checks exact FPS, scene start and end and the inclusive frame count. With `require_action_range: true`, every bound Action must expose the same range. Get the expected values from the current DayZ contract.
-
-### `point_distance_band`
-
-Checks positive contact or controlled clearance. The measured value is:
-
-`surface_gap = distance(point_a, point_b) - radius_a_m - radius_b_m`
-
-Use `min_m` and `max_m`. A negative gap is penetration; a positive gap above the maximum is separation.
-
-### `segment_clearance`
-
-Computes the minimum capsule surface distance. Use explicit `segment_pairs` for anatomy and self-collision so segments of the same chain are never compared by accident. Cartesian `segments_a` and `segments_b` remain useful for disjoint object groups.
-
-### `ordered_projection`
-
-Projects point groups onto either a fixed `axis` or a per-frame `axis_from_points`. Use several groups along a chain: roots, intermediate joints and tips. Endpoint-only order is insufficient.
-
-### `relative_transform_lock`
-
-Evaluates the target transform in actor-local space on every frame and compares it with the first contact frame. It requires at least two frames. Declare translation and rotation drift tolerances, and use a consecutive `frame_range` for a rigid window. Split windows around an intentional slip or release.
-
-### `joint_angle_range`
-
-Measures the quaternion angle from a declared reference. A scalar swing angle cannot distinguish twist from flexion; use this as a coarse guard and add axis-specific or domain review when anatomy is load-bearing.
-
-### `joint_swing_twist_range`
-
-Decomposes a local joint quaternion around a declared local `twist_axis`. Declares signed twist bounds and a maximum swing. Feed it `pose_bone_local`, not a world transform.
-
-### `continuity_limit`
-
-Measures point speed, acceleration and jerk across increasing frames. Declare only limits supported by the action or reference. Impact or snap windows should be excluded or separately contracted.
-
-### `rotation_continuity_limit`
-
-Measures quaternion angular speed, acceleration and jerk as shortest-path rotation vectors. Use local transforms for anatomical stutter and world or object transforms for mechanical stutter.
-
-### `endpoint_match`
-
-Compares named points and transforms at two frames. For loops, add a continuity check around the seam when matching derivatives matters; identical poses alone do not prove a seamless loop.
-
-### `seam_derivative_match`
-
-Compares incoming velocity at the loop end with outgoing velocity at the loop start. It supports point linear velocity or transform linear and angular velocity. This is the derivative gate that complements `endpoint_match`.
-
-## Result semantics
-
-Each check returns:
-
-- `pass` and `required`;
-- `worst_frame`;
-- `measured` and `limit`;
-- an explanatory message.
-
-`overall_pass` is the conjunction of required checks. Optional diagnostics remain visible but cannot disguise a required failure. The result also echoes `contract_mode` and reports `eligible_for_offline_pass`; that field is true only when a production contract passes every required check.
-
-## Tolerance discipline
-
-Choose tolerances from one of these sources, in order:
-
-1. approved reference pose or motion;
+1. an approved reference pose or motion;
 2. measured geometry and known surface thickness;
-3. verified vanilla clip distribution;
-4. explicit user decision recorded in the task contract.
+3. a checked spread of vanilla clips;
+4. a decision the user made, written into the contract.
 
-Never derive the tolerance solely from the candidate being judged. Always run a corrected or positive fixture to prove the check is not tautological.
+Never take a tolerance only from the candidate being judged. Run a corrected sample through the same check to show it can pass, so the check is not circular.
 
-`contract_mode` is required and accepts exactly `diagnostic` or `production`. Contracts that can grant `OFFLINE_PASS` set `contract_mode: "production"`. Every check then requires:
+`contract_mode` is required and is exactly `diagnostic` or `production`. A contract that can give `OFFLINE_PASS` uses `production`, and then every check carries:
 
 ```json
 "provenance": {
@@ -140,4 +85,4 @@ Never derive the tolerance solely from the candidate being judged. Always run a 
 }
 ```
 
-If any `segment_clearance` check is present, add `segment_radius_provenance` with the same fields. Production checks for contact, collision, relative lock, ordering, joint range and continuity must use a consecutive `frame_range` with `step: 1`; explicit or sparse `frames` are diagnostic evidence only. Diagnostic contracts may omit provenance, but they cannot support a production PASS even when `overall_pass` is true.
+A contract with any `segment_clearance` check also carries `segment_radius_provenance` with the same fields. In production, contact, collision, lock, order, joint range and continuity checks use a consecutive `frame_range` with `step: 1`; scattered `frames` count only as diagnostic evidence. A diagnostic contract may leave provenance out, but it never supports a production pass, even when `overall_pass` is true.

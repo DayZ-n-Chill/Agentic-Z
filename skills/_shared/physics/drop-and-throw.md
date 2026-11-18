@@ -29,6 +29,8 @@ A body can exist in the collision world without being simulated. Check its state
 
 An object spawned without `ECE_CREATEPHYSICS` has no collision envelope, so nothing rests on it and it rests on nothing. An item spawned with it can still be static and hang where it was created; make it fall as below.
 
+Map objects are static too. The train wagon wrecks such as `StaticObj_Wreck_Train_Wagon_Flat` and `StaticObj_Wreck_Train_Wagon_Tanker` inherit `HouseNoDestruct` (`P:\DZ\structures\wrecks\config.cpp:1588`, `:1593`), and an impulse on them was discarded in a mod test (measured, not checkable on `P:\`). To knock one over, catch the hit in `OnContact` on your own moving entity and replace the wreck with a dynamic entity of your own. Removing a map object has to reach every client as well as the server, so prove the swap in the in game test.
+
 ## How vanilla drops and throws
 
 - **Player throw.** Holding the throw button winds up a force from 0 to 1; on release the player calls `GetHumanInventory().ThrowEntity(item, direction, force)` with a force between `c_fThrowingForceMin = 20.0` and `c_fThrowingForceMax = 90.0` (`P:\scripts\4_world\entities\dayzplayerimplementthrowing.c:62`, `:261`, `:262`). The hand action then calls `item.ThrowPhysically(player, throwEvent.GetForce())` (`P:\scripts\3_game\systems\inventory\hand_actions.c:81`).

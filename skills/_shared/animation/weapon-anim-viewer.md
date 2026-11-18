@@ -1,159 +1,122 @@
-# Weapon animation authoring viewer (layer 2, interactive)
+# Weapon animation viewer
 
-A repeatable way to author weapon animations: a web page that shows the weapon and the character on the player skeleton, where the user poses with IK handles and a keyframe timeline, the agent renders an offline preview, and the result is exported as SEAnim on the way to `.anm`. The six tools for it are in `skills/dayz-animation-pipeline/scripts/`.
+How to pose a weapon animation interactively: a web page that shows the weapon and the character on the player skeleton, where the user poses with IK handles and a key timeline, then exports SEAnim on the way to `.anm`. Use it for "how should this weapon be held" and "how should this reload look" instead of keying bone by bone in Workbench; for a seated rider use `rider-pose-solver.md`.
 
-It is the alternative to keying bone by bone in Workbench for questions like "how should this weapon be held" and "how should this reload look". For a seated rider use `rider-pose-solver.md`.
-
-Nothing here is a vanilla fact that `P:\` can show: it is tool behaviour and measured results, each with its date and build. In-game playback is the only acceptance.
+This is tool behaviour and measured results, not vanilla facts `P:\` can show. Playing the clip in game is the only acceptance. The six tools are in `skills/dayz-animation-pipeline/scripts/`.
 
 ## The pipeline
 
-```
-[1] Viewer page: weapon, skinned character, skeleton overlay             agent builds
-      IK handles (hands, feet, head, weapon) with two bone IK
-      direct sliders (wrist roll, finger curl, torso lean, head)
-      keyframe timeline (add, scrub, play, interpolate) and JSON export
-[2] Offline preview: frames captured with a headless browser, as a GIF   agent
-[3] seanim_export.py: animation JSON -> .seanim, read back as a check    agent
-[4] DayZATool --generate-anim X.seanim -> X.anm                          user
-[5] Bind it in an instance file, pack, sign, TEST IN GAME                user
-```
+| Step | What | Who |
+|---|---|---|
+| 1 | The viewer page: weapon, skinned character, skeleton overlay; IK handles (hands, feet, head, weapon) with two bone IK; sliders for wrist roll, finger curl, torso lean and head; a key timeline (add, scrub, play, interpolate) and JSON export. | The agent builds it. |
+| 2 | An offline preview: frames captured with a browser run from the command line, as a GIF. No capture script ships here. | The agent. |
+| 3 | `seanim_export.py` turns the animation JSON into a `.seanim` and reads it back as a check. | The agent. |
+| 4 | `DayZATool --generate-anim X.seanim` makes `X.anm`. | The user. |
+| 5 | Bind it in an instance file, pack, sign and test in game. | The user. |
 
 ## The tools, in the order they run
 
-All in `skills\dayz-animation-pipeline\scripts\`. They pass their files through the folder named by `DAYZ_ANIM_SCRATCH` (default `<tempdir>\dayz-anim-pipeline`).
+They pass files through the folder named by `DAYZ_ANIM_SCRATCH` (default `<tempdir>\dayz-anim-pipeline`).
 
 1. `fbx_extract.py` (Blender) dumps the rig FBX to `rig_raw.json`: rest matrices, parents and lengths of every bone, every empty, and the body mesh.
-2. `extract_empties.py` (Blender, same FBX) writes the helper empties through their parent chain to `empties_armworld.json`. It exits 1 and writes nothing when the FBX has no `RightHand_Dummy` (the weapon anchor of the survivor skeleton, `P:\DZ\anims\cfg\skeletons.anim.xml:115`). It removes the previous run's file before the FBX import, read only or not, so a failed run leaves step 3 nothing stale to build on; a file it cannot remove stops it with that error.
-3. `build_rig_dayz.py` (Python, numpy) aligns bones and mesh and writes `rig_dayz.json` in the viewer's frame, with the helpers as its `anchors`.
-4. `extract_weapon.py` (Python, the DayZ fork of py3d) writes the weapon's first visual LOD and memory points to `weapon.json`. It is independent of steps 1 to 3.
-5. `build_viewer.py` (Python) writes the page from `rig_dayz.json` and `weapon.json`. On load and on "Ready pose" the page puts the weapon grip at a fixed idle point, (-0.06, 1.02, 0.32) in the viewer frame. The `RightHand_Dummy` anchor is used only by `poseReady()`, which no button calls; run it from the browser console as `window.__VIEWER__.poseReady()`.
-6. `seanim_export.py` (Python) turns the page's animation JSON into SEAnim; its paths are arguments.
+2. `extract_empties.py` (Blender, same FBX) writes the helper empties through their parent chain to `empties_armworld.json`. It exits 1 and writes nothing when the FBX has no `RightHand_Dummy`, the weapon anchor of the survivor skeleton (`P:\DZ\anims\cfg\skeletons.anim.xml:115`). It deletes the previous run's file before the import, so a failed run leaves nothing stale for step 3; a file it cannot delete stops it with that error.
+3. `build_rig_dayz.py` (numpy) aligns bones and mesh and writes `rig_dayz.json` in the viewer's frame, with the helpers as its `anchors`.
+4. `extract_weapon.py` (the DayZ fork of py3d) writes the weapon's first visual LOD and memory points to `weapon.json`; it does not depend on steps 1 to 3.
+5. `build_viewer.py` writes the page from `rig_dayz.json` and `weapon.json`. On load and on "Ready pose" the page puts the weapon grip at a fixed idle point, (-0.06, 1.02, 0.32) in the viewer frame. The `RightHand_Dummy` anchor is used only by `poseReady()`, which no button calls; run it from the browser console as `window.__VIEWER__.poseReady()`.
+6. `seanim_export.py` turns the page's animation JSON into SEAnim; its paths are arguments.
 
-```cmd
+```bat
 blender -b --python-exit-code 1 --python skills\dayz-animation-pipeline\scripts\fbx_extract.py -- <animation_rig_character.fbx>
 blender -b --python-exit-code 1 --python skills\dayz-animation-pipeline\scripts\extract_empties.py -- <animation_rig_character.fbx>
-python skills\dayz-animation-pipeline\scripts\build_rig_dayz.py
-python skills\dayz-animation-pipeline\scripts\extract_weapon.py <weapon_mlod.p3d>
-python skills\dayz-animation-pipeline\scripts\build_viewer.py <out.html>
-python skills\dayz-animation-pipeline\scripts\seanim_export.py --anim weapon_anim.json --rig <scratch>\rig_dayz.json --out clip.seanim
+py skills\dayz-animation-pipeline\scripts\build_rig_dayz.py
+py skills\dayz-animation-pipeline\scripts\extract_weapon.py <weapon_mlod.p3d>
+py skills\dayz-animation-pipeline\scripts\build_viewer.py <out.html>
+py skills\dayz-animation-pipeline\scripts\seanim_export.py --anim weapon_anim.json --rig <scratch>\rig_dayz.json --out clip.seanim
 ```
 
-- The two Blender steps take the FBX after `--`, or from `DAYZ_ANIM_RIG_FBX`, or by its file name in the current folder. Give both the same FBX. `extract_weapon.py` takes the `.p3d` as its argument or from `DAYZ_ANIM_WEAPON_P3D`.
-- Run the Blender steps with `--python-exit-code 1` and stop at the first exit code that is not zero. Without that flag an uncaught Python error still exits 0.
-- `build_viewer.py` needs the shared viewer core (`viewer_core.py`), which it looks for at `scripts/tools/dayz-3d-viewer/dayz_3d_viewer/` and then under `skills/_shared/`; `--viewer-core <path>` names another copy. The page loads three.js 0.185.1 from a CDN when it opens, so it needs a network connection; three.js is not inlined.
-- No headless browser script for a self test or for the preview capture of step [2] ships here.
+- The Blender steps take the FBX after `--`, from `DAYZ_ANIM_RIG_FBX`, or by file name in the current folder; give both the same FBX. `extract_weapon.py` takes the `.p3d` as its argument or from `DAYZ_ANIM_WEAPON_P3D`.
+- Run Blender with `--python-exit-code 1` and stop at the first non zero exit; without the flag an uncaught Python error still exits 0.
+- `build_viewer.py` needs the shared viewer core (`viewer_core.py`), looked for at `scripts/tools/dayz-3d-viewer/dayz_3d_viewer/` and then under `skills/_shared/`; `--viewer-core <path>` names another copy. The page loads three.js 0.185.1 from a CDN when it opens, so it needs a network connection.
 
-Measured 2026-10-02 with Blender 5.1.1: steps 1 to 3 on the Bohemia rig FBX rebuilt a reference `rig_dayz.json` byte for byte except its `space` label: the 8 helpers it holds (`LeftHandIKTarget`, the ninth name the script looks for, is not in that FBX), the 114 bones and the mesh.
+Measured with Blender 5.1.1: steps 1 to 3 on the Bohemia rig FBX rebuild a reference `rig_dayz.json` byte for byte apart from its `space` label: the 8 helpers it holds (`LeftHandIKTarget`, the ninth name the script looks for, is not in that FBX), the 114 bones and the mesh.
 
-## Where the rig comes from, and its traps
+## The rig and its traps
 
-The source is the character rig FBX from Bohemia's public DayZ-Misc repository (`animation_rig_character.fbx`): an armature of 114 bones with the player skeleton's exact names, and the `Male_body` mesh (7,499 vertices) skinned to it. Read it with Blender headless, not a Python FBX parser.
+The rig is `animation_rig_character.fbx` from Bohemia's public DayZ-Misc repository: 114 bones with the player skeleton's exact names, and the `Male_body` mesh (7,499 vertices) skinned to it. Read it with Blender from the command line, not a Python FBX parser.
 
-### The FBX holds mesh and armature in different spaces
+The importer leaves the mesh at object scale 0.01 and the armature at scale 1, so they live in separate spaces: the armature in a T pose in centimetres with its origin at the pelvis, the mesh in metres with its origin at the feet. Read bone world positions directly and the skeleton lands about 35 times off the mesh, and animating the raw rig pivots the mesh round far away points. Bind again in one space instead of trusting the FBX:
 
-Measured 2026-06-28. The importer leaves the mesh at object scale 0.01 and the armature at scale 1, so the two live in separate spaces: the armature in a T pose, in centimetres, with its origin at the pelvis; the mesh in meters with its origin at the feet. The bones do not coincide with the mesh. Deformation works in Blender only through the modifier's relative transform, and reading bone world positions directly puts the skeleton about 35 times off the mesh. Animating the raw rig then pivots the mesh around far away points, which looks like broken deformation.
+1. Read bone rest matrices in armature world (cm) and mesh vertices in mesh world (m).
+2. Both are roughly a T pose, so align them with one uniform scale and a translation. Take the scale from the wrist's X against the mesh's half width (`RightHand` at about -58.6 cm, mesh edge at about ±0.703 m, so about 0.0101); match the bounding box centres and the feet's Z.
+3. Turn into the viewer's Y up frame, `(x', y', z') = (x, z, -y)`. Blender and three.js are both right handed, so this is a rotation, not DayZ's change of handedness: DayZ model space is left handed and any map into it mirrors (such as the flip `(x, y, -z)` in `weapon-in-hands.md`). Coordinates from `rig_dayz.json` written into a `.p3d` as they are land mirrored.
+4. Build a fresh skeleton and skinned mesh in that space; skinning and IK are then right.
 
-The fix is to bind again in one consistent space, not to trust the FBX's bind:
+The result, in metres in the viewer frame: head at 1.62, pelvis at 0.99, hands at ±0.59 across and 1.07 high, feet at about 0.09, and `RightHand_Dummy`, which is also `Weapon_Root`, at (-0.156, 1.368, 0.207).
 
-1. Read the bone rest matrices in armature world (cm) and the mesh vertices in mesh world (m).
-2. Both are roughly a T pose, so align them with one uniform scale and a translation. Take the scale from a reliable pair: the wrist bone's X against the mesh's half width on X (`RightHand` at about −58.6 cm, mesh edge at about ±0.703 m, so a scale near 0.0101). Translate to match the bounding box centres, and match Z at the feet.
-3. Rotate into the viewer's frame, Y up: `(x', y', z') = (x, z, −y)`. Blender's Z up frame and three.js's Y up frame are both right handed, so this is a rotation. It is not DayZ's change of handedness: DayZ model space is left handed, and any map into it mirrors (for example the flip `(x, y, −z)` in `weapon-in-hands.md`).
-4. Build a fresh skeleton and skinned mesh in that space. The bind is then consistent, and skinning and IK are correct.
+The helpers (`RightHand_Dummy`, `Weapon_Root`, `LeftHand_Dummy` and the IK helpers) are empties parented to bones or to another helper; `Weapon_Root` hangs from `RightHand_Dummy`. Of the FBX's 38 empties, 17 import disabled in viewports (`hide_viewport`), those three among them, and keep `matrix_world` at the origin even after `view_layer.update()`; the other 21 agree with the formula below to 1e-5. So compose the world matrix by hand:
 
-Landmarks of the result (viewer frame, Y up, right handed, meters): head at 1.62, pelvis at 0.99, hands at ±0.59 across and 1.07 high, feet at about 0.09. The weapon anchor `RightHand_Dummy`, which is also `Weapon_Root`, is at (−0.156, 1.368, 0.207).
-
-Because that frame is right handed, coordinates from `rig_dayz.json` written into a `.p3d` as they are land mirrored.
-
-### Helper "bones" are empties, and 17 of them hide their world matrix
-
-`RightHand_Dummy`, `Weapon_Root`, `LeftHand_Dummy` and the IK helpers are empties in the FBX, parented to bones or to another helper (`Weapon_Root` hangs from `RightHand_Dummy`). Their world matrix has to be composed by hand with the child of bone formula:
-
-```
+```text
 armature world @ pose bone matrix @ T(0, bone length, 0) @ matrix_parent_inverse @ matrix_basis
 ```
 
-For a helper whose parent is another helper, the parent's world takes the place of the first three factors. `extract_empties.py` does this; it assumes what this FBX has: one armature, parent bones without `use_relative_parent`, and every hidden helper parented.
-
-Measured with Blender 5.1.1: plain `matrix_world` will not do. Of the FBX's 38 empties, 17 import disabled in viewports (`hide_viewport`), `RightHand_Dummy`, `Weapon_Root` and `LeftHand_Dummy` among them, and those keep `matrix_world` at the origin before and after `view_layer.update()`. The other 21, 16 of them parented to bones, agree with the formula to 1e-5 either way.
-
-## The bone frame gap, and why the game is the judge
-
-The quaternions the viewer exports are local to the rig's bones. DayZ's `.anm` and SEAnim bone frame puts a chain child on X: in a vanilla SEAnim extracted with DayZATool, finger phalanx offsets are `(length, 0, 0)`. SEAnim local translations are in centimetres (rig meters times 100), also read from that reference.
-
-One change of basis per rig reconciles the two (established 2026-10-02). The maps are in "Route C bone-frame maps, per rig" below.
-
-What still holds: a SEAnim from the viewer is valid in structure (it reads back, its bone names are the skeleton's, its frame rate is right) and correct in the rig, and only playing it in game confirms that it is right for DayZ. Plan the in-game check from the first day.
+For a helper parented to another helper, the parent's world replaces the first three factors. `extract_empties.py` does this and assumes one armature, parent bones without `use_relative_parent`, and every hidden helper parented.
 
 ## How the page works
 
 For anyone maintaining `build_viewer.py`:
 
-- The skinned mesh and skeleton are built by hand from the rig JSON (local position and quaternion per bone, the hierarchy, and four skin weights per vertex).
-- Two bone analytic IK per limb (law of cosines plus a pole hint), the same mathematics as `ik_pose_to_seanim.py`, written in JavaScript. It is applied by aiming each bone's rest direction to its child at the solved child position, which keeps the rest roll, and setting the bone's local quaternion to the parent's inverse world rotation times the wanted world rotation.
-- The page exports each bone's local quaternion directly. The unfinished positions to rotations step of `ik_pose_to_seanim.py` is not on this path.
-- The direct sliders multiply onto the IK result, so wrist roll and finger curl layer over the IK instead of resetting to rest. The IK helpers do not roll the wrist, so wrist and finger control goes to the raw `LeftHand` and `RightHand` and the finger bones.
-- A keyframe stores the authoring state (target positions, slider values, the weapon's transform). Playback and export interpolate the state, run the IK and sliders again, and bake local quaternions per frame and bone. The IK and sliders are the single source of truth.
+- It builds the skinned mesh and skeleton by hand from the rig JSON: local position and quaternion per bone, the hierarchy, four skin weights per vertex.
+- Each limb has analytic two bone IK (law of cosines and a pole hint), the same maths as `ik_pose_to_seanim.py` in JavaScript. Each bone's rest direction is aimed at the solved child position, which keeps the rest roll, and its local quaternion is the parent's inverse world rotation times the wanted world rotation.
+- It exports each bone's local quaternion directly, so the unfinished positions to rotations step of `ik_pose_to_seanim.py` is not on this path.
+- Sliders multiply onto the IK result, so wrist roll and finger curl layer over it. The IK helpers do not roll the wrist, so wrist and finger control goes to `LeftHand`, `RightHand` and the finger bones.
+- A key stores the authoring state (targets, slider values, the weapon's transform). Playback and export interpolate it, run IK and sliders again and bake local quaternions per frame and bone, so IK and sliders are the single source of truth.
 
-`seanim_writer.py` has a working reader (`read_seanim`); use it to load a rest pose. A Python SEAnim reader and writer exist here; nothing here writes `.anm`.
+`seanim_writer.py` has a working reader, `read_seanim`, for loading a rest pose. Nothing here writes `.anm`.
 
-## The wall
+The viewer's quaternions are local to the rig's bones; DayZ's `.anm` and SEAnim bone frame puts a chain child on X (finger offsets in a vanilla DayZATool extract are `(length, 0, 0)`), and SEAnim translations are in centimetres. One change of basis per rig reconciles them ("Bone frame maps per rig"). A viewer SEAnim is valid in structure and right in the rig, and only the game says it is right for DayZ.
 
-The graph wall applies only when the plan replaces the player graph. A weapon animation bound through a child `.asi` replaces nothing and loads next to other mods (`anim-graphs.md`, "Which changes collide"). Do not state the wall on a weapon animation plan that binds through a child `.asi`.
+A weapon animation bound through a child `.asi` replaces no graph and loads next to other mods (`anim-graphs.md`, "Which changes collide"); do not raise the graph wall on such a plan.
 
-## A fuller viewer: what a second pass adds
+## A fuller viewer
 
-A later version of this viewer (2026-07-05) went well past the page `build_viewer.py` writes. Its state, for anyone extending that page:
+A later version of the viewer went well past what `build_viewer.py` writes. For anyone extending the page:
 
-- **Rig.** The plugin's master rig (151 bones, mesh `zMale_body`, scale 1) in place of the 114 bone FBX with its two spaces.
-- **Start pose.** The real in-game grip, read off the live skeleton with a bone dump (`weapon-in-hands.md`, "The elbow cannot be derived offline"): hands and fingers within 0 to 0.4 cm of the game, and the elbow the one the engine's IK resolved.
-- **Finger sliders.** Absolute, per finger and thumb: 0 is an open hand, 100 a fist; the thumb at 100 moves toward the in-game aim grip. They are baked into the base pose, not applied as a layer each frame.
-- **Hyperextension guard.** Elbow and knee by the signed angle in the flexion plane (limit 178 degrees), the wrist by quaternion magnitude; a red joint dot and a warning line.
-- **Editing.** Forward kinematics on any bone (click a joint dot for a gizmo, sized down for finger bones), move everything, undo and redo, mirror left and right, a filterable list of the 151 bones. The weapon follows the right hand rigidly.
-- **Two export routes to `.anm`**, both checked by reading back offline, with the game as the judge:
-  - **Route A, the standard one.** Dump the viewer's world pose and write a `.txa` through the Blender plugin; Workbench compiles it. It handles root motion. Use this for the grip. No script for this route ships here.
-  - **Route C, command line.** `seanim_export.py` (`skills/dayz-animation-pipeline/scripts/`), then `DayZATool --generate-anim <f>.seanim 100`. Rotations and rest only. On the plugin's master rig the quaternion map is exact on the fingers, but `LeftHand` does not obey it (the wrist is a separate process), so do not use Route C for the support hand's wrist. Route C is also not valid for full body action clips (jam, unjam, melee): a melee strike on a rifle (2026-06-30) confirmed that full body goes through Route A. Use Route C for weapon bone and partial tracks only.
+- Rig: the plugin's master rig (151 bones, mesh `zMale_body`, scale 1) instead of the 114 bone FBX with its two spaces.
+- Start pose: the real in game grip, read off the live skeleton with a bone dump (`weapon-in-hands.md`, "The elbow cannot be derived offline"), hands and fingers within 0.4 cm of the game and the elbow as the engine's IK solved it.
+- Finger sliders: absolute per finger and thumb, 0 an open hand and 100 a fist (the thumb at 100 moves to the in game aim grip), baked into the base pose rather than layered each frame.
+- Overextension guard: elbow and knee by signed angle in the bending plane (limit 178 degrees), wrist by quaternion size, with a red joint dot and a warning.
+- Editing: forward kinematics on any bone through a gizmo (smaller on fingers), move all, undo and redo, mirror left and right, a filterable list of the 151 bones. The weapon follows the right hand rigidly.
+- Two export routes, both read back offline with the game as judge. The `.txa` route dumps the viewer's world pose and writes a `.txa` through the Blender plugin for Workbench to compile; it handles root motion and is the one for grips and full body clips (no script for it ships here). The SEAnim route is `seanim_export.py` then `DayZATool --generate-anim <f>.seanim 100`: rotations and rest only, for weapon bone and partial tracks. On the master rig its map is exact on the fingers, but `LeftHand` does not follow it, so never use it for the support wrist; and a melee strike on a rifle showed full body action clips (jam, unjam, melee) need the `.txa` route.
 
-### Authoring a grip with the viewer
+A grip is set by three levers (`weapon-in-hands.md`), and posing the wrist is not one: the firearms behaviour and an IK pose; geometric parity, moving the weapon to where the IK pose lands the hand (+2.4 cm on one rifle, done with the viewer's place weapon on hand function or the weapon gizmo); and finger curl, the one part of the hand the IK pose visibly drives. The viewer serves the last two. Turning `LeftHand` in the IK pose does almost nothing.
 
-Verified in game on one rifle. The grip is set by three levers, and "posing the wrist" is not one of them (`weapon-in-hands.md`):
+A native IK pose export is not worth it: a real IK pose keys eight IK bones the viewer's rig lacks (the two hand IK targets, two hand origins, two forearm directions and their origins) plus the fingers and `_Dummy` bones, and working mods reuse vanilla IK poses with matching geometry.
 
-1. the firearms behaviour and an IK pose;
-2. geometric parity: move the weapon to where the IK pose lands the hand (the fix on that weapon was +2.4 cm), with the viewer's place weapon on hand function or the weapon gizmo;
-3. finger curl, the one thing about the hand that the IK pose drives visibly.
+## Bone frame maps per rig
 
-The viewer serves levers 2 and 3. Rotating `LeftHand` in the IK pose does almost nothing.
-
-### A native IK pose export is not trivial
-
-A real IK pose keys eight IK bones that the viewer's rig lacks (the two hand IK targets, the two hand origins, the two forearm directions and their origins) plus fingers and the `_Dummy` bones. A usable export would have to synthesize those eight from the viewer's pose. The return is doubtful, since working mods reuse vanilla IK poses with matching geometry.
-
-## Route C bone-frame maps, per rig
-
-Dated 2026-10-02. One change of basis per rig takes the viewer's bone frame to DayZ's. The bone axis differs between the two rigs: child offsets lie on ±X in `rig_dayz.json` (the FBX rig) and on ±Y in the plugin master rig's JSON. `--rest-pose` does not rebase rotations; it only masks bones.
+One change of basis per rig takes the viewer's bone frame to DayZ's. Child offsets lie on ±X in `rig_dayz.json` (the FBX rig) and on ±Y in the master rig's JSON. `--rest-pose` does not rebase rotations; it only masks bones.
 
 `seanim_export.py` reads the rig family from the rest offsets:
 
-- **Bone axis.** Chain children of `Left` bones sit on the positive side of one axis and children of `Right` bones on the negative side (Y in the master rig, X in the FBX rig). Only anatomical chains count (shoulder, arm, forearm, hand, finger, leg and foot bones and their roll bones), so helpers such as `RightHand_Dummy`, which the master rig holds at the grip, and its child `Weapon_Root` do not.
-- **Roll.** Through the chosen map, the direction from `LeftShoulder` to `RightShoulder` (in `Spine3`) and from `RightHandRing` to `RightHandIndex1` (in each hand) must lie within 2 degrees of vanilla's direction across the bone. Both rigs read within 0.07 degrees.
-- **Refusals.** Any other rig (a native Blender one, one mixing frames, one rolled about its bone axes by 2 degrees or more on `Spine3` or a hand), an animation bone missing from the rig, and a `--rest-pose` file that does not exist.
-- **Not seen.** A smaller roll, which tilts a rotation of angle α by up to `4·asin(sin(α/2)·sin(roll/2))` (about 2.8 degrees for a 90 degree turn under a 2 degree roll), and a roll confined to bones those pairs do not reach.
+- Bone axis: chain children of `Left` bones lie on the positive side of one axis and of `Right` bones on the negative side (Y on the master rig, X on the FBX rig). Only anatomical chains count, so helpers such as `RightHand_Dummy`, which the master rig holds at the grip, and its child `Weapon_Root` do not.
+- Roll: through the chosen map, `LeftShoulder` to `RightShoulder` (in `Spine3`) and `RightHandRing` to `RightHandIndex1` (in each hand) must lie within 2 degrees of vanilla's across the bone direction. Both rigs read within 0.07 degrees.
+- It refuses any other rig (a native Blender one, one mixing frames, one rolled 2 degrees or more on `Spine3` or a hand), an animation bone missing from the rig, and a missing `--rest-pose` file. A smaller roll passes and tilts a rotation of angle α by up to `4·asin(sin(α/2)·sin(roll/2))`, about 2.8 degrees for a 90 degree turn under a 2 degree roll.
 
-Both maps mirror (determinant −1): offsets go through `M`, the vector part of a quaternion through `−M`, and `w` is unchanged.
+Both maps mirror (determinant -1): offsets go through `M`, a quaternion's vector part through `-M`, and `w` is unchanged.
 
-| Rig | Rotation `(x,y,z,w)` becomes | Rest offset `(x,y,z)` in m becomes, in cm (×100) | Status |
+| Rig | Rotation `(x,y,z,w)` becomes | Rest offset `(x,y,z)` in m becomes, in cm | Status |
 |---|---|---|---|
-| Plugin master rig | `(−y,−z,x,w)` | `(y,z,−x)` | Calibrated 2026-06-29 against a reference extracted with DayZATool (the plugin's sample fire `.txa` against the `.anm` extract): exact to 0.00 degrees over 73 bone and frame pairs. |
-| Bohemia FBX rig, `rig_dayz.json` from `build_rig_dayz.py` | `(−x,−z,−y,w)` | `(x,z,y)` | Derived offline 2026-10-02: the calibrated map after the turn measured below; no rotation pair. In game the same day one `LeftArm` pose played as authored through it and wrong through the master rig's map. |
+| Plugin master rig | `(-y,-z,x,w)` | `(y,z,-x)` | Calibrated against a DayZATool extract (the plugin's sample fire `.txa` against the `.anm`): exact to 0.00 degrees over 73 bone and frame pairs. |
+| Bohemia FBX rig (`rig_dayz.json`) | `(-x,-z,-y,w)` | `(x,z,y)` | Derived offline from the master rig's map and the turn below. In game one `LeftArm` pose played as authored through it and wrong through the master rig's map. |
 
-**Measured offline, 2026-10-02** (the FBX rig rebuilt by `fbx_extract.py` and `build_rig_dayz.py`). The FBX rig's bone frames are the master rig's turned 90 degrees about Z, `q_fbx = (y,−x,z,w)` of the master rig's: 113 of 114 rest rotations agree within 1 degree (the root `Pelvis`, relative to the world, differs by that turn) and 109 of 113 rest offsets point the same way within 2.6 degrees (the four eyelid bones differ). The FBX rig is 1.2 percent larger. Against DayZATool extracts of vanilla clips: rest offsets through the master rig's map match 78 of 78 bones of `p_erc_attackl_inplace_01_ras` within 5 degrees (median 0.00, length ratio 1.000); the FBX rig through that same map matches 0 of 77 (median 90 degrees), and through its own map 77 of 77 (median 0.00, ratio 1.012). A second reference splits the same way (35 of 36, 0 of 34, 34 of 34). Rotations: against frame 0 of the vanilla `p_1hd_erc_idle_low` (absolute: rest rotations of 180 degrees read 175 to 180 there), the FBX rig's rest through its own map lands within 0.87 degrees per bone of where the master rig's map lands the master rig (60 bones); through the master rig's map six bones land 90 degrees or more off (`RightShoulder` by 176.9). The regression test is `test_seanim_export.py` next to the script.
+Offline, the FBX rig's bone frames are the master rig's turned 90 degrees about Z, `q_fbx = (y,-x,z,w)`: 113 of 114 rest rotations agree within 1 degree (the root `Pelvis` differs by that turn) and 109 of 113 rest offsets point the same way within 2.6 degrees (the four eyelid bones differ); the FBX rig is 1.2 percent larger. Against DayZATool extracts, the FBX rig's rest offsets match 77 of 77 bones of `p_erc_attackl_inplace_01_ras` within 5 degrees through its own map and 0 of 77 through the master's. Against frame 0 of the vanilla `p_1hd_erc_idle_low`, its rest rotations through its own map land within 0.87 degrees of the master rig's through the master's map (60 bones); through the master's map six land 90 degrees or more off. The test is `test_seanim_export.py` next to the script.
 
-**Played in game, 2026-10-02** (DayZDiag 1.29.163709, one run). `LeftArm` alone was keyed on the FBX rig in Blender 5.1.1, straight ahead and 20 degrees above horizontal: a turn mostly about the bone's own X and Y, where the two maps disagree (the sideways raise in `blender-headless-authoring.md` turns about Z, which both maps read alike). The pose went through `seanim_export.py`, which read the rig as the FBX family, and for comparison through the master rig's map. Each output's `LeftArm` track was spliced alone into the DayZATool extract of the vanilla one handed idle `p_1hd_erc_idle_low.anm`, built with `DayZATool --generate-anim` and played through a child `.asi` of `player_main_1h_fruit.asi` on an item held in the right hand. Through the FBX map the left arm reached forward of the chest, slightly above horizontal. Through the master rig's map it stuck out to the character's left, a little behind the shoulder line. A second take of each agreed, and each landed on the side that offline forward kinematics on the vanilla idle predicted (elevation was not measured). The character's front was read as +Z of that clip's SEAnim space (left −X, up +Y): its toes point to +Z, its forearms swing toward +Z of the upper arms and its shins toward −Z of the thighs. Scope: one bone, rotations only (the bone offsets came from the vanilla clip, so the offset map was not exercised), one run; the master rig was not played.
+In game, one run: `LeftArm` alone keyed on the FBX rig straight ahead and 20 degrees up, a turn mostly about the bone's own X and Y where the maps disagree, was exported both ways, spliced alone into the DayZATool extract of `p_1hd_erc_idle_low.anm`, built and played through a child `.asi` of `player_main_1h_fruit.asi`. Through the FBX map the arm reached forward of the chest; through the master's it stuck out to the left. That clip's front is +Z in SEAnim space (left -X, up +Y). Only one bone and rotations were exercised.
 
 What the maps do not cover:
 
-- **The root.** `EntityPosition`, `Pelvis` and any bone without a parent are relative to the viewer's world. Neither map applies, and the script warns when it exports one.
-- **A full body action.** In game the master rig's map has played one, a melee strike on a rifle (2026-06-30). With root, pelvis and legs included, the player flopped. Masked to the vanilla bone set, the player stood but the weapon went to the back: `RightHand_Dummy` was written at the rig's offset, which is not the bind one. Head and body came right through Route A. The bone convention is the suspected cause, but the switch changed more than the rotation map, so the cause is not isolated. Route C stays for weapon bone and partial tracks.
-- **`--rest-pose <vanilla.seanim>`** writes only the reference's bones (in game this fixed the flop). Every position comes from the rig, not from the reference: DayZATool marks most bones of vanilla action extracts RELATIVE through SEAnim bone modifiers (61 of 73 in `p_erc_jam_pm73_ras`, with `Spine` to `Head` at `(0,0,0)`), and in SEAnim a RELATIVE translation is an offset from rest inherited by child bones, while this script writes an ABSOLUTE clip (`read_seanim` returns the modifiers; the export writes none). That is the split described in `weapon-anim-blender.md`, "Two conventions for what a key means". Taking the reference's positions and writing those zeros as offsets is not implemented in `seanim_export.py`.
-- **A bone the viewer rig holds off bind is written off bind.** The master rig's `RightHand_Dummy`, which the viewer moved to the grip (`(51.8, −29.3, 4.8)` cm through the map), sent the weapon to the back in game. The confirmed strike dropped it, and the `Weapon_` bones, from the clip. Leave them out of the reference.
-- **Bolt travel.** `Weapon_` positions per frame are not supported: the viewer page does not export them, and the script warns about and ignores positions per frame in an animation.
+- The root: `EntityPosition`, `Pelvis` and any bone without a parent are relative to the viewer's world. Neither map applies, and the script warns when it exports one.
+- A full body action: a melee strike through the master's map flopped the player with root, pelvis and legs in, and sent the weapon to the back when masked to the vanilla bone set, because `RightHand_Dummy` was written at the rig's off bind offset. Head and body came right through the `.txa` route. The cause is not isolated.
+- `--rest-pose <vanilla.seanim>` writes only the reference's bones (in game this fixed the flop), but every position comes from the rig. DayZATool marks most bones of vanilla action extracts RELATIVE (61 of 73 in `p_erc_jam_pm73_ras`, `Spine` to `Head` at `(0,0,0)`), an offset from rest inherited by children, while this script writes an ABSOLUTE clip (`weapon-anim-compile.md`, "Two conventions for what a key means"). Taking the reference's positions is not implemented.
+- A bone the rig holds off bind is written off bind: the master rig's `RightHand_Dummy` at the grip (`(51.8, -29.3, 4.8)` cm through the map) sent the weapon to the back. Leave it and the `Weapon_` bones out of the reference.
+- Bolt travel: per frame `Weapon_` positions are not exported by the page, and the script ignores per frame positions with a warning.

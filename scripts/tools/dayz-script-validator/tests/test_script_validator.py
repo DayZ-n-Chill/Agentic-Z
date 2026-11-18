@@ -418,7 +418,7 @@ class TestEsEmptyIfdef(unittest.TestCase):
         "1.30.164289 a block holding only a comment compiled and ran on server "
         "and client, at file scope, in a class body and in a method body, with "
         "a macro DayZDiag defines and with one nobody defines "
-        "(skills/_shared/enscript/depth/pitfalls-advanced.md, section 5). Not "
+        "(skills/_shared/enscript/depth/pitfalls-advanced.md, section 'Empty #ifdef blocks'). Not "
         "measured: a block with nothing at all inside, a retail build, DayZ "
         "1.29. Remove the block if it holds no code."
     )
@@ -1354,7 +1354,7 @@ class TestEsRefAutoptrCombined(unittest.TestCase):
         self.assertEqual("WARN", warning["severity"])
         self.assertEqual("warn_ref_autoptr_combined.c", warning["file"])
         self.assertEqual(3, warning["line"])
-        self.assertIn("skills/_shared/enscript/depth/hard-rules.md, rule 13", warning["message"])
+        self.assertIn("skills/_shared/enscript/depth/hard-rules.md, section 'Memory'", warning["message"])
         assert_standard_findings(self, result)
 
     def test_autoptr_ref_combined_warns(self):

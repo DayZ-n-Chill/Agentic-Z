@@ -1,10 +1,10 @@
-# config.cpp Patterns for DayZ Mods
+# Mod config.cpp
 
-## Structure Overview
+What a script mod's `config.cpp` declares: `CfgPatches`, the script modules in `CfgMods`, item and kit classes, the item keys script reads, hidden selections, the matching `model.cfg` and `$PBOPREFIX$`.
 
-Every DayZ mod needs a `config.cpp` defining its classes and dependencies.
+## Patches and script modules
 
-```
+```cpp
 class CfgPatches
 {
     class MyMod
@@ -22,164 +22,134 @@ class CfgMods
     {
         type = "mod";
         dependencies[] = { "Game", "World", "Mission" };
-
         class defs
         {
-            class worldScriptModule
-            {
-                value = "";
-                files[] = { "MyMod/scripts/4_World" };
-            };
-            class missionScriptModule
-            {
-                value = "";
-                files[] = { "MyMod/scripts/5_Mission" };
-            };
-            class gameScriptModule
-            {
-                value = "";
-                files[] = { "MyMod/scripts/3_Game" };
-            };
+            class gameScriptModule    { value = ""; files[] = { "MyMod/scripts/3_Game" }; };
+            class worldScriptModule   { value = ""; files[] = { "MyMod/scripts/4_World" }; };
+            class missionScriptModule { value = ""; files[] = { "MyMod/scripts/5_Mission" }; };
         };
     };
 };
 ```
 
-## CfgVehicles — Entity Definitions
+`3_Game` compiles first, then `4_World`, then `5_Mission`. A later module can use an earlier one's classes, never the reverse; what goes where is in `script-layers.md`.
 
-### Basic Item (Inventory_Base)
+## Rules for every class
 
-```
+| Rule | Why |
+|---|---|
+| `scope = 2` to show in public lists and tools that filter on it; `scope = 1` still lets script create the class; `scope = 0` hides it | Vanilla gives `LargeTentClutterCutter` `scope = 1` (`P:\DZ\gear\camping\config.cpp:1454` to `:1456`) and creates it with `CreateObjectEx` (`P:\scripts\4_world\entities\itembase\tentbase\largetent.c:140`) |
+| List every class in `units[]` | The engine tolerates a patch without it (`DZ_data_aiconfigs` has an empty body, `P:\DZ\data\aiconfigs\config.cpp:3` to `:5`), but `/dayz-lint` warns |
+| `requiredAddons[]` names every addon your classes inherit from | |
+| Forward declare a parent (`class Inventory_Base;`) before using it | |
+| Close every class with `};` and leave no comma after the last array element | |
+| Write each class name with the same case everywhere | Whether config lookups ignore case is not checked on `P:\` |
+
+## A basic item
+
+```cpp
 class CfgVehicles
 {
     class Inventory_Base;
-
     class MyMod_Device: Inventory_Base
     {
-        scope = 2;                    // 2 = visible in-game, 0 = hidden
+        scope = 2;
         displayName = "$STR_MYMOD_DEVICE";
         descriptionShort = "$STR_MYMOD_DEVICE_DESC";
         model = "\MyMod\data\mydevice\mydevice.p3d";
-        weight = 500;                 // grams
-        itemSize[] = { 3, 3 };        // inventory slots (width, height)
-        rotationFlags = 17;           // rotation in inventory
-        storageCategory = 1;          // enables persistence
+        weight = 500;
+        itemSize[] = { 3, 3 };
+        rotationFlags = 17;
+        storageCategory = 1;
         hiddenSelections[] = { "camo", "light_led" };
         hiddenSelectionsTextures[] = { "\MyMod\data\mydevice\texture.paa" };
         hiddenSelectionsMaterials[] = { "\MyMod\data\mydevice\material.rvmat" };
-
         class AnimationSources
         {
-            class led_state
-            {
-                source = "user";
-                animPeriod = 0.01;
-                initPhase = 0;
-            };
+            class led_state { source = "user"; animPeriod = 0.01; initPhase = 0; };
         };
     };
 };
 ```
 
-### Kit Item (Deployable)
+`weight` is in grams and `itemSize[]` is width and height in inventory cells.
 
-```
-class CfgVehicles
+## A kit
+
+In config a kit inherits from `Inventory_Base`, as vanilla kits do (`FenceKit`, `P:\DZ\gear\camping\config.cpp:2955`). `DeployableContainer_Base` is a script class only (`P:\scripts\4_world\entities\itembase\container_base.c:32`); no vanilla config declares it, and a kit that named it as its config parent was invisible in game (measured in game).
+
+```cpp
+class MyMod_Device_Kit: Inventory_Base
 {
-    class Inventory_Base;
-
-    // In config a kit inherits from Inventory_Base, as vanilla kits do
-    // (FenceKit, P:\DZ\gear\camping\config.cpp:2955).
-    // DeployableContainer_Base is a script class only
-    // (P:\scripts\4_world\entities\itembase\container_base.c:32); no vanilla
-    // config declares it. A kit that named it as its config parent was
-    // invisible in game (measured in game twice).
-    class MyMod_Device_Kit: Inventory_Base
+    scope = 2;
+    displayName = "$STR_MYMOD_DEVICE_KIT";
+    model = "\MyMod\data\kits\kit_box.p3d";
+    weight = 800;
+    itemSize[] = { 2, 2 };
+    rotationFlags = 17;
+    class Placement
     {
-        scope = 2;
-        displayName = "$STR_MYMOD_DEVICE_KIT";
-        descriptionShort = "$STR_MYMOD_DEVICE_KIT_DESC";
-        model = "\MyMod\data\kits\kit_box.p3d";
-        weight = 800;
-        itemSize[] = { 2, 2 };
-        rotationFlags = 17;
-
-        // Kit placement configuration. Not vanilla: no config under P:\DZ and
-        // no script under P:\scripts reads `class Placement` or `deployableModel`,
-        // so only the mod's own script reads these values.
-        class Placement
-        {
-            // If kit and deployed model are different:
-            deployableModel = "\MyMod\data\mydevice\mydevice.p3d";
-            // If same model (camera/door controller pattern): omit deployableModel
-        };
-
-        // hiddenSelections for kit appearance
-        hiddenSelections[] = { "camo" };
-        hiddenSelectionsTextures[] = { "\MyMod\data\kits\kitboxtexture.paa" };
-        hiddenSelectionsMaterials[] = { "\MyMod\data\kits\kit_box.rvmat" };
+        deployableModel = "\MyMod\data\mydevice\mydevice.p3d";   // omit when kit and device share a model
     };
+    hiddenSelections[] = { "camo" };
+    hiddenSelectionsTextures[] = { "\MyMod\data\kits\kitboxtexture.paa" };
 };
 ```
 
-### Important config.cpp Rules
+`class Placement` and `deployableModel` are not vanilla: no config under `P:\DZ` and no script under `P:\scripts` reads them, so only the mod's own script uses these values.
 
-1. **`scope`** — Creation by script works with `scope = 1`: [EXACT] vanilla gives `LargeTentClutterCutter` `scope = 1` (`P:\dz\gear\camping\config.cpp:1454-1456`) and creates it from script with `CreateObjectEx` (`P:\scripts\4_world\entities\itembase\tentbase\largetent.c:140`). Exposure in public lists/tools that filter by scope 2 needs `scope = 2`. `scope = 0` hides them.
-2. **`units[]`** — List all your classes here. The engine tolerates a patch class without it (vanilla `DZ_data_aiconfigs` has an empty body, `P:\DZ\data\aiconfigs\config.cpp:3-5`); `/dayz-lint` reports the missing array as a warning.
-3. **`requiredAddons[]`** — Must include addons your classes inherit from.
-4. **Forward declare parent classes** — `class Inventory_Base;` before using as parent.
-5. **Semicolons after closing braces** — Every `};` needs the semicolon.
-6. **No trailing comma in arrays** — Last element must not have comma.
-7. **Case** — Write a class name with the same case everywhere. Whether config lookups are case-sensitive is not yet checked on `P:\`.
+## Item keys script reads
 
-8. **`ItemBaseType` keys (1.30)** — script reads these from the item's `CfgVehicles` class at type construction (`P:\scripts\4_world\entities\itembasetype.c:55-138`): `headSelectionsToHide`, `hideSelectionsByinventorySlot`, `varWetMax` / `varWetInit` / `varWetMin`, `quickBarBonus`, `itemModelLength`, `itemAttachOffset`, `temperaturePerQuantityWeight`, `EnvironmentWetnessIncrements` (Soaking `parentWithLiquid`/`wetParent`, Drying `player`/`ground`/`playerHeatSource`/`groundHeatSource`), `compatibleLocks`, `lockType`. Instance fields that 1.29 mods stored on the item may now be type-cached — put the values in config, not only on the script instance.
-8a. **More item flags read by script (1.30.164289).** `canBeSplit` (stack can be split and combined; `P:\scripts\4_world\entities\itembasetype.c:58-59`, used in `P:\scripts\4_world\entities\itembase.c:183`), `quantityBar` (show a quantity bar instead of a count; `P:\scripts\4_world\entities\itembasetype.c:74`), `canBeDigged` (can be buried; `P:\scripts\4_world\entities\itembasetype.c:94`, `ItemBase.CanBeDigged()` `P:\scripts\4_world\entities\itembase.c:924-927`) and `heavyItem` (taking it to hands plays the full-body heavy pick-up, `CMD_ACTIONFB_PICKUP_HEAVY`; `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiontakematerialtohands.c:114-122`). All paths under `scripts/4_World/`. Vanilla gear also sets `absorbency` and `lootTag[]`, which no script reads; their engine meaning is not documented here.
-9. **`GUIInventoryAttachmentsProps`** — resolved by `TypeAttachmentGroupsDataHolder` (`P:\scripts\3_game\entities\typeattachmentgroupdataholders.c:39`) under weapons / magazines / vehicles. Vicinity category reach is a 1.5 m dome (`P:\scripts\5_mission\gui\inventorynew\inherited\attachmentcategoriesrow.c:764`).
-10. **Rebuilding slots `RB_LvL*`** — `CfgSlots` in `P:\scripts\config.cpp:2915` (`Slot_RB_LvL1_Log`, `name = "RB_LvL1_Log"`, `stackMax = 15`) plus LvL1/2/3 plank/nail/sheet/brick/wire/mortar and LvL1/2 rope/stick. Also new: `Slot_Att_CodeLock*`, `Slot_Att_CombinationLock*_Wood/Metal`, `Slot_NBC*`, motorbike wheel/shield slots. Duplicate members inside one class now fail the binarizer (see `skills/dayz-build-pbo/references/dayz-1-30-pbo-build.md`).
+In DayZ 1.30 `ItemBaseType` reads these keys from the item's `CfgVehicles` class when the type is built (`P:\scripts\4_world\entities\itembasetype.c:55` to `:138`). Values a 1.29 mod kept on the script instance may now be cached per type, so put them in config.
 
-### hiddenSelections System
+| Key | Effect | Source |
+|---|---|---|
+| `headSelectionsToHide`, `hideSelectionsByinventorySlot` | Selections hidden when worn | `itembasetype.c:55` to `:138` |
+| `varWetMax`, `varWetInit`, `varWetMin` | Wetness range | same |
+| `quickBarBonus`, `itemModelLength`, `itemAttachOffset`, `temperaturePerQuantityWeight` | Item behaviour values | same |
+| `EnvironmentWetnessIncrements` | Soaking (`parentWithLiquid`, `wetParent`) and drying (`player`, `ground`, `playerHeatSource`, `groundHeatSource`) | same |
+| `compatibleLocks`, `lockType` | Lock matching | same |
+| `canBeSplit` | The stack can be split and combined | `itembasetype.c:58` and `:59`; used at `P:\scripts\4_world\entities\itembase.c:183` |
+| `quantityBar` | Shows a bar instead of a count | `itembasetype.c:74` |
+| `canBeDigged` | The item can be buried | `itembasetype.c:94`; `ItemBase.CanBeDigged()` at `itembase.c:924` to `:927` |
+| `heavyItem` | Taking it to hands plays the full body heavy pick up, `CMD_ACTIONFB_PICKUP_HEAVY` | `P:\scripts\4_world\classes\useractionscomponent\actions\interact\actiontakematerialtohands.c:114` to `:122` |
 
-hiddenSelections allow runtime texture/material swaps:
+Vanilla gear also sets `absorbency` and `lootTag[]`, which no script reads; their engine meaning is not covered here. Vanilla spells `hideSelectionsByinventorySlot` with a lower case `i`; keep that spelling.
 
-```
-// In config.cpp — declare selections
+## Inventory groups and slots
+
+- `GUIInventoryAttachmentsProps` is resolved by `TypeAttachmentGroupsDataHolder` (`P:\scripts\3_game\entities\typeattachmentgroupdataholders.c:39`) under weapons, magazines and vehicles. The vicinity category reaches 1.5 m (`P:\scripts\5_mission\gui\inventorynew\inherited\attachmentcategoriesrow.c:764`).
+- Rebuilding slots: `CfgSlots` in `P:\scripts\config.cpp:2915` declares `Slot_RB_LvL1_Log` (`name = "RB_LvL1_Log"`, `stackMax = 15`) and the level 1 to 3 plank, nail, sheet, brick, wire and mortar slots, plus level 1 and 2 rope and stick. Also present: `Slot_Att_CodeLock*`, `Slot_Att_CombinationLock*_Wood` and `_Metal`, `Slot_NBC*`, and the motorbike wheel and shield slots.
+- A duplicate member inside one class fails the binarizer in DayZ 1.30 (see `skills/dayz-build-pbo/references/dayz-1-30-pbo-build.md`).
+
+## Hidden selections
+
+Declare the selections in config, one texture and one material per index:
+
+```cpp
 hiddenSelections[] = { "camo", "light_led", "screen" };
-hiddenSelectionsTextures[] = {
-    "\MyMod\data\mydevice\texture.paa",   // [0] camo
-    "",                                           // [1] light_led (set by script)
-    "\MyMod\data\mydevice\screen.paa"      // [2] screen
-};
-hiddenSelectionsMaterials[] = {
-    "\MyMod\data\mydevice\material.rvmat",
-    "\MyMod\data\mydevice\led_off.rvmat",
-    "\MyMod\data\mydevice\screen.rvmat"
-};
+hiddenSelectionsTextures[] = { "\MyMod\data\mydevice\texture.paa", "", "\MyMod\data\mydevice\screen.paa" };
+hiddenSelectionsMaterials[] = { "\MyMod\data\mydevice\material.rvmat", "\MyMod\data\mydevice\led_off.rvmat", "\MyMod\data\mydevice\screen.rvmat" };
 ```
 
-```
-// In script — swap material at runtime
-string rvmatOn = "\MyMod\data\mydevice\led_on.rvmat";
-int selIndex = 1;  // light_led
-SetObjectMaterial(selIndex, rvmatOn);
+Swap them from script by index:
 
-// Swap texture at runtime
-string texAlt = "\MyMod\data\mydevice\texture_alt.paa";
-int texIndex = 0;  // camo
-SetObjectTexture(texIndex, texAlt);
+```c
+SetObjectMaterial(1, "\MyMod\data\mydevice\led_on.rvmat");    // index 1, light_led
+SetObjectTexture(0, "\MyMod\data\mydevice\texture_alt.paa");  // index 0, camo
 ```
 
-**Critical**: The index in `SetObjectMaterial`/`SetObjectTexture` corresponds to the position in the `hiddenSelections[]` array. The selection name in the p3d model must match exactly.
+The index is the position in `hiddenSelections[]`, and each name must match a selection in the model exactly. An empty texture string leaves that slot for script to fill.
 
-### model.cfg for Animations
+## The model.cfg side
 
-```
+```cpp
 class CfgModels
 {
     class MyMod_Device
     {
         sectionsInherit = "";
         sections[] = { "camo", "light_led", "screen" };
-
         class Animations
         {
             class led_state
@@ -192,38 +162,35 @@ class CfgModels
                 minValue = 0;
                 maxValue = 1;
                 angle0 = 0;
-                angle1 = 0.01;  // minimal rotation for state change
+                angle1 = 0.01;
             };
         };
     };
 };
 ```
 
-## $PBOPREFIX$ File
+A rotation of 0.01 is enough to switch a state the model shows by animation.
 
-Required at mod root for DayZ to resolve baked p3d paths to correct PBO namespace:
+## `$PBOPREFIX$`
 
-```
-// File: $PBOPREFIX$
-// Content (single line, no trailing newline):
+Put a `$PBOPREFIX$` file at the mod root holding the prefix on one line, with no trailing newline:
+
+```text
 MyMod
 ```
 
-Without this file, all model/texture/material paths that reference `\MyMod\...` will fail to resolve at runtime.
+Without it, model, texture and material paths that start `\MyMod\...` do not resolve at runtime.
 
-## Script Module Organization
+## Folder layout
 
-```
+```text
 MyMod/
-├── config.cpp
-├── $PBOPREFIX$
-├── scripts/
-│   ├── 3_Game/       ← Shared utilities, settings, data classes
-│   ├── 4_World/      ← Entity scripts, device logic, actions
-│   └── 5_Mission/    ← UI code, menus, HUD overlays
-├── data/             ← Models, textures, materials
-└── gui/
-    └── layouts/      ← .layout UI files
+  config.cpp
+  $PBOPREFIX$
+  scripts/
+    3_Game/      shared helpers, settings, data classes
+    4_World/     entity scripts, device logic, actions
+    5_Mission/   UI, menus, HUD
+  data/          models, textures, materials
+  gui/layouts/   .layout files
 ```
-
-**Loading order matters**: 3_Game loads first, then 4_World, then 5_Mission. Classes in 4_World can use 3_Game classes but not vice versa.

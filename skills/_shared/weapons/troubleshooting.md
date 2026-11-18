@@ -1,10 +1,12 @@
-# Checks before the first test, and symptoms
+# Weapon troubleshooting
 
-What to check offline before the first in-game test of a custom firearm, and where to look when it misbehaves. Each line points to the pack file that holds the fact; nothing here is a fact of its own.
+What to check offline before the first in-game test of a custom firearm, and where to look when it misbehaves. Each line points to the pack file that holds the fact.
 
 ## Compare with the gun you inherit
 
-Pick the vanilla or third-party weapon whose ammo, magazines, recoil, sounds and animations you want (the AKM for an AK pattern rifle, the AKS-74U or PM73 RAK for an SMG), read its config and a readable copy of its model, and match them: the same selection names, memory points laid out the same way, and a config base chosen for its behaviour. The vanilla weapon models on `P:\` are binarized (for example `P:\DZ\weapons\firearms\pm73rak\pm73rak.p3d`, named at `P:\DZ\weapons\firearms\pm73rak\config.cpp:201`), and Agentic-Z ships no debinarizer, so the comparison uses the vanilla config and scripts plus a readable model you have the right to open; `/dayz-p3d-audit` reads the mod's own MLOD source.
+Pick the vanilla or third-party weapon whose ammo, magazines, recoil, sounds and animations you want: the AKM for an AK pattern rifle, the AKS-74U or PM73 RAK for an SMG. Read its config and a readable copy of its model, and match them: the same selection names, memory points laid out the same way, and a config base chosen for its behaviour.
+
+The vanilla weapon models on `P:\` are binarized (for example `P:\DZ\weapons\firearms\pm73rak\pm73rak.p3d`, named at `P:\DZ\weapons\firearms\pm73rak\config.cpp:201`), and this repo ships no debinarizer. Compare against the vanilla config and scripts plus a readable model you have the right to open; `/dayz-p3d-audit` reads the mod's own MLOD source.
 
 ## Before the first test
 

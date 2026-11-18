@@ -1,27 +1,21 @@
-# Color test harness: an in game panel that measures how UI colors are drawn
+# Color test panel
 
-`ColorTest` is a tiny diagnostic mod: F7 opens a panel with 10 swatches of known ARGB colors, so a screenshot shows how far the drawn colors sit from their hex values. It was written to measure the effect of `Widget.SetLV`.
+How to build a small diagnostic mod that shows ten swatches of known ARGB colors in game, and how to run the two screenshot comparison that tells you how far drawn colors sit from their hex values. Where UI colors come from is in `theme-and-color.md`.
 
-**This is a diagnostic harness, not a pattern to copy.** It calls `Widget.SetLV(0)` on purpose, to measure. A mod must not do this: `SetLV` and `SetTextLV` are `proto static` and global (`P:\scripts\1_core\proto\enwidgets.c:114-117`), and vanilla uses them to apply the brightness the player chose (`SetHudBrightness` at `P:\scripts\3_game\dayzgame.c:3910-3914`). When you run this test, put the value back when you close it. See `theme-and-color.md`, "Color system".
+This panel is a measuring tool, not a pattern to copy. It calls `Widget.SetLV(0)` on purpose. A mod never does: `SetLV` and `SetTextLV` are `proto static` and set one global value for every widget (`P:\scripts\1_core\proto\enwidgets.c:115` and `:117`), and vanilla uses them to apply the HUD brightness the player chose (`SetHudBrightness`, `P:\scripts\3_game\dayzgame.c:3910` to `:3914`). Close the game after each test so the player's value comes back.
 
-Two more things to know before you run it:
+The code is not checked in game on 1.30.
 
-- The harness paints its swatches with the procedural texture `#(argb,8,8,3)color(1,1,1,1,CO)`. Measured in game on DayZ 1.29: `ImageWidget.LoadImageFile` rejects that string ("Bad texture name"), which leaves the swatch without a texture (`checklist-and-troubleshooting.md`, rule 2). When the swatches come out wrong, ship a 1x1 white `.edds` and load that.
-- The result this harness produced was first read as "`SetLV(0)` fixes dark colors" and later retracted: it measured the test machine's HUD brightness setting (`fact-ledger.md`, finding 6).
+## What the result means
 
-The harness code below is not yet checked in game on 1.30.
+The darkening this panel measures is the player's HUD brightness setting, not a renderer fault. `SetLV` takes a value from -15 to 0, where lower is darker and 0 is the default (`enwidgets.c:114`). A test client whose brightness slider is turned down draws every swatch darker; `SetLV(0)` brightens them only because it overrides that setting. Design against the player's setting; never reset it (`engine-widget-facts.md`, "The global HUD brightness").
 
-## What it does
-- F7 opens a panel with 10 rectangles of known ARGB colors
-- Shows the hex value of each color next to it
-- Tests `Widget.SetLV(0)` upon opening to see if it normalizes colors
-- You take a screenshot of the panel and compare it with the expected hex values
-- Second test: comment out the SetLV(0) line, reload, screenshot again
-- Comparing both screenshots gives the exact darkening factor
+## The mod
 
-## Files
+Three files under `workspace/ColorTest/`. The swatches need a texture: a procedural texture string such as `#(argb,8,8,3)color(1,1,1,1,CO)` is rejected by `LoadImageFile` with "Bad texture name" (measured in game on 1.29; see `checklist-and-troubleshooting.md`, "Frames and panels draw nothing alone"), so ship a 1x1 white texture as `ColorTest/data/white.edds`.
 
-### config.cpp
+`config.cpp`:
+
 ```cpp
 class CfgPatches
 {
@@ -52,17 +46,11 @@ class CfgMods
 };
 ```
 
-### $PBOPREFIX$
-```
-ColorTest
-```
+`$PBOPREFIX$` holds the single line `ColorTest`.
 
-### scripts/5_Mission/ColorTest.c
+`scripts/5_Mission/ColorTest.c` builds the panel from script with `WorkspaceWidget.CreateWidget(type, left, top, width, height, flags, color, sort, parent)` (`P:\scripts\1_core\proto\enwidgets.c:179`) and toggles it on F7:
 
 ```c
-// ColorTest: DayZ color diagnostics
-// F7 opens and closes the panel
-
 class ColorTestPanel
 {
     protected static ref ColorTestPanel s_Instance;
@@ -72,197 +60,79 @@ class ColorTestPanel
     static void Toggle()
     {
         if (!s_Instance)
-        {
             s_Instance = new ColorTestPanel();
-        }
-
         if (s_Instance.m_Open)
-        {
             s_Instance.Close();
-        }
         else
-        {
             s_Instance.Open();
-        }
-    }
-
-    void ColorTestPanel()
-    {
-        m_Open = false;
     }
 
     void ~ColorTestPanel()
     {
         if (m_Root)
-        {
             m_Root.Unlink();
-        }
     }
 
     void Open()
     {
         if (!m_Root)
-        {
             Build();
-        }
-
         if (!m_Root)
-        {
             return;
-        }
-
-        // ===== TEST: SetLV(0) to normalize colors (diagnostic only) =====
-        // First test: with this line active. Screenshot.
-        // Second test: comment out this line. Screenshot.
+        // Test A keeps these two lines; test B comments them out.
         Widget.SetLV(0);
         Widget.SetTextLV(0);
-        // ==================================================
-
         m_Root.Show(true);
         m_Open = true;
-        Print("[ColorTest] Panel opened. SetLV(0) applied.");
     }
 
     void Close()
     {
         if (m_Root)
-        {
             m_Root.Show(false);
-        }
         m_Open = false;
-        Print("[ColorTest] Panel closed.");
+    }
+
+    protected Widget Add(WorkspaceWidget ws, WidgetType type, int x, int y, int w, int h, int color, int extraFlags)
+    {
+        int flags = WidgetFlags.VISIBLE | WidgetFlags.EXACTPOS | WidgetFlags.EXACTSIZE | WidgetFlags.IGNOREPOINTER | extraFlags;
+        return ws.CreateWidget(type, x, y, w, h, flags, color, 0, m_Root);
     }
 
     protected void Build()
     {
         WorkspaceWidget ws = GetGame().GetWorkspace();
         if (!ws)
-        {
-            Print("[ColorTest] ERROR: workspace null");
             return;
-        }
-
-        // Root frame
-        int rootFlags = WidgetFlags.VISIBLE;
-        rootFlags = rootFlags | WidgetFlags.EXACTPOS;
-        rootFlags = rootFlags | WidgetFlags.EXACTSIZE;
-        m_Root = ws.CreateWidget(FrameWidgetTypeID, 100, 100, 420, 520, rootFlags, 0, 50000);
+        m_Root = ws.CreateWidget(FrameWidgetTypeID, 100, 100, 420, 520, WidgetFlags.VISIBLE | WidgetFlags.EXACTPOS | WidgetFlags.EXACTSIZE, 0, 50000);
         if (!m_Root)
-        {
-            Print("[ColorTest] ERROR: could not create root");
             return;
-        }
 
-        // Background
-        int bgFlags = WidgetFlags.VISIBLE;
-        bgFlags = bgFlags | WidgetFlags.EXACTPOS;
-        bgFlags = bgFlags | WidgetFlags.EXACTSIZE;
-        bgFlags = bgFlags | WidgetFlags.IGNOREPOINTER;
-        bgFlags = bgFlags | WidgetFlags.STRETCH;
-        Widget bgW = ws.CreateWidget(ImageWidgetTypeID, 0, 0, 420, 520, bgFlags, ARGB(240, 20, 20, 20), 0, m_Root);
-        ImageWidget bg = ImageWidget.Cast(bgW);
+        ImageWidget bg = ImageWidget.Cast(Add(ws, ImageWidgetTypeID, 0, 0, 420, 520, ARGB(240, 20, 20, 20), WidgetFlags.STRETCH));
         if (bg)
-        {
-            string texPath = "#(argb,8,8,3)color(1,1,1,1,CO)";
-            bg.LoadImageFile(0, texPath);
-            bg.SetColor(ARGB(240, 20, 20, 20));
-        }
-
-        // Title
-        int txtFlags = WidgetFlags.VISIBLE;
-        txtFlags = txtFlags | WidgetFlags.EXACTPOS;
-        txtFlags = txtFlags | WidgetFlags.EXACTSIZE;
-        txtFlags = txtFlags | WidgetFlags.IGNOREPOINTER;
-        Widget titleW = ws.CreateWidget(TextWidgetTypeID, 10, 10, 400, 30, txtFlags, ARGB(255, 255, 255, 255), 0, m_Root);
-        TextWidget title = TextWidget.Cast(titleW);
+            bg.LoadImageFile(0, "ColorTest/data/white.edds");
+        TextWidget title = TextWidget.Cast(Add(ws, TextWidgetTypeID, 10, 10, 400, 30, ARGB(255, 255, 255, 255), 0));
         if (title)
+            title.SetText("ColorTest - F7 to close");
+
+        array<int> colors = { 0xFFFF0000, 0xFF00FF00, 0xFF0000FF, 0xFFFFFFFF, 0xFF808080,
+            0xFF404040, 0xFF34D399, 0xFFF87171, 0xFF60A5FA, 0x80FFFFFF };
+        array<string> labels = { "FF FF0000 red", "FF 00FF00 green", "FF 0000FF blue", "FF FFFFFF white", "FF 808080 gray 50%",
+            "FF 404040 gray 25%", "FF 34D399 emerald", "FF F87171 light red", "FF 60A5FA light blue", "80 FFFFFF white at half alpha" };
+
+        for (int i = 0; i < colors.Count(); i++)
         {
-            string titleText = "ColorTest - F7 to close";
-            title.SetText(titleText);
-        }
-
-        // 10 color swatches
-        // Each: known ARGB → ImageWidget + TextWidget with hex label
-        ref array<int> colors = new array<int>();
-        ref array<string> labels = new array<string>();
-
-        colors.Insert(ARGB(255, 255, 0, 0));
-        labels.Insert("FF FF0000 Pure red");
-
-        colors.Insert(ARGB(255, 0, 255, 0));
-        labels.Insert("FF 00FF00 Pure green");
-
-        colors.Insert(ARGB(255, 0, 0, 255));
-        labels.Insert("FF 0000FF Pure blue");
-
-        colors.Insert(ARGB(255, 255, 255, 255));
-        labels.Insert("FF FFFFFF White");
-
-        colors.Insert(ARGB(255, 128, 128, 128));
-        labels.Insert("FF 808080 Gray 50%");
-
-        colors.Insert(ARGB(255, 64, 64, 64));
-        labels.Insert("FF 404040 Gray 25%");
-
-        colors.Insert(ARGB(255, 52, 211, 153));
-        labels.Insert("FF 34D399 Emerald 400");
-
-        colors.Insert(ARGB(255, 248, 113, 113));
-        labels.Insert("FF F87171 Red 400");
-
-        colors.Insert(ARGB(255, 96, 165, 250));
-        labels.Insert("FF 60A5FA Blue 400");
-
-        colors.Insert(ARGB(128, 255, 255, 255));
-        labels.Insert("80 FFFFFF White 50% alpha");
-
-        int i = 0;
-        int yOffset = 50;
-        int swatchH = 40;
-        int gap = 6;
-
-        for (i = 0; i < colors.Count(); i = i + 1)
-        {
-            int cy = yOffset + (i * (swatchH + gap));
-            int col = colors.Get(i);
-            string lab = labels.Get(i);
-
-            // Color swatch
-            int swFlags = WidgetFlags.VISIBLE;
-            swFlags = swFlags | WidgetFlags.EXACTPOS;
-            swFlags = swFlags | WidgetFlags.EXACTSIZE;
-            swFlags = swFlags | WidgetFlags.IGNOREPOINTER;
-            swFlags = swFlags | WidgetFlags.STRETCH;
-            Widget swW = ws.CreateWidget(ImageWidgetTypeID, 10, cy, 80, swatchH, swFlags, col, 0, m_Root);
-            ImageWidget sw = ImageWidget.Cast(swW);
-            if (sw)
+            int y = 50 + i * 46;
+            ImageWidget swatch = ImageWidget.Cast(Add(ws, ImageWidgetTypeID, 10, y, 80, 40, colors[i], WidgetFlags.STRETCH));
+            if (swatch)
             {
-                string swTex = "#(argb,8,8,3)color(1,1,1,1,CO)";
-                sw.LoadImageFile(0, swTex);
-                sw.SetColor(col);
+                swatch.LoadImageFile(0, "ColorTest/data/white.edds");
+                swatch.SetColor(colors[i]);
             }
-
-            // Label
-            int lbFlags = WidgetFlags.VISIBLE;
-            lbFlags = lbFlags | WidgetFlags.EXACTPOS;
-            lbFlags = lbFlags | WidgetFlags.EXACTSIZE;
-            lbFlags = lbFlags | WidgetFlags.IGNOREPOINTER;
-            Widget lbW = ws.CreateWidget(TextWidgetTypeID, 100, cy, 310, swatchH, lbFlags, ARGB(255, 220, 220, 220), 0, m_Root);
-            TextWidget lb = TextWidget.Cast(lbW);
-            if (lb)
-            {
-                lb.SetText(lab);
-            }
-
-            // Log
-            string logMsg = "[ColorTest] Swatch ";
-            logMsg = logMsg + i.ToString();
-            logMsg = logMsg + ": ";
-            logMsg = logMsg + lab;
-            Print(logMsg);
+            TextWidget label = TextWidget.Cast(Add(ws, TextWidgetTypeID, 100, y, 310, 40, ARGB(255, 220, 220, 220), 0));
+            if (label)
+                label.SetText(labels[i]);
         }
-
-        Print("[ColorTest] Panel built with 10 swatches.");
     }
 }
 
@@ -271,32 +141,24 @@ modded class MissionGameplay
     override void OnKeyPress(int key)
     {
         super.OnKeyPress(key);
-
-        // Compare against the KeyCode name, not a raw number.
         if (key == KeyCode.KC_F7)
-        {
             ColorTestPanel.Toggle();
-        }
     }
 }
 ```
 
-## User instructions
+Compare the key with its `KeyCode` name (`KC_F7`, `P:\scripts\1_core\proto\ensystem.c:222`), not a raw number.
 
-1. Create the mod as `workspace/ColorTest/` with the files above, then pack it with `/dayz-build-pbo`
-2. Load the mod on the local test server with `/dayz-launch-test`
-3. In game: press F7
-4. **Test A**: Screenshot of the panel (with SetLV(0) active)
-5. Close game
-6. Comment the lines `Widget.SetLV(0)` and `Widget.SetTextLV(0)` in the script
-7. Reload
-8. **Test B**: Screenshot of the panel (without SetLV)
-9. Keep both screenshots and the `.RPT`
+## Running the comparison
 
-## What we are looking for
+1. Pack the mod with `/dayz-build-pbo` and load it with `/dayz-launch-test`.
+2. Press F7 and take a screenshot. This is test A, with `SetLV(0)` active.
+3. Close the game, comment out the `SetLV` and `SetTextLV` lines, pack and launch again.
+4. Press F7 and take a second screenshot. This is test B.
+5. Keep both screenshots and the RPT.
 
-Comparing Test A vs Test B:
-- If Test A shows colors identical to the hex values, the darkening comes from the LV value. That is the player's HUD brightness setting, so it is a thing to design against, not to reset
-- If Test A remains dark, the darkening comes from the renderer, not LV
-- In both: measure how much darker each swatch is vs the expected hex
-  (50% gray above all: if 808080 looks like 5C5C5C, that gives the factor)
+Reading them:
+
+- Test A matches the hex values: the darkening comes from the LV value, which is the player's brightness setting. Design against it.
+- Test A is still dark: the darkening comes from the renderer, not LV.
+- In both, measure each swatch against its hex value. The 50 percent gray is the easiest: if `808080` reads as `5C5C5C`, that ratio is the darkening factor.

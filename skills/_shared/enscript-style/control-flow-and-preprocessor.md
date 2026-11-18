@@ -210,7 +210,7 @@ Vanilla compiles `#ifdef` blocks that hold only a comment. `P:\scripts\4_world\c
 
 A comment-only block is therefore not a crash risk. Still delete blocks you no longer need, so the code stays readable.
 
-The claim that an empty `#ifdef` or `#ifndef` block segfaults even when it holds only comments was not reproduced. Measured in game, not checked on `P:\` (DayZDiag 1.30.164289, in a mod's `4_World` scripts): a block holding only a comment compiled and ran on the server and on the client, at file scope, in a class body and in a method body. Not measured: a block with nothing at all inside, a retail build, and DayZ 1.29.
+The claim that an empty `#ifdef` or `#ifndef` block segfaults even when it holds only comments was not reproduced. Measured in game, not checked on `P:\` (DayZDiag 1.30, in a mod's `4_World` scripts): a block holding only a comment compiled and ran on the server and on the client, at file scope, in a class body and in a method body. Not measured: a block with nothing at all inside, a retail build, and DayZ 1.29.
 
 ### Defines
 

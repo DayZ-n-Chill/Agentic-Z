@@ -24,8 +24,8 @@ ES_RESERVED_WORD_IDENTIFIER_RULE_ID = "ES-RESERVED-WORD-IDENTIFIER"
 #   owned   local `EntityAI owned;`, 2026-07-20: `Broken expression (missing
 #           ';'?)` (skills/_shared/enscript/depth/review-and-troubleshooting.md)
 #   out     a local named `out`: `Broken expression (missing ';'?)`
-#           (skills/_shared/enscript/depth/compiler-traps.md, "Three ways to break the
-#           compiler without a readable error")
+#           (skills/_shared/enscript/depth/compiler-traps.md, "Keywords and file level
+#           statements")
 #
 # Vanilla uses all four as keywords, never as names: `sealed class Contact`
 # (1_core/physics/contact.c:9), `local array<string> overridden`

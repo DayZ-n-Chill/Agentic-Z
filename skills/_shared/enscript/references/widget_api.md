@@ -1,6 +1,6 @@
 # Reference: Widget Script API
 
-The script side of DayZ UI: every widget class a mod uses, its methods, widget events and `ScriptedWidgetEventHandler`, loading layouts, `UIScriptedMenu` and imagesets. The `.layout` file format itself is in `gui_layout.md`.
+The script side of DayZ UI: every widget class a mod uses, its methods, widget events and `ScriptedWidgetEventHandler`, loading layouts, `UIScriptedMenu` and imagesets. The `.layout` file format itself is in `gui_layout.md`. This file is the working subset; every prototype is in `_shared/ui/widget-prototypes.md` (the base class and globals) and `_shared/ui/widget-classes.md` (class by class).
 
 Every fact here is vanilla and was read from these files on `P:\`, except the `CfgMods` imageset registration, which is marked as not checkable on `P:\`:
 

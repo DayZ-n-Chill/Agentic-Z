@@ -75,4 +75,4 @@ Measured in game on DayZDiag 1.29 with a scripted helicopter mod; the calls are 
 - `GetHealth01(zone, type)` (`P:\scripts\3_game\entities\object.c:1001`) threw `cannot be called on client` and returned 0.
 - `SetPosition` done on the server did not reach the client copy of a physics vehicle whose driver had just left. With no crew, the server can rebuild the client copies with `RemoteObjectTreeDelete(obj)` then `RemoteObjectTreeCreate(obj)` (`P:\scripts\3_game\global\game.c:708`, `:710`).
 
-The full list, with the vehicle cases, is in `skills/_shared/enscript/depth/vehicle-scripting.md`; the RPC and persistence depth is in `skills/_shared/enscript/depth/networking.md`.
+The full list, with the vehicle cases, is in `skills/_shared/enscript/depth/vehicle-scripting.md`; the RPC depth is in `skills/_shared/enscript/depth/rpc-routing.md` and `skills/_shared/enscript/depth/networking.md`, and saving in `skills/_shared/enscript/depth/persistence-and-files.md`.

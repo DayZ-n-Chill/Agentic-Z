@@ -1,6 +1,6 @@
-# Vanilla file map for environment hazards
+# Where the hazard code lives
 
-Which vanilla file holds which part of the 1.30 hazard systems, what could not be checked, and common assumptions that are wrong. Every path in the first table exists on `P:\` (DayZ 1.30); line numbers are in the topic files, not here.
+Which vanilla file holds which part of the sandstorm, heat stroke, dust and oil pit systems, what `P:\` cannot show about them, and the facts that are easiest to get wrong. Line numbers are in the topic files; this file is the map.
 
 ## Files on `P:\`
 
@@ -19,11 +19,11 @@ Which vanilla file holds which part of the 1.30 hazard systems, what could not b
 | `P:\scripts\3_game\ppemanager\requesters\ppersandstorm.c` | sandstorm post process |
 | `P:\scripts\3_game\vehicles\transport.c` | `GetWeightCoef` |
 | `P:\scripts\4_world\systems\sandstorm\scriptedsandstormcontroller.c` | shelter |
-| `P:\scripts\4_world\systems\sandstorm\playersandstormdata.c` | per player state |
-| `P:\scripts\4_world\classes\playermodifiers\emodifiers.c` | the new modifier IDs |
-| `P:\scripts\4_world\classes\playermodifiers\modifiersmanager.c` | eyes and heat stroke sync bits |
+| `P:\scripts\4_world\systems\sandstorm\playersandstormdata.c` | per player storm state |
+| `P:\scripts\4_world\classes\playermodifiers\emodifiers.c` | the hazard modifier IDs |
+| `P:\scripts\4_world\classes\playermodifiers\modifiersmanager.c` | eye and heat stroke sync bits |
 | `P:\scripts\4_world\classes\playermodifiers\modifiers\heatcomfortmdfr.c` | feeding the thermal bias |
-| `P:\scripts\4_world\classes\playermodifiers\modifiers\diseases\heatstroke.c` | the four phases |
+| `P:\scripts\4_world\classes\playermodifiers\modifiers\diseases\heatstroke.c` | the four heat stroke phases |
 | `P:\scripts\4_world\classes\playermodifiers\modifiers\diseases\silicosis.c` | silicosis thresholds |
 | `P:\scripts\4_world\classes\playermodifiers\modifiers\diseases\irritatedeyes.c` | eye effect from 15 agents |
 | `P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\sandstormexposure.c` | agent transmission, coughing |
@@ -53,42 +53,40 @@ Which vanilla file holds which part of the 1.30 hazard systems, what could not b
 | `P:\scripts\4_world\entities\vehicles\boatscript.c` | `GetHeatComfortOverride` |
 | `P:\scripts\4_world\entities\manbase\playerbase.c` | handler creation, `HasDisease`, the handler's save and load calls |
 | `P:\scripts\4_world\classes\playersymptoms\states\secondary\squintstate.c` | eye protection for squinting |
-| `P:\scripts\5_mission\mission\gameplayeffectwidgets\gewidgetsmetadataeyeveins.c` | eye veins screen effect (file exists; not read) |
-| `P:\scripts\5_mission\mission\gameplayeffectwidgets\gewidgetsmetadatasquinting.c` | squinting screen effect (file exists; not read) |
+| `P:\scripts\5_mission\mission\gameplayeffectwidgets\gewidgetsmetadataeyeveins.c` | eye veins screen effect (not yet read) |
+| `P:\scripts\5_mission\mission\gameplayeffectwidgets\gewidgetsmetadatasquinting.c` | squinting screen effect (not yet read) |
 | `P:\DZ\data\config.cpp` | `class Sandstorm` in the default world |
 | `P:\DZ\data\aiconfigs\config.cpp` | `AIParams` noise multipliers |
 | `P:\DZ\characters\masks\config.cpp` | `dust_particle_breath` and `dust_particle_eyes` on masks |
-| `P:\DZ\characters\glasses\config.cpp` | `dust_particle_eyes` on eyewear |
+| `P:\DZ\characters\glasses\config.cpp` | `dust_particle_eyes` on glasses |
 | `P:\graphics\materials\postprocess\sandstorm.emat` | the `SnowEffect` material of the storm |
 
-## Not on `P:\`
+## What `P:\` does not show
 
-These are in the game's own PBOs or its changelog; they are not unpacked on `P:\` and were not checked here:
+These live in the game's own PBOs, executable or release notes and are not unpacked on `P:\`:
 
-- The Nasdara data addon (`DZ\data_takistan\config.cpp`, `basicDefines.hpp`, `aiconfigs\config.cpp`) and the PBO listings of builds 1.30.164014 and 1.30.164200.
-- The 1.30 changelog entries (`OnCEIterate`, native AI noise, the known issues list).
-- Everything about build 1.30.164289: the topic files mark each such line.
+- The Nasdara data addon (`DZ\data_takistan\config.cpp`, `basicDefines.hpp`, `aiconfigs\config.cpp`) and the Nasdara PBO listings (`nasdara-badlands.md`).
+- The 1.30 changelog entries for `OnCEIterate`, native AI noise and the known issues.
+- Values from a later 1.30 update; the topic files mark each one.
 
-## Not checked anywhere
+Nothing in the vanilla data shows these, so treat them as unverified:
 
-1. The native `SandstormController`: how the storm grows, its magnitude and `GetPointOnEdge` live in the game executable.
-2. The Nasdara terrain: no listed PBO has a `.wrp`; it is presumably inside the encrypted `worlds_nasdara.ebo`.
-3. Binary assets (`.p3d`, `.ptc`, `.edds`): only their names in listings; emitter curves were not read.
-4. Run time: no tick was measured in game. Every line in this pack is read from source.
-5. Log texts to search for in the RPT (`ThermalBiasHandler`, `Sandstorm`, `Could not get players sandstorm data`) were not confirmed against a real log.
+- The native `SandstormController`: how the storm grows, its magnitude and `GetPointOnEdge` are in the game executable.
+- The Nasdara terrain: no Nasdara PBO lists a `.wrp`, so the world is presumably inside the encrypted `worlds_nasdara.ebo`.
+- Binary assets (`.p3d`, `.ptc`, `.edds`): only their names are known, not their emitter curves.
+- Run time behaviour: every line in this pack is read from source, and no tick was timed in game.
+- The RPT texts to search for (`ThermalBiasHandler`, `Sandstorm`, `Could not get players sandstorm data`) are not yet confirmed against a real log.
 
-## Common wrong assumptions
+## Facts that are easy to get wrong
 
-Assumptions about the 1.30 scripts that are wrong on `P:\`:
-
-| Wrong assumption | What `P:\` shows |
+| Fact | Source |
 |---|---|
-| The shadow check runs every 5 s | Every 30 s: `ENVIRO_TICK_SHADOW_RC_CHECK` (`P:\scripts\3_game\constants.c:760`) |
-| The area enum is `EOffsetDataAreaType` | It is `EEffectAreaType` (`P:\scripts\4_world\classes\contaminatedarea\effectarea.c:10`) |
-| The new modifiers are integers 59 to 66 | The enum has no explicit numbers after `MDF_TEMPERATURE = 1`; use the names (`P:\scripts\4_world\classes\playermodifiers\emodifiers.c:3`) |
-| The `AGT_AIRBOURNE_SOLID` case is at line 377 of the transmission plugin | It is at `P:\scripts\4_world\plugins\pluginbase\plugintransmissionagents.c:414` |
-| `PlayerBase` saves the thermal bias handler around line 941 | That area is `OnUpdateEffectAreaServer` (`P:\scripts\4_world\entities\manbase\playerbase.c:911`); the save call is `m_ThermalBiasHandler.OnStoreSave(ctx)` at `P:\scripts\4_world\entities\manbase\playerbase.c:7395` |
-| Motorbike and boat wind is at lines 371 to 402 and 884 to 942 of the environment class | It is `DetermineHeatcomfortBehavior` at `P:\scripts\4_world\classes\environment\environment.c:575`; line 889 is `GetWetDelta` |
-| Motorbikes have a dust weight coefficient of 0.25 | `Motorbike_01_ColorBase` returns 0.5 and `Motorbike_02_ColorBase` 0.75 from `GetWeightCoef` (`P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:87`, `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_02.c:77`) |
-| A mask cancels the sandstorm cough | Only when its `DEF_DUST_PARTICLE_BREATH` protection covers the storm's intensity: `coughIntensity` is intensity minus protection (`P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\sandstormexposure.c:143`) |
-| The Nasdara data config has skinning entries at lines 214 to 239 | That config ends near line 60; the yields are in `basicDefines.hpp`. Not checked on `P:\` |
+| The shade check runs every 30 s, not every 5 s | `ENVIRO_TICK_SHADOW_RC_CHECK`, `P:\scripts\3_game\constants.c:760` |
+| The area enum is `EEffectAreaType` | `P:\scripts\4_world\classes\contaminatedarea\effectarea.c:10` |
+| The hazard modifiers have no fixed numbers; the enum numbers nothing after `MDF_TEMPERATURE = 1`, so use the names | `P:\scripts\4_world\classes\playermodifiers\emodifiers.c:3` |
+| The `AGT_AIRBOURNE_SOLID` case of the transmission plugin | `P:\scripts\4_world\plugins\pluginbase\plugintransmissionagents.c:414` |
+| `PlayerBase` saves the thermal bias handler with `m_ThermalBiasHandler.OnStoreSave(ctx)` | `P:\scripts\4_world\entities\manbase\playerbase.c:7395` |
+| Motorbike and boat wind is decided in `DetermineHeatcomfortBehavior` | `P:\scripts\4_world\classes\environment\environment.c:575` |
+| Motorbike dust weight is 0.5 (`Motorbike_01_ColorBase`) and 0.75 (`Motorbike_02_ColorBase`), never 0.25 | `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:1` and `:87` (`return 0.5` at `:89`); `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_02.c:1` and `:77` (`return 0.75` at `:79`) |
+| A mask stops the storm cough only when its breath protection covers the storm's intensity, because `coughIntensity` is intensity minus protection | `P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\sandstormexposure.c:143` |
+| Nasdara's skinning yields are in its `basicDefines.hpp`, not in the data config, which ends near line 60 | not on `P:\` |

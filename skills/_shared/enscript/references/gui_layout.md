@@ -4,6 +4,8 @@ Layout files define the widget tree for DayZ's GUI. They use a **custom property
 
 Every class, property and value below was checked against the vanilla layouts in `P:\gui\layouts\` and the widget classes in `P:\scripts\1_core\proto\enwidgets.c`. A citation names the first vanilla file that uses it.
 
+This is the short reference. The full format is in the UI pack: syntax and widget classes in `_shared/ui/layout-format.md`, every attribute in `_shared/ui/layout-attributes.md`, the screen rect arithmetic in `_shared/ui/layout-geometry.md`, and copyable blocks in `_shared/ui/layout-snippets.md`.
+
 ---
 
 ## Contents

@@ -1,4 +1,4 @@
-# Extraction ledger: state files, novelty, loop and final report
+# The study ledger
 
 How a study of a packed mod (`study-a-packed-mod.md`) keeps its state: the four ledger files, how a finding is classified and where it goes, how to run the work one unit per turn, and what the closing report holds.
 
@@ -12,8 +12,8 @@ An ordered list of work units. Each line is `- [ ] <unit-id>: <description>` or 
 
 Unit types:
 
-- `dim/<dimension>`: a pass 1 dimensional sweep
-- `<entity>/<name>`: a pass 2 per-entity deep dive
+- `dim/<dimension>`: a first pass unit, one file type
+- `<entity>/<name>`: a second pass unit, one entity
 - `APPLY skill_changes for <X>`: apply pending findings to a skill or pack
 - `PASS_END_CHECK pass-<N>`: the convergence check
 
@@ -65,7 +65,7 @@ Per pattern, search `skills/` (the skills and the packs under `skills/_shared/`)
 
 A good finding names the lines and the mismatch:
 
-```
+```text
 "pattern": "OnDebugSpawn creates 4 wheels but attachments[] allows only 3 slots; the fourth ends up in the player's cargo."
 "evidence": "TheirCar.c:79-86 vs TheirCar/config.cpp:134"
 ```
@@ -89,7 +89,7 @@ Every change edits versioned files, so it needs the user's request first. Mechan
 
 ## Notes for findings that fit no pack
 
-```
+```text
 output/<project>-extraction/notes/
 ├── <author>-style-fingerprints.md      # naming conventions, code style
 ├── <author>-quirks.md                  # anti-patterns, mistakes, oddities
@@ -98,18 +98,18 @@ output/<project>-extraction/notes/
 
 Link every note entry to its evidence path. About a fifth of the findings in a large study typically fit no pack but answer a later "what did this author do with X?".
 
-## Loop mode for long studies
+## One unit per turn for long studies
 
 In Claude Code, `/loop` in dynamic mode runs one unit per turn:
 
-```
+```text
 /loop Process the next unit of the <project> extraction.
 Queue: output/<project>-extraction/_state/queue.md
 State dir: output/<project>-extraction/_state/
 
 Each turn:
 1. Read queue.md and take the FIRST line with [ ]
-2. Run the unit (dimensional, per-entity, APPLY or PASS_END_CHECK)
+2. Run the unit (file type, entity, APPLY or PASS_END_CHECK)
 3. Update the state and tick the line
 4. Schedule the next wake-up in 240 s if units remain; schedule nothing when converged or a flag was raised
 

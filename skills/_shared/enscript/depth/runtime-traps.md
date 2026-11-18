@@ -1,44 +1,42 @@
 # Runtime traps
 
-Failures that compile cleanly and then crash or do nothing at run time: native getters called during client preload, the missing `Math.Exp`, where `$profile:` really points, scheduled callbacks that re-check a clock, and path literals that lose their backslashes. A line cited as `P:\...:N` was opened on `P:\`; the measured results were measured once in a third-party mod and were not re-run.
+Which code compiles and then crashes or does nothing: native camera getters during client preload, the missing `Math.Exp`, where `$profile:` really points, scheduled callbacks that re-check a clock, entities that fall asleep, and path literals that lose their backslashes. Crashes in ordinary code are in `runtime-pitfalls.md`.
 
-## Client preload: native camera and world getters crash, and no guard catches it
+## Camera and world getters during client preload
 
-Native getters that reach the world camera are not safe during the client's preload: `GetCurrentCameraPosition` and `GetCurrentCameraDirection` on the game (`P:\scripts\3_game\global\game.c:731-732`), and `Camera.GetCurrentCamera`, `GetCurrentFOV` and `IsInterpolationComplete` (`P:\scripts\3_game\entities\camera.c:7`, `:13`, `:29`). The world camera is not built yet, the native getter reads through a null pointer, and the process takes a native crash (a minidump), not a script exception. A script guard on the result (`if (!Camera.GetCurrentCamera())`) does not catch it: the bad read happens inside the next native call. A client handler that processes asynchronous input (an RPC, a pulled command, a poll driven by a tick) can receive a command before the local player exists and hit this.
+Native getters that reach the world camera are not safe while the client preloads: `GetCurrentCameraPosition` and `GetCurrentCameraDirection` on the game (`P:\scripts\3_game\global\game.c:731` and `:732`), and `Camera.GetCurrentCamera`, `GetCurrentFOV` and `IsInterpolationComplete` (`P:\scripts\3_game\entities\camera.c:7`, `:13`, `:29`). The world camera does not exist yet, the native call reads through a null pointer, and the client takes a native crash with a minidump, not a script exception. A script check on the result, such as `if (!Camera.GetCurrentCamera())`, does not help, because the bad read happens inside the next native call.
 
-Rule: in any client handler that touches camera, world or player derived APIs, check readiness before the first native call and fail closed: `GetGame() && GetGame().GetPlayer()` (a null local player means preload, or not in game). A handler that resolves the player's vehicle uses the same test and returns `null` when `GetGame().GetPlayer()` is null. Prefer one check in the dispatcher, which covers the whole class of commands, plus a defensive guard at the getter when it has call sites that do not come back through the dispatcher (for example the report of an asynchronous job).
+A client handler for asynchronous input, such as an RPC, a pulled command or a tick-driven poll, can receive a command before the local player exists. In any client handler that touches camera, world or player APIs, check `GetGame() && GetGame().GetPlayer()` before the first native call and fail closed; a null local player means preload or not in game. Put one check in the dispatcher, plus a guard at the getter for call sites that bypass it. Measured in game: a camera command that arrived during preload wrote a minidump; with the check, the same command returned "client not in game" and no dump.
 
-Related: the entity lifecycle notes in `api-patterns.md`, the `IsServer` and `IsClient` side checks (rules 19 and 20 in `hard-rules.md`) and the `CallLater` rule (rule 21) are the same family of lifecycle timing problems. Measured in game: a client camera command that reached the client during preload wrote a minidump; with the check in place the same command returned a "client not in game" error and no dump was written.
+The side checks during load (`hard-rules.md`, section "Networking and sides") and the `CallLater` report (`hard-rules.md`, section "Timers") are the same family of timing problems.
 
-## There is no `Math.Exp`: write `Math.Pow(Math.EULER, x)`
+## No `Math.Exp`
 
-Enforce has no `Math.Exp` (no hit anywhere under `P:\scripts\`). Write any exponential (smoothing that does not depend on the frame time, decay, half life, easing) with `Math.Pow` (`P:\scripts\1_core\proto\enmath.c:183`) and `Math.EULER` (`P:\scripts\1_core\proto\enmath.c:11`). Vanilla uses the same idiom, `Pow(EULER,-mean)`, in its Poisson helper (`P:\scripts\1_core\proto\enmath.c:710`).
+Nothing under `P:\scripts\` declares `Math.Exp`. Write exponentials, for frame-rate-independent smoothing, decay, half lives and easing, with `Math.Pow` (`P:\scripts\1_core\proto\enmath.c:183`) and `Math.EULER` (`:11`). Vanilla does the same, `Pow(EULER,-mean)`, in its Poisson helper (`:710`).
 
-A tick pattern that does not depend on the frame time (cheap: one `Pow` per channel per tick): when the tuning loads, compute once per channel `K_PER_SEC = Math.Pow(Math.EULER, -1.0 / TAU_channel)`; each tick compute `decay = Math.Pow(K_PER_SEC, dt)` and `alpha = 1 - decay`. This equals `exp(-dt/TAU)` without an exp call. Never use a constant per tick (multiplying by 0.95 each tick depends on the frame rate; that bug has shipped in a helicopter flight simulation).
+For smoothing that does not depend on frame time, compute once per channel when the tuning loads, `K_PER_SEC = Math.Pow(Math.EULER, -1.0 / TAU)`, then each tick `decay = Math.Pow(K_PER_SEC, dt)` and `alpha = 1 - decay`. That equals `exp(-dt/TAU)` for one `Pow` per channel per tick. Never multiply by a constant per tick, such as 0.95; the result then depends on the frame rate.
 
-Related: the row "`Math.Clamp` not found" in `review-and-troubleshooting.md`, the same family of math APIs assumed missing or assumed present.
+## Where `$profile:` points
 
-## `$profile:` is the folder of the exe's `-profiles=`, not always `%USERPROFILE%`: probe it at run time
+`$profile:` resolves to the folder given by the executable's `-profiles=` parameter (`DayZDiag_x64`, `DayZServer_x64`), not always to `Documents\DayZ` in the user folder. It differs between server and client, diag and retail, and with the exact `-profiles=` value; a relative value resolves against the folder the executable started from. Print the resolved path once at mission init:
 
-`$profile:` resolves to the folder given by the `-profiles=` parameter of the exe (`DayZDiag_x64`, `DayZServer_x64`), not always `%USERPROFILE%\Documents\DayZ\...`. What it resolves to changes between server and client, between diag and retail, and with the exact `-profiles=` value (a relative path resolves against the folder the exe was launched from). The standard probe, run by the mod on first boot (mission init):
+```c
+string p = "$profile:mymod.json";
+Print("[MyMod] profile resolves to: " + p);
+```
 
-    string p = "$profile:mymod.json"; // or whatever file
-    Print("[MOD] profile resolves to: " + p);
+Compare it in the RPT with where the launch script wrote the config. A mismatch explains "config URL empty" or "JsonFileLoader returned empty" without touching the read code: fix the launcher's `-profiles=` or use an absolute path. Path tokens are in `../references/file_paths.md`.
 
-Check in the RPT that `p` matches the absolute path where the launch wrapper (PowerShell or batch) wrote the config. A mismatch explains symptoms such as "config_url_empty" or "JsonFileLoader returned empty" without touching the read code or rebuilding: the fix is the wrapper's `-profiles=` or an absolute path in the mod, not the read logic. The path tokens themselves are in `skills/_shared/enscript/references/file_paths.md`.
+## Scheduled callbacks are the deadline
 
-## Scheduled callbacks: the callback is the deadline; sleeping entities miss `EOnSimulate`; one log marker per fix
+A one-shot `GetGame().GetCallQueue(...).CallLater(fn, delayMs, false)` whose `fn` checks again with `GetTickTime() >= armTime` can miss by milliseconds at the very moment it is due: the call queue keeps its own clock, and `GetTickTime()` can lag in the frame that fires. With a one-shot the action is lost for good. Inside the callback check only state (`armed && !started && state == X`), never the clock; a path that runs on an awake entity's tick may keep the clock comparison. Measured in game in a helicopter mod: the log showed the callback fire and then skip; the clock-free version worked.
 
-A clock race in a scheduled one-shot: a `GetGame().GetCallQueue(...).CallLater(fn, delayMs, false)` whose `fn` checks the deadline again with `GetTickTime() >= armTime` can miss by milliseconds at the very instant it is due (the call queue keeps its own clock, and `GetTickTime()` can lag in the frame that fires). With a one-shot the action is lost for good. Rule: the callback is the deadline. Do not compare clocks inside it; check only state (`armed && !started && state==X`). A path that runs on a tick of an awake entity may keep the clock comparison. Measured in game in a helicopter mod: the log read `TrySpikeStart fired state=0` and then `skipped`; the version without a clock (`IsArmedNotStarted()`) worked first time.
+An idle `CarScript` that is not moving falls asleep within a few ticks, and anything inside `EOnSimulate`, countdowns and polls, stops with it. `dBodyActive(this, ActiveState.ALWAYS_ACTIVE)` alone did not keep the tick running in that mod. To time logic on an entity that may sleep, use the call queue, which body sleep does not affect.
 
-Sleeping entities miss `EOnSimulate`: an idle `CarScript` that is not moving goes to sleep within a few ticks, and anything living inside `EOnSimulate` (countdowns, polls) stops with it. `dBodyActive(this, ActiveState.ALWAYS_ACTIVE)` alone did not guarantee the tick in that mod; the robust way to time logic on an entity that may sleep is the call queue, which body sleep does not affect.
+Give each fix its own log line, such as "keep-awake applied". Without it, "the fix was not compiled" and "the fix is not enough" look the same. The debug order is in `skills/dayz-launch-test/references/debug-protocol.md`.
 
-A working habit: one log marker per fix. Each fix that goes through an in game cycle adds its own log line ("keep-awake applied", "TrySpikeStart fired state=X"). Without it, "the fix was not compiled" and "the fix is not enough" look the same and cost a full rebuild and boot. Related: the `CallLater` rule (rule 21 in `hard-rules.md`) and the debug order in `skills/dayz-launch-test/references/debug-protocol.md`.
+## Path literals that lose their backslashes
 
-## A path literal whose backslashes never arrive
+Enforce drops escape sequences it does not recognise. `SetObjectMaterial(idx, "dz\\data\\data\\mirror.rvmat")` written from a bash heredoc reached the file with single backslashes, so the engine received `dzdatadatamirror.rvmat`: the call ran, the log said yes, and nothing rendered. When generating such literals from a script, build the backslash explicitly (`chr(92)` in Python) and check the result with `repr()`, and confirm in the log that the engine received the path intact.
 
-`SetObjectMaterial(idx, "dz\\data\\data\\mirror.rvmat")` written from a bash heredoc arrives in the file with a single backslash. Enforce drops escape sequences it does not recognize, so the engine received `dzdatadatamirror.rvmat`: the call ran, the log said yes, and nothing was rendered. It fails silently and looks green; the whole run was useless.
-
-Write such literals by building the backslash in Python (`chr(92)`) and check the result with `repr()`. When the engine consumes the value, check in its log that it arrived intact before trusting the run: here the log itself printed the path it received, and the missing backslashes were visible there.
-
-The same single backslash trap repeats at the size of a whole mod, so script path literals belong in an audit. Vanilla script literals write texture paths escaped and without a leading backslash (`"dz\\gear\\navigation\\data\\GPS_%1_ca.paa"`, `P:\scripts\4_world\entities\itembase\gear\navigation\gpsreceiver.c:4`). One mod shipped 64 `"\ModName\data\....rvmat"` literals with single backslashes in the source across 24 `.c` files, all of them its LEDs. Search the mod's `.c` files for string literals that carry a lone backslash inside a path, and print in the log the path the engine actually receives.
+Vanilla writes texture paths escaped and without a leading backslash: `"dz\\gear\\navigation\\data\\GPS_%1_ca.paa"` (`P:\scripts\4_world\entities\itembase\gear\navigation\gpsreceiver.c:4`). One mod shipped 64 `"\ModName\data\....rvmat"` literals with single backslashes across 24 `.c` files. Search a mod's `.c` files for string literals with a lone backslash inside a path, and log the path the engine actually receives.

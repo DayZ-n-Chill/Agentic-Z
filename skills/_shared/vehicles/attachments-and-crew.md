@@ -66,7 +66,7 @@ Cargo space is `class Cargo` with `itemsCargoSize[]`, `allowOwnedCargoManipulati
 
 A four seat car adds `class Cargo1` and `class Cargo2` with `seat_cargo1`, `crewCargo1`, `pos_cargo1` and `pos_cargo1_dir` (`Offroad_02`, `:20990`). The seat index script sees follows this order: driver `0`, co driver `1`, then cargo seats, which is how `GetSeatAnimationType` maps them (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroad_02.c:138`).
 
-How the engine picks the seat from the collision component the cursor hits, why each seat needs its own component in the View Geometry LOD, and how the crew proxy triangle sets the seated pose are in `vehicle-config-and-modelcfg.md`, section 17, and in the crew addenda of `vehicle-structural-parity.md`.
+How the engine picks the seat from the collision component the cursor hits, why each seat needs its own component in the View Geometry LOD, and how the crew proxy triangle sets the seated pose are in `crew-get-in-geometry.md` and in `vehicle-modelcfg-animations.md`, section "The crew proxy frame".
 
 ## Doors and seats in script
 

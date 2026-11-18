@@ -73,7 +73,7 @@ Two of these slots have more than one vanilla value, counted over all the `.rvma
 
 ## Without DayZ Tools
 
-On a machine with no ImageToPAA (Linux, macOS, a clean Windows), `skills/_shared/vehicles/png-to-paa-encoding.md` holds a pure Python DXT1 writer for opaque `_co` textures and describes the `.paa` file layout. It is tool notes that were not run here; `/dayz-pack-texture` stays the normal route.
+On a machine with no ImageToPAA (Linux, macOS, a clean Windows), `png-to-paa-encoding.md` holds a pure Python DXT1 writer for opaque `_co` textures, and `paa-file-layout.md` describes the `.paa` file layout. The writer's output is not checked in game; `/dayz-pack-texture` stays the normal route.
 
 ## Images ImageToPAA refuses
 

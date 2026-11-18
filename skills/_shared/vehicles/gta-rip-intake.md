@@ -1,17 +1,52 @@
 # GTA V rip intake
 
-Reading a GTA V vehicle mod archive offline, what its skeleton names map to in DayZ, and why bone names and exclusion patterns must be checked against the real mesh pieces.
+How to read a GTA V vehicle mod archive offline, what its skeleton names map to in DayZ, and why bone names and exclusion lists must be checked against the real mesh pieces.
 
-> Status: the measurements below were taken on a third-party vehicle mod (the HH-60G of TestHeli) with third-party tools; they are not vanilla behaviour, cannot be checked on `P:\`, and were not repeated here. A citation written with its full `P:\` path was opened on the vanilla data of this repo. Script names such as `rpf_extract.py` belong to that mod's build folder, which is not part of this repo. "Invariant N" and "item N" mean the numbered invariants; `README.md` lists which file holds each number.
+Nothing in GTA's formats can be checked on `P:\`; what follows was measured on one third-party helicopter rip (an HH-60G) with third-party tools (**tool knowledge**). The one vanilla link is the glass: a ripped vehicle's panes take a vanilla glass material such as the `niva_glass` one the hatchback door uses (`P:\DZ\vehicles\wheeled\config.cpp:942`).
 
-## Vanilla anchors checked on `P:\`
+## Reading the archive
 
-- Nothing in GTA's formats can be checked on `P:\`. The one vanilla link is the glass: a ripped vehicle's panes take a vanilla glass material such as the `niva_glass` one that the hatchback door uses (`P:\DZ\vehicles\wheeled\config.cpp:942`).
+Mod archives (`dlc.rpf`) built with OpenIV are usually not encrypted and can be read fully offline, with no GTA V install and no keys. Check the encryption dword at offset 12 of the RPF7 header first: `0x4E45504F` ("OPEN") means unencrypted.
 
-## Invariant 25: GTA V rip intake (dlc.rpf)
+| Part | Layout |
+|---|---|
+| Header | 16 bytes: `7FPR` magic, entry count, names length, encryption |
+| Entry | 16 bytes; the second dword tells the kind: `0x7FFFFF00` is a folder, high bit set is a resource, otherwise a plain file |
+| Offsets | In 512-byte sectors |
+| Plain file of size 0 | Stored as is, usually a nested `.rpf`; recurse into it in place |
+| Resource | A 16-byte RSC7 header in the clear (magic `RSC7`, version 162 for `.yft` and 13 for `.ytd`, system flags, graphics flags), then raw deflate from byte 16 (`zlib` with `wbits=-15`) |
 
-**GTA V rip intake (dlc.rpf) — mod RPFs are usually UNENCRYPTED and fully parseable offline; the vehicle skeleton maps 1:1 to DayZ needs (TestHeli HH-60G, 2026-07-18).** Check the encryption dword at offset 12 of the RPF7 header FIRST: `0x4E45504F` ('OPEN', standard for OpenIV-built mod RPFs) = no GTA V install, no NG/AES keys needed. Verified on-disk layout: 16-byte header (`7FPR` magic, entryCount, namesLength, encryption); 16-byte entries discriminated by dword2 (`0x7FFFFF00` = directory, high bit set = resource, else binary); file offsets in 512-byte sectors; binary entry with fileSize==0 = stored verbatim (nested .rpf — recurse in place). A resource on disk = **16-byte RSC7 header IN THE CLEAR** (magic `RSC7`, version — 162 yft / 13 ytd —, sysFlags, gfxFlags) + raw-deflate payload from +16 (`zlib wbits=-15`); scene-standard standalone `.yft`/`.ytd` files are exactly that byte range copied verbatim, so extraction is a copy, not a re-encode. Skeleton conventions worth knowing before Blender (string-scan of the decompressed payload suffices — no FRAG parsing): rotors ship THREE states `rotor_main`/`_slow`/`_fast` (+ `rotor_rear` same) = direct map to the DayZ static+blur rotor pattern; doors `door_[dp]side_[fr]` + `handle_*`; glass as own bones (`windscreen`, `window_*` — glass census for free); `seat_[dp]side_*`, `wheel_lf/rf/lr`, `gear_*` incl. `gear_door_*`; guns/turrets are separate bones (`turret_*`, `weapon_*`) = clean v1 exclusion. Toolchain [IN-VIVO VERIFIED 2026-07-18]: Sollumz 2.8.3 imports binary `.yft` directly (PyMateria/szio, Windows-only) on Blender 5.1 (4.0-5.1 supported), while CodeWalker demands a GTA V game folder on first run — so for OPEN rips the primary chain is own-extractor → Sollumz binary import, CodeWalker only as fallback. Two verified gotchas: (a) **PyMateria's native `.pyd` fails to load from a long path** ("DLL load failed ... filename too long", MAX_PATH) — install Sollumz into a SHORT isolated Blender profile via `BLENDER_USER_RESOURCES=<short-dir>\blp` (a folder with a short path) (also keeps the user's running Blender untouched); headless install = `bpy.ops.extensions.package_install_files(repo="user_default", enable_on_install=True)` + `<addon>.dependencies.install_dependencies(online_access_override=True, optional_dependencies_to_install={"pymateria"})`. (b) **The `.yft` does NOT carry its textures** (they live in sibling `.ytd`), and Sollumz's high-level `gta5.try_load_asset` returns None for a `.ytd`, and its `.yft` import wires 47 named-but-empty image nodes — the FIX is the RAW PyMateria binding: `pmg8 = szio.gta5.native.provider_gen8.pmg8`; `res = pmg8.TextureDictionary.import_rsc(Path(ytd))`; `td = res.result`; `td.textures` is a Map(name→Texture); `tex.export_dds(path)` writes the decoded DDS (PyMateria does all the RSC7+format). ~generic base-game textures (`vehicle_generic_*`) live in GTA's `vehshare.ytd` (not in the mod) and stay missing = pink in Blender, but IRRELEVANT for DayZ (glass gets a vanilla `.rvmat`; the rest are secondary spec/detail overlays). Measured on the TestHeli HH-60G intake with its own `rpf_extract.py`, `ytd_extract.py` and `bl_install.py`; the textured package was verified by render.
+A standalone `.yft` or `.ytd` is exactly that byte range, so extracting one is a copy, not a re-encode.
 
-## Invariant 26: a rip's bone names are not its mesh pieces, and an exclusion regex classifies content nobody has looked at
+## What the skeleton names tell you
 
-**A rip's BONE NAMES are not its MESH PIECES, and an exclusion REGEX silently classifies content nobody has looked at (TestHeli HH-60G, 2026-07-28).** Two failures of the same import, both invisible offline and both only surfaced by a full in-game cycle. (a) **Regex exclusion.** The day-1 census marked `exclude_v1` with `^(mod_[a-z0-9]+|turret_|weapon_|siren\d|extra_\d|hbgrip_)` to drop "GTA cruft". That swept in `mod_n` (31,598 tris = the whole nose kit: refuelling probe, rescue hoist, radome, nose pods) and `mod_s` (52,550 tris = the entire interior, seats included). The exporter inherited the classification and the vehicle shipped with no nose and a hollow cabin; **94,084 tris of legitimate content, 38% of the source**, lost for ten days without one warning. Rule: **the exclusion list is LITERAL NAMES, one justifying line each — never a regex.** A regex classifies pieces nobody has looked at yet; a literal list forces you to look. (b) **Bone names != mesh pieces.** The string-scan of the skeleton (item 25 above) lists `handle_*` next to `door_*`, so the routing table cited `handle_dside_f/pside_f/dside_r/pside_r`. Measured against the actual LOD levels: those four names exist in **no** level of the `.yft` and in **no** mesh of the imported `.blend` — the skeleton carries bones with no geometry behind them. **Item 25's skeleton-convention list is a hypothesis about names, not a piece inventory**; intersect it with the per-level mesh list before routing anything. Corollary that decides the fix: "the export LOST a piece" and "the export CITED a piece that never existed" look identical from a silent `if obj_by_name(n)` skip and lead to **opposite** repairs (go find it vs delete the row). Gates that would have caught both on day 1, cheap and offline: **SOURCE = the piece set of the richest LOD level, measured** (here `hh60g.yft/High` = 49, set-identical to `hh60g_hi.yft/VeryHigh`); every source piece appears **exactly once** in a routing group or in the literal exclusion list, partition verified by set equality, not by totals; every routed name is **in SOURCE**; and a missing artefact is an **error, never a `[skip]`**.
+A string scan of the decompressed payload is enough; no fragment parsing is needed. Typical names:
+
+- Rotors in three states, `rotor_main`, `rotor_main_slow`, `rotor_main_fast`, and the same for `rotor_rear`: a direct match for DayZ's static and blurred rotor pattern.
+- Doors `door_dside_f`, `door_pside_r` and so on, with `handle_*`.
+- Glass as its own bones (`windscreen`, `window_*`), which gives a glass list for free.
+- `seat_dside_*`, `seat_pside_*`, `wheel_lf`, `wheel_rf`, `wheel_lr`, and `gear_*` including `gear_door_*`.
+- Guns and turrets as separate bones (`turret_*`, `weapon_*`), easy to leave out of a first version.
+
+These are names, not pieces. On the HH-60G, `handle_dside_f`, `handle_pside_f`, `handle_dside_r` and `handle_pside_r` are bones in the skeleton but exist in no LOD of the `.yft` and no mesh of the imported Blender file. Intersect the name list with the mesh list per LOD before routing anything. "The export lost a piece" and "the export named a piece that never existed" look the same from a silent `if obj_by_name(n)` skip, and need opposite fixes: go find it, or delete the row.
+
+## Importing into Blender
+
+Sollumz 2.8.3 imports a binary `.yft` directly through PyMateria (Windows only) on Blender 4.0 to 5.1. CodeWalker asks for a GTA V game folder on first run, so for an unencrypted rip use your own extractor and the Sollumz binary import, and keep CodeWalker as a fallback.
+
+- PyMateria's native `.pyd` fails to load from a long path ("DLL load failed ... filename too long"). Install Sollumz into a short, separate Blender profile by setting `BLENDER_USER_RESOURCES` to a short folder; this also leaves the user's own Blender alone. Headless install: `bpy.ops.extensions.package_install_files(repo="user_default", enable_on_install=True)`, then the add-on's `dependencies.install_dependencies(online_access_override=True, optional_dependencies_to_install={"pymateria"})`.
+- The `.yft` does not carry its textures; they are in the sibling `.ytd`. Sollumz's `gta5.try_load_asset` returns `None` for a `.ytd`, and its `.yft` import wires 47 named but empty image nodes. Use the raw binding instead: `pmg8 = szio.gta5.native.provider_gen8.pmg8`, `td = pmg8.TextureDictionary.import_rsc(Path(ytd)).result`, then `tex.export_dds(path)` for each item of `td.textures`.
+- Shared base game textures (`vehicle_generic_*`) live in GTA's `vehshare.ytd`, not in the mod, and stay pink in Blender. They do not matter for DayZ: glass gets a vanilla `.rvmat`, and the rest are secondary detail layers.
+
+## Exclusions are literal names
+
+A first version of the HH-60G excluded parts with the pattern `^(mod_[a-z0-9]+|turret_|weapon_|siren\d|extra_\d|hbgrip_)`. It also caught `mod_n` (31,598 triangles: the whole nose, with refuelling probe, rescue hoist, radome and nose pods) and `mod_s` (52,550 triangles: the entire interior, seats included). The vehicle shipped with no nose and a hollow cabin, 94,084 triangles or 38 percent of the source gone, with no warning, and only a full in-game look showed it.
+
+Write the exclusion list as literal names, each with one line saying why; never a pattern. A pattern classifies pieces nobody has looked at, and a literal list forces you to look.
+
+Cheap offline checks that catch both failures:
+
+- The source is the measured piece set of the richest LOD (on the HH-60G, 49 pieces in `hh60g.yft` High, identical to `hh60g_hi.yft` VeryHigh).
+- Every source piece appears exactly once, either in a routing group or in the exclusion list; compare the sets, not the totals.
+- Every routed name is in the source.
+- A missing piece is an error, never a skip.

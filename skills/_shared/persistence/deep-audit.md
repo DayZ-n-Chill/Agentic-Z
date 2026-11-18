@@ -1,199 +1,150 @@
 # Deep data audit
 
-The full audit for a mod where a bug means lost player progression (saved data, state machines, async queues, recovery paths): mechanical checks first, eight review angles, verification of every finding against the real file, a cross-actor pass, fixes, a re-audit and four tests in game. Open this when `data-audit.md` says to run the deep audit, or when asked whether such a mod is release-safe. Labels such as `VULN-003` are the finding numbers of the worked example used in the check files. The agent runs the checks with its own search tools; there is no script.
+How to audit a mod where a bug loses player progression (saved data, state machines, queues that work across ticks, recovery paths): mechanical checks first, eight review angles, every finding checked against the real file, a pass that traces data across actors, fixes, a short re-audit and four tests in game. Open it when `data-audit.md` says to run the deep audit, or when asked whether such a mod is safe to release. The agent runs the checks with its own search tools; there is no script.
 
-## When to invoke
+## When to run it
 
-Trigger automatically when any of these are true:
+Run it when any of these is true:
 
-- Mod touches persistence, save files, state machines, or async work queues
-- A bug would cause **silent data loss** (lost items, wrong sids, money loss)
-- User asks for an audit or a deep review, asks "release-safe?", or says a change could break progression
-- User just applied multiple fixes and wants verification before rebuild/test
-- User hands you findings from an external auditor and asks you to verify
+- The mod touches saved data, save files, state machines or queues of work that runs across ticks.
+- A bug would lose data without a message: lost items, wrong storage ids, lost money.
+- The user asks for an audit or a deep review, asks whether a release is safe, or says a change could break progression.
+- The user applied several fixes and wants them checked before a rebuild and test.
+- The user hands over findings from another auditor to verify.
 
-If the change is cosmetic or UI-only, this procedure is overkill; skip it.
+Skip it for a cosmetic or UI only change.
 
-## Why reasoning alone is insufficient
+## Why reading the code is not enough
 
-The reasoning agents that signed off on the virtual storage mod were not lazy. Each read the relevant code and produced a coherent argument. They missed bugs anyway. Looking at the 12 VULNs the implementer-grade audit caught:
+A reviewer that reads the code and follows the normal path produces a sound argument and still misses whole classes of bug. These are the classes a reading review misses, each with the mechanical check that finds it:
 
-| Failure mode | VULN examples | Why reasoning misses it |
-|---|---|---|
-| Path-helper inconsistency | VULN-003 (`.tmp` vs `.lfv.tmp`) | Bug is enumerable, not deducible, reasoning agents trace happy paths and see helpers used in isolation |
-| Sidecar/marker not cleaned | VULN-008 (`.restoring`/`.manifest.json` survive `DeleteContainerFiles`) | Symmetric obligation, every Write needs a Delete. Reasoning agents check the writer side, not the cleanup side |
-| Alternative entry point skips invariant | VULN-009 (sync path leaves stale marker), VULN-001 (kill-switch not durable) | Agent fixates on the canonical async path; the synchronous shortcut is "obviously similar" so gets a glance |
-| Flag lifecycle asymmetry | VULN-010 (admin clears flag while sidecar still references stale state) | Two state stores must move together; reasoning agents check each store internally |
-| Pre-super gate placement | VULN-004 (gate runs after vanilla super) | Order of operations within an EE hook is invisible from "is the gate present?" |
-| Sanity caps missing | VULN-011 (count fields read from disk uncapped) | Threat model not in scope of the agent's prompt |
+| Bug class | Example | Why reading misses it | Check |
+|---|---|---|---|
+| Path helpers disagree | one helper writes `.tmp`, another looks for `.lfv.tmp` | it is a list to compare, not a chain to follow; each helper looks right alone | `deep-audit-path-naming.md` |
+| A file or marker has no cleanup | `.restoring` and `.manifest.json` survive the container delete | every write needs a delete; reviewers check the writer, not the cleanup | `deep-audit-sidecar-cleanup.md` |
+| Another entry point skips the rule | the synchronous shutdown path leaves a marker; a kill switch set in memory is lost on a reload | reviewers follow the main path and glance at the shortcut | `deep-audit-entry-points.md` |
+| A flag and its file drift apart | an admin clears a flag while the file still holds the old state | two stores must move together; each is checked alone | `deep-audit-flag-lifecycle.md` |
+| A gate runs after `super` | an `EE` hook checks its gate after vanilla already changed the cargo | "is the gate there?" does not show the order | `deep-audit-hooks-and-super.md` |
+| Counts read from disk have no cap | a count field sizes an array with no upper bound | the threat model was not in the review's scope | angle 8 below |
 
-Five of those are **enumerable mechanically**, a search plus a table walk finds them in minutes (the per-check time budgets in the reference files), with no reasoning needed. Three are **cross-actor**, one writer + a different deleter + admin override. Reasoning across 3+ files is where reasoning agents thin out.
+Most of these are found by a search and a table walk in minutes. The rest need one writer, another deleter and an admin override held in mind together, across three or more files, which is where reading reviews thin out. Reviewers also report invented findings as confidently as real ones, so the audit pairs cheap mechanical checks, reviews aimed at those gaps, and a hostile check of every finding before anything is trusted.
 
-And separately: agents *report* findings convincingly whether or not the findings are real. The fix is three-pronged: cheap mechanical pre-checks first, then reasoning agents specifically prompted on the gaps reasoning is bad at, then an adversarial verification pass before any finding is trusted.
+## Steps
 
-## Workflow
+Phase one, steps 1 to 6, runs from the code and ends with verified findings and applied fixes. Phase two, step 7, is the test in game; a clean audit alone does not make a release safe. Do the steps in order, and do not start a step until the one before meets its exit condition.
 
-Seven steps in two phases.
+1. Mechanical checks.
+2. Cover the eight review angles.
+3. Verify every finding and build one table.
+4. Trace data across actors.
+5. Apply fixes.
+6. Re-audit what changed.
+7. Test in game.
 
-- **Phase A (steps 1 to 6)** is the audit. It runs entirely from the codebase and ends with a verified findings list and fixes applied.
-- **Phase B (step 7)** is in-game validation. A clean audit is necessary but not sufficient for "release-safe".
+## Mechanical checks (step 1)
 
-Skipping early steps makes later ones less effective, do not skip. Each step below carries two annotations in a quote block: **Assignment** (who runs the step's work and under which budget) and **Done when** (the explicit exit criterion, do not advance until it holds).
+Run these before any review starts. Each is a search plus a table. They catch bookkeeping bugs that reading misses. Done when a written list of mechanical findings exists, empty if clean, each citing `path:line_start-line_end`, ready to hand to step 2.
 
-## Phase A: audit (steps 1 to 6)
+- `deep-audit-path-naming.md`: helpers that build file paths disagree.
+- `deep-audit-sidecar-cleanup.md`: a file or marker is never deleted on delete or reset.
+- `deep-audit-entry-points.md`: another entry point skips a rule the main path keeps.
+- `deep-audit-flag-lifecycle.md`: a flag and the file it mirrors drift apart.
+- `deep-audit-incremental-rebuild.md`: an operation that used to be one step now runs in phases.
+- `deep-audit-state-machine.md`: illegal state changes and state counted twice.
+- The whole inheritance chain: when a rule depends on every class calling `super` (open and close failsafes, `EE` hook chains, overrides on a modded base), search for the override in every class up to the modded base, not only the leaf (`deep-audit-hooks-and-super.md`).
 
-### Step 1: Mechanical pre-checks (cheap, deterministic, fast)
+Two DayZ facts every audit assumes, both found by search rather than by reading the normal path:
 
-> **Assignment:** run deterministic checks directly; delegate only if assigned and useful.
-> **Done when:** a written list of mechanical findings exists (zero items if
-> clean), each citing `path:line_start-line_end`, ready to paste into step 2.
+- Script has no rename or move, so a write to a temp file, a check and a replace is not atomic (`sidecar-files.md`).
+- `EntityAI.OnStoreSave` (`P:\scripts\3_game\entities\entityai.c:2910`) writes a varying number of values before a subclass's own (`save-load-contract.md`, "The base class data has no fixed width").
 
-Run before spawning any agents. Each check is a grep + table walk; on a mod of that size they take about two hours together (the four mechanical-check files, `deep-audit-state-machine.md` and `deep-audit-hooks-and-super.md` each give a time budget; the other three step-1 files give none), and they catch the bookkeeping-style bugs reasoning misses.
+Where the two meet: in one save simulator the normal save deleted a copy that failed its check, while the recovery path left the bad bytes in place as the live file. When a mod has both a save and a recovery, compare their check branches line by line.
 
-These reference files give the procedures. Read the ones that apply before running:
+Hand this list to the step 2 reviews so they do not find the same things again.
 
-- `deep-audit-path-naming.md`: catches path-helper drift (VULN-003 class)
-- `deep-audit-sidecar-cleanup.md`: catches missing cleanup on delete/reset (VULN-008 class)
-- `deep-audit-entry-points.md`: catches alternative entry points skipping invariants (VULN-009, VULN-001 class)
-- `deep-audit-flag-lifecycle.md`: catches flag/sidecar state-store divergence (VULN-010 class)
-- `deep-audit-incremental-rebuild.md`: atomic-to-phased conversion hazards
+## The eight review angles (step 2)
 
-Plus the existing structural check:
+The angles are areas to cover, not eight reviewers. One reviewer can cover a bounded audit; split angles across reviewers only when that is useful. Mark an angle that does not apply, with the reason. Keep each report short and free of narrative.
 
-- `deep-audit-state-machine.md`: catches illegal transitions and double-counted state
-- **Full-ancestry super-chain walk**: whenever an invariant depends on "leaf class chains super" (physical Open/Close failsafes, EE* hook propagation, modded-base overrides), grep the override in every class of the inheritance chain up to the modded base, never just the leaf. See `deep-audit-hooks-and-super.md`.
+Every finding pastes the code it is about, with `path:line`, plus a severity. A description without the pasted code is a guess, not a finding; step 3 cannot check it, and it goes back to the reviewer.
 
-Two DayZ facts every audit assumes, both found with a search rather than by reading the happy path: script has no rename or move, so a temp, verify and replace sequence is not atomic (`sidecar-files.md`), and `EntityAI.OnStoreSave` (`P:\scripts\3_game\entities\entityai.c:2910`) writes a varying number of values before a subclass's own (`save-load-contract.md`, "The base class data has no fixed width"). Where they combine: on a save simulator, the normal save path deleted a destination that failed its check after the copy, while the recovery path left the corrupt bytes in place as the live file. When a codebase has a save and a recover, compare their verify branches line by line.
+1. Saved data and atomic writes: write order, `.tmp`, `.bak1` and `.bak2` rotation, header and footer checks, recovery from a half written file.
+2. State machine: every change of state, every gate, every branch that "should never happen".
+3. Queues across ticks: running twice for the same storage id, cancelling, adding to a queue while it is walked, draining on shutdown.
+4. Engine hooks: where the gate sits, the order of `super` calls, `EEDelete` against `EEKilled`, how often `OnStoreSave` and `OnStoreLoad` run.
+5. Admin commands: input checks, path traversal, races with running queues, files that disagree with memory.
+6. Recovery: what a crash leaves on disk, what the next boot reads, reduced modes, setting half finished state aside.
+7. Actions: every action handler that may fire while a container is stored away; gates run before vanilla `super`.
+8. Input bounds: caps on counts, sizes and lengths read from disk, checked before anything is allocated.
 
-This list goes into step 2's agent prompts as known-context so agents do not waste cycles re-finding.
+What each angle looks for, how the claims are checked and what the cross-actor pass traces are in `deep-audit-angles.md`.
 
-### Step 2: Cover the relevant audit angles
+## Verify every finding (step 3)
 
-> **Assignment:** the orchestrator chooses reviewer family, effort and lane count
-> from risk and available budget; this procedure does not authorize extra agents.
-> **Done when:** relevant angles are covered; every finding pastes the literal
-> code snippet it is about (not just a line citation) plus severity. A
-> "finding" that only describes code without pasting it is bounced back as
-> SUSPECT, not accepted.
+This step turns "a reviewer reported it" into "it is real". Done when every row of the table was checked against the real file, the sample in 3c passed, and each row is labelled defect or improvement.
 
-The eight angles below are coverage dimensions, not eight required agents or reports. Use one reviewer for a bounded audit; distribute independent angles only when delegated and useful. Bound delegated reports (≤700 words, no narrative).
+3a. Open the file at each cited range and confirm it says what the pasted code claims. Reviewers drift on line numbers, copy citations from a sibling file, and sometimes invent a likely looking range. A finding whose code does not match the file is dropped or worked out again. Before a cause goes into lasting notes, record the file, the search pattern and how many matches it returned, which must be more than zero; without those it is a guess. To choose between two explanations, find a prediction only the new one makes and check it.
 
-**Show, don't tell.** A claim of the form "this code has bug X" must include a copy-paste of the actual code, with `path:line`. A description without the snippet is a hypothesis, not a finding, the next step cannot verify it and it will be dropped. This requirement is what makes "verified" something grep-able rather than narrative.
+3b. When an independent check is assigned, give it to a reviewer of another model family with a fresh context that has not seen the angle reports. If none is available, say so; never claim independence you did not have. Hand it only the claims and their locations, with no reasoning and no severity. For each claim it returns two separate answers with the lines pasted: does the file say this, and does the conclusion follow from that code, judged without the auditor's reasoning. A claim it cannot confirm on either answer is not acted on until you read it yourself; never drop it silently, because that is how a real finding disappears. A verifier that refutes nothing is a reason to distrust the verifier, not to trust the batch; one claim can arrive confirmed on a false premise about inheritance. Agreement between reviewers that read the same spec or conventions is shared error, not confirmation, so the verifier must not share that context.
 
-Coverage dimensions; mark non-applicable angles with a reason:
+3c. Pick a fifth of the findings at random and check them yourself in the files. If more than a tenth of that sample is invented, the audit cannot be trusted: run step 2 again with stricter instructions, or drop it. Never act on an audit that fails this check.
 
-1. **Persistence & atomic flow**: write barriers, fsync semantics, `.tmp`/`.bak1`/`.bak2` rotation, header/footer verification, partial-write recovery
-2. **State machine**: every transition, every gate, every "should never happen" branch
-3. **Async queues & cross-tick safety**: re-entry on the same sid, cancellation, queue-during-iteration, shutdown drain
-4. **Engine hooks (EE*)**, entry-point gating placement, super-call ordering, EEDelete vs EEKilled symmetry, OnStoreSave/OnStoreLoad cadence
-5. **Admin commands**: input validation, path traversal, race with running queues, sidecar ↔ in-memory consistency
-6. **Recovery paths**: what crash leaves on disk, what boot consumes, degraded modes, partial-state quarantine
-7. **Action layer (pre-super gates)**: every action handler that might fire while a container is virtualized; gates run **before** vanilla super
-8. **Threat model & input bounds**: sanity caps on counts, sizes, lengths from disk; bound check before allocation
+Then build one table without duplicates:
 
-Full prompts are in `deep-audit-prompts.md`. The implementer-grade prompt for step 4 is also there.
-
-### Step 3: Adversarial verification + consolidate
-
-> **Assignment:** follow the orchestrator's review budget. Citation checking and
-> judging whether an inference follows are different checks; neither model brand proves them.
-> **Done when:** every row in the deduped table has been confirmed against
-> the real file (by the independent verifier or by you); the 20% self-sample
-> passed (<10% confabulation); each row is labelled defect vs improvement.
-
-This is the step that turns "agents reported it" into "it is real". It exists because skipping it once produced an audit in which about 45% of the findings were invented. Three sub-steps, in order:
-
-**3a, Verify every cited snippet against the real file.** Open the file at the cited range and confirm it says what the agent's pasted snippet claims. Reasoning agents drift on line numbers, copy citations from sibling files, and occasionally invent plausible ranges wholesale. A finding whose snippet does not match the file is not a finding, re-derive it or drop it. Before a cause is written into lasting notes or memory, record three things: the file, the search pattern, and the number of matches it returned, which must be more than zero. A cause without those three is a hypothesis. To choose between two competing explanations, find a prediction that only the new explanation makes and check it.
-
-**3b, Independent verifier pass.** When an independent pass is assigned, use a reviewer from another family with a **fresh context that has not seen the angle reports**. If it is unavailable, declare that limitation; do not silently claim independence. Hand it only the bare list of claims (claim + location, no reasoning, no severity). Its task: for each claim, open the cited file and return TWO separate verdicts, "does the file actually say this" (`snippet_matches_file`) and "does the conclusion follow from that code" (`inference_holds`, judged without seeing the auditor's reasoning), pasting the relevant lines. A claim the independent verifier cannot confirm on either verdict is NOT actionable until the orchestrator re-reads it, dropping it silently is how a real finding disappears. And a refutation rate of 0% is a reason to distrust the verifier, not to trust the batch: the run that produced this rule refuted 0 of 67 claims, and one claim arrived `CONFIRMED` on a false inheritance premise. This is adversarial on purpose, convergence between agents that *shared* context (the same spec, the same conventions doc) is contagion, not confirmation. The verifier must not share that context.
-
-**3c, 20% self-sample gate.** Before trusting the consolidated table, pick 20% of the findings at random and verify them yourself by opening the files. If more than 10% of the sample is confabulated, the audit is not trustworthy, re-run step 2 with stricter prompts, or discard it. Do not act on an audit that fails this gate.
-
-Then build the single deduped table:
-
-| ID | Severity | Title | File:Lines | Found by | Verified by | Defect/Improvement | Status |
+| ID | Severity | Title | File and lines | Found by | Verified by | Defect or improvement | Status |
 |---|---|---|---|---|---|---|---|
 
-- Severity is yours to assign, do not trust the agent's self-reported severity. P0 = data-loss possible. P1 = recovery required. P2 = degraded behavior. P3 = code smell.
-- **Defect vs improvement.** Defensive coding is not a bug. An `OR` branch that accepts two input formats, a tolerant parser, a redundant guard, those are robustness, not defects. Label them "improvement" at most; do not file them as findings or inflate their severity. Calling tolerance a bug was the biggest error class of an audit that skipped step 3.
+- You set the severity, not the reviewer, by what the bug does to player data: data loss possible, recovery needed, degraded behaviour, or untidy code.
+- Defensive code is not a bug. A branch that accepts two formats, a tolerant parser or a redundant guard is robustness. Label it an improvement at most; never file it as a defect or raise its severity. Calling tolerance a bug is the most common false finding.
 
-### Step 4: Implementer-grade cross-actor pass
+## Trace data across actors (step 4)
 
-> **Assignment:** an independently assigned reviewer capable of cross-actor reasoning.
-> **Done when:** the agreed product checks and review budget are satisfied. A new
-> finding needs executable evidence to block. The one stop rule is in step 6;
-> do not create an until-clean loop here.
+Give one reviewer that can reason across actors a fresh context: no audit history, no review output. Hand it the code, the README or spec, and one instruction: "Find every way this code can lose, corrupt, or silently misroute player data. Trace each writer to every reader, each sidecar to every cleanup site, each admin flag to every consumer. Where any of those triples is incomplete, that is a bug." More on this pass is in `deep-audit-angles.md`, section "The cross-actor pass".
 
-This is the step that, in retrospect, would have caught the 12 VULNs.
+Reviewers told to audit one layer stay in that layer; this instruction makes the reviewer follow data from one actor to the next. If it finds nothing, the audit is converging. If it finds a defect, reproduce it, rate it and check the affected path again within the agreed budget; hand back what is left when the budget runs out. A new finding blocks only with evidence that can be run.
 
-Give the assigned reviewer a fresh context, no audit history, no agent output, no priors. Hand it the codebase, the README/spec, and this single prompt: *"Find every way this code can lose, corrupt, or silently misroute player data. Trace each writer to every reader, each sidecar to every cleanup site, each admin flag to every consumer. Where any of those triples is incomplete, that is a bug."*
+## Apply fixes (step 5)
 
-Full prompt: `deep-audit-prompts.md` § "Implementer-grade pass".
+Done when every fix names the check or angle that caught it, a new search shows the pattern is gone everywhere, and no fix is larger than the verified change.
 
-The cross-actor framing matters. Reasoning agents prompted "audit this layer" look within the layer; they do not chase across actors. The implementer-grade prompt explicitly says "trace across actors".
+- Write down which check or angle caught each fix. A fix with no source is a hunch; check it again before it ships.
+- After each fix, search again for the bug pattern everywhere, not only at the cited line. Path helper bugs often have siblings.
+- Apply only what step 3 verified. When the verified fix is "add X before the else", add X, not also Y and Z because an unverified sibling finding suggested them.
+- When the audit produced work, keep a tracker file next to the findings file: one row per item with its id, severity, `file:line`, the issue, the fix, the owner and a status (open, in progress, closed with the commit, or won't fix with the reason). Keep the file after the last item closes. Do not create tasks in a tracker tool without asking the user.
+- Never ship a release, a packed skill or a patch file built on findings that did not pass step 3.
 
-If this agent finds nothing, that is the signal that the audit is converging. If it finds a defect, reproduce it, classify its impact, and recheck the affected path within the agreed budget. Escalate remaining work when that budget is exhausted.
+## Re-audit what changed (step 6)
 
-### Step 5: Apply fixes
+Run the mechanical checks again, plus the two angles whose code changed most. When a fix adds new design (a new flow, state, recovery or cleanup path), also run every angle that applies over that new code, because its defects are in the design and a check of the changed lines cannot see them (`deep-audit-fix-traps.md`).
 
-> **Assignment:** use the execution route authorized by the orchestrator.
-> **Done when:** every applied fix names the check or angle that caught it;
-> a re-grep confirms the pattern is gone everywhere; no fix exceeds the
-> minimum verified change.
+A new finding goes back to step 5 once. If a finding of the same kind comes back a second time, the defect is in the design, not the patch: stop, list the rest as numbered work for later and hand it back. The budget is two rounds, and a finding blocks only with a reproduction that can be run.
 
-Standard editing flow, with five specifics:
+When a value passes through several layers, write a test for each pair of neighbouring layers that runs both real layers, with no fakes between them. Check each test by deleting the code that joins the two layers: the test must then fail. Accept the fix only when whoever receives it repeats that deletion and sees the failure too.
 
-- For every fix, write down which mechanical check or which agent angle caught it. If a fix has no source, it is a hunch, re-verify before shipping.
-- After each fix, re-grep to confirm the bug pattern is gone everywhere (not just at the cited line). VULN-003-class bugs often have siblings.
-- **Minimum verifiable patch.** Apply only what step 3 verified. When the verified instruction is "add bands X before the else", add bands X, do not also add Y, Z, W because a sibling (unverified) finding suggested them. "While I'm here" is exactly how a patch gets bloated with confabulation-derived changes.
-- **Close the audit with a fix tracker.** When the audit produced findings to act on, keep a tracker file next to the findings file: one row per closeable item with its ID, severity, `file:line`, the issue, the proposed fix, the owner and a status (`open`, `in-progress`, `closed (commit, date)` or `wont-fix (reason)`). Keep the file after the last item closes. Do not create tasks in a tracker tool without asking the user.
-- **Do not ship artifacts from an un-reverified audit.** Packaging a `.skill`, cutting a release, or handing the user a patch file based on findings that did not pass step 3 is how false confidence propagates. Applying a patch costs minutes; the bad release it enables costs hours.
+## Test in game (step 7)
 
-### Step 6: Re-audit subset
+The user runs these; the agent cannot. Only when all four pass is the release safe:
 
-> **Assignment:** mechanical checks directly; targeted reasoning under the
-> same review budget and family-independence contract.
-> **Done when:** mechanical pre-checks plus the two most-changed angles run
-> clean (every applicable angle over the new code when a fix added new design, see below). A new finding loops back to step 5 **once**; a second reappearance stops
-> the loop (hand the backlog back to the orchestrator).
+- A player connects with a stored container, the server restarts, and the container is intact.
+- The server is killed in the middle of storing a container, then rebooted: recovery finishes, nothing is lost, and no marker files are left.
+- An admin resets a container while it is being stored: the state is stable afterwards.
+- After a long session every storage id on disk matches what players did: no orphans and no ghosts.
 
-Re-run mechanical pre-checks (cheap) plus the two angles whose code changed most. That is the rule for fixes that patch existing code. When a fix adds new design (a new flow, a new state, a new recovery or cleanup path), run every applicable angle over that new code as well, because its defects are in the design and a check of the changed lines cannot see them (`deep-audit-fix-traps.md`, last section). Either way the round counts toward the two-round budget below. If a new finding appears, loop back to step 5 once. If a finding of the same family reappears, the defect is design, not patching: stop, file the remainder as numbered backlog and escalate. Stop rule: the product gate closes the loop, a finding blocks only with an executable repro, and the budget is two rounds (this replaced "until zero critical or major"). When a value passes through several layers, write a test for each pair of adjacent layers that runs both real layers, with no fakes or stubs in between. Check the test by deleting the code that connects the two layers: the test must then fail. Accept the fix only when the person or agent who receives it repeats that same deletion and sees the test fail too.
+The audit's job is to make the code phase trustworthy enough that this phase is short.
 
-## Phase B: in-game validation (step 7)
+## Mistakes that cost rounds
 
-### Step 7: In-game test gate
-
-> **Assignment:** the user runs these; the agent cannot.
-> **Done when:** all four scenarios below pass in-game. Only then is
-> "release-safe" earned.
-
-A clean audit is not yet release-safe. Before declaring release-safe:
-
-- Player connects with a virtualized container, server restart, container intact (basic round-trip)
-- Crash in the middle of a virtualize (kill the server), then reboot: recovery completes, no data loss, no orphan markers
-- Admin reset on a container that is virtualizing: stable state after the reset
-- All sids on disk after a long session match player intent (no orphans, no ghosts)
-
-The agent cannot run these tests for the user. The audit's contribution is to make the audit phase trustworthy enough that the in-game test phase is short.
-
-## Anti-patterns
-
-Watching for these saves rounds:
-
-- **Declaring "release-safe" after step 2.** Steps 3 to 7 are not optional. Phase A alone is never "release-safe", Phase B is the gate.
-- **Using eight identical agents instead of eight different angles.** Eight reasoning agents prompted "audit this code" produce eight redundant reports. The angles must differ.
-- **Skipping step 1 because "the agents will catch it".** They demonstrably do not.
-- **Treating defensive coding as a bug.** A tolerant `OR` branch, a redundant guard, a parser that accepts two formats, robustness, not defects. Calling tolerance a bug is the most common false finding.
-- **Trusting consolidated metrics without drill-down.** "34 VERIFIED, 9 CONFABULATED" is smoke if it is a summed number with no per-finding click-through. Metrics without traceable findings are sums of guesses.
-- **Acting on an audit that has not passed step 3.** The agents' report is a set of hypotheses. Adversarial verification (independent verifier + 20% self-sample) is what makes it a set of facts. No verification = do not act.
-- **Trusting "convergence" between agents that shared context.** Four agents citing the same bug because they all read the same conventions doc is contagion, not confirmation. The step 3 verifier must have fresh context.
-- **Re-running the same audit after fixes.** Step 6 re-runs the cheap checks plus the two angles whose code changed most; re-running all eight angles over code the fixes did not touch wastes budget. Only new design added by a fix gets every applicable angle, and only over that new code.
-- **Serializing independent work after parallel delegation was authorized.** If multiple lanes are assigned, dispatch them together so they run concurrently.
-- **Shipping a `.skill` / release / patch file from un-reverified findings.** Cheap to apply, expensive to walk back.
-- **Reading a short-circuit finding as green.** A gate skipped on PRECONDITION (dirty tree, unreadable config) wears the same face as a pass: verify the gate evaluated what changed, and count exit codes, not findings. Verification on a dirty tree is not verification.
+- Calling a mod release safe after step 2. Steps 3 to 7 are not optional, and only step 7 earns "release safe".
+- Running eight identical reviews instead of eight different angles. Identical reviews give redundant reports.
+- Skipping step 1 because the reviews will catch it. They do not.
+- Treating defensive code as a bug.
+- Trusting totals without the rows behind them. "34 verified, 9 invented" means nothing unless each finding can be opened.
+- Acting on an audit that has not passed step 3. Reports are guesses until verified.
+- Trusting agreement between reviewers that shared context.
+- Running all eight angles again after fixes. Step 6 covers what changed, plus every angle over new design only.
+- Running independent reviews one after another when running them together was allowed.
+- Reading a skipped check as a pass. A gate skipped on a precondition (a dirty work tree, an unreadable config) looks like a pass. Confirm the gate checked what changed, and count exit codes, not findings.
 
 ## On Linux
 
-Everything above is the Windows workflow and stays valid there. On Linux, the Proton setup, the measured tool matrix and the pitfalls are in the shared Linux and Proton notes (`skills/_shared/linux-proton.md`); this section only says what changes for this procedure.
-
-- The search lines in the code blocks of the `deep-audit-*.md` files (`Grep "<pattern>" --type c --output_mode content -n true`) are recipes for the agent's own search tool, not shell commands, so they work the same on Linux. Outside the agent, `rg -n --type c "<pattern>"` runs the same search; build the tables by hand or with Python. Paths: forward slashes, case-sensitive file system (see the guide).
+The procedure is the same. The search lines in the `deep-audit-*.md` files are recipes for the agent's own search tool, so they work on Linux too; outside the agent, `rg -n --type c "<pattern>"` runs the same search, and the tables are built by hand or with Python. Use forward slashes and expect a case sensitive file system. The Proton setup and its traps are in `_shared/linux-proton.md`.

@@ -154,7 +154,7 @@ Adding a missing selection or the two axis points to an MLOD `.p3d` is script wo
 
 Measured in game or tool behaviour; not checked on `P:\`.
 
-- **Which way a positive angle turns.** Right handed around the axis from its first memory point to its second, the points taken in index order (measured in game on DayZDiag 1.29.163709). With the axis toward +Z, +X moves toward +Y.
+- **Which way a positive angle turns.** Right handed around the axis from its first memory point to its second, the points taken in index order (measured in game on DayZDiag 1.29). With the axis toward +Z, +X moves toward +Y.
 - **A child rotation composes with its parent's.** A part that folds on another folding part works when it is a child bone of it. Checked with rays on a leaf that folds on a folding part: blade tips cut at x = ±3.15 m against ±3.21 m predicted.
 - **Chained segments.** Several entries with different `minValue` to `maxValue` segments over one clamped source play as one sequence, and play back in reverse when the source returns.
 - **A sub-piece of a proxy cannot be animated in place.** Animations move whole selections and whole proxies. Split the moving piece into its own proxy or selection.

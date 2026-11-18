@@ -1,6 +1,6 @@
 @echo off
 REM Compare two renders taken with the same camera and report what changed. Thin wrapper, forwards all arguments.
-REM See skills\_shared\models\blender-visual-review.md ("Delta check") for full usage.
+REM See skills\_shared\models\blender-visual-review.md ("Did the fix land") for full usage.
 REM Uses python when it runs, otherwise the py launcher. Running it (not just
 REM finding it) skips the Microsoft Store alias, which is on PATH but exits 9009.
 REM If neither runs it prints one [FAIL] line and exits 9009. (call ) clears the

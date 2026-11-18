@@ -1,20 +1,13 @@
-"""validate() 1.2.0: one negative per finding code, and parity with
-tools/audit_p3d.py."""
+"""validate() 1.2.0: one negative per finding code."""
 
 import io
 import math
-import os
 import struct
-import subprocess
-import sys
 
 import pytest
 
 from builders import (CUBE_POINTS, CUBE_QUADS, add_proxy_triangle,
                       build_multilod_v2_p3d)
-
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-AUDIT = os.path.join(REPO, "tools", "audit_p3d.py")
 
 
 def codes(findings):
@@ -423,40 +416,6 @@ def test_val_neg_code_1to1(fork, name, mutate):
     p3d = build_multilod_v2_p3d(fork)
     expected = sorted(set(mutate(fork, p3d)))
     assert codes(p3d.validate()) == expected
-
-
-@pytest.mark.parametrize("name,mutate", CASES, ids=[c[0] for c in CASES])
-def test_val_audit_parity(fork, name, mutate, tmp_path):
-    """The pruned audit (tools/audit_p3d.py, delegating to this library)
-    reports the SAME findings, with severities mapped: ERROR to CRITICAL
-    and exit 1, WARN to WARNING and exit 0."""
-    p3d = build_multilod_v2_p3d(fork)
-    expected = sorted(set(mutate(fork, p3d)))
-    fx = tmp_path / ("%s.p3d" % name)
-    with open(str(fx), "wb") as f:
-        p3d.write(f)
-    env = dict(os.environ, PYTHONPATH=REPO)
-    r = subprocess.run([sys.executable, AUDIT, str(fx)],
-                       capture_output=True, text=True, env=env, cwd=REPO)
-    for code in expected:
-        assert "[%s]" % code in r.stdout, (code, r.stdout)
-        sev = "CRITICAL" if code.startswith("ERR_") else "WARNING"
-        assert any(sev in ln and "[%s]" % code in ln
-                   for ln in r.stdout.splitlines()), (code, r.stdout)
-    has_err = any(c.startswith("ERR_") for c in expected)
-    assert r.returncode == (1 if has_err else 0), r.stdout
-
-
-def test_val_audit_parity_clean(fork, tmp_path):
-    """The clean model passes the pruned audit: ALL PASSED, exit 0."""
-    fx = tmp_path / "clean.p3d"
-    with open(str(fx), "wb") as f:
-        build_multilod_v2_p3d(fork).write(f)
-    env = dict(os.environ, PYTHONPATH=REPO)
-    r = subprocess.run([sys.executable, AUDIT, str(fx)],
-                       capture_output=True, text=True, env=env, cwd=REPO)
-    assert r.returncode == 0
-    assert "ALL CHECKS PASSED" in r.stdout and "OVERALL: ALL PASSED" in r.stdout
 
 
 # ---- WARN_COMPONENT_COVERAGE: the union of the components (1.9.0) -----

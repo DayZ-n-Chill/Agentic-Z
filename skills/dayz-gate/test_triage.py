@@ -162,7 +162,7 @@ def test_classify(line, category):
 
 
 # Lines every DayZDiag session prints with or without a mod (dayz-launch-test references/troubleshooting.md
-# and references/session-findings.md). They must stay out of the error categories and out of the catalog,
+# and references/window-capture-pitfalls.md). They must stay out of the error categories and out of the catalog,
 # or every watch and every pasted log would report them.
 @pytest.mark.parametrize("line", [
     # P:\scripts\4_world\plugins\pluginmanager.c:339 prints this under DIAG_DEVELOPER, then dumps a stack.

@@ -16,7 +16,7 @@ tool contains only:
 - the strict adapter;
 - `backend/manifest-v1.json`, which pins the five required backend files by
   SHA-256;
-- three first-party binary fixtures.
+- three binary ODOL test fixtures.
 
 The adapter verifies the manifest and every backend file by SHA-256 in the
 parent process, launches an isolated subprocess, and verifies the same
@@ -111,16 +111,15 @@ converted model must not be represented as a strict inspection pass.
 | `ODOL_SUMMARY_INVALID` | A diff input is not a complete valid strict summary. |
 | `ODOL_OUTPUT_UNWRITABLE` | Requested JSON output cannot be written atomically. |
 
-## Authorized fixtures
+## Test fixtures
 
 | Fixture | Version / LODs | Size | SHA-256 |
 |---|---:|---:|---|
 | `odol-v53-ammo-box.p3d` | v53 / 1 | 462 | `c2ba93cc05d3d47df5400c6f5f68aef928687eef06ce38747340927cd39e96ba` |
 | `odol-v54-rugermarkiv-optic.p3d` | v54 / 1 | 562 | `ccdb62e78661f2a0d98e5d5ca8844a8a7f0ae5242c2e1f403530d01d0ef037f9` |
-| `odol-v55-lfquad-body.p3d` | v55 / 5 | 1,441,109 | `9dd2b16a70001b5e6513bf26da0b24db6c2a92c09f6fa09ae9aab20f77ef19d3` |
+| `odol-v55-vehicle-body.p3d` | v55 / 5 | 1,441,109 | `9dd2b16a70001b5e6513bf26da0b24db6c2a92c09f6fa09ae9aab20f77ef19d3` |
 
-All three are first-party assets authorized for public redistribution. They
-contain no backend source.
+All three are test fixtures. They contain no backend source.
 
 ## Test
 

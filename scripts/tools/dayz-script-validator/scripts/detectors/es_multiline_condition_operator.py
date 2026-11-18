@@ -18,7 +18,7 @@ ES_MULTILINE_CONDITION_OPERATOR_RULE_ID = "ES-MULTILINE-CONDITION-OPERATOR"
 # was refused with `Invalid statement ')'` and `Syntax error` at the
 # continuation line. The same parser rule, with the operator leading the next
 # line instead, is in skills/_shared/enscript/depth/compiler-traps.md ("A newline
-# terminates the statement ALSO in a condition": `Expected ')'`);
+# ends the statement": `Expected ')'`);
 # that form is not reported here. No `if` or `while` header
 # ending in `&&` or `||` was found in the DayZ-MCP addon (compiles on 1.29
 # and 1.30) or in any .c file of this repo.

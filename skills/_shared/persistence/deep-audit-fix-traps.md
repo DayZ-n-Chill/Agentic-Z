@@ -21,7 +21,7 @@ Caveat when applying the propagation (step 5): if the missing call-site moves to
 
 Case: an admin tool mod (a dual cross-family review plus this procedure). The code entered with two independent UNSOUND verdicts and emerged with 19 fixes. The two most severe findings of the day **were not in the code being audited**: they were in the fixes written that very day. None of the 8 angles would have found them, because all 8 angles look at the system, not the patch.
 
-### 1. A reused identifier is verified by its lifecycle, not by its equality
+### Check a reused identifier by its lifecycle, not by its equality
 
 The first check is that the symbol exists. The second is the meaning of a helper you reuse. The missing third check is the one that bites in two-process systems: when a fix uses an identifier issued by another actor, verifying that the equality holds is not enough; you must also verify how long that equality lives and who resets the counter.
 
@@ -31,7 +31,7 @@ Real case: to delete an orphaned entity, a fix reused the `command_id` returned 
 
 A corollary from the same case: also verify the execution order on the other actor. There, a `spawn` was always deferred to a queue while a `delete` of a batch without a spawn was dispatched immediately, so the compensation could run before the spawn it was meant to undo and create the permanent orphan it was meant to prevent.
 
-### 2. Step 6 looks for interactions between fixes, not just defects in each fix
+### Look for interactions between fixes in step 6, not just defects in each fix
 
 Step 6 says "re-run the angles whose code changed most". That is not enough: it invites re-auditing each fix on its own, while the defect appears in the combination of two correct fixes.
 

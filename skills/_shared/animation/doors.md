@@ -2,7 +2,7 @@
 
 What a door needs inside the model, how the names line up with `model.cfg`, `config.cpp`, the player's door actions and script, and who writes each part.
 
-This file is the short version. `building-doors.md` and the three files it indexes hold the depth: every `model.cfg` and `config.cpp` key (`door-config-and-locks.md`), the LOD contract (`door-lods.md`), three worked patterns and the 1.30 lock rules (`door-patterns.md`).
+This file is the short version. `building-doors.md` and the files it indexes hold the depth: every `model.cfg` and `config.cpp` key (`door-config-and-locks.md`), the LOD layout (`door-lods.md`), three worked patterns (`door-patterns.md`), the 1.30 open check (`door-open-and-lock-code.md`) and locks on building doors (`building-door-locks.md`).
 
 ## Who writes what
 
@@ -34,14 +34,14 @@ A double door has one bone and one axis per leaf but one source, one component a
 
 Two name chains meet in a door:
 
-- **What moves:** a named selection in the model, a skeleton bone of the same name, and the `selection` of the `model.cfg` animation.
-- **What the player uses:** a named selection in the View Geometry LOD, the animation's `source`, and the `class Doors` entry.
+- What moves: a named selection in the model, a skeleton bone of the same name, and the `selection` of the `model.cfg` animation.
+- What the player uses: a named selection in the View Geometry LOD, the animation's `source`, and the `class Doors` entry.
 
 In a plain door both chains use one name. They split when a door is opened from a button or a lever beside it: the animation keeps `selection = "door1"` but takes its `source` from the controller's View Geometry selection, for example `door1_open`, and the `class Doors` entry names that selection in `component`. A static button needs no bone and no animation; a lever that moves gets its own bone and animation on the same source. Several animations can share one source (door, handle and lever from one action), and a handle that should ride on the door names the door bone as its skeleton parent.
 
 In vanilla the `class Doors` subclass name, its `component` and the animation source are always one name: all 1,373 `class Doors` entries in the configs under `P:\DZ` have a class name equal to their `component` apart from letter case (`class Doors5` with `component="Doors5"`, `P:\DZ\structures\residential\config.cpp:7385`). Vanilla therefore cannot show whether the engine ties the animation source to the subclass name or to `component`. Keep all three the same in a mod door.
 
-Worked patterns for a door with a handle, a door with a button, and a door with a handle and a lever, with the pitfalls of each, are in `door-patterns.md`. They are third-party mod patterns, not vanilla.
+Worked patterns for a door with a handle, a door with a button, and a door with a handle and a lever, with the pitfalls of each, are in `door-patterns.md`. They come from third party mod samples, not vanilla.
 
 ## Model rules for a door
 
@@ -53,7 +53,7 @@ Worked patterns for a door with a handle, a door with a button, and a door with 
 
 ## User actions
 
-- Every player has `ActionOpenDoors`, `ActionCloseDoors` and `ActionLockedDoors` (`P:\scripts\4_world\entities\manbase\playerbase.c:1697` to `:1699`). A lockpick adds `ActionLockDoors` and `ActionUnlockDoors` (`P:\scripts\4_world\entities\itembase\gear\tools\lockpick.c:18`, `:19`). A door can be lockpicked when its `lockCompatibilityBitMask` includes `1 << EBuildingLockType.LOCKPICK`, which is the default when the key is missing from its `class Doors` entry (`P:\scripts\3_game\entities\additionaldoorsinfo.c:29` to `:32`); both actions AND the lockpick's `GetKeyCompatibilityType` with the door's `GetLockCompatibilityType` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionunlockdoors.c:55`, `actionlockdoors.c:56`).
+- Every player has `ActionOpenDoors`, `ActionCloseDoors` and `ActionLockedDoors` (`P:\scripts\4_world\entities\manbase\playerbase.c:1697` to `:1699`). A lockpick adds `ActionLockDoors` and `ActionUnlockDoors` (`P:\scripts\4_world\entities\itembase\gear\tools\lockpick.c:18`, `:19`). A door can be lockpicked when its `lockCompatibilityBitMask` includes `1 << EBuildingLockType.LOCKPICK`, which is the default when the key is missing from its `class Doors` entry (`P:\scripts\3_game\entities\additionaldoorsinfo.c:29` to `:32`); both actions combine the lockpick's `GetKeyCompatibilityType` with the door's `GetLockCompatibilityType` with a bitwise and (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionunlockdoors.c:55`, `actionlockdoors.c:56`).
 - `ActionOpenDoors` works only on buildings: it checks `IsBuilding` (`P:\scripts\4_world\classes\useractionscomponent\actions\interact\actionopendoors.c:33`), which is true for `Building` (`P:\scripts\3_game\entities\building.c:267`) and false for other objects (`P:\scripts\3_game\entities\object.c:642`). A mod building inherits a house class such as `HouseNoDestruct` (`P:\DZ\data\config.cpp:3119`).
 - On the server it turns the aimed component into a door index and calls `OpenDoor` (`actionopendoors.c:67` to `:73`). A building with matching model names and `class Doors` needs no mod script.
 - A door that opens from one side only reads two memory point names from its `class Doors` entry, `interactPositionPoint` and `interactDirPoint` (`additionaldoorsinfo.c:35`, `:38`), checked by `DoorsDirectionalCheck` (`P:\scripts\4_world\entities\game\super\building.c:336`). No vanilla `config.cpp` under `P:\DZ\` sets them. Add both points to the Memory LOD only when the user wants this.
@@ -62,23 +62,7 @@ Worked patterns for a door with a handle, a door with a button, and a door with 
 
 ## Building doors that take a lock (1.30)
 
-Since 1.30 a building is a `BuildingBase` with two lock slots, `Att_CombinationLock` and `Att_CodeLock` (`P:\scripts\4_world\entities\game\super\building.c:10` to `:11`), and each `class Doors` entry can carry extra keys that script reads into an `AdditionalDoorInfo` (`Init`, `P:\scripts\3_game\entities\additionaldoorsinfo.c:21` to `:45`):
-
-| Key in the `class Doors` entry | What it does |
-|---|---|
-| `relatedInventorySlots[]` | The lock slots that belong to this door. Open, the lockpick and the attach action all read it. |
-| `lockCompatibilityBitMask` | Which keys fit. When it is missing, the lockpick fits (`1 << EBuildingLockType.LOCKPICK`). |
-| `interactPositionPoint`, `interactDirPoint` | Memory points for a door that works from one side (above). |
-| `doorConstructionPart`, `doorConstructionPhysicsSource` | For a door of a house that can be rebuilt: its construction part, and the `AnimationSources` name that switches the door's physics. |
-
-What follows for the model and the config:
-
-- The entity's `attachments[]` lists the slots, as the vanilla fence does (`P:\DZ\gear\camping\config.cpp:4362` to `:4368`), and the door's entry lists them again in `relatedInventorySlots[]`.
-- The Memory LOD needs the slot selections `att_combinationlock` and `att_codelock`, the `selection` values of the slot classes (`Slot_Att_CombinationLock`, `P:\scripts\config.cpp:2316` to `:2321`; `Slot_Att_CodeLock`, `P:\scripts\config.cpp:2768` to `:2773`).
-- A locked `DigitalCodeLock` or `CombinationLock` in a related slot stops the door from opening (`CanDoorBeOpened`, `P:\scripts\4_world\entities\game\super\building.c:307` to `:333`). A second lock on the same door is refused and a locked lock cannot be taken off (`CanReceiveAttachment`, `P:\scripts\4_world\entities\game\super\building.c:192`; `CanReleaseAttachment`, `:267`).
-- Combination and code locks are inventory attachments. `EBuildingLockType` still only has `NONE`, `LOCKPICK` and the ship container keys (`P:\scripts\3_game\enums\ebuildinglocktypes.c:7` to `:16`).
-
-No `config.cpp` under `P:\DZ\` uses `relatedInventorySlots[]`, so there is no vanilla door block to copy; the full reasoning, the lock items and the bunker door are in `door-patterns.md`, "Building locks (DayZ 1.30)".
+The 1.30 lock slots, the `class Doors` keys they need and the lock items are in `building-door-locks.md`.
 
 ## Spawn state
 
@@ -89,7 +73,7 @@ Both meanings are Bohemia format knowledge; vanilla script does not show them.
 
 ## Furniture inside houses
 
-A fridge or wardrobe inside a vanilla house is a proxy inside the house's model, not a placed object of its own class. `StaticObj_Furniture_fridge` exists (`P:\DZ\structures\furniture\config.cpp:547` to `:551`), but changing that class does not reach the fridges in houses. Check for this before promising doors on vanilla furniture; what was measured is in `building-doors.md`, "Common traps".
+A fridge or wardrobe inside a vanilla house is a proxy inside the house's model, not a placed object of its own class. `StaticObj_Furniture_fridge` exists (`P:\DZ\structures\furniture\config.cpp:547` to `:551`), but changing that class does not reach the fridges in houses. Check for this before promising doors on vanilla furniture; what was measured is in `building-doors.md`, "Furniture inside vanilla houses".
 
 ## The script side
 
@@ -102,7 +86,7 @@ Doors on an item or a placed object that is not a building, such as the base bui
 For each door, in order:
 
 1. Visual LODs: select the door leaf faces and points, create the named selection `<bone>` in each visual LOD.
-2. Geometry, Fire Geometry and View Geometry: add the moving collision part to `<bone>`. In View Geometry, also do this: build the door (or the pair of leaves) as its own closed convex part in the View Geometry LOD, keep its ComponentNN name, and add a second named selection named after the door (for example `Doors5`) that holds that part.
+2. Geometry, Fire Geometry and View Geometry: add the moving collision part to `<bone>`. In View Geometry also build the door (or the pair of leaves) as its own closed convex part, keep its ComponentNN name, and add a second named selection named after the door (for example `Doors5`) that holds that part.
 3. Memory LOD: add two points on the hinge as `<bone>_axis` and one point at the handle as `<door>_action`.
 4. Save the MLOD file, then run `/dayz-p3d-audit` on it with `--model-cfg` and `--config`.
 5. Send the art lead the bone, axis, component, action point and source names for the animation and config specialists.

@@ -1,6 +1,6 @@
 # Effect area particles: emitter budget and vertical band
 
-How many particle emitters a contaminated area in `cfgeffectarea.json` asks for, the hard cap, and why an area can hurt players where no gas is drawn. Run these checks before choosing a large radius. Line numbers are from the 1.30 scripts on `P:\`.
+How many particle emitters a contaminated area in `cfgeffectarea.json` asks for, the hard cap, and why an area can hurt players where no gas is drawn. Run these checks before you choose a large radius. Line numbers are from the 1.30 scripts on `P:\`.
 
 ## Contents
 
@@ -12,8 +12,6 @@ How many particle emitters a contaminated area in `cfgeffectarea.json` asks for,
 - [Safe positions](#safe-positions)
 - [The JSON schema](#the-json-schema)
 - [Checklist before picking a radius](#checklist-before-picking-a-radius)
-
----
 
 ## The hard cap
 
@@ -73,7 +71,7 @@ Choose `PosHeight` and `NegHeight` from the real height range of the terrain ins
 
 Underground spaces count too:
 
-- On 1.29 a particle was snapped to `SurfaceY`, so none was ever placed below the terrain, and a bunker inside the cylinder could be lethal while showing no gas (1.29, not yet checked on `P:\`).
+- In 1.29 a particle was snapped to `SurfaceY`, so none was ever placed below the terrain, and a bunker inside the cylinder could be lethal while showing no gas (1.29 is not checked on `P:\`, which holds 1.30).
 - Since 1.30 a particle starts at the height of the area centre and is lowered to `SurfaceRoadY` only when it is above the road surface (`P:\scripts\4_world\classes\contaminatedarea\effectarea.c:414`). An area centred below the surface keeps its particles at that height.
 
 A lethal space with no gas can be a deliberate design, but it should never happen by accident.

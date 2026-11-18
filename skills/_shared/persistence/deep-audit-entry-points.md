@@ -1,118 +1,104 @@
-# Entry-point audit: mechanical check 3
+# Entry point check
 
-Catches the bug class where the canonical path enforces an invariant but an alternative entry point (a synchronous shortcut, an admin command, an early mission hook) skips it. Open this in step 1 for every invariant the mod states about its saved data.
+How to find the bug where the main path keeps a rule about saved data but another way in (a synchronous shortcut, an admin command, an early mission hook) skips it. This is the third mechanical check of `deep-audit.md`; run it for every rule the mod keeps about its saved data.
 
-Reasoning agents miss this because they fixate on the canonical async flow and treat the shortcut as "obviously similar". The shortcut is rarely similar enough.
+A reading review follows the main path, which is usually spread across ticks, and treats the shortcut as obviously the same. It rarely is.
 
-The worked examples are two storage mods (third-party mod behaviour, read in their code or measured in game, not checkable on `P:\`). Function names and `file:line` values in the tables are those mods' and show the shape of each table. The vanilla hooks the procedure names are cited where they are listed. The search lines in the code blocks are recipes for the agent's search tool.
+The examples come from two storage mods, read in their code or measured in game, so they cannot be checked on `P:\`. The function names and `file:line` values in the tables are those mods' and only show the shape of each table. The vanilla hooks are cited where they are listed. The search lines are recipes for the agent's search tool.
 
-## Worked examples
+## Examples
 
-### VULN-009: synchronous virtualize leaves a stale marker
+### The synchronous path leaves a marker
 
-`Virtualize_Async` wrote `.virtualizing`, did the work across ticks, then removed the marker. `VirtualizeSynchronous` (used during shutdown) wrote `.virtualizing` but never removed it, because the shutdown path skipped the cleanup branch that runs after completion. The next boot saw the marker, treated the container as crashed during virtualize, and entered recovery on a fully virtualized container. Recovery merged duplicates.
+`Virtualize_Async` wrote a `.virtualizing` marker, did the work across ticks, then removed the marker. `VirtualizeSynchronous`, used during shutdown, wrote the marker but never removed it, because the shutdown path skipped the cleanup that runs on completion. The next boot saw the marker, decided the container had crashed mid store, and ran recovery on a container that was fully stored. Recovery merged duplicates.
 
-### VULN-001: kill switch not durable across mission entry points
+### A kill switch held only in memory
 
-`OnMissionStart` set the in-memory flag `m_ExternalVSDetected`. `OnMissionLoaded` read it and gated work. It looked correct. The bug: a separate boot path (a server reload after an admin command) skipped `OnMissionStart` and went straight to `OnMissionLoaded`; the flag was still false and the gate did not fire. The fix was to persist the detection result on disk so any entry point could read it again.
+`OnMissionStart` set the flag `m_ExternalVSDetected` in memory, and `OnMissionLoaded` read it to gate work. A second boot path, a server reload after an admin command, skipped `OnMissionStart` and went straight to `OnMissionLoaded`, so the flag was still false and the gate never fired. The fix saved the detection result on disk, where every entry point can read it.
 
-### VULN-004: pre-super gate runs after vanilla super
+### The gate runs after super
 
-`EEItemAttached` called `super.EEItemAttached(item, slot)` first, then checked `IsVirtualized()`. The vanilla super had already changed the cargo before the gate fired, leaving inconsistent state.
+`EEItemAttached` called `super.EEItemAttached(item, slot)` first and then checked `IsVirtualized()`. Vanilla had already changed the cargo, so the state was left inconsistent.
 
-### Second storage mod: an unregister by proximity deletes a neighbour's entry
+### Removing a registry entry by distance
 
-The second mod keeps the objects it placed in its own registry (`placed.json`: class, position and id per entry). The canonical removal went by id: `EEDelete` called `UnregisterEntity`, which looked the rock up by id. When the rock had no id it fell back to the nearest entry of the same class within 0.75 m and saved the file without it. Two entry points delete a rock that never got an id: the placement that creates the rock, checks the site and deletes it on refusal, and an admin who spawns one from the console and deletes it. Both removed the entry of a registered rock nearby, which did not come back after the next restart. Fix: removal needs a matching id, and an entity without one never touches the file. Found by reading the code (audit of 2026-10-03); with the fix, a console rock spawned 0.3 m from a registered one (horizontally) and then deleted left the file's SHA-256 unchanged in game (DayZDiag 1.29), and the registered rock came back after the restart.
+The second mod keeps the objects it placed in its own registry, `placed.json`, with class, position and id per entry. The main removal went by id: `EEDelete` called `UnregisterEntity`, which found the rock by its id. A rock with no id fell back to the nearest entry of the same class within 0.75 m, which was then saved out of the file. Two entry points delete a rock that never got an id: placement, which creates the rock, checks the site and deletes it when refused, and an admin who spawns one from the console and deletes it. Both removed the entry of a registered rock nearby, and that rock did not come back after the next restart.
 
-Another finding of the same audit is the shutdown face of this invariant: a restore pass still in the `CALL_CATEGORY_SYSTEM` queue after `OnMissionFinish` cleared the shutdown flag again, so the deletions of the shutdown unregistered entries. `OnMissionFinish` now removes the pass before setting the flag (the shutdown order in game is not confirmed). Both rules, and the restore that binds by id before position, are in `where-to-save.md`, hard stop 8, and in `load-and-restore.md`, section "A registry entry leaves by its id, never by proximity".
+The fix: removal needs a matching id, and an entity without one never touches the file. Measured in game: a console rock spawned 0.3 m (horizontally) from a registered one and then deleted left the file unchanged, and the registered rock came back after the restart.
 
-## Procedure
+The same audit found the shutdown side of this rule: a restore pass still queued in `CALL_CATEGORY_SYSTEM` after `OnMissionFinish` cleared the shutdown flag again, so the deletions during shutdown removed entries. `OnMissionFinish` now removes the pass before it sets the flag; the shutdown order in game is not confirmed. Both rules, and the restore that binds by id before position, are in `where-to-save.md` and in `load-and-restore.md`, section "A registry entry leaves by its id, never by proximity".
 
-### Step 1: inventory the entry points per invariant
+## List the entry points for each rule
 
-For each invariant the mod enforces, list every entry point that should honour it. Common invariants and their entry points:
+For each rule the mod keeps, list every entry point that should keep it. Common rules and their entry points:
 
-**Invariant: a container must end a virtualize with no marker on disk**
+| Rule | Entry points |
+|---|---|
+| A container ends a store with no marker on disk | `Virtualize_Async` (main path, across ticks); `VirtualizeSynchronous` (shutdown); `Virtualize_FromAdminCommand` (`migrate-all`); `Virtualize_FromMigrationStub` (old saves, runs once) |
+| Detecting another storage mod gates work on every boot | `OnMissionStart`; `OnMissionLoaded`; a server reload after an admin command; a world load after a crash recovery |
+| A registry entry leaves only by its own id | `EEDelete` of a registered entity (pickup, dismantle, destruction); placement refused after the entity was created; an admin console spawn, then delete; `EEDelete` of every entity during shutdown; a restore pass still queued with `CallLater` when `OnMissionFinish` runs |
 
-- `Virtualize_Async` (canonical, multi-tick)
-- `VirtualizeSynchronous` (shutdown)
-- `Virtualize_FromAdminCommand` (`migrate-all`)
-- `Virtualize_FromMigrationStub` (legacy, one-shot)
+The vanilla `Mission` class declares `OnInit`, `OnMissionStart` (`P:\scripts\3_game\gameplay.c:701`), `OnMissionFinish` (`gameplay.c:702`) and `OnUpdate` (`gameplay.c:703`). A search of `P:\scripts` finds no `OnMissionLoaded`: that hook comes from a framework or from the mod (Community Framework modules have one; not checked on `P:\`). List the mission hooks the mod really overrides, vanilla and framework, as separate entry points.
 
-**Invariant: detection of an external virtual storage mod must gate work on every boot**
+For the rule that a gate runs before vanilla `super`, the entry points are the `EE` hooks and the store pair:
 
-- `OnMissionStart`
-- `OnMissionLoaded`
-- Server reload after an admin command
-- World load after a rare crash recovery
+| Hook | Source |
+|---|---|
+| `EEInit` | `P:\scripts\3_game\entities\entityai.c:905` |
+| `EEDelete` | `entityai.c:946` |
+| `EEItemLocationChanged` | `entityai.c:976` |
+| `EEKilled` | `entityai.c:1104` |
+| `EEItemAttached`, `EEItemDetached` | `entityai.c:1159`, `:1199` |
+| `EECargoIn`, `EECargoOut` | `entityai.c:1234`, `:1248` |
+| `OnStoreSave`, `OnStoreLoad` | `entityai.c:2910`, `:2978` |
 
-The vanilla `Mission` class declares `OnInit`, `OnMissionStart` (`P:\scripts\3_game\gameplay.c:701`), `OnMissionFinish` (`gameplay.c:702`) and `OnUpdate` (`gameplay.c:703`). A search of `P:\scripts` finds no `OnMissionLoaded`: that hook comes from a framework or from the mod itself (Community Framework modules have one; not yet checked on `P:\`). List the mission hooks the audited mod really overrides, vanilla and framework, as separate entry points.
+## Walk every entry point
 
-**Invariant: the pre-super gate must precede the vanilla super in EE hooks**
+Search for each entry point, open each match and check that the rule holds. Build the table:
 
-- `EEInit` (`P:\scripts\3_game\entities\entityai.c:905`)
-- `EEDelete` (`entityai.c:946`)
-- `EEKilled` (`entityai.c:1104`)
-- `EECargoIn` (`entityai.c:1234`) and `EECargoOut` (`entityai.c:1248`)
-- `EEItemAttached` (`entityai.c:1159`) and `EEItemDetached` (`entityai.c:1199`)
-- `EEItemLocationChanged` (`entityai.c:976`)
-- `OnStoreSave` (`entityai.c:2910`) and `OnStoreLoad` (`entityai.c:2978`)
-
-**Invariant: an entry of the mod's own registry leaves only by its own id**
-
-- `EEDelete` of a registered entity (pickup, dismantle, destruction)
-- Placement refused after the entity was created (create, check the site, delete)
-- Admin console spawn, then delete (the entity never got an id)
-- `EEDelete` of every entity while the mission shuts down
-- A restore pass still queued (`CallLater`) when `OnMissionFinish` runs
-
-### Step 2: for each invariant, walk every entry point
-
-Search for the entry-point name; open each match; verify that the invariant is enforced. Build the table:
-
-| Invariant | Entry point | File:Line | Honoured? | Notes |
+| Rule | Entry point | File:Line | Kept? | Notes |
 |---|---|---|---|---|
-| End virtualize without marker | `Virtualize_Async` | persistence.c:340 | yes | Removes `.virtualizing` on success |
-| End virtualize without marker | `VirtualizeSynchronous` | persistence.c:480 | **no: VULN-009** | Skips the cleanup branch |
-| End virtualize without marker | `Virtualize_FromAdminCommand` | admin.c:120 | yes | Calls the async path |
-| Pre-super gate | `EEItemAttached` | events.c:88 | **no: VULN-004** | Gate after super |
-| Pre-super gate | `EECargoIn` | events.c:102 | yes | |
+| Store ends without a marker | `Virtualize_Async` | persistence.c:340 | yes | removes `.virtualizing` on success |
+| Store ends without a marker | `VirtualizeSynchronous` | persistence.c:480 | no | skips the cleanup branch |
+| Store ends without a marker | `Virtualize_FromAdminCommand` | admin.c:120 | yes | calls the async path |
+| Gate before super | `EEItemAttached` | events.c:88 | no | gate after super |
+| Gate before super | `EECargoIn` | events.c:102 | yes | |
 
-### Step 3: specific patterns to search
+## Patterns to search
 
-**Synchronous shortcuts of an async operation**:
+Synchronous shortcuts of a queued operation:
 
 ```text
 Grep "Synchronous|_Sync\b|Force\w+|_Now\b|ImmediateMode" --type c --output_mode content -n true
 ```
 
-For each hit, find the corresponding async function and compare the two by hand. The difference should be limited to scheduling and yielding, not invariants.
+For each hit, find the matching queued function and compare the two by hand. They should differ only in scheduling, not in the rules they keep.
 
-**Admin command handlers**:
+Admin command handlers:
 
 ```text
 Grep "OnAdminCommand|HandleAdmin|RegisterCommand|admin_|Cmd_" --type c --output_mode content -n true
 ```
 
-For each handler, ask: does this short-circuit the async queue? If yes, does it acquire the same gates and clean up the same markers as the queue would?
+For each handler, ask whether it bypasses the queue. If it does, it must take the same gates and clean up the same markers as the queue.
 
-**Mission entry points**:
+Mission entry points:
 
 ```text
 Grep "OnMissionStart|OnMissionLoaded|OnMissionFinish|OnUpdate" --type c --output_mode content -n true
 ```
 
-For state set in `OnMissionStart` and read in `OnMissionLoaded`: is there a path that reaches `OnMissionLoaded` without `OnMissionStart`? Server reload, world reload, mission script reload. If yes, the state must be **on disk**, not in memory.
+For state set in `OnMissionStart` and read in `OnMissionLoaded`, look for a path that reaches `OnMissionLoaded` without `OnMissionStart`: a server reload, a world reload, a mission script reload. If one exists, the state must be on disk, not in memory.
 
-**EE hook ordering**:
+Order inside `EE` hooks:
 
 ```text
 Grep "override\s+void\s+EE" --type c --output_mode content -n true
 ```
 
-For each EE override that gates: read the body. The gate must run before the `super` call in every such hook. A hook that calls `super` first and gates afterwards is a finding (VULN-004), even when every hook does it in the same order.
+For each `EE` override that gates, read the body. The gate must run before `super` in every such hook. A hook that calls `super` first and gates afterwards is a finding, even when every hook does it the same way.
 
-**Proximity used as identity**:
+Distance used as identity:
 
 ```text
 Grep "Closest|Nearest|GetObjectsAtPosition" --type c --output_mode content -n true
@@ -122,22 +108,22 @@ For each hit, ask whether it decides which registry entry an entity owns. If it 
 
 - a matching id must win;
 - an entity without an id must not remove an entry;
-- on restore, a candidate in the radius that does not carry the entry's id is not a match. The first candidate is not guaranteed to be the nearest one: `GetObjectsAtPosition3D` promises no order (`P:\scripts\3_game\global\game.c:930`; its comment says only that it returns all objects in the sphere);
-- an empty radius does not prove that the entry's entity is gone, so a restore that creates on it can make a second one.
+- on restore, a candidate in the radius that does not carry the entry's id is not a match, and the first candidate is not always the nearest: `GetObjectsAtPosition3D` promises no order (`P:\scripts\3_game\global\game.c:930`; its comment says only that it returns all objects in the sphere);
+- an empty radius does not prove the entry's entity is gone, so a restore that creates one there can make a second copy.
 
-How a restore should bind and create is an open problem: no rule for it has come out of review sound (`where-to-save.md`, hard stop 8, and point 2 of the registry section in `load-and-restore.md`).
+How a restore should bind and create is still open: no rule for it has held up in review (`where-to-save.md`, and the registry section of `load-and-restore.md`).
 
-### Step 4: output
+## Output
 
-A findings table with three columns: invariant, offending entry point, fix sketch. Group by invariant so the user sees "this invariant is honoured in 3 of 4 entry points". One wrong entry point is enough for a finding; rate it by what the break does to player data, as with any other finding: P0 when data loss is possible, P1 when recovery is required. VULN-009 above is P1: the stale marker sends a complete container into recovery.
+A findings table with three columns: the rule, the entry point that breaks it, and a sketch of the fix. Group by rule, so the user sees "this rule holds in 3 of 4 entry points". One broken entry point is enough for a finding. Rate it by what it does to player data, as with any finding: data loss possible, or recovery needed. The synchronous marker above needs recovery: it sends a complete container into recovery.
 
-## Heuristics
+## Rules of thumb
 
-- An entry-point inventory of fewer than 4 items per invariant is suspicious: go and look harder, you missed one.
-- "Synchronous", "Sync", "Force", "Immediate" or "Now" in a function name means a shortcut, which means high suspicion.
-- Admin commands almost always skip something. Default to "untrusted, audit individually".
-- Server-reload and mission-reload paths are easy to forget; ask the user explicitly which entry points exist if unsure.
+- Fewer than four entry points for a rule usually means one was missed; look harder.
+- "Synchronous", "Sync", "Force", "Immediate" or "Now" in a function name marks a shortcut. Suspect it.
+- Admin commands almost always skip something. Audit each one on its own.
+- Server reload and mission reload paths are easy to forget; when unsure which entry points exist, ask the user.
 
-## Time budget
+## Time
 
-About 3 to 5 minutes per invariant. That mod has about 6 invariants of this shape, so about 30 minutes. Slow, but cheap relative to a P0 that escapes.
+Allow 3 to 5 minutes per rule. A storage mod with about six rules of this shape takes about 30 minutes, which is cheap next to a data loss bug that ships.
