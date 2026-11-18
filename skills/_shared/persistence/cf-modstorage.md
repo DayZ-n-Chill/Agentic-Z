@@ -22,6 +22,7 @@ modded class ItemBase
         CF_ModStorage ctx = storage.Get("MyMod");
         ctx.Write(m_MyModCustomValue);
         ctx.Write(m_MyModTag);
+        ctx.Write(m_MyModNewField);
     }
 
     override bool CF_OnStoreLoad(CF_ModStorageMap storage)
@@ -33,14 +34,24 @@ modded class ItemBase
         if (!storage.Contains("MyMod"))
             return true;
 
+        // Read into locals; apply nothing unless every read succeeds.
         CF_ModStorage ctx = storage.Get("MyMod");
-        if (!ctx.Read(m_MyModCustomValue)) return false;
-        if (!ctx.Read(m_MyModTag))         return false;
+        int customValue;
+        string tag;
+        int newField;
+        if (!ctx.Read(customValue)) return false;
+        if (!ctx.Read(tag))         return false;
 
-        if (ctx.GetVersion() >= 2)
+        bool hasNewField = ctx.GetVersion() >= 2;
+        if (hasNewField)
         {
-            if (!ctx.Read(m_MyModNewField)) return false;
+            if (!ctx.Read(newField)) return false;
         }
+
+        m_MyModCustomValue = customValue;
+        m_MyModTag = tag;
+        if (hasNewField)
+            m_MyModNewField = newField;
 
         return true;
     }

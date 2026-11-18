@@ -3,14 +3,14 @@
 Tier 3 pack for config work on custom containers (dayz-config-specialist). Tier 2 rules in `dayz-conventions.md` still apply.
 
 Inheriting from `Container_Base` and declaring `scope = 2; model = ...` is
-not the whole class. Vanilla containers also declare a `class Cargo`, a
-`GlobalArmor` and nested `healthLevels[]`. Copy all three.
+not the whole class. Most vanilla containers (not all) also declare a
+`class Cargo`, a `GlobalArmor` and nested `healthLevels[]`. Copy all three.
 
 ### 1. Declare `class Cargo`
 
 Vanilla containers declare it next to `DamageSystem`: `Barrel_ColorBase`
 (`P:\DZ\gear\containers\config.cpp:93-98`, `itemsCargoSize[]={10,15}`)
-and `WoodenCrate` (`P:\DZ\gear\camping\config.cpp:10261-10266`). For a
+and `WoodenCrate` (`P:\DZ\gear\camping\config.cpp:10271-10276`). For a
 container that holds no player cargo (loot dropped from `EEKilled` and the
 like), declare it with a zero size:
 
@@ -31,8 +31,11 @@ class MyMod_FancyContainer : Container_Base
 };
 ```
 
-No vanilla container uses a zero cargo size, so this case is not checked on
-`P:\`. Start a diag session and read the RPT after you add it.
+The vanilla zero-cargo example is `NBCPack_ColorBase : Container_Base`
+(`P:\DZ\gear_takistan\containers\config.cpp:20`), which sets
+`itemsCargoSize[]={0,0}` at line 41 and declares no `class Cargo`. The
+nested `class Cargo` above is not checked on `P:\`, so start a diag
+session and read the RPT after you add it.
 
 ### 2. `class GlobalArmor` for each damage type
 
@@ -97,5 +100,5 @@ healthLevelValues[] = { 1.0, 0.7, 0.5, 0.3, 0.0 };
 ```
 
 Reference: vanilla `WoodenCrate` in `DZ\gear\camping\config.cpp` lines
-10157-10292 has the full pattern (`DamageSystem` with `GlobalHealth` and
+10167-10276 has the full pattern (`DamageSystem` with `GlobalHealth` and
 `GlobalArmor`, then `class Cargo`).

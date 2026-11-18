@@ -126,7 +126,7 @@ Terrain Builder, Publisher, BinMake and the GUI front ends were not started. Obj
 
 ## The helper scripts
 
-All are in `scripts/tools/dayz-linux/`. The shell scripts run on Linux only (POSIX `sh` or `bash`, `/proc`, Proton). The two Python scripts also run on Windows, where the vanilla scripts folder on the work drive is already a tree `build-api-index.py` can read: `python scripts/tools/dayz-linux/build-api-index.py`, given that folder and an output folder, writes the index in about 6 seconds (6,776 classes, 431 enums), and `python scripts/tools/dayz-linux/dayz-api.py chain PlayerBase` then prints the base class chain. On Windows the Tier 2 search rule (Grep, then the `dayz-rag` search) stays the first choice; the index is for a machine with no work drive, or for one answer that needs every inherited member.
+All are in `scripts/tools/dayz-linux/`. The shell scripts run on Linux only (POSIX `sh` or `bash`, `/proc`, Proton). The two Python scripts also run on Windows, where the vanilla scripts folder on the work drive is already a tree `build-api-index.py` can read: `python scripts/tools/dayz-linux/build-api-index.py`, given that folder and an output folder, writes the index in about 6 seconds (6,786 classes, 431 enums), and `python scripts/tools/dayz-linux/dayz-api.py chain PlayerBase` then prints the base class chain. On Windows the Tier 2 search rule (Grep, then the `dayz-rag` search) stays the first choice; the index is for a machine with no work drive, or for one answer that needs every inherited member.
 
 | Script | What it does |
 |---|---|

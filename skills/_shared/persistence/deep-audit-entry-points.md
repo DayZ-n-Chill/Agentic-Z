@@ -26,7 +26,7 @@ The second mod keeps the objects it placed in its own registry, `placed.json`, w
 
 The fix: removal needs a matching id, and an entity without one never touches the file. Measured in game: a console rock spawned 0.3 m (horizontally) from a registered one and then deleted left the file unchanged, and the registered rock came back after the restart.
 
-The same audit found the shutdown side of this rule: a restore pass still queued in `CALL_CATEGORY_SYSTEM` after `OnMissionFinish` cleared the shutdown flag again, so the deletions during shutdown removed entries. `OnMissionFinish` now removes the pass before it sets the flag; the shutdown order in game is not confirmed. Both rules, and the restore that binds by id before position, are in `where-to-save.md` and in `load-and-restore.md`, section "A registry entry leaves by its id, never by proximity".
+The same audit found the shutdown side of this rule: a restore pass still queued in `CALL_CATEGORY_SYSTEM` after `OnMissionFinish` cleared the shutdown flag again, so the deletions during shutdown removed entries. `OnMissionFinish` now removes the pass before it sets the flag; the shutdown order in game is not confirmed. Both rules, and the restore that binds by id before position, are in `load-and-restore.md`, section "A registry entry leaves by its id, never by distance" (the shutdown rule is point 3); the removal rule is also in `where-to-save.md`, "Hard stops".
 
 ## List the entry points for each rule
 

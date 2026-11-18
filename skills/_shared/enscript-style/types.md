@@ -67,7 +67,7 @@ ref TVectorArray m_SpawnPoints;
 ```
 
 - **`ref`**: a strong reference. The instance is deleted when the last strong reference to it goes away (`../enscript/references/language_memory.md`).
-- **`autoptr`**: the older owning qualifier, not a separate model. Vanilla keeps it in ten files, mostly `1_core` docs and examples (`autoptr map<string, float> m_values;`, `P:\scripts\1_core\proto\serializer.c:14`). Newer vanilla code uses `ref` for members. Use `ref` in mod code (`../enscript/references/language_memory.md`, section `autoptr`).
+- **`autoptr`**: the older owning qualifier, not a separate model. Vanilla keeps it in ten files, four in `1_core` and six in ordinary `3_game`, `4_world` and `5_mission` code (`autoptr map<string, float> m_values;`, `P:\scripts\1_core\proto\serializer.c:14`). Newer vanilla code uses `ref` for members. Use `ref` in mod code (`../enscript/references/language_memory.md`, section `autoptr`).
 
 ```
 class Example

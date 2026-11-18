@@ -1,9 +1,11 @@
 """Pack and remove a session-only helper mod under P:\\Mods\\@<name>\\.
 
-Used by /dayz-gate visual (AZ_VisualHelper) and the dayz-testbridge MCP server
-(AZ_TestBridge). A helper mod is packed for one test session and removed
-afterwards; it is never part of a user's mod. The folder gets an ownership
-marker so remove() and /dayz-clean-workspace may delete it and nothing else.
+Used by /dayz-gate visual (AZ_VisualHelper), /dayz-gate's test bridge packing
+(AZ_TestBridge, gate.py) and the dayz-testbridge MCP server (AZ_TestBridge). A
+helper mod is packed for one test session and removed afterwards; it is never
+part of a user's mod. The folder gets an ownership marker so remove() may delete
+it and nothing else. /dayz-clean-workspace does not touch it, since it acts only
+on mods with a workspace/<ModName> entry.
 """
 from __future__ import annotations
 

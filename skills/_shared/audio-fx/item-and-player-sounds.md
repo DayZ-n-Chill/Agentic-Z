@@ -109,7 +109,7 @@ The check itself is `IsHeadlessOrDedicatedServer()` on the game (`P:\scripts\3_g
 - `RegisterHandler(SoundHandlerBase handler)` adds one (`P:\scripts\4_world\classes\soundhandlers\playersoundmanager.c:33`) and `GetHandler(eSoundHandlers id)` returns it (`P:\scripts\4_world\classes\soundhandlers\playersoundmanager.c:39`).
 - There is a server manager and a client manager. The client one registers the client handler of each state (`P:\scripts\4_world\classes\soundhandlers\playersoundmanager.c:95`).
 - State sounds of other players are heard only within `SOUNDS_HEARING_DISTANCE = 50` meters (`P:\scripts\4_world\classes\soundhandlers\playersoundmanager.c:2`).
-- The freezing handler is not live: the whole of `P:\scripts\4_world\classes\soundhandlers\freezingsoundhandler.c` is commented out (lines 1 to 57), and its enum entry and its registration are commented out too (`P:\scripts\4_world\classes\soundhandlers\playersoundmanager.c:99`). A mod cannot extend `FreezingSoundHandlerClient`.
+- The freezing handler is not live: the whole of `P:\scripts\4_world\classes\soundhandlers\freezingsoundhandler.c` is commented out (lines 1 to 58), and its enum entry and its registration are commented out too (`P:\scripts\4_world\classes\soundhandlers\playersoundmanager.c:99`). A mod cannot extend `FreezingSoundHandlerClient`.
 
 ## Step sounds
 

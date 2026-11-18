@@ -90,7 +90,7 @@ Notes on tool behaviour seen on one vehicle mod. None of it is a game fact. The 
 | Old trap | What went wrong | In the fork |
 |---|---|---|
 | 1. `py3d.Selection()` with no arguments | An empty selection with no error; later adds wrote nothing, so the selection reached the file with its name and no members. The old fix was `py3d.Selection(lod.points, lod.faces)`. | A clear `TypeError`. Use `lod.new_selection(name)` or `lod.set_selection(name, ...)`. |
-| 2. A weight given as a float (`1.0`) | The weight slot is one byte; a float wrote four, shifted the rest of the file by three, and Object Builder could not read the LOD. Same for point weights. | Whole numbers are converted on write; anything else raises `ValueError` naming the selection. |
+| 2. A weight given as a float (`1.0`) | The weight slot is one byte; a float wrote four, shifted the rest of the file by three, and Object Builder could not read the LOD. Same for point weights. | Whole numbers (`0`, `1`, `0.0`, `1.0`) are written as one byte, floats strictly between 0 and 1 are stored as fractional weights, and anything else raises `ValueError` naming the selection. |
 | 3. Material names compared with case | Exporters and their JSON often use upper or mixed case while vanilla derived models use lower case, so an exact match found nothing and the face set ended up empty. | `lod.faces_by_material()` and `faces_for_material()` ignore case. |
 | 4. Appending a memory point that already exists | A model extended from a vanilla one already has points such as `crewdriver`; a second point of the same name was ignored because the engine was seen to use the first, so the edit did nothing. This breaks the seat test in `animation/get-in-sides.md`. | `lod.set_memory_point(name, xyz)` inserts or overwrites and never duplicates. |
 | 5. References taken before the LOD grew | A reference to the points or faces taken before more were added went stale; selections then listed garbled indices that covered random faces. | Membership is checked on write, and `P3D.save(verify=True)` reads the file back and checks it. |
@@ -104,9 +104,11 @@ A rebake script takes selections and memory points described in one frame (a vie
 ```python
 def detect_frame(p3d) -> str:
     # Count faces in a 0.5 m band at each end of the long axis; the fuller end is the front.
-    bbox = p3d.lod0.bbox()
-    front_pos = count_faces_in_band(p3d.lod0, axis="z", band=(bbox.z_max - 0.5, bbox.z_max))
-    front_neg = count_faces_in_band(p3d.lod0, axis="z", band=(bbox.z_min, bbox.z_min + 0.5))
+    # count_faces_in_band is a helper you write yourself; py3d has none.
+    lod = p3d.lods[0]
+    (_, _, z_min), (_, _, z_max), _ = lod.bbox()
+    front_pos = count_faces_in_band(lod, axis="z", band=(z_max - 0.5, z_max))
+    front_neg = count_faces_in_band(lod, axis="z", band=(z_min, z_min + 0.5))
     return "plusZ" if front_pos > front_neg else "minusZ"
 
 parser.add_argument("--frame", choices=["plusZ", "minusZ", "auto"], default="auto")

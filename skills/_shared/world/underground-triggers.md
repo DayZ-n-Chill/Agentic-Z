@@ -22,7 +22,7 @@ The root is `{ "Triggers": [ ... ] }` (`JsonUndergroundTriggers`, `P:\scripts\3_
 | `AmbientSoundSet` | string | Ambient sound played directly. Livonia uses `Underground_SoundSet`; Nasdara uses `ambient_Irrigation_Tunnel_loop_SoundSet` and `ambient_Bunker_loop_SoundSet`. |
 | `Breadcrumbs` | array | Transition points. Any breadcrumb makes the type `TRANSITIONING`; the limit is 32. |
 
-Each breadcrumb is a `JsonUndergroundAreaBreadcrumb` (`undergroundarealoader.c:36` to `:51`): `Position` (float[3]), `EyeAccommodation` (float), `UseRaycast` (bool), `Radius` (float; Livonia uses `-1`), `LightLerp` (bool, only with `UseLinePointFade`), `Comment`, and `ExternalValueController` with a `Type` and `Params` (`:53` to `:57`). One controller type is `BreadcrumbDoorStateController`, which takes the selection name of a door (`:59` to `:67`).
+Each breadcrumb is a `JsonUndergroundAreaBreadcrumb` (`undergroundarealoader.c:36` to `:51`): `Position` (float[3]), `EyeAccommodation` (float), `UseRaycast` (bool), `Radius` (float; Livonia uses `-1`), `LightLerp` (bool, only with `UseLinePointFade`), `Comment`, and `ExternalValueController` with a `Type` and `Params` (`:53` to `:57`). The one `Type` value the client handles is `"DoorState"` (`undergroundhandlerclient.c:116`), whose `Params` hold the selection name of a door; the client builds a `BreadcrumbDoorStateController` (`undergroundarealoader.c:59` to `:67`) from it.
 
 ## Trigger types
 

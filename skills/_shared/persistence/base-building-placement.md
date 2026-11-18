@@ -28,7 +28,7 @@ Read the cap from `CfgSlots`, not from the item. The item's class overstates pla
 
 `Hologram.RefreshVisual` tints by calling `SetObjectTexture` and `SetObjectMaterial` on a hidden selection index (`P:\scripts\4_world\classes\hologram.c:1546` to `:1565`). `GetHiddenSelection` returns 0 when the name is missing (`:1523` to `:1531`), so a model with no `hiddenSelections[]` shows the ghost in its normal material, with no error.
 
-The hologram looks for a hidden selection named `placing` when the model has a `Placing` animation, otherwise `inventory` (`hologram.c:40` to `:43` and `:178` to `:194`), and tints that selection's index when the config declares it. Vanilla traps declare `hiddenSelections[]={"placing"}` for this (`P:\DZ\gear\traps\config.cpp:106` to `:109`). Index 0, the first entry, is used only when neither name exists.
+The hologram looks for a hidden selection named `placing` when the model has a `Placing` animation, otherwise `inventory` (`hologram.c:40` to `:43` and `:178` to `:194`), and tints that selection's index when the config declares it. Vanilla traps declare `hiddenSelections[]={"placing"}` for this (`P:\DZ\gear\traps\config.cpp:106` to `:109`). Index 0, the first entry, is used whenever the one name the hologram chose is not in `hiddenSelections[]`, even if the other name is declared, so a model with a `Placing` animation must declare `placing`, not `inventory`.
 
 To get the tint:
 
