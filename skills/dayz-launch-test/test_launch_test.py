@@ -713,3 +713,23 @@ def test_no_mod_without_the_bridge_is_refused(monkeypatch, tmp_path):
     with pytest.raises(SystemExit) as e:
         launch.main()
     assert e.value.code == 2
+
+
+def test_test_bridge_exec_adds_the_opt_in_flag_to_both_peers(monkeypatch, tmp_path, capsys):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["--test-bridge", TOKEN, "--test-bridge-exec", "--dry-run"])
+    assert launch.main() == 0
+    out = capsys.readouterr().out
+    for prefix in ("[DRY-RUN] Server cmd:", "[DRY-RUN] Client cmd:"):
+        assert next(l for l in out.splitlines() if l.startswith(prefix)).endswith("-azBridgeExec=1")
+
+
+def test_exec_never_rides_along_without_its_flag_or_without_the_bridge(monkeypatch, tmp_path, capsys):
+    _instance(tmp_path)
+    _patch_main(monkeypatch, tmp_path, ["--test-bridge", TOKEN, "--dry-run"])
+    assert launch.main() == 0
+    assert "azBridgeExec" not in capsys.readouterr().out
+    _patch_main(monkeypatch, tmp_path, ["MyMod", "--test-bridge-exec", "--dry-run"])
+    with pytest.raises(SystemExit) as e:
+        launch.main()
+    assert e.value.code == 2

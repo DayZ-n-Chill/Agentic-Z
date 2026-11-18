@@ -86,6 +86,8 @@ class Bridge:
         clock: Callable[[], float] = time.monotonic,
         sleep: Callable[[float], None] = time.sleep,
         spawns: int = 0,
+        allow_exec: bool = False,
+        exec_log: Optional[Path] = None,
     ):
         self.token = token
         self.dirs = {peer: session_dir(d, token) for peer, d in peer_dirs.items()}
@@ -93,6 +95,8 @@ class Bridge:
         self.clock = clock
         self.sleep = sleep
         self.spawns = spawns  # kept in session.json by session.py, so a restarted MCP server keeps counting
+        self.allow_exec = allow_exec  # exec only when the session opted in at start
+        self.exec_log = exec_log
 
     # -- state read from the folders, so a restarted MCP server carries on --------------
 
@@ -124,6 +128,10 @@ class Bridge:
         if peer not in allowed:
             raise allowlist.AllowlistError(f"{cmd} runs on the {spec.peer}, not the {peer}")
         checked = allowlist.validate(cmd, args)
+        if spec.opt_in and not self.allow_exec:
+            raise allowlist.AllowlistError(f"{cmd} is off: start the session with allow_exec=true to run code in it")
+        if spec.opt_in:
+            self.log_exec(peer, checked["code"])
         if cmd == "spawn" and self.spawns >= allowlist.MAX_SPAWNS:
             raise allowlist.AllowlistError(f"at most {allowlist.MAX_SPAWNS} spawns in a session")
         payload = {"cmd": cmd, "args": allowlist.wire_args(cmd, args)}
@@ -131,6 +139,15 @@ class Bridge:
             self.spawns += 1  # counted when sent: a spawn that timed out may still have happened
         result = self.send(peer, payload, timeout if timeout is not None else allowlist.timeout(cmd, checked))
         return outputs_only(cmd, result)
+
+    def log_exec(self, peer: str, code: str) -> None:
+        """Append a code string to the session's exec log before it is sent (owner decision 3, revised)."""
+        if self.exec_log is None:
+            raise BridgeError("exec needs a session exec log")
+        self.exec_log.parent.mkdir(parents=True, exist_ok=True)
+        stamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        with self.exec_log.open("a", encoding="utf-8") as f:
+            f.write(f"--- {stamp} {peer} seq {self.next_seq(peer)} ---\n{code}\n")
 
     def send(self, peer: str, payload: dict, timeout: float, seq: Optional[int] = None, token: Optional[str] = None) -> dict:
         """Write one command file and wait for its result. Low level: no allowlist check.

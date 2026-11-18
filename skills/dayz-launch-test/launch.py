@@ -570,6 +570,14 @@ def main() -> int:
             "Used by the dayz-testbridge MCP server, which makes the token and packs the mod."
         ),
     )
+    parser.add_argument(
+        "--test-bridge-exec",
+        action="store_true",
+        help=(
+            "With --test-bridge: also pass -azBridgeExec=1, which lets that session's bridge run arbitrary "
+            "Enforce Script (the exec command). Off unless given."
+        ),
+    )
     args, extra = parser.parse_known_args()
     # argparse does not add a name that follows an option to the shared mods;
     # refuse it rather than guess whether it was meant shared or server-only.
@@ -594,6 +602,8 @@ def main() -> int:
         seen.add(name.casefold())
     if dupes:
         parser.error(f"mod named more than once: {', '.join(dupes)}")
+    if args.test_bridge_exec and not args.test_bridge:
+        parser.error("--test-bridge-exec works only with --test-bridge TOKEN")
     if not args.modnames and not args.test_bridge:
         parser.error("name at least one mod to load")
     if any(name.casefold() == BRIDGE_MOD.casefold() for name in args.modnames + args.server_only):
@@ -628,6 +638,10 @@ def main() -> int:
         server_cmd = add_test_bridge(client_mod_arg, server_cmd, args.test_bridge)
         client_cmd = add_test_bridge(client_mod_arg, client_cmd, args.test_bridge)
         print(f"{OK} Test bridge: @{BRIDGE_MOD} loaded last on both peers")
+        if args.test_bridge_exec:
+            server_cmd.append("-azBridgeExec=1")
+            client_cmd.append("-azBridgeExec=1")
+            print(f"{WARN} Test bridge exec is ON for this session: it can run any Enforce Script")
 
     # Printed with list2cmdline, the same quoting Popen applies on Windows, so a
     # path with spaces (Program Files, a project under 'DayZ n Chill') pastes as is.

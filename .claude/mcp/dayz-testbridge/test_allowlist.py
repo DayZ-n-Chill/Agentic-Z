@@ -14,7 +14,7 @@ CAR = [4200.0, 0.0, 10650.0]
 
 
 @pytest.mark.parametrize("cmd, args, message", [
-    ("exec", {}, "unknown command"),
+    ("exec", {}, "code is required"),
     ("run_script", {"code": "x"}, "unknown command"),
     ("spawn", {"cls": "Hatchback_02"}, "pos is required"),
     ("spawn", {"cls": "Hatch back", "pos": CAR}, "not allowed"),
@@ -55,7 +55,7 @@ def test_defaults_are_filled_and_names_mapped_to_the_wire():
 def test_every_command_names_its_peer_outputs_and_only_known_wire_fields():
     for name, spec in allowlist.COMMANDS.items():
         assert spec.peer in (allowlist.SERVER, allowlist.CLIENT, allowlist.BOTH), name
-        assert spec.outputs, name
+        assert spec.outputs or name == "shutdown", name
         for arg_name, arg in spec.args.items():
             assert (arg.wire or arg_name) in allowlist.WIRE_DEFAULTS, f"{name}.{arg_name} has no AZB_Args field"
 
@@ -65,7 +65,9 @@ def test_drive_timeout_follows_its_seconds():
     assert allowlist.timeout("drive", checked) == 50.0
 
 
-def test_no_command_evaluates_script_or_touches_files():
-    banned = ("exec", "eval", "script", "file", "call", "method", "invoke", "console")
+def test_only_exec_runs_code_and_it_needs_the_session_opt_in():
+    # Owner decision 3, revised: running code is allowed, off by default, per-session opt-in.
+    assert {n for n, c in allowlist.COMMANDS.items() if c.opt_in} == {"exec"}
+    banned = ("eval", "script", "file", "call", "method", "invoke", "console")
     for name in allowlist.COMMANDS:
         assert not any(b in name for b in banned), name

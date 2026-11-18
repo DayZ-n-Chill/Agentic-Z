@@ -1,7 +1,7 @@
 ---
 name: dayz-launch-test
 description: "Launches a local DayZ Diag server for an instance from /dayz-add-server, then the diag client connected to it with the given built mods loaded. Run-only; does no setup. Use when you want to test built mods in game, or to preview the exact launch commands with a dry run. Its references cover why a session starts but does not test the change, scripted test cells, server and mission config, the Linux server and headless client, and what makes an in-game check valid (spawning, raycasts, captures, actions, vehicle acceptance checks); also the recurring error catalog (E01 to E35), the top-down debug protocol, the fast DayZDiag loop, measured 1.30 server facts and the mod loop from code to Workshop."
-argument-hint: "<ModName> [<ModName2> ...] [--server-only <ModName>]... [--server <instance>] [--port N] [--test-bridge TOKEN] [--dry-run]"
+argument-hint: "<ModName> [<ModName2> ...] [--server-only <ModName>]... [--server <instance>] [--port N] [--test-bridge TOKEN [--test-bridge-exec]] [--dry-run]"
 ---
 
 <!-- skill-dir-note -->
@@ -20,7 +20,7 @@ Follow `skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server-only <ModName>]... [--server <instance>] [--port N] [--test-bridge TOKEN] [--dry-run]
+python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server-only <ModName>]... [--server <instance>] [--port N] [--test-bridge TOKEN [--test-bridge-exec]] [--dry-run]
 ```
 
 Name every shared mod first, then the options. `--server-only` takes one name, so repeat it for each server-only mod: `CF MyMod --server-only SrvA --server-only SrvB`. A mod name after an option (`CF --server-only Srv MyMod`, `CF --port 2402 MyMod`) exits 2 with `unexpected arguments: MyMod`, also with `--dry-run`, rather than guessing whether it was meant shared or server-only.
@@ -32,6 +32,7 @@ Name every shared mod first, then the options. `--server-only` takes one name, s
 | `--server` | no | Server instance to launch on. Default `chernarus`. Must have been added via `/dayz-add-server`. A name with a path separator, a drive letter or `..`, or one starting with `!` (the shared `.server` folders), exits 2 with `is not an instance name` or `is not an instance`. |
 | `--port` | no | Server port, 1 to 65535. Default `2302`. Any other value exits 2 with `port must be 1-65535`, also with `--dry-run`. |
 | `--test-bridge` | no | The 32-character token of a `dayz-testbridge` session. Adds `P:\Mods\@AZ_TestBridge` last on `-mod=` for both peers and `-azBridge=<token>` to both command lines, and checks that `@AZ_TestBridge` has a PBO. The `dayz-testbridge` MCP server makes the token, packs the mod and passes this option; you do not pass it by hand. Naming `AZ_TestBridge` as a mod exits 2. `--dry-run` shows both lines. See `references/test-bridge.md`. |
+| `--test-bridge-exec` | no | Only with `--test-bridge`: also passes `-azBridgeExec=1`, which lets that session's bridge run arbitrary Enforce Script (its `exec` command). Off unless given; the `dayz-testbridge` MCP server passes it only for a session started with `allow_exec`. Without `--test-bridge` it exits 2. |
 | `--dry-run` | no | Run every check, print the resolved server and client commands, then exit 0. Writes nothing of its own (no profile dirs, no display-prefs file, no processes); `/dayz-preflight` may still create the `P:\Mods` junction if it is missing. |
 
 ## Mods with dependencies
