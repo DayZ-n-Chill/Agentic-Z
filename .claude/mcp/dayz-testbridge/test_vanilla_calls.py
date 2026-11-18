@@ -65,6 +65,7 @@ VANILLA_CALLS = {
     "GetFog": r"3_game\weather.c:186",
     "GetGear": r"3_game\vehicles\car.c:248",
     "GetHealth": r"3_game\entities\object.c:994",
+    "GetHierarchyRoot": r"3_game\entities\entityai.c:879",
     "GetHud": r"3_game\gameplay.c:720",
     "GetHumanInventory": r"3_game\entities\man.c:81",
     "GetInventory": r"3_game\entities\entityai.c:1884",

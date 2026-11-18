@@ -58,6 +58,7 @@ Files, one folder per peer and session: `<profile>/AZTestBridge/<token>/`, where
 - `EngineStart` in the same tick as `OnDebugSpawn` left the engine off: `OnBeforeEngineStart` (`carscript.c:1713`) wants the battery and spark plug that `OnDebugSpawn` is still attaching. A tick later it starts.
 - A `staticcamera` set right after getting out of a car lost the view to the player's own camera; the client now re-activates the scripted camera every frame, and hides the HUD every frame while asked to, since vanilla shows it again.
 - `wind: 0` read back as 0.005 of the maximum: the weather does not land exactly on zero.
+- A car's doors, trunk and radiator are objects of their own, so a ray can hit them and not the car. Each `raycast` hit carries `parent_net_id`, the object the part hangs on. Level view rays from 3.5 m out at 0.4, 0.8 and 1.2 m above the ground hit a prepared Hatchback_02 or a part of it 9 times in 12; before `vehicle_prepare` fitted its doors, 6 times.
 
 ## Safety
 

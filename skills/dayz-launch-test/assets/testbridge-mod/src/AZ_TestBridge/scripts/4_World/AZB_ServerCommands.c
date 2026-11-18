@@ -412,6 +412,13 @@ class AZB_ServerPeer : AZB_Peer
 				hit.net_id = NetId(res.obj);
 				hit.type = res.obj.GetType();
 			}
+			// A car's doors, trunk and parts are their own objects. Name the object they
+			// hang on: the ray's proxy parent (dayzphysics.c:101) or the hierarchy root (entityai.c:879).
+			if (res.parent)
+				hit.parent_net_id = NetId(res.parent);
+			EntityAI hitEntity = EntityAI.Cast(res.obj);
+			if (hit.parent_net_id == "" && hitEntity && hitEntity.GetHierarchyRoot() != hitEntity)
+				hit.parent_net_id = NetId(hitEntity.GetHierarchyRoot());
 			hit.pos = FromVector(res.pos);
 			hit.component = res.component;
 			hit.entry = res.entry;

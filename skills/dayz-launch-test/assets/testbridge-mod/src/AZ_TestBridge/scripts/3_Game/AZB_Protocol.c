@@ -77,6 +77,7 @@ class AZB_Obj
 class AZB_Hit
 {
 	string net_id;
+	string parent_net_id;
 	string type;
 	bool terrain;
 	ref array<float> pos;
