@@ -159,11 +159,15 @@ def test_closing_renames_the_token_folder(dirs):
     assert done.name == TOKEN + ".done" and done.is_dir() and not b.dirs["server"].exists()
 
 
-def test_a_failed_command_keeps_no_data(dirs):
+def test_a_failed_command_keeps_only_its_reason(dirs):
     b = make(dirs)
-    with FakePeer(b.dirs["server"], TOKEN, "server", {"delete": lambda a: (False, "vehicle_has_crew", {"removed": False})}):
+    handlers = {"delete": lambda a: (False, "vehicle_has_crew", {"removed": False}),
+                "get_in": lambda a: (False, "not_seated", {"seated": False, "reason": "possible=false"})}
+    with FakePeer(b.dirs["server"], TOKEN, "server", handlers), FakePeer(b.dirs["client"], TOKEN, "client", handlers):
         res = b.call("delete", {"net_id": "3,4"})
+        res2 = b.call("get_in", {"net_id": "3,4"})
     assert res["ok"] is False and res["error"] == "vehicle_has_crew" and res["data"] == {}
+    assert res2["data"] == {"reason": "possible=false"}
 
 
 def test_bad_tokens_are_refused():

@@ -101,9 +101,11 @@ COMMANDS: dict[str, Command] = {
         "rain": Arg("float", default=0.0, **_UNIT), "wind": Arg("float", default=0.0, **_UNIT),
         "freeze": Arg("bool", default=True),
     }, ("overcast", "fog", "rain", "wind", "frozen")),
-    "vehicle_prepare": Command(SERVER, {"net_id": _NET_ID, "engine_on": Arg("bool", default=True)},
-                               ("wheels_declared", "wheels_present", "fuel", "engine_on", "entry_pos"),
-                               doc="Server-side OnDebugSpawn (wheels, parts, fluids), engine start, read one tick later."),
+    "vehicle_prepare": Command(SERVER, {"net_id": _NET_ID, "engine_on": Arg("bool", default=True),
+                                       "open_driver_door": Arg("bool", default=True)},
+                               ("wheels_declared", "wheels_present", "fuel", "engine_on", "door_open", "entry_pos"),
+                               doc="Server-side OnDebugSpawn (wheels, parts, fluids), then engine start and driver door"
+                                   " open a tick later (as the vanilla door action does), read back later still."),
     "vehicle_state": Command(BOTH, {"net_id": _NET_ID},
                              ("speed", "rpm", "gear", "engine_on", "wheels_declared", "wheels_present",
                               "wheel_contact", "fuel", "crew_seats", "pos")),
@@ -116,7 +118,7 @@ COMMANDS: dict[str, Command] = {
         "x": Arg("float", lo=0.0, hi=WORLD_MAX_XZ, required=True), "z": Arg("float", lo=0.0, hi=WORLD_MAX_XZ, required=True),
         "y": Arg("float", default=0.0, lo=MIN_Y, hi=MAX_Y),
     }, ("ground_y", "road_y", "surface")),
-    "get_in": Command(CLIENT, {"net_id": _NET_ID, "seat": Arg("int", default=0, lo=0, hi=31)}, ("seated", "tries"),
+    "get_in": Command(CLIENT, {"net_id": _NET_ID, "seat": Arg("int", default=0, lo=0, hi=31)}, ("seated", "tries", "reason"),
                       timeout=lambda a: 45.0, doc="The real get-in action on the client; seat confirmed on a later tick."),
     "get_out": Command(CLIENT, {}, ("on_foot",), timeout=lambda a: 30.0),
     "drive": Command(CLIENT, {
@@ -136,7 +138,7 @@ COMMANDS: dict[str, Command] = {
 WIRE_DEFAULTS: dict[str, Any] = {
     "label": "", "cls": "", "pos": [0.0, 0.0, 0.0], "flags": 0, "placement": 0, "where": "", "net_id": "",
     "radius": 0.0, "ground": False, "year": 0, "month": 0, "day": 0, "hour": 0, "minute": 0,
-    "overcast": 0.0, "fog": 0.0, "rain": 0.0, "wind": 0.0, "freeze": False, "engine_on": False,
+    "overcast": 0.0, "fog": 0.0, "rain": 0.0, "wind": 0.0, "freeze": False, "engine_on": False, "open_driver_door": False,
     "from_pos": [0.0, 0.0, 0.0], "to_pos": [0.0, 0.0, 0.0], "mode": "", "layer_mask": 0,
     "x": 0.0, "z": 0.0, "y": 0.0, "has_y": False, "seat": 0, "throttle": 0.0, "steer": 0.0, "brake": 0.0,
     "seconds": 0.0, "sample_hz": 0.0, "look_at": [0.0, 0.0, 0.0], "show": False,

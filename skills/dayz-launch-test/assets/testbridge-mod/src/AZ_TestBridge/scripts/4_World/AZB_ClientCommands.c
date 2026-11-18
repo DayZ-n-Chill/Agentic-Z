@@ -13,12 +13,21 @@ class AZB_ClientPeer : AZB_Peer
 	static const int MAX_COMPONENTS = 64;
 
 	Camera m_Camera;
+	bool m_HudHidden;
 	CarScript m_Car;
 	int m_Tries;
 	float m_TryStarted;
 	vector m_StartPos;
 	float m_LastSample;
 	float m_StopStarted;
+
+	// Called every frame: a player camera change (getting out of a car ends with
+	// one) takes the view back, so the scripted camera is made active again.
+	void KeepView()
+	{
+		if (m_Camera && !m_Camera.IsActive())
+			m_Camera.SetActive(true);
+	}
 
 	PlayerBase LocalPlayer()
 	{
@@ -117,12 +126,6 @@ class AZB_ClientPeer : AZB_Peer
 		}
 		if (m_Step == 2 && m_Elapsed - m_TryStarted < SEAT_WAIT_S)
 			return false;
-		if (m_Tries >= SEAT_TRIES)
-		{
-			Fail(r, "not_seated");
-			r.data.tries = m_Tries;
-			return true;
-		}
 		int component = SeatComponent(m_Car, c.args.seat);
 		if (component < 0)
 		{
@@ -135,12 +138,49 @@ class AZB_ClientPeer : AZB_Peer
 			Fail(r, "no_action_manager");
 			return true;
 		}
-		ActionTarget target = new ActionTarget(m_Car, null, component, vector.Zero, 0);
-		manager.PerformActionStart(ActionManagerBase.GetAction(ActionGetInTransport), target, null);
+		// The client's target condition measures from the cursor hit, not the car
+		// (cctcursornoruincheck.c:38 to :43), so aim at the seat's entry point.
+		vector entryPos;
+		vector entryDir;
+		m_Car.CrewEntryWS(c.args.seat, entryPos, entryDir);
+		ActionTarget target = new ActionTarget(m_Car, null, component, entryPos, 0);
+		ActionBase action = ActionManagerBase.GetAction(ActionGetInTransport);
+		if (m_Tries >= SEAT_TRIES)
+		{
+			Fail(r, "not_seated");
+			r.data.tries = m_Tries;
+			r.data.reason = SeatReason(player, manager, action, target);
+			return true;
+		}
+		manager.PerformActionStart(action, target, null);
 		m_Tries++;
 		m_TryStarted = m_Elapsed;
 		m_Step = 2;
 		return false;
+	}
+
+	// Why a get-in did not seat: the action manager's own gate, the action's
+	// condition from here, and the player's command and distance to the entry point.
+	string SeatReason(PlayerBase player, ActionManagerClient manager, ActionBase action, ActionTarget target)
+	{
+		string text = "possible=" + manager.ActionPossibilityCheck(player.GetCurrentCommandID()).ToString();
+		text = text + " can=" + action.Can(player, target, null).ToString();
+		text = text + " command=" + player.GetCurrentCommandID().ToString();
+		text = text + " entry_dist=" + vector.Distance(player.GetPosition(), target.GetCursorHitPos()).ToString();
+		Transport transport = Transport.Cast(target.GetObject());
+		int seat = transport.CrewPositionIndex(target.GetComponentIndex());
+		text = text + " through=" + transport.CrewCanGetThrough(seat).ToString();
+		text = text + " area_free=" + transport.IsAreaAtDoorFreeDiag(seat).ToString();
+		array<string> selections = new array<string>;
+		transport.GetActionComponentNameList(target.GetComponentIndex(), selections);
+		bool reach = false;
+		foreach (string selection : selections)
+		{
+			if (transport.CanReachSeatFromDoors(selection, player.GetPosition(), 1.0))
+				reach = true;
+		}
+		text = text + " reach=" + reach.ToString();
+		return text;
 	}
 
 	bool CmdGetOut(AZB_Command c, AZB_Result r)
@@ -193,6 +233,9 @@ class AZB_ClientPeer : AZB_Peer
 				Fail(r, "not_driver");
 				return true;
 			}
+			// The driver's client owns the car now; an engine left off since the spawn starts here.
+			if (!m_Car.EngineIsOn())
+				m_Car.EngineStart();
 			m_StartPos = m_Car.GetPosition();
 			r.data.samples = new array<ref AZB_Sample>;
 			AZB_Drive.Begin(m_Car, c.args.throttle, c.args.steer, c.args.brake);
@@ -277,6 +320,8 @@ class AZB_ClientPeer : AZB_Peer
 		}
 		hud.ShowHud(c.args.show);
 		hud.ShowQuickBar(c.args.show);
+		// Vanilla shows the HUD again on its own; MissionGameplay hides it every frame while this is set.
+		m_HudHidden = !c.args.show;
 		r.data.hud = c.args.show;
 		return true;
 	}

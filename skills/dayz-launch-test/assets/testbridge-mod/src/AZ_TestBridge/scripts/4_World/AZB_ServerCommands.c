@@ -309,18 +309,37 @@ class AZB_ServerPeer : AZB_Peer
 		if (m_Step == 0)
 		{
 			car.OnDebugSpawn();
-			if (c.args.engine_on)
-				car.EngineStart();
 			m_Step = 1;
 			return false;
 		}
-		// The tank can read 0 in the tick OnDebugSpawn fills it (vehicle-in-game-facts.md); read later.
+		// The tank can read 0 in the tick OnDebugSpawn fills it (vehicle-in-game-facts.md),
+		// and the engine refuses to start before the battery and spark plug are in
+		// (OnBeforeEngineStart, carscript.c:1713), so start it a tick later and read later still.
 		if (m_Elapsed < TICK_S)
+			return false;
+		if (m_Step == 1)
+		{
+			if (c.args.engine_on)
+				car.EngineStart();
+			// A car with a driver door only takes a driver through an open door
+			// (CrewCanGetThrough, hatchback_02.c:218 to :226). Open it the way the
+			// vanilla door action does on the server (actioncardoorsoutside.c:104).
+			if (c.args.open_driver_door)
+			{
+				string doorSource = car.GetAnimSourceFromSelection(car.GetDoorSelectionNameFromSeatPos(0));
+				if (doorSource != "")
+					car.SetAnimationPhase(doorSource, 1.0);
+			}
+			m_Step = 2;
+			return false;
+		}
+		if (m_Elapsed < TICK_S * 3)
 			return false;
 		r.data.wheels_declared = car.WheelCount();
 		r.data.wheels_present = car.WheelCountPresent();
 		r.data.fuel = car.GetFluidFraction(CarFluid.FUEL);
 		r.data.engine_on = car.EngineIsOn();
+		r.data.door_open = car.CrewCanGetThrough(0);
 		vector entryPos;
 		vector entryDir;
 		car.CrewEntryWS(0, entryPos, entryDir);

@@ -54,6 +54,12 @@ modded class MissionGameplay
 			m_AZBPeer.Start("client");
 		}
 		m_AZBPeer.Tick(timeslice);
+		m_AZBPeer.KeepView();
+		if (m_AZBPeer.m_HudHidden)
+		{
+			GetHud().ShowHud(false);
+			GetHud().ShowQuickBar(false);
+		}
 	}
 }
 #endif

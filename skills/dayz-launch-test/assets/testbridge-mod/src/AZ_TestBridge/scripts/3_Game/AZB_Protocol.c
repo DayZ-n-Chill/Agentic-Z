@@ -26,6 +26,7 @@ class AZB_Args
 	float wind;
 	bool freeze;
 	bool engine_on;
+	bool open_driver_door;
 	ref array<float> from_pos;
 	ref array<float> to_pos;
 	string mode;
@@ -131,6 +132,7 @@ class AZB_Data
 	string wheel_contact;
 	float fuel;
 	bool engine_on;
+	bool door_open;
 	ref array<float> entry_pos;
 	float speed;
 	float rpm;
@@ -429,6 +431,9 @@ class AZB_Peer
 		return GetGame().GetObjectByNetworkId(parts[0].ToInt(), parts[1].ToInt());
 	}
 
+	// "<low>,<high>". Vanilla's GetNetworkIDString joins high and low with no
+	// separator (object.c:821 to :826), so it cannot be split back into the two
+	// numbers GetObjectByNetworkId (game.c:356) takes.
 	static string NetId(Object obj)
 	{
 		if (!obj)
@@ -438,7 +443,7 @@ class AZB_Peer
 		obj.GetNetworkID(low, high);
 		if (low == 0 && high == 0)
 			return "";
-		return obj.GetNetworkIDString();
+		return low.ToString() + "," + high.ToString();
 	}
 }
 #endif

@@ -205,8 +205,12 @@ def outputs_only(cmd: str, result: dict) -> dict[str, Any]:
     """The result with `data` cut to the outputs the allowlist declares for `cmd`.
 
     The mod writes every AZB_Data field (most at their defaults); only the
-    command's own outputs mean anything. A failed command keeps no data.
+    command's own outputs mean anything. A failed command keeps only its
+    `reason`, when the mod gave one.
     """
     data = result.get("data") if isinstance(result.get("data"), dict) else {}
-    keep = {k: data.get(k) for k in allowlist.COMMANDS[cmd].outputs} if result.get("ok") else {}
+    if result.get("ok"):
+        keep = {k: data.get(k) for k in allowlist.COMMANDS[cmd].outputs}
+    else:
+        keep = {"reason": data["reason"]} if data.get("reason") else {}
     return {**{k: v for k, v in result.items() if k != "data"}, "data": keep}

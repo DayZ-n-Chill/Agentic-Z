@@ -17,7 +17,20 @@ P_SCRIPTS = Path("P:\\scripts")
 
 VANILLA_CALLS = {
     "AbsFloat": r"1_core\proto\enmath.c:225",
+    "ActionPossibilityCheck": r"4_world\classes\useractionscomponent\actionmanagerbase.c:262",
     "ActionTarget": r"4_world\classes\useractionscomponent\actiontargets.c:125",
+    "Can": r"4_world\classes\useractionscomponent\actionbase.c:968",
+    "CanReachSeatFromDoors": r"3_game\vehicles\transport.c:745",
+    "CrewCanGetThrough": r"3_game\vehicles\transport.c:727",
+    "GetActionComponentNameList": r"3_game\entities\object.c:192",
+    "GetAnimSourceFromSelection": r"3_game\vehicles\transport.c:845",
+    "GetComponentIndex": r"4_world\classes\useractionscomponent\actiontargets.c:159",
+    "GetDoorSelectionNameFromSeatPos": r"4_world\entities\vehicles\carscript.c:2162",
+    "GetObject": r"4_world\classes\useractionscomponent\actiontargets.c:142",
+    "IsAreaAtDoorFreeDiag": r"3_game\vehicles\transport.c:918",
+    "SetAnimationPhase": r"3_game\entities\entity.c:15",
+    "GetCurrentCommandID": r"3_game\human.c:1473",
+    "GetCursorHitPos": r"4_world\classes\useractionscomponent\actiontargets.c:169",
     "Cast": r"1_core\proto\enscript.c:94",
     "CastTo": r"1_core\proto\enscript.c:110",
     "ClassName": r"1_core\proto\enscript.c:37",
@@ -57,7 +70,6 @@ VANILLA_CALLS = {
     "GetInventory": r"3_game\entities\entityai.c:1884",
     "GetMission": r"3_game\global\game.c:1093",
     "GetNetworkID": r"3_game\entities\object.c:819",
-    "GetNetworkIDString": r"3_game\entities\object.c:821",
     "GetObjectByNetworkId": r"3_game\global\game.c:356",
     "GetObjectsAtPosition": r"3_game\global\game.c:923",
     "GetOrientation": r"3_game\entities\object.c:305",
@@ -121,8 +133,9 @@ VANILLA_CALLS = {
 }
 
 # Names the mod declares itself that are also vanilla names it calls: Continue is
-# MissionGameplay.Continue (missiongameplay.c:1334), called in AZB_Resume.
-OWN_AND_VANILLA = {"Continue": r"5_mission\mission\missiongameplay.c:1334"}
+# MissionGameplay.Continue (missiongameplay.c:1334), called in AZB_Resume, and
+# IsActive is Camera.IsActive (camera.c:61), called in KeepView.
+OWN_AND_VANILLA = {"Continue": r"5_mission\mission\missiongameplay.c:1334", "IsActive": r"3_game\entities\camera.c:61"}
 
 KEYWORDS = {"if", "for", "while", "switch", "foreach", "return"}
 
