@@ -21,6 +21,7 @@ Never kill blindly. A blind kill of another mod's server evicts a live session, 
 3. `DayZServer_x64.exe`, the retail dedicated server, is a separate process from `DayZDiag_x64`: a diag-only kill misses it, and killing it evicts a retail session. Cover both names when you clean up your own.
 4. Killing someone else's DayZServer while it writes corrupts the shared persistence at `DayZServer\mpmissions\<mission>\storage_1`. The next boot dies on `!!! Serious stream damage detected during load` and exits before the UDP bind. Rename `storage_1` and the server creates a fresh one; better, do not kill other sessions' servers.
 5. After your own launch binds, confirm the running command line names your `@<Mod>` before you trust any observation in game.
+6. A machine that looked free (no DayZ process) was taken by another session's server 40 s later, and a probe then moved that session's player. Right before any change aimed at "the first player", list the DayZ processes again and change nothing if a server that is not yours is running.
 
 ## Starting DayZDiag from an agent's shell
 

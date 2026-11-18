@@ -81,6 +81,8 @@ The cause was a partial sync between the repo's addon tree and the `P:\<Mod>` bu
 
 Enforce Script fails the whole module on one unresolved symbol, so the log also shows errors from unrelated mods loaded in the same run. The first error names the real culprit; debug that one first.
 
+Script compilation also stops at the first mod whose module fails. A second broken mod in the same run therefore shows its error only once yours compiles, which reads as "my fix broke it". Before reading your own mod's errors, find the `Module: Mission; loaded ...` line; when it is missing, `Can't compile "Mission" script module!` and the run's `crash_*.log` name the failing file.
+
 After any deploy, boot the server with only that mod and grep the fresh script log for its module line:
 
 ```text

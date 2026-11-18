@@ -28,6 +28,7 @@ An action with a progress bar finishes on the server in `OnFinishProgressServer`
 Measured on DayZ 1.30:
 
 - Taking an item from the cargo of a world container (`WoodenCrate`, `Barrel_Blue`, open, player 1.5 m away) or from a building's attachment slot (`RB_LvL1_Plank` on `Land_House_1M1`) with a server-side take failed as not reachable. Taking an attachment of an item lying on the ground (`SparkPlug` in a `PowerGenerator`) and a container on the ground worked.
+- `ActionAttach` with a plank in the hands was refused on a `Land_House_1M1` and worked on a `PowerGenerator` (spark plug). To fill a building's slot, use `PredictiveTakeEntityToTargetAttachment` from the table below.
 - What worked every time: a test only addon whose `modded class MissionGameplay` (inside `#ifndef SERVER`) maps keys in `OnKeyPress` (`P:\scripts\5_mission\mission\missiongameplay.c:742`) to the client's own inventory calls, on objects found with `g_Game.GetObjectsAtPosition` (`P:\scripts\3_game\global\game.c:923`). Each reached the server as a real inventory command:
 
 | Move | Call | Source |
