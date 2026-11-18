@@ -16,7 +16,7 @@ ES_EMPTY_IFDEF_UNSUPPORTED_RULE_ID = "ES-EMPTY-IFDEF-UNSUPPORTED-PATTERN"
 
 # An #ifdef or #ifndef block with no statement in it, comments aside. It was
 # FAIL on a reported segfault. WARN since it was measured: on DayZDiag
-# 1.30.164289 (2026-11-09), in a mod's 4_World scripts, a block holding only
+# 1.30.164289, in a mod's 4_World scripts, a block holding only
 # a comment compiled and ran on server and client, at file scope, in a class
 # body and in a method body, each with DIAG_DEVELOPER (which DayZDiag defines
 # on both) and with a macro nobody defines; the method's marker was printed

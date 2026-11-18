@@ -141,7 +141,7 @@ numbers, `(x, y, z) → (x, z, y)`, determinant −1. That reflection on its own
 already puts the faces in the MLOD order — vertex-order cross product pointing
 inward — so `blender_to_dayz` keeps every face's vertex order and only negates
 the normals, which MLOD also stores pointing inward. Measured in game on
-2026-10-01 (DayZDiag 1.29.163709) with one chiral model, an "F" in relief on a
+DayZDiag 1.29.163709 with one chiral model, an "F" in relief on a
 plate, written three ways and binarized with AddonBuilder:
 
 | how the model was written | in game |
@@ -272,7 +272,7 @@ left alone, and only then fix the normals against it:
    `validate()` reads it at 75 % (`WARN_WINDING_NORMAL_MISMATCH`), and negating
    those corners turns six right normals, through three pool copies, and takes
    it to 100 % with no finding.
-   *(Changed 2026-10-03, 1.10.1: this step read "negate each corner normal that
+   *(Changed in 1.10.1: this step read "negate each corner normal that
    still points against its face, in the pool, [...] Go corner by corner: the
    check reads each face's first corner only, and negating whole faces turns
    corners that were right. [...] A corner normal close to perpendicular to its

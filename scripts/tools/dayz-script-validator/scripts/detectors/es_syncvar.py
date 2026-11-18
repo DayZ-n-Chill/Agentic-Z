@@ -441,7 +441,7 @@ def check_es_syncvar_contract(
                                 )
                             )
                             continue
-                        # WRITE_NO_IFDEF quarantined 2026-08-18. The premise -
+                        # WRITE_NO_IFDEF quarantined. The premise -
                         # "a SyncVar write must sit under #ifdef SERVER" - is not
                         # the contract vanilla implements. ItemBase.SetQuantity
                         # writes m_VarQuantity at itembase.c:3336, :3343 and :3352
@@ -449,7 +449,7 @@ def check_es_syncvar_contract(
                         # check is the runtime IsServerCheck(allow_client) at
                         # :3317), and publishes with
                         # SetVariableMask(VARIABLE_QUANTITY) at :3382, also
-                        # outside any #ifdef. Corrected 2026-08-19: the quarantine
+                        # outside any #ifdef. Corrected: the quarantine
                         # note first read the `if` at :3357 as guarding that
                         # write. It does not - it sits AFTER the assignment and
                         # wraps an inventory-sound block. Re-reading

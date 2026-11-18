@@ -26,7 +26,7 @@ ES_NONEXISTENT_METHOD_RE = re.compile(
 
 ES_NONEXISTENT_METHOD_MESSAGE = (
     "[FAIL] {rel_path} line {line}: `{sym}` does not exist in the vanilla "
-    "script tree (0 occurrences, verified 2026-06-10) -> `Undefined function` "
+    "script tree (0 occurrences) -> `Undefined function` "
     "compile fail. Fix: {fix}."
 )
 

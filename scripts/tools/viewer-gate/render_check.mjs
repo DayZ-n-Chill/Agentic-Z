@@ -24,7 +24,7 @@
 // against the original - or real use downstream can vouch for it. Do not add a fourth counter,
 // and do not treat the pictures as the end of the argument either.
 //
-// v4 (2026-09-02):
+// v4:
 //   - VERSION IS NOW A FACT, not a proxy: viewer_core emits `window.__THREE_REVISION` from
 //     the module it actually imported, and the gate reads that. A URL, a comment or a decoy
 //     fetch cannot forge it. Fail-closed: no handshake + --expected-three => FAIL.

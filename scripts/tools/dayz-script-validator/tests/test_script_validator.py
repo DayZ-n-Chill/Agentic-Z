@@ -2112,7 +2112,7 @@ class TerseOutputTests(unittest.TestCase):
         self.assertTrue(parser.parse_args(["some_root", "--terse"]).terse)
 
 class TestProtectedCrossModule(unittest.TestCase):
-    """ES-PROTECTED-CROSS-MODULE — verified at runtime 2026-09-17.
+    """ES-PROTECTED-CROSS-MODULE — verified at runtime.
 
     A disposable probe was built into a PBO and booted on a dedicated server:
     World compiled, Mission did not, with "Variable 'm_FX_ProbeValue' is
@@ -2150,7 +2150,7 @@ class TestProtectedCrossModule(unittest.TestCase):
 
 
 class TestExternalConsumerMissing(unittest.TestCase):
-    """ES-EXTERNAL-CONSUMER-MISSING — observed 2026-09-17.
+    """ES-EXTERNAL-CONSUMER-MISSING — observed in a mod.
 
     A refactor deleted facade methods after proving no file under the addon's
     own scripts/ called them. The mission init.c did, and the server refused to
@@ -2216,9 +2216,9 @@ def _errors_of(result, rule_id):
 class TestReservedWordIdentifier(unittest.TestCase):
     """ES-RESERVED-WORD-IDENTIFIER: a keyword used as a name.
 
-    sealed: parameter, DayZDiag 1.29.163709, 2026-10-02, "Expected name, not a
+    sealed: parameter, DayZDiag 1.29.163709, "Expected name, not a
     keyword 'sealed'". local: local variable, DayZDiag 1.30.164014 (Exp),
-    2026-09-28, "Broken expression (missing ';'?)". owned and out: the same
+    "Broken expression (missing ';'?)". owned and out: the same
     error on a local (skills/_shared/enscript/depth/review-and-troubleshooting.md and compiler-traps.md).
     """
 
@@ -2435,9 +2435,9 @@ MODULO_RULE = "ES-MODULO-FLOAT-CONTEXT"
 class TestModuloFloatContext(unittest.TestCase):
     """ES-MODULO-FLOAT-CONTEXT: '%' in an expression with a float literal.
 
-    `((g % 5) - 2) * 7.0` failed on DayZDiag 1.29 (2026-09-28) and
-    `float ox = (n % 4) * 0.7 - 1.05;` on DayZ 1.30 Exp (2026-09-24), both
-    with "Unknown operator '%'". On DayZDiag 1.30.164289 (2026-11-09)
+    `((g % 5) - 2) * 7.0` failed on DayZDiag 1.29 and
+    `float ox = (n % 4) * 0.7 - 1.05;` on DayZ 1.30 Exp, both
+    with "Unknown operator '%'". On DayZDiag 1.30.164289
     two more failed with it, each at its own line, and
     the third shape, with the '%' in an int local first, compiled.
     """
@@ -2647,7 +2647,7 @@ def _formula_chain(terms):
 class TestFormulaTooComplex(unittest.TestCase):
     """ES-FORMULA-TOO-COMPLEX: 18 or more terms joined by '+' with a string.
 
-    DayZDiag 1.30.164289 (2026-11-09): one line
+    DayZDiag 1.30.164289: one line
     alternating string literals with an int and a float's ToString()
     compiled with 14 and 17 terms and failed with "Formula too complex" with
     18 and 20.
@@ -2796,7 +2796,7 @@ def _rule_skips(result):
 
 
 class TestUndefinedClassRef(unittest.TestCase):
-    """ES-UNDEFINED-CLASS-REF — observed 2026-09-19 on a mod.
+    """ES-UNDEFINED-CLASS-REF — observed on a mod.
 
     A change deleted a class from 4_World while 5_Mission still called its
     static Sort(...). The
@@ -3516,7 +3516,7 @@ class TestVariableNamedAsType(unittest.TestCase):
         )
 
     def test_a_file_outside_any_module_is_judged_against_1_core_only(self):
-        # Measured on 2026-10-17: a member `Attachments` in a mod
+        # Measured: a member `Attachments` in a mod
         # laid out without its module folders was reported against the
         # 5_Mission class Attachments; the classes that use it are 4_World.
         source = (
@@ -3533,7 +3533,7 @@ class TestVariableNamedAsType(unittest.TestCase):
         )
 
     def test_template_arguments_and_typedef_names_are_not_declarators(self):
-        # Vanilla control 2026-10-13: commas between template arguments and a
+        # Vanilla control run: commas between template arguments and a
         # typedef's own name were read as declarators (104 findings on 1.29,
         # 109 on 1.30), e.g. `Param3<bool, vector, int> x` and
         # `typedef map<string,ref array<string>> DamageZoneMap;`. Again with a
@@ -3988,7 +3988,7 @@ class TestCastUnrelatedTypes(unittest.TestCase):
 class TestFileScopes(unittest.TestCase):
     """The lookups of ES-CAST-UNRELATED-TYPES and ES-PROTECTED-METHOD-CROSS-CLASS.
 
-    Measured on 2026-10-17: counting lines from the start of the file
+    Measured: counting lines from the start of the file
     and scanning every method and class body at each call kept the protected
     method rule running for more than 20 minutes on a 10 MB file. FileScopes
     reads them once; it must give what the scans gave.
@@ -4044,7 +4044,7 @@ class TestFileScopes(unittest.TestCase):
 class TestMethodSignatureCollection(unittest.TestCase):
     """find_method_regions, which FileScopes and nine other rules read.
 
-    Measured on 2026-10-17: it collected a signature at every
+    Measured: it collected a signature at every
     line, and from a "(" that never closes each one ran to the end of the
     file, rebuilding the string at every line. Two files
     of up to 20 MB of binary data still passed 20 minutes, and method headers
@@ -5483,7 +5483,7 @@ class TestUndefinedBuiltinMethod(unittest.TestCase):
         )
 
     def test_a_template_list_read_across_parameters_is_unknown(self):
-        # Measured on 2026-11-03: the lookup read `map<string, int> refunds`
+        # Measured: the lookup read `map<string, int> refunds`
         # from array's `<` to map's `>` and reported GetKey on an array.
         source = (
             "void F(array<ref FX_Claim> timeline, array<int> values, bool dirty, "
@@ -5532,7 +5532,7 @@ class TestUndefinedBuiltinMethod(unittest.TestCase):
         self.assertEqual([3], [e["line"] for e in _builtin_errors(source)])
 
     def test_a_variable_named_as_the_type_is_no_static_call(self):
-        # Measured on 2026-11-03: `Widget map = ...; map.ClearFlags(...)`. The
+        # Measured: `Widget map = ...; map.ClearFlags(...)`. The
         # name fails as a variable (ES-VARIABLE-NAMED-AS-TYPE), not the call.
         source = (
             "void F(Widget root)\n{\n    Widget map = root;\n"

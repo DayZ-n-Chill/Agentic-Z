@@ -7,7 +7,7 @@ ES_REGISTERRECIPES_TYPO_RULE_ID = "ES-REGISTERRECIPES-TYPO"
 # The real recipe-registration hook carries an official typo:
 # `RegisterRecipies()` (double i) -- declared at pluginrecipesmanagerbase.c:14,
 # invoked at pluginrecipesmanager.c:662. The correctly-spelled form
-# `RegisterRecipes` has 0 occurrences in the vanilla tree (verified 2026-06-10,
+# `RegisterRecipes` has 0 occurrences in the vanilla tree (verified with a
 # host-side grep). Consequences of writing the correct spelling:
 #   (a) `override ... RegisterRecipes(` -> compile fail (no base method).
 #   (b) plain definition or call -> legal dead method the engine never invokes;

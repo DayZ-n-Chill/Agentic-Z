@@ -239,7 +239,7 @@ class FileScopes:
     _argument_type() asks for them at every cast or call. Counting the lines
     from the start of the file and going through every method and class body
     each time kept ES-PROTECTED-METHOD-CROSS-CLASS running for more than 20
-    minutes on a 10 MB file (measured on 2026-10-17).
+    minutes on a 10 MB file (measured).
     """
 
     def __init__(self, stripped):

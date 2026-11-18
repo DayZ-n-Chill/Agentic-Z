@@ -250,7 +250,7 @@ def test_json_reports_the_curl_floor(maps, tmp_path, capsys):
 
 
 def test_a_difference_of_exactly_one_step_is_noise():
-    # the residual medians of vanilla vineyardfence_wires_nohq (product test, 2026-10-04): 4/255 and
+    # the residual medians of vanilla vineyardfence_wires_nohq (product test): 4/255 and
     # 2/255 as computed. Their difference is one step plus a few ulps, so a bare <= let it through.
     rd, rg = 0.015686274509803977, 0.007843137254901933
     assert abs(rd - rg) > nc.CURL_FLOOR

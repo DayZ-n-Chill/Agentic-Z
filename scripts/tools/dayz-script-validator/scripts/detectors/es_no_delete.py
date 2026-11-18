@@ -1,4 +1,4 @@
-# QUARANTINED 2026-08-18 - not imported by script_validator.py and not executed.
+# QUARANTINED - not imported by script_validator.py and not executed.
 # The premise is FALSE. `delete` is real Enforce API and vanilla uses it in code
 # that ships: 125 findings over the 2805-file vanilla tree, every one a false
 # positive by construction. Bohemia's own proto DEMANDS it:

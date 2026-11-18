@@ -33,7 +33,7 @@ ES_VARIABLE_NAMED_AS_TYPE_RULE_ID = "ES-VARIABLE-NAMED-AS-TYPE"
 # whole script module from compiling. Measured twice:
 #
 #   member  `bool Debug;` in a settings class (scripts/4_World), DayZDiag
-#           1.29, 2026-09-28: the client refused the module with
+#           1.29: the client refused the module with
 #           `Variable name 'Debug' already used as type name`. Debug is a
 #           vanilla class (3_game/tools/debug.c).
 #   local   `Widget map = root.FindAnyWidget("mapWidget")`:
@@ -54,7 +54,7 @@ ES_VARIABLE_NAMED_AS_TYPE_RULE_ID = "ES-VARIABLE-NAMED-AS-TYPE"
 # file's. A file outside any N_Module folder may compile in any module, so
 # it is judged only against the types of 1_Core, which every module sees, and
 # those of its own file; a type outside any N_Module folder counts only in
-# its own file. (Measured on 2026-10-17: in a mod laid out without
+# its own file. (Measured: in a mod laid out without
 # its module folders, the rule reported a member `Attachments`, against the
 # 5_Mission class Attachments, in a class that 4_World code uses.) Without a
 # usable vanilla tree only the addon and the external roots are judged, and

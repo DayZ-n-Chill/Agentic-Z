@@ -1,6 +1,6 @@
 # Known issues
 
-This library was put through a deliberately adversarial audit in August 2026 —
+This library was put through a deliberately adversarial audit —
 several independent reviewers, each reproducing findings by executing code
 rather than reading it. What follows is what that audit found and what is still
 open. It is published in full, unflattering parts included, because a modelling

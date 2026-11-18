@@ -1,6 +1,6 @@
 """1.6.0: #UVSet# fidelity.
 
-Measured on 2026-09-01 with 1.5.0: re-saving a skinned body that carried two
+Measured with 1.5.0: re-saving a skinned body that carried two
 UV sets dropped the second one (4,761,261 -> 4,409,836 bytes), and a Memory
 LOD from a BI-authored file lost the empty #UVSet# tag that Object Builder
 writes for LODs without faces. LOD.read discarded every #UVSet#; LOD.write

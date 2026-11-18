@@ -9,7 +9,7 @@ ES_EXTERNAL_CONSUMER_MISSING_RULE_ID = "ES-EXTERNAL-CONSUMER-MISSING"
 # breaking change that no in-addon check sees, because every in-addon reference
 # is gone by construction.
 #
-# Observed on 2026-09-17 in a mod:
+# Observed in a mod:
 # a refactor removed 62 facade methods from 4_World after proving that no file
 # under the addon's own `scripts/` called them. The offline linter was green, the
 # implementer's gates were green and an independent review was green. The server

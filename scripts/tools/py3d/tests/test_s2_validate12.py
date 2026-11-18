@@ -89,7 +89,7 @@ def mut_winding_lowconf(m, p3d):
             "WARN_WINDING_EDGE_INCOHERENT"]
 
 # A collision LOD with faces and no component collides with nothing in
-# game (measured 2026-10-02 with all three missing); each LOD is checked.
+# game (measured with all three missing); each LOD is checked.
 def mut_component_none(m, p3d):
     p3d.get_lod("geometry").selections.pop("Component01")
     return ["ERR_COMPONENT_NAMING"]
@@ -147,7 +147,7 @@ def mut_coverage_fire(m, p3d):
     return _cover_all_but_one_face(p3d.get_lod("fire_geometry"))
 
 # A closed part in no component beside a covered one: measured in game
-# (2026-10-02) to collide with nothing, so an ERROR (1.10.0).
+# to collide with nothing, so an ERROR (1.10.0).
 def mut_coverage_part_outside(m, p3d):
     add_box(m, p3d.get_lod("geometry"), CROSS, mass=25.0)
     return ["ERR_COMPONENT_COVERAGE"]
@@ -294,7 +294,7 @@ COLLISION_KINDS = ("geometry", "view_geometry", "fire_geometry")
 @pytest.mark.parametrize("name", ["Component01", "component01",
                                   "COMPONENT01", "Component02"])
 def test_val_component_name_any_case(fork, name):
-    """In game (2026-10-02) component01 collided exactly like Component01,
+    """In game component01 collided exactly like Component01,
     and binarize writes both as component01: "Component" and a number, in
     any case, raises nothing on any collision LOD. Up to 1.8.0 a
     lowercase component01 raised ERR_COMPONENT_NAMING."""
@@ -669,7 +669,7 @@ def test_coverage_silent_without_components(fork):
 
 
 # ---- ERR_COMPONENT_COVERAGE (1.10.0): which faces are a closed part left
-# out whole. In game (2026-10-02, dayz-p3d-audit killer #8) a closed box in
+# out whole. In game (dayz-p3d-audit killer #8) a closed box in
 # no component beside a covered one collided with nothing; a part left out
 # only in part, an open piece and a flat sheet were not measured and stay
 # the WARN.

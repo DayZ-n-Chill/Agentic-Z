@@ -19,7 +19,7 @@ Per model it writes <folder>/<name>.fbx with:
 
 Axis map DayZ -> Blender is (x, y, z) -> (x, z, y): determinant -1 and its own
 inverse. The garment lands like the official rig (Z up, front -Y, left +X)
-with faces outward. Until 2026-10-01 this script used (x, -z, y), a mirror
+with faces outward. An earlier version of this script used (x, -z, y), a mirror
 image with inward faces; a package made that way goes back through
 (x, z, -y), never through this map.
 

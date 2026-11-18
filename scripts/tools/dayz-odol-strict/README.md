@@ -71,8 +71,8 @@ Findings use deterministic JSON-pointer-like paths.
 
 - Accepted direct or embedded payload versions: v53, v54 and v55 only.
   The 1.30 vanilla models and the models binarized by DayZ Tools
-  1.30.164.078 (2026-10-15) are v56, so the adapter refuses them with
-  `ODOL_VERSION_UNSUPPORTED`. In one harness run on 2026-11-12, DayZ Tools
+  1.30.164.078 are v56, so the adapter refuses them with
+  `ODOL_VERSION_UNSUPPORTED`. In one harness run, DayZ Tools
   1.30 (`BINARIZE 1.30.164289.70`) wrote v56 into three test `.p3d` files; no
   other DayZ Tools build was measured in that run.
 - LOD count must be `1..64` before the external backend runs.

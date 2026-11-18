@@ -5,7 +5,7 @@ only: menu commands through `PostMessage(WM_COMMAND)`, file dialogs through
 `WM_SETTEXT`. No `SendInput`, no `SetCursorPos`, no `SetForegroundWindow`: the
 desktop stays usable while it runs. Windows only.
 
-**Experimental.** Verified on 2026-10-03, on Spanish Windows, on an instance
+**Experimental.** Verified on Spanish Windows, on an instance
 this runner launched: menu commands and the standard Windows file dialogs,
 with Terrain Builder never taking the focus. **Not verified:** Generate
 Layers, a real import, an end-to-end WRP export. This was measured in Terrain
@@ -74,7 +74,7 @@ Parse them one at a time (for example with `json.JSONDecoder().raw_decode`), not
 
 ## Gotchas
 
-Measured in Terrain Builder (DayZ Tools) on 2026-10-03:
+Measured in Terrain Builder (DayZ Tools):
 
 - **Menu ids are dynamic,** and wxWidgets updates a menu's enabled state only on
   `WM_INITMENUPOPUP`: refresh before every command. `command`, `save_loop` and

@@ -41,7 +41,7 @@ header's anim_type (seanim.py SEANIM_TYPE: 0 absolute, 1 additive, 2 relative,
 bone none) and write_seanim writes one entry per bone that has one, in bone
 order, so a clip read and written back keeps them. DayZATool extracts of
 vanilla clips carry them: p_1hd_erc_idle_low has an absolute header and 60 of
-its 65 bones relative. Until 2026-10-03 this script skipped them on read and
+its 65 bones relative. An earlier version skipped them on read and
 always wrote none.
 """
 import os

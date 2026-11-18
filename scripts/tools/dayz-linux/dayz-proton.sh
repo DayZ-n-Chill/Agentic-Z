@@ -25,7 +25,7 @@
 # Steamworks Shared), adds the game key, spends the one failing first .NET start, and maps P: (a
 # dosdevices symlink) in both prefixes. Run it once; it takes about two minutes.
 #
-# Rules learned the hard way (2026-11-03, Proton Hotfix and GE-Proton11-1, Debian testing):
+# Rules learned the hard way (Proton Hotfix and GE-Proton11-1, Debian testing):
 # - One display per prefix at a time: a prefix's wineserver is bound to the display its first
 #   program used; others die with "X Error ... BadWindow ... X_UnmapWindow". A headless state
 #   path may only contain A-Z a-z 0-9 / . _ - (checked as given and once resolved, before any
@@ -171,7 +171,7 @@ find_runtime() {
 # Bare and without WoW64, Proton runs them against the host's i386 libraries, and without an i386
 # FreeType their dialogs show no text at all. Inside the Steam Linux Runtime container
 # (DAYZ_PROTON_RUNTIME=1, what Steam itself does) GDI tools died on a fontconfig/X error here.
-# WoW64 runs them through the 64-bit host libraries, which fixed both (measured 2026-11-03).
+# WoW64 runs them through the 64-bit host libraries, which fixed both (measured).
 prun() {
     if [ "${DAYZ_PROTON_RUNTIME:-0}" = 1 ] && rt=$(find_runtime) && [ -n "$rt" ]; then
         "$rt" --verb=run -- "$PROTON_BIN" run "$@"
@@ -257,7 +257,7 @@ ensure_prefix() {   # ensure_prefix <appid>: create the Wine prefix once
 }
 
 # The first .NET tool started in a fresh prefix never finishes: AddonBuilder crashed (DXVK error)
-# without WoW64 and hung after its constructor with it; every later start works (2026-11-03).
+# without WoW64 and hung after its constructor with it; every later start works.
 # Spend that one start on a throwaway pack, time-boxed, then stop the prefix's wineserver.
 warm_dotnet() {
     ab=$(appdir 830640)/Bin/AddonBuilder/AddonBuilder.exe

@@ -64,7 +64,7 @@ from detectors.rvmat import (
     check_rvmat_normalmapmacro,
     strip_rvmat_line_comment,
 )
-# ES-NO-DELETE quarantined 2026-08-18: vanilla ships 125 `delete` statements and
+# ES-NO-DELETE quarantined: vanilla ships 125 `delete` statements and
 # its own proto demands manual delete. See the detector module header.
 from detectors.es_empty_ifdef import (
     ES_EMPTY_IFDEF_MESSAGE,
@@ -150,7 +150,7 @@ from detectors.es_layout_path_pboprefix import (
     check_es_layout_path_pboprefix,
     parse_pboprefix,
 )
-# ES-PROCESSDIRECTDAMAGE-DT-ALIAS quarantined 2026-08-18: entityai.c:4153 calls
+# ES-PROCESSDIRECTDAMAGE-DT-ALIAS quarantined: entityai.c:4153 calls
 # ProcessDirectDamage(DT_CUSTOM, ...). See the detector module header.
 from detectors.es_local_var_redeclare import (
     ES_LOCAL_VAR_REDECLARE_RULE_ID,
@@ -246,7 +246,7 @@ from detectors.es_respawn_equip_onclientrespawn import (
     ES_RESPAWN_EQUIP_RULE_ID,
     check_es_respawn_equip_onclientrespawn,
 )
-# ES-C-STYLE-CAST and ES-STRING-PLUS-BOOL were quarantined 2026-08-18: both rested
+# ES-C-STYLE-CAST and ES-STRING-PLUS-BOOL were quarantined: both rested
 # on claims the vanilla tree refutes. See the headers of their detector modules.
 from detectors.es_override_of_platform_gated_method import (
     ES_OVERRIDE_OF_PLATFORM_GATED_METHOD_RULE_ID,
