@@ -196,7 +196,7 @@ Using an image:
 - In script: `ImageWidget.LoadImageFile(0, "set:dayz_gui image:cartridge_int")` loads into slot 0 (vanilla `P:\scripts\5_mission\gui\inventorynew\containeditems\icon.c` line 1541). `SetImage(n)` switches between loaded slots.
 - In rich text: `<image set="<set>" name="<image>" />` (vanilla `P:\scripts\3_game\tools\inpututils.c` line 178).
 
-Not checkable on `P:\`: no vanilla `config.cpp` registers imagesets, and the only vanilla `CfgMods` classes (in `DZ\data` and `DZ\data_sakhal`) have no `imageSets` entry. Mods register their imagesets in `config.cpp` under `CfgMods` so a layout can use them:
+Not checkable on `P:\`: no vanilla `config.cpp` registers imagesets, and the only vanilla `CfgMods` classes (in `DZ\data`, `DZ\data_sakhal` and `DZ\data_takistan`) have no `imageSets` entry. Mods register their imagesets in `config.cpp` under `CfgMods` so a layout can use them:
 
 ```cpp
 class CfgMods

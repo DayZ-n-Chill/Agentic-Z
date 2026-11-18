@@ -30,6 +30,7 @@ protected const float MYMOD_DIAL_INTERVAL = 0.1;   // 10 per second
 
 override void EOnPostSimulate(IEntity other, float dt)
 {
+    super.EOnPostSimulate(other, dt);
     m_DialTimer += dt;
     if (m_DialTimer >= MYMOD_DIAL_INTERVAL)
     {

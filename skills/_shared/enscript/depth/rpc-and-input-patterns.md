@@ -26,7 +26,7 @@ override void OnRPC(PlayerIdentity sender, int rpc_type, ParamsReadContext ctx)
 }
 ```
 
-A six or seven digit number with a prefix unique to the mod keeps clear of vanilla's low numbers and other mods (a community convention; see `rpc-routing.md`, section "RPC IDs"). One enum per direction makes the flow of each RPC obvious. `IsServer()` is safe inside `OnRPC`; the load time caveat in `hard-rules.md`, section "Networking and sides", applies only during init.
+A high fixed number in a block unique to the mod keeps clear of vanilla's low numbers and other mods (a community convention; see `rpc-routing.md`, section "RPC IDs"). One enum per direction makes the flow of each RPC obvious. `IsServer()` is safe inside `OnRPC`; the load time caveat in `hard-rules.md`, section "Networking and sides", applies only during init.
 
 ## Client locks, server decides
 

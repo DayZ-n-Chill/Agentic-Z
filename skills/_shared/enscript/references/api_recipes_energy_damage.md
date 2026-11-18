@@ -35,7 +35,7 @@ A recipe whose ingredient is a weapon or any item with attachments must override
 |---|---|
 | A device has at most four sockets: `MAX_SOCKETS_COUNT = 4` | `P:\scripts\3_game\tools\component\componentenergymanager.c:73` |
 | `energyStorageMax` is optional. With only `energyAtSpawn` in config, that value is also the maximum | `componentenergymanager.c:228` and `:229` |
-| `ConsumeEnergy()` and `CanWork()` walk the chain of sources upwards, with a safety limit of 500 steps (`cycle_limit`) | `componentenergymanager.c:800` |
+| `CanWork()` walks the chain of sources upwards with a safety limit of 500 steps (`cycle_limit`); `ConsumeEnergy()` recurses through `FindAndConsumeEnergy` with no step limit, only a check against returning to the original caller | `componentenergymanager.c:800`; `:1717` and `:1728` |
 | With no `compatiblePlugTypes` in config, a socket accepts every plug | `componentenergymanager.c:994` |
 
 The events to override are empty methods on `EntityAI`: `OnWorkStart()`, `OnWork(float consumed_energy)`, `OnWorkStop()`, `OnSwitchOn()` and `OnSwitchOff()` (`P:\scripts\3_game\entities\entityai.c:3428`, `:3431`, `:3434`, `:3437`, `:3440`). Measured in game: the switch events fire on both sides, while the work events fire only on the server and in single player. Anything clients must see goes through a synced variable and `SetSynchDirty()` (`../patterns/netsync.md`).

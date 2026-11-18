@@ -91,7 +91,7 @@ bool on = player.GetModifiersManager().IsModifierActive(eModifiers.MDF_BROKEN_LE
 
 ## Custom RPC ID ranges (community convention)
 
-Vanilla does not reserve any range for mods; this table is a community convention with no vanilla source. Vanilla `ERPCs` ends a little under 200 on this build (see above). CF sends all its RPCs on one ID, `FRAMEWORK_RPC_ID = 10042` (`3_Game\CommunityFramework\RPC\RPCManager.c:47` inside `P:\Mods\@CF\Addons\scripts.pbo`).
+Vanilla does not reserve any range for mods; this table is a community convention with no vanilla source. Vanilla `ERPCs` ends at 112 in a retail build and at 189 in a `DIAG_DEVELOPER` build on this extraction (see above). CF sends all its RPCs on one ID, `FRAMEWORK_RPC_ID = 10042` (`3_Game\CommunityFramework\RPC\RPCManager.c:47` inside `P:\Mods\@CF\Addons\scripts.pbo`).
 
 | Range | Typical use |
 |---|---|

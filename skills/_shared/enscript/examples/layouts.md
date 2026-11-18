@@ -170,7 +170,7 @@ class MyMod_InspectMenu : UIScriptedMenu
     void Rotate(float delta)
     {
         m_RotY += delta;
-        m_Preview.SetModelOrientation(Vector(m_RotY, 0, 0));
+        m_Preview.SetModelOrientation(Vector(0, m_RotY, 0));
     }
 }
 ```

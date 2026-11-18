@@ -93,7 +93,7 @@ class MyMod_CustomCanteen : Bottle_Base // P:\scripts\4_world\entities\itembase\
     // PlayerBase.Consume (P:\scripts\4_world\entities\manbase\playerbase.c:7743),
     // which the drink action calls on the server only
     // (P:\scripts\4_world\classes\useractionscomponent\actioncomponents\cacontinuousquantityedible.c:52-58).
-    // Note: ItemBase.OnApply (itembase.c:4510) is only called by injector actions, not drinking.
+    // Note: ItemBase.OnApply (itembase.c:4514) is only called by injector actions, not drinking.
     // -----------------------------------------------------------------------
     override void OnConsume(float amount, PlayerBase consumer)
     {
@@ -121,7 +121,7 @@ class MyMod_CustomCanteen : Bottle_Base // P:\scripts\4_world\entities\itembase\
     }
 
     // -----------------------------------------------------------------------
-    // Persistence – LOAD (P:\scripts\3_game\entities\entityai.c:2978; ItemBase override at itembase.c:3089)
+    // Persistence – LOAD (P:\scripts\3_game\entities\entityai.c:2978; ItemBase override at itembase.c:3093)
     // Read fields in the same order they were written.
     // NEVER read more than was written; guard new fields with version checks.
     // -----------------------------------------------------------------------
@@ -151,13 +151,13 @@ class MyMod_CustomCanteen : Bottle_Base // P:\scripts\4_world\entities\itembase\
     // -----------------------------------------------------------------------
     // Vanilla hooks – always call super, even when adding nothing
     // -----------------------------------------------------------------------
-    override void OnInventoryEnter(Man player) // P:\scripts\4_world\entities\itembase.c:3902
+    override void OnInventoryEnter(Man player) // P:\scripts\4_world\entities\itembase.c:3906
     {
         super.OnInventoryEnter(player);
         // e.g. log pickup for admin analytics (guard with IsServer() for server-side work)
     }
 
-    override void OnInventoryExit(Man player) // P:\scripts\4_world\entities\itembase.c:3914
+    override void OnInventoryExit(Man player) // P:\scripts\4_world\entities\itembase.c:3918
     {
         super.OnInventoryExit(player);
     }

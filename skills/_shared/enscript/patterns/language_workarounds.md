@@ -141,7 +141,7 @@ There is no `try`/`catch`; no vanilla script uses either. Vanilla signals failur
 bool TryParse(string input, out int result)
 {
     result = input.ToInt();   // enstring.c:20
-    return input.Length() > 0 && result != 0;
+    return input.Length() > 0 && (result != 0 || input == "0");
 }
 
 int val;
