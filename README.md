@@ -370,6 +370,14 @@ Agentic-Z collects no personal data, sends no telemetry, and keeps nothing on an
 
 ---
 
+## Thank you, DayZ community
+
+Agentic-Z exists because of the DayZ modding community. Over the years, modders, server owners, testers and players have shared their findings, answered questions, published tools and taken apart problems in the open. That shared knowledge is a big part of what made this project possible.
+
+To everyone who has ever posted a fix, written a guide, shared a config, or helped a stranger get their mod to load: thank you. We love this community, and we're grateful for every bit of help along the way.
+
+— DayZ n' Chill
+
 ## License
 
 See [`LICENSE`](LICENSE). Copyright (c) 2026 DayZ n' Chill. Source available for non-commercial use only. You may use it free of charge to develop DayZ mods, but you may not sell it, sell services that use it, or make money from anything made with it.
