@@ -10,7 +10,7 @@ The UI sends intents and the server decides. The menu never assumes a price or s
 
 1. The server module's `StartTrading()` sends `RPC_LoadTraderData`. The client opens `CreateSVMenu("ExpansionMarketMenu")`.
 2. The server sends items in batches (`RPC_LoadTraderItems`); the client inserts them into `ObservableCollection`s and the bindings update the widgets. The last batch fires `SI_SetTraderInvoker.Invoke()`.
-3. The player clicks Buy. `OnBuyButtonClick()` sets the menu state to `DIALOG`, or straight to `REQUESTING_PURCHASE` when confirmations are off, and calls `m_MarketModule.RequestPurchase(itemID, qty, price_seen, ...)`.
+3. The player clicks Buy. `OnBuyButtonClick()` sets the menu state to `DIALOG` and shows the confirm dialog, or calls `OnConfirmBuyButtonClick()` directly when confirmations are off. `OnConfirmBuyButtonClick()` sets `REQUESTING_PURCHASE` and calls `m_MarketModule.RequestPurchase(itemID, qty, price_seen, ...)`.
 4. The server RPC `RPC_RequestPurchase` recalculates the price with `FindPurchasePriceAndReserveEx()` and reserves the stock with `zone.RemoveStock(..., true)`.
 5. The client RPC `RPC_Callback(PurchaseSuccess)` sets the state back to `NONE` and confirms the purchase (`ActualPurchase`, `ConfirmPurchase`).
 6. The confirming `RPC_RequestPurchase` removes the stock for real, takes the money, spawns the item and calls `zone.Save()`. A final `RPC_Callback` refreshes the menu with `UpdateUI`.

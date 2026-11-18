@@ -76,7 +76,7 @@ if (fh != 0)
 
 ## JSON Read/Write (Preferred for Structured Data)
 
-The `JsonFileLoader<T>` utility is preferred over manual file I/O for structured config/data. Use `LoadFile` and `SaveFile`, which return `bool` and an error message (`P:\scripts\3_game\tools\jsonfileloader.c:7` and `:42`); vanilla marks the older `JsonLoadFile` and `JsonSaveFile` "use JsonFileLoader::LoadFile instead" (`jsonfileloader.c:104-105`).
+The `JsonFileLoader<T>` utility is preferred over manual file I/O for structured config/data. Use `LoadFile` and `SaveFile`, which return `bool` and an error message (`P:\scripts\3_game\tools\jsonfileloader.c:7` and `:42`); vanilla marks the older `JsonLoadFile` "use JsonFileLoader::LoadFile instead" (`jsonfileloader.c:104-105`) and `JsonSaveFile` "use JsonFileLoader::SaveFile instead" (`:133-134`).
 
 ```c
 string err;
@@ -122,7 +122,7 @@ CopyFile("$mission:mymod_defaults.json", "$profile:\\MyMod\\config.json");
 | Script source files | `Scripts/<layer>/<YourFile>.c` |
 | Config (server) | `<ServerDir>\mpmissions\<mission>\cfggameplay.json` |
 | Economy | `<ServerDir>\mpmissions\<mission>\db\*.xml` |
-| Mod PBO output | `<DayZDir>\@MyMod\addons\MyMod.pbo` |
+| Mod PBO output | `P:\Mods\@MyMod\Addons\MyMod.pbo` (built by `/dayz-build-pbo`) |
 | Workbench project | `<DayZDir>\Projects\MyMod\` |
 | Profile root | `<ServerDir>\profiles\<profileName>\` |
 

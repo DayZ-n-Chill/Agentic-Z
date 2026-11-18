@@ -14,7 +14,7 @@ x = px + position_x * s if hexactpos  == 1  else px + position_x * pw
 y = py + position_y * s if vexactpos  == 1  else py + position_y * ph
 ```
 
-A missing `position` is `0 0`. Exact units are 1/1080 of the screen height (`checklist-and-troubleshooting.md`, "Declare all four unit flags"), so a predictor that treats them as pixels is right only at 1080 pixels high. `resolve_geometry` in `scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py` still uses the pixel form, and so do the HTML viewer and `/dayz-layout-preview` unless `scaled 1` is set.
+A missing `position` is `0 0`. Exact units are 1/1080 of the screen height (`checklist-and-troubleshooting.md`, "Declare all four unit flags"), so a predictor that treats them as pixels is right only at 1080 pixels high. `resolve_geometry` in `scripts/tools/dayz-ui-lab/dayz_ui_lab/parse.py` still uses the pixel form, and so does the HTML viewer always; `/dayz-layout-preview` does too unless `scaled 1` is set.
 
 Measured in game at 1920x1080, the formula matched the engine to within 0.00003 of a pixel on six widgets at three depths of nesting, and again on five buttons.
 

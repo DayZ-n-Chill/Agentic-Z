@@ -145,7 +145,7 @@ class MyMod_ItemArea
             return area;
 
         TIntArray sizes = new TIntArray;
-        GetGame().ConfigGetIntArray("CfgVehicles " + typeName + " itemSize[]", sizes);
+        GetGame().ConfigGetIntArray("CfgVehicles " + typeName + " itemSize", sizes);
         area = 1;
         if (sizes.Count() >= 2)
             area = sizes[0] * sizes[1];

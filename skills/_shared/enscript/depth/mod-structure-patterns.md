@@ -64,7 +64,7 @@ class CfgMods
     {
         class defs
         {
-            class worldScriptModule { files[] = { "MyMod/scripts/4_World" }; };
+            class worldScriptModule { files[] = { "MyMod_FeatureX/scripts/4_World" }; };
         };
     };
 };
@@ -122,5 +122,6 @@ Input names start with `UA`, for User Action. Keyboard keys start with `k` (`kSp
 | Space | Jump and climb, `UAGetOver` |
 | G, V, H, M | Throw and drop (`UAThrowitem`, `UADropItem`), view (`UAPersonView`), horn (`UACarHorn`), map (`UAMapToggle`), all in `P:\bin\preset_x1mousekey.xml` |
 | Left Alt (`kLMenu`) | Free look, `UALookAround` and `UALookAroundToggle`, same file |
+| F1 to F11 | Gesture and emote slots (`UAGestureSlot01` onward at `P:\bin\preset_x1mousekey.xml:418` to `:449`, `EmoteGreeting` and the other emotes from `:453`) |
 
-Good candidates are J, K, B, N, the function keys and the numpad. Check `preset_x1mousekey.xml` for the key before taking it, and see `action-and-input-rules.md` for keys admin mods use.
+Good candidates are J, K, B, N and the numpad. Check `preset_x1mousekey.xml` for the key before taking it, and see `action-and-input-rules.md` for keys admin mods use.

@@ -41,7 +41,7 @@ World objects descend from `IEntity` (`P:\scripts\1_core\proto\enentity.c:164`) 
 | `EEHealthLevelChanged(int oldLevel, int newLevel, string zone)` | A zone's health level changes | `entityai.c:1043` |
 | `EEHitBy(TotalDamageResult, int damageType, EntityAI source, int component, string dmgZone, string ammo, vector modelPos, float speedCoef)` | Damage was applied | `entityai.c:1143` |
 | `EEKilled(Object killer)` | Server, when the entity is killed | `entityai.c:1103` and `:1104` |
-| `EEDelete()` | The entity leaves the world | `entityai.c:946` |
+| `EEDelete(EntityAI parent)` | The entity leaves the world | `entityai.c:946` |
 
 Call `RegisterNetSyncVariableInt`, `Bool` and `Float` in the constructor, not in `EEInit`. Reported, not checked on `P:\`: a registration made after construction is ignored. `patterns/netsync.md` lists the two other vanilla places, `InitItemVariables()` and `PlayerBase.Init()`.
 
@@ -156,7 +156,7 @@ if (!item)
 
 ### Skip null entries from `EnumerateInventory`
 
-Check each entry that `GetInventory().EnumerateInventory(...)` returns before use, as vanilla does in all five `InventoryTraversalType.LEVELORDER` calls (`P:\scripts\4_world\static\miscgameplayfunctions.c:131`, checked at `:136`; `:349` at `:354`; `:1222` at `:1239`; `P:\scripts\4_world\entities\manbase\playerbase.c:7004` at `:7011`; `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionskinning.c:238` at `:241`). Never pass an unchecked entry to a `notnull` parameter such as `HasInventoryJunctureItem(notnull EntityAI item)` (`P:\scripts\3_game\global\game.c:757`).
+Check each entry that `GetInventory().EnumerateInventory(...)` returns before use, as vanilla does in all five `InventoryTraversalType.LEVELORDER` calls (`P:\scripts\4_world\static\miscgameplayfunctions.c:131`, checked at `:136`; `:351` at `:356`; `:1230` at `:1247`; `P:\scripts\4_world\entities\manbase\playerbase.c:7004` at `:7011`; `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionskinning.c:238` at `:241`). Never pass an unchecked entry to a `notnull` parameter such as `HasInventoryJunctureItem(notnull EntityAI item)` (`P:\scripts\3_game\global\game.c:757`).
 
 Measured in game on a DayZ 1.30 server with Expansion AI: an array filled only by a `LEVELORDER` traversal led to `Virtual Machine Exception: NULL pointer to instance` at `HasInventoryJunctureItem(entry)`. The script carried on and counted the item as kept, so the bug showed as a wrong result rather than a crash. With `if (entry && ...)` the exception stopped. Unverified: what a null stands for inside the native traversal, and whether `PREORDER` and `INORDER` return nulls too.
 

@@ -44,7 +44,7 @@ These are third party mods, and this repo has not checked their source, so all o
 - What "CUI" names is unclear. Tier 2 reads it as Community UI Framework; it is also short for Colorful UI, a template said to come as a free community edition and a paid edition whose terms forbid commercial use. Read the terms of the edition you pick before using it on a monetised server.
 - Colorful UI is said to ship every default layout again as a file you edit on its own. If so, it is the same per layout route Tier 2 calls heavy, not a central theme layer. It may still be a useful start for "reskin the whole vanilla UI".
 - Do not promise that either turns a retheme into a few property edits until its source shows a central theme API.
-- Community Framework ships no MVC or UI layer (its changelog marks MVC deprecated in 1.1 and removed in 1.3.1; not checked against the CF files). Its only UI piece worth knowing is the server aware `NotificationSystem` (`skills/_shared/enscript/integrations/community_framework.md`).
+- Community Framework ships no MVC or UI layer (its changelog marks MVC deprecated in 1.1 and removed in 1.3.1; not checked against the CF files). The server-to-client popup is vanilla, not CF: `NotificationSystem.SendNotificationToPlayerIdentityExtended` (`skills/_shared/enscript/depth/global-functions.md`, "Notifications").
 
 ## The color system
 

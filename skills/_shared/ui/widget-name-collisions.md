@@ -26,7 +26,9 @@ import re
 
 def names(path):
     text = io.open(path, encoding="utf-8", errors="replace").read()
-    return set(re.findall(r'^\s*\w+WidgetClass\s+(\w+)\s*\{', text, re.M))
+    header = re.findall(r'^\s*\w+WidgetClass\s+(\w+)\s*\{', text, re.M)
+    props = re.findall(r'^\s*Name\s+"([^"]+)"', text, re.M)
+    return set(header) | set(props)
 
 print(sorted(names(PROD) & names(TEST)))   # must be empty
 ```

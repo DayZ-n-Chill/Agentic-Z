@@ -163,7 +163,7 @@ modded class MissionServer
             // Class.CastTo(out Class to, Class from): P:\scripts\1_core\proto\enscript.c:110
             if (Class.CastTo(canteen, item))
             {
-                // ItemBase.SetQuantity(float value, ...): P:\scripts\4_world\entities\itembase.c:3315
+                // ItemBase.SetQuantity(float value, ...): P:\scripts\4_world\entities\itembase.c:3319
                 // Liquid is water: Bottle_Base varLiquidTypeInit=512 (P:\DZ\data\config.cpp:3529)
                 // = LIQUID_WATER (P:\scripts\3_game\constants.c:578)
                 canteen.SetQuantity(500);   // pre-fill with water

@@ -41,7 +41,7 @@ The compiler can stop at the first of these and show the next only after a rebui
 |---|---|
 | Opaque file handles treated as integers. `FileHandle` and `FindFileHandle` are `int[]` aliases (`P:\scripts\1_core\proto\ensystem.c:390`, `:503`) | Declare the type without `= 0`, test `if (!handle)` and track the open state yourself |
 | Searching a folder | `FindFile(pattern, out name, out attr, flags)`, `FindNextFile(handle, out name, out attr)`, then `CloseFindFile(handle)` (`ensystem.c:520` to `:522`) |
-| Reading a whole file with `ReadFile(FileHandle, void, int)` (`:425`) | `OpenFile` (`:417`) with `READ`, repeated `FGets`, then `CloseFile`, as vanilla does (`P:\scripts\5_mission\gui\controlsxbox.c:297` to `:305`) |
+| Reading a whole file with `ReadFile(FileHandle, void, int)` (`:425`) | `OpenFile` (`:417`) with `READ`, repeated `FGets`, then `CloseFile`, as vanilla does (`P:\scripts\5_mission\gui\controlsxbox.c:293` to `:305`) |
 | `ScriptRPC.WriteString` | There is none: `ScriptRPC` adds only `Reset` and `Send` (`P:\scripts\3_game\gameplay.c:104` to `:118`) to a `Serializer` with generic `Write` and `Read` (`P:\scripts\1_core\proto\serializer.c:57` and `:58`). A member that keeps the RPC needs `ref` |
 | `.Replace().Replace()` | `string.Replace` changes the string in place and returns an `int` (`P:\scripts\1_core\proto\enstring.c:156`); call it once per statement on a local |
 | `Multiple declaration` | Locals have method scope; rename per branch or declare once. Separate `#ifdef` and `#else` views may reuse a name, since only one exists at a time |

@@ -11,7 +11,7 @@ Dabs Framework is a third party mod. These facts are checked against its own scr
 - Constructing it opens it. The field `ref UIScriptViewMenu m_UIScriptViewMenu = new UIScriptViewMenu(this)` wraps the view in a vanilla `UIScriptedMenu` (`P:\scripts\3_game\tools\uiscriptedmenu.c:66`), and when `UseUIManager()` is true the constructor calls `ShowScriptedMenu(m_UIScriptViewMenu, GetMenu())` (`:19` to `:22`; vanilla `ShowScriptedMenu`, `P:\scripts\3_game\tools\uimanager.c:9`).
 - It adds the names from `GetInputExcludes()` with `Mission.AddActiveInputExcludes` (`:25`; vanilla `P:\scripts\3_game\gameplay.c:800`) and removes them in the destructor (`:79` to `:81`).
 - It calls `ChangeGameFocus(1, INPUT_DEVICE_MOUSE)` when `UseMouse()` is true and `ChangeGameFocus(1, INPUT_DEVICE_KEYBOARD)` when `UseKeyboard()` is true (`:38` to `:44`; vanilla `ChangeGameFocus(int add, int input_device = -1)`, `P:\scripts\3_game\tools\input.c:20`).
-- It sets the cursor two GUI frames later with `SetMouseCursorDesiredVisibility` (`:47`; vanilla `P:\scripts\3_game\dayzgame.c:4003`). The source comment says one frame worked and two is the safe value.
+- It sets the cursor with `SetMouseCursorDesiredVisibility` through a 2 ms `CallLater` on the GUI queue, in practice the next GUI tick (`:47`; vanilla `P:\scripts\3_game\dayzgame.c:4003`; `CallLater` takes milliseconds, `P:\scripts\2_gamelib\tools.c:61`). The source comment says 1 also worked and 2 is the safe value.
 - `Close()` queues `_Close` on `CALL_CATEGORY_GUI`, which runs `if (CanClose()) delete this` (`:170` to `:191`). You own the object's memory: keep a reference while it is open.
 
 ## What it leaves to you
@@ -48,7 +48,7 @@ The `UIManager` stack can clash with other mods that manage menus. For a floatin
 | `GroupPrefab`, `HorizontalSpacerPrefab` | Grouping |
 | `MessageBoxPrefab` | Uses a `RichTextWidget` |
 
-The same PBO holds `layouts\sample_mvc.layout`, `layouts\sample_mvc2.layout`, `layouts\tooltip\tooltip_view.layout` and the options menu layouts under `layouts\options\`. Dabs's `SampleMVC.c` shows a function command (`Relay_Command "SwapItemsExecute"` calling `m_Collection.SwapItems(m_Left, m_Right)` and returning true).
+The same PBO holds `layouts\sample_mvc.layout`, `layouts\sample_mvc2.layout`, `layouts\tooltip\tooltip_view.layout` and the options menu layouts under `layouts\options\`. Dabs's `SampleMVC.c` shows a function command (`Relay_Command "SwapItemsExecute"` calling `observable_list_box.SwapItems(counter_left_value, counter_right_value)` and returning true).
 
 Its color option places a marker inside its parent by fraction, a helper worth copying:
 

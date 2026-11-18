@@ -89,11 +89,11 @@ Other controls, in short:
 | `TextListboxWidget` | `AddItem(text, userData, column, row = -1)` returns the row, `SetItem`, `GetItemText(row, col, out text)`, `SetItemColor(row, col, color)`, `RemoveRow`, `GetSelectedRow`, `SelectRow`, `GetNumItems`, `GetItemData`, `EnsureVisible`, `ClearItems` |
 | `ProgressBarWidget` | Extends `SimpleProgressBarWidget` (`P:\scripts\1_core\proto\enwidgets.c:369` to `:379`); `SetCurrent(float)`; `GetMin` and `GetMax` only read, so the range comes from the layout or style. Vanilla drives the stamina bar from 0 to 100: `m_Stamina.SetCurrent((value / range) * 100)` (`P:\scripts\5_mission\gui\ingamehud.c:690`) |
 | `PasswordEditBoxWidget` | An edit box plus `SetHideText(bool)` |
-| `MapWidget` | `ScreenToMap`, `MapToScreen`, `SetMapPos`, `GetMapPos`, `SetScale`, `GetScale`, `AddUserMark`, `ClearUserMarks` (`P:\scripts\3_game\gameplay.c:321`; `map-and-markers.md`) |
+| `MapWidget` | `ScreenToMap`, `MapToScreen`, `SetMapPos`, `GetMapPos`, `SetScale`, `GetScale`, `AddUserMark`, `ClearUserMarks` (`P:\scripts\3_game\gameplay.c:322`; `map-and-markers.md`) |
 
 Dabs Framework binds both ways (`Two_Way_Binding`) to edit boxes, multiline edit boxes, password edit boxes, check boxes, sliders, combo boxes, text list boxes, progress bars, buttons, and to scroll and spacer widgets that hold a collection; text, rich text, image and preview widgets bind one way only (`dabs-mvc-internals.md`).
 
-`SetFocus(null)` clears focus from an edit box; with a focused edit box the first ESC clears the focus and only the second closes a menu that handles it that way (`verification.md`).
+`SetFocus(null)` clears focus from an edit box; with a focused edit box the first ESC clears the focus and only the second closes a menu that handles it that way (`automated-ui-checks.md`, "ESC with a focused edit box").
 
 ## ScrollWidget and spacers
 

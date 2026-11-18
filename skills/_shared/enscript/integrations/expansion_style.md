@@ -136,7 +136,7 @@ class YourMod_BountyModule : CF_ModuleWorld
 ```c
 // Trace: the preferred form. Expansion treats it as costing almost nothing while tracing is off
 // (not measured here), so it needs no #ifdef outside performance-critical code.
-auto trace = EXTrace.Start(EXTrace.GENERAL, this, "MethodName");
+auto trace = EXTrace.Start(EXTrace.MISC, this, "MethodName");
 
 // Older trace form, behind the define (which is commented out by default, see _shared/enscript-style/debugging-and-errors.md)
 #ifdef EXPANSIONTRACE

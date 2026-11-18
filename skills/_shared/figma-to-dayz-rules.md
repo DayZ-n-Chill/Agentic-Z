@@ -37,10 +37,10 @@ WidgetClassNameClass WidgetName {
 }
 ```
 
-Three rules that cover the syntax:
+Four rules that cover the syntax:
 
 - Class names always end in `Class`. `FrameWidget` is wrong, `FrameWidgetClass` is right.
-- Emit the name in the header as above, the form most vanilla layouts use. Ten of the 227, the HUD among them, write the class and a quoted ID in the header and the name as a `Name "..."` property (`P:\gui\layouts\day_z_hud.layout:1` and `:2`); the game reads both (`ui/layout-format.md`).
+- Emit the name in the header as above, the form most vanilla layouts use. Ten of the 227 leave the name out of the header and give it as a `Name "..."` property: the HUD's root writes the class alone in the header (`P:\gui\layouts\day_z_hud.layout:1` and `:2`), and its other widgets and the nine other layouts write the class and a quoted ID (`day_z_hud.layout:48` and `:49`); the game reads both (`ui/layout-format.md`).
 - Properties are key-value pairs on their own line. No `=`, no `:`, no semicolons. The value follows the key separated by a space. Quote string values the way vanilla does: `text`, `font`, `image0`/`imageTexture`, `scriptclass`, `colums`, `items`, `layout`, `Mask` and `ScriptParamsClass` values (for example `items` at `P:\gui\layouts\camera_tools\camera_tools.layout:98`). Numbers, flags and enum words such as `style`, `halign` and `valign` stay bare. Multi-word keys are quoted too (`"exact text" 1`).
 - The child `{ }` block goes inside the parent's braces, AFTER all of the parent's own properties. A widget may have multiple child blocks (the second is conventionally for `ScriptParamsClass` parameter blocks).
 

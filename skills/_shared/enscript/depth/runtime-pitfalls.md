@@ -40,7 +40,7 @@ if (pile && pile.GetAmmoCount() <= 0)
 
 ## Time in a float
 
-`GetTime()` returns an `int` of milliseconds (`P:\scripts\3_game\global\game.c:1535`). Stored in a 32-bit `float`, about 7 significant digits, it stops holding every millisecond after 2^24 ms, about 4.66 hours, when the step becomes 2 ms; after about 46 hours the step is 16 ms, and it keeps doubling. Keep time in an `int`.
+`GetTime()` returns an `int` of milliseconds (`P:\scripts\3_game\global\game.c:1535`). Stored in a 32-bit `float`, about 7 significant digits, it stops holding every millisecond after 2^24 ms, about 4.66 hours, when the step becomes 2 ms; after about 37 hours the step is 16 ms, and it keeps doubling. Keep time in an `int`.
 
 `int.ToString()` and `float.ToString()` work, but there is no printf-style formatting; write a small helper for fixed decimals.
 

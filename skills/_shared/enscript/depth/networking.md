@@ -71,7 +71,7 @@ Measured in game with a probe mod, from a dedicated server to a client already c
 
 Sync scale yourself, for example with `RegisterNetSyncVariableFloat` (`entityai.c:2861`), and apply it on the client. Raise `precision` when values such as `1.25` must survive packing, or pass equal minimum and maximum for no packing. Scale changes collision too: identical probe boxes at scale 1 and 0.5 gave vertical ray distances of 0.2018 m and 0.1018 m.
 
-Unverified: a client that joins later, and objects placed in the map. Animation results depend on the model: `Barrel_ColorBase` drives its two caps from one phase with `SetAnimationPhase` on `Lid` and `Lid2` (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:148` to `:154`), and phase 0.5 showed both. `GetAnimationPhase` read straight after a write returned the old value.
+Unverified: a client that joins later, and objects placed in the map. Animation results depend on the model: `Barrel_ColorBase` drives its two caps with two animations, `Lid` and `Lid2`, set to opposite phases with `SetAnimationPhase` (`P:\scripts\4_world\entities\itembase\barrel_colorbase.c:148` to `:154`), and phase 0.5 showed both. `GetAnimationPhase` read straight after a write returned the old value.
 
 ## Client-only visual writes get overwritten
 
