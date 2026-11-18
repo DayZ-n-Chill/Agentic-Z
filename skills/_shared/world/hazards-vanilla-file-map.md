@@ -87,7 +87,7 @@ The Nasdara data addon and its Central Economy files are on `P:\` (`nasdara-badl
 | The hazard modifiers have no fixed numbers; the enum numbers nothing after `MDF_TEMPERATURE = 1`, so use the names | `P:\scripts\4_world\classes\playermodifiers\emodifiers.c:3` |
 | The `AGT_AIRBOURNE_SOLID` case of the transmission plugin | `P:\scripts\4_world\plugins\pluginbase\plugintransmissionagents.c:414` |
 | `PlayerBase` saves the thermal bias handler last in `OnStoreSave`, with `m_ThermalBiasHandler.OnStoreSave(ctx)`; the server update while the player stands in an effect area is `OnUpdateEffectAreaServer` | `P:\scripts\4_world\entities\manbase\playerbase.c:7395`; `:911` |
-| Motorbike and boat wind is decided in `DetermineHeatcomfortBehavior`, not in `GetWetDelta` | `P:\scripts\4_world\classes\environment\environment.c:575`; `:890` |
+| Motorbike and boat wind is decided in `DetermineHeatcomfortBehavior`, not in `GetWetDelta` | `P:\scripts\4_world\classes\environment\environment.c:575`; `:889` |
 | Motorbike dust weight is 0.5 (`Motorbike_01_ColorBase`) and 0.75 (`Motorbike_02_ColorBase`), never 0.25 | `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:1` and `:84` (`return 0.5` at `:86`); `P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_02.c:1` and `:74` (`return 0.75` at `:76`) |
 | A mask stops the storm cough only when its breath protection covers the storm's intensity, because `coughIntensity` is intensity minus protection | `P:\scripts\4_world\classes\playermodifiers\modifiers\conditions\sandstormexposure.c:143` |
 | A mask or glasses protect only when the script class files them as `MASK` or `EYEWEAR`; the config value alone does nothing | `P:\scripts\4_world\entities\itembase\clothing_base.c:178` and `:198` |

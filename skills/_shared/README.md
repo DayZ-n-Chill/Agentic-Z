@@ -35,6 +35,8 @@ The Linux and Proton shell helpers, the script API index builder and its lookup 
 | Folder or file | Purpose |
 |---|---|
 | `_shared/skill_helpers.py` | The helpers every pipeline skill (build, deploy, clean, scaffold, launch) imports: loading a sibling skill's script, the `/dayz-preflight` gate, the project folder cached by `/dayz-init`, link checks that never follow a junction, the ownership marker in `P:\Mods\@<ModName>\`, the `allowFilePatching` setting in `serverDZ.cfg`, and the Steam and free UDP port checks before a server launch. |
+| `_shared/helper_mod.py` | Packs and removes a session-only helper mod under `P:\Mods\@<name>\` (with an ownership marker) for `/dayz-gate visual` and the test bridge (`/dayz-gate` and the dayz-testbridge MCP server). |
+| `_shared/window_capture.py` | Captures a game window from outside the game with `PrintWindow` (Windows only) for `/dayz-gate visual` and the dayz-testbridge MCP server. |
 | `_shared/viewer_core.py` | Emits the shared Three.js viewer scaffold that the skills' viewer generators splice into their pages. A string emitter; it does not render and does not vendor three.js. |
 
 ### Enforce Script style guide (`_shared/enscript-style`)
@@ -297,7 +299,7 @@ Front index: `_shared/models/README.md`. Written for `dayz-object-builder`.
 | `_shared/models/domain-recipes.md` | Not yet checked on `P:\`: three results measured on real mods: cookware, a client side cable segment, and an asset posed in the hands. |
 | `_shared/models/device-recipes.md` | Third-party mod practice, not vanilla: which worked specifications exist for electrical devices (a push button, a wall switch, a battery adapter, a sorter, a generator, a cable segment and a junction box), the design language they share, their vertex budgets and naming, and a template for a new device. |
 | `_shared/models/artist-returns.md` | What to check when a `.p3d`, `.paa` or `.rvmat` comes from outside the repo. Process rules learned on mod projects. |
-| `_shared/models/unconfirmed-findings.md` | Not checked on `P:\`: three unconfirmed findings of medium confidence, to use as red flags during a model audit. |
+| `_shared/models/unconfirmed-findings.md` | Not checked on `P:\`: two unconfirmed Binarize and proxy faults, to use as red flags during a model audit, plus a note on a third party Object Builder replacement for Maya. |
 | `_shared/models/generated-model-troubleshooting.md` | Symptom, root cause and fix for the failures the pipeline produces most. Causes and fixes come from mod projects and are not checked on `P:\`. |
 | `_shared/models/dayz-1-30-models.md` | What 1.30 changes for meshes, proxies, houses, wells and the model cache, and what to check when a 1.29 model comes forward; changes stated only by the 1.30 changelog say so. |
 | `_shared/models/tools-3d-viewer-states.md` | Planned, not built: where a model's moving parts and material states are defined, across the `.p3d`, `model.cfg` and `config.cpp`, and the maths that turns an animation phase into a movement. |

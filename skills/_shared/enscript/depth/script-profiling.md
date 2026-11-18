@@ -59,7 +59,7 @@ To use it: wrap the suspect code, run a realistic case (many devices, a full ser
 A string joined in every tick costs its time on every device every tick. Build it when the data changes and keep it:
 
 ```c
-class MyMod_Device
+class MyMod_Device : ItemBase
 {
     protected string m_CachedLabel;
 

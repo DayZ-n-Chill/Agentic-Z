@@ -8,7 +8,7 @@ All of this is game and tool behaviour on DayZ 1.30, which vanilla files on `P:\
 
 Up to 1.29 the pre-build check was "the same class cannot be defined twice", and a property written twice in one class was silent, with the last one winning. Since 1.30 the binarizer stops when a member is defined more than once in one class. AddonBuilder and CfgConvert, which used to pass a repeated `scope`, `displayName`, `weight`, `hiddenSelections[]` or inner class name, now fail, and `build.py` prints binarize's `Member already defined` line from AddonBuilder's log.
 
-The check is in the engine; the vanilla scripts hold no example of it. Audit every `config.cpp`, and every fragment it includes, for a member written twice in the same class body. A forward declaration followed by the definition (`class Foo;` then `class Foo: Bar {}`) is not this fault. The check in `pre-build-checks.md` covers both duplicate class names and duplicate members.
+The check is in the engine; the vanilla scripts hold no example of it. Audit every `config.cpp`, and every fragment it includes, for a member written twice in the same class body. A forward declaration followed by the definition (`class Foo;` then `class Foo: Bar {}`) is not this fault. The checks in `config-and-model-checks.md` cover both duplicate class names and duplicate members.
 
 ## Unpacked mods do not replace the PBO
 

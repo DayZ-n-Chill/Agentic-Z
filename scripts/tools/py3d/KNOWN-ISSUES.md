@@ -95,9 +95,12 @@ original, so a proxy selection goes from one face to two and
   overflows a byte and raises `ValueError` at write time.
 - **`set_selection(name, face_idx=0)` silently produces an empty selection**,
   because `face_idx or ()` treats the integer `0` as empty. `face_idx=[0]` works.
-- **A selection whose name contains `#` corrupts the file.** Writing is allowed;
-  on read, a name like `#EndOfFile#` terminates the tag loop early, leaving the
-  LOD with a garbage resolution and no selections.
+- **A selection whose name starts with `#` is misread.** Writing is allowed, and
+  a `#` elsewhere in the name (`foo#bar`) round-trips intact, but on read
+  `LOD.read` treats any name whose first character is `#` as a tag
+  (`taggname[0]`). An unknown name such as `#foo` is silently dropped (the LOD
+  is otherwise fine); a tag name such as `#EndOfFile#` ends the tag loop early,
+  leaving the LOD with a garbage resolution and the later selections lost.
 - **`validate()` raises `IndexError` on out-of-range point indices** instead of
   reporting a finding, so a corrupt file crashes the validator.
 - **N-gons (>4 vertices) can be written but not read back.** `save(verify=True)`

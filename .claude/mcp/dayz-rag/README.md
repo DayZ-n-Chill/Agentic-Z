@@ -61,7 +61,7 @@ After a DayZ update, rebuild with `python skills\dayz-search-index\index.py --fu
 | `VOYAGE_API_KEY not set` | Key missing from `.env` | Add `VOYAGE_API_KEY=pa-...` at the repo root |
 | `mcp SDK not installed` | Missing dependencies | `pip install -r .claude\mcp\dayz-rag\requirements.txt` |
 | Results look unrelated | Query model differs from index model | Check `embed_model` in `~/.claude/dayz-search-index/manifest.json`; rebuild with `--full` if you changed models |
-| 429 rate-limit errors | Burst beyond your Voyage limits | Queries retry transient Voyage errors (rate limit, timeout, connection, server) up to 4 times with backoff; if it persists, check your Voyage dashboard |
+| 429 rate-limit errors | Burst beyond your Voyage limits | Queries retry transient Voyage errors (rate limit, timeout, connection, server) up to 4 attempts (3 retries) with backoff; if it persists, check your Voyage dashboard |
 
 ## Tests
 

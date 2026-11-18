@@ -9,7 +9,7 @@ argument-hint: "<ModName> [--version 1.2.0] [--since <git ref>] [--deps CF ...] 
 
 # /dayz-release-pack
 
-A script reads the mod and writes four files. It starts no process except `git`, needs no DayZ Tools and takes about a second. It does not gate on `/dayz-preflight`, because it reads only the mod folder and, when it exists, `P:\Mods\@<ModName>\Keys\` for the public key. The AI only reads the warnings, settles them and rereads the texts before they are published.
+A script reads the mod and writes four files. It starts no process except `git`, needs no DayZ Tools and takes about a second. It does not gate on `/dayz-preflight`, because it reads only the mod folder and, when they exist, `P:\Mods\@<ModName>\Keys\` for the public key and the deployed PBOs in `P:\Mods\@<ModName>\Addons\` for the test-bridge check. The AI only reads the warnings, settles them and rereads the texts before they are published.
 
 Follow `skills/_shared/dayz-conventions.md`.
 

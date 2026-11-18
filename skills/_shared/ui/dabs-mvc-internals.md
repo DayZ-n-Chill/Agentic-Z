@@ -95,8 +95,10 @@ bool OnSaveExecute(ButtonCommandArgs args)
     return true; // handled
 }
 
-// A field named like the Relay_Command value; Dabs creates it when null.
-ref RelayCommand m_SaveCommand;
+// Layout: Relay_Command "m_SaveCommand". A field on the controller; when it is null, Dabs
+// spawns the field's declared type (MVC\ViewController.c:282 to :294). Declare the concrete
+// subclass: a bare RelayCommand has an empty Execute, and a held command gets no function fallback.
+ref MyMod_SaveCommand m_SaveCommand;
 
 // Layout: Relay_Command "MyMod_SaveCommand". A class found by type name.
 class MyMod_SaveCommand : RelayCommand

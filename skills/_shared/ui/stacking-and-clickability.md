@@ -44,7 +44,7 @@ void MyMod_RecalculateLayout()
 }
 ```
 
-Call it when the UI opens and closes, after every `Show(bool)`, after items are added or removed, and once after the layout is first created. In a Dabs `ScriptView` that means in your constructor after `super` has built the layout; Dabs has no `OnShow` and no binding hook (`dabs-mvc-internals.md`).
+Call it when the UI opens and closes, after every `Show(bool)`, after items are added or removed, and once after the layout is first created. In a Dabs `ScriptView` that means in your constructor after `super` has built the layout; Dabs has no `OnShow` and no binding hook (`dabs-menus-and-prefabs.md`, "What it leaves to you").
 
 For many small rows, let a spacer do it. A `WrapSpacerWidgetClass` with an exact width and a proportional height grows with its children and flows them down:
 
@@ -94,7 +94,7 @@ Work down this list:
 1. `ignorepointer 1` on the widget itself. Keep it on decoration only: backgrounds, labels, separators. A parent's `ignorepointer` does not block its children, as the pause menu shows, so check the widget, not its ancestors.
 2. Visibility and size. `visible 0` on the widget or any ancestor stops input, and a widget with no area can't be clicked.
 3. Something on top. A later sibling covers it. Reorder the tree, or give the covering widget a lower `SetSort` value.
-4. No handler. A plain `ScriptedWidgetEventHandler` gets nothing until `SetHandler(this)` (`enwidgets.c:172`). A `UIScriptedMenu` gets the events of its own layout without it; vanilla `InGameMenu` overrides `OnClick` and never calls `SetHandler` (`P:\scripts\5_mission\gui\ingamemenu.c:161`). Check the signatures: `OnClick(Widget w, int x, int y, int button)` and `OnMouseButtonDown(Widget w, int x, int y, int button)` (`enwidgets.c:668`).
+4. No handler. A plain `ScriptedWidgetEventHandler` gets nothing until `SetHandler(this)` (`enwidgets.c:172`). A `UIScriptedMenu` gets the events of its own layout without it; vanilla `InGameMenu` overrides `OnClick` and never calls `SetHandler` (`P:\scripts\5_mission\gui\ingamemenu.c:161`). Check the signatures: `OnClick(Widget w, int x, int y, int button)` (`enwidgets.c:657`) and `OnMouseButtonDown(Widget w, int x, int y, int button)` (`enwidgets.c:668`).
 5. Game focus. Without `ChangeGameFocus(1)` (`P:\scripts\3_game\tools\input.c:20`) when the UI opens, clicks go to the game world.
 6. Position. `hexactpos 1` and `vexactpos 1` place the widget in exact units of 1/1080 of the screen height from the parent (measured in game; `checklist-and-troubleshooting.md`, "Declare all four unit flags"); `0` places it by fraction, and `size 1 1` fills the parent. A wrong mix can put the widget outside where you click.
 

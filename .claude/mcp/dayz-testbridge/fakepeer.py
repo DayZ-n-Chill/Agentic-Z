@@ -26,6 +26,18 @@ DEFAULT_HANDLERS: dict[str, Handler] = {
 }
 
 
+def _remove(path: Path) -> None:
+    """Delete a command file that a second fake peer on the same folder may have taken.
+
+    It may be gone already or, on Windows, still open in the other peer, where
+    unlink raises PermissionError ([WinError 32]); both mean the other peer has it.
+    """
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
 class FakePeer:
     def __init__(self, folder: Path, token: str, peer: str, handlers: Optional[dict[str, Handler]] = None,
                  hello: Optional[dict] = None, delay: float = 0.0):
@@ -66,7 +78,7 @@ class FakePeer:
     def step(self) -> None:
         cmd_dir, res_dir = self.folder / "cmd", self.folder / "res"
         while (res_dir / f"{self.next}.json").exists():  # never run a command that already has a result
-            (cmd_dir / f"{self.next}.json").unlink(missing_ok=True)
+            _remove(cmd_dir / f"{self.next}.json")
             self.next += 1
         path = cmd_dir / f"{self.next}.json"
         if not path.exists():
@@ -92,5 +104,5 @@ class FakePeer:
         (res_dir / f"{seq}.json").write_text(json.dumps(
             {"seq": seq, "ok": ok, "error": error, "peer": self.peer, "game_time_ms": 1000 + seq, "data": data}),
             encoding="utf-8")
-        path.unlink(missing_ok=True)  # a second fake peer on the same folder may have taken it
+        _remove(path)
         self.next += 1

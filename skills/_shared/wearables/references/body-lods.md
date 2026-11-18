@@ -18,7 +18,7 @@ Stage every vanilla file a LOD names, such as the penetration `.rvmat` above, in
 
 ## A hole one can see through
 
-- **Visual.** Model an inner tunnel: a closed surface whose faces look into the hole. It is the most robust route. The other is double sided geometry, each face twice, once per direction. A per face "both sides" flag is no route: Binarize drops the MLOD face flags, and faces flagged `0x20000` stay see-through in game (measured on vehicles, `_shared/vehicles/rip-textures-and-materials.md`).
+- **Visual.** Model an inner tunnel: a closed surface whose faces look into the hole. It is the most robust route. The other is double sided geometry, each face twice, once per direction. A per face "both sides" flag is no route: Binarize drops the MLOD face flags, and faces flagged `0x20000` stay see-through in game (measured in game and by binarize round trip, `skills/dayz-p3d-audit/references/winding-methodology.md`, the `NoBackfaceCulling` item).
 - **Geometry.** It must be closed and convex, and a torso with a hole is not convex. Split it into convex pieces as numbered `ComponentXX` selections, or keep the collision solid and ignore the hole. The collision LOD does not have to match the visual LOD.
 - **Fire Geometry.** Keep it solid unless shots should pass through the hole, which needs more components for little gain. With a solid Fire Geometry, bullets that cross the visual hole still hit. That is a design decision; tell the user.
 - **Damage zones.** A remodelled torso keeps taking zone damage as long as the components the zones list are still in the model (`_shared/ai/custom-infected.md`).

@@ -118,7 +118,8 @@ Input names start with `UA`, for User Action. Keyboard keys start with `k` (`kSp
 | Q, E | Lean |
 | Mouse | Aim and look |
 | F | Pick up and interact |
-| Left Shift, Left Ctrl | Sprint and crouch |
+| Left Shift, Left Ctrl | Sprint and walk (`kLControl` is `UAWalkRunTemp`, a double-click toggles `UAWalkRunToggle`, `P:\bin\preset_x1mousekey.xml:24` to `:29`) |
+| C | Crouch and stance, `UAStance` (`P:\bin\preset_x1mousekey.xml:62` to `:63`) |
 | Space | Jump and climb, `UAGetOver` |
 | G, V, H, M | Throw and drop (`UAThrowitem`, `UADropItem`), view (`UAPersonView`), horn (`UACarHorn`), map (`UAMapToggle`), all in `P:\bin\preset_x1mousekey.xml` |
 | Left Alt (`kLMenu`) | Free look, `UALookAround` and `UALookAroundToggle`, same file |

@@ -22,7 +22,7 @@ Every one of these updates the UI: `Insert`, `InsertAt`, `InsertAll`, `Remove(in
 - Don't use `ObservableSet`. It raises `NotifyCollectionChangedAction.Add` and `.Set` (`MVC\Observables\ObservableSet.c:14`, `:23`, `:43`), and the enum has only `Insert`, `InsertAt`, `Remove`, `Replace`, `Move`, `Swap` and `Clear` (`MVC\Types\NotifyCollectionChangedAction.c`).
 - The widget to controller registry matches the exact type. `RegisterWidgetControllers` (`3_Game\DabsFramework\!Core\DayZGame.c:54` to `:80`) fills the registry, and `GetWidgetController` (`:158` to `:163`) looks it up by `data.Type()` without walking the inheritance chain, so a widget type that isn't registered logs "Could not find WidgetController for type X" (`MVC\ScriptedViewBase.c:87`).
 
-A scroll list bound to a collection, from Dabs's own `layouts\options\options_tab.layout`:
+A scroll list bound to a collection, adapted from Dabs's own `layouts\options\options_tab.layout` (there the scroll widget is `SettingsScroll`, the spacer `SettingsRoot` with full position and size properties, and the binding `Binding_Name "OptionCategories"`; the sample renames them and drops the sizing):
 
 ```c
 ScrollWidgetClass Scroll {

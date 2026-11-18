@@ -501,7 +501,7 @@ def main(argv: list[str] | None = None) -> int:
         install(extracted, INDEX_ROOT, tag)
 
     report_installed(INDEX_ROOT)
-    log("OK", "Done. Restart Claude Code to reconnect the dayz-rag MCP server.")
+    log("OK", "Done. The dayz-rag MCP server picks up the new index on its next search.")
     return 0
 
 

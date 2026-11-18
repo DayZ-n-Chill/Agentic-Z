@@ -467,7 +467,7 @@ class AZB_Peer
 		if (!r.data.executed)
 		{
 			// Measured on DayZDiag 1.30: the engine refuses with "CGame::ExecuteEnforceScript not
-			// allowed in release version"; the console's own run is #ifdef DEVELOPER (scriptconsoleenfscripttab.c:130).
+			// allowed in release version"; the console's own run is #ifdef DEVELOPER (scriptconsoleenfscripttab.c:131).
 			Fail(r, "exec_failed");
 			r.data.reason = "the engine refused or the code did not compile; read the peer's script log (DayZDiag 1.30 refuses ExecuteEnforceScript as a release build)";
 		}

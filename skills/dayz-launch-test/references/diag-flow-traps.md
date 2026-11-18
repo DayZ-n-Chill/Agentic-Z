@@ -14,9 +14,9 @@ These were measured in game with the diag and retail executables, Community Fram
 
 ## A dependency addon goes in the base mods
 
-When a mod keeps its dependencies in a separate addon (`@<Mod>_deps`, not inside `@<Mod>`), the launch must include it or the client fails to compile: `Can't compile "World": Unknown type '<BaseClass>'`, at a line of the mod's own script. Dependencies (base config and script classes) must load before the mod, so put them in `-BaseMods`, which goes first in `-mod=`, not in `-ExtraMods`, which goes after the mod. A weapon mod that loads correctly takes `-BaseMods "@CF;@Dabs Framework;@VPPAdminTools;@<Mod>_deps"`.
+When a mod keeps its dependencies in a separate addon (`@<Mod>_deps`, not inside `@<Mod>`), the launch must include it or the client fails to compile: `Can't compile "World": Unknown type '<BaseClass>'`, at a line of the mod's own script. Dependencies (base config and script classes) must load before the mod, so put them first in `-mod=`, before the mod; with `/dayz-launch-test`, name them first in the mod list (dependencies first). The external launcher these traps were measured with (not in this repo) does this with its `-BaseMods` parameter, which goes first in `-mod=`, not `-ExtraMods`, which goes after the mod. A weapon mod that loads correctly takes `-BaseMods "@CF;@Dabs Framework;@VPPAdminTools;@<Mod>_deps"`.
 
-Before you relaunch a mod that was tested before, do not assume the default `-BaseMods`: read `-mod=` from the last successful RPT or launcher output (`<Mod>_dev\_client\profiles\*.RPT`, the "Launch CLIENT" line) and use that set. `P:\` may not be mounted in a new session; mount it before you build or launch (`/dayz-workdrive`).
+Before you relaunch a mod that was tested before, do not assume a default mod set (that launcher's default `-BaseMods`): read `-mod=` from the last successful RPT or launcher output (`<Mod>_dev\_client\profiles\*.RPT`, the "Launch CLIENT" line) and use that set. `P:\` may not be mounted in a new session; mount it before you build or launch (`/dayz-workdrive`).
 
 ## Third-party scripts that only retail accepts
 

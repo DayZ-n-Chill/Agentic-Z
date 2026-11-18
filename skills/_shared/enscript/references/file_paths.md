@@ -23,7 +23,7 @@ string configPath = "$profile:\\MyMod\\config.json";
 
 ## File Existence and Directory Management
 
-`FileExist(string name)` (`:396`) and `MakeDirectory(string name)` (`:525`):
+`FileExist(string name)` (`:397`) and `MakeDirectory(string name)` (`:525`):
 
 ```c
 string folder = "$profile:\\MyMod\\";

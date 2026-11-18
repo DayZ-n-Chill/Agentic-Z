@@ -133,7 +133,7 @@ Each shot ends as one of these:
 
 Every status but `PASS` fails the gate. The report adds `shots` (one entry per shot with `status`, `ratio`, `threshold`, `capture`, `baseline`, `diff` and `reason`) and `visual` (the run and baseline folders). Triage marks each failure `known` with owner `user`, because only a person can say whether a new look is right: look at the capture and the diff, then accept it with `--accept --shot <id>` (add `--replace-failed` for a `FAIL`) or send it to the specialist who owns that part of the screen.
 
-The first run of a shot is always `NEW`. Look at its capture, accept it, and later runs compare against it. Keep the baselines with the project; the runs folder is ignored by git. To undo an accept, copy the shot's newest `baseline/.prev/<id>.<date_time>.png` back to `baseline/<id>.png`.
+The first run of a shot is always `NEW`. Look at its capture, accept it, and later runs compare against it. All of `output/` is ignored by git, the baselines as well as the runs: to version the baselines, force-add the baseline folder (`git add -f`) or keep a copy somewhere else. To undo an accept, copy the shot's newest `baseline/.prev/<id>.<date_time>.png` back to `baseline/<id>.png`.
 
 ### Shots file
 

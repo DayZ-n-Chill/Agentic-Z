@@ -10,7 +10,7 @@ description: "Runs first-run DayZ setup in an Agentic-Z clone (environment check
 
 The agent is the wizard: it runs the scripts below with Bash and asks the user questions with AskUserQuestion. None of the scripts prompt for input. Every action goes through the sibling skill that owns it; this skill never re-implements them.
 
-Follow `skills/_shared/dayz-conventions.md`. This skill does not gate on `/dayz-preflight` itself, because its own environment check covers the same ground and also fixes `P:\` first. Every child skill it runs gates on preflight.
+Follow `skills/_shared/dayz-conventions.md`. This skill does not gate on `/dayz-preflight` itself, because its own environment check covers the same ground and also fixes `P:\` first. Every child skill in the setup plan (new mod, import, add server, build and launch) gates on preflight.
 
 State is per clone, in `.claude/local-memory/` (gitignored): `dayz-current-project.txt` (the project root other DayZ skills read) and `dayz-init-state.json` (the active mod). The project root is the clone: `$CLAUDE_PROJECT_DIR`, else the nearest folder at or above the current directory (below the home folder) that holds `dayz-current-project.txt`, else the clone that holds the skill scripts when that clone has the cache, else the current directory. Mods live in `workspace/<ModName>/`, test servers in `.server/<instance>/`.
 

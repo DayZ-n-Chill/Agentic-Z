@@ -50,6 +50,7 @@ Files, one folder per peer and session: `<profile>/AZTestBridge/<token>/`, where
 | `exec_disabled`, `exec_failed` (with `reason`) | `exec` without the session's opt-in, or code the engine refused or could not compile. |
 | `not_an_action`, `not_registered`, `action_refused`, `no_target`, `move_refused`, `in_vehicle`, `not_aligned` (with `reason`) | An action or move that was not started, or a turn that did not finish. |
 | `no_such_slot`, `attach_failed` (with `reason`), `no_menu`, `no_widget`, `not_an_edit_box` | A slot, menu or widget that is not there, or an item that does not fit. |
+| `no_mission`, `no_action_manager`, `no_camera`, `no_hud` | The client has no mission, action manager or HUD to work with yet (for example before it has fully joined), or the camera could not be created. |
 
 ## Measured
 
@@ -91,7 +92,7 @@ The owner's second round (items 22 and 24 of the queue; `list_commands` gives ev
 
 Measured on DayZ 1.30.164289 Diag:
 
-- `exec` reaches `ExecuteEnforceScript`, and the engine refuses it: "CGame::ExecuteEnforceScript not allowed in release version". DayZ Diag counts as a release build here; the Diag console's own run is compiled only under `#ifdef DEVELOPER` (`scriptconsoleenfscripttab.c:130`), which Diag does not define. So `exec` is built and gated but cannot run code on this install; it answers `exec_failed` with that reason. It is kept on purpose: other DayZ Diag builds may allow it, and Bohemia may turn it on in a later release, so test it again on each new Diag before relying on it or removing it.
+- `exec` reaches `ExecuteEnforceScript`, and the engine refuses it: "CGame::ExecuteEnforceScript not allowed in release version". DayZ Diag counts as a release build here; the Diag console's own run is compiled only under `#ifdef DEVELOPER` (`scriptconsoleenfscripttab.c:131`), which Diag does not define. So `exec` is built and gated but cannot run code on this install; it answers `exec_failed` with that reason. It is kept on purpose: other DayZ Diag builds may allow it, and Bohemia may turn it on in a later release, so test it again on each new Diag before relying on it or removing it.
 - An item spawned at y 0 with surface placement stayed buried (a pear at y 0.54 under 338 m of terrain) and the client never saw it. `spawn` now starts at `SurfaceY` unless `ground` is false.
 - The movement override on the client is read back by `GetMovement` and does not move the player; on the server it walked 4.6 m in 3 s, jogged 12.7 m, and an angle of 90 went east. The aim override does work on the client.
 - After `look_at` the cursor offered `ActionTakeItem` and `ActionTakeItemToHands` on a pear, and `action_use` put it in the player's hands.
@@ -110,7 +111,7 @@ Diag only (every script inside `#ifdef DIAG_DEVELOPER`); off without the token; 
 - Continuous actions and anything that needs held input or key presses (`actions-doors-and-inventory.md`).
 - Doors of buildings.
 - Automatic gearboxes are left to the engine: the drive shifts only manual boxes, and an automatic car that stays in neutral under scripted throttle (`vehicle-in-game-facts.md`) is not handled.
-- The rows `feature-gaps.md` marks not worth building: a queue for the machine, changing a drive midway, waiting on a log line, time speed-up, on-screen messages, a roof check before a teleport, respawn, memory points, the handbrake, key presses and a resolution sweep.
+- Left out as not worth building: a queue for the machine, changing a drive midway, waiting on a log line, time speed-up, on-screen messages, a roof check before a teleport, respawn, memory points, the handbrake, key presses and a resolution sweep.
 - Linux: `PrintWindow` and the launch path are Windows only.
 ## The smoke test
 

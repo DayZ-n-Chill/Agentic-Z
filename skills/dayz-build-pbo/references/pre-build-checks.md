@@ -26,7 +26,7 @@ The checks rest on vanilla files where a line cites `P:\`; the rest is measured 
 | Stringtable | None | Manual, or the validator plan in `validation-scripts.md`. |
 | Scripts | `/dayz-lint`: modules, modded classes, then the code rules of the script validator in `scripts/tools/dayz-script-validator/` | A code error already stops the build. Run the validator on its own only to pass `--external-scripts` or to compare before and after a change (`script-linter-and-compile-gate.md`). |
 
-Up to 1.29 the folder structure, `stringtable.csv`, the include list and the duplicate class name check below were the whole contract. Since 1.30 binarize also stops on a member defined twice in one class, and an unpacked `-mod` folder is a way to iterate in diag, not a substitute for a shipped PBO (`dayz-1-30-pbo-build.md`).
+Up to 1.29 the folder structure, `stringtable.csv`, the include list and the duplicate class name check (`config-and-model-checks.md`) were the whole contract. Since 1.30 binarize also stops on a member defined twice in one class, and an unpacked `-mod` folder is a way to iterate in diag, not a substitute for a shipped PBO (`dayz-1-30-pbo-build.md`).
 
 ## Folder structure
 

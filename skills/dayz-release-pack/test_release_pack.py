@@ -307,8 +307,8 @@ SUBFOLDER_DATA = """class CfgPatches
 };
 class CfgVehicles
 {
-	class Vest_Base;
-	class MyVest_Base: Vest_Base
+	class Clothing;
+	class MyVest_Base: Clothing
 	{
 		scope = 0;
 	};
@@ -356,7 +356,7 @@ def test_items_in_a_subfolder_config_are_read(mod, tmp_path):
 def test_class_in_two_configs_is_listed_once_and_warned(mod, tmp_path):
     (mod / "data").mkdir()
     (mod / "data" / "config.cpp").write_text(
-        "class CfgVehicles\n{\n\tclass Vest_Base;\n\tclass MyVest_Black: Vest_Base\n\t{\n\t\tscope = 0;\n\t};\n};\n",
+        "class CfgVehicles\n{\n\tclass Clothing;\n\tclass MyVest_Black: Clothing\n\t{\n\t\tscope = 0;\n\t};\n};\n",
         encoding="utf-8")
     report, files = pack(mod, tmp_path)
     assert report["spawnable"].count("MyVest_Black") == 1  # the root definition wins

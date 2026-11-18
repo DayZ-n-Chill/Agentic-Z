@@ -71,7 +71,7 @@ DayZ RAG index downloader
 [INFO]	Extracting...
 [OK]	Indexed source chunks: <count>
 [OK]	Embed model: voyage-code-3
-[OK]	Done. Restart Claude Code to reconnect the dayz-rag MCP server.
+[OK]	Done. The dayz-rag MCP server picks up the new index on its next search.
 ```
 
 ## Idempotency
@@ -99,7 +99,7 @@ An agent's shell cannot answer the overwrite prompt. When the run ends on the `E
 
 ## After downloading
 
-The dayz-rag MCP server reads the index when it starts. Restart Claude Code (or reconnect with `/mcp`) to pick up the new index. Downloading needs no `VOYAGE_API_KEY`, but the server embeds each search query with Voyage, so add the key to `.env` before searching.
+The dayz-rag MCP server picks up the new index on its next search: it reopens the table whenever `manifest.json` changes. A restart of Claude Code (or a reconnect with `/mcp`) also works. Downloading needs no `VOYAGE_API_KEY`, but the server embeds each search query with Voyage, so add the key to `.env` before searching.
 
 ## Dependencies
 

@@ -6,7 +6,7 @@ This is Linux tool behaviour, measured with Proton for the DayZ Tools comparison
 
 ## Get the right dayzmake
 
-dayzmake is the DayZ fork of armake2, renamed at 1.0.0. It keeps adding functions only DayZ needs; the list is in `skills/_shared/linux-proton.md`, section 1. The original armake2 is no substitute: it fails on DayZ configs, and its v3 file hash leaves out `*.c` files, while dayzmake's includes them, so a changed script also changes the signed checksum.
+dayzmake is the DayZ fork of armake2, renamed at 1.0.0. It keeps adding functions only DayZ needs; the list is in `skills/_shared/linux-proton.md`, section "dayzmake, the DayZ fork of armake2" ("What the fork adds"). The original armake2 is no substitute: it is built for Arma (whether it fails on DayZ configs is not checked), and its v3 file hash leaves out `*.c` files, while dayzmake's includes them, so a changed script also changes the signed checksum.
 
 Pin dayzmake 2.0.0 or later. 1.0.0 is enough only to build and sign your own sources: 2.0.0 adds entry name containment to `dayzmake unpack` (`safe_relative_path` and `crosses_symlink` in `src/pbo.rs`), and 1.0.0 has none (`src/pbo.rs:724` and `:731` to `:733`). Install the 2.0.0 release binary, or build the `v2.0.0` tag with `cargo install` (it needs `libssl-dev`).
 

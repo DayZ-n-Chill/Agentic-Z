@@ -234,7 +234,7 @@ def test_docs_routing_check_reads_only_the_routing_table():
 ROUTE = json.loads((SKILLS_DIR / "dayz-route" / "rules.json").read_text(encoding="utf-8"))
 
 # Lead workers reached only through another agent, never straight from /dayz-route.
-NOT_ROUTE_TARGETS = {"figma-to-dayz-layout"}  # stage 2 of the Figma pipeline, started by figma-node-normalizer
+NOT_ROUTE_TARGETS = {"figma-to-dayz-layout"}  # stage 2 of the Figma pipeline, started by the caller (dayz-lead or the main session) after figma-node-normalizer
 
 
 def test_every_lead_worker_is_a_route_target():
@@ -1377,7 +1377,7 @@ PANEL = REPO / "mods" / "agentic-z-panel" / "hooks" / "register.tsx"
 
 
 def test_panel_buttons_name_existing_skill_scripts():
-    """CI runs pytest only, so this catches a renamed script that would silently break a panel button."""
+    """CI runs no TypeScript build or check of the panel, so this catches a renamed script that would silently break a panel button."""
     text = PANEL.read_text(encoding="utf-8")
     block = text.split("const SKILL = {", 1)[1].split("} as const", 1)[0]
     pairs = re.findall(r"\w+:\s*\['([\w-]+)',\s*'([\w.]+)'\]", block)

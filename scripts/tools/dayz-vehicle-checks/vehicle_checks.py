@@ -16,7 +16,9 @@ the solid rays, so they meet the car with its doors, trunk and wheels on:
   5 drives       full throttle for --drive-s: more than 1 m and a speed above 0, engine on
   6 turns        a straight stretch, then full left steer: the signed turn, NOT calibrated (information only)
 
-Each failure is mapped to the row of that reference's "Failure to fix table".
+Each car failure is mapped to the row of that reference's "Failure to fix table";
+the site failure and the engine-off drive failure are this tool's own additions
+and have no row there.
 Solid, oriented and turning the right way also need eyes on the car: the
 verdict says so and never claims acceptance. The run uses the session the
 dayz-testbridge recorded (.server/!TestBridge/session.json), or starts one with

@@ -11,7 +11,7 @@ The causes below were measured on one Windows test machine; BattlEye, Steam, VPP
 | Symptom | Cause | Fix |
 |---|---|---|
 | Client kicked with `0x00020005` | File patching mismatch | `allowFilePatching = 1;` in `serverDZ.cfg`. |
-| Kicked with `0x00010002` | Signatures do not match | Rebuild the PBO, or `verifySignatures=0` (the dev config already sets it). |
+| Kicked with `0x00010002` | Seen once with signatures that did not match. What the code means is not settled: decoded from the script enums it reads `EConnectErrorClient.ALREADY_CONNECTING`, an earlier join still running (`skills/_shared/enscript/references/api_game.md`, "Connect error codes"), and `P:\` holds no engine documentation that decides it | Rebuild the PBO, or `verifySignatures=0` (the dev config already sets it). If it persists, close the client so no earlier join is running and connect once. |
 | VPPAdminTools asks for a password although `SuperAdmins.txt` lists you | The `serverDZ.cfg` predates `vppDisablePassword = 1;` | Add the line and restart the server (`windows-launch-cycle.md`, "Default mods and admin tools"). |
 | "PlayerConnect will stay disabled" | Empty mission, or `-mission` not absolute | Pass an absolute mission path. On the native Linux `DayZServer` it is the reverse: a relative `mpmissions/<name>` (`linux.md`). |
 | Stuck past the loading screen | Retail exe with file patching | Use `DayZDiag_x64.exe`. |

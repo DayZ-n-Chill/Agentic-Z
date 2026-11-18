@@ -104,6 +104,23 @@ def test_the_peer_never_reruns_a_command_that_already_has_a_result(dirs):
     assert peer.ran == [] and not (folder / "cmd" / "1.json").exists() and peer.next == 2
 
 
+def test_the_fake_peer_survives_a_command_file_another_peer_holds_open(dirs, monkeypatch):
+    # On Windows a second fake peer on the same folder can still hold cmd/<n>.json
+    # open, so unlink raises PermissionError; the stand-in must carry on.
+    b = make(dirs)
+    folder = b.dirs["server"]
+    (folder / "cmd" / "1.json").write_text(json.dumps({"seq": 1, "token": TOKEN, "cmd": "ping", "args": {}}), encoding="utf-8")
+
+    def held_open(self, missing_ok=False):
+        raise PermissionError(32, "The process cannot access the file because it is being used by another process")
+
+    monkeypatch.setattr(Path, "unlink", held_open)
+    peer = FakePeer(folder, TOKEN, "server")
+    peer.step()
+    assert peer.ran == [(1, "ping")] and peer.next == 2
+    assert json.loads((folder / "res" / "1.json").read_text(encoding="utf-8"))["ok"] is True
+
+
 def test_files_of_an_old_token_are_never_read(dirs):
     b = make(dirs)
     old = bridge.session_dir(dirs["server"], OLD_TOKEN)

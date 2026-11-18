@@ -41,7 +41,7 @@ override void EOnPostSimulate(IEntity other, float timeSlice)
     Input inp = GetGame().GetInput();
     if (!inp || !m_CanAct || !inp.LocalHold("UAMyModAction"))
         return;
-    GetGame().RPCSingleParam(this, MyMod_RPCserver.RPC_DO_ACTION, new Param1<bool>(true), true);
+    GetGame().RPCSingleParam(this, MyMod_RPCserver.RPC_DO_FIRE, new Param1<bool>(true), true);
     m_CanAct = false;
     GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(ActionReady, ACTION_TIMEOUT_MS, false);
 }
@@ -61,7 +61,7 @@ GetGame().GetPlayers(m_PlayerCache);
 foreach (Man man : m_PlayerCache)
 {
     if (MyMod_ShouldReceive(man))
-        GetGame().RPCSingleParam(this, MyMod_RPCclient.RPC_SYNC, new Param1<int>(m_State), true, man.GetIdentity());
+        GetGame().RPCSingleParam(this, MyMod_RPCclient.RPC_SYNC_FX, new Param1<int>(m_State), true, man.GetIdentity());
 }
 ```
 

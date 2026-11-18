@@ -70,8 +70,8 @@ def resolve_roots(
     """Read the untracked local-roots file; absence is a finding, not a crash.
 
     `required` limits the reporting to the roots this manifest actually uses. The
-    file is shared with the API-index resolver and lists roots unrelated to the
-    corpora, and reporting those as findings would bury the ones that matter.
+    file can list roots the manifest does not use (the example lists dayz_vanilla),
+    and reporting those as findings would bury the ones that matter.
     """
     path = pack_root / LOCAL_ROOTS_FILE
     if not path.is_file():

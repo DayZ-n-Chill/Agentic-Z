@@ -65,7 +65,7 @@ A `.p3d` can pass this whole audit with no CRITICAL and still be refused when th
 
 `check_lod0_vertex_budget` counts the `(point, normal, uv)` triples of the most detailed Visual LOD and fails only past 65,535. There is no per LOD count with a warning near the limit measured for a model. The limit is per model, not a constant, so `RESOLVED_LIMIT = 65535` misleads: on one helicopter, 46,133 triples load and 46,134 do not (25 in-game verdicts, none contradicting).
 
-`binarize.exe` decides, not this count, and it has three results: PASS, CAPACITY_FAIL and OTHER_FAIL. On CAPACITY_FAIL do not go in game to fix the Geometry LOD; on OTHER_FAIL do not touch geometry at all. The record and the measured limit are in `_shared/vehicles/binarize-vertex-budget.md`. One OTHER_FAIL measured since is a size limit of the collision LODs that prints nothing; its two checks and its fix, which moves pieces to another model and changes none of them, are in item 3 of that file.
+`binarize.exe` decides, not this count, and it has three results: PASS, CAPACITY_FAIL and OTHER_FAIL. On CAPACITY_FAIL do not go in game to fix the Geometry LOD; on OTHER_FAIL do not touch geometry at all. The record and the measured limit are in `_shared/vehicles/binarize-vertex-budget.md`. One OTHER_FAIL measured since is a size limit of the collision LODs that prints nothing; its two checks and its fix, which moves pieces to another model and changes none of them, are in that file's section "Three verdicts, not two".
 
 ## Where a "vanilla value" came from
 
