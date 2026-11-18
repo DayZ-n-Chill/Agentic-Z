@@ -1,6 +1,6 @@
 # Network ownership and vehicle physics
 
-Who simulates a vehicle (the owner client, with the server reconciling), why a seat forced on the server is not ownership, why writing the pose fights the owner, how to derive angular velocity, and the rules for a custom `PawnMove` and `PawnOwnerState` pair. Per-tick events and what a passenger's client sees are in `runtime-state-and-sync.md`; driving a car from an automated test is in `test-stand-and-mcp.md`; the same classes on an aircraft are in `aviation-networking.md`.
+Who simulates a vehicle (the owner client, with the server reconciling), why a seat forced on the server is not ownership, why writing the pose fights the owner, how to derive angular velocity, and the rules for a custom `PawnMove` and `PawnOwnerState` pair. Per-tick events and what a passenger's client sees are in `runtime-state-and-sync.md`; driving a car from an automated test is in `scripted-vehicle-tests.md`; the same classes on an aircraft are in `aviation-networking.md`.
 
 ## The owner drives the physics
 

@@ -344,8 +344,8 @@ def _scan_continuation(text: str, index: int) -> tuple[int, int, int] | None:
 # Inline form cannot use the physical line as a delimiter; parse_values
 # consumes this many tokens instead.
 MEASURED_ANCHORS = (
-    "anchor arithmetic read back from the engine 2026-08-19: ui_tree over "
-    "day_z_hud HudFrameWidget, DayZ 1.29.163709 at 1920x1080. center_ref adds "
+    "anchor arithmetic read back from the engine: widget rects of "
+    "day_z_hud HudFrameWidget, DayZ 1.29 at 1920x1080. center_ref adds "
     "position; right_ref and bottom_ref subtract it."
 )
 

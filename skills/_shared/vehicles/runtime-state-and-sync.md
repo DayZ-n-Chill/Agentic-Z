@@ -58,4 +58,4 @@ Keep a control in the same capture. Pick a second selection whose script state i
 
 A lit control means the script ran, so the subject shows the real result. An unlit control means the script did not run, and the subject tells you nothing. Compare the `emmisive[]` values of the two materials first (vanilla spells the key `emmisive`): 0.3 against 1.1 is clear in daylight, 0.9 against 1.0 is not.
 
-Through the dayz-mcp test bridge (`test-stand-and-mcp.md`), starting the engine needs client ownership of the vehicle, and taking it leaves the free camera unusable until the client restarts. Framing the dashboard and running the engine then exclude each other on one client, so prefer the attachment sync.
+From a test script (`scripted-vehicle-tests.md`), starting the engine needs client ownership of the vehicle, and taking it left the free camera unusable until the client restarted (measured in game). Framing the dashboard and running the engine then exclude each other on one client, so prefer the attachment sync.

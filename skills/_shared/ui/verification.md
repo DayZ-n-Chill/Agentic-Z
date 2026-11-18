@@ -1,6 +1,6 @@
 # Verifying a UI
 
-What a passing automated check proves about a UI and what only a look at the screen can, which offline tool answers which question, how to test another resolution, and the traps in host helpers, logs and black frames. Name collisions are in `widget-name-collisions.md`; the in game test bridge is in `ui-test-bridge.md`.
+What a passing automated check proves about a UI and what only a look at the screen can, which offline tool answers which question, how to test another resolution, and the traps in host helpers, logs and black frames. Name collisions are in `widget-name-collisions.md`; what a script-driven check can do in game is in `automated-ui-checks.md`.
 
 Facts in this file were measured in game on 1.29 unless a line cites `P:\`.
 

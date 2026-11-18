@@ -111,7 +111,7 @@ The second stage runs every rule of the script validator on the mod folder and r
 | `LAYOUT-*`, `ES-LAYOUT-*`, `ES-ONMOUSELEAVE-PARAM-COUNT` | `dayz-ui-specialist` | A `.layout` in XML format, a layout path in script that does not start with the prefix or names no file, an `OnMouseLeave` handler that never fires. |
 | `RVMAT-*` | `dayz-asset-specialist` | `shader = NormalMapMacro;` and a `P:\` path in a `.rvmat`. |
 
-`scripts/tools/dayz-script-validator/README.md` describes the rules, the evidence behind each and what each one leaves unjudged.
+`scripts/tools/dayz-script-validator/RULES.md` describes the rules, the evidence behind each and what each one leaves unjudged.
 
 Run on its own, the validator (`scripts/tools/dayz-script-validator/scripts/script_validator.py`) answers in its own shape: a JSON report whose root keys are `status`, `errors` and `warnings`, and exit code 0 for PASS, 1 for FAIL and 2 for warnings only. A script that calls it directly gates on the error count, not on a non-zero exit. `/dayz-lint` already does that and turns the result into its own verdict above.
 

@@ -1,8 +1,8 @@
 # Starting DayZDiag by hand
 
-What to check when you start DayZDiag yourself, outside `/dayz-launch-test` and outside dayz-mcp's managed lifecycle: reading defines from the log, a stale Steam session seen from inside a desktop app, the profiles path, the environment a crash dump carries, and owning the process. Each trap cost a run when a 1.30 Experimental install was probed by hand.
+What to check when you start DayZDiag yourself, outside `/dayz-launch-test`: reading defines from the log, a stale Steam session seen from inside a desktop app, the profiles path, the environment a crash dump carries, and owning the process. Each trap cost a run when a 1.30 Experimental install was probed by hand.
 
-These were measured on a Windows test machine with the third-party dayz-mcp tooling present, and are not checked on `P:\`. The registry side of the Steam session is also covered in `managed-launcher.md` ("The client needs Steam") and `troubleshooting.md`.
+These were measured on a Windows test machine and are not checked on `P:\`. The registry side of the Steam session is also covered in `client-startup-failures.md` ("The Steam pid in the registry can be dead") and `troubleshooting.md`.
 
 ## Read the defines from the script log
 
@@ -14,7 +14,7 @@ The Claude and Codex desktop apps run under MSIX registry virtualization: every 
 
 - Compare the app's view with the real value: read the real hive through WMI `StdRegProv`, and the app's copy with `Get-ItemProperty` inside the app. Both must point at the live `steam.exe` before you launch.
 - Launch through WMI (`Win32_Process.Create`) so the game reads the real key, or bring the copy in line right before launching. Writing the value from a shell inside the app fixes only the private copy, and only until the next Steam restart.
-- Never start or restart Steam from a shell inside the app. The new Steam registers in the private copy, and the real key can be left at `pid = 0, ActiveUser = 0`: the WMI check outside reports it broken while the app's own view looks healthy, and dayz-mcp's `auto_remediate_steam` cannot fix it because its worker runs inside the app too.
+- Never start or restart Steam from a shell inside the app. The new Steam registers in the private copy, and the real key can be left at `pid = 0, ActiveUser = 0`: the WMI check outside reports it broken while the app's own view looks healthy, and no repair run from inside the app can fix it.
 - Never write or delete another program's `HKCU` keys from an app shell. A write creates the private copy; a delete leaves a tombstone that hides the real key even after it is written again outside. The copy goes away only with the app closed and its hive edited offline.
 
 ## Keep the profiles path short and new
@@ -30,4 +30,4 @@ Start DayZ with `ProcessStartInfo.UseShellExecute = $false` and remove every var
 
 ## Own the process
 
-A probe outside the managed lifecycle starts and stops only the process it launched, by its process id, and holds the dayz-mcp lease while it runs so no managed run lands on top of it. Closing rules: `automated-cells.md`, "Whoever opens a process closes it".
+A probe started by hand starts and stops only the process it launched, by its process id, and checks first that no other session holds the machine (`test-machine-sharing.md`). Closing rules: `automated-cells.md`, "Whoever opens a process closes it".

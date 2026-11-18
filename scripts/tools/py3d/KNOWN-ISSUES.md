@@ -152,7 +152,7 @@ reader independent of this library, covered what the first left out:
 - **Collision.** The F plate with Geometry, ViewGeometry and FireGeometry LODs,
   one convex component per box. In the binarized file every component of the
   B and A variants winds like vanilla `Motorbike_02` (outward, 48 of 48 per
-  LOD) and C the other way (0 of 48). In game, `scene_raycast` north to south
+  LOD) and C the other way (0 of 48). In game, a raycast north to south
   and south to north hit B and A in `geom`, `view` and `fire`, missed C in all
   three, and hit a vanilla container used as control.
 - **Proxies.** Three static proxies drawn in Blender as canonical raw

@@ -79,4 +79,4 @@ Aim at `pos_driver` and `pos_codriver` with `GetMemoryPointPos`, which returns e
 
 Inject the probe into the mod's own test mission `init.c`, not a shared one, poll `script.log` for the probe lines, and restore the original file afterwards. To build the probe PBO without launching, call AddonBuilder directly (`<src> <target> -prefix=<Mod> -temp=<fresh folder> -packonly`); a fresh temp folder gives a clean sync.
 
-A forced seat entry proves nothing about get-in: `vehicle_enter` through the test bridge seats the player without running `ActionCondition` (`test-stand-and-mcp.md`). Watch for the prompt itself.
+A forced seat entry proves nothing about get-in: seating the player from script skips `ActionCondition` (`scripted-vehicle-tests.md`). Watch for the prompt itself.

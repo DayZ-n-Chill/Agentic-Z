@@ -25,7 +25,7 @@ A later `SetObjectMaterial` rebinds the base texture and silently undoes the hoo
 
 The route cannot show a live GPS. The render target keeps the first frame it draws: later `SetScale`, `SetMapPos` or vehicle movement never redraw it. A `MapWidget` child also gives only the vector layers (roads and contours); the raster fill of land, forest and buildings never reaches the render target, even 24 s after creating the widget. Use it for static screen content only, and build a live GPS from baked tiles (next section).
 
-To seat a driver and start the engine from the test bridge, use `vehicle_get_in_client` (a get-in that takes ownership; `vehicle_enter` reports seated without it sticking) and then `engine_set`. The tools are described in `skills/dayz-launch-test/references/mcp/`.
+To seat a driver and start the engine from a test script, the client must own the vehicle: a seat forced on the server reports the player seated without the client taking ownership, and the engine does not start. Seat the player on the client as well, then start the engine; `scripted-vehicle-tests.md` has the details.
 
 ## Screen tiles: the satellite layers, reapplied on the client
 

@@ -27,7 +27,7 @@ When two of them disagree, write down both claims with their sources and stop th
 | A vehicle occupant or contact with controls | Add `_shared/vehicles/` (1.30: motorbikes on `MOTO1` and `MOTO2`, two bone handlebar IK, rider lean) |
 | Creature locomotion, combat or terrain alignment | Add `_shared/ai/custom-infected.md` and `_shared/wearables/references/canonical-bind.md` (1.30: `.agf` subgraphs, `AnimSrcNodeProcTransform` terrain rotation, skeletons without fixed bone indices) |
 | `.p3d` hierarchy, selection, proxy or mechanical axis | `/dayz-p3d-audit` and `dayz-object-builder` |
-| In game test | `/dayz-launch-test`, `/dayz-gate`, `/dayz-logwatch`, the bridge checks in `skills/dayz-launch-test/references/mcp/` and their run rules in `skills/dayz-launch-test/references/mcp/run-lifecycle.md` |
+| In game test | `/dayz-launch-test`, `/dayz-gate`, `/dayz-logwatch`, and the DayZ facts behind an in-game check listed in `skills/dayz-launch-test/references/README.md` |
 
 ## Keeping facts in one place
 

@@ -127,7 +127,7 @@ class SimulationModule: SimulationModule
 
 ## `AnimationSources`
 
-From `config.cpp:383` to `:403`. `SeatDriver` drives the flip-up seat: `Motorbike_01_ColorBase.CanGetIn()` refuses entry unless its phase is 0 (`P:\scripts_world\entitiesehicles\inheritedmotorbikes\motorbike_01.c:89` to `:95`), so a bike that copies the source but never closes the seat cannot be mounted.
+From `config.cpp:383` to `:403`. `SeatDriver` drives the flip-up seat: `Motorbike_01_ColorBase.CanGetIn()` refuses entry unless its phase is 0 (`P:\scripts\4_world\entities\vehicles\inheritedmotorbikes\motorbike_01.c:89` to `:95`), so a bike that copies the source but never closes the seat cannot be mounted.
 
 ```cpp
 class AnimationSources: AnimationSources

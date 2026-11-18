@@ -4,7 +4,7 @@ Reference for building DayZ menus and HUDs: the `.layout` format, the widget cal
 
 Follow `skills/_shared/dayz-conventions.md` and the UI rules in `skills/_shared/conventions/ui.md`; where this pack and those rules differ, the rules win. Read the short, checked files first (`skills/_shared/enscript/references/gui_layout.md`, `skills/_shared/enscript/references/widget_api.md` and `skills/_shared/figma-to-dayz-rules.md`) and come here for depth. A design from Figma goes through the Figma pipeline (`figma-node-normalizer`, `figma-to-dayz-layout`, `dayz-layout-validator`); this pack covers the scripts and polish after it.
 
-Every vanilla fact cites the file on `P:\` it came from, checked on DayZ 1.30; when a line has moved, Grep the class or key name in the same file. "Measured in game" means a running client showed it (DayZ 1.29 unless the line says otherwise) and `P:\` can't confirm it. Facts about Dabs Framework, DayZ Expansion, other mods or the DayZ MCP bridge come from those products' own scripts, not vanilla, and each file says which.
+Every vanilla fact cites the file on `P:\` it came from, checked on DayZ 1.30; when a line has moved, Grep the class or key name in the same file. "Measured in game" means a running client showed it (DayZ 1.29 unless the line says otherwise) and `P:\` can't confirm it. Facts about Dabs Framework, DayZ Expansion or other mods come from those products' own scripts, not vanilla, and each file says which.
 
 The tools live elsewhere: `/dayz-layout-preview` draws a layout at several screen sizes, `/dayz-build-imageset` packs sprites, `/dayz-lint` checks the mod setup, and `scripts/tools/` holds the script validator, the UI reconciler, the layout parser and the HTML viewer.
 
@@ -46,7 +46,7 @@ The tools live elsewhere: `/dayz-layout-preview` draws a layout at several scree
 | Why does a `#STR_` key print raw, and how does `text_proportion` behave | `preview-text-and-stringtables.md` |
 | What can an automated check prove about a UI, and how do I test another resolution | `verification.md` |
 | Why can't a widget be reached by name when a test copy of its layout is loaded | `widget-name-collisions.md` |
-| What do the MCP bridge's UI calls return, and where do they stop working | `ui-test-bridge.md` |
+| What can a script-driven UI check do, and where does it stop working | `automated-ui-checks.md` |
 | How do I leave a scripted camera, open a UI from a vehicle seat, or hook the loading screen | `cameras-seats-loading-screens.md` |
 | How do I keep script pixel sizes right at every resolution | `screen-scaling.md` |
 | How do admin tools build floating windows, labels over objects and a free look menu | `admin-ui-patterns.md` |

@@ -8,7 +8,7 @@ Vanilla models on `P:\` are binarized, so winding and component facts cannot be 
 
 - The Blender to DayZ map: the section "The Blender to DayZ map" of `_shared/models/generated-model-rules.md`. After it, both the cross product `cross(v1-v0, v2-v0)` and the stored normals point away from the side meant to be seen, so on a solid seen from outside both point inward.
 - The per component winding check: the section "The per component winding check" of the same file. Every face of every closed, convex `ComponentNN` of a collision LOD must read inward. Its section "Convex collision components" says each component is one closed, convex part.
-- The ray set: rays cast in game in the `geom`, `view` and `fire` intersection modes through `RaycastRVProxy`, plus `DayZPhysics.RayCastBullet` for the physics world. How to cast them and which controls to run is in `skills/dayz-launch-test/references/mcp/collision-probes.md`.
+- The ray set: rays cast in game in the `geom`, `view` and `fire` intersection modes through `RaycastRVProxy`, plus `DayZPhysics.RayCastBullet` for the physics world. How to cast them and which controls to run is in `skills/dayz-launch-test/references/raycasts-and-collision.md`.
 - py3d findings such as `ERR_WINDING_INVERTED` are codes of `P3D.validate()` in the DayZ fork of py3d under `scripts/tools/py3d/`. `audit_p3d.py` prints them when that fork is in use.
 
 ## Collision LOD wound outward

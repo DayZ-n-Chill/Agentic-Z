@@ -1,10 +1,10 @@
 # DayZ 1.30 launch changes
 
-What DayZ 1.30 changes for starting and driving a test session: unpacked `-mod` folders, two new launch flags, headless clients, pending actions in single player and Script Console tabs. The rules in `README.md` ("Rules that hold on every route") still apply: diag only managed runs, absolute `-mod` paths on Windows, and the file patching caveats.
+What DayZ 1.30 changes for starting and driving a test session: unpacked `-mod` folders, two new launch flags, headless clients, pending actions in single player and Script Console tabs. The rules in `README.md` ("Rules that hold on every route") still apply: absolute `-mod` paths on Windows, the `-mod=` line as the measure of a run, and the file patching caveats.
 
 Script lines cite the vanilla 1.30 scripts on `P:\scripts\`. Quoted lines come from the DayZ 1.30 Experimental modding changelog; how the new flags behave was read there, not measured with a 1.30 DayZ Tools binary. Nothing from 1.29 is unpacked on `P:\`, so a 1.29 comparison is reported, not checked there.
 
-Related files: `diag-direct-launch.md` (starting the 1.30 DayZDiag by hand), `server-load-and-dummy-bots.md` (load tests with server side bots), `mcp/vehicle-verbs.md` (dayz-mcp vehicle verbs on 1.30) and `dayz-1-30-server-measured.md` (what a running 1.30 server showed).
+Related files: `diag-direct-launch.md` (starting the 1.30 DayZDiag by hand), `server-load-and-dummy-bots.md` (load tests with server side bots), `vehicle-in-game-facts.md` (cars in a scripted test on 1.30) and `dayz-1-30-server-measured.md` (what a running 1.30 server showed).
 
 ## An unpacked `-mod` folder
 
@@ -40,7 +40,7 @@ When iterating on unpacked or MLOD assets, add them to the diag command line, fo
 
 1.30 adds `CGame.IsHeadless()` and `IsHeadlessOrDedicatedServer()` (`P:\scripts\3_game\global\game.c:1130` and `:1136`; reported absent from the 1.29 `Game.c`). The script side is in `_shared/enscript/depth/dayz-1-30-enforce-script.md`.
 
-- A headless client has no window to capture, so a capture run through dayz-mcp still needs mode `all` with a rendered client and `@DayZ_MCP`; never treat a headless client as the capture peer.
+- A headless client has no window to capture, so a capture run still needs a rendered client; never treat a headless client as the capture peer.
 - Script that skips visual effects should test `IsHeadlessOrDedicatedServer()`, so headless clients behave like the dedicated server.
 - On 1.30 Experimental the headless client (`-headlessMode=1`) crashes before loading `World`, so it cannot carry a load test there. Server side dummy players do the job instead (`server-load-and-dummy-bots.md`).
 
@@ -89,7 +89,7 @@ override int GetActionState()
 
 A test that injects a second `PerformActionStart` in single player before the first has finished does nothing, with no error (not tested in game). Wait until `GetActionState()` is no longer `UA_AM_INIT`, and use the constant, never the number 14. Multiplayer is unchanged: `PerformActionStart` still calls `ActionStart` directly (`:816` to `:819`).
 
-Through dayz-mcp, `action_use` in single player does nothing the same way while an action is pending or running. Continuous actions already never finish through it (`mcp/actions-ui-and-inventory.md`). For an instant action, if a second call returns `setup_failed` or does nothing, wait for `GetActionState()` to leave `UA_AM_INIT`.
+A scripted action start in single player does nothing the same way while an action is pending or running. Continuous actions need held input a script does not give (`actions-doors-and-inventory.md`). For an instant action, if a second start does nothing, wait for `GetActionState()` to leave `UA_AM_INIT`.
 
 ## Script Console tabs
 
@@ -112,7 +112,7 @@ class ScriptConsoleTabRegistry
 - Vanilla `InitializeRegistry` (`scriptconsole.c:50` to `:66`) first clears the array (`:52` and `:53`), then registers the tabs from GENERAL to WEATHER.
 - `ScriptConsole.BuildContextMenu()` (`:279`) calls `InitializeRegistry()` and then walks `GetAll()` (`:293` to `:296`). `Init()` calls `BuildContextMenu()` at `:227`, and on console builds `OnInputDeviceChanged` calls it again at `:249`.
 
-For a mod's debug tab, mod the registry initializer or register from a mission module after vanilla has registered, with a new `ScriptConsoleTabID` below `COUNT`; never replace the whole `ScriptConsole.c`. Because `InitializeRegistry` clears the array, a `Register` call from `4_World` that runs before it is lost; registering inside a `modded` `InitializeRegistry` after `super` avoids that. Neither order is tested in game. Console tabs are diag UI, not dayz-mcp verbs, and do not replace `bridge_status`, spawning or raycasts.
+For a mod's debug tab, mod the registry initializer or register from a mission module after vanilla has registered, with a new `ScriptConsoleTabID` below `COUNT`; never replace the whole `ScriptConsole.c`. Because `InitializeRegistry` clears the array, a `Register` call from `4_World` that runs before it is lost; registering inside a `modded` `InitializeRegistry` after `super` avoids that. Neither order is tested in game. Console tabs are diag UI for a person; a scripted test still needs its own spawning and raycasts.
 
 ## Navmesh
 

@@ -2,14 +2,14 @@
 
 How to check that a new mod mounts before any model or physics exists, and what to change when you copy a test launcher, spawn mission and verdict parser from one mod to another.
 
-The probe and the traps were measured on test servers with `dayz-test.ps1` and per-mod helper scripts; they are not checked on `P:\`. Those helpers (a physics test launcher, a mount probe launcher, a mission `init.c` that spawns the subject, a verdict parser) are not part of this repo: the notes describe traps to avoid when you write or copy them.
+The probe and the traps were measured on test servers with per-mod helper scripts; they are not checked on `P:\`. Those helpers (a physics test launcher, a mount probe launcher, a mission `init.c` that spawns the subject, a verdict parser) are not part of this repo: the notes describe traps to avoid when you write or copy them.
 
 ## A mount probe before a physics test
 
 For the first build, deploy and mount check of a new mod, before a model or physics exists, do not use a physics test that spawns and measures. Use a minimal mount probe:
 
 1. A stub with only `CfgPatches`: a `config.cpp` with `class CfgPatches { class <Mod> { requiredAddons[]={"DZ_Data"}; }; }` plus `$PBOPREFIX$`, built with `-packonly`.
-2. `dayz-test.ps1 -Mod <Mod> -Source <stub> -Mode server -Build -NoBaseMods`, isolated, since the stub needs only vanilla.
+2. Build the stub with `/dayz-build-pbo` and start only a server with no other mods, since the stub needs only vanilla.
 3. A mission whose `init.c` is a minimal `MissionServer` that on its first `OnUpdate` (once, behind a flag) runs `GetGame().ConfigIsExisting("CfgPatches <Mod>")` and prints `[<MOD>-MOUNT] CfgPatches.<Mod>=0|1`. Vanilla calls it the same way, with a config path that contains a space: `g_Game.ConfigIsExisting(CFG_VEHICLESPATH+" "+type_name)` (`P:\scripts\4_world\systems\inventory\attachmentsoutofreach.c:82`).
 4. Poll `script*.log` for `[<MOD>-MOUNT]`, and run `BankRev -lf` on the deployed PBO to list what it holds.
 
@@ -26,6 +26,6 @@ A physics test written for one vehicle (a launcher, an `init.c` that spawns the 
 
 ## Moving the test scripts to a new mod
 
-`dayz-test.ps1` takes `-Mod` and has no hard-coded mod name: copy it unchanged into the new mod's `tools` folder. Only the per-mod helpers carry the old name and need a case-sensitive swap: the physics test launcher, the mount probe and its `init.c` (including the bracketed `MOD-MOUNT` print token), the spawn `init.c` (class name and wheel attachments), the verdict parser, and the `server`, `client` and `offline` `.bat` wrappers (`set MOD=`). Generic p3d utilities copy unchanged.
+Only the per-mod helpers carry the old mod name and need a case-sensitive swap: the physics test launcher, the mount probe and its `init.c` (including the bracketed `MOD-MOUNT` print token), the spawn `init.c` (class name and wheel attachments), the verdict parser, and any `.bat` wrappers (`set MOD=`). Generic p3d utilities copy unchanged.
 
 Do the swap on the host with PowerShell `-creplace` and `[System.IO.File]::WriteAllText` as UTF-8 without BOM, not through a sandboxed shell whose view of the files can be cached, and not with an editing tool on a `.py` inside a OneDrive folder, which risks null bytes. Afterwards, search the new folder for leftover old-mod tokens (there must be none) and confirm the new ones landed: wheel attachment, class name, probe token, `set MOD=`. The control vehicle, `CivilianSedan`, is shared across mods and never changes.

@@ -530,7 +530,7 @@ def test_every_user_facing_dayz_skill_is_a_target():
         ("extract the pbos of that trader mod and look for patterns", "dayz-import-mod"),
         ("align the proxies on my mannequin", "dayz-model-tools"),
         ("the vest proxy comes out rotated", "dayz-model-tools"),
-        ("verify MyVest in game with MCP", "dayz-launch-test"),
+        ("verify MyVest in game", "dayz-launch-test"),
         ("run the vehicle acceptance ladder", "dayz-launch-test"),
         ("lint my rvmat", "dayz-pack-texture"),
         ("is my normal map OpenGL or DirectX?", "dayz-pack-texture"),

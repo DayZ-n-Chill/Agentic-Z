@@ -49,7 +49,9 @@ The failure looked the same three times:
 
 `0x80000003` is not a crash. It is a deliberate `int 3` of the diag exe when it shows its dialog, which is why the process stays alive at 0 CPU and why the Windows Event Viewer shows no failure: DayZ writes its own `.mdmp` and halts.
 
-The reliable fix is to copy the running `steam.exe` pid into the key, with guards: the key unchanged between two reads, a valid `ActiveUser`, exactly one running `steam.exe` in your session and its install path, checked again just before writing and verified after. Write from a shell outside any sandboxed (MSIX) app, because a write from inside one reaches only that app's private registry copy (`managed-launcher.md`, on the Steam prerequisite). Restarting Steam (`steam.exe -shutdown` and relaunch) keeps the login but may not rewrite the key: after one restart the key kept the old pid and the new one appeared only in `HKLM\SOFTWARE\Valve\Steam\SteamPID`. If you restart, check that the key matches a running process before you launch the client.
+The reliable fix is to copy the running `steam.exe` pid into the key, with guards: the key unchanged between two reads, a valid `ActiveUser`, exactly one running `steam.exe` in your session and its install path, checked again just before writing and verified after. Write from a shell outside any sandboxed (MSIX) app, because a write from inside one reaches only that app's private registry copy (`diag-direct-launch.md`, "A desktop app can show the game a dead Steam"). Restarting Steam (`steam.exe -shutdown` and relaunch) keeps the login but may not rewrite the key: after one restart the key kept the old pid and the new one appeared only in `HKLM\SOFTWARE\Valve\Steam\SteamPID`. If you restart, check that the key matches a running process before you launch the client.
+
+The client needs Steam; the server does not. A client launched with Steam down exits at once with a header-only RPT of under 1 KB and an `ErrorMessage_*.mdmp`, and the real message is only in the dump: extract its strings and look for `Unable to locate a running instance of Steam`. When that string appears while Steam runs and every registry check passes, start the client yourself from your own user shell with the same command line (take it from the RPT header or the dump). If your client dies too, the host or Steam is broken and the fix belongs to the user; if it lives, the context that started the first client is the cause, and restarting Steam will not help.
 
 The probe that tells the two states apart is `SteamAPI_IsSteamRunning`, not `SteamAPI_Init`. With a stale key, DayZ's own `steam_api64.dll` returned `Init` OK and `IsSteamRunning` false, and the client died anyway; after copying the pid both returned true and the client got in. A check that only calls `Init` passes on the broken state.
 
@@ -66,7 +68,7 @@ A minidump carries a `MINIDUMP_EXCEPTION_STREAM` (type 6) and a `MODULE_LIST` (t
 
 Before you look for the cause in your change, deploy the previous build and reproduce. When the PBO from before the change failed the same way, that cleared the change in one cycle and moved the search to the environment. An A/B with the old build costs the same as testing one theory, and it decides.
 
-## Reading live logs, and a run already released
+## Reading live logs
 
 DayZDiag keeps the RPT and `script_*.log` open, so `Get-Content` or `ReadAllText` can throw `IOException` at any point of a wait loop. To watch a live peer, open the file with explicit sharing:
 
@@ -76,7 +78,7 @@ $fs = [IO.File]::Open($path, [IO.FileMode]::Open, [IO.FileAccess]::Read,
 try { $text = [IO.StreamReader]::new($fs).ReadToEnd() } finally { $fs.Dispose() }
 ```
 
-In the managed lifecycle, keep the `run_id` and use the public tools. When a low-level call finds a `released` run, the order is `adopt`, then `stop`; `stop` alone can only return `run_not_adopted`. If another session already cleaned it up, `run_not_adoptable` with no run processes and an RPT ending in `Termination successfully completed` is an orderly shutdown, not a crash.
+An RPT ending in `Termination successfully completed` with no game process left is an orderly shutdown, not a crash.
 
 ## Quote the whole argument
 
@@ -87,7 +89,7 @@ For `name=value` arguments with spaces, quote the whole token:
 "-profiles=<profiles-path>"      # right: one complete token
 ```
 
-Do the same for `-config=`, `-mission=` and `-mod=`. In Windows PowerShell 5.1, an array passed to `Start-Process -ArgumentList` does not guarantee each element is quoted, so do not take it as proof of the command line the game received. The managed route of this skill passes a structured array and stays the normal way.
+Do the same for `-config=`, `-mission=` and `-mod=`. In Windows PowerShell 5.1, an array passed to `Start-Process -ArgumentList` does not guarantee each element is quoted, so do not take it as proof of the command line the game received. `/dayz-launch-test` builds the command line itself and prints it with `--dry-run`.
 
 ## A diag that never writes logs
 

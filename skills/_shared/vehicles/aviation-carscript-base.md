@@ -35,7 +35,7 @@ Setting velocity directly (`SetVelocity`, `P:\scripts\1_core\proto\enphysics.c:1
 
 A rubberband is not a reason to change the flight mode. RFFS has no client pose smoothing: it syncs only instruments (`RFFSHeli_Core.c:189` to `:208`), leaves the pose to the car's own replication, and calls `dBodyActive(this, ActiveState.ACTIVE)` while flying (`RFFSHeli_Core.c:1005` and `:1006`). When a `CarScript` helicopter rubberbands under a pilot, the cause is almost always a custom client smoother (dead reckoning plus a client `SetPosition`) fighting the native replication. Remove it before you consider forces. A scripted path flown offline with `SetPosition` and `SetVelocity` can show a small stutter that tempts you to add a smoother, but piloted flight behaves differently. Judge the flight mode in game with real inputs.
 
-The in-game test bridge (`skills/dayz-launch-test/references/mcp/`) can prepare any `CarScript` as a test vehicle. It runs the vehicle's own `OnDebugSpawn` unless every declared wheel, the fuel and any vital battery or spark plug are already there, and reports the vehicle as not ready if they still are not. So it prepares a test helicopter exactly as that helicopter's `OnDebugSpawn` does (point 3). Calling `OnDebugSpawn` late from `EEInit` also works.
+To prepare any `CarScript` as a test vehicle, run the vehicle's own `OnDebugSpawn` unless every declared wheel, the fuel and any vital battery or spark plug are already there, then check them again and treat the vehicle as not ready if they are still missing. That prepares a test helicopter exactly as that helicopter's `OnDebugSpawn` does (point 3). Calling `OnDebugSpawn` late from `EEInit` also works.
 
 ## Angular velocity and axes
 

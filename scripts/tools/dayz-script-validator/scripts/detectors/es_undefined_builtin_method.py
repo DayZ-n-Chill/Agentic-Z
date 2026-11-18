@@ -74,8 +74,8 @@ ES_UNDEFINED_BUILTIN_METHOD_RULE_ID = "ES-UNDEFINED-BUILTIN-METHOD"
 # DAYZ_<major>_<minor>, that of the running build (1_Core/defines.c:11-14 in
 # 1.30.164200; DAYZ_1_30 in the defines of that server's script log), and the
 # vanilla tree does not say which build it is. Mods test an older one around
-# the code of every later build (`#ifndef DAYZ_1_29`, as the DayZ-MCP
-# addon does): those lines are judged. A line under `#ifdef DAYZ_1_29`, or under
+# the code of every later build (`#ifndef DAYZ_1_29`): those lines are
+# judged. A line under `#ifdef DAYZ_1_29`, or under
 # the #else of `#ifndef DAYZ_1_29`, compiles on that one build, which may not
 # be the tree's.
 

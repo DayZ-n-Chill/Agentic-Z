@@ -1,8 +1,8 @@
 # Native Linux server tests
 
-How to prove the server half of a mod on the native Linux `DayZServer` without dayz-mcp: where the server comes from, the private tree it runs from, ports, the launch line, and how to read whether the mod loaded, compiled and ran. A syntax check and a clean build do not show that the scripts compile, that a `modded class` or `override` is legal, or that the engine loaded them at all; a local dedicated server answers all three in about a minute with no client.
+How to prove the server half of a mod on the native Linux `DayZServer`: where the server comes from, the private tree it runs from, ports, the launch line, and how to read whether the mod loaded, compiled and ran. A syntax check and a clean build do not show that the scripts compile, that a `modded class` or `override` is legal, or that the engine loaded them at all; a local dedicated server answers all three in about a minute with no client.
 
-Measured with the native Linux `DayZServer` (Steam app 223350) on DayZ 1.30, and again in full on 1.30 stable; a build named in the text is where a detail was first seen. These are server and tool results, not checked on `P:\`; the vanilla script symbols under "Read the result" and "Code that needs players" are cited. The Windows server (`DayZServer_x64.exe`) takes the same parameters, but where the two differ the Windows rules in `README.md` and `/dayz-launch-test` win on Windows. The managed route with dayz-mcp is in `linux.md`; a real client is in `linux-headless-client.md`.
+Measured with the native Linux `DayZServer` (Steam app 223350) on DayZ 1.30, and again in full on 1.30 stable; a build named in the text is where a detail was first seen. These are server and tool results, not checked on `P:\`; the vanilla script symbols under "Read the result" and "Code that needs players" are cited. The Windows server (`DayZServer_x64.exe`) takes the same parameters, but where the two differ the Windows rules in `README.md` and `/dayz-launch-test` win on Windows. The diag pair under Proton is in `linux.md`; a real client is in `linux-headless-client.md`.
 
 Scripts: `scripts/tools/dayz-linux/` (`find-dayzserver.sh`, `make-server-tree.sh`, `free-ports.sh`), tested by `scripts/tools/dayz-linux/test_linux_helpers.py`.
 
@@ -160,4 +160,4 @@ Without a client, player driven hooks (actions, inventory, damage, vitals) never
 
 ## On Windows (not verified)
 
-The Steam root is `HKCU\Software\Valve\Steam` `SteamPath`; `libraryfolders.vdf` and the manifests have the same format; the binary is `DayZServer_x64.exe`; stop it with `Stop-Process`. `make-server-tree.sh` is POSIX sh; the same tree on Windows would use `New-Item -ItemType SymbolicLink` or `mklink /J`. On Windows the managed route in `managed-launcher.md` is the measured one.
+The Steam root is `HKCU\Software\Valve\Steam` `SteamPath`; `libraryfolders.vdf` and the manifests have the same format; the binary is `DayZServer_x64.exe`; stop it with `Stop-Process`. `make-server-tree.sh` is POSIX sh; the same tree on Windows would use `New-Item -ItemType SymbolicLink` or `mklink /J`. On Windows `/dayz-launch-test` is the measured route.

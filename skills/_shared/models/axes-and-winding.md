@@ -24,7 +24,7 @@ One asymmetric model exported three ways and loaded in game:
 | The rotation `(x,z,-y)`, faces reversed, normals negated | Solid but mirrored: text and logos read backwards |
 | `P3D.transform(py3d.BLENDER_TO_DAYZ)` alone | Inside out and mirrored |
 
-With the reflection, the Geometry, View Geometry and Fire Geometry components took `scene_raycast` hits in `geom`, `view` and `fire` from both sides; after the rotation alone they took none.
+With the reflection, the Geometry, View Geometry and Fire Geometry components took `RaycastRVProxy` hits in `geom`, `view` and `fire` from both sides; after the rotation alone they took none.
 
 Proxy triangles drawn in Blender as py3d raw triangles and converted with the model get the same engine frames as `add_proxy(space="engine")` with the matching rotation, and render in the pose drawn in Blender. That settles the proxy frame, not a seated rider: only the identity crew frame is known to work in game, and a tilted one turned the rider left instead of leaning him forward (`proxy-frames.md`).
 

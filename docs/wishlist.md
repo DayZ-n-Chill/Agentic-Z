@@ -4,6 +4,7 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 
 | Idea | Where it came up | Date |
 | --- | --- | --- |
+| Build Agentic-Z's own in-game test tool, written from scratch: a small in-game DayZ mod that carries out commands (spawn, teleport, drive a vehicle, raycast, camera and screenshot, read logs) and an MCP server in this repo that agents call, wired into `/dayz-launch-test` and `dayz-ingame-tester`. The engine facts are in `skills/dayz-launch-test/references/`. Next project; plan with `dayz-mod-architect` first. | Owner decision | 2026-11-18 |
 | Derive the seat roster in `skills/dayz-p3d-audit/scripts/audit_getin_wheels.py` from the car's `Crew` config, so it is right for four-seat cars and cars with no seat-back selections. | Vehicles review | 2026-11-17 |
 | A census script for the hidden-selection face ownership check and the light selection preflight the vehicle pack describes by hand. | Vehicles review | 2026-11-17 |
 | A PBO reader for the checks in section 5 of `skills/_shared/vehicles/build-packaging-and-debug.md` (completeness, build mode, baked wheel angle, stray drive letters); `scripts/tools/dayz-pbo-diff/` may cover part of it. | Vehicles review | 2026-11-17 |
@@ -15,7 +16,6 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 | A short "Boats at run time" section in `skills/_shared/vehicles/class-hierarchy.md` (engine stop out of water, decay timer, water particle points). | Vehicles review | 2026-11-17 |
 | A `/dayz-lint` warning for a class that extends `CarScript`, defines `EOnSimulate` and never calls `SetEventMask(EntityEvent.SIMULATE)`. | Vehicles review | 2026-11-17 |
 | A `/dayz-lint` check that every `UA*` string read in script is declared in the mod's `inputs.xml`. | Vehicles review | 2026-11-17 |
-| A line in the pack index on the tag vocabulary for third-party references (`[VERIFIED-<mod>]`, `[INFERRED]`, `[UNVERIFIED]`, `[DESIGN]`). | Vehicles review | 2026-11-17 |
 | A fixed phrase for facts reported for a newer game build than the one on `P:\`, as a convention. | Vehicles review | 2026-11-17 |
 | Eval questions for `dayz-vehicle-specialist` on aviation (event mask, `OnDriverExit` gear stop, `SyncedValue` priming) and motorbikes (brake `input` channels, `Wheels` without `Axles`, the battery override, the directional get-in pair). | Vehicles review | 2026-11-17 |
 | `/dayz-p3d-audit`: print a per-LOD resolved-vertex count, with a warning at 90 % of a ceiling the user gives. | Models review | 2026-11-17 |
@@ -56,14 +56,10 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 | A build check that every `.rvmat` named in `config.cpp` is an entry of the PBO. | Scripting review | 2026-11-17 |
 | Compare the entries of two PBOs from `/dayz-build-pbo` with `scripts/tools/dayz-pbo-diff`. | Scripting review | 2026-11-17 |
 | `/dayz-setup-objectbuilder`: offer to set the external viewer to the game's `-buldozer` command line. | Scripting review | 2026-11-17 |
-| A `/dayz-gate` guard that refuses to stop a session whose command line loads `@DayZ_MCP` without `--yes`. | Scripting review | 2026-11-17 |
 | `/dayz-stop-test`: list each DayZ process command line before killing, and cover `DayZServer_x64.exe`. | Scripting review | 2026-11-17 |
 | A `--game-root` option on `/dayz-lint` for the `VANILLA-ROOT-BUILD-MISMATCH` rule. | Tools review | 2026-11-17 |
 | Let `/dayz-gate build` and `/dayz-build-pbo` find dependency folders from `requiredAddons[]` and pass them to the lint code stage. | Tools review | 2026-11-17 |
 | A thin skill for `scripts/tools/dayz-layout-viewer`, next to `/dayz-layout-preview`. | Tools review | 2026-11-17 |
-| A `.mcp.example.json` at the repo root for DayZ-MCP. | Knowledge review | 2026-11-17 |
-| Short `.cursorrules` and `.github/copilot-instructions.md` entry files that point at `AGENTS.md`. | Knowledge review | 2026-11-17 |
-| Adopt the labels `[EXACT]` and `[DESIGN]` for examples in pack files, and six named verification levels, as written conventions. | Knowledge review | 2026-11-17 |
 | An eval question for `dayz-ui-specialist` on Dabs MVC. | Knowledge review | 2026-11-17 |
 | Panel (liked): a log errors card with the newest 5 `script.log`/RPT errors from `logwatch.py --json`, crash logs in red, each with an "Ask the debugger" button that fills the prompt box. | Mod panel review | 2026-11-18 |
 | Panel (liked): a test-server picker (instances under `.server\`, passed as `--server` to Launch and Check in game) and a mod picker (folders under `workspace\`, written through `skills/dayz-init/state.py`) so switching mods costs no tokens. | Mod panel review | 2026-11-18 |
@@ -95,8 +91,8 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 | Step and impact sound tables for a custom surface: how a new `CfgSurfaces` class gets entries in `CfgStepSoundTables` and `CfgImpactSoundTables` (`P:\DZ\sounds\hpp\config.cpp:386921` and `:506974`) | Code check | 2026-11-18 |
 | List the other weapon shot sound arrays next to `soundSetShot[]`: `soundSetShotExt[]`, `soundSetShot1st[]`, `soundSetShotExt1st[]` (`P:\DZ\weapons\firearms\akm\config.cpp:98` to `:146`) and when the engine picks each | Code check | 2026-11-18 |
 | Find out whether a mod can add its own effecter class (a subclass of `ParticleEffecter`, `P:\scripts\3_game\effectmanager.c:775`) without a `CfgVehicles` entry; vanilla effecters have none on `P:\DZ` | Code check | 2026-11-18 |
-| Split `dayz-particles/references/vanilla-particle-catalog.md` (589 lines) under the 400 line ceiling | Code check | 2026-11-18 |
-| Bring `dayz-particles/references/emat-format-reference.md` to house style: `---` rules, arrows in code comments, hard wrapped prose | Code check | 2026-11-18 |
+| Split `dayz-particles/references/integration-patterns.md` (537 lines) and `vanilla-particle-catalog.md` (589 lines) under the 400 line ceiling | Code check | 2026-11-18 |
+| Bring `dayz-particles/references/emat-format-reference.md` and `integration-patterns.md` to house style: `---` rules, arrows in code comments, hard wrapped prose | Code check | 2026-11-18 |
 | Note the `InventoryItemType` debug define `ITEM_SOUND_EVENTS_DEBUG` (`P:\scripts\3_game\inventoryitemtype.c:2`) as the way to see why an attach or detach sound did not register | Code check | 2026-11-18 |
 | List the `serverDZ.cfg` keys that vanilla script reads with `ServerConfigGetInt` (`disableBaseDamage`, `disableContainerDamage`, `disableRespawnDialog`, `disablePersonalLight`, `lightingConfig`, `enableDebugMonitor`, the `adminLog*` keys; `P:\scripts\3_game\cfggameplaydatajson.c:47` to `:79`, `P:\scripts\4_world\plugins\pluginbase\pluginadminlog.c:44` to `:47`) in `conventions/server.md` | Code check | 2026-11-18 |
 | Note in the persistence pack that `EntityAI.OnCEIterate` without arguments is marked obsolete in 1.30 in favour of `OnCEIterate(float currentTime, float elapsedTime)` (`P:\scripts\3_game\entities\entityai.c:4924`) | Code check | 2026-11-18 |
@@ -193,7 +189,7 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 | List the vanilla `m_VehicleContactDamageCoef` and `m_CrewContactDamageCoef` values per car next to the bikes' (0.03 and 0.018, 0.035 and 0.012, `inheritedmotorbikes\motorbike_01.c:5` and `:6`, `motorbike_02.c:5` and `:6`) as a starting point for tuning crash damage | Code check | 2026-11-18 |
 | Check in game whether `BoatScript.EOnSimulate` runs although its constructor sets only `POSTSIMULATE` and `FRAME` (`P:\scripts\4_world\entities\vehicles\boatscript.c:95` and `:96`), and record the answer in `runtime-state-and-sync.md` | Code check | 2026-11-18 |
 | Note the refuel reach, `GetActionDistanceFuel()` returning 1.5 m (`P:\scripts\3_game\vehicles\transport.c:467` to `:470`), beside the `refill` memory point rule | Code check | 2026-11-18 |
-| Describe the diag car autopilot (`ECarDebugMode`, `CarScript.OnInput` under `DIAG_DEVELOPER`, `P:\scripts\4_world\entities\vehicles\carscript.c:1045` to `:1207`) as a vanilla way to drive a car in a diag test without a bridge | Code check | 2026-11-18 |
+| Describe the diag car autopilot (`ECarDebugMode`, `CarScript.OnInput` under `DIAG_DEVELOPER`, `P:\scripts\4_world\entities\vehicles\carscript.c:1045` to `:1207`) as a vanilla way to drive a car in a diag test | Code check | 2026-11-18 |
 | Say that the boat engine repair also needs `Blowtorch.HasEnoughEnergyForRepair` and that `Blowtorch` is where it is added (`P:\scripts\4_world\entities\itembase\blowtorch.c:115`), so a mod boat's engine repair needs no action registration of its own | Code check | 2026-11-18 |
 | The `isSuicideWeapon` key that `Weapon_Base.CanBeUsedForSuicide` checks (`P:\scripts\4_world\entities\firearms\weapon_base.c:2212`; set on the flare gun, `P:\DZ\weapons\pistols\flaregun\config.cpp:36`) as a row in the `weapon-config.md` key table | Code check | 2026-11-18 |
 | The 1.30 gold retexture variants (`AKM_Gold`, `Magnum_Gold`, `SawedoffMagnum_Gold` under `P:\DZ\weapons_takistan\`) as a second worked example of a material-only variant with `RefTexsMats[]` in `weapon-config.md`, "Damage" | Code check | 2026-11-18 |
@@ -215,3 +211,4 @@ Ideas that would be nice to add but were not asked for. Nothing here is built du
 | Explain `PlayerSandstormData` state bits and the in-game script console weather tab that hooks `GetSandstormStartSI` (`P:\scripts\5_mission\gui\scriptconsoleweathertab.c:434`) as a debugging aid | Code check | 2026-11-18 |
 | Describe the irrigation tunnel trigger layout on Nasdara (653 triggers) as a worked example of a long tunnel built from breadcrumbs | Code check | 2026-11-18 |
 | Note that phase 4 heat stroke and silicosis pass uninitialised `vignette`, `fadeOut` and `interval` to the faint symptom while the player is unconscious (`heatstroke.c:357` to `:369`) | Code check | 2026-11-18 |
+| Split `skills/_shared/figma-to-dayz-rules.md` (480 lines, over the 400 line ceiling) into a format file and a translation file, indexed in `skills/_shared/README.md` | Code check | 2026-11-18 |

@@ -21,7 +21,7 @@ An unresolved key logs nothing; no RPT line matched `STR_UI_`. It also can't wra
 
 ## Reading the text back proves nothing
 
-In the same frame the bridge's `ui_tree` reported `BtnNo.text == "#STR_CfgWheel0"` while the screen showed the translation. The engine substitutes at draw time and returns what was assigned, so a check that reads widget text and fails it for starting with `#` reports a fault that isn't there. Only two of seven widgets were readable at all; no `MultilineTextWidgetClass` was. Judge keys from the frame.
+In the same frame, reading the text back from script gave `BtnNo.text == "#STR_CfgWheel0"` while the screen showed the translation. The engine substitutes at draw time and returns what was assigned, so a check that reads widget text and fails it for starting with `#` reports a fault that isn't there. Only two of seven widgets were readable at all; no `MultilineTextWidgetClass` was. Judge keys from the frame.
 
 ## Glyph height follows the box
 

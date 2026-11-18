@@ -32,7 +32,7 @@ class MyMod_Wheel_Front_Ruined extends CarWheel_Ruined {};
 
 Vanilla also registers the two handed carry profile of each ruined class (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:892` and `:893`). A mod that registers its wheels in `ModItemRegisterCallbacks.RegisterHeavy` adds the `_Ruined` names there too.
 
-On a 1.30 diag server and client, a test quad without the twins raised, for the first front and the first rear wheel of each session, `[CarWheelType::SetReplacementTypes] :: [ERROR] :: No config class entry for wheel entity '<class>_Ruined'` as a `Virtual Machine Exception`, on both sides. With the twins there was none. Both classes spawned with their own script class (`entities_query` reports it as `classname`; an intact wheel with no script class of its own reads `CarWheel`), and each fitted the slots of its own axle and was refused by the other's. The swap itself was not seen: no test tool sets an item's health, and a grenade 1.5 m from a loose wheel took it only to 97 percent.
+On a 1.30 diag server and client, a test quad without the twins raised, for the first front and the first rear wheel of each session, `[CarWheelType::SetReplacementTypes] :: [ERROR] :: No config class entry for wheel entity '<class>_Ruined'` as a `Virtual Machine Exception`, on both sides. With the twins there was none. Both classes spawned with their own script class (`ClassName()` reports it; an intact wheel with no script class of its own reads `CarWheel`), and each fitted the slots of its own axle and was refused by the other's. The swap itself was not seen: the test set no health directly, and a grenade 1.5 m from a loose wheel took it only to 97 percent.
 
 `PlayWheelExlosionSound()` picks the burst sound by vanilla class name (`inventoryitem.c:297` to `:320`), so a mod wheel bursts silently unless its `_Ruined` class overrides that method. Vanilla spells the method `Exlosion`; keep that spelling.
 
@@ -40,7 +40,7 @@ On a 1.30 diag server and client, a test quad without the twins raised, for the 
 
 A 1.29 mod that shipped `_Ruined` twins and returned them from overrides of `CarWheel.GetRuinedReplacement()` and `CarWheel_Ruined.GetReplacement()` still compiles on 1.30. Both methods remain and now return the `m_RuinedType` and `m_NormalType` that `CarWheelType.SetReplacementTypes()` derived (`inventoryitem.c:215` to `:218` and `:342` to `:345`; `inventoryitemtype.c:3` and `:4`), which are the names those overrides return anyway.
 
-A second quad mod dropped its four overrides and kept empty script classes, as vanilla does. In game on a 1.30 diag build its four wheel classes reported their own script class in `entities_query`, no `SetReplacementTypes` error was logged, each ruined wheel fitted the two slots of its own axle and was refused by the other's, and the fitted ruined wheels showed their own torn tyre models through their proxies.
+A second quad mod dropped its four overrides and kept empty script classes, as vanilla does. In game on a 1.30 diag build its four wheel classes reported their own script class in `ClassName()`, no `SetReplacementTypes` error was logged, each ruined wheel fitted the two slots of its own axle and was refused by the other's, and the fitted ruined wheels showed their own torn tyre models through their proxies.
 
 ## The four new tyre fields
 
@@ -54,7 +54,7 @@ Every vanilla 1.30 car wheel declares `tyreType`, `tyreRoughness`, `tyreLongitud
 
 `HatchbackWheel` (`P:\DZ\vehicles\wheeled\config.cpp:853`) is an intact example, its tyre fields at `:874` to `:880`, and its ruined twin `HatchbackWheel_Ruined` (`:882`) drops to `0.35` and `4.95` (`:905` and `:906`); the truck's double wheel is at `:18147` and `:18148`. Every ruined twin keeps `tyreType=0`. Motorbike wheels do not follow these ranges; their values are in `motorbike-damage-and-wheel-config.md`.
 
-Measured on two test quads, each with a manual gearbox and the `Offroad_02_Wheel` set (`0`, `1`, `1.5`, `1.8`), driven through the test bridge:
+Measured on two test quads, each with a manual gearbox and the `Offroad_02_Wheel` set (`0`, `1`, `1.5`, `1.8`), driven from a test script:
 
 - The first reached 46 km/h in about 4.6 s and 71 km/h in 8.4 s on grass, and turned about 77 degrees in 2.8 s at full lock and 40 km/h without rolling over.
 - The second reached 34 to 39 km/h in 2.8 s, turned about 65 degrees in 2.3 s at full lock and 38 to 47 km/h without rolling over, and stopped from about 38 km/h in about 1.6 s.

@@ -44,8 +44,8 @@ Also cross `GetSeatAnimationType` for the rear seats (the vanilla shape is at `o
 
 ## Asking the game which guard blocks
 
-dayz-mcp, a third-party bridge into a running game that this repo does not ship, has `query_get_in_condition`. Given a `component` index it returns `first_block` as one of `componentNN`, `occupied`, `crew_can_get_through`, `area_blocked`, `unreachable`, `item_heavy`, `already_in_vehicle`, `no_component` or `""`, plus `crew_can_get_through`, `area_free`, `occupied` and `reachable` per seat. Its `reachable` loop runs the same `GetActionComponentNameList` and `CanReachSeatFromDoors` loop as the action. `FIRST_BLOCK_FIX` in `skills/dayz-launch-test/scripts/run_vehicle_checks.py` lists the fix for each value.
+A diag script on the server can run the same checks as `ActionGetInTransport.ActionCondition`, in the same order, and log the first one that fails for a given action component: no component (`CrewPositionIndex` below 0), the seat taken, `CrewCanGetThrough`, `IsAreaAtDoorFreeDiag`, then `CanReachSeatFromDoors` over `GetActionComponentNameList`, as the action loops (`actiongetintransport.c:26` to `:69`). Log the player-level rejections first: a heavy item in hands and an existing vehicle command. Each answer maps to one section of this file.
 
-Pass a real component index. With `component=-1` it reports the whole crew, but `reachable` is then always false and `first_block` is `no_component` with `partial=1`, so that result is never a pass.
+Pass a real action component index. Without one, `CrewPositionIndex` has nothing to map and the reach loop has no selections, so the result is never a pass.
 
-Read `first_block` per seat before editing the model, config or script. On a ten seat test helicopter every seat returned `unreachable` with the first four guards passing, which pointed at the last guard alone and ruled out seat name case and reach radius at once.
+Read the first failing check per seat before editing the model, config or script. On a ten seat test helicopter every seat returned `unreachable` with the first four guards passing, which pointed at the last guard alone and ruled out seat name case and reach radius at once.

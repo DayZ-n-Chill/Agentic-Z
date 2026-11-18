@@ -192,7 +192,7 @@ Before the first boot of an aircraft, check these faults, which compile clean an
 | Is the packed PBO the approved artifact; `config.cpp` syntax with `CfgConvert` and canaries; comparing native crashes | `deploy-gates-and-crash-fingerprint.md` |
 | Per-tick events, engine state on a passenger's client, visual state on a fresh spawn, a vehicle drawn or exited in the wrong place | `runtime-state-and-sync.md` |
 | Network ownership against a forced seat, why writing the pose fights the owner, a custom Pawn frame | `network-physics-ownership.md` |
-| Driving, seating and unseating a vehicle from an automated test bridge; what the server still checks; camera traps | `test-stand-and-mcp.md` |
+| Driving, seating and unseating a vehicle from a test script; what the server still checks; camera traps | `scripted-vehicle-tests.md` |
 | Whether a pose complaint is perspective; anchoring a HUD marker ray; checking a ripped part before rebuilding it; an offline visibility check | `visual-metrics-and-viewer.md` |
 | Winding checks for imported cars: the orientation rule, per-piece uniformity, the see-through ray check, duplicate faces, shading seams, what a clean `validate()` and a Blender culling render cannot prove, the sign of a face a script adds or moves | `visual-gates-and-winding.md` |
 

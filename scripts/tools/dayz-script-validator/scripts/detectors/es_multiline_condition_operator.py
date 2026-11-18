@@ -20,8 +20,7 @@ ES_MULTILINE_CONDITION_OPERATOR_RULE_ID = "ES-MULTILINE-CONDITION-OPERATOR"
 # line instead, is in skills/_shared/enscript/depth/compiler-traps.md ("A newline
 # ends the statement": `Expected ')'`);
 # that form is not reported here. No `if` or `while` header
-# ending in `&&` or `||` was found in the DayZ-MCP addon (compiles on 1.29
-# and 1.30) or in any .c file of this repo.
+# ending in `&&` or `||` was found in any .c file of this repo.
 #
 # Reported: a line inside the parentheses of an `if (` or `while (` that ends
 # in `&&` or `||` once comments are dropped, once per header. A header whose

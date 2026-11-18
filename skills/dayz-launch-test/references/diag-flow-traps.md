@@ -2,7 +2,7 @@
 
 Which traps of the DayZDiag launch flow make a working mod look broken: where `Print` output goes, file patching that loads nothing, dependency mods in the wrong place, third-party scripts that only retail accepts, and the launch flags added in 1.30.
 
-These were measured in game with the diag and retail executables, Community Framework, Dabs Framework, VPPAdminTools and a third-party weapons pack; they are not checked on `P:\`. Flags such as `-Mode`, `-BaseMods` and `-NoFilePatching` belong to the launcher script `dayz-test.ps1` (`windows-launch-cycle.md`); in this repo the launch, stop and log jobs are `/dayz-launch-test`, `/dayz-stop-test` and `/dayz-logwatch`.
+These were measured in game with the diag and retail executables, Community Framework, Dabs Framework, VPPAdminTools and a third-party weapons pack; they are not checked on `P:\`. In this repo the launch, stop and log jobs are `/dayz-launch-test`, `/dayz-stop-test` and `/dayz-logwatch`.
 
 ## Five traps of the diag flow
 
@@ -25,13 +25,9 @@ Some third-party dependencies produce `SCRIPT (W)` warnings on retail but fatal 
 - DayZDiag is stricter: the warnings become `Can't compile "World" script module!`, and the diag server dies ("Server process exited before binding").
 - A retail client with `-filePatching` crashes on connect with `Unhandled exception ... Access violation. Illegal read ... at 0x0`, call stack `CDPInitServer` and `CDPCreateClient`, and leaves a minidump and a `crash_*.log` in `_client\profiles`. The server stays healthy (`is connected`, then `[Disconnect] -1`).
 
-When your change is already packed in the PBO, launch retail with `-Retail -NoFilePatching`. File patching is unnecessary with an up-to-date PBO, dropping it avoids both failures, and a PBO without file patching is how the mod runs on a real dedicated server:
+When your change is already packed in the PBO, launch the retail executables without `-filePatching`. File patching is unnecessary with an up-to-date PBO, dropping it avoids both failures, and a PBO without file patching is how the mod runs on a real dedicated server:
 
-```text
-dayz-test.ps1 -Mod <Mod> -Mode all -Retail -NoFilePatching -BaseMods "@CF;@Dabs Framework;@VPPAdminTools;@<Mod>_deps"
-```
-
-The current `../scripts/dayz-test.ps1` refuses `-Retail` ("Retail lifecycle is manual-only and quarantined"), so the user runs this launch by hand with the same arguments; the agent only reads while it runs (`troubleshooting.md`, "Third-party modsets on the retail executables").
+The same mod list as the diag run goes on `-mod=` of both retail executables, Community Framework first. The user runs this launch by hand; the agent only reads while it runs (`troubleshooting.md`, "Third-party modsets on the retail executables").
 
 Confirm the connection without reading the screen: `Select-String 'is connected'` in the server RPT is the reliable signal, and a new `crash_*.log` in the client profile marks the failure. Read both with PowerShell on the host, not through a sandboxed shell whose view of the files can be cached.
 

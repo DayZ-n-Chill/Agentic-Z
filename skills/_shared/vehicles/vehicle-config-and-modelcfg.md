@@ -214,4 +214,4 @@ Unknown config keys are ignored without a log, so check a key exists before tuni
 - No `torqueMax`, `torqueRpm`, `powerMax`, `powerRpm` or `rpmMax` in the vanilla wheeled config; the engine is the `torqueCurve[]` table.
 - No `reflectors[]` (an Arma 3 lights feature) in the vanilla wheeled config.
 - `CentralDifferential` keys seen are `ratio` and `type` only.
-- Offroad Hatchback door slots are exactly `NivaDriverDoors`, `NivaCoDriverDoors`, `NivaHood` and `NivaTrunk` (`P:\scripts_world\entitiesehicles\inheritedcars\offroadhatchback.c:209` to `:219`; `NivaHood` also at `:146` and `:160`, `NivaTrunk` at `:189`). Slot lookups and sound set names are case sensitive; a mismatch returns nothing without a clear message.
+- Offroad Hatchback door slots are exactly `NivaDriverDoors`, `NivaCoDriverDoors`, `NivaHood` and `NivaTrunk` (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroadhatchback.c:209` to `:219`; `NivaHood` also at `:146` and `:160`, `NivaTrunk` at `:189`). Slot lookups and sound set names are case sensitive; a mismatch returns nothing without a clear message.

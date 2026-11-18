@@ -14,7 +14,7 @@ A fact with a `P:\` citation was read in that vanilla file. A fact marked measur
 | Write | Read the pack for the domain (table below), follow `skills/dayz-scope-mod/references/implementation-protocol.md`, and look up every API before you use it. A new mod starts with `/dayz-new-mod`. | The pack, the implementation protocol |
 | Build | Validate, pack, sign. | `/dayz-lint`, `/dayz-build-pbo`; detail in `skills/dayz-build-pbo/references/` |
 | Boot | A PBO that builds is not a tested mod. Boot it on a local server, compare the script module counts with a vanilla boot, read `script_*.log`. | `/dayz-launch-test`, `/dayz-gate ingame`, `/dayz-logwatch`; this folder |
-| Check in game | When the change is visible or driven by the player. | `/dayz-gate behavior`, `/dayz-gate visual`; the dayz-mcp checks in `mcp/` |
+| Check in game | When the change is visible or driven by the player. | `/dayz-gate behavior`, `/dayz-gate visual`; what makes an in-game check valid in `in-game-check-validity.md` |
 | Publish | Only when the user says so. | `/dayz-release-pack`, `/dayz-server-kit`; `skills/dayz-build-pbo/references/workshop-publish.md` on Windows, `skills/dayz-build-pbo/references/dayzmake-linux.md` on Linux |
 
 ## Rules for every task
@@ -65,7 +65,7 @@ Match the request and read that pack or skill first; read more than one when the
 | Models `.p3d`, LODs, memory points | `skills/_shared/models/`, `/dayz-p3d-audit`, `skills/dayz-model-tools/` |
 | Textures `.paa`, `.rvmat`; animations | `skills/_shared/textures/` and `/dayz-pack-texture`; `skills/_shared/animation/README.md` and `skills/dayz-animation-pipeline/` |
 | Reading a third-party mod | `/dayz-import-mod` |
-| Checking in game through the dayz-mcp server | `mcp/README.md` |
+| Checking in game: spawning, raycasts, captures, vehicle checks | `in-game-check-validity.md`, which links the rest |
 | A mod that runs beside CF, COT or Expansion; a DayZ update | `/dayz-conflict-check`; `/dayz-upgrade-guard` |
 
 ## Porting or reviewing a mod for 1.30
@@ -83,7 +83,7 @@ Third-party mod behaviour, not vanilla. The CF version, the Expansion load order
 
 ## Testing a mod or a server
 
-- Windows: `/dayz-add-server` once, then `/dayz-launch-test`, `/dayz-gate` for the scripted checks and `/dayz-logwatch` while you play (`README.md` in this folder). The managed cycle through the dayz-mcp server is in `managed-launcher.md`.
+- Windows: `/dayz-add-server` once, then `/dayz-launch-test`, `/dayz-gate` for the scripted checks and `/dayz-logwatch` while you play (`README.md` in this folder).
 - Linux: the native `DayZServer` from a private tree, the retail client headless under Proton, and the self-reporting AutoTest mod (`linux-native-server.md` and `linux-headless-client.md`). DayZ Tools and DayZDiag under Proton: `skills/_shared/linux-proton.md`.
 - Ports and instances: on Windows the test machine runs one DayZ instance at a time on the default port 2302; never kill another session's DayZ process without asking (`test-machine-sharing.md`). On the Linux native server every server takes its own tree and its own non-default ports; each used about 7.5 GB resident with the Expansion bundle, so check free memory first if two must overlap (`linux-native-server.md`).
 - Either way: a vanilla boot as the baseline, and a deliberate syntax error as the probe when an override silently does nothing. An unchanged script module count in a module the mod adds files to means its scripts did not load.

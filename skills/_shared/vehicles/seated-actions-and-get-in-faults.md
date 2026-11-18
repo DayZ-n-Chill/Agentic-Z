@@ -42,7 +42,7 @@ The get-in prompt shows but accepting does nothing, on every seat, with no trace
 Before blaming the model, proxies or config for a get-in regression:
 
 1. Look in the previous run's client profile for a `crash_*.log`; a crash while seated starts the phantom.
-2. With the test tool's get-in query, `first_block=already_in_vehicle` with the player standing in the open confirms it, and seating the player directly on the owner side, skipping the action checks, shows whether the seat and model are healthy.
+2. A server diag script that logs `GetCommand_Vehicle()` for the player (`get-in-guards.md`, "Asking the game which guard blocks") confirms it when it is not null while the player stands in the open, and seating the player directly on the owner side, skipping the action checks, shows whether the seat and model are healthy.
 3. A clean logout clears it. "It fixed itself next session" is the sign of this fault, not of a flaky model.
 
 In the measured case a full get-in regression was blamed on a model edit whose Geometry, View Geometry, Fire Geometry and Memory LODs were identical before and after.

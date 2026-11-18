@@ -2,7 +2,7 @@
 
 How a build, deploy and test cycle goes green without testing the change: backups packed into the PBO, a locked PBO that is never replaced, a build check that only tests that a file exists, a signature written over the old PBO, and mission storage written by a different mod set, above all with or without Community Framework.
 
-In this repo the build step is `/dayz-build-pbo`, the launch is `/dayz-launch-test`, the stop is `/dayz-stop-test`, the logs are `/dayz-logwatch` and the verdict is `/dayz-gate`. The orchestrator script `../scripts/dayz-test.ps1` names the same steps `-Build` and `-Mode all`; its mod source `P:\<Mod>` is the junction to `workspace/<ModName>/`, and its `<Mod>_dev\_server\profiles` and `<Mod>_dev\_client\profiles` are `.server/<instance>/Profiles` and `.server/!ClientDiagLogs` here.
+In this repo the build step is `/dayz-build-pbo`, the launch is `/dayz-launch-test`, the stop is `/dayz-stop-test`, the logs are `/dayz-logwatch` and the verdict is `/dayz-gate`. A mod source written `P:\<Mod>` is the junction to `workspace/<ModName>/`, and profile folders written `<Mod>_dev\_server\profiles` and `<Mod>_dev\_client\profiles` are `.server/<instance>/Profiles` and `.server/!ClientDiagLogs` here.
 
 The tool behaviour here (AddonBuilder, DSSignFile, DSCheckSignatures, Community Framework) was measured on a Windows test machine and is not checked on `P:\`. Vanilla script facts cite the file.
 
@@ -37,13 +37,13 @@ Rename-Item -LiteralPath "$m\storage_1" -NewName "storage_1_corrupt-modstorage-$
 
 A rename is reversible, but booting with CF on that storage crashes again: what you keep is evidence, not a state to return to. Tell the user before you rotate, because the world and the character of that mission reset.
 
-A check you ruled out holds only for the plan you ruled it out under. In one run the plan was a fresh private copy of the mission, so "clean mission, no storage" was true; then `dayz_test_run` refused the absolute path (dayz-mcp accepts only the aliases `chernarus`, `livonia` and `sakhal` for `mission`), the run fell back to the shared mission, and nobody checked the storage again. When the plan changes, check every caveat again.
+A check you ruled out holds only for the plan you ruled it out under. In one run the plan was a fresh private copy of the mission, so "clean mission, no storage" was true; then the launch refused the absolute mission path, the run fell back to the shared mission, and nobody checked the storage again. When the plan changes, check every caveat again.
 
 ## Clean storage before a measurement boot
 
 Saved vehicles and other persistent entities run `EEInit` again on the next boot (`P:\scripts\3_game\entities\entityai.c:905`). Anything armed there, a test `CallLater`, a tuning mode driven by a JSON file, a countdown, fires again on every saved instance at once. Two helicopters saved the day before re-armed a test mode at boot and flew off by themselves after 60 seconds, adding two runs of data that did not come from the run being measured.
 
-Before every boot meant for measurement (test cells, tuning runs, telemetry), rotate `storage_1` to `storage_1.bak_<date>_<reason>`, not only after an unclean stop. The rename also clears test entities piled up by earlier sessions. In a dayz-mcp run this happens before the session lease is taken (`mcp/README.md`, "The loop").
+Before every boot meant for measurement (test cells, tuning runs, telemetry), rotate `storage_1` to `storage_1.bak_<date>_<reason>`, not only after an unclean stop. The rename also clears test entities piled up by earlier sessions.
 
 ## Persistence brings the subject back as the last run left it
 
@@ -53,11 +53,11 @@ Normalize the subject before measuring (`SetWet(0)`, `P:\scripts\4_world\entitie
 
 ## Backups packed into the PBO
 
-A `<file>.c.bak_*` beside the `.c` it backs up is packed by any build that copies the tree as it is, such as `dayz-test.ps1 -Build -PackOnly`. Enforce compiles only `*.c`, so the game ignores it, but the PBO grows (about seven times larger with 29 backups inside, on a helicopter mod) and a text search of the PBO finds an old anchor in a backup instead of the active file. `/dayz-build-pbo` leaves `*.bak` out through `exclude.lst`. Keep backups outside the mod source, and when you check a PBO by text, count matches instead of testing for one.
+A `<file>.c.bak_*` beside the `.c` it backs up is packed by any build that copies the tree as it is, such as AddonBuilder with `-packonly` and no exclude list. Enforce compiles only `*.c`, so the game ignores it, but the PBO grows (about seven times larger with 29 backups inside, on a helicopter mod) and a text search of the PBO finds an old anchor in a backup instead of the active file. `/dayz-build-pbo` leaves `*.bak` out through `exclude.lst`. Keep backups outside the mod source, and when you check a PBO by text, count matches instead of testing for one.
 
 ## A locked PBO is signed and reported as deployed
 
-A running client or server, or a live `dayz_test_run`, keeps the PBO locked. Rebuilding with AddonBuilder then prints `[ERROR]: Build failed`, and a chained `DSSignFile` still exits 0: it signed the previous PBO. A script that chains the two prints a sign result of 0 that looks like a confirmed deploy.
+A running client or server keeps the PBO locked. Rebuilding with AddonBuilder then prints `[ERROR]: Build failed`, and a chained `DSSignFile` still exits 0: it signed the previous PBO. A script that chains the two prints a sign result of 0 that looks like a confirmed deploy.
 
 Stop the run before you rebuild, and judge the result by the PBO's file table against the source sizes, never by exit codes:
 
@@ -68,13 +68,13 @@ scripts\5_Mission\MyMod_Driver.c 4756     <- on disk: 4756
 
 This is the build rule (the verdict is the file table; AddonBuilder exits 0 on some error paths, `skills/dayz-build-pbo/references/addonbuilder-rules.md`) carried over to signing.
 
-### What `dayz-test.ps1` checks, and what it misses
+### What a build script must check
 
-After AddonBuilder returns, `Invoke-Build` in `../scripts/dayz-test.ps1` stops on `Build failed` in the output, checks that the PBO exists and is newer than the build start, and tests the deployed PBO for exclusive write before it builds. It does not compare the PBO's entries with the source, and it only warns when `Build Successful` is missing. Older copies checked only the exit code, `Test-Path` and a size above 4096 bytes, which all pass on the old PBO when a running game holds it, so they printed `[ok] deployed` beside `[ERROR]: Build failed`. If you see both lines in one run, the PBO under test is the old one.
+A build script that checks only the exit code, `Test-Path` and a size above 4096 bytes passes on the old PBO when a running game holds it, and prints a deploy line beside `[ERROR]: Build failed`. If you see both lines in one run, the PBO under test is the old one. Stop on `Build failed` in the output, check that the PBO is newer than the build start, and compare its entries with the source.
 
-When `<WorkDrive>\Mods` is missing, `Invoke-Build` creates it with `New-Item -Force`. The current script runs its preflight first and creates the `P:\Mods` junction, but when `Mods` already exists as a plain folder it only warns, and the PBO lands where the engine never reads (measured: `exit=0; Mods created=True; junction=False`). `/dayz-preflight` reports a plain `P:\Mods` folder.
+When `P:\Mods` already exists as a plain folder instead of the junction to `!Workshop`, a build that writes there lands where the engine never reads (measured: `exit=0; Mods created=True; junction=False`). `/dayz-preflight` reports a plain `P:\Mods` folder.
 
-`dayz-test.ps1 -Build` also passes no `-include` list, so a mod with both models and scripts can lose its `.c` files. Build with `/dayz-build-pbo`, which passes `include.lst` and checks the entries afterwards (why: `skills/dayz-build-pbo/references/post-build-gates.md`, "`-include` is not the final PBO manifest"), launch without `-Build`, and stop the run before you rebuild.
+A build without an `-include` list can lose a mixed mod's `.c` files. Build with `/dayz-build-pbo`, which passes `include.lst` and checks the entries afterwards (why: `skills/dayz-build-pbo/references/post-build-gates.md`, "`-include` is not the final PBO manifest"), and stop the run before you rebuild.
 
 ## Before you spend a boot
 

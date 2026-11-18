@@ -20,8 +20,6 @@ python "<skill-dir>\preflight.py"
 
 Run it before other DayZ skills, after a fresh clone, and after each reboot (`P:\` does not auto-mount). Build and deploy skills run it for you as a gate.
 
-The dayz-mcp launcher script `skills/dayz-launch-test/scripts/dayz-test.ps1` does not call this skill, so run `/dayz-preflight` before you use it. The script adds its own checks on top (game exe, work drive, the `P:\Mods` junction, `allowFilePatching` in `serverDZ.cfg`, the Steam session, AddonBuilder for a build) and creates the junction when it is missing.
-
 ## What it checks
 
 | # | Check | Severity |

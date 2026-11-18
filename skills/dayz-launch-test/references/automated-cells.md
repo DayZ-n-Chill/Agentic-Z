@@ -2,13 +2,13 @@
 
 How to set up a scripted test, a "cell", that boots the game, drives it without a person and reads its verdict from the logs: where the test code lives, what a test mission may do, which diag defines exist, and who closes the processes. Seating a player in a vehicle by script is in `test-cell-vehicles.md`; gates, teardown and what makes a run count as evidence are in `test-cell-evidence.md`. The ready-made self-reporting test mod is `../assets/autotest-mod/` (`linux-headless-client.md`).
 
-Vanilla script facts cite the file on `P:\`. The rest was measured in game on a Windows test machine with the third-party dayz-mcp tool, Community Framework and test vehicle mods, and is not checked on `P:\`.
+Vanilla script facts cite the file on `P:\`. The rest was measured in game on a Windows test machine with Community Framework and test vehicle mods, and is not checked on `P:\`.
 
 ## Setting up a headless cell
 
-Reuse the launcher's build and deploy step, then add these:
+Build with `/dayz-build-pbo`, then add these:
 
-1. Launch through dayz-mcp's `dayz_test_run` when the machine uses it. It owns the lease, so do not take a separate one first (`managed-launcher.md`). Keep its `run_id` and poll the RPT read only. Never start DayZDiag yourself with `Start-Process` beside it, and never call the approved launcher directly.
+1. Launch with `/dayz-launch-test` or a `.bat` the user starts (`test-machine-sharing.md`), keep the process ids, and poll the RPT read only. Never start DayZDiag with `Start-Process` from a background task, which kills it when the task ends.
 2. Skip `CreateHive()` in a test mission `init.c` for a physics test. The Central Economy loads about 20,000 loot items and delays the mission loop by minutes.
 3. Connect a client before you spawn a vehicle. A `CarScript` vehicle only ticks `OnUpdate` and simulates with a player present, so give the cell a mode that connects a second diag instance to `127.0.0.1`.
 4. Put cell code inside the mod, not in the mission. Spawn on connect, an engine watcher and test hooks belong in the mod under `#ifdef DIAG` plus a launch parameter of the mod's own, for example a `modded class MissionServer` in `5_Mission` switched on by `-<mod>AutoGetIn=1` and read in its `PlayerBase`. The mission lives in the Steam folder (`DayZServer\mpmissions\<mission>\init.c`), which no backup or repo carries. Inside the mod it travels with the PBO, is versioned, and stays inert in retail because the flag is absent.
@@ -59,7 +59,7 @@ Use it for logic a single process can check (config values, a pure script functi
 
 The DayZDiag requirement in `windows-launch-cycle.md` covers iteration with `-filePatching` and `/dayz-launch-test`. A headless retail `DayZServer_x64.exe` also loads PBOs with `-mod`, compiles Enforce Script and makes outbound `RestApi` calls without taking the client's Steam session; a measured run logged the defines `RELEASE, SERVER, NO_GUI, SERVER_FOR_WINDOWS` and real HTTP polling.
 
-Use it as the second side of a diag against retail check when server behaviour may depend on `RELEASE` or on developer only APIs. It does not replace the client for captures or for anything that needs a connected player. It stays outside the managed lifecycle: only a runner that holds its exact process id starts and stops it.
+Use it as the second side of a diag against retail check when server behaviour may depend on `RELEASE` or on developer only APIs. It does not replace the client for captures or for anything that needs a connected player. Only a runner that holds its exact process id starts and stops it.
 
 ## A one-off diagnostic spawn
 
@@ -76,6 +76,6 @@ A respawn and a reconnect call `OnClientRespawnEvent` and `OnClientReconnectEven
 
 ## Whoever opens a process closes it
 
-Managed runs close by their `run_id`. For a manual process outside dayz-mcp that the user allowed, the agent that opened it keeps its process id and `CommandLine`, asks it to close with `CloseMainWindow()`, waits 8 to 10 seconds, and uses `Stop-Process -Id <pid>` only as the fallback. Never pick a process by executable name or touch another session's peer.
+The agent that opened a process keeps its process id and `CommandLine`, asks it to close with `CloseMainWindow()`, waits 8 to 10 seconds, and uses `Stop-Process -Id <pid>` only as the fallback. Never pick a process by executable name or touch another session's peer.
 
 If the user opened the window and is playing, closing it stays their job, through the game's UI. If the agent opened it, the agent closes it; asking to continue the cycle lets the agent close only its own processes.

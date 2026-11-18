@@ -45,7 +45,7 @@ So a 1.29 car whose script says `override void ToggleHeadlights()` overrides a m
 
 ## Script module paths need forward slashes
 
-A 1.29 script module path written with backslashes can load nothing on 1.30, silently. A test quad's `CfgMods` declared `dir = "MyMod"` and `worldScriptModule` `files[] = {"MyMod\scripts\4_world"}`, which loaded on 1.29. On a 1.30 diag server its `World` module loaded 2,332 files, the same as a run without the mod, with and without `-filePatching`: the quad ran as a bare `CarScript`, and the `ToggleHeadlights` compile error never appeared. With `files[] = {"MyMod/scripts/4_world"}` the module loaded 2,337 files, the mod's five scripts. The test bridge mod, whose paths use forward slashes, loaded in the same runs.
+A 1.29 script module path written with backslashes can load nothing on 1.30, silently. A test quad's `CfgMods` declared `dir = "MyMod"` and `worldScriptModule` `files[] = {"MyMod\scripts\4_world"}`, which loaded on 1.29. On a 1.30 diag server its `World` module loaded 2,332 files, the same as a run without the mod, with and without `-filePatching`: the quad ran as a bare `CarScript`, and the `ToggleHeadlights` compile error never appeared. With `files[] = {"MyMod/scripts/4_world"}` the module loaded 2,337 files, the mod's five scripts. Another mod whose paths use forward slashes loaded in the same runs.
 
 Write module paths with forward slashes, and compare the script log's `Module: World; loaded Nx files` line with a run without the mod: scripts that never load never fail to compile either. This reverses the 1.29 advice on script binding in `vehicle-structural-parity.md`.
 

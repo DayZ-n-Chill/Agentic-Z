@@ -65,7 +65,7 @@ For a failure on getting out or a desync, log the callback that matches `OnDrive
 
 - In an owner series with rewind and replay, several samples can share one `t`. Keep the first sample per tick, or merge a stated interval under 20 ms, before reading edges.
 - Convert server events to the owner's clock. Trust the server's series first and the owner's second, and re-run the whole history after you change the parser.
-- The dayz-mcp bridge does not inject arbitrary values into `UAInput`. If the mod disables `CarController` and reads its own axes, the cell needs a DIAG script on the owner before `WriteToMove`, adopted only after a run in game shows it steers.
+- Nothing outside the game injects arbitrary values into `UAInput`. If the mod disables `CarController` and reads its own axes, the cell needs a DIAG script on the owner before `WriteToMove`, adopted only after a run in game shows it steers.
 
 Log the symptom callback on both peers with a gated probe and a stack trace. On the client, print the stack one line at a time so it is not cut, and never call server only APIs there.
 

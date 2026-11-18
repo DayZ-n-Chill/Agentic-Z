@@ -2,7 +2,7 @@
 
 How to load a DayZ 1.30 server with moving dummy players and no clients, and how to measure that load without fooling yourself. The DayZDiag executable of the public 1.30 Experimental build compiles in the bot code that makes this possible.
 
-Measured on the 1.30 Experimental DayZDiag, a local server outside dayz-mcp's managed lifecycle, and not checked on `P:\` beyond the cited script lines. The figures come from two runs with one sample per cell; neither is a capacity figure.
+Measured on the 1.30 Experimental DayZDiag, a local server started by hand, and not checked on `P:\` beyond the cited script lines. The figures come from two runs with one sample per cell; neither is a capacity figure.
 
 ## What the 1.30 DayZDiag compiles in
 
@@ -29,7 +29,7 @@ d.m_Bot.StartAction(EActions.PLAYER_BOT_STOP_CURRENT);       // back to idle
 
 The "randomizer" is not random: it forces `OverrideMovementSpeed(ONE_FRAME, 3.0)` and `OverrideMovementAngle(ONE_FRAME, 0.0)` every frame (`P:\scripts\4_world\systems\bot\bot_movementrandomizer.c:26` to `:40`), so every dummy sprints in a straight line north: about 33.7 m per 5 seconds (about 6.75 m/s), and about 1.7 m/s once in water. Spawn inland; from the coast they run into the sea. Mean distance covered was 169.2, 169.1, 168.1 and 158.9 m in 25 seconds for 10, 25, 50 and 100 dummies in one run, and 297.1 and 291.0 m in 45 seconds for 50 and 100 in the other.
 
-Dummies and roboclients alike run under server authority, so this loads the server; it does not offload simulation. dayz-mcp has no verb for it yet; a server verb pair to spawn N dummies and start or stop their action would give N moving players on one machine for load and soak tests.
+Dummies and roboclients alike run under server authority, so this loads the server; it does not offload simulation. A server command pair to spawn N dummies and start or stop their action would give N moving players on one machine for load and soak tests.
 
 ## Measuring the load
 

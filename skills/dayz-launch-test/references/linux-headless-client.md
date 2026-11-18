@@ -4,7 +4,7 @@ How to test the client side of a mod on Linux: run the retail client under Proto
 
 Measured on Linux with DayZ 1.30 and GE-Proton11-1, first on 1.30 Experimental and again in full on 1.30 stable. These are tool and runtime results, not checked on `P:\`; the one vanilla script fact (godmode) is cited.
 
-Scripts: `scripts/tools/dayz-linux/dayz-client-headless.sh`, `dayz-client-test.sh` and `dayz-mod-pack.sh`. Test mod: `../assets/autotest-mod/`. This pairs the retail client with the native server. A DayZDiag client only joins a DayZDiag server (`0x00020017`); that pairing and the managed dayz-mcp cycle are in `_shared/linux-proton.md` and `linux.md`.
+Scripts: `scripts/tools/dayz-linux/dayz-client-headless.sh`, `dayz-client-test.sh` and `dayz-mod-pack.sh`. Test mod: `../assets/autotest-mod/`. This pairs the retail client with the native server. A DayZDiag client only joins a DayZDiag server (`0x00020017`); that pairing is in `_shared/linux-proton.md` and `linux.md`.
 
 ## What you need
 

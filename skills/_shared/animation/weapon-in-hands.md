@@ -81,7 +81,7 @@ To capture the aim grip, force the raise every frame with `OverrideRaise(HumanIn
 - Do not call `SetIronsights()`: it forces the sight camera, fights a free camera, and server side left the weapon untextured.
 - `WeaponADS()` is an input flag (`human.c:86`) with no override among the `Override...` methods (`:253` to `:274`), and reads 0 even when aiming works. Use `IsRaised()` or the client log.
 
-Running such a test mod is in `skills/dayz-launch-test/references/mcp/`.
+Run such a test mod with `/dayz-launch-test` and read its result from `script.log`; posing a raised weapon for a screenshot is in `skills/dayz-launch-test/references/screenshots-and-cameras.md`, "Capturing a raised weapon".
 
 ## How a custom weapon animation is bound
 

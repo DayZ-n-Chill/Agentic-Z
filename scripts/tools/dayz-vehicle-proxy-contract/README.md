@@ -13,8 +13,8 @@ AddonBuilder, stores those `.p3d` files as ODOL, so every host and proxy entry
 reports `PBO-HASH-MISMATCH` and `audit` exits 1 even when the build is fresh
 and correct.
 
-This is an offline check. It does not launch DayZ. In-game verification
-belongs to DayZ-MCP (`skills/dayz-launch-test/references/mcp/`).
+This is an offline check. It does not launch DayZ. The in-game check is
+`/dayz-gate ingame`, which reads `script.log` and the RPT.
 
 Its fail-closed PBO reader, `scripts/vehicle_proxy/pbo.py`, is also the reader
 of [`scripts/tools/dayz-pbo-diff`](../dayz-pbo-diff/README.md), through `digest_pbo`.

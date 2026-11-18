@@ -2,7 +2,7 @@
 
 How to change a `.layout` on disk and see it in the running client within seconds: which paths the game reads again, the reload loop, its four traps, and what the preview can't show. What the preview taught about text and stringtables is in `preview-text-and-stringtables.md`.
 
-Everything here is measured in game on DayZ 1.29, not read from source; the engine calls it uses are cited on `P:\`. Some steps use the DayZ MCP bridge, and each one also has a plain script form.
+Everything here is measured in game on DayZ 1.29, not read from source; the engine calls it uses are cited on `P:\`.
 
 ## Only `$profile:` is read again
 
@@ -39,14 +39,7 @@ Test the reread with two files that predict different shapes, never the same fil
 4. Compare with the offline prediction, and look at the frame.
 5. Edit and repeat. No repack, no restart.
 
-With the DayZ MCP bridge the reload is one call. It needs a lease, runs on the client, and returns the same node shape as `ui_tree`, so an existing rect comparison keeps working:
-
-```text
-ui_reload_layout(path="$profile:my_panel.layout")
-ui_reload_layout(mode="close")
-```
-
-Without the bridge, the same engine calls from your own mod:
+The reload runs on the client, from a small diag script in your own mod:
 
 ```c
 WorkspaceWidget workspace = GetGame().GetWorkspace();
@@ -73,8 +66,8 @@ A special case of the white box: a `{GUID}Gui/...edds` reference that works in a
 
 ## What the preview can't show
 
-The preview shows appearance, not behaviour. Nothing attaches a script class to its root, so its buttons have no handlers. It also takes no input: a click, from the bridge or from a real mouse with the inventory open, does nothing, although the preview draws above the inventory. Draw order and input are separate, and `CreateWidgets` gives only the first, because nothing calls `SetActiveWindow` on the new root (`enwidgets.c:695`). Focus, hover and wheel scrolling can't be seen in this loop at all. Use the real menu for those.
+The preview shows appearance, not behaviour. Nothing attaches a script class to its root, so its buttons have no handlers. It also takes no input: a click, from a script or from a real mouse with the inventory open, does nothing, although the preview draws above the inventory. Draw order and input are separate, and `CreateWidgets` gives only the first, because nothing calls `SetActiveWindow` on the new root (`enwidgets.c:695`). Focus, hover and wheel scrolling can't be seen in this loop at all. Use the real menu for those.
 
-Bridge calls such as `ui_click`, `ui_set_text` and `ui_tree` find widgets by name through `FindAnyWidget`, which ignores which tree a name came from. A preview with widgets named `BtnYes` or `Title` collides with whatever else is loaded; give hot layouts a prefix of their own.
+A test that clicks, sets text or reads the tree usually finds widgets by name through `FindAnyWidget`, which ignores which tree a name came from. A preview with widgets named `BtnYes` or `Title` collides with whatever else is loaded; give hot layouts a prefix of their own.
 
 Not yet measured: whether a custom font or an imageset resolves from `$profile:`. Vanilla fonts and imagesets work because they come from the game's own PBOs.

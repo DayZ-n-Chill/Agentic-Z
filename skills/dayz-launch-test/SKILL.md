@@ -1,6 +1,6 @@
 ---
 name: dayz-launch-test
-description: "Launches a local DayZ Diag server for an instance from /dayz-add-server, then the diag client connected to it with the given built mods loaded. Run-only; does no setup. Use when you want to test built mods in game, or to preview the exact launch commands with a dry run. Its references cover why a session starts but does not test the change, scripted test cells, server and mission config, the Linux server and headless client, and in-game verification through the dayz-mcp server (spawn, capture, collision, vehicle acceptance), with the dayz-mcp launcher and vehicle check scripts; also the recurring error catalog (E01 to E35), the top-down debug protocol, the fast DayZDiag loop, measured 1.30 server facts and the mod loop from code to Workshop."
+description: "Launches a local DayZ Diag server for an instance from /dayz-add-server, then the diag client connected to it with the given built mods loaded. Run-only; does no setup. Use when you want to test built mods in game, or to preview the exact launch commands with a dry run. Its references cover why a session starts but does not test the change, scripted test cells, server and mission config, the Linux server and headless client, and what makes an in-game check valid (spawning, raycasts, captures, actions, vehicle acceptance checks); also the recurring error catalog (E01 to E35), the top-down debug protocol, the fast DayZDiag loop, measured 1.30 server facts and the mod loop from code to Workshop."
 argument-hint: "<ModName> [<ModName2> ...] [--server-only <ModName>]... [--server <instance>] [--port N] [--dry-run]"
 ---
 
@@ -147,7 +147,5 @@ These map to `-window`, `-x=<width>`, `-y=<height>`. Edit the file freely. A fil
 
 Everything this skill knows beyond the launch itself is in `<skill-dir>\references\`; start at `references/README.md`, which lists every file, the rules that hold on every route, and when to read each one.
 
-- In-game verification through the third-party dayz-mcp server (spawn, camera captures, collision raycasts, placement, the vehicle acceptance checks, a PASS or FAIL report with evidence) is `references/mcp/README.md`. A dayz-mcp run is started and stopped by its own `dayz_test_run` and `dayz_test_stop`, never by this skill or `/dayz-stop-test` (`references/mcp/run-lifecycle.md`).
-- `scripts/dayz-test.ps1`, with the `server.bat`, `client.bat` and `offline.bat` templates in `assets/launcher/`, is the launcher dayz-mcp's managed runs start. It is an option for machines with dayz-mcp, not a replacement for this skill: run `/dayz-preflight` first, build with `/dayz-build-pbo`, and read `references/managed-launcher.md` before using it.
-- `skills/dayz-launch-test/scripts/run_vehicle_checks.py` runs the vehicle acceptance checks against a running dayz-mcp daemon (`references/mcp/vehicle-acceptance.md`).
+- In-game checks: what makes a verdict valid is `references/in-game-check-validity.md`, which links the files on spawning, raycasts, captures, actions and the vehicle acceptance checks.
 - `assets/autotest-mod/` is a small self-reporting test mod (`references/linux-headless-client.md`, "Tests that run on both sides and report back"). Keep it out of a release.

@@ -12,8 +12,6 @@ This is measured behaviour of AddonBuilder, binarize and the game's loader, not 
 - It packs a binarized `config.bin`. If a class of a built mod does not spawn while the logs are clean, test the cause under "A `config.bin` that never registers".
 - Open point: binarize looks for the files a `.p3d` cites under the parent of the source folder. For `build.py` that parent is `P:\temp\_stage\`, which holds no `dz\` data. Whether a vanilla material cited by a model's faces is then embedded empty in a `/dayz-build-pbo` build is not measured. Until it is, check a model that cites vanilla `dz\...` materials as `binarize-file-lookup.md` describes.
 
-The dayz-mcp launcher `skills/dayz-launch-test/scripts/dayz-test.ps1` carries a weaker build of its own; build with `/dayz-build-pbo` and launch it without `-Build`.
-
 ## The command line
 
 AddonBuilder is in `<DayZ Tools>\Bin\AddonBuilder\`; DayZ Tools is a separate Steam app, and `/dayz-preflight` finds it.
@@ -65,7 +63,7 @@ After the build, list the PBO entries and compare them with every `.rvmat` path 
 
 The mod mounts (the engine reads the folder, no RPT errors), but `CreateObjectEx` returns `unknown_type` and the item is in no spawn list. The same PBO packed again with `config.cpp` as text registers and spawns; this was narrowed down with vanilla `Armband_Pink` as the control. A related sign: `unRap` exits 255 on that `config.bin`.
 
-When it happens, pack `config.cpp` as text and use the full binarizing build only for the ODOL. Prove that a mod mounts with an in-game spawn, through the dayz-mcp check in `skills/dayz-launch-test/references/mcp/README.md` or the debug console, never with the strings or entries of the PBO: static analysis of that `config.bin` reported it healthy while the engine ignored it.
+When it happens, pack `config.cpp` as text and use the full binarizing build only for the ODOL. Prove that a mod mounts with an in-game spawn from the debug console, never with the strings or entries of the PBO: static analysis of that `config.bin` reported it healthy while the engine ignored it.
 
 ## Speed
 

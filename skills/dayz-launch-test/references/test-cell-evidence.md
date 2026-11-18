@@ -2,7 +2,7 @@
 
 What makes a scripted test's verdict worth believing: gates that can actually fail, a teardown that keeps the logs, the checks a run must pass before it counts, and the two silent ways an in-game observation is spoiled (a missing mod on the `-mod=` line, and an unfocused client). Setting up the cell is in `automated-cells.md`.
 
-Vanilla script facts cite the file on `P:\`. The rest was measured on a Windows test machine with test mods and the third-party dayz-mcp tool, and is not checked on `P:\`.
+Vanilla script facts cite the file on `P:\`. The rest was measured on a Windows test machine with test mods, and is not checked on `P:\`.
 
 ## A gate must be able to go red
 
@@ -54,13 +54,13 @@ The closing quote sticks to the last field. Take what lies between `= '` and the
 A cell emits `PASS` only when it shows it booted in the planned mode, covered the whole transition, and produced the evidence the verdict reads.
 
 1. **Preflight by mechanism and mode.** Write each guard as the mechanism it protects and the modes it affects, and code that branch: a guard that only matters with a client aborts with a client and only warns in a no-client run, with no manual bypass. On a machine with several stacks, a cell with a client is not isolated from the keyboard: list the other `DayZDiag` processes with their process ids, mods and ports, record the focus risk, and use a test only DIAG guard that refuses human actions that would change state while the script runs. If port 2302 belongs to another session, pick another free port. If you cannot show isolation, the result is `SETUP_FAIL`.
-2. **Boot identity.** In a series that relaunches the client, wait 60 seconds between one shutdown and the next start; a native crash during that start is `SETUP_FAIL`, not a regression. A single isolated run needs no cooldown. When packing evidence, never pick a file by its modified time: dayz-mcp names its files in UTC while RPT names and modified times use local time. Match the boot id or an internal marker against the time recorded for the incident, and reject the bundle if the expected boot markers are missing.
+2. **Boot identity.** In a series that relaunches the client, wait 60 seconds between one shutdown and the next start; a native crash during that start is `SETUP_FAIL`, not a regression. A single isolated run needs no cooldown. When packing evidence, never pick a file by its modified time: tools that name files in UTC disagree with RPT names and modified times, which use local time. Match the boot id or an internal marker against the time recorded for the incident, and reject the bundle if the expected boot markers are missing.
 3. **The whole transition, compiled on both sides.** Write each transition as four steps: the input, the state you can observe, the exit and the state after the exit, and drive all four from the script. A test that only enters has not covered the transition. Search the script logs of server and client for `Compile error` and `Can't compile` before waiting for any marker: a dead client, a live server and `Can't compile` mean code only the client compiles is broken, not a timeout. Offline lint cannot prove `private` or `protected` visibility.
 4. **A shutdown that fits the measurement.** Copying logs before the kill keeps what was written, but proves nothing about results written on exit. For leak reports, flushes, destructors and final hooks, ask for a graceful shutdown, wait for a marker that the hook ran, then collect. A forced kill makes every exit metric `SETUP_FAIL`. "The problem did not appear" is never `PASS` if the check never ran.
 
 ## An observation is worth its `-mod=` line
 
-`managed-launcher.md` reads `-mod=` to learn whose machine it is. Here you read it to learn whether an observation counts, before you act on it.
+`test-machine-sharing.md` reads the command line to learn whose machine it is. Here you read it to learn whether an observation counts, before you act on it.
 
 The failure is silent: a missing mod gives no error, the game starts and the observation looks normal. On two quad bike mods tested together, only one of ten runs loaded the animation mod `@SurvivorAnims`. Each mod's `GetAnimInstance` override returns its own instance only when `CfgPatches SurvivorAnims` exists (checked with `ConfigIsExisting`, `P:\scripts\3_game\global\game.c:612`) and otherwise falls back to `VehicleAnimInstances.V3S` (`P:\scripts\4_world\entities\vehicles\vehicleaniminstances.c:4`), the truck pose on a quad. With that pose the driver's camera is in the wrong place, which changes what is seen from the seat and which LOD the engine picks, so a LOD fix judged on such a run is not valid.
 

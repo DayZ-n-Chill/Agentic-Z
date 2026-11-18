@@ -38,7 +38,7 @@ taskkill's error output is captured and dropped only for errorlevel 128 (its "pr
 
 ## Before you stop a session you did not start
 
-`taskkill /IM` ends every `DayZDiag_x64.exe` on the machine, whoever started it. The test machine has one game port and one Steam client, so another session (the user's own play session, a second agent, a dayz-mcp run) may hold it. The measured cases are in `skills/dayz-launch-test/references/test-machine-sharing.md`, "Check who holds the machine before any kill or launch".
+`taskkill /IM` ends every `DayZDiag_x64.exe` on the machine, whoever started it. The test machine has one game port and one Steam client, so another session (the user's own play session, a second agent) may hold it. The measured cases are in `skills/dayz-launch-test/references/test-machine-sharing.md`, "Check who holds the machine before any kill or launch".
 
 - **See who is running first** when the session is not clearly yours. List the processes with their command lines and read each `-mod=` and `-profiles=` value:
 
@@ -47,6 +47,5 @@ taskkill's error output is captured and dropped only for errorlevel 128 (its "pr
   ```
 
   If a process loads a mod other than the one under test, ask the user before stopping it. `/dayz-gate` applies the same rule: it stops a session it did not start only after `--yes` or a yes at the prompt.
-- **A dayz-mcp run is not stopped here.** A run started with dayz-mcp's `dayz_test_run` is ended with its own `dayz_test_stop` for that `run_id`, because dayz-mcp holds the machine's lock under that run (`skills/dayz-launch-test/references/mcp/run-lifecycle.md`).
 - **`DayZServer_x64.exe` is a separate process and stays up.** This skill never kills it. A retail server started by hand keeps holding its port until whoever started it closes it.
 - **A server killed while it saves can leave half-written persistence.** The next start then dies before binding its port with `!!! Serious stream damage detected during load`, which looks like a mod bug. `/dayz-gate` and `/dayz-logwatch` name it (`storage-stream-damage`) with the fix: rename the mission's `storage_1` with the server stopped, after telling the user that the world and characters reset.

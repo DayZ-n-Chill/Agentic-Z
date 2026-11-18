@@ -263,7 +263,7 @@ These skills run offline scripts on the files they are given. The knowledge behi
 
 L2 conventions: [`skills/_shared/dayz-conventions.md`](../skills/_shared/dayz-conventions.md) (core) and the topic files in [`skills/_shared/conventions/`](../skills/_shared/conventions/).
 
-**Full walkthrough — prerequisites, quick start, env vars, troubleshooting:** [`docs/dayz-modding.md`](dayz-modding.md).
+**Full walkthrough — prerequisites, quick start, env vars, troubleshooting:** [`docs/dayz-modding.md`](dayz-modding.md). Step by step detail of the four core skills: [`docs/dayz-core-skills.md`](dayz-core-skills.md).
 
 ## Knowledge packs
 

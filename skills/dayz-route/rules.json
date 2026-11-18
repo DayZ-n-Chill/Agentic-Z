@@ -5,7 +5,7 @@
     "dayz-build-pbo": {"kind": "skill", "step": true, "description": "Pack an existing mod from workspace/<ModName>/ into a PBO"},
     "dayz-lint": {"kind": "skill", "step": true, "description": "Check a mod for errors that would stop it loading, before packing"},
     "dayz-conflict-check": {"kind": "skill", "step": true, "description": "Find class name and path collisions between a mod and CF, COT, Expansion or other mods"},
-    "dayz-launch-test": {"kind": "skill", "step": true, "description": "Launch the local DayZ Diag test server and client; its references also cover in-game verification through the dayz-mcp server (spawn, capture, collision raycast, vehicle acceptance ladder)"},
+    "dayz-launch-test": {"kind": "skill", "step": true, "description": "Launch the local DayZ Diag test server and client; its references also hold the DayZ facts behind an in-game check (which peer runs what, spawning, cameras and screenshots, collision raycasts, vehicle acceptance checks)"},
     "dayz-logwatch": {"kind": "skill", "description": "Watch a running test session's logs and triage each new error line as it appears"},
     "dayz-stop-test": {"kind": "skill", "step": true, "description": "Stop a running local DayZ test session"},
     "dayz-preflight": {"kind": "skill", "description": "Check the DayZ modding environment (P: drive, DayZ Tools)"},
@@ -246,7 +246,7 @@
       "route": "dayz-launch-test",
       "confidence": 0.95,
       "absorbs": true,
-      "patterns": ["\\bmcp\\s+verif(?:y|ication)\\b", "\\b(?:verify|test|check)\\b[^\\n]{0,40}?\\b(?:with|through|via|over|using)\\s+(?:the\\s+)?(?:dayz[\\s-])?mcp\\b", "\\bvisual\\s+smoke\\s+test\\b", "\\bacceptance\\s+ladder\\b"]
+      "patterns": ["\\bverif(?:y|ication)\\b[^\\n]{0,40}?\\bin[\\s-]game\\b", "\\bvisual\\s+smoke\\s+test\\b", "\\bacceptance\\s+ladder\\b"]
     },
     {
       "route": "dayz-pack-texture",

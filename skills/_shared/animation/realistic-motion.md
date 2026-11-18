@@ -16,7 +16,7 @@ It sets the acceptance; the Blender and DayZ files keep the technical facts (`mo
 | Weapon, reload, unjam or `.p3d` mechanism | `_shared/weapons/` when the item's config changes, and the model tools. Check the weapon's bone remap, such as `LugerBoneRemap` (`P:\scripts\4_world\entities\manbase\dayzplayer\dayzplayercfgbase.c:1621`), and its own instance file (`motion-domain-gates.md`). |
 | Occupant, boarding or vehicle controls | `_shared/vehicles/` (1.30: motorbikes on `MOTO1` and `MOTO2` with two bone handlebar IK). |
 | Mocap from outside | `mixamo-retarget.md`; never without a source to target bone map. |
-| In game test | `/dayz-launch-test`, `/dayz-gate`, `/dayz-logwatch` and the bridge checks in `skills/dayz-launch-test/references/mcp/`, with their run rules. |
+| In game test | `/dayz-launch-test`, `/dayz-gate` and `/dayz-logwatch`; the DayZ facts behind an in-game check are listed in `skills/dayz-launch-test/references/README.md`. |
 
 A purely technical question (which `AnimationSource`, how to register an `.anm`, what an instance state means) is answered by `model-cfg-animations.md`, `anm-clips.md` or `anim-graphs.md`, not here.
 
