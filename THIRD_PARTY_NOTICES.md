@@ -8,7 +8,7 @@ Agentic-Z's own license is in [`LICENSE`](LICENSE). Some of the code and text in
 - License: MIT (text below)
 - Copyright: Copyright (c) 2026 DayZ Modding Knowledge Pack contributors
 
-The Knowledge Pack's skills, notes and tools were imported and then merged into this repo's own folders. Its material now lives in:
+The Knowledge Pack's skills, notes and tools were imported as a starting point and then reworked for Agentic-Z. The text was rewritten in Agentic-Z's house style and merged into this repo's own folders, every DayZ fact was checked against the vanilla game files and corrected where it was wrong, and the code was fixed and given tests. Independent reviewers then graded every resulting file, and each one was revised until it reached A+ (see `docs/grades/`). The parts that started from the Knowledge Pack now live in:
 
 - **The knowledge packs** under `skills/_shared/`: `ai/`, `animation/`, `audio-fx/`, `enscript/`, `models/`, `persistence/`, `physics/`, `textures/`, `ui/`, `vehicles/`, `weapons/`, `wearables/` and `world/`, plus `skills/_shared/linux-proton.md` and `skills/_shared/viewer_core.py`.
 - **Two skills built from it**: `skills/dayz-animation-pipeline/` and `skills/dayz-model-tools/`.
