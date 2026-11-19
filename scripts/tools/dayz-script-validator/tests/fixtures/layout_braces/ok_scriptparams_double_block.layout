@@ -1,0 +1,19 @@
+FrameWidgetClass Root
+{
+    position 0 0
+    size 1 1
+    {
+        TextWidgetClass Label
+        {
+            text "Hello"
+            {
+            }
+        }
+    }
+    {
+        ScriptParamsClass Params
+        {
+            Name "Value"
+        }
+    }
+}

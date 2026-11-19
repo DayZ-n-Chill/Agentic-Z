@@ -4,7 +4,7 @@ Muzzle flash, smoke and overheating are config entries under `class Particles` o
 
 ## How the effects are played
 
-- `ItemBase.LoadParticleConfigOnFire` reads every child class of `Particles OnFire` and `Particles OnBulletCasingEject` (`P:\scripts\4_world\entities\itembase.c:313` to `:349`). Overheating settings are read at `itembase.c:400` to `:411`.
+- `ItemBase.LoadParticleConfigOnFire` reads every child class of `Particles OnFire` and `Particles OnBulletCasingEject` (`P:\scripts\4_world\entities\itembase.c:313` to `:378`). Overheating settings are read at `itembase.c:400` to `:411`.
 - On each shot `Weapon_Base.EEFired` plays the weapon's fire particles, then a fitted suppressor's own (`P:\scripts\4_world\entities\firearms\weapon_base.c:341` to `:356`). It plays no effects on a dedicated server (`weapon_base.c:345`).
 - Each entry becomes a `WeaponParticlesBase` (`P:\scripts\4_world\entities\weaponparticles.c:7`).
 
@@ -22,9 +22,10 @@ All read in `weaponparticles.c`:
 
 | Key | Meaning | Line |
 |---|---|---|
-| `overrideParticle` | Particle name as registered in `ParticleList`, such as `weapon_shot_cz527_01` (`P:\scripts\3_game\particles\particlelist.c:188`). Looked up with `ParticleList.GetParticleIDByName`. Required; a missing value logs an error. | `:116` to `:127` |
+| `overrideParticle` | Particle name as registered in `ParticleList`, such as `weapon_shot_cz527_01` (`P:\scripts\3_game\particles\particlelist.c:188`). Looked up with `ParticleList.GetParticleIDByName`. When the fired ammo's `CfgAmmo` class sets `muzzleFlashParticle` to a registered particle, that particle plays instead (`:286` to `:323`). A missing `overrideParticle` logs an `INFO` level error and falls back to the ammo's `muzzleFlashParticle`, so nothing plays only when the ammo has none either. | `:116` to `:127` |
 | `overridePoint` | Memory point to spawn at. Defaults to `Usti hlavne`, the muzzle. | `:109` to `:113` |
 | `overrideDirectionPoint` | Memory point the effect points toward. | `:132` |
+| `overrideDirectionVector` | A fixed direction vector, read only when `overrideDirectionPoint` is empty; a zero vector is ignored. | `:134` to `:142` |
 | `positionOffset[]` | Offset from the point. | `:147` |
 | `ignoreIfSuppressed` | Skip when a suppressor is fitted. | `:38` |
 | `illuminateWorld` | The flash lights the surroundings. | `:44` |
@@ -45,3 +46,5 @@ A new particle name must be registered in `ParticleList` before `overrideParticl
 ## AI hearing
 
 `class NoiseShoot` on the weapon sets how loud the shot is to AI (`cz527\config.cpp:76` to `:80`, `strength=100`; AKM `strength=80` at `akm\config.cpp:82`). Suppressors lower it with `noiseShootModifier` (`P:\DZ\weapons\attachments\muzzle\config.cpp:1083`).
+
+Mod weapons set the same class, for example `class NoiseShoot { strength = 82; type = "shot"; }` on a rifle of a third-party weapon mod (mod config, not on `P:\`). The shot noise is config only: the engine reads the class, and no file under `P:\scripts` contains the name `NoiseShoot`. Since 1.30 the engine also lowers what AI hears in rain, snow, fog, wind and sandstorm by itself (`skills/_shared/ai/perception.md`, "Weather and noise"), so do not scale a shot's noise by weather in script.

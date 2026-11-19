@@ -6,7 +6,7 @@ Covers the clothing class tree in config and in script, how to pick the closest 
 
 Every vanilla wearable inherits `Clothing`, which inherits `Clothing_Base`, which inherits `Inventory_Base`.
 
-- `Clothing_Base` is defined at `P:\DZ\data\config.cpp:3442` with `scope=0`, `simulation="clothing"`, `itemInfo[]={"Clothing"}` and `visibilityModifier=1`. Its `GlobalArmor` sets every damage value to 1.
+- `Clothing_Base` is defined at `P:\DZ\data\config.cpp:3442` with `scope=0`, `simulation="clothing"`, `itemInfo[]={"Clothing"}`, `visibilityModifier=1` and `allowOwnedCargoManipulation=1` (`:3444` to `:3451`). Its `GlobalHealth` gives 100 `hitpoints` (`:3460`), and its `GlobalArmor` sets every damage value of `Projectile`, `Melee` and `FragGrenade` to 1 (`:3463` to `:3510`).
 - Each clothing addon redeclares `class Clothing_Base;` and `class Clothing: Clothing_Base {};` before its own classes, for example `P:\DZ\characters\vests\config.cpp:20` and `:21`.
 - Vanilla wearables then inherit `Clothing` directly (`class PlateCarrierVest: Clothing` at `P:\DZ\characters\vests\config.cpp:24`). The slot type comes from `inventorySlot[]`, not from a config base class.
 
@@ -37,7 +37,7 @@ Each vanilla wearable has a script class with the same name as its config class.
 1. Find the vanilla item that is closest in slot, shape and behavior. Grep `inventorySlot` and the item name in the matching folder under `P:\DZ\characters\` (`tops`, `pants`, `shoes`, `gloves`, `headgear`, `masks`, `glasses`, `vests`, `backpacks`, `belts`).
 2. Prefer the `_ColorBase` class when vanilla has one (`UKAssVest_ColorBase` at `P:\DZ\characters\vests\config.cpp:866`). It holds the shared values, has no `scope=2`, and each color sets `scope=2` and its textures, plus any value that differs for that color, such as `visibilityModifier` on `UKAssVest_Black` (`:1011` to `:1037`).
 3. Read the parent's whole config class before inheriting, and cite it as `path:line`.
-4. Check the parent's script class too. Special behavior, such as the plate carrier changing its health when an infected wears it (`P:\scripts\4_world\entities\itembase\clothing\platecarriervest.c:3`), comes with the parent.
+4. Check the parent's script class too. Special behavior comes with the parent: the plate carrier sets its own health to a random 0.2 to 0.4 on the server when it is attached to an infected (`P:\scripts\4_world\entities\itembase\clothing\platecarriervest.c:3` to `:12`), and the script parent decides which protection the game reads (`protection-and-insulation.md`, section "Which items the game asks").
 
 ## Addon for `requiredAddons[]`
 
@@ -57,6 +57,11 @@ Name the addon that defines the parent, so the mod loads after it.
 | `characters\belts` | `DZ_Characters_Belts` | `P:\DZ\characters\belts\config.cpp:3` |
 | `characters\data` (survivors, proxies) | `DZ_Characters` | `P:\DZ\characters\data\config.cpp:3` |
 | `gear\containers` (vest pouches such as `PlateCarrierPouches` at `:646`) | `DZ_Gear_Containers` | `P:\DZ\gear\containers\config.cpp:3` |
+| `characters_takistan\tops` (kameez, short sleeve shirts, `FNOJacket`) | `DZ_Characters_Nasdara_Tops` | `P:\DZ\characters_takistan\tops\config.cpp:3` |
+| `characters_takistan\pants`, `shoes`, `headgear`, `glasses`, `vests`, `belts`, `backpacks` | `DZ_Characters_Nasdara_Pants` and so on, one per folder | line 3 of each `config.cpp` under `P:\DZ\characters_takistan\` |
+| `gear_takistan\containers` (`NBCPack_ColorBase`) | `DZ_Gear_Nasdara_Containers` | `P:\DZ\gear_takistan\containers\config.cpp:3` |
+
+The `Nasdara` addons load after the base addon of the same folder (`DZ_Characters_Nasdara_Tops` requires `DZ_Characters_Tops`, `P:\DZ\characters_takistan\tops\config.cpp:28` to `:31`). A mod that inherits one of their classes names the `Nasdara` addon in `requiredAddons[]`.
 
 ## Minimal example
 

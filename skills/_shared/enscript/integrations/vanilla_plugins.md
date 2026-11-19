@@ -1,6 +1,6 @@
 # Vanilla Plugin System Integration
 
-Plugins are global singletons owned by `PluginManager`. They are the vanilla equivalent of a service locator: one shared instance per class, reachable from anywhere through `GetPlugin(PluginClassName)`. They are **not** created automatically: `PluginManager.Init()` registers each plugin class by name, and only registered plugins are spawned (`P:\scripts\4_world\plugins\pluginmanager.c:39-104`). A plugin that is never registered makes `GetPlugin` return `null`.
+Plugins are global singletons owned by `PluginManager`. They are the vanilla equivalent of a service locator: one shared instance per class, reachable from anywhere through `GetPlugin(PluginClassName)`. They are **not** created automatically: `PluginManager.Init()` registers each plugin class by name, and only registered plugins are spawned (`P:\scripts\4_world\plugins\pluginmanager.c:39-106`). A plugin that is never registered makes `GetPlugin` return `null`.
 
 All line numbers below are in `P:\scripts\4_world\plugins\` unless another path is given.
 
@@ -60,7 +60,7 @@ class PluginMyMod : PluginBase
 
 ## Registering it
 
-Add the plugin in a modded `PluginManager.Init()`, after `super.Init()`. `RegisterPlugin(string plugin_class_name, bool reg_on_client, bool reg_on_server, bool reg_on_release = true)` is at `pluginmanager.c:193`; vanilla registers its own plugins the same way, for example `RegisterPlugin("PluginAdminLog", false, true)` (`:57`).
+Add the plugin in a modded `PluginManager.Init()`, after `super.Init()`. `RegisterPlugin(string plugin_class_name, bool reg_on_client, bool reg_on_server, bool reg_on_release = true)` is at `pluginmanager.c:194`; vanilla registers its own plugins the same way, for example `RegisterPlugin("PluginAdminLog", false, true)` (`:57`).
 
 ```c
 // Scripts/4_World/Plugins/PluginManager.c
@@ -75,13 +75,13 @@ modded class PluginManager
 }
 ```
 
-This works because the mission calls `PluginManagerInit()` (`P:\scripts\5_mission\mission\missionbase.c:21`), which runs `Init()` and then `PluginsInit()` (`pluginmanager.c:297-303`). `PluginsInit()` spawns every registered class and then calls `OnInit()` on each (`:110-138`). Pass `false` for client or server to keep a plugin off that side: in multiplayer, `RegisterPlugin` skips it there (`:195-212`).
+This works because the mission calls `PluginManagerInit()` (`P:\scripts\5_mission\mission\missionbase.c:21`), which runs `Init()` and then `PluginsInit()` (`pluginmanager.c:298-305`). `PluginsInit()` spawns every registered class and then calls `OnInit()` on each (`:111-138`). Pass `false` for client or server to keep a plugin off that side: in multiplayer, `RegisterPlugin` skips it there (`:196-212`). A fourth argument of `false` registers the plugin only when `IsDebug()` is true (`:215` to `:221`).
 
 ---
 
 ## Accessing from Anywhere
 
-`GetPlugin(typename plugin_type)` (`pluginmanager.c:326`) returns the instance, or `null` when the class was never registered. Only a `DIAG_DEVELOPER` build also prints "not Registred in PluginManager.c" (:336-342); retail builds stay silent. `GetPluginSafe` (:350) never prints.
+`GetPlugin(typename plugin_type)` (`pluginmanager.c:327`) returns the instance, or `null` when the class was never registered. Only a `DIAG_DEVELOPER` build also prints "not Registred in PluginManager.c" (:337-343); retail builds stay silent. `GetPluginSafe` (:351) never prints.
 
 ```c
 // Retrieve the singleton with a safe cast
@@ -98,11 +98,11 @@ pm.AddPoints(player.GetIdentity().GetId(), 10);
 
 | Method | When it fires | Source |
 |---|---|---|
-| `OnInit()` | Once, after all registered plugins are spawned | `pluginmanager.c:131-138` |
-| `OnUpdate(float delta_time)` | Every gameplay update, for every plugin | `PluginManager.MainOnUpdate`, `pluginmanager.c:143-153`, queued at :104 |
-| `OnDestroy()` | When the plugin manager is deleted, as the mission ends | `pluginmanager.c:23-31`; `missionbase.c:61` |
+| `OnInit()` | Once, after all registered plugins are spawned | `pluginmanager.c:132-138` |
+| `OnUpdate(float delta_time)` | Every gameplay update, for every plugin | `PluginManager.MainOnUpdate`, `pluginmanager.c:144-155`, queued at :105 |
+| `OnDestroy()` | When the plugin manager is deleted, as the mission ends | `~PluginManager`, `pluginmanager.c:23-31`; `PluginManagerDelete()` in `~MissionBase`, `missionbase.c:61` |
 
-There is no opt-in step for `OnUpdate`: `PluginManager.Init()` puts `MainOnUpdate` in the `CALL_CATEGORY_GAMEPLAY` update queue (`:104`), and it calls `OnUpdate` on every plugin. Keep `OnUpdate` cheap, or leave it empty and use a timer (`../patterns/scheduler.md`). Player events such as connect and reconnect are not forwarded to plugins; call your plugin from a modded `MissionServer`.
+There is no opt-in step for `OnUpdate`: `PluginManager.Init()` puts `MainOnUpdate` in the `CALL_CATEGORY_GAMEPLAY` update queue (`:105`), and it calls `OnUpdate` on every plugin. Keep `OnUpdate` cheap, or leave it empty and use a timer (`../patterns/scheduler.md`). Player events such as connect and reconnect are not forwarded to plugins; call your plugin from a modded `MissionServer`.
 
 ---
 
@@ -124,7 +124,7 @@ if (Class.CastTo(log, GetPlugin(PluginAdminLog)))
 
 ## Other vanilla plugins
 
-`PluginPlayerStatus`, `PluginLifespan`, `PluginRecipesManager`, `PluginTransmissionAgents` and the rest are registered in the same list (`pluginmanager.c:46-57`). Read their files under `P:\scripts\4_world\plugins\pluginbase\` before relying on one; they are internal services, not a modding API.
+`PluginPlayerStatus`, `PluginLifespan`, `PluginRecipesManager`, `PluginTransmissionAgents` and the rest are registered in the same list (`pluginmanager.c:46-58`). Read their files under `P:\scripts\4_world\plugins\pluginbase\` before relying on one; they are internal services, not a modding API.
 
 ---
 
@@ -156,7 +156,7 @@ else
     Print("[ModB] PluginMyMod not loaded, skipping points");
 ```
 
-`string.ToType()` turns a class name into a `typename`, as `RegisterPlugin` does (`pluginmanager.c:222`). If the name is unknown, `t` is `null` and Mod B skips the call.
+`string.ToType()` turns a class name into a `typename`, as `RegisterPlugin` does (`pluginmanager.c:223`). If the name is unknown, `t` is `null` and Mod B skips the call.
 
 ---
 

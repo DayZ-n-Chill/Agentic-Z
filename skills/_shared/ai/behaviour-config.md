@@ -24,9 +24,10 @@ Templates by family, all in `P:\DZ\AI\config.cpp`:
 - Ambient life (hen, hare, fox): `AmbientLife` (`:16`), `AmbientLife_Gallus_Gallus_Domesticus` (`:155`), `AmbientLife_Lepus_Europaeus` (`:294`) and `AmbientLife_Vulpes_Vulpes` (`:440`). Each is declared with no parent and sets its own `teamName="AmbientLife"`.
 - Herbivores: `Herbivores` (`:585`) and species classes such as `Herbivores_CervusElaphus` (`:4883`). Each is declared with no parent and sets its own `teamName="BigGame"`.
 - Wolf: `Predators_Wolf` (`:5420`), `teamName="Predator"`.
+- Nasdara animals, in a third addon `DZ_AI_Nasdara` (`P:\DZ\AI_takistan\config.cpp:2180`): `Predators_Dobermann` (`:3`) and `Predators_GermanShepherd` (`:676`), both `teamName="Predator"` with `defaultGroupTemplateName="DZDogGroupBeh"`; `Herbivores_OvisGmelini` (`:1338`) for the mouflon, `BigGame` with `DZMouflonGroupBeh`; and `AmbientLife_Varanus_Griseus` (`:2010`) for the monitor lizard.
 - Infected: `Infected` (`:6214`), `teamName="Zombies"`. These are the only templates that inherit from each other, with children from `InfectedFemale` (`:6397`) to `InfectedMMummy` (`:6861`), for example `InfectedMSoldier` (`:6477`) and `InfectedRunner` (`:6797`).
 
-Animal templates also name a group behaviour with `defaultGroupTemplateName`, for example `DZDeerGroupBeh` (`:589`) and `DZWolfGroupBeh` (`:5424`). The infected template has none. The group templates themselves, including the infected pack template `DZInfectedPackBeh`, are defined in `P:\DZ\data\aiconfigs\config.cpp` (see `patrols-and-guards.md`).
+Herbivore and predator templates also name a group behaviour with `defaultGroupTemplateName`, for example `DZDeerGroupBeh` (`:589`) and `DZWolfGroupBeh` (`:5424`). The ambient life and infected templates have none. The group templates themselves, including the infected pack template `DZInfectedPackBeh`, are defined in `P:\DZ\data\aiconfigs\config.cpp` (see `patrols-and-guards.md`).
 
 ## Infected template layout
 
@@ -37,12 +38,24 @@ Inside `Infected` (`P:\DZ\AI\config.cpp:6214`):
 | `BehaviourHLZombie` | `:6219` | The high level behaviour. |
 | `MovementWalk`, `MovementRun`, `MovementSprint` | `:6221`, `:6231`, `:6243` | `maxSpeed` 1.5, 3 and 9, acceleration, turn speed, and the `pathFilter` (`ZombieCalm` for walk, `ZombieAlerted` for run and sprint). |
 | `SlotCalm` then `BehaviourZombieCalm` | `:6261` | Idle and wander timing: `StandingDurationMin/Max`, `WalkingDurationMin/Max`. |
-| `SlotAlerted` then `BehaviourZombieAlerted` | `:6285` | `fightStateEnterDistance` 2 (`:6291`), `attractedSearchDistance` 15 (`:6303`), utility weights for vision, noise and damage, and `NoiseMakeAlert` (`:6326`, strength 40): the scream that alerts other infected. |
+| `SlotAlerted` then `BehaviourZombieAlerted` | `:6285` | `fightStateEnterDistance` 2 and `fightStateExitDistance` 3 (`:6291`, `:6292`), `attractedSearchDistance` 15 (`:6303`), utility weights for vision, noise and damage, and `NoiseMakeAlert` (`:6326`, strength 40): the scream that alerts other infected. |
 | `AlertSystem` | `:6333` | `visionToAlertMultiplier` 20, `noiseToAlertMultiplier` 1, `damageToAlertMultiplier` 10000, `noiseShotToAlertMultiplier` 1.7 (`:6335` to `:6338`); `Calm` and `Alerted` levels with `DropSpeed`, `DropDelay` and `MaxAlertValue` 20 and 100 (`:6339`, `:6345`). |
 | `TargetSystemDZBase` | `:6355` | Vision: proximity, close and far ranges (`visionRangeMax` 40, `:6363`), field of view, peripheral vision, and multipliers for night (`visionNightMaxMult` 0.3, `:6372`), rain and fog. |
 | `NoiseSystemParams` | `:6378` | Hearing: `rangeMax` 35 for ordinary noise, `rangeShotMax` 110 for shots (`:6381`, `:6383`), and `NoiseStrengthTeamMultipliers` per team (`:6389`). |
 
-Children override only what differs. `InfectedMSoldier` (`:6477`) lowers its alert scream to strength 25 (`:6487`).
+Children override only what differs. `InfectedMSoldier` (`:6477`) lowers its alert scream to strength 25 (`:6487`) and alerts faster: `visionToAlertMultiplier` 25 and `noiseShotToAlertMultiplier` 2 (`:6494`, `:6497`).
+
+## Path filters
+
+Each `pathFilter` value names a class in `class PathGraphFilters` (`P:\DZ\data\aiconfigs\config.cpp:335`), with navmesh flags to include and exclude and extra costs per area:
+
+| Filter | Includes | Excludes | Costs |
+|---|---|---|---|
+| `ZombieCalm` (`:337`) | `walk`, `door`, `inside` | `disabled`, `swim`, `swimsea`, `jump`, `climb`, `crawl`, `crouch` | `building` 5 (`:360`) |
+| `ZombieAlerted` (`:363`) | `walk`, `door`, `inside`, `jump`, `climb` | `disabled`, `crawl`, `crouch` | `jump0` 3, `water` 5 (`:384`, `:389`) |
+| `ZombieCrawl` (`:392`) | `walk`, `door`, `inside` | as calm, without `crawl` | none |
+
+So a calm infected never plans a path that jumps, climbs or swims; only an alerted one may jump and climb. The animals have their own filters in the same class, such as `DeerOnRun` (`:442`) and `WolfOnHunt` (`:567`). A template variant that changes `pathFilter` must name a class that exists here or in its own `PathGraphFilters`; no vanilla addon adds one, so a new filter is unverified until the in game test shows the creature still moves.
 
 ## Making your own variant
 
@@ -91,8 +104,34 @@ On `ZombieBase` (`P:\DZ\characters\zombies\config.cpp:24`):
 - `class InputController` (`:79`): `movementSpeedMapping[]` maps idle, walk, run and sprint to speeds.
 - `class NoiseTemplates` (`:161`): the noise its own steps make.
 - `class DamageSystem` (`:169`): 100 global health by default.
-- `class AttackActions` on the sex bases (`:436` for female): `AttackLong` and `AttackRun` with `ammoType`, `distance`, `cooldown`. Script reads the ammo from these names (see `creatures.md`, "Attacks").
+- `class AttackActions` on the sex bases (`:436` for female, `:566` for male): `AttackLong`, `AttackRun`, `AttackShort` and `AttackShortLow`, each with `ammoType`, `minDistance`, `distance`, `cooldown` and more (`AttackLong` at `:438` to `:456`). Script reads only `ammoType`, and only from `AttackShort`, `AttackLong` and `AttackRun` (`P:\scripts\3_game\entities\dayzinfectedtype.c:57` to `:59`); the attack distances script uses are fixed numbers (see `creatures.md`, "Attacks"). Whether the engine reads the config distances is not checked on `P:\`.
 
 ## Noise classes
 
 `CfgNoises` (`P:\DZ\AI\config.cpp:6903`) holds named noises such as `ZombieRoarNoise` and `WolfStepNoise`, each with `type`, `continuousRange` and `strength`. Weapons carry their own `NoiseShoot` class, for example strength 80 and type `shot` in `P:\DZ\weapons\firearms\akm\config.cpp:82`. Script loads any of these with `NoiseParams` (see `perception.md`).
+
+## Global AI parameters
+
+`class AIParams` (`P:\DZ\data\aiconfigs\config.cpp:12`) holds values shared by every creature: `maxNoiseRange=300` (`:14`), the weather to noise multipliers the engine uses since 1.30 to lower what AI hears (`rainToNoiseMultiplier` to `sandstormToNoiseMultiplier`, `:15` to `:20`), `noiseDampeningMultiplier` (`:21`), `noiseCollisionDampeningMultiplier` and `noiseShotCollisionDampeningMultiplier` (`:22`, `:23`), `groupLODDistance=1000` (`:24`), and `class AgentTeams` with the team list and each team's `friends[]` (`:25`). The teams are the `teamName` values the templates above use: `Player`, `BigGame`, `Zombies`, `Predator` and `AmbientLife`.
+
+Each team's friends, as listed in `class AgentTeams`:
+
+| Team | `friends[]` | Line |
+|---|---|---|
+| `Player` | `Player` | `P:\DZ\data\aiconfigs\config.cpp:35` |
+| `Predator` | `Predator`, `Zombies`, `AmbientLife` | `P:\DZ\data\aiconfigs\config.cpp:42` |
+| `BigGame` | `BigGame`, `AmbientLife` | `P:\DZ\data\aiconfigs\config.cpp:51` |
+| `Zombies` | `Zombies`, `Predator`, `AmbientLife` | `P:\DZ\data\aiconfigs\config.cpp:59` |
+| `AmbientLife` | `AmbientLife` | `P:\DZ\data\aiconfigs\config.cpp:68` |
+
+The list says infected and predators count each other as friends; that this is why they leave each other alone is the reading of the config, not tested in game. The bear template uses `teamName="Predator"` too (`P:\DZ\AI_bliss\config.cpp:19`).
+
+## Picking a template for a new animal
+
+Start from the vanilla template closest in role and change as little as possible, as for the animation side (`skills/_shared/animation/creature-rig-to-game.md`, "AI wiring for an ambient creature"):
+
+- A harmless ambient creature (a bird, a small animal) starts from an `AmbientLife` template, `AmbientLife_Gallus_Gallus_Domesticus` for the hen (`P:\DZ\AI\config.cpp:155`), and keeps `teamName="AmbientLife"` (`:158`), which the predator, infected and big game teams list as a friend.
+- A grazing animal starts from a `Herbivores` species template such as `Herbivores_CervusElaphus` (`P:\DZ\AI\config.cpp:4883`), team `BigGame`.
+- A predator starts from `Predators_Wolf` (`P:\DZ\AI\config.cpp:5420`) or the bear's `Predator_UrsusArctos` (`P:\DZ\AI_bliss\config.cpp:16`), then its attack range and the `AttackActions` of its creature class are tuned.
+
+The class also needs the script side of an animal (skinning, hit components), which comes from inheriting the closest vanilla `AnimalBase` child (`creatures.md`). That a new animal template works is unverified until the in game test shows the creature moves, flees or attacks as intended. How the weather multipliers replace the old script helpers is in `perception.md`, "Weather and noise".

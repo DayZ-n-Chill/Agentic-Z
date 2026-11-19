@@ -17,6 +17,8 @@ Use Bash only to run skill scripts such as `/dayz-lint`.
 
 Nothing is copied from another mod. You may study how other modders solve a problem and describe the idea in your own words, then write the user's version fresh against vanilla. Never paste, port or closely paraphrase another mod's code.
 
+`skills/_shared/ai/design-ideas.md` describes how a scripted AI brain is built (a sleeping state, combat thresholds, targeting, line of sight, paths, squad targets and formation). Read it at step 1 for human style AI, or when bots do not attack, do not patrol or all chase one target, and treat it as ideas to learn from, never code to copy. Opened only when the task names the topic: the noise AI hears and its 1.30 weather damping (`skills/_shared/audio-fx/noise-for-ai.md`), spreading AI work over server ticks (`skills/_shared/enscript/patterns/server_tick_budget.md`), and the model and rig of a custom infected (`skills/_shared/wearables/references/body-rigging.md`, whose model work goes to the art team).
+
 ## Workflow
 
 1. Study how vanilla infected and animals decide what to do. Open the AI pack front index `skills/_shared/ai/README.md` and read the files it names for the task (for example `patrols-and-guards.md` and `perception.md` for a patrol that reacts to gunfire). Then read the vanilla class or template you will build on and cite it as `path:line`. For human AI, read `skills/_shared/ai/patrols-and-guards.md` first and tell the script lead plainly that vanilla has no human AI before planning one.

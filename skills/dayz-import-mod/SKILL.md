@@ -1,6 +1,6 @@
 ---
 name: dayz-import-mod
-description: "Links a DayZ mod folder kept elsewhere on disk into workspace/<ModName>/, or clones a GitHub link there, and creates its P:\\<ModName>\\ junction, so build, launch and clean skills work on it, offering to add missing scaffold files. Refuses Steam Workshop links. Use when you want to work on a mod repo kept outside the workspace or the user pastes a GitHub link to a mod."
+description: "Links a DayZ mod folder kept elsewhere on disk into workspace/<ModName>/, or clones a GitHub link there, and creates its P:\\<ModName>\\ junction, so build, launch and clean skills work on it, offering to add missing scaffold files. Refuses Steam Workshop links; for a mod you only have as PBOs it classifies them from their headers and gives the extract-and-sweep method for studying them. Use when you want to work on a mod repo kept outside the workspace, the user pastes a GitHub link to a mod, or wants to understand, fork or audit somebody else's packed mod."
 argument-hint: "--source <path|github-link> [--name <ModName>] [--author <handle>] [--scaffold | --no-scaffold]"
 ---
 
@@ -66,7 +66,52 @@ Accepted link forms, naming, clone reuse and cleanup steps: [references/github-a
 
 ## Workshop links
 
-A Steam Workshop link (`steamcommunity.com/sharedfiles/filedetails/?id=...` or `steam://url/CommunityFilePage/...`) is refused before preflight runs. A Workshop item holds the packed mod: PBOs with binarized models and configs, often signed or protected by its author, so there is no source in it to work on. The message says to import your own source folder or repo instead, or to ask the author for the source and their permission.
+A Steam Workshop link (`steamcommunity.com/sharedfiles/filedetails/?id=...` or `steam://url/CommunityFilePage/...`) is refused before preflight runs. A Workshop item holds the packed mod: PBOs with binarized models and configs, often signed or protected by its author, so there is no source in it to work on. The message says to import your own source folder or repo instead, or to ask the author for the source and their permission. To learn from the packed mod without importing it, see "Studying a packed mod" below.
+
+## Studying a packed mod
+
+For a mod you have only as PBOs (a Workshop download, a third-party release), classify each PBO from its header first. It never extracts or decompresses anything, so it is safe on a read-only Workshop folder, and like the rest of the study it does not need `P:\`:
+
+```cmd
+python "<skill-dir>\pbo_inventory.py" <file.pbo | folder> [more ...] [--json] [--no-trailer]
+```
+
+| Argument | Required? | Notes |
+|---|---|---|
+| `<file.pbo \| folder>` | yes, one or more | A folder is searched for `.pbo` files at any depth. |
+| `--json` | no | One JSON list with every field per PBO, for the study's ledger. |
+| `--no-trailer` | no | Skips the checksum trailer, which hashes the whole file; use it on very large PBOs. |
+
+It reads each header with `dayz-build-pbo\pbo_entries.py` and prints, per PBO:
+
+```
+[OK]    ...\addons\TheirMod.pbo
+       prefix: TheirMod   entries: 4   payload: 12,345 bytes
+       kind:   deployable mod (config plus scripts, models or layouts)
+       types:  .bin 1, .c 1, .p3d 1, .paa 1
+
+1 PBO(s): 1 mod
+```
+
+| Kind | Rule | Meaning |
+|---|---|---|
+| deployable mod | A non-empty `config.bin` or `config.cpp`, plus at least one `.c`, `.p3d` or `.layout` | Worth the full sweep. |
+| config-only | A non-empty config and none of those | Mounts but ships no code or model. A scripts mod packed without its `.c` files looks like this (the post-build gates reference of `/dayz-build-pbo`). |
+| source asset distribution | No usable config, and archives or source art (`.rar`, `.zip`, `.7z`, `.fbx`, `.blend`, `.max`, `.obj`, `.psd`, `.spp`, `.tga`) | Nothing the game loads. Catalog it; do not sweep it as a mod. |
+| data only | No config and no source art | Loaded only if another PBO refers to its files. |
+
+Warnings: an empty config entry, compressed entries (prove the extractor decoded them), GUID-like or unsafe entry names (path traversal, a drive letter, a Windows device name, a control character: signs of obfuscation or of a PBO that should not be extracted over existing files), and a missing checksum trailer. Exit code 1 when a file is not a readable PBO or none was found, otherwise 0. Outside an agent session, `scripts\dayz\pbo-inventory.bat` runs it with the same arguments.
+
+Then extract with Mikero's `ExtractPbo` into a scratch folder and sweep the files with a `path:line` ledger until no new pattern turns up. Findings are facts about that mod, never copied files.
+
+## References
+
+| Question | File |
+|---|---|
+| Which git links are accepted, how clones are named and reused, and how an import is removed? | `references/github-and-cleanup.md` |
+| How do I extract a packed mod and sweep it, step by step, and when has the study converged? | `references/study-a-packed-mod.md` |
+| What goes in the study's `queue.md`, `seen.json`, `findings.jsonl` and `skill_changes.md`, how is novelty classified, where does a finding go, and what does the final report hold? | `references/extraction-ledger.md` |
+| What goes wrong (trusting names, a class the recovery dropped, an extraction that left the payload compressed), how do I read a `.p3d` without py3d, and what changes on Linux? | `references/extraction-pitfalls.md` |
 
 ## Output
 
@@ -138,3 +183,4 @@ Same behavior as `/dayz-new-mod`: if `P:\<Name>\` exists as a junction pointing 
 - Don't bypass the preflight gate.
 - Don't allow imports from inside `workspace/`. Self-referential or circular links break tooling and serve no purpose.
 - Don't try to be clever about UNC paths or remote drives. Junctions can only target local paths; refuse with a clear hint.
+- Don't extract somebody else's PBOs into, or beside, a Workshop folder or anything under `P:\Mods\`, and don't sweep obfuscated output; use a scratch folder (`references/study-a-packed-mod.md`).

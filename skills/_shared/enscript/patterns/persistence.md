@@ -2,7 +2,7 @@
 
 DayZ persists entity data through a positional binary stream. Fields are written and read in **strict order**. Adding new fields requires a version guard at the read site.
 
-The hooks are `void OnStoreSave(ParamsWriteContext ctx)` and `bool OnStoreLoad(ParamsReadContext ctx, int version)` on `EntityAI` (`P:\scripts\3_game\entities\entityai.c:2910` and `:2978`), overridden by `ItemBase` (`P:\scripts\4_world\entities\itembase.c:3190` and `:3089`) and `PlayerBase` (`P:\scripts\4_world\entities\manbase\playerbase.c:7353` and `:7408`). The full contract (what vanilla already saves, the load hook order, what `false` means) is in [`../../persistence/save-load-contract.md`](../../persistence/save-load-contract.md); this file is the short pattern.
+The hooks are `void OnStoreSave(ParamsWriteContext ctx)` and `bool OnStoreLoad(ParamsReadContext ctx, int version)` on `EntityAI` (`P:\scripts\3_game\entities\entityai.c:2910` and `:2978`), overridden by `ItemBase` (`P:\scripts\4_world\entities\itembase.c:3194` and `:3093`) and `PlayerBase` (`P:\scripts\4_world\entities\manbase\playerbase.c:7353` and `:7408`). The full contract (what vanilla already saves, the load hook order, what `false` means) is in [`../../persistence/save-load-contract.md`](../../persistence/save-load-contract.md); this file is the short pattern.
 
 ---
 
@@ -101,30 +101,7 @@ modded class PlayerBase
 
 ## CF ModStorage Alternative
 
-If you use Community Framework, prefer `CF_OnStoreSave` / `CF_OnStoreLoad` to avoid touching the vanilla stream. They are declared on CF's modded `ItemBase` (`4_World\CommunityFramework\Entities\ItemBase.c:42` inside `P:\Mods\@CF\Addons\scripts.pbo`), and `CF_ModStorageMap` has `Get(string)` and `Contains(string)` (`3_Game\CommunityFramework\ModStorage\CF_ModStorageMap.c:5` and `:15`):
-
-```c
-modded class ItemBase
-{
-    override void CF_OnStoreSave(CF_ModStorageMap storage)
-    {
-        super.CF_OnStoreSave(storage);
-        CF_ModStorage ctx = storage.Get("MyMod");
-        ctx.Write(m_MyValue);
-    }
-
-    override bool CF_OnStoreLoad(CF_ModStorageMap storage)
-    {
-        if (!super.CF_OnStoreLoad(storage))
-            return false;
-        if (!storage.Contains("MyMod"))
-            return true;
-        CF_ModStorage ctx = storage.Get("MyMod");
-        if (!ctx.Read(m_MyValue)) return false;
-        return true;
-    }
-}
-```
+With Community Framework loaded, a mod can keep its data in its own CF block instead of the vanilla stream; see `_shared/persistence/cf-modstorage.md`.
 
 ---
 

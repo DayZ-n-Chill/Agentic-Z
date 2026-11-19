@@ -1,0 +1,27 @@
+{
+  "collections": [],
+  "default_state": "default",
+  "entrypoint": {
+    "layout": "../three-cards/layouts/shell.layout",
+    "subviews": []
+  },
+  "scenario_id": "binding-missing",
+  "schema_version": "dayz-ui-scenario-v1",
+  "states": [
+    {
+      "bindings": [
+        {
+          "property": "text",
+          "value": "Missing",
+          "widget": "DoesNotExist"
+        }
+      ],
+      "name": "default"
+    }
+  ],
+  "subviews": [],
+  "viewport": {
+    "height": 1080,
+    "width": 1920
+  }
+}

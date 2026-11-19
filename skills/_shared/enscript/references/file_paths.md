@@ -76,7 +76,7 @@ if (fh != 0)
 
 ## JSON Read/Write (Preferred for Structured Data)
 
-The `JsonFileLoader<T>` utility is preferred over manual file I/O for structured config/data. Use `LoadFile` and `SaveFile`, which return `bool` and an error message (`P:\scripts\3_game\tools\jsonfileloader.c:7` and `:42`); vanilla marks the older `JsonLoadFile` and `JsonSaveFile` "use JsonFileLoader::LoadFile instead" (`jsonfileloader.c:104-105`).
+The `JsonFileLoader<T>` utility is preferred over manual file I/O for structured config/data. Use `LoadFile` and `SaveFile`, which return `bool` and an error message (`P:\scripts\3_game\tools\jsonfileloader.c:7` and `:42`); vanilla marks the older `JsonLoadFile` "use JsonFileLoader::LoadFile instead" (`jsonfileloader.c:104-105`) and `JsonSaveFile` "use JsonFileLoader::SaveFile instead" (`:133-134`).
 
 ```c
 string err;
@@ -91,7 +91,7 @@ if (!JsonFileLoader<MyMod_Config>.LoadFile("$profile:\\MyMod\\config.json", cfg,
     Print("[MyMod] load failed: " + err);
 ```
 
-Rules:
+Field rules, reported and not checked on `P:\` because `JsonSerializer` is native (`../patterns/singleton.md`, section "Rules"). A field marked `[NonSerialized()]` stays out of the file (`P:\scripts\1_core\proto\enscript.c:122`).
 - All serialized fields must be `public`
 - Nested `ref` objects serialize recursively
 - Extra keys in file are silently ignored (safe for forward-compatible formats)
@@ -122,9 +122,11 @@ CopyFile("$mission:mymod_defaults.json", "$profile:\\MyMod\\config.json");
 | Script source files | `Scripts/<layer>/<YourFile>.c` |
 | Config (server) | `<ServerDir>\mpmissions\<mission>\cfggameplay.json` |
 | Economy | `<ServerDir>\mpmissions\<mission>\db\*.xml` |
-| Mod PBO output | `<DayZDir>\@MyMod\addons\MyMod.pbo` |
+| Mod PBO output | `P:\Mods\@MyMod\Addons\MyMod.pbo` (built by `/dayz-build-pbo`) |
 | Workbench project | `<DayZDir>\Projects\MyMod\` |
-| Profile root | `<ServerDir>\profiles\<profileName>\` |
+| Profile root (`$profile:`) | The `-profiles=` folder itself, e.g. `<ServerDir>\<-profiles folder>\` |
+
+The same asset path is written two ways. In `config.cpp` a backslash is single: `"dz\gear\camping\data\tent_pristine_co.paa"` (`P:\DZ\gear\camping\config.cpp:61`). In an Enforce Script string the backslash escapes, so it is doubled: `"dz\\gear\\cultivation\\data\\soil_digged_wet_lime_CO.paa"` (`P:\scripts\4_world\entities\gardenbase.c:4`).
 
 ---
 

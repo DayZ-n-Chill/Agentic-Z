@@ -499,13 +499,38 @@ def instance_name(value: str) -> str:
     return value
 
 
+BRIDGE_MOD = "AZ_TestBridge"
+_TOKEN_RE = re.compile(r"^[0-9a-f]{32}$")
+
+
+def bridge_token(value: str) -> str:
+    """argparse type for --test-bridge: the session token the dayz-testbridge MCP server made."""
+    if not _TOKEN_RE.match(value):
+        raise argparse.ArgumentTypeError("the test bridge token is 32 lowercase hex characters")
+    return value
+
+
+def add_test_bridge(mod_arg: str, cmd: list[str], token: str) -> list[str]:
+    """A launch command with @AZ_TestBridge last on -mod= and -azBridge=<token> added.
+
+    The bridge mod reads the token with CommandlineGetParam
+    (P:\\scripts\\3_game\\global\\game.c:661) and does nothing without it.
+    """
+    bridge = str(MODS_ROOT / f"@{BRIDGE_MOD}")
+    full = f"{mod_arg};{bridge}" if mod_arg else bridge
+    return [f"-mod={full}" if part == f"-mod={mod_arg}" else part for part in cmd] + [f"-azBridge={token}"]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Launch local DayZ server + client with one or more built mods."
     )
     parser.add_argument(
-        "modnames", nargs="+", type=mod_name,
-        help="Mod names loaded on both client and server, dependencies first (PBO must exist).",
+        "modnames", nargs="*", type=mod_name,
+        help=(
+            "Mod names loaded on both client and server, dependencies first (PBO must exist). "
+            "At least one, except with --test-bridge, which can test vanilla alone."
+        ),
     )
     # One name per --server-only flag. With nargs="+" it swallowed every name
     # after it, so `CF --server-only Srv MyMod` silently left MyMod off the client.
@@ -536,6 +561,23 @@ def main() -> int:
         action="store_true",
         help="Print resolved commands without launching anything.",
     )
+    parser.add_argument(
+        "--test-bridge",
+        type=bridge_token,
+        metavar="TOKEN",
+        help=(
+            f"Load the in-game test mod @{BRIDGE_MOD} last on both peers and pass -azBridge=TOKEN. "
+            "Used by the dayz-testbridge MCP server, which makes the token and packs the mod."
+        ),
+    )
+    parser.add_argument(
+        "--test-bridge-exec",
+        action="store_true",
+        help=(
+            "With --test-bridge: also pass -azBridgeExec=1, which lets that session's bridge run arbitrary "
+            "Enforce Script (the exec command). Off unless given."
+        ),
+    )
     args, extra = parser.parse_known_args()
     # argparse does not add a name that follows an option to the shared mods;
     # refuse it rather than guess whether it was meant shared or server-only.
@@ -560,13 +602,19 @@ def main() -> int:
         seen.add(name.casefold())
     if dupes:
         parser.error(f"mod named more than once: {', '.join(dupes)}")
+    if args.test_bridge_exec and not args.test_bridge:
+        parser.error("--test-bridge-exec works only with --test-bridge TOKEN")
+    if not args.modnames and not args.test_bridge:
+        parser.error("name at least one mod to load")
+    if any(name.casefold() == BRIDGE_MOD.casefold() for name in args.modnames + args.server_only):
+        parser.error(f"{BRIDGE_MOD} is loaded only with --test-bridge TOKEN, never by name")
 
     project_dir = h.resolve_project_dir()
     h.gate_on_preflight()
     print()
     print(f"{OK} Project: {project_dir}")
     gate_on_old_layout(project_dir)
-    verify_built_mods(args.modnames + args.server_only)
+    verify_built_mods(args.modnames + args.server_only + ([BRIDGE_MOD] if args.test_bridge else []))
     gate_on_dependencies(args.modnames, args.server_only, project_dir)
     diag_exe = resolve_diag_client()
     cfg_path, server_profile_dir, mission_path, client_profile_dir = verify_instance_environment(
@@ -586,6 +634,14 @@ def main() -> int:
         server_mod_arg=server_mod_arg,
     )
     client_cmd = build_client_cmd(diag_exe, client_mod_arg, args.port, client_profile_dir, display)
+    if args.test_bridge:
+        server_cmd = add_test_bridge(client_mod_arg, server_cmd, args.test_bridge)
+        client_cmd = add_test_bridge(client_mod_arg, client_cmd, args.test_bridge)
+        print(f"{OK} Test bridge: @{BRIDGE_MOD} loaded last on both peers")
+        if args.test_bridge_exec:
+            server_cmd.append("-azBridgeExec=1")
+            client_cmd.append("-azBridgeExec=1")
+            print(f"{WARN} Test bridge exec is ON for this session: it can run any Enforce Script")
 
     # Printed with list2cmdline, the same quoting Popen applies on Windows, so a
     # path with spaces (Program Files, a project under 'DayZ n Chill') pastes as is.

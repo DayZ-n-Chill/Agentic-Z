@@ -30,7 +30,7 @@
   },
   "dayz-script-specialist": {
     "score": 5,
-    "total": 5,
+    "total": 13,
     "passed": [
       "action-layer",
       "layer-visibility",
@@ -100,7 +100,7 @@
   },
   "dayz-animation-specialist": {
     "score": 5,
-    "total": 5,
+    "total": 9,
     "passed": [
       "angle-radians",
       "building-door-source",
@@ -114,7 +114,7 @@
   },
   "dayz-persistence-specialist": {
     "score": 5,
-    "total": 5,
+    "total": 10,
     "passed": [
       "base-part-id-renumber",
       "cargo-saved-by-engine",
@@ -203,7 +203,7 @@
   },
   "dayz-ui-specialist": {
     "score": 5,
-    "total": 5,
+    "total": 6,
     "passed": [
       "chat-open-check",
       "hud-mod-ingamehud",
@@ -345,18 +345,20 @@
     "claude_version": "2.1.310 (Claude Code)"
   },
   "dayz-ingame-tester": {
-    "score": 5,
-    "total": 5,
+    "score": 7,
+    "total": 7,
     "passed": [
       "bundle-exempt-from-deps",
       "bundle-pbo-check-passes",
+      "companion-lifecycle-authority",
+      "drive-check-through-the-test-bridge",
       "non-bundle-unmapped-dep-stops",
       "ready-line-and-settle",
       "unqualified-null-pointer-is-warning"
     ],
-    "recorded": "2026-10-24",
+    "recorded": "2026-11-18",
     "model": "claude-opus-5-5",
-    "claude_version": "2.1.310 (Claude Code)"
+    "claude_version": "2.1.327 (Claude Code)"
   },
   "dayz-router": {
     "score": 8,
@@ -377,7 +379,7 @@
   },
   "dayz-build-checker": {
     "score": 5,
-    "total": 5,
+    "total": 6,
     "passed": [
       "agreed-session-stops-first",
       "lint-error-fails-before-build",

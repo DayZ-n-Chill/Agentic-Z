@@ -53,7 +53,7 @@ The final grades cover 6 items. All 6 are at A+: 2 of the 2 agents, 2 of the 2 s
 The rules are split into a 3-line core and two topic files of 2 to 4 lines.
 
 ```
-agents\\ | The 2 agents, one .md file each; skills\\ | The 2 skills, one folder each with its SKILL.md; The two DayZ rules topic files; hooks\\ | The 3 hooks: edit check
+agents\\ | The 2 agents, one .md file each; skills\\ | The 2 skills, one folder each with its SKILL.md; The two DayZ rules topic files; hooks\\ | The 3 hooks: edit check; .claude\\ | Repo rules, settings, the search server and the 0 repo-only skills; skills\\ | The 0 repo-only skills: agentic-z-update
 ```
 
 ### Quality by version
@@ -218,7 +218,7 @@ def test_facts_count_distinct_items_and_latest_grades(repo):
     facts = sync.gather_facts()
     counts = {k: v for k, (v, _) in facts.counts.items()}
     assert counts == {
-        "agents": 2, "skills": 2, "hooks": 3, "eval_agents": 1, "memory_agents": 1,
+        "agents": 2, "skills": 2, "repo_skills": 0, "hooks": 3, "eval_agents": 1, "memory_agents": 1,
         "rag_agents": 1,  # beta-agent names a dayz-rag tool only below its frontmatter
         "graded_agents": 2, "graded_skills": 2, "graded_shared": 2, "graded_total": 6,
         "aplus_agents": 2, "aplus_skills": 2, "aplus_shared": 2, "graded_aplus": 6,
@@ -283,7 +283,7 @@ def test_missing_agents_section_is_reported(repo):
 # ---------------------------------------------------------------- the claims table
 
 def test_every_claim_names_known_facts_and_one_fact_per_number():
-    facts = {"agents", "skills", "hooks", "eval_agents", "memory_agents", "rag_agents", "graded_agents", "graded_skills", "graded_shared",
+    facts = {"agents", "skills", "repo_skills", "hooks", "eval_agents", "memory_agents", "rag_agents", "graded_agents", "graded_skills", "graded_shared",
              "graded_total", "aplus_agents", "aplus_skills", "aplus_shared", "graded_aplus",
              "core_lines", "topic_files", "topic_min", "topic_max"}
     for claim in sync.CLAIMS:

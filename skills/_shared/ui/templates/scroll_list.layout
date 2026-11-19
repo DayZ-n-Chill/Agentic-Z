@@ -1,0 +1,80 @@
+// Scroll host + its spacer. A ScrollWidget with no spacer child does not scroll
+// (checklist-and-troubleshooting.md, troubleshooting table). Vanilla first-child of ScrollWidget (54 hosts):
+// GridSpacer 25, WrapSpacer 12, Panel 8, Frame 4. This file uses the 25.
+FrameWidgetClass ScrollListRoot {
+	name "ScrollListRoot"
+	ignorepointer 1
+	position 0 0
+	size 1 1
+	hexactpos 0
+	vexactpos 0
+	hexactsize 0
+	vexactsize 0
+	{
+		PanelWidgetClass ScrollListPanel {
+			name "ScrollListPanel"
+			color 0.1176 0.1176 0.1176 0.9608
+			position 0 0
+			size 0.36 0.60
+			halign center_ref
+			valign center_ref
+			hexactpos 0
+			vexactpos 0
+			hexactsize 0
+			vexactsize 0
+			// Same Panel paint rule as modal_panel.layout. 641x rover_sim_colorable.
+			style rover_sim_colorable
+			{
+				ScrollWidgetClass ScrollList {
+					name "ScrollList"
+					// Must receive the wheel.
+					// gui/layouts/xbox/ingamemenu_xbox/players_info_panel.layout:61
+					// sets ignorepointer 1 on the scroll; this template does not —
+					// a list you will click/wheel needs the pointer.
+					clipchildren 1
+					position 0.04 0.04
+					size 0.92 0.92
+					hexactpos 0
+					vexactpos 0
+					hexactsize 0
+					vexactsize 0
+					// ScrollWidget/blank: dayzwidgets.styles:3966. Normal Center="".
+					// Paints nothing; it is the most-used Scroll style (22x). The
+					// bar comes from "Scrollbar V", not from this skin.
+					style blank
+					// gui/layouts/new_ui/credits/credits_menu.layout:23,
+					// gui/layouts/new_ui/options/keybindings_selectors/keybinding_container.layout:33,
+					// gui/layouts/xbox/ingamemenu_xbox/players_info_panel.layout:71,
+					// gui/layouts/examples/scrolltest.layout:16.
+					"Scrollbar V" 1
+					{
+						GridSpacerWidgetClass ScrollContent {
+							name "ScrollContent"
+							// The load-bearing spacer. Copied from
+							// gui/layouts/new_ui/options/keybindings_selectors/keybinding_container.layout:35-54.
+							// That vanilla spacer has NO children in the file — script
+							// fills it at runtime. Same here.
+							// size 1 0 + vexactsize 1 + "Size To Content V" 1: width
+							// fills the scroll, height starts at 0 px and grows with
+							// children. THAT is what makes it scroll. vexactsize 1 is
+							// the one exact flag this template needs; hexactpos stays 0
+							// because position 0 0 is unit-less.
+							ignorepointer 1
+							position 0 0
+							size 1 0
+							hexactpos 0
+							vexactpos 0
+							hexactsize 0
+							vexactsize 1
+							// keybinding_container.layout:49-54 (Padding 8, Columns 1).
+							Padding 8
+							Margin 8
+							"Size To Content V" 1
+							Columns 1
+						}
+					}
+				}
+			}
+		}
+	}
+}

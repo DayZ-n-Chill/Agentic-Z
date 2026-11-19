@@ -1,0 +1,73 @@
+{
+  "errors": [
+    {
+      "file": "3_game/global/world.c",
+      "note": "Accepted: world.c holds one byte that is not UTF-8, 0x99 (TRADE MARK SIGN in cp1252), inside a block comment at line 127, and the game compiles the file. The validator reads sources as UTF-8 only, so it reports the file instead of judging it.",
+      "rule_id": "INPUT-ENCODING-ERROR"
+    },
+    {
+      "file": "3_game/tools/input.c",
+      "note": "Accepted: 'Mission mission' is declared at input.c:272 under '#ifdef PLATFORM_PS4' (:266) and at :282 under '#ifdef PLATFORM_XBOX' (:278), in two consecutive blocks; the detector treats only the arms of one #ifdef/#else as exclusive. Neither block compiles in a PC build.",
+      "rule_id": "ES-LOCAL-VAR-REDECLARE"
+    },
+    {
+      "file": "4_world/entities/firearms/weaponfsm.c",
+      "note": "Accepted: vanilla is lax about checking read returns. That does not make a truncated save harmless in a mod, so the rule stays live and these six are allowed by name.",
+      "rule_id": "ES-CTX-READ-UNCHECKED"
+    },
+    {
+      "file": "4_world/entities/gardenbase.c",
+      "note": "Accepted: vanilla is lax about checking read returns. That does not make a truncated save harmless in a mod, so the rule stays live and these six are allowed by name.",
+      "rule_id": "ES-CTX-READ-UNCHECKED"
+    },
+    {
+      "file": "4_world/entities/itembase/bloodcontainerbase/bloodcontainerbase.c",
+      "note": "Accepted: vanilla is lax about checking read returns. That does not make a truncated save harmless in a mod, so the rule stays live and these six are allowed by name.",
+      "rule_id": "ES-CTX-READ-UNCHECKED"
+    },
+    {
+      "file": "4_world/entities/itembase/containerlocked.c",
+      "note": "Accepted: vanilla is lax about checking read returns. That does not make a truncated save harmless in a mod, so the rule stays live and these six are allowed by name.",
+      "rule_id": "ES-CTX-READ-UNCHECKED"
+    },
+    {
+      "file": "4_world/entities/itembase/containerlocked.c",
+      "note": "Accepted: vanilla is lax about checking read returns. That does not make a truncated save harmless in a mod, so the rule stays live and these six are allowed by name.",
+      "rule_id": "ES-CTX-READ-UNCHECKED"
+    },
+    {
+      "file": "4_world/entities/itembase/tentbase.c",
+      "note": "Accepted: vanilla is lax about checking read returns. That does not make a truncated save harmless in a mod, so the rule stays live and these six are allowed by name.",
+      "rule_id": "ES-CTX-READ-UNCHECKED"
+    }
+  ],
+  "measured": {
+    "date": "2026-11-10",
+    "elapsed_seconds": 340.71,
+    "roots": "P:\\scripts (DayZ 1.30.164289 stable); three runs gave the same findings and the same digest: the --update run, the check after it and the --json check",
+    "runs": 3
+  },
+  "schema": 1,
+  "totals": {
+    "errors": 8,
+    "warnings": 431
+  },
+  "tree": {
+    "dayz_build": "1.30.0.164289",
+    "dayz_build_note": "Build of the measured tree: DayZ 1.30.164289 stable (DayZDiag_x64.exe file version 1.30.164.289, product version 1.30.164289.70), tree digest fd826b4016910c5ca99046158d6e07aea79b4e52722b5ad20b36ffed8e527a1e. Identity of the control tree is the digest; set this deliberately when re-baselining after a patch.",
+    "digest": "fd826b4016910c5ca99046158d6e07aea79b4e52722b5ad20b36ffed8e527a1e",
+    "digest_scope": "sha256 over (posix relpath, sha256 of contents) of every file the validator discovers under the vanilla root, in walk order. Not comparable to the vanilla_index digest, which covers .c only.",
+    "file_count": 3057,
+    "total_bytes": 14032879
+  },
+  "warning_counts": {
+    "ES-CTX-READ-UNCHECKED": 82,
+    "ES-CTX-READ-UNSUPPORTED-PATTERN": 23,
+    "ES-EMPTY-IFDEF": 7,
+    "ES-EMPTY-IFDEF-UNSUPPORTED-PATTERN": 260,
+    "ES-GETTYPE-EXACT-MATCH": 36,
+    "ES-SYNCVAR-CLASS-UNKNOWN": 1,
+    "ES-SYNCVAR-UNSUPPORTED-PATTERN": 22
+  },
+  "what_this_is": "Expected findings of dayz-script-validator over Bohemia's vanilla script tree. The tree compiles and ships, so any finding on it is a false positive by construction: this file is the allowlist of the ones already triaged, each with the reason it is tolerated. A finding that is NOT here fails the control."
+}

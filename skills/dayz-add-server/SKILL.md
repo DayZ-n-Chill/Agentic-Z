@@ -25,7 +25,7 @@ python "<skill-dir>\add_server.py" <instance> [--map <name>] [--refresh-mission]
 |---|---|---|
 | `<instance>` | yes | Free-form instance name. Becomes the folder name under `.server/`, so it must be a single folder name (no `/`, `\`, `:`, `..`, or any of the characters Windows forbids in file names, such as `*`, `?` and `"`). It must contain at least one letter or digit, because the server's six character `shardId` is built from them. Examples: `chernarus`, `chernarus-hardcore`, `loot-test`, `livonia-pvp`. |
 | `--map` | no | Map alias (`chernarus`, `livonia`, `sakhal`, `nasdara`) or full mission template folder name (e.g. `dayzOffline.namalsk`). It must be a single folder name, with the same rules as `<instance>`, because it is joined into the DayZ Server `mpmissions` path and the junction path under `.server/<instance>/`. When omitted, `<instance>` is used as the map alias if it matches a known one; otherwise the skill fails and asks for `--map`. |
-| `--refresh-mission` | no | Re-copy the mission folder from the DayZ Server install. The current `mission/` is first renamed to `mission.bak-<YYYYMMDD-HHMMSS>/` so your edits stay recoverable. Use after a DayZ update brings new mission content. Without this flag, an existing mission folder is left alone. |
+| `--refresh-mission` | no | Re-copy the mission folder from the DayZ Server install. The new copy is made first; only once it succeeds is the current `mission/` renamed to `mission.bak-<YYYYMMDD-HHMMSS>/`, so your edits stay recoverable. Use after a DayZ update brings new mission content. Without this flag, an existing mission folder is left alone. |
 
 ## What it does
 
@@ -88,7 +88,8 @@ On a rerun with everything already set up, the changed lines read:
 
 ## Editing what this skill creates
 
-- **Mission folder** at `.server/<instance>/mission/` is yours to edit. The server runs with `-filePatching` so edits to `init.c`, `cfggameplay.json`, `db/types.xml`, etc. are live on the next launch.
+- **Mission folder** at `.server/<instance>/mission/` is yours to edit. The server reads it from disk at every start, so edits to `init.c`, `db/types.xml` and the other mission files are live on the next launch.
+- **`cfggameplay.json`** in the mission is read only when `serverDZ.cfg` sets `enableCfgGameplayFile = 1`; otherwise the server keeps the built-in defaults (`P:\scripts\3_game\cfggameplayhandler.c:53` and `:62`). The default config this skill writes does not set it, so add the line before you tune that file. The file is looked up as `$mission:cfggameplay.json` (`:3`).
 - **`serverDZ.cfg`** at `.server/<instance>/serverDZ.cfg` is yours to tune (max players, persistence, etc.). The skill never overwrites your edits, except `allowFilePatching`: it is re-added if you remove it and set back to `1` if you change it (without it, clients launched with `-filePatching` can't connect).
 
 ## Do not

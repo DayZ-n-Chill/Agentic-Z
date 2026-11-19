@@ -1,1 +1,9 @@
-py3d @ git+https://github.com/KoffeinFlummi/py3d.git@7acd58ba6ea3e118f7ad0130bea262c6e7172c84
+# py3d for this skill is the DayZ fork kept in this repo at scripts/tools/py3d
+# (distribution name py3d-dayz, import name py3d). audit_p3d.py loads it from
+# that folder by path, so nothing has to be installed to run the audit.
+#
+# This file installs that same copy as a package, for an environment where
+# `import py3d` must work outside the audit script. pip reads the path below
+# against the current folder, so run it from the repo root:
+#   python -m pip install -r skills/dayz-p3d-audit/requirements.txt
+./scripts/tools/py3d

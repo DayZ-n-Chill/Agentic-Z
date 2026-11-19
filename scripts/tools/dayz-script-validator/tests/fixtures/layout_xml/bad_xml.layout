@@ -1,0 +1,5 @@
+<GUI>
+    <class type="PanelWidget" name="Root">
+        <var name="pos" value="0 0"/>
+    </class>
+</GUI>

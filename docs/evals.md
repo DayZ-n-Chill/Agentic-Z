@@ -11,6 +11,7 @@ Answer tests check what an agent actually says. Each agent has a set of question
 | `scripts/dev/run_evals.py` | The runner. |
 | `scripts/dev/evals.bat` | The no-token wrapper for the runner. |
 | `output/evals/` | Results files, one per run. Not committed. |
+| `evals/fixtures/<agent>/` | Small files a question tells the agent to read. The question's `unchanged` list guards them. |
 
 ## Question file format
 

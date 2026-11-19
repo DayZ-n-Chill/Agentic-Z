@@ -9,13 +9,13 @@ argument-hint: "[--check [--quiet]] [--yes] [--per-file] [--force] [--dry-run] [
 
 # /agentic-z-update
 
-Pull template improvements (agents, skills, conventions, docs) from upstream `DayZ-n-Chill/Agentic-Z`'s `main` branch into the current clone. Three guarantees:
+Pull template improvements (agents, skills, conventions, docs) from the `main` branch of the Agentic-Z GitHub repository (the `upstream` remote, whose URL is `UPSTREAM_URL` in `update.py`) into the current clone. Three guarantees:
 
 1. **`workspace/` mod work is never touched.** All changes are limited to template-managed paths.
 2. **Local customizations to template files are not overwritten silently.** A three-way per-file classification (local file, file at the baseline, upstream file) detects when both the clone and upstream edited the same file and leaves it alone unless the user picks "take" in `--per-file` mode. File contents are never merged: each file is either kept or replaced whole.
 3. **No two updates can apply at once.** A PID-based lock covers the first-run baseline write and the apply phase (checkout, delete, commit, baseline write); previews and `--check` do not take it. The lock file is created atomically with its content already in it, so two runs that start together cannot both get it. A lock left by a dead process is taken over under a short-lived second lock (`.claude/.upstream-update.lock.takeover`), and the stale lock is removed only if it is still the one that was judged stale, so two runs that find the same dead lock cannot both end up holding it.
 
-The first run records the commit your clone was made from (the merge base with upstream main) as the baseline, so changes upstream made since you cloned are offered; with no shared history it records upstream HEAD and adds nothing. A template file that is in the baseline but missing locally is treated as one you deleted on purpose (`locally-deleted`): it is left alone and offered for restore in `--per-file`. Every later run compares the local file, the file at the baseline and upstream's current file to decide what to do per file. The comparison uses git blob ids, with the local file hashed through the clone's line-ending settings (`git hash-object --stdin-paths`, which applies the same filters as `git add`), so a CRLF checkout under `core.autocrlf=true` is not mistaken for a local edit. The ids come from one `git ls-tree` per revision and one `git hash-object` for the working tree, so the check costs the same handful of git calls whether 3 or 500 files drifted. The script works from the repo root (`git rev-parse --show-toplevel`), so it can be started from any subfolder.
+The first run records the commit your clone was made from (the merge base with upstream main) as the baseline, so changes upstream made since you cloned are offered; with no shared history it records upstream HEAD, so no file the clone has is overwritten on that run, but a template file the clone never had is still offered as `new`. A template file that is in the baseline, missing locally, and once committed in the clone is treated as one you deleted on purpose (`locally-deleted`): it is left alone and offered for restore in `--per-file`. Every later run compares the local file, the file at the baseline and upstream's current file to decide what to do per file. The comparison uses git blob ids, with the local file hashed through the clone's line-ending settings (`git hash-object --stdin-paths`, which applies the same filters as `git add`), so a CRLF checkout under `core.autocrlf=true` is not mistaken for a local edit. The ids come from one `git ls-tree` per revision and one `git hash-object` for the working tree, so the check costs the same handful of git calls whether 3 or 500 files drifted. The script works from the repo root (`git rev-parse --show-toplevel`), so it can be started from any subfolder.
 
 ## How to run
 
@@ -28,7 +28,7 @@ python "<skill-dir>\update.py" [--check] [--quiet] [--yes] [--per-file] [--force
 | Flag | Behavior |
 |---|---|
 | (default) | Preview drift, prompt y/N, apply safe changes (conflicts left alone). When the only drift is `local-only-edit` or `locally-deleted` files, it lists them, says `Up to date.` and exits 0 without prompting (with `--per-file`, a `locally-deleted` file still gets the prompt so it can be restored) |
-| `--check` | Preview only: fetches upstream (adding the upstream remote if it is missing) and writes no files; exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date (`local-only-edit` and `locally-deleted` files do not count) |
+| `--check` | Preview only: fetches upstream (adding the upstream remote if it is missing) and writes no files; exits 1 if upstream changes are pending, no baseline exists yet, or a newer prebuilt search index release is available (see "Search index notification"), 0 if none of these (`local-only-edit` and `locally-deleted` files do not count) |
 | `--quiet` | With `--check`: single-line output for hooks, and always exits 0 so the hook shows the line. Rejected without `--check` |
 | `--yes` | Skip the confirmation prompt (CI / scripted use) |
 | `--per-file` | Walk each conflict and `locally-deleted` file interactively: keep / take / diff / skip. Keep is a decision: the file stays yours and no longer holds the baseline back. Skip (also Enter, or no terminal) decides later: the file is offered again on the next run |
@@ -52,7 +52,7 @@ It then records the upstream SHA in `.claude/.upstream-baseline`, but only when 
 |---|---|---|
 | `unchanged` | Local file matches upstream | nothing |
 | `safe-overwrite` | Not edited locally, upstream changed it | apply upstream |
-| `new` | Upstream has it, the baseline and the clone do not | apply upstream |
+| `new` | Upstream has it and the clone never had it (absent from the baseline, or in the baseline but never committed in the clone) | apply upstream |
 | `locally-deleted` | In the baseline, missing in the clone, and once committed in the clone (you deleted it) | leave alone (`--per-file` take restores it) |
 | `local-only-edit` | Only the clone edited it (upstream unchanged) | leave alone |
 | `conflict` | Both the clone and upstream edited it | leave alone (use `--per-file` to resolve) |
@@ -89,6 +89,8 @@ package-lock.json
 .github/
 CONTRIBUTING.md
 LICENSE
+THIRD_PARTY_NOTICES.md
+.gitattributes
 .markdownlint.json
 .markdownlint-cli2.jsonc
 .markdownlintignore
@@ -124,13 +126,13 @@ output/                     # one-shot deliverables
 
 ## SessionStart hook
 
-A `SessionStart` hook runs `update.py --check --quiet` at the start of every Claude Code session in this repo. It prints a one-line nudge if upstream is ahead, if a newer prebuilt search index is available, or if no baseline has been recorded yet (run `/agentic-z-update` once to record it). Silent on no-change. The hook has a 20 second timeout, which leaves room for the `git fetch` plus the 5 second GitHub release check on a slow network; the drift check itself takes well under a second even with hundreds of files behind. It always exits 0: Claude Code drops plain output from a hook that exits non-zero, so a failing exit code would hide the nudge. Configured in `.claude/settings.json`.
+A `SessionStart` hook runs `update.py --check --quiet` at the start of every Claude Code session in this repo. It prints a one-line nudge if upstream is ahead, if a newer prebuilt search index is available, or if no baseline has been recorded yet (run `/agentic-z-update` once to record it). Silent on no-change. The hook has a 20 second timeout, which leaves room for the `git fetch` plus the GitHub release check (one or two requests of up to 5 seconds each) on a slow network; the drift check itself takes well under a second even with hundreds of files behind. It always exits 0: Claude Code drops plain output from a hook that exits non-zero, so a failing exit code would hide the nudge. Configured in `.claude/settings.json`.
 
 To disable temporarily: comment out the `SessionStart` block in `.claude/settings.json`.
 
 ## Search index notification
 
-If `/dayz-search-download` was run before, this skill also checks whether the installed GitHub release of the search index has been superseded. The check is read-only and never downloads; it only suggests running `/dayz-search-download`.
+If `/dayz-search-download` was run before, this skill also checks whether the installed GitHub release of the search index has been superseded. It picks the newest release carrying an index the same way `/dayz-search-download` does: the latest release if it has a `dayz-search-index-*` or `dayz-rag-index-*` asset, otherwise the newest published (not draft, not prerelease) release in the release list that has one. It reports an update when that release's tag sorts newer than the installed one. The check is read-only and never downloads; it only suggests running `/dayz-search-download`.
 
 To skip the check: ensure `~/.claude/dayz-search-index/release-tag.txt` doesn't exist (the check is silent when no installed tag is recorded).
 

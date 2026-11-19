@@ -1,7 +1,7 @@
 ---
 name: dayz-launch-test
-description: "Launches a local DayZ Diag server for an instance from /dayz-add-server, then the diag client connected to it with the given built mods loaded. Run-only; does no setup. Use when you want to test built mods in game, or to preview the exact launch commands with a dry run."
-argument-hint: "<ModName> [<ModName2> ...] [--server-only <ModName>]... [--server <instance>] [--port N] [--dry-run]"
+description: "Launches a local DayZ Diag server for an instance from /dayz-add-server, then the diag client connected to it with the given built mods loaded. Run-only; does no setup. Use when you want to test built mods in game, or to preview the exact launch commands with a dry run. Its references cover why a session starts but does not test the change, scripted test cells, server and mission config, the Linux server and headless client, and what makes an in-game check valid (spawning, raycasts, captures, actions, vehicle acceptance checks); also the recurring error catalog (E01 to E35), the top-down debug protocol, the fast DayZDiag loop, measured 1.30 server facts and the mod loop from code to Workshop."
+argument-hint: "<ModName> [<ModName2> ...] [--server-only <ModName>]... [--server <instance>] [--port N] [--test-bridge TOKEN [--test-bridge-exec]] [--dry-run]"
 ---
 
 <!-- skill-dir-note -->
@@ -9,7 +9,7 @@ argument-hint: "<ModName> [<ModName2> ...] [--server-only <ModName>]... [--serve
 
 # /dayz-launch-test
 
-Run-only: launches a local DayZ test session for one or more built mods. Always starts the **server first**, then the **client** connecting to it (DayZ cannot be tested standalone, per L2 conventions). Both run from `DayZDiag_x64.exe` with `-filePatching` for fast iteration on Enforce Script and config edits.
+Run-only: launches a local DayZ test session for one or more built mods. Always starts the **server first**, then the **client** connecting to it (DayZ cannot be tested standalone, per L2 conventions). Both run from `DayZDiag_x64.exe` with `-filePatching`, which is meant to serve script and config edits from source. On the measured install it did not do so for scripts, so rebuild with `/dayz-build-pbo` after a script change (see "When the session starts but does not work").
 
 **Prerequisite:** the instance must have been added with `/dayz-add-server <instance>`, which owns the `.server/<instance>/` layout (mission copy, `serverDZ.cfg`, `Profiles/`, the template junction) and documents how to edit the mission. This skill verifies that state and runs.
 
@@ -20,17 +20,19 @@ Follow `skills/_shared/dayz-conventions.md`.
 ## How to run
 
 ```cmd
-python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server-only <ModName>]... [--server <instance>] [--port N] [--dry-run]
+python "<skill-dir>\launch.py" <ModName> [<ModName2> ...] [--server-only <ModName>]... [--server <instance>] [--port N] [--test-bridge TOKEN [--test-bridge-exec]] [--dry-run]
 ```
 
 Name every shared mod first, then the options. `--server-only` takes one name, so repeat it for each server-only mod: `CF MyMod --server-only SrvA --server-only SrvB`. A mod name after an option (`CF --server-only Srv MyMod`, `CF --port 2402 MyMod`) exits 2 with `unexpected arguments: MyMod`, also with `--dry-run`, rather than guessing whether it was meant shared or server-only.
 
 | Argument | Required? | Notes |
 |---|---|---|
-| `<ModName> ...` | yes | Mod names loaded on **both** client and server, dependencies first. `CF` and `@CF` name the same mod. A name with a path separator, a drive letter or `..` exits 2 with `is not a mod name`. Each must have at least one `.pbo` at `P:\Mods\@<ModName>\Addons\` (build with `/dayz-build-pbo` first). |
+| `<ModName> ...` | yes, except with `--test-bridge`, which can launch vanilla alone | Mod names loaded on **both** client and server, dependencies first. `CF` and `@CF` name the same mod. A name with a path separator, a drive letter or `..` exits 2 with `is not a mod name`. Each must have at least one `.pbo` at `P:\Mods\@<ModName>\Addons\` (build with `/dayz-build-pbo` first). |
 | `--server-only` | no | One mod loaded on the **server only**; repeat the flag for each. Server-only mods are passed, in the order given, with the server's `-serverMod=` switch and never added to either `-mod=` list (mods on `-mod=` are advertised to clients). Use for a mod that self-terminates when it detects itself running outside the dedicated server (e.g. a `CfgMods` server-marker `defines[]` entry guarding a `RequestExit()` call). Same `.pbo`-presence requirement as above. A name given both here and as a shared mod exits 2 with `mod named both as shared and --server-only`, and a name given twice anywhere exits 2 with `mod named more than once`, also with `--dry-run`. Both checks ignore case and a leading `@`, since Windows folder names ignore case (`CF` and `cf` are the same `@CF`). |
 | `--server` | no | Server instance to launch on. Default `chernarus`. Must have been added via `/dayz-add-server`. A name with a path separator, a drive letter or `..`, or one starting with `!` (the shared `.server` folders), exits 2 with `is not an instance name` or `is not an instance`. |
 | `--port` | no | Server port, 1 to 65535. Default `2302`. Any other value exits 2 with `port must be 1-65535`, also with `--dry-run`. |
+| `--test-bridge` | no | The 32-character token of a `dayz-testbridge` session. Adds `P:\Mods\@AZ_TestBridge` last on `-mod=` for both peers and `-azBridge=<token>` to both command lines, and checks that `@AZ_TestBridge` has a PBO. The `dayz-testbridge` MCP server makes the token, packs the mod and passes this option; you do not pass it by hand. Naming `AZ_TestBridge` as a mod exits 2. `--dry-run` shows both lines. See `references/test-bridge.md`. |
+| `--test-bridge-exec` | no | Only with `--test-bridge`: also passes `-azBridgeExec=1`, which lets that session's bridge run arbitrary Enforce Script (its `exec` command). Off unless given; the `dayz-testbridge` MCP server passes it only for a session started with `allow_exec`. Without `--test-bridge` it exits 2. |
 | `--dry-run` | no | Run every check, print the resolved server and client commands, then exit 0. Writes nothing of its own (no profile dirs, no display-prefs file, no processes); `/dayz-preflight` may still create the `P:\Mods` junction if it is missing. |
 
 ## Mods with dependencies
@@ -109,6 +111,20 @@ Both running. Close the windows manually to stop.
 
 The `Wrote default client display prefs` line appears only on the first real launch, when that file does not exist yet. With `--dry-run`, the output is the same through the instance check (never with that line), then the two `[DRY-RUN] Server cmd:` / `[DRY-RUN] Client cmd:` lines, and exit 0.
 
+## When the session starts but does not work
+
+This skill checks what it can before it spawns anything; the cases below pass those checks and still fail. They are measured results from real test sessions, recorded in `references/`, and are not yet checked on `P:\`.
+
+| What you see | Likely cause | Read |
+|---|---|---|
+| The client hangs on a modal dialog `unable to locate running instance of Steam`: the process stays alive with 0 CPU, its RPT holds only the header, and an `ErrorMessage_DayZDiag_x64_*.mdmp` with exception `0x80000003` appears | `steam.exe` is running but no user is signed in, or the registry value `HKCU\Software\Valve\Steam\ActiveProcess` holds the pid of a Steam that has exited. The Steam check in step 7 only looks for the process. | `references/client-startup-failures.md`, "The Steam pid in the registry can be dead" |
+| The server counts down `[Server] :: termination in: N` and exits | `serverDZ.cfg` has no `class Missions` block or no `instanceId`. `/dayz-add-server` writes both; a hand-edited cfg can lose them. | `references/windows-launch-cycle.md` |
+| The server dies before it binds the port with `!!! Serious stream damage detected during load`, or crashes with `Failed to read modstorage for entity`, or floods the log with `Scripted variables corrupted` | The mission's `storage_1` is half written, or was written by a different mod set (with or without Community Framework) than the one now loading it | `references/troubleshooting.md`, the symptom table; `references/build-and-storage-traps.md` |
+| The client is refused with `0x00010002` | A signature mismatch: the instance's `serverDZ.cfg` was edited to turn `verifySignatures` back on, and a PBO's `.bisign` does not match its key. `/dayz-add-server` writes `verifySignatures = 0`. The other refusal codes in the `connection` row (a diag client on a server that is not diag, different game builds) cannot come from this launch, which starts both sides from the same `DayZDiag_x64.exe` with `forceSameBuild = 0`. | `skills/dayz-gate/triage.md`, the `connection` row |
+| The mod's change is not in game although the build said it succeeded | A stale or locked PBO, or `-filePatching` not serving what you expect. On the measured install scripts came from the PBO even with `-filePatching`, so rebuild for a script change. | `references/build-and-storage-traps.md`, `references/windows-build-and-mount.md` |
+
+`/dayz-gate` and `/dayz-logwatch` name the storage, countdown and refusal lines with their fix (`skills/dayz-gate/triage.md`). Renaming `storage_1` resets the world and characters, so ask the user first.
+
 ## Client display preferences
 
 The client reads `.claude/local-memory/dayz-client-display.json` (per clone, gitignored). The first real launch creates it with:
@@ -128,3 +144,10 @@ These map to `-window`, `-x=<width>`, `-y=<height>`. Edit the file freely. A fil
 - Don't launch the client without the server. DayZ has no offline mode for mod testing.
 - Don't substitute retail `DayZ_x64.exe` or `DayZServer_x64.exe` for the diag binary.
 - Don't kill the session from here once it is running; close the windows or use `/dayz-stop-test`.
+
+## References and scripts
+
+Everything this skill knows beyond the launch itself is in `<skill-dir>\references\`; start at `references/README.md`, which lists every file, the rules that hold on every route, and when to read each one.
+
+- In-game checks: what makes a verdict valid is `references/in-game-check-validity.md`, which links the files on spawning, raycasts, captures, actions and the vehicle acceptance checks.
+- `assets/autotest-mod/` is a small self-reporting test mod (`references/linux-headless-client.md`, "Tests that run on both sides and report back"). Keep it out of a release.

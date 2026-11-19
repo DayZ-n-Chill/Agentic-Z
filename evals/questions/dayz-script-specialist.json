@@ -12,7 +12,7 @@
         "re:(?<!n't )(?<!not )(?<!never )\\b(keep|leave)\\s+(the\\s+)?`?extends\\b(?![^.\\n]{0,25}\\b(out|off)\\b)"
       ],
       "cite": "4_world/entities/manbase/playerbase.c",
-      "verified": "P:/scripts/4_world/entities/manbase/playerbase.c:49 (class PlayerBase extends ManBase) and :7623 (void OnConnect); the no-extends form is the vanilla modding example form: P:/scripts/3_game/particles/particlelist.c:5, P:/scripts/4_world/plugins/pluginbase/plugindiagmenu/plugindiagmenumodding.c:21 (one commented-out vanilla sample, P:/scripts/3_game/ppemanager/pperequesterbank.c:276, writes extends Managed; none writes a class extending itself). Not checked (so not scored): that extends on a modded class is a silent no-op (modded_class.md marks it reported)"
+      "verified": "P:/scripts/4_world/entities/manbase/playerbase.c:49 (class PlayerBase extends ManBase) and :7623 (void OnConnect); the no-extends form is the vanilla modding example form: P:/scripts/3_game/particles/particlelist.c:5, P:/scripts/4_world/plugins/pluginbase/plugindiagmenu/plugindiagmenumodding.c:21 (one commented-out vanilla sample, P:/scripts/3_game/ppemanager/pperequesterbank.c:276, writes extends Managed; none writes a class extending itself). Not checked (so not scored): that extends on a modded class is a silent no-op (skills/_shared/enscript/patterns/modded_class.md marks it as not checked on P:)"
     },
     {
       "id": "action-layer",
@@ -55,6 +55,110 @@
       ],
       "cite": "entityai.c",
       "verified": "P:/scripts/3_game/entities/entityai.c:2850 (RegisterNetSyncVariableInt) and :3064 (SetSynchDirty)"
+    },
+    {
+      "id": "api-enforce",
+      "question": "Answer only, do not edit any file. Read evals/fixtures/dayz-script-specialist/demo_api.c. Which methods does class DemoApi declare, with their full signatures? I was told I can also call DemoApi.InventedCall() with no arguments: is that method declared in the file? Name only what the file declares and give the line.",
+      "must_include": [
+        "re:VerifiedCall\\s*\\(\\s*int value\\s*\\)",
+        "re:\\bno\\b|\\bnot\\b|isn't|doesn't|does not|nowhere"
+      ],
+      "must_not_include": [
+        "re:InventedCall\\(\\)?`? (is|exists|is also) (declared|defined|available)"
+      ],
+      "cite": "demo_api.c",
+      "unchanged": [
+        "evals/fixtures/dayz-script-specialist/demo_api.c"
+      ],
+      "verified": "evals/fixtures/dayz-script-specialist/demo_api.c line 3 is the only method, void VerifiedCall(int value); the file holds no InventedCall"
+    },
+    {
+      "id": "api-index-liveness",
+      "question": "Answer only, do not edit any file. A search for active class declarations in evals/fixtures/dayz-script-specialist/api_liveness.c returned ActiveApi only, so a teammate concluded that CommentedApi and GuardedApi do not exist anywhere in the file. Read the file. For each of the three class names say whether it is active, commented out, or behind a preprocessor guard, and say whether a mod running on the retail game can call Run() on it.",
+      "must_include": [
+        "ActiveApi",
+        "re:comment",
+        "re:#ifdef|DEVELOPER"
+      ],
+      "must_not_include": [
+        "re:(CommentedApi|GuardedApi)`? (does not|doesn't) (exist|appear)"
+      ],
+      "unchanged": [
+        "evals/fixtures/dayz-script-specialist/api_liveness.c"
+      ],
+      "verified": "evals/fixtures/dayz-script-specialist/api_liveness.c lines 1 to 4 (class ActiveApi, active), 6 to 9 (class CommentedApi, every line commented out), 11 to 16 (class GuardedApi inside #ifdef DEVELOPER, which the retail game does not define)"
+    },
+    {
+      "id": "enforce-negatives-autoptr",
+      "question": "Answer only, do not edit any file. A wiki page says every member that owns an object must be declared autoptr in Enforce Script, and that ref is not enough. Is that right? Start with yes or no, then say which qualifier mod code should use for an owning member.",
+      "must_include": [
+        "re:\\A\\W*no\\b",
+        "re:\\bref\\b"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*yes\\b"
+      ],
+      "verified": "skills/_shared/enscript/references/language_memory.md section autoptr (the older owning qualifier; use ref in mod code); P:/scripts/1_core/proto/enscript.c:834 (autoptr map<string, int> prg_count, a 1_core example) and :737 (TManagedRefArray, typedef array<ref Managed>)"
+    },
+    {
+      "id": "enforce-negatives-overload",
+      "question": "Answer only, do not edit any file. A wiki page says Enforce Script cannot have two methods with the same name and different parameters in one class. Is that right? Start with yes or no and name one vanilla class that proves it either way, citing the file.",
+      "must_include": [
+        "re:\\A\\W*no\\b",
+        "re:ShowWalkieTalkie|SetParent|overload"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*yes\\b"
+      ],
+      "verified": "P:/scripts/3_game/gameplay.c:652-653 (ShowWalkieTalkie(bool show) and ShowWalkieTalkie(int fadeOutSeconds) in class Hud); skills/_shared/enscript/patterns/language_workarounds.md section 'Overloading works, but keep it simple'. Vanilla declares overloads in one class, so the claim that they are unsupported is false."
+    },
+    {
+      "id": "enforce-negatives-managed",
+      "question": "Answer only, do not edit any file. Someone told me that a class deriving from Managed is owned by the engine, so I never need a ref to keep my helper object alive. Is that right? Start with yes or no and say what keeps a Managed object alive.",
+      "must_include": [
+        "re:\\A\\W*no\\b",
+        "re:\\bref\\b"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*yes\\b"
+      ],
+      "verified": "P:/scripts/1_core/proto/enscript.c:117 (class Managed) and :737 (TManagedRefArray, typedef array<ref Managed>); skills/_shared/enscript/references/language_memory.md sections 'The two roots' (Managed is the root for objects script owns; entities are the engine-owned ones) and 'ref keeps an object alive'"
+    },
+    {
+      "id": "enforce-negatives-jsonloadfile",
+      "question": "Answer only, do not edit any file. Is JsonLoadFile a global helper function in vanilla DayZ that I can call as JsonLoadFile(path, data) and that tells me whether the load worked? Say where it is really declared, what it returns, and which call vanilla tells you to use instead. Cite the vanilla file.",
+      "must_include": [
+        "JsonFileLoader",
+        "re:\\bvoid\\b|returns? nothing|no return",
+        "LoadFile"
+      ],
+      "cite": "3_game/tools/jsonfileloader.c",
+      "verified": "P:/scripts/3_game/tools/jsonfileloader.c:105 (static void JsonLoadFile, a method of JsonFileLoader<Class T>, under the DEPRECATED comment at :99, with 'use JsonFileLoader::LoadFile instead' at :104) and :7 (static bool LoadFile(string filename, out T data, out string errorMessage))"
+    },
+    {
+      "id": "enforce-negatives-ondrop",
+      "question": "Answer only, do not edit any file. I want code to run when a player drops my item on the ground, so I plan to write override bool OnDrop(...) in my ItemBase class. Is OnDrop a callback every entity has? Say which vanilla class declares OnDrop and what it is for, citing the file.",
+      "must_include": [
+        "re:\\bno\\b|\\bnot\\b|isn't|doesn't",
+        "re:ScriptedWidgetEventHandler|widget"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*yes\\b"
+      ],
+      "cite": "enwidgets.c",
+      "verified": "P:/scripts/1_core/proto/enwidgets.c:679 (bool OnDrop(Widget w, int x, int y, Widget reciever), a drag and drop event of class ScriptedWidgetEventHandler at :656); the item side hook is P:/scripts/3_game/entities/entityai.c:976 (EEItemLocationChanged)"
+    },
+    {
+      "id": "enforce-negatives-dabs",
+      "question": "Answer only, do not edit any file. A tutorial uses a class named ViewController from Dabs Framework for a menu. Is ViewController part of the vanilla scripts under P:\\scripts, so my mod can use it with no extra dependency? Start with yes or no and say what my mod's config.cpp needs if I use it.",
+      "must_include": [
+        "re:\\A\\W*no\\b",
+        "requiredAddons"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*yes\\b"
+      ],
+      "verified": "Dabs Framework is a third-party mod, not vanilla: a search of P:/scripts for 'class ViewController' and for 'DabsFramework' finds no file (checked on game storage version 144). A mod that uses another mod's classes lists that mod's CfgPatches class in requiredAddons: skills/_shared/enscript/integrations/dabs_framework.md (add \"DF_Scripts\" to requiredAddons[]) and skills/_shared/enscript/patterns/modded_class.md"
     }
   ]
 }

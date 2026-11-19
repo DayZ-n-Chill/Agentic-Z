@@ -5,25 +5,63 @@ What goes in the Memory LOD (`1.0e+15`), the names vanilla script looks up, and 
 ## Rules
 
 - The Memory LOD holds points only. Each named selection is one point, or two points for an axis. The audit warns when the LOD has faces (`check_memory_lod` in `skills/dayz-p3d-audit/scripts/audit_p3d.py`).
-- An axis is a selection of exactly two points, named after the bone it turns: bone `doors5` uses `doors5_axis` in `houseblock_3f_corner1.p3d`. The audit checks that every `<name>_axis` in the Memory LOD has a `<name>` selection in the visual LOD and reports CRITICAL when it does not.
+- An axis is a selection of exactly two points, named after the bone it turns: bone `doors5` uses `doors5_axis` in `houseblock_3f_corner1.p3d`. Both points sit in the one selection, never split across two. The name is a convention: what ties an axis to the part it moves is the animation class in `model.cfg`, which names its own `selection` and `axis`, and a rig may give them unrelated names (a wheel selection `wheelfrontleft` turning on `wheel_1_1_axis`). The audit, run with `--model-cfg`, checks the selection and axis each animation names and reports CRITICAL when one is missing or the axis does not have exactly two points (`check_animations` in `skills/dayz-p3d-audit/scripts/audit_p3d.py`). Without a `model.cfg` it only guesses from the `_axis` name, as a WARNING, and only when the repo's py3d (`scripts/tools/py3d`) is in use.
 - Script finds points by name with `GetMemoryPointPos`, `MemoryPointExists` and `GetMemoryPointIndex` (`P:\scripts\3_game\entities\object.c:451` to `:454`). Spell the name exactly as the script or config that uses it.
-- Placed objects need `pos center` at `(0,0,0)` (`dayz-p3d-audit/references/p3d-killers.md` section 5, and the autocenter rule in `named-properties.md`).
+- Placed objects need `pos center` at `(0,0,0)` (`dayz-p3d-audit/references/p3d-killers.md` section 5, and the autocenter rule in `named-properties.md`). This rule comes from mod debugging of tall objects, not from vanilla: none of the 572 models under `P:\DZ\gear\` and none of the 161 under `P:\DZ\vehicles\wheeled\` holds a `pos center` point (the watchtower, the fence and the territory flag pole included). Vanilla marks an object's center with `ce_center` instead. So the audit asks for `pos center` only as a WARNING, and only on an item whose config sets `autocenter = 0`.
+- Format knowledge, not shown by a vanilla file: the order of an axis's two points sets the direction a rotation turns in (right hand rule). A memory selection can itself be named as the `selection` of an animation, which moves an action point along with the part it belongs to.
+- A memory selection is a set of points, and tools can lose the set while keeping the name. After any conversion or rebuild, check that each memory selection still holds its points (`selections.md`, "Membership lost by tools").
+- Two models of the same family can be authored in frames that differ by a quarter turn. Before copying a rotation offset or a point from one model to its sibling, compare their memory points one by one (`dayz-p3d-audit/references/manual-checks.md`, "Sibling-model frame parity").
+
+## Making the points
+
+- In Object Builder: switch to the Memory LOD, add single vertices where the points go, and put each in its named selection.
+- In Blender: an Empty or a one vertex mesh per point, in a vertex group with the exact name; the Arma 3 Object Builder addon writes them to the Memory LOD.
+- From a tool with no exporter for points: build a triangle with a vertex on each point, import it into Object Builder, and delete the vertices you do not need.
+- With py3d the points are written directly (`py3d-generation.md`, "Memory LOD points").
+
+Placing an axis: for a door hinge put one point at the top and one at the bottom of the hinge edge; for a lever, both on the pivot, apart along the pivot line. A slide uses the same two point selection, and the part moves along the line instead of turning around it.
+
+`ce_radius` is a single point; its distance from `ce_center` is the radius.
+
+An animated part that swings outside the object's bounding sphere can make the action raycast miss at some angles. A Memory selection that covers the whole swept area, named in `config.cpp` as `bounding = "<selection>";`, is the usual fix in modelling guides. Not checked on `P:\`: vanilla gear sets `bounding` to `"BSphere"` (`P:\DZ\gear\camping\config.cpp:44`), and no vanilla file read here gives it a selection name (`model-config-and-packing.md`).
 
 ## Names vanilla looks up
 
 | Point | Used for | Where vanilla reads it |
 |---|---|---|
-| `ce_center` | The object's center for actions, vicinity and the code lock | `P:\scripts\3_game\entities\object.c:1363` (`GetCenter`), `P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:854`, `P:\scripts\5_mission\gui\inventorynew\vicinityitemmanager.c:11`, `P:\scripts\4_world\entities\itembase\codelock.c:4` |
+| `ce_center` | The object's center for actions, vicinity and the code lock | `P:\scripts\3_game\entities\object.c:1363` (`GetCenter`), `P:\scripts\4_world\classes\useractionscomponent\actiontargets.c:857`, `P:\scripts\5_mission\gui\inventorynew\vicinityitemmanager.c:11`, `P:\scripts\4_world\entities\itembase\codelock.c:4` |
 | `boundingbox_min`, `boundingbox_max`, `invView` | The item's inventory preview box and camera. `boundingbox_min2`, `boundingbox_max2`, `invView2` and so on add more views | `P:\scripts\3_game\gameplay.c:293` to `:295`; `invView2` at `P:\scripts\3_game\entities\entityai.c:3771` |
 | `box_placing_min`, `box_placing_max` | Fallback hologram box when the Geometry LOD box fails | `p3d-killers.md` section 7 |
 | `<bone>_axis` | Hinge or slide line of a moving part | `houseblock_3f_corner1.p3d` (`doors1_axis` to `doors9_axis`), `wooden_case.p3d` (`lid_axis`) |
 | `<door>_action` | Where a building door's sound plays; named by `soundPos` in `class Doors` | `P:\DZ\structures\residential\config.cpp:7363` (`doorsTwin1_action`) |
 | `light_left`, `light_right`, `light_reverse` and their `_dir` points | Car lights | `P:\scripts\4_world\entities\vehicles\carscript.c:165` to `:169` |
 | `refill` | Where a vehicle is refuelled | `P:\scripts\3_game\vehicles\transport.c:112` |
+| `pos_driver`, `pos_driver_dir`, `pos_coDriver`, `pos_coDriver_dir`, `pos_cargo1` and so on | Where a player stands to get into a seat, and which way they face. Config names them per seat as `getInPos` and `getInDir` | `P:\DZ\vehicles\wheeled\config.cpp:271` and `:272` (`getInPos="pos_driver"`, `getInDir="pos_driver_dir"`); the names are stored in `P:\DZ\vehicles\wheeled\civiliansedan\civiliansedan.p3d` |
 | any name | A light or a sound at a point: `CreateLightAtObjMemoryPoint`, `PlaySoundSetAtMemoryPoint` | `P:\scripts\4_world\entities\scriptedlightbase.c:215`, `P:\scripts\3_game\entities\object.c:1294` |
 
-The wooden case shows a typical item set: `boundingbox_min`, `boundingbox_max`, `ce_center`, `ce_radius`, `invview`, `lid_axis`, `hook_axis` and `throwingimpulseposition` (names stored in `P:\DZ\gear\camping\wooden_case.p3d`). Weapon points are in `_shared/weapons/model-selections.md`.
+The wooden case shows a typical item set: `boundingbox_min`, `boundingbox_max`, `ce_center`, `ce_radius`, `invview`, `lid_axis`, `hook_axis` and `throwingimpulseposition` (names stored in `P:\DZ\gear\camping\wooden_case.p3d`). Weapon points are in `_shared/weapons/model-selections.md`; two more readers of them: `MiscGameplayFunctions.GetProjectedCursorPos3d` takes `usti hlavne` and `konec hlavne` as the two ends of the barrel to project the aim point (`P:\scripts\4_world\static\miscgameplayfunctions.c:730` and `:731`), and the AKM names `eye` with `memoryPointCamera="eye"` (`P:\DZ\weapons\firearms\AKM\config.cpp:169`) and its ejection port with `overridePoint="Nabojnicestart"` (`:236`), a point for spent casings and chamber smoke, not the magazine well. Building points (door axes and action points, ladder entry and exit points, loot and rain sound points) are in `building-selections.md`.
+
+How common each name is, from a scan of the 572 models under `P:\DZ\gear\`: `ce_center` in 453, `ce_radius` in 452, `boundingbox_min` in 428, `invview` in 404, `box_placing_min` in 8 (for example `P:\DZ\gear\camping\cartentplacing.p3d`).
+
+## Wheel models
+
+A wheel is its own `.p3d`, placed on the vehicle body as a proxy. There are 14 intact vanilla wheel models under `P:\DZ\vehicles\wheeled\` (plus 13 ruined or destroyed variants such as `sedanwheel_destroyed.p3d`, and not counting the `data\damagewheel\` models). Two of them, `P:\DZ\vehicles\wheeled\truck_02\proxy\truck_02_wheel.p3d` and `truck_02_wheel_spare.p3d`, have no Memory LOD at all (only visual, Geometry and Fire Geometry LODs). Of the 12 that have one, 11 hold the same five memory points: `ce_center`, `ce_radius`, `boundingbox_min`, `boundingbox_max` and `invview` (for example `P:\DZ\vehicles\wheeled\offroadhatchback\proxy\nivawheel.p3d`). `P:\DZ\vehicles\wheeled\civiliansedan\proxy\sedanwheel.p3d` holds only the last three. Give a new wheel all five. Seen on one custom quad, not checked on `P:\`: a wheel with only `ce_center` never touched the ground in the simulation (`dayz-p3d-audit/references/vehicle-checks.md`, killer 11).
+
+## Reading points and selections from script
+
+`GetMemoryPointPos` returns a position in model space; turn it into a world position with `ModelToWorld`, as `GetCenter` does with `ce_center` (`P:\scripts\3_game\entities\object.c:1361` to `:1366`). It gives one position per name, so a selection with several points needs the `Selection` and `LOD` classes instead (`P:\scripts\3_game\gameplay.c:179` to `:244`):
+
+| Call | What it gives |
+|---|---|
+| `GetLODByName(LOD.NAME_MEMORY)` | The Memory LOD; the other names are `geometry`, `view`, `fire` and `roadway` (`gameplay.c:206` to `:210`) |
+| `LOD.GetSelections`, `LOD.GetSelectionByName` | The LOD's named selections; `GetSelectionByName` compares in lower case (`:222` to `:239`) |
+| `Selection.GetVertexCount`, `Selection.GetVertexPosition(lod, i)` | Each point of a selection, in model space |
+| `LOD.GetPropertyCount`, `GetPropertyName`, `GetPropertyValue` | The LOD's named properties (`named-properties.md`) |
+
+Vanilla uses this for points that come in sets: the ladder entry reads every point of `ladderN_con` and picks the nearest (`building-selections.md`, "Ladders").
 
 ## Names the mod invents
 
 Points that only the mod's own script or config reads can have any name, for example `Fuse_Start` and `Fuse_End` on the fireworks launcher (`P:\scripts\4_world\entities\itembase\gear\tools\fireworkslauncher.c:520`, `:525`). Hand the exact names to whoever writes that script or config.
+
+Names such as `actionPos` and `soundPos`, which modelling guides list as interaction points, are of this kind: no vanilla script under `P:\scripts\` looks up a point called `actionPos`, and a vanilla building door names its sound point in config (`soundPos="doorsTwin1_action"`, `P:\DZ\structures\residential\config.cpp:7363`). A worked example of a full naming scheme, the cable ports of a power grid mod (`port_input_N`, `port_output_N` and their `_dir` points, matched to the port names its script registers), is in `_shared/models/memory-and-selections-authoring.md`.

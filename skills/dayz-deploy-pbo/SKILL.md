@@ -86,8 +86,8 @@ Dry run (`--dry-run`), after the same check lines:
 
 Dry run - nothing will be written to P:\Mods\@MyBundle\
   overwrite  P:\Mods\@MyBundle\Addons\core.pbo
-  unchanged  P:\Mods\@MyBundle\Addons\core.pbo.mykey.bisign
   copy       P:\Mods\@MyBundle\Addons\extras.pbo
+  unchanged  P:\Mods\@MyBundle\Addons\core.pbo.mykey.bisign
 [WARN]  extras.pbo has no matching .bisign - clients with signature verification enabled will reject it.
 
 [OK]    Dry run: 2 would be copied, 1 unchanged. Rerun without --dry-run to deploy.

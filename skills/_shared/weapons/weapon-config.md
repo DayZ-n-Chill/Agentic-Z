@@ -12,6 +12,15 @@ The `CfgWeapons` keys a firearm needs, and the `CfgPatches` entry that loads it 
 
 Fire mode and optics bases are declared at the root of the file, outside `cfgWeapons`, before they are used (`cz527\config.cpp:22` to `:27`: `Mode_Safe`, `Mode_SemiAuto`, `Mode_Single`, `Mode_Burst`, `Mode_FullAuto`, `OpticsInfoRifle`). The parent weapon class is declared inside `cfgWeapons` (`:30`).
 
+Where each declaration goes matters, because a forward declaration in the wrong scope creates a new empty class and reports no error:
+
+- The fire mode bases are root classes of the engine config, defined before `CfgWeapons` opens: `WeaponMode_Base` (`P:\bin\config.cpp:224`), `Mode_SemiAuto` (`P:\bin\config.cpp:237`), `Mode_Single` (`P:\bin\config.cpp:254`), `Mode_Burst` (`P:\bin\config.cpp:271`), `Mode_Double` (`P:\bin\config.cpp:293`) and `Mode_FullAuto` (`P:\bin\config.cpp:315`), then `OpticsInfoDefault` (`P:\bin\config.cpp:334`), `Muzzle_Base` (`P:\bin\config.cpp:345`) and only then `CfgWeapons` (`P:\bin\config.cpp:366`). `OpticsInfoRifle` is a root class too (`P:\DZ\data\config.cpp:3930`).
+- `Mode_FullAuto` is the class that sets `autoFire=1` (`P:\bin\config.cpp:318`); `WeaponMode_Base` has `autoFire=0` (`P:\bin\config.cpp:226`).
+- A `class Mode_FullAuto;` written inside `CfgWeapons` declares a different, empty class there. A weapon mode `class FullAuto: Mode_FullAuto` then inherits the empty one, has no `autoFire`, and the engine drops the mode: the gun fires single shots only, shows no mode name in the HUD and the fire mode key does nothing. Binarize and `CfgConvert` accept it, and the derapified config looks correct. Confirmed in game on a custom SMG, where the cause took about 12 rebuilds to find.
+- Weapon bases (`Rifle_Base`, another mod's `_Base` class) are members of `CfgWeapons` and are declared inside it.
+
+To find out why a gun will not cycle its fire modes: add a throwaway `scope=2` class that inherits a base known to cycle and changes nothing but `model`, spawn it next to your gun, and press the fire mode key on both. If the clone cycles, the fault is in your config, and when your config compares equal to a working mod's, compare scope against the engine config in `P:\bin\config.cpp`. Give every throwaway weapon its own `model`: a class that inherits a `scope=0` base with no model crashed on spawn in that test.
+
 ## Keys on the weapon class
 
 | Key | What it does | Vanilla line |
@@ -26,7 +35,8 @@ Fire mode and optics bases are declared at the root of the file, outside `cfgWea
 | `ironsightsExcludingOptics[]` | Optics whose model covers the iron sights; the CZ527 lists `HuntingOptic`. Engine key: no vanilla script reads it, so confirm the effect in game. | `cz527\config.cpp:45` |
 | `winchesterTypeOpticsMount` | Makes `HuntingOptic` show its Winchester rings instead of its rail rings. | `cz527\config.cpp:44`; read in `P:\scripts\4_world\entities\itembase\inventory_base\huntingoptic.c:66` |
 | `PPDOFProperties[]` | Depth of field while aiming. Read by `Weapon_Base.InitDOFProperties`. | `cz527\config.cpp:42`; `P:\scripts\4_world\entities\firearms\weapon_base.c:1279` |
-| `WeaponLength`, `ObstructionDistance` | Used by the weapon lift check near walls. `WeaponLength` defaults to 0.8 when missing. | `cz527\config.cpp:49`, `:50`; `weapon_base.c:1300` |
+| `WeaponLength`, `ObstructionDistance` | Used by the weapon lift check near walls. `WeaponLength` defaults to 0.8 when missing, `ObstructionDistance` to 0. | `cz527\config.cpp:49`, `:50`; `weapon_base.c:1300`, `:1337` |
+| `ShoulderDistance`, `WeaponLiftCheckVerticalOffset` | How far from the shoulder the weapon length starts (pistols start nearer the wrist, stocked rifles at 0), and a height offset for the lift check. Both default to 0; the CZ527 sets neither, the M4 uses `ShoulderDistance=0.050000001`, the 1911 `0.40000001` and the M79 `WeaponLiftCheckVerticalOffset=-0.1`. | `weapon_base.c:1312`, `:1324`, `:1756` to `:1760`; `P:\DZ\weapons\pistols\1911\config.cpp:36`; `P:\DZ\weapons\firearms\m4\config.cpp:48`; `P:\DZ\weapons\launchers\m79\config.cpp:147` |
 | `initSpeedMultiplier` | Engine key; by its name a multiplier on the bullet's `initSpeed`. The CZ527 uses 1.2, the AKM 0.9 (`akm\config.cpp:43`). | `cz527\config.cpp:52` |
 | `barrelArmor` | Engine key for barrel wear; it pairs with the bullet's `damageBarrel` (see `magazines-ammo.md`). | `cz527\config.cpp:51` |
 | `class NoiseShoot` | How far AI hears the shot (`strength`, `type="shot"`). | `cz527\config.cpp:76` |
@@ -36,10 +46,25 @@ Fire mode and optics bases are declared at the root of the file, outside `cfgWea
 | `weaponStateAnim` | Weapon state animation file. | `cz527\config.cpp:178` |
 | `model`, `itemSize[]`, `weight` | The `.p3d`, the inventory size, the weight in grams. | `cz527\config.cpp:185`, `:192`, `:35` |
 
+The same keys on an automatic rifle, the AKM (`P:\DZ\weapons\firearms\akm\config.cpp`): `initSpeedMultiplier` `:43`, `chamberableFrom[]` `:46`, `magazines[]` `:51`, `simpleHiddenSelections[]` `:68`, `modes[]` `:77`, the mode classes `:87` and `:119` with `dispersion` at `:116` and `:164`, `discreteDistance[]` `:170`, `weaponStateAnim` `:189` and `attachments[]` `:197`. The base you inherit may differ; Grep the key in its config before quoting a line.
+
+More keys seen in vanilla:
+
+- `chamberSize` is 1 on most firearms; guns that hold their rounds in the chamber or an internal tube set it higher: 5 on the Mosin (`P:\DZ\weapons\firearms\mosin9130\config.cpp:47`), 7 on the Repeater (`P:\DZ\weapons\firearms\repeater\config.cpp:41`).
+- `chamberedRound=""` sits next to `chamberSize` on several guns (`P:\DZ\weapons\firearms\b95\config.cpp:40`; SCAR-H at `P:\DZ\weapons\firearms\scarh\config.cpp:39`). Engine key; no vanilla script reads it.
+- `recoilModifier[]={1,1,1}` is the neutral value (`P:\DZ\weapons\firearms\b95\config.cpp:61`).
+- `aiRateOfFire` and `aiRateOfFireDistance` appear on the launchers (`P:\DZ\weapons\launchers\rpg7\config.cpp:37`, `:38`). Engine keys.
+- `reloadAction` is set only on the bow and launcher bases in vanilla (`P:\DZ\data\config.cpp:4592`, `:4756`); third-party weapon packs set it on rifles too (for example `reloadAction = "ReloadAKM"` on an AK; mod config, not on `P:\`). It does not drive the reload; see `_shared/animation/weapon-anim-wiring.md`, "The reloadAction key is legacy".
+
+## Model path
+
+`model` must name the file where it really sits inside the PBO, for example `model="\MyMod\data\my_rifle.p3d"` when the model is under `data\`. On a custom rifle, a `model` that pointed at the PBO root while the file lived under `data\` wasted a whole series of builds: builds made without a clean temp folder carried an old unbinarized copy at the root, the game loaded that copy, and every measurement of the real model was meaningless; the first clean build then showed an invisible weapon and crashed on equip (measured in game on that rifle). `/dayz-lint` reports a `model` path that names no file in the mod (`missing-model`). `/dayz-build-pbo <ModName>` empties its temp folder (`P:\temp\<ModName>`) before every build, which is what removes such leftovers; its `--clean` flag does something else, wiping `P:\Mods\@<ModName>\Addons\` before the build. Importing the mesh and testing the binarized build: `model-import.md`.
+
 ## Jamming
 
 - `class Reliability` holds `ChanceToJam[]` with five values, one per health level from pristine to ruined. `Rifle_Base` uses `{0,0.001,0.0099999998,0.1,1}` (`P:\DZ\data\config.cpp:4218` to `:4221`); `BoltActionRifle_Base` never jams until ruined, `{0,0,0,0,1}` (`:4261` to `:4264`).
-- Script reads it on the server in `InitReliability` (`weapon_base.c:1289`) and picks the value for the current health level in `GetChanceToJam` (`weapon_base.c:403`).
+- Script reads it on the server only, in `InitReliability` from the `Weapon_Base` constructor (`weapon_base.c:126` to `:129`, `:1289`), and picks the value for the current health level in `GetChanceToJam` (`weapon_base.c:403`).
+- The client never reads the config. While the gun is in hands, the server's `WeaponManager` sends the current chance to the client through `DayZPlayerSyncJunctures.SendWeaponJamChance` whenever it differs by more than 0.001 (`P:\scripts\4_world\classes\weapons\weaponmanager.c:927` to `:941`). On each trigger pull `WeaponManager.Fire` calls `JamCheck` (`weaponmanager.c:494`), which compares that synced chance with a synced random number (`RandomGeneratorSyncUsage.RGSJam`, `weapon_base.c:366` to `:376`). To change jamming in script, override `GetChanceToJam` on the server side; never roll the jam with your own random number, or client and server disagree.
 
 ## Damage
 
@@ -49,4 +74,4 @@ Fire mode and optics bases are declared at the root of the file, outside `cfgWea
 
 ## Changing a vanilla gun
 
-Redeclare the vanilla class with its original parent and only the keys you change, and add its addon to `requiredAddons[]`. When you change an array such as `attachments[]` or `magazines[]`, write the whole array with `=` and keep the vanilla entries; Tier 2 (`conventions/config.md`) explains why `+=` is unsafe.
+Redeclare the vanilla class with its original parent and only the keys you change, and add its addon to `requiredAddons[]`. When you change an array such as `attachments[]` or `magazines[]`, write the whole array with `=` and keep the vanilla entries. The vanilla parent comes from an already compiled PBO, and a child's `+=` onto an array inherited across that PBO boundary is not a safe basis for the merged list (`_shared/vehicles/proxies-and-detachable-parts.md`, section "When a baked part becomes an attachment", covers this for `attachments[]`; not yet checked on `P:\` for `magazines[]`). With `=` the effective list is exactly what you wrote.

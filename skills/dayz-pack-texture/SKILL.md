@@ -1,7 +1,7 @@
 ---
 name: dayz-pack-texture
-description: "Converts PNG or TGA images to DayZ .paa textures with ImageToPAA, after checking each filename has a texture-role suffix such as _co, _ca, _nohq or _smdi. Use when a mod's textures need packing for config.cpp, .rvmat or hiddenSelectionsTextures references."
-argument-hint: "[--dry-run] <image_co.png|.tga> [<image2_nohq.png> ...]"
+description: "Converts PNG or TGA images to DayZ .paa textures with ImageToPAA, after checking each filename has a texture-role suffix such as _co, _ca, _nohq or _smdi. Also ships three offline material scripts: an .rvmat linter, an .rvmat template writer and a normal map convention check (OpenGL or DirectX). Use when a mod's textures need packing for config.cpp, .rvmat or hiddenSelectionsTextures references, when an .rvmat needs a starting point or a lint, or when a normal map may be inverted."
+argument-hint: "[--dry-run] <image_co.png|.tga> [<image2_nohq.png> ...] | scripts: <file.rvmat ...> | <super|damage|emissive|penetration|multi> --prefix <packed-path> | --normal <normal.png> --albedo <albedo.png>"
 ---
 
 <!-- skill-dir-note -->
@@ -9,7 +9,7 @@ argument-hint: "[--dry-run] <image_co.png|.tga> [<image2_nohq.png> ...]"
 
 # /dayz-pack-texture
 
-Convert one or more PNG/TGA images to `.paa` (DayZ's texture format) using DayZ Tools' `ImageToPAA.exe`. Each input file must end in a texture-role suffix. ImageToPAA reads the suffix to pick the compression and color space (its rules are in `<DayZ Tools>\Bin\ImageToPAA\TexConvert.cfg`). The skill accepts every suffix that has a rule there and is used by vanilla textures under `P:\DZ`:
+Convert one or more PNG/TGA images to `.paa` (DayZ's texture format) using DayZ Tools' `ImageToPAA.exe`. Each input file must end in a texture-role suffix. ImageToPAA reads the suffix to pick the compression and color space (its rules are in `<DayZ Tools>\Bin\ImageToPAA\TexConvert.cfg`). The skill accepts the suffixes below; each has a rule there and is used by vanilla textures under `P:\DZ`. A few rarer suffixes also have a rule and appear on a handful of vanilla `.paa` files, and the skill refuses them: `_can` (3 files), `_nofhq` (2), `_raw` (1) and the format suffixes `_dxt5` (25), `_dxt1` (1) and `_4444` (2) (a scan of the `.paa` file names under `P:\DZ`).
 
 | Suffixes | Role |
 |---|---|
@@ -53,7 +53,7 @@ python "<skill-dir>\pack_texture.py" [--dry-run] <input1> [<input2> ...]
 - `ImageToPAA.exe` is not found under DayZ Tools.
 - An input file doesn't exist, is a folder (for example a folder named `x_co.png`), or cannot be read.
 - An input doesn't end in `.png` or `.tga`.
-- An input's basename doesn't end with one of the suffixes above. ImageToPAA picks the compression from the suffix, and the rest of the pipeline (rvmat stages, reviewers) relies on it to tell what the texture is for. The message suggests a name from the stem: a trailing `_normal` or `_nrm` becomes `_nohq`, `_spec` or `_specular` becomes `_smdi`, `_alpha` becomes `_ca`, `_diffuse` or `_albedo` becomes `_co`, and any other name gets `_co` appended.
+- An input's basename doesn't end with one of the suffixes above. ImageToPAA picks the compression from the suffix, and the rest of the pipeline (rvmat stages, reviewers) relies on it to tell what the texture is for. The message suggests a name from the stem: a trailing `_normal` or `_nrm` becomes `_nohq`, `_spec` or `_specular` becomes `_smdi`, `_alpha` becomes `_ca`, `_diffuse` or `_albedo` becomes `_co`, a role word elsewhere in the stem (for example `vestnormalmap`) gets its suffix appended, and any other name gets `_co` appended.
 - Two inputs would write the same `.paa` (for example `vest_co.png` and `vest_co.tga`, or the same file passed twice), since the second conversion would silently replace the first.
 - An input's width or height is not a power of two, or its size cannot be read from the header (a missing PNG signature or `IHDR` chunk, or a TGA header with an invalid color map type, image type or bits per pixel). The message names the nearest vanilla size from `skills/_shared/textures/suffixes-and-sizes.md` (for example 1000 x 1000 becomes 1024 x 1024). Nothing is converted until every input passes, and every failing input is listed in the same run.
 
@@ -77,6 +77,41 @@ Preflight complete.
 
 [OK]   2 of 2 textures packed.
 ```
+
+## Material scripts
+
+Three offline scripts in `scripts\` check and draft the material side. They only read the files they are given and print a report or a template, so they do not run `/dayz-preflight`; nothing here needs DayZ Tools except decoding a `.paa` to PNG with ImageToPAA before `normal_convention.py` reads it.
+
+| Script | What it does | Arguments, exit codes and how to read the result |
+|---|---|---|
+| `rvmat_lint.py` | Lints one or more `.rvmat` files (and a companion `.emat`), standard library only | `skills/_shared/textures/rvmat-cookbook.md`, "The template writer and the linter" |
+| `rvmat_template.py` | Writes a starter `super`, `damage`, `emissive`, `multi` or `penetration` `.rvmat`, standard library only | the same section |
+| `normal_convention.py` | Proposes whether a normal map is DirectX (Y-) or OpenGL (Y+) from the normal and its albedo; needs numpy and Pillow | `skills/_shared/textures/normal-maps.md`, "Measuring a source map" |
+
+```cmd
+python "<skill-dir>\scripts\rvmat_lint.py" <file.rvmat> [<more.rvmat> ...] [--pdrive-root P:\] [--warnings-as-errors] [--json]
+python "<skill-dir>\scripts\rvmat_template.py" <super|damage|emissive|multi> --prefix <packed\path\name> [--output <file.rvmat>]
+python "<skill-dir>\scripts\rvmat_template.py" penetration [--surface <packed\path.bisurf>] [--output <file.rvmat>]
+python -m pip install -r "<skill-dir>\scripts\requirements.txt"
+python "<skill-dir>\scripts\normal_convention.py" --normal <normal.png> --albedo <albedo.png> [--json]
+```
+
+Each script takes `--help`; the two `.rvmat` scripts also take `--self-test`. Outside an agent session, `scripts\dayz\rvmat-lint.bat`, `scripts\dayz\rvmat-template.bat` and `scripts\dayz\normal-convention.bat` in the repo run them with the same arguments. Which route, map and material to make, and the checks before handing the work over, are in the texture pack, `skills/_shared/textures/README.md`.
+
+### Rules for material work
+
+1. **Check before you write.** Read every path, config key and material pattern in the mod or in the unpacked vanilla data on `P:\` before it goes into an answer or a file. Never edit a file on `P:\`.
+2. **Take the lowest risk route that meets the goal**, from the table in `skills/_shared/textures/rvmat-cookbook.md`, "Pick the route": a `_co.paa` and `hiddenSelectionsTextures[]` for a skin, a `.rvmat` for a different highlight, relief or glow, `healthLevels[]` materials for a look per health level, a penetration `.rvmat` for bullet and surface response, Multi only once the section count and the two UV sets justify it, and MatPBR only for a metallic and roughness set with no damage look that is not terrain.
+3. **`_nohq` is DirectX style, Y-.** Do not guess a source map's convention from where it came from: run `normal_convention.py` for a candidate, then confirm it with the baker's export setting or a raking light render (`skills/_shared/textures/normal-maps.md`). Do not read a shipped `_nohq` as plain RGB.
+4. **Copy the closest vanilla `.rvmat` of the same kind first**, and set `_smdi`, `_as` and `_co` levels against the closest vanilla asset with matching material constants (`skills/_shared/textures/smdi-and-levels.md`).
+5. **A template is a draft** until it holds the mod's real paths, selections and UV sets and was compared with a vanilla reference.
+6. **UI textures**: never change the tone curve from an offline model, and ship a `.paa` from ImageToPAA, not a hand written `.edds` (`skills/_shared/textures/ui-textures.md`).
+7. **Before borrowing a vanilla `.rvmat`**, measure its `_as` per channel and check Stage4, Stage5 and every `uvSource`; **before changing UV orientation or winding**, decode the atlas and draw the affected faces over it (`skills/_shared/textures/baked-atlas-checks.md`).
+8. **A material set from script is judged by the frame**, not by `GetObjectMaterial`, and a health level change wipes it (`skills/_shared/textures/runtime-material-swaps.md`).
+
+### Ask before writing final files
+
+Ask when any of these is unknown: the mod's root folder and packed path; the exact selections that get a texture or material swap; whether the model has one UV set or two; whether the texture is cosmetic only or must change surface, damage, glass, light or penetration behaviour; whether the result is a change to the mod or a standalone reference.
 
 ## Do not
 

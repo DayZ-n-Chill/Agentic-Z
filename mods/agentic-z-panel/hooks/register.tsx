@@ -25,7 +25,7 @@ const keys = atom({ plugin: 'agentic-z-panel', key: 'keys' } as const, {} as Key
 // store under the Claude Code config folder, and in this process's environment,
 // so the skill scripts, the agent's commands and MCP servers started after read them.
 const KEY_LIST = [
-  { name: 'VOYAGE_API_KEY', label: 'Voyage AI', what: 'vanilla source search: the Ask tab, /dayz-ask and the dayz-rag tools' },
+  { name: 'VOYAGE_API_KEY', label: 'Voyage AI', what: 'vanilla source search: the ask field, /dayz-ask and the dayz-rag tools' },
   { name: 'TYPESAFE_API_KEY', label: 'TypeSafe', what: 'Jev, the routing model /dayz-route asks' },
   { name: 'GITHUB_TOKEN', label: 'GitHub token', what: 'a higher GitHub rate limit for /dayz-search-download; git and gh use it too' },
 ] as const

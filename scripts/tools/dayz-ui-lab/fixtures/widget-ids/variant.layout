@@ -1,0 +1,17 @@
+FrameWidgetClass {
+ {
+  WrapSpacerWidgetClass "{00000000564F35E9}" {
+   Prefab "{00000000564F35E9}"
+   {
+    TextWidgetClass "{00000000308B9F61}" {
+     Prefab "{00000000308B9F61}"
+     color 1 0 0 1
+    }
+    TextWidgetClass "{6ACB5888C22B23AC}" {
+     Name "added_text"
+     text "TEST"
+    }
+   }
+  }
+ }
+}

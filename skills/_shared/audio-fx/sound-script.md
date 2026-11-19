@@ -1,8 +1,12 @@
 # Sound script: playing sound sets
 
-How Enforce Script plays, loops, fades and stops a sound set, and how to clean it up. The sound set itself is written in config (`sound-config.md`).
+How Enforce Script plays, loops, fades and stops a sound set, and how to clean it up. The sound set itself is written in config (`sound-config.md`). Line numbers are from the 1.30 scripts on `P:\`; statements about 1.29, such as what a version added, are not yet checked on `P:\`.
 
 Sounds are client only (Tier 2, `conventions/scripts.md`, "Client and server ownership"). PlaySoundSet, PlaySoundSetLoop and StopSoundSet do nothing on a dedicated server (object.c:1249, 1316). The memory point helpers (lines 1279 to 1311) have no server check, so put them behind `!GetGame().IsDedicatedServer()` yourself. The code around any helper (timers, fields, particles) needs the check too.
+
+Since 1.30 the game also has `IsHeadlessOrDedicatedServer()` (`P:\scripts\3_game\global\game.c:1136`), which is true on a headless client as well. `PlaySoundSet` and `StopSoundSet` did not move to it, but the vanilla item and player sound handlers did; the list is in `item-and-player-sounds.md`. In new play and stop code of your own, `IsHeadlessOrDedicatedServer()` is the wider check.
+
+`SEffectManager` creates its effect and sound maps only on a client: the game calls `SEffectManager.Init()` when it is not a dedicated server (`P:\scripts\3_game\global\game.c:58`), and the comment on `Init` says this is done so the maps do not exist on a server (`P:\scripts\3_game\effectmanager.c:507`). A dedicated server gets only `InitServer()` (`P:\scripts\3_game\effectmanager.c:517`), which sets up the maps for server spawned particle effecters, not for sound.
 
 ## Contents
 
@@ -42,6 +46,9 @@ Two rules hidden in `PlaySoundSet` (lines 1251 to 1260):
 | 237 | `static EffectSound PlaySoundEnviroment(string sound_set, vector position, float play_fade_in = 0, float stop_fade_out = 0, bool loop = false)` | Same, and adds the environment sound variables at that spot (the spelling is vanilla's). |
 | 256 | `static EffectSound PlaySoundOnObject(string sound_set, Object parent_object, float play_fade_in = 0, float stop_fade_out = 0, bool loop = false)` | Plays on an object and follows it. This is what `Object.PlaySoundSet` calls. |
 | 153 | `static EffectSound CreateSound(string sound_set, vector position, ...)` | Creates and registers without playing. Call `SoundPlay()` on it later. |
+| 197 | `static EffectSound PlaySoundParams(notnull SoundParams params, vector position, float play_fade_in = 0, float stop_fade_out = 0, bool loop = false)` | Plays from a `SoundParams` object you already built, for a set that is played often. |
+| 216 | `static EffectSound PlaySoundCachedParams(string sound_set, vector position, float play_fade_in = 0, float stop_fade_out = 0, bool loop = false)` | Same, but the manager keeps the `SoundParams` of each set name in its own cache. The item sound handler plays through it. |
+| 441 | `static bool DestroySound(EffectSound sound_effect)` | Older form of `DestroyEffect` for a sound. |
 | 280 | `static void DestroyEffect(Effect effect)` | Stops, unregisters and frees. If a fade out is still running, it lets the sound finish and then frees it. |
 
 The manager keeps a strong reference to every effect it registers (warning at line 3, and at line 40 for `PlayInWorld`). An effect is freed only when it has autodestroy set and stops, or when you call `DestroyEffect`. A sound you play through `SEffectManager` directly and never destroy stays in memory. `PlaySoundSet` and `PlaySoundSetLoop` set autodestroy for you (object.c line 1264). The memory point helpers do not set autodestroy. `StopSoundSet` only stops their sound and sets your variable to null, and the manager still holds it. Free their sound with `SEffectManager.DestroyEffect(sound)`, which stops it and frees it once any fade out ends (effectmanager.c:280), or call `sound.SetAutodestroy(true)` right after the helper returns true so the sound frees itself when it stops (`P:\scripts\3_game\effect.c:336`).
@@ -54,11 +61,22 @@ The manager keeps a strong reference to every effect it registers (warning at li
 |---|---|---|
 | 199 | `bool SoundPlay()` | Starts the sound. |
 | 217 | `void SoundStop()` | Stops it. With a fade out set, it fades first instead of stopping at once. |
-| 816 | `void SetSoundLoop(bool loop)` | Loops the playing wave. The loop flag is applied again when the wave starts (line 383), so a script loop works even when the set says `loop=0`. The vanilla generator relies on this: `powerGeneratorLoop_SoundSet` has `loop=0` (`P:\DZ\sounds\hpp\config.cpp:319409`) and is played with `PlaySoundSetLoop` (`powergenerator.c:95`). |
+| 816 | `void SetSoundLoop(bool loop)` | Loops the playing wave. The loop flag is applied again when the wave starts (line 383), so a script loop works even when the set says `loop=0`. The vanilla generator relies on this: `powerGeneratorLoop_SoundSet` has `loop=0` (`P:\DZ\sounds\hpp\config.cpp:320079`) and is played with `PlaySoundSetLoop` (`powergenerator.c:95`). |
 | 856 | `void SetSoundVolume(float volume)` | Relative volume on top of the config volume. |
+| 798 | `void SetSoundSet(string snd)` | The sound set to play, for an `EffectSound` you build yourself. |
+| 917 | `void SetDoppler(bool setDoppler)` | Doppler shift on or off for this sound. |
 | 899, 908 | `SetSoundFadeIn(float)`, `SetSoundFadeOut(float)` | Fade times in seconds. |
 | 607 | `override void SetAutodestroy(bool auto_destroy)` | Free the effect when it stops. |
 | 11 | `ref ScriptInvoker Event_OnSoundWaveEnded` | Fires when the wave ends. Also `Event_OnSoundWaveStarted`, `Event_OnSoundFadeInStopped`, `Event_OnSoundFadeOutStarted` (lines 10 to 13). |
+| 878 | `void SetSoundMaxVolume(float volume)` | The volume a fade in rises to. |
+| 788 | `void SetSoundWaveKind(WaveKind wave_kind)` | The mixer category of the sound; see `sound-engine-api.md`. |
+| 828 | `void SetEnviromentVariables(bool setEnvVariables)` | Whether the environment sound variables are added when the sound is built (the spelling is vanilla's). |
+| 274 | `bool IsSoundPlaying()` | Whether the wave is playing. |
+| 847 | `float GetSoundWaveLength()` | Length of the wave. |
+
+A sound with a fade in starts silent in 1.30. When the wave starts and the fade in time is above zero, `Event_OnSoundWaveStarted` calls `SetSoundVolume(0)` (`P:\scripts\3_game\effects\effectsound.c:554`). 1.29 had no such line and a faded loop could play its first frame at full volume (1.29, not yet checked on `P:\`). If a mod's levels were tuned around that first frame, listen to them again.
+
+`EffectSound` keeps its wave in a protected member, so the pitch of a sound started with these helpers cannot be changed from outside. To set the pitch or build a sound step by step, see `sound-engine-api.md`.
 
 ## Worked example: start, loop and stop
 
@@ -106,7 +124,7 @@ class MyMod_Generator extends ItemBase
 Vanilla differences worth knowing:
 
 - Vanilla tests `g_Game.IsClient() || !g_Game.IsMultiplayer()` (lines 88, 147, 196). That is the same as "not a dedicated server" for a player, and also covers single player. Either form works; Tier 2 prefers `!GetGame().IsDedicatedServer()`.
-- Vanilla starts the loop 1.5 seconds after the start sound with a `Timer` (line 161) so the start sound plays first. A `startDelay` in the loop set (`startDelay=1.2`, `P:\DZ\sounds\hpp\config.cpp:319412`) does a similar job in config.
+- Vanilla starts the loop 1.5 seconds after the start sound with a `Timer` (line 161) so the start sound plays first. A `startDelay` in the loop set (`startDelay=1.2`, `P:\DZ\sounds\hpp\config.cpp:320082`) does a similar job in config.
 - The vanilla destructor frees the smoke effect (line 38) but not the loop sound. Stop loops yourself in `EEDelete` so a deleted device goes quiet.
 
 ## Starting a sound from the server
@@ -115,4 +133,6 @@ The server cannot play sounds. When the server decides a sound should play, send
 
 - For a one-shot, register a signal bool: `RegisterNetSyncVariableBoolSignal("m_PlayCrashSoundLight")` (`P:\scripts\4_world\entities\vehicles\carscript.c:280`). The doc comment says the value is sent to clients while true and then becomes false again (`P:\scripts\3_game\entities\entityai.c:2835` to `2840`). The client plays the sound in `OnVariablesSynchronized()` (`carscript.c:435` to `442`). `ItemBase` uses the same pattern for impact sounds (`P:\scripts\4_world\entities\itembase.c:194`).
 - For a state that lasts (running, stopped), sync a bool or int and start or stop the loop in `OnVariablesSynchronized()` when it changes. Pattern: `skills/_shared/enscript/patterns/netsync.md`.
-- Energy devices are simpler: the energy manager's `DeviceUpdate` runs on clients too and calls `OnWorkStart` and `OnWorkStop` there; only the energy use is limited to the server (`P:\scripts\3_game\tools\component\componentenergymanager.c:1781` to `1840`). That is why the vanilla generator plays its sounds in those two events.
+- For a sound that belongs to an item event (placed, deployed, opened, locked), use the vanilla item sound handler: link a `SoundConstants` ID to a sound set in `InitItemSounds()` and call `StartItemSoundServer(id)` on the server (`P:\scripts\4_world\entities\itembase.c:4455`). The steps and what 1.30 changed are in `item-and-player-sounds.md`. An impact sound fits this route: call `StartItemSoundServer` from the server's contact event (contact events are in `skills/_shared/physics/contact.md`).
+- When AI should notice the sound too, add a noise on the server; players do not hear it and AI does not hear the sound set. See `noise-for-ai.md`.
+- Energy devices are simpler: the energy manager's `DeviceUpdate` runs on clients too and calls `OnWorkStart` and `OnWorkStop` there; only the energy use is limited to the server (`P:\scripts\3_game\tools\component\componentenergymanager.c:1781` to `1841`). That is why the vanilla generator plays its sounds in those two events.

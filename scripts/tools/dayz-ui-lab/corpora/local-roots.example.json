@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "roots": {
+    "dayz_vanilla": {
+      "path_env": "PACK_DAYZ_VANILLA_ROOT",
+      "writable": false
+    },
+    "ui_corpus_expansion": {
+      "path_env": "PACK_UI_CORPUS_EXPANSION_ROOT",
+      "writable": false
+    },
+    "ui_corpus_traderplus": {
+      "path_env": "PACK_UI_CORPUS_TRADERPLUS_ROOT",
+      "writable": false
+    },
+    "ui_corpus_traderx_layouts": {
+      "path_env": "PACK_UI_CORPUS_TRADERX_LAYOUTS_ROOT",
+      "writable": false
+    },
+    "ui_corpus_traderx_pbo": {
+      "path_env": "PACK_UI_CORPUS_TRADERX_PBO_ROOT",
+      "writable": false
+    },
+    "ui_corpus_vpp": {
+      "path_env": "PACK_UI_CORPUS_VPP_ROOT",
+      "writable": false
+    }
+  }
+}

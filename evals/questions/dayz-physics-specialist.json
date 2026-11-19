@@ -17,7 +17,7 @@
         "re:heavy",
         "re:\\bnot a bug\\b|n['’]t a bug\\b|expected|by design|intended|normal|\\bno\\b"
       ],
-      "verified": "P:/scripts/4_world/entities/dayzplayerimplementthrowing.c:187 and :231 (no throw with a HEAVY hand profile), P:/scripts/4_world/entities/manbase/dayzplayer/dayzplayercfgbase.c:854 (WoodenCrate uses heavyItemBehaviour), P:/DZ/gear/camping/config.cpp:10176 (itemBehaviour=0)"
+      "verified": "P:/scripts/4_world/entities/dayzplayerimplementthrowing.c:187 and :231 (no throw with a HEAVY hand profile), P:/scripts/4_world/entities/manbase/dayzplayer/dayzplayercfgbase.c:854 (WoodenCrate uses heavyItemBehaviour), P:/DZ/gear/camping/config.cpp:10186 (itemBehaviour=0)"
     },
     {
       "id": "spawn-without-physics",
@@ -33,7 +33,7 @@
       "must_include": [
         "re:ThrowPhysically\\s*\\(\\s*null\\s*,\\s*vector\\.Zero"
       ],
-      "verified": "P:/scripts/4_world/classes/constructionbase.c:300 and P:/scripts/4_world/entities/itembase/tentbase/shelter.c:65 (item.ThrowPhysically(null, vector.Zero)); signature at P:/scripts/3_game/entities/inventoryitem.c:26"
+      "verified": "P:/scripts/4_world/classes/constructionbase.c:358 and P:/scripts/4_world/entities/itembase/tentbase/shelter.c:65 (item.ThrowPhysically(null, vector.Zero)); signature at P:/scripts/3_game/entities/inventoryitem.c:26"
     },
     {
       "id": "bullets-pass-through",

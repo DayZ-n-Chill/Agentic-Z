@@ -1,0 +1,9 @@
+# These files are read byte for byte, so they keep LF on every platform.
+# The probe test refuses a template that holds a carriage return
+# (dayz-ui-lab/probe/prepare_probe.py), the generated viewer copy is sealed
+# with a SHA-256 over the raw bytes of its source (sync_generated.py check),
+# and the ODOL backend manifest is checked against a pinned SHA-256 of its raw
+# bytes (dayz-odol-strict/dayz_odol_strict/manifest.py).
+dayz-ui-lab/probe/AZ_UIProbe/gui/layouts/continuation.layout.template text eol=lf
+dayz-3d-viewer/dayz_3d_viewer/viewer_core.py text eol=lf
+dayz-odol-strict/backend/manifest-v1.json text eol=lf

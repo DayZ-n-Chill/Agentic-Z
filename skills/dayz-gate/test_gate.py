@@ -277,6 +277,22 @@ def test_build_runs_lint_first_and_stops_on_errors(project, capsys):
     assert [w["rule"] for w in data["warnings"]] == ["p-not-mounted"]
 
 
+def test_build_keeps_lint_triage_for_a_code_stage_finding(project, capsys):
+    # The code rules have no known-errors.json entry; lint's own table names the owner and the fix.
+    script = project / "workspace" / "MyMod" / "scripts" / "4_World" / "vest.c"
+    script.write_text("modded class PlayerBase\n{\n\tvoid MyModTick()\n\t{\n\t\tvector local;\n\t}\n}\n", encoding="utf-8")
+    rc, first, data = run_main(["build", "MyMod", "--json"], FakeRuntime({"build.py": (0, BUILD_OK)}), capsys)
+    assert (rc, first) == (1, "FAIL")
+    [f] = data["failures"]
+    assert (f["category"], f["rule"], f["line"]) == ("lint", "ES-RESERVED-WORD-IDENTIFIER", 5)
+    t = f["triage"]
+    assert (t["status"], t["id"], t["owner_agent"]) == ("known", "lint-es-reserved-word-identifier", "dayz-script-specialist")
+    assert t["fix"] == "Rename the variable, member or parameter."
+    assert gate.main(["build", "MyMod"], rt=FakeRuntime().runtime()) == 1
+    assert "    known lint-es-reserved-word-identifier -> dayz-script-specialist: Rename the variable, member or parameter." \
+        in capsys.readouterr().out.splitlines()
+
+
 def test_build_stores_lint_and_build_results_for_health(project, capsys):
     fake = FakeRuntime({"build.py": (0, BUILD_OK)})
     rc, _, data = run_main(["build", "MyMod", "--json"], fake, capsys)
@@ -664,6 +680,16 @@ def test_ingame_timeout_without_ready_fails_and_still_stops(project, capsys):
     assert fake.stops() == 1 and fake.running == []
 
 
+def test_ingame_join_deadline_stops_counting_once_the_client_joins(project, capsys):
+    """A client that joins 2 s before --timeout still gets the full --settle after the join."""
+    fake = FakeRuntime({"launch.py": launch_ok()})
+    session(fake, project, ready_at=18)
+    rc, first, data = ingame(fake, capsys, "--timeout", "20")
+    assert (rc, first) == (0, "PASS"), data["failures"]
+    assert data["ready"]["text"] == READY
+    assert fake.now >= 18 + 6
+
+
 def test_ingame_process_exit_is_a_crash_and_stops_early(project, capsys):
     fake = FakeRuntime({"launch.py": launch_ok()})
     session(fake, project, ready_at=None)
@@ -830,3 +856,79 @@ def test_argparse_errors_still_print_error_first_line(argv, capsys):
     assert out[0] == "ERROR"
     if "--json" in argv:
         assert json.loads("\n".join(out[1:]))["verdict"] == "ERROR"
+
+
+# --- ingame --test-bridge ------------------------------------------------------------------
+
+sys.path.insert(0, str(gate.TESTBRIDGE_DIR))
+from fakepeer import FakePeer  # noqa: E402
+
+
+def bridge_session(fake: FakeRuntime, proj: Path, answer: bool = True, fail_line: str = "") -> dict:
+    """A clean session whose bridge peers answer from the fake clock (or never)."""
+    events = {"install": 0, "remove": 0, "peers": []}
+    session(fake, proj, ready_at=4, client_lines=[fail_line] if fail_line else [])
+    real_launch = fake.on_launch
+
+    def launch():
+        real_launch()
+        cmd = next(c for c in fake.calls if "launch.py" in " ".join(c))
+        token = cmd[cmd.index("--test-bridge") + 1]
+        if not answer:
+            return
+        bridge = gate._bridge()
+        for peer, d, hello in (("server", server_dir(proj), {"player_count": 1}),
+                               ("client", client_dir(proj), {"player_loaded": True})):
+            folder = bridge.session_dir(d, token)
+            (folder / "hello.json").write_text(json.dumps({"peer": peer, "token": token, **hello}), encoding="utf-8")
+            events["peers"].append(FakePeer(folder, token, peer))
+
+    fake.on_launch = launch
+    real_sleep = fake.sleep
+
+    def sleep(seconds):
+        real_sleep(seconds)
+        for p in events["peers"]:
+            p.step()
+
+    fake.sleep = sleep
+    return events
+
+
+def bridge_runtime(fake: FakeRuntime, events: dict) -> gate.Runtime:
+    return fake.runtime()._replace(install_bridge=lambda: events.__setitem__("install", events["install"] + 1),
+                                   remove_bridge=lambda: events.__setitem__("remove", events["remove"] + 1))
+
+
+def test_ingame_test_bridge_passes_when_both_peers_answer(project, capsys):
+    fake = FakeRuntime({"launch.py": launch_ok()})
+    events = bridge_session(fake, project)
+    rc = gate.main(["ingame", "MyMod", "--json", "--settle", "6", "--test-bridge"], rt=bridge_runtime(fake, events))
+    out = capsys.readouterr().out
+    data = json.loads(out.partition("\n")[2])
+    assert rc == 0 and out.startswith("PASS"), out
+    step = next(s for s in data["steps"] if s["step"] == "test-bridge")
+    assert step["result"] == "both peers answered ping" and step["pings"]["client"]["player_loaded"] is True
+    launch_cmd = next(c for c in fake.calls if "launch.py" in " ".join(c))
+    assert launch_cmd[-2] == "--test-bridge" and len(launch_cmd[-1]) == 32
+    assert events["install"] == 1 and events["remove"] == 1 and fake.running == []
+    assert list((server_dir(project) / "AZTestBridge").glob("*.done"))
+
+
+def test_ingame_test_bridge_that_never_answers_is_an_error_not_a_fail(project, capsys):
+    fake = FakeRuntime({"launch.py": launch_ok()})
+    events = bridge_session(fake, project, answer=False)
+    rc = gate.main(["ingame", "MyMod", "--json", "--settle", "6", "--test-bridge"], rt=bridge_runtime(fake, events))
+    out = capsys.readouterr().out
+    assert rc == 2 and out.startswith("ERROR") and "test bridge fault, not a verdict on MyMod" in out
+    assert events["remove"] == 1 and fake.running == []
+
+
+def test_ingame_test_bridge_keeps_the_mods_own_fail(project, capsys):
+    fake = FakeRuntime({"launch.py": launch_ok()})
+    events = bridge_session(fake, project, answer=False,
+                            fail_line="SCRIPT    (E): NULL pointer to instance MyMod_Vest")
+    rc = gate.main(["ingame", "MyMod", "--json", "--settle", "6", "--test-bridge"], rt=bridge_runtime(fake, events))
+    out = capsys.readouterr().out
+    assert rc == 1 and out.startswith("FAIL"), out
+    assert "the mod failed first" in out

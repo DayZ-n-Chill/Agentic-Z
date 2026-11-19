@@ -154,7 +154,7 @@ bool MyMod_ShouldProcessInput()
     if (ui.GetMenu())
         return false;
 
-    // Chat input open: IsMenuOpen(int id), uimanager.c:154; MENU_CHAT_INPUT = 17, constants.c:192
+    // Chat input open: IsMenuOpen(int id), uimanager.c:154; MENU_CHAT_INPUT = 17, P:\scripts\3_game\constants.c:192
     if (ui.IsMenuOpen(MENU_CHAT_INPUT))
         return false;
 
@@ -173,6 +173,19 @@ bool MyMod_ShouldProcessInput()
 ```
 
 `MENU_*` constants are in `P:\scripts\3_game\constants.c` (for example `MENU_INGAME = 9` at :184). There is no `MenuID` enum in vanilla.
+
+### Applying and removing an exclude group
+
+A client menu or view turns a group of inputs off through the mission: `AddActiveInputExcludes(array<string> excludes)` and `RemoveActiveInputExcludes(array<string> excludes, bool bForceSupress = false)` (`P:\scripts\3_game\gameplay.c:798` and `:800`). Vanilla adds `{"inventory"}` when the inventory opens (`P:\scripts\5_mission\mission\missiongameplay.c:412`) and removes it when it closes (`:852`). `MissionGameplay` keeps each group name once in a plain list, not a count (`:1001` to `:1017`, `:938` to `:952`), so if your menu and another one both add `menu`, the first one to remove it turns the inputs back on for both. Remove exactly the groups you added, when your menu closes.
+
+### An exclude group that reaches `aiming` kills mouse look
+
+Exclude groups include each other. In `P:\bin\specific.xml` the group `aiming` is the four look inputs `UAAimLeft`, `UAAimRight`, `UAAimUp` and `UAAimDown` (lines 149 to 154), `inventory` includes `aiming` (lines 242 to 244), and `menu` includes `inventory` (lines 277 to 278). A custom camera, sight or scripted view that applies `inventory` or `menu` as an input exclude therefore reads 0.0 from every look axis, with no error. The sign: the view still answers keys read with raw `KeyState`, but ignores the mouse (measured in game with a scripted sight on a helicopter).
+
+- Pass only groups that do not reach `aiming`: open each group you pass in `specific.xml` and follow its `<include>` lines.
+- Read the look axes as the vanilla spectator does: `GetUApi().GetInputByID(UAAimLeft).LocalValue()` (`P:\scripts\4_world\entities\dayzspectator.c:39`).
+
+For a sight used from a vehicle seat, do not take the camera away from the player at all; `../depth/action-and-input-rules.md`, sections "Excludes that kill mouse look" and "Sights and turrets on a seated player", has the measured reasons and the vehicle camera method.
 
 ---
 

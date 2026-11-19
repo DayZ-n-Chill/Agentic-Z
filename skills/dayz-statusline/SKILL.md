@@ -17,7 +17,7 @@ P: mounted | mod MyVest | Diag off | RAG 3d old
 | Segment | Source |
 |---|---|
 | `P: mounted` / `P: NOT mounted` | whether `P:\` exists |
-| `mod <Name>` / `no active mod` / `no project (/dayz-init)` / `mod ?` | the project cache and active mod written by `/dayz-init` (read through `dayz-init/state.py`); `mod ?` means that lookup failed, for example a broken `.claude\local-memory\dayz-init-state.json` or a missing `dayz-init` skill, so fix that file rather than re-running `/dayz-init` |
+| `mod <Name>` / `no active mod` / `no project (/dayz-init)` / `mod ?` | the project cache and active mod written by `/dayz-init` (read through `dayz-init/state.py`); `mod ?` means that lookup failed, for example a `.claude\local-memory\dayz-init-state.json` whose `last_intent` is not an object, or a missing `dayz-init` skill, so fix that file rather than re-running `/dayz-init`; a state file that is not valid JSON at all shows `no active mod` |
 | `Diag running` / `Diag off` | any `DayZDiag_x64.exe` process (server or client) |
 | `RAG <age> old` / `RAG not indexed` | `indexed_at` in `~/.claude/dayz-search-index/manifest.json` |
 

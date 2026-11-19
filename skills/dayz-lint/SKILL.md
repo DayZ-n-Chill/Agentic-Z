@@ -1,7 +1,7 @@
 ---
 name: dayz-lint
-description: "Finds errors that would stop a DayZ mod loading, before it is packed: config.cpp syntax, CfgPatches, requiredAddons, $PBOPREFIX$ and its P: link, script modules, modded classes, missing files and bad suffixes. Prints PASS or FAIL with file:line findings, each with an owner and a fix. Runs first inside /dayz-gate build and /dayz-build-pbo; use it alone to check a mod while you work."
-argument-hint: "<ModName> [--json] | --mod-dir <folder> [--json]"
+description: "Finds errors that would stop a DayZ mod loading, before it is packed: config.cpp syntax, CfgPatches, requiredAddons, $PBOPREFIX$ and its P: link, script modules, modded classes, missing files and bad suffixes, then the code itself (Enforce Script, .layout, inputs.xml and .rvmat rules of the script validator). Prints PASS or FAIL with file:line findings, each with an owner and a fix. Runs first inside /dayz-gate build and /dayz-build-pbo; use it alone to check a mod while you work."
+argument-hint: "<ModName> [--json] [--external-scripts <folder>] | --mod-dir <folder> [--json] [--external-scripts <folder>]"
 ---
 
 <!-- skill-dir-note -->
@@ -9,22 +9,28 @@ argument-hint: "<ModName> [--json] | --mod-dir <folder> [--json]"
 
 # /dayz-lint
 
-A script reads the mod's files and reports every problem it is sure of. It starts no process, needs no DayZ Tools, and takes under a second. The AI only reads the findings and hands each one to its owner.
+A script reads the mod's files and reports every problem it is sure of, in two stages run by the one command:
+
+1. **Setup**: `config.cpp`, `CfgPatches`, the prefix and its link, script modules and files (the [Rules](#rules) table).
+2. **Code**: the script validator in `scripts/tools/dayz-script-validator/` reads the Enforce Script, `.layout`, `config.cpp`, `inputs.xml` and `.rvmat` files themselves (the [Code rules](#code-rules-second-stage) table).
+
+It starts no process and needs no DayZ Tools. The code stage reads the vanilla scripts on `P:\scripts\` when they are there, which adds roughly 10 to 15 seconds on a full `P:\scripts\` (under a second without it). The AI only reads the findings and hands each one to its owner.
 
 Follow `skills/_shared/dayz-conventions.md`.
 
 ## How to run
 
 ```cmd
-python "<skill-dir>\lint.py" <ModName> [--json]
-python "<skill-dir>\lint.py" --mod-dir <folder> [--json]
+python "<skill-dir>\lint.py" <ModName> [--json] [--external-scripts <folder>]
+python "<skill-dir>\lint.py" --mod-dir <folder> [--json] [--external-scripts <folder>]
 ```
 
 | Argument | Notes |
 |---|---|
-| `<ModName>` | A mod under `workspace/<ModName>/` in the project cached by `/dayz-init`. A plain folder name: a name holding `/`, `\`, `:` or `..` is refused with ERROR; pass a path with `--mod-dir`. |
+| `<ModName>` | A mod under `workspace/<ModName>/` in the project cached by `/dayz-init`. A plain folder name: a name that is `.` or `..`, or contains `/`, `\` or `:`, is refused with ERROR; pass a path with `--mod-dir`. |
 | `--mod-dir` | Lint any folder instead. Its name is the mod name unless `<ModName>` is given too. Paths in findings and fixes are shown from the current folder. |
 | `--json` | Print the full report as JSON after the verdict line. |
+| `--external-scripts` | The folder of a mod this one depends on (the folder that holds its `config.cpp`), for example Community Framework. Its classes then count as declared in the code stage. Repeatable. A folder that does not exist is an ERROR. |
 
 You don't need to run it before a build: `/dayz-gate build` and `/dayz-build-pbo` run it first and stop on any error.
 
@@ -53,7 +59,17 @@ With `--json`:
 }
 ```
 
-Each rule has a `lint-<rule>` entry in `skills/dayz-gate/known-errors.json` with its meaning, fix and owner, so lint findings are triaged the same way as log lines. Owner `user` means the user has to act; owner `dayz-orchestrator` means a skill run fixes it. Fixes that name `workspace/<ModName>/` are rewritten to the folder actually linted. For a `--mod-dir` folder outside the cached project's `workspace\`, where `/dayz-add-scaffold` refuses to run, the `p-link`, `pboprefix-missing` and `config-missing` fixes say what to create by hand (or point at `/dayz-import-mod`) instead.
+A code-stage finding has the same fields plus `"stage": "code"`, and its `rule` is the validator's rule id:
+
+```
+- workspace/MyVest/scripts/4_World/vest.c:5  error ES-RESERVED-WORD-IDENTIFIER: 'local' is an Enforce keyword and cannot name a variable, member or parameter. ...
+    -> dayz-script-specialist: Rename the variable, member or parameter.
+  not checked ES-UNDEFINED-CLASS-REF: config.cpp requires JM_CF_Scripts, and no scanned root declares it in CfgPatches. ...
+```
+
+A `not checked` line names a code rule that could not judge this mod, with the reason: `P:\scripts\` is missing, or the mod depends on a mod whose folder was not passed with `--external-scripts`. It is not a finding and does not change the verdict, but that rule did not pass either. The report gains `"code": {"errors", "warnings", "files", "skipped": [{"rule", "reason"}]}` for the stage; `errors` and `warnings` at the top count both stages. A payload-only bundle has no `code` entry.
+
+Each setup rule has a `lint-<rule>` entry in `skills/dayz-gate/known-errors.json` with its meaning, fix and owner, so lint findings are triaged the same way as log lines. Owner `user` means the user has to act; owner `dayz-orchestrator` means a skill run fixes it. Fixes that name `workspace/<ModName>/` are rewritten to the folder actually linted. For a `--mod-dir` folder outside the cached project's `workspace\`, where `/dayz-add-scaffold` refuses to run, the `p-link`, `pboprefix-missing` and `config-missing` fixes say what to create by hand (or point at `/dayz-import-mod`) instead.
 
 ## Rules
 
@@ -65,7 +81,7 @@ A finding is an error only when it stops the mod packing or loading. Everything 
 | `config-syntax` | error | Unbalanced braces, a missing `;` or `};`, an array without `[]`, `;` between array elements. Same grammar as the edit hook (`hooks/edit_check.py`). The structure rules below wait until the syntax is fixed. |
 | `cfgpatches-missing`, `cfgpatches-empty` | error | No `class CfgPatches`, or one with no patch class inside. |
 | `cfgpatches-field` | error | `units`, `weapons` or `requiredAddons` written without `[]`, so it is not an array. |
-| `cfgpatches-field-missing` | warning | A patch class without `units[]` or `weapons[]`. The engine tolerates it: vanilla `DZ_data_aiconfigs` in `P:\DZ\data\aiconfigs\config.cpp` has an empty body. |
+| `cfgpatches-field-missing` | warning | A patch class without `units[]` or `weapons[]`. The engine tolerates it: vanilla `DZ_data_aiconfigs` in `P:\DZ\data\aiconfigs\config.cpp:3` has an empty body. |
 | `required-addons-missing` | error | A patch class without `requiredAddons[]`, so its config can load before the vanilla classes it changes. |
 | `required-addon-name` | error | An entry that is not a class name (a path, a `.pbo`, an `@mod` folder, a space), the mod's own patch class, or a `DZ_` name that no vanilla config on `P:\DZ\` or `P:\scripts\` declares. |
 | `required-addon-duplicate` | warning | The same entry twice. |
@@ -84,17 +100,38 @@ A finding is an error only when it stops the mod packing or loading. Everything 
 | `texture-suffix` | warning | A texture in `hiddenSelectionsTextures[]` or a `.rvmat` `texture` without a role suffix such as `_co`, `_nohq` or `_smdi`. |
 | `rvmat-syntax` | error | A `.rvmat` with an unclosed string or comment. |
 
+## Code rules (second stage)
+
+The second stage runs every rule of the script validator on the mod folder and reports its findings in the shape above. The validator's FAIL findings are errors and its WARN findings are warnings, with one exception: a file that is not UTF-8 (`INPUT-ENCODING-ERROR`) is a warning, because the engine still loads it and only the code rules cannot read it. The owner and fix of each rule come from the `CODE_RULES` table in `lint.py`; a `lint-<rule>` entry in `known-errors.json` or a learned entry wins when one matches. Log-line entries of `known-errors.json` are not matched against code findings.
+
+| Rules | Owner | Finds |
+|---|---|---|
+| `ES-*` on `.c` files, `INPUT-ENCODING-ERROR` | `dayz-script-specialist` | Code the compiler refuses (an unknown class, a reserved word as a name, unbalanced brackets, a variable declared twice, a cast between unrelated types, a `modded class` of an engine class, a wrong override) and code that compiles but fails at run time (an unchecked `ctx.Read`, a sync variable written without `SetSynchDirty()`). |
+| `CONFIG-*`, `ES-CONFIG-*`, `ES-ATTACHMENTS-*` | `dayz-config-specialist` | An `inputs.xml` that `CfgMods` does not register or whose root element is wrong, a nested class whose base is not forward-declared, `attachments[] +=` over a class from another PBO, a `P:\` path in `config.cpp`. |
+| `LAYOUT-*`, `ES-LAYOUT-*`, `ES-ONMOUSELEAVE-PARAM-COUNT` | `dayz-ui-specialist` | A `.layout` in XML format, a layout path in script that does not start with the prefix or names no file, an `OnMouseLeave` handler that never fires. |
+| `RVMAT-*` | `dayz-asset-specialist` | `shader = NormalMapMacro;` and a `P:\` path in a `.rvmat`. |
+
+`scripts/tools/dayz-script-validator/RULES.md` describes the rules, the evidence behind each and what each one leaves unjudged.
+
+Run on its own, the validator (`scripts/tools/dayz-script-validator/scripts/script_validator.py`) answers in its own shape: a JSON report whose root keys are `status`, `errors` and `warnings`, and exit code 0 for PASS, 1 for FAIL and 2 for warnings only. A script that calls it directly gates on the error count, not on a non-zero exit. `/dayz-lint` already does that and turns the result into its own verdict above.
+
+To tell whether a change brought in an error, lint the mod before the change and again after it and compare the findings: a finding only in the second run belongs to the change. This catches a reference left dangling by a deleted or renamed file, which a grep for the symbol misses.
+
+Three rules (`ES-UNDEFINED-CLASS-REF`, `ES-VARIABLE-NAMED-AS-TYPE`, `ES-UNDEFINED-BUILTIN-METHOD`) need the vanilla scripts on `P:\scripts\`, and their verdicts hold for the game build those scripts come from. `ES-UNDEFINED-CLASS-REF` also needs every non-vanilla mod in `requiredAddons[]` passed with `--external-scripts`. Without them the rule is listed as `not checked`.
+
 ## Inside the build check
 
-- `/dayz-gate build` lints first. On an error it reports FAIL with the lint findings as failures (category `lint`, triaged against `known-errors.json`) and does not stop a running session or build. The JSON report gains `"lint": {"verdict", "errors", "warnings"}`; lint warnings join the report's warnings.
-- `/dayz-build-pbo` lints right after it reads the project cache, before `/dayz-preflight`. On an error it prints `[FAIL]` with each `file:line` and exits 1. It leaves the `P:\<ModName>\` link to its own junction check.
+- `/dayz-gate build` lints first, both stages. On an error it reports FAIL with the lint findings as failures (category `lint`; a setup finding is triaged against `known-errors.json`, a code finding keeps the triage lint gave it) and does not stop a running session or build. The JSON report gains `"lint": {"verdict", "errors", "warnings"}`; lint warnings join the report's warnings.
+- `/dayz-build-pbo` lints, both stages, after its preflight and workspace checks. On an error it prints `[FAIL]` with each `file:line` and exits 1. It leaves the `P:\<ModName>\` link to its own junction check.
+- Neither passes `--external-scripts`, so for a mod that depends on another mod `ES-UNDEFINED-CLASS-REF` is not checked there. Run `/dayz-lint <ModName> --external-scripts <folder>` to get its verdict.
 
 ## Limits
 
-- Lint checks files, not behaviour. Script compile errors still surface in `/dayz-gate ingame`.
+- Lint checks files, not behaviour. The code stage is a set of rules, not a compiler: a PASS means no rule fired, so other script compile errors still surface in `/dayz-gate ingame`.
 - Paths into vanilla or another mod are not checked, and non vanilla `requiredAddons` names are only checked for shape. `/dayz-gate ingame --deps` covers those at run time.
 - `#include` files are not followed.
+- A path with a `P:\` drive in `config.cpp` or a `.rvmat` can be listed twice, once by each stage (`absolute-path` and `CONFIG-PDRIVE-PATH` or `RVMAT-PDRIVE-PATH`). One fix clears both.
 
 ## Do not
 
-- Don't edit `known-errors.json` to silence a finding; fix the mod or, if lint is wrong, the rule in `lint.py` with a test.
+- Don't edit `known-errors.json` to silence a finding; fix the mod or, if lint is wrong, the rule in `lint.py` (a setup rule) or in `scripts/tools/dayz-script-validator/` (a code rule) with a test.

@@ -1,6 +1,6 @@
 # Enforce Script style: Types and casting
 
-Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`. The guide is a mirror of the [TrueDolphin/references wiki](https://github.com/TrueDolphin/references/wiki/EnScript-(Enforce-Script)-Style-Guide).
+Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`.
 
 Vanilla facts: The checked type facts are in `../enscript/references/language_types.md`; it cites `P:\scripts\` and wins where the two differ.
 
@@ -67,7 +67,7 @@ ref TVectorArray m_SpawnPoints;
 ```
 
 - **`ref`**: a strong reference. The instance is deleted when the last strong reference to it goes away (`../enscript/references/language_memory.md`).
-- **`autoptr`**: the older owning qualifier, not a separate model. Vanilla keeps it in ten files, mostly `1_core` docs and examples (`autoptr map<string, float> m_values;`, `P:\scripts\1_core\proto\serializer.c:14`). Newer vanilla code uses `ref` for members. Use `ref` in mod code (`../enscript/references/language_memory.md`, section `autoptr`).
+- **`autoptr`**: the older owning qualifier, not a separate model. Vanilla keeps it in ten files, four in `1_core` and six in ordinary `3_game`, `4_world` and `5_mission` code (`autoptr map<string, float> m_values;`, `P:\scripts\1_core\proto\serializer.c:14`). Newer vanilla code uses `ref` for members. Use `ref` in mod code (`../enscript/references/language_memory.md`, section `autoptr`).
 
 ```
 class Example

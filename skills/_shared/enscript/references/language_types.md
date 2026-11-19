@@ -24,12 +24,12 @@ Built in types, classes, enums, casting, parameters, arrays, maps, sets and temp
 | `bool` | `true` or `false`. `ToString()` gives `"true"` or `"false"`. | `P:\scripts\1_core\proto\enconvert.c:1` |
 | `string` | Text. It has methods (`Length`, `Substring`, `IndexOf`, `Replace`, `ToLower`) and an empty constant `string.Empty`. | `P:\scripts\1_core\proto\enstring.c:5`, `:7` |
 | `vector` | Three floats. Written as a string literal (`"0 1 0"`); `vector.Up`, `vector.Zero` and friends are constants. | `P:\scripts\1_core\proto\enconvert.c:118`, `:120` to `:123` |
-| `typename` | A class type as a value. `Spawn()` makes an instance, `ToString()` gives the name, `IsInherited()` tests the parent. | `P:\scripts\1_core\proto\enconvert.c:556`, `:565`, `:574`, `:584` |
+| `typename` | A class type as a value. `Spawn()` makes an instance, `ToString()` gives the name, `IsInherited()` tests the parent. | `P:\scripts\1_core\proto\enconvert.c:535`, `:544`, `:553`, `:563` |
 | `func` | A function reference, used by call queues and `ScriptInvoker`. | `P:\scripts\1_core\proto\enconvert.c:10`, `P:\scripts\2_gamelib\tools.c:57` |
 | `Class` | Root of every class. | `P:\scripts\1_core\proto\enscript.c:10` |
 | `Managed` | Root for script classes whose lifetime script manages (see `language_memory.md`). | `P:\scripts\1_core\proto\enscript.c:117` |
 
-A string turns into a type with `"PlayerBase".ToType()` (`P:\scripts\1_core\proto\enstring.c:95`). Use `typename.EnumToString(MyEnum, value)` and `typename.StringToEnum(MyEnum, "NAME")` for enum names (`P:\scripts\1_core\proto\enconvert.c:598`, `:670`); `EnumTools` has the same helpers plus `GetEnumSize` and `GetLastEnumValue` (`P:\scripts\1_core\proto\enconvert.c:699` to `:750`).
+A string turns into a type with `"PlayerBase".ToType()` (`P:\scripts\1_core\proto\enstring.c:95`). Use `typename.EnumToString(MyEnum, value)` and `typename.StringToEnum(MyEnum, "NAME")` for enum names (`P:\scripts\1_core\proto\enconvert.c:577`, `:649`); `EnumTools` has the same helpers plus `GetEnumSize` and `GetLastEnumValue` (`P:\scripts\1_core\proto\enconvert.c:666` to `:735`).
 
 ## Type inference with `auto`
 
@@ -44,8 +44,8 @@ Sources: `P:\scripts\4_world\classes\useractionscomponent\actions\continuous\veh
 
 ## Classes and members
 
-- Inherit with `:` or `extends`; vanilla uses both (`class Param: Managed`, `class Param1<Class T1> extends Param`, `P:\scripts\1_core\param.c:11`, `:31`).
-- The constructor and destructor are methods named after the class: `void Param1(T1 p1)` and `void ~ScriptRPC()` (`P:\scripts\1_core\param.c:35`, `P:\scripts\3_game\gameplay.c:107`).
+- Inherit with `:` or `extends`; vanilla uses both (`class Param: Managed`, `class Param1<Class T1> extends Param`, `P:\scripts\1_core\param.c:11`, `:32`).
+- The constructor and destructor are methods named after the class: `void Param1(T1 p1)` and `void ~ScriptRPC()` (`P:\scripts\1_core\param.c:36`, `P:\scripts\3_game\gameplay.c:107`).
 - Access: `private` and `protected` on fields and methods (`P:\scripts\3_game\global\game.c:15`, `:72`). A private constructor stops script from creating the class (`P:\scripts\3_game\gameplay.c:383`).
 - `static` and `const` combine: `static const int GEAR_COUNT = 3;` (`P:\scripts\3_game\analytics\analyticsmanagerclient.c:3`). A top level `const int` is a global constant (`P:\scripts\3_game\tools\tools.c:8`).
 - `override` marks a method that replaces a parent method; call the parent with `super.Name(...)` (`P:\scripts\3_game\entities\entityai.c:3507`, `:3509`).
@@ -70,14 +70,16 @@ Values count up from 0 unless set. An enum can extend another enum with `:` (`P:
 | `Class.CastTo(player, obj)` | `true` and fills `player` when the cast works; `false` when it fails or `obj` is null. | `P:\scripts\1_core\proto\enscript.c:110` |
 | `obj.IsInherited(PlayerBase)` | `true` when the instance is that type or a child. | `P:\scripts\1_core\proto\enscript.c:23` |
 | `obj.Type()` / `obj.ClassName()` | The runtime type as `typename` or `string`. | `P:\scripts\1_core\proto\enscript.c:52`, `:37` |
-| `obj.IsKindOf("Inventory_Base")` | Config class test, separate from script types. `GetGame().IsKindOf(className, parentName)` does the same for a class name. | `P:\scripts\3_game\entities\object.c:511`, `P:\scripts\3_game\global\game.c:1436` |
+| `obj.IsKindOf("Inventory_Base")` | Config class test, separate from script types. `GetGame().IsKindOf(className, parentName)` does the same for a class name. | `P:\scripts\3_game\entities\object.c:511`, `P:\scripts\3_game\global\game.c:1437` |
 
 A template class casts the same way: `PlayerStat<float>.Cast(...)` (`P:\scripts\4_world\entities\manbase\playerbase.c:8201`).
+
+A cast between two classes where neither derives from the other is a compile error, not a `null`: `IngameHud.Cast(mission)` with `Mission mission` stopped the Mission module with `Types 'IngameHud' and 'Mission' are not related` (measured, DayZDiag 1.29). Cast from an ancestor or a descendant: `IngameHud extends Hud` (`P:\scripts\5_mission\gui\ingamehud.c:1`) and the mission returns a `Hud` from `GetHud` (`P:\scripts\3_game\gameplay.c:720`), so `IngameHud.Cast(mission.GetHud())` compiles. In the same way, passing an `Object` where a `proto` method takes an `EntityAI` fails with `Unsafe down-casting, use 'EntityAI.Cast' for safe down-casting` (measured, DayZDiag 1.30); cast first, then pass the result.
 
 ## Parameters
 
 - `out` fills a variable for the caller: `GetPlayers(out array<Man> players)` (`P:\scripts\3_game\global\game.c:945`).
-- `inout` reads and writes it: `SanitizeMinsMaxs(inout vector min, inout vector max)` (`P:\scripts\1_core\proto\enconvert.c:542`).
+- `inout` reads and writes it: `SanitizeMinsMaxs(inout vector min, inout vector max)` (`P:\scripts\1_core\proto\enconvert.c:521`).
 - `notnull` makes passing `null` an error: `HasEntityInInventory(notnull EntityAI item)` (`P:\scripts\3_game\systems\inventory\inventory.c:118`).
 - Default values work: `CreateObject(string type, vector pos, bool create_local = false, ...)` (`P:\scripts\3_game\global\game.c:691`).
 
@@ -149,18 +151,20 @@ An ordered list of unique values. Its API is `Count`, `Clear`, `Find(v)` (index 
 Declare type parameters with `Class`:
 
 ```c
-class Param1<Class T1> extends Param      // 1_core/param.c:31
+class Param1<Class T1> extends Param      // 1_core/param.c:32
 class JsonFileLoader<Class T>             // 3_game/tools/jsonfileloader.c:1
 class map<Class TKey,Class TValue>        // 1_core/proto/enscript.c:846
 ```
 
-Use them with concrete types: `new Param1<int>(55)` (`P:\scripts\1_core\param.c:26`). `Param1` to `Param4` and up carry values through RPCs, call queues and timers, and expose `param1`, `param2` and so on (`P:\scripts\1_core\param.c:33`).
+The compiler accepts a run of `>` where one would close the template: vanilla declares `map<string, ref ExplosiveEffectData>> surfaceNameToEffectIDMap;` with one `<` and two `>` (`P:\scripts\3_game\global\ammotypes.c:80`). A parser or linter for Enforce Script must accept it and not read it as a shift operator.
+
+Use them with concrete types: `new Param1<int>(55)` (`P:\scripts\1_core\param.c:28`). `Param1` to `Param4` and up carry values through RPCs, call queues and timers, and expose `param1`, `param2` and so on (`P:\scripts\1_core\param.c:34`).
 
 ## Strings
 
 | Method | Behaviour | Source |
 |---|---|---|
-| `Length()` | Character count. | `enstring.c:199` |
+| `Length()` | Length in bytes: equal to the character count for ASCII, but a two-byte UTF-8 character counts 2 (measured, DayZDiag 1.30). `LengthUtf8()` counts characters. | `enstring.c:199`, `:212` |
 | `Substring(start, len)` | Part of the string. | `enstring.c:113` |
 | `IndexOf(s)`, `LastIndexOf(s)`, `IndexOfFrom(start, s)` | Position or -1. | `enstring.c:240`, `:253`, `:271` |
 | `Contains(s)` | Substring test. | `enstring.c:286` |

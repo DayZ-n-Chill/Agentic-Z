@@ -8,7 +8,7 @@ Semantic search over vanilla DayZ source, for any DayZ specialist agent. Three r
 
 Agents use these after Grep, per the search rule in `skills/_shared/dayz-conventions.md`: Grep for known symbols, `search_dayz_source` for questions by meaning, then verify a hit with `get_dayz_file` or Read before relying on it. Each search hit has `path`, `file_type`, `parent_context`, `line_start`, `line_end`, `distance` (LanceDB L2² distance, lower is closer), `snippet` and `is_stale`. `snippet` is the chunk's text cut to its first 1500 characters, while `line_start` and `line_end` cover the whole chunk, so fetch that range with `get_dayz_file` to read all of it. Hits carry `is_stale: true`, plus a `stale_reason` of `modified` or `missing` that is present only on stale hits, when the file on `P:\` changed after the index was built. A file counts as modified only when its mtime is newer than the build and its content hash differs from the one in `file_hashes.json`, so re-extracting `P:\` or downloading the index does not flag unchanged files. An index built before `file_hashes.json` existed compares mtime alone, and then every hit on a re-extracted drive reads stale until the index is rebuilt.
 
-Installed as a plugin, the tools appear as `mcp__plugin_agentic-z_dayz-rag__<tool>`; from a clone via `.mcp.json`, as `mcp__dayz-rag__<tool>`.
+The tools appear as `mcp__plugin_agentic-z_dayz-rag__<tool>`, both when the plugin is installed and in a clone, which loads the server through the same plugin. They appear as `mcp__dayz-rag__<tool>` only if you add the server to `.mcp.json` yourself.
 
 ## How it works
 
@@ -30,7 +30,7 @@ Every tool reports failures the same way: it raises, and the MCP client receives
    pip install -r .claude\mcp\dayz-rag\requirements.txt
    ```
 3. Install the prebuilt index with `/dayz-search-download`, or build it against your own DayZ install with `/dayz-search-index`.
-4. Wiring: in a clone, `.mcp.json` at the repo root declares the server, and the committed `.claude/settings.json` already sets `"enabledMcpjsonServers": ["dayz-rag"]`, so a clone needs no local opt in. The plugin registers it in `.claude-plugin/plugin.json`.
+4. Wiring: the server is registered in `.claude-plugin/plugin.json`. A clone loads it through the agentic-z plugin that the committed `.claude/settings.json` enables (`enabledPlugins`), so it needs no local opt in, and the committed `.mcp.json` declares no servers.
 5. Restart Claude Code and check `/mcp` shows `dayz-rag` connected.
 
 If it fails to start, run it directly to see the error:
@@ -61,7 +61,7 @@ After a DayZ update, rebuild with `python skills\dayz-search-index\index.py --fu
 | `VOYAGE_API_KEY not set` | Key missing from `.env` | Add `VOYAGE_API_KEY=pa-...` at the repo root |
 | `mcp SDK not installed` | Missing dependencies | `pip install -r .claude\mcp\dayz-rag\requirements.txt` |
 | Results look unrelated | Query model differs from index model | Check `embed_model` in `~/.claude/dayz-search-index/manifest.json`; rebuild with `--full` if you changed models |
-| 429 rate-limit errors | Burst beyond your Voyage limits | Queries retry transient Voyage errors (rate limit, timeout, connection, server) up to 4 times with backoff; if it persists, check your Voyage dashboard |
+| 429 rate-limit errors | Burst beyond your Voyage limits | Queries retry transient Voyage errors (rate limit, timeout, connection, server) up to 4 attempts (3 retries) with backoff; if it persists, check your Voyage dashboard |
 
 ## Tests
 

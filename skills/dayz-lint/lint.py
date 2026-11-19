@@ -1,18 +1,21 @@
 """dayz-lint: find errors that would stop a mod loading, before it is packed.
 
-  lint.py <ModName> [--json]
-  lint.py --mod-dir <folder> [--json]
+  lint.py <ModName> [--json] [--external-scripts <folder> ...]
+  lint.py --mod-dir <folder> [--json] [--external-scripts <folder> ...]
 
-Checks workspace/<ModName>/ without DayZ, AddonBuilder or any process:
-config.cpp syntax, CfgPatches and its arrays, requiredAddons names,
-$PBOPREFIX$ and its P:\\ link, CfgMods script modules against the scripts/
-folders, modded classes with an extends clause, files the config and the
-.rvmat materials point at, and file suffixes.
+Checks workspace/<ModName>/ without DayZ, AddonBuilder or any process, in two
+stages. Stage 1, the mod setup: config.cpp syntax, CfgPatches and its arrays,
+requiredAddons names, $PBOPREFIX$ and its P:\\ link, CfgMods script modules
+against the scripts/ folders, modded classes with an extends clause, files the
+config and the .rvmat materials point at, and file suffixes. Stage 2, the code:
+the rules of scripts/tools/dayz-script-validator/ on the Enforce Script,
+.layout, config.cpp, inputs.xml and .rvmat files, reported in the same shape.
 
 The first output line is the verdict: PASS (exit 0, warnings allowed), FAIL
 (exit 1, at least one error) or ERROR (exit 2: bad arguments, no project, no
-mod folder). Every finding carries file:line and its triage from
-dayz-gate/known-errors.json (owner agent and fix). /dayz-gate build and
+mod folder). Every finding carries file:line and its triage (owner agent and
+fix): a stage 1 finding from dayz-gate/known-errors.json, a stage 2 finding
+from the CODE_RULES table unless a lint or learned entry matches it. /dayz-gate build and
 /dayz-build-pbo call lint_mod() first and stop on errors. See SKILL.md.
 """
 from __future__ import annotations
@@ -41,11 +44,76 @@ import edit_check  # noqa: E402
 triage = h.load_module("dayz_lint_triage", SKILLS_DIR / "dayz-gate" / "triage.py")
 pack_texture = h.load_module("dayz_lint_pack_texture", SKILLS_DIR / "dayz-pack-texture" / "pack_texture.py")
 
+# Stage 2, the script validator. Its modules import each other by bare name
+# (shared, detectors, stripper), so its scripts folder goes on sys.path.
+VALIDATOR_DIR = REPO / "scripts" / "tools" / "dayz-script-validator"
+sys.path.insert(0, str(VALIDATOR_DIR / "scripts"))
+import script_validator  # noqa: E402
+
 P_DRIVE = Path("P:\\")
 
 ERROR, WARNING = "error", "warning"
 
-# Every rule lint can report; each has a "lint-<rule>" entry in dayz-gate/known-errors.json.
+# Stage 2 findings keep the validator's rule id. Each one maps to the agent that owns the fix and
+# to the fix itself; an id that is not listed gets CODE_DEFAULT. A "lint" scope entry in
+# dayz-gate/known-errors.json or a learned entry, when one matches, wins over this table;
+# "log" scope entries are not matched against code findings.
+SCRIPT, CONFIG, UI, ASSET = "dayz-script-specialist", "dayz-config-specialist", "dayz-ui-specialist", "dayz-asset-specialist"
+CODE_DEFAULT = (SCRIPT, "Change the code as the finding says.")
+CODE_RULES = {
+    "ES-CAST-UNRELATED-TYPES": (SCRIPT, "Cast to a class the variable's declared type derives from, or get the object from a call that returns a related type."),
+    "ES-CTX-READ-UNCHECKED": (SCRIPT, "Check every read: if (!ctx.Read(value)) return; (return false where the method returns bool)."),
+    "ES-CTX-READ-UNSUPPORTED-PATTERN": (SCRIPT, "Write the check as if (!ctx.Read(...)) return; so it can be verified, or confirm by hand that the result is checked."),
+    "ES-EMPTY-IFDEF": (SCRIPT, "Remove the #ifdef block if it holds no code."),
+    "ES-EMPTY-IFDEF-UNSUPPORTED-PATTERN": (SCRIPT, "Nothing to fix if the block is intended; only plain #ifdef or #ifndef blocks closed by #endif are read."),
+    "ES-EXTERNAL-CONSUMER-MISSING": (SCRIPT, "Restore the member, or update the outside script that still calls it."),
+    "ES-FORMULA-TOO-COMPLEX": (SCRIPT, "Build the string in steps (s = s + part;) so no statement joins 18 or more terms."),
+    "ES-GETTYPE-EXACT-MATCH": (SCRIPT, 'Use obj.IsKindOf("TypeName") so inherited and modded types match too.'),
+    "ES-INT-MIN-COMPARISON": (SCRIPT, "Compare against another sentinel value, or split the check."),
+    "ES-LOCAL-VAR-REDECLARE": (SCRIPT, "Declare the variable once in the method and reuse it."),
+    "ES-MEMBER-REDECLARE-BASE": (SCRIPT, "Remove the member; the vanilla base class already declares it."),
+    "ES-METHOD-NAME-COLLIDES-VANILLA-CLASS": (SCRIPT, "Rename the method so it is not the name of a vanilla class."),
+    "ES-MODDED-ENGINE-CLASS": (SCRIPT, "Mod a script class that derives from it instead (CarScript or BoatScript for vehicles)."),
+    "ES-MODULO-FLOAT-CONTEXT": (SCRIPT, "Compute the % into an int local first, then use that local in the expression."),
+    "ES-MULTILINE-CONDITION-OPERATOR": (SCRIPT, "Keep the condition on one line, or compute its parts into bool locals first."),
+    "ES-NONEXISTENT-METHOD": (SCRIPT, "Call the vanilla method the finding names instead."),
+    "ES-OVERRIDE-OF-PLATFORM-GATED-METHOD": (SCRIPT, "Wrap the override in the #ifdef that guards the vanilla method."),
+    "ES-OVERRIDE-PARAM-NAME-MISMATCH": (SCRIPT, "Rename the parameter to the name the vanilla base method uses."),
+    "ES-PROTECTED-CROSS-MODULE": (SCRIPT, "Read the member through a public method of its class."),
+    "ES-PROTECTED-METHOD-CROSS-CLASS": (SCRIPT, "Make the method public, or call it from inside its class."),
+    "ES-PROTO-ARGUMENT-DOWNCAST": (SCRIPT, "Cast the argument to the parameter's class first, or declare the variable as that class."),
+    "ES-REF-AUTOPTR-COMBINED": (SCRIPT, "Keep one of ref and autoptr on the field."),
+    "ES-REGISTERRECIPES-TYPO": (SCRIPT, "Name the override RegisterRecipies, the vanilla spelling."),
+    "ES-RESERVED-WORD-IDENTIFIER": (SCRIPT, "Rename the variable, member or parameter."),
+    "ES-RESPAWN-EQUIP-IN-ONCLIENTRESPAWNEVENT": (SCRIPT, "Move the loadout code to OnClientNewEvent, which gets the new character."),
+    "ES-SOURCE-UNTERMINATED-BLOCK-COMMENT": (SCRIPT, "Close the comment with */; the rest of the file is not checked until then."),
+    "ES-SOURCE-UNTERMINATED-STRING": (SCRIPT, "Close the string on its own line; the rest of the file is not checked until then."),
+    "ES-SYNCVAR-CLASS-UNKNOWN": (SCRIPT, "Nothing to fix if the class is intended; check its sync variables by hand."),
+    "ES-SYNCVAR-CONTRACT": (SCRIPT, "Register the variable in the constructor, write it only on the server and call SetSynchDirty() after the write."),
+    "ES-SYNCVAR-UNSUPPORTED-PATTERN": (SCRIPT, "Move the write under a plain #ifdef SERVER branch, or check it by hand."),
+    "ES-UNBALANCED-BRACKETS": (SCRIPT, "Close or remove the bracket the finding names."),
+    "ES-UNDECLARED-STATIC-MEMBER": (SCRIPT, "Declare the member on the class again, or update the lines that still use it."),
+    "ES-UNDEFINED-BUILTIN-METHOD": (SCRIPT, "Use a method the built-in type declares in the vanilla scripts of your game build."),
+    "ES-UNDEFINED-CLASS-REF": (SCRIPT, "Fix the class name or add the class; if another mod declares it, list that mod in requiredAddons[] and pass its folder with --external-scripts."),
+    "ES-VARIABLE-NAMED-AS-TYPE": (SCRIPT, "Rename the variable so it is not the name of a class, enum or typedef."),
+    "INPUT-ENCODING-ERROR": (SCRIPT, "Save the file as UTF-8; the code rules do not read it until then."),
+    "CONFIG-INPUTS-XML-NOT-REGISTERED": (CONFIG, 'Add inputs = "<prefix>/<folder>/inputs.xml"; to the mod class in CfgMods.'),
+    "CONFIG-INPUTS-XML-WRONG-ROOT": (CONFIG, "Make <modded_inputs> the root element of inputs.xml."),
+    "CONFIG-PDRIVE-PATH": (CONFIG, "Write the path from the PBO prefix, without the P:\\ drive."),
+    "ES-ATTACHMENTS-COMPOUND-APPEND-CROSSPBO": (CONFIG, "Declare the full list with attachments[] = {...}; instead of +=."),
+    "ES-CONFIG-NESTED-OVERRIDE-NO-FORWARDREF": (CONFIG, "Forward-declare the base class (class <Name>;) at the root of CfgVehicles."),
+    "ES-LAYOUT-FILE-MISSING": (UI, "Create the .layout file, or fix the path."),
+    "ES-LAYOUT-PATH-PBOPREFIX-MISMATCH": (UI, "Start the layout path with the $PBOPREFIX$ value."),
+    "ES-ONMOUSELEAVE-PARAM-COUNT": (UI, "Declare it as OnMouseLeave(Widget w, Widget enterW, int x, int y)."),
+    "LAYOUT-XML-FORMAT": (UI, "Write the layout again in the brace format: WidgetClass Name { ... }."),
+    "RVMAT-NO-NORMALMAPMACRO": (ASSET, "Use shader = Super; in the material."),
+    "RVMAT-PDRIVE-PATH": (ASSET, "Write the path from the PBO prefix, without the P:\\ drive."),
+}
+# Not an error of the mod: the engine still loads a file that is not UTF-8; only the code rules cannot read it.
+CODE_WARNING_ONLY = {"INPUT-ENCODING-ERROR"}
+
+# Every setup-stage (stage 1) rule; each has a "lint-<rule>" entry in dayz-gate/known-errors.json.
+# Stage 2 findings report the validator's rule ids instead (see CODE_RULES).
 RULES = (
     "config-missing", "config-syntax", "cfgpatches-missing", "cfgpatches-empty", "cfgpatches-field",
     "cfgpatches-field-missing", "required-addons-missing", "required-addon-name", "required-addon-duplicate", "pboprefix-missing", "pboprefix-encoding", "pboprefix-mismatch",
@@ -55,7 +123,7 @@ RULES = (
 )
 
 # CfgMods > <mod> > defs > <module class> and the scripts/ layer each one compiles.
-# Vanilla: P:\DZ\data_sakhal\config.cpp lists worldScriptModule -> DZ/data_sakhal/scripts/4_World.
+# Vanilla: P:\DZ\data_sakhal\config.cpp:21 lists worldScriptModule -> DZ/data_sakhal/scripts/4_World.
 MODULE_LAYERS = {
     "enginescriptmodule": "1_Core",
     "gamelibscriptmodule": "2_GameLib",
@@ -297,7 +365,7 @@ class Lint:
                     self.add("required-addons-missing", ERROR, cfg, patch.line,
                              f"CfgPatches class {patch.name} has no requiredAddons[] array, so its load order is not guaranteed.")
                 elif prop is None:
-                    # Vanilla loads patch classes without units[] or weapons[] (P:\DZ\data\aiconfigs\config.cpp,
+                    # Vanilla loads patch classes without units[] or weapons[] (P:\DZ\data\aiconfigs\config.cpp:3,
                     # class DZ_data_aiconfigs has an empty body), so a missing one is only a warning.
                     self.add("cfgpatches-field-missing", WARNING, cfg, patch.line, f"CfgPatches class {patch.name} has no {field}[] array.")
                 elif not prop[2]:
@@ -445,6 +513,34 @@ class Lint:
                 self.add("modded-class-extends", ERROR, path, number,
                          f"{clause}: a modded class with an extends clause is a silent no-op.")
 
+    # stage 2: the code
+    def check_code(self, external_roots: Optional[list[Path]] = None) -> dict:
+        """Run the script validator on the mod and add its findings in the lint shape. Returns the stage summary."""
+        scripts = self.vanilla_root / "scripts" if self.vanilla_root is not None else None
+        if scripts is not None and scripts.is_dir():
+            vanilla, reason = scripts, None
+        else:
+            vanilla, reason = None, f"the vanilla scripts were not found at {scripts}"
+        result = script_validator.validate_addon(
+            self.mod_dir, [str(root) for root in external_roots or []], vanilla_root=vanilla, vanilla_skip_reason=reason)
+        count = {ERROR: 0, WARNING: 0}
+        for severity, items in ((ERROR, result["errors"]), (WARNING, result["warnings"])):
+            for item in items:
+                rule = item["rule_id"]
+                sev = WARNING if rule in CODE_WARNING_ONLY else severity
+                # The validator's message starts "[FAIL] <file> line <n>: "; file and line have their own fields here.
+                head = r"^\[(?:FAIL|WARN)\] (?:" + re.escape(item["file"]) + r"(?: line \d+)?: )?"
+                self.add(rule, sev, self.mod_dir / item["file"], item["line"], re.sub(head, "", item["message"]).strip())
+                self.findings[-1]["stage"] = "code"
+                count[sev] += 1
+        return {
+            "errors": count[ERROR],
+            "warnings": count[WARNING],
+            "files": result["info"]["files_scanned"],
+            # Rules that could not judge (no vanilla scripts, an unknown dependency): not findings, not a pass either.
+            "skipped": [{"rule": s["rule_id"], "reason": s["reason"]} for s in result["info"].get("skipped_checks", [])],
+        }
+
 
 def strip_comments(text: str, backslash_escapes: bool) -> str:
     """Drop // and /* */ comments outside string literals, keeping their newlines so line numbers stay right.
@@ -511,8 +607,14 @@ def lint_mod(
     p_drive: Optional[Path] = None,
     project_dir: Optional[Path] = None,
     in_workspace: bool = True,
+    external_roots: Optional[list[Path]] = None,
 ) -> dict:
     """Lint one mod folder and return the report.
+
+    Stage 1 checks the mod setup, stage 2 the code (the script validator); a
+    payload-only bundle has no source, so neither runs on it. external_roots:
+    folders of mods this one depends on, whose classes then count as declared
+    in stage 2.
 
     p_drive (default P:\\) holds the $PBOPREFIX$ link and the unpacked vanilla
     data used for the requiredAddons spelling check (skipped when P:\\DZ\\ is
@@ -528,12 +630,22 @@ def lint_mod(
     p_drive = p_drive or P_DRIVE
     lint = Lint(mod, mod_dir, display_root or mod_dir.parent, p_drive if check_link else None, p_drive)
     note = lint.run()
+    code = lint.check_code(external_roots) if note is None else None
     known = triage.load_known(triage.KNOWN_ERRORS, triage.learned_path(project_dir) if project_dir else None)
+    # Code findings match only "lint" entries and learned ones (no compiled regex): a log-line
+    # pattern that happens to appear in a validator message must not replace the CODE_RULES fix.
+    code_known = [e for e in known if e.get("scope") == "lint" or "_re" not in e]
     context = {"ModName": mod}
     folder = lint.rel(mod_dir)
     for f in lint.findings:
-        f["triage"] = triage.match_line(f["text"], known, context)
+        f["triage"] = triage.match_line(f["text"], code_known if f.get("stage") == "code" else known, context)
         t = f["triage"]
+        if f.get("stage") == "code":
+            if t["status"] != "known":  # no lint or learned entry: the built-in table
+                owner, fix = CODE_RULES.get(f["rule"], CODE_DEFAULT)
+                f["triage"] = {"status": "known", "id": f"lint-{f['rule'].lower()}", "meaning": f["message"],
+                               "fix": fix, "owner_agent": owner, "fingerprint": t["fingerprint"]}
+            continue
         if t["status"] != "known":
             continue
         # Catalog fixes name workspace/<ModName>/; name the folder actually linted instead.
@@ -542,7 +654,7 @@ def lint_mod(
             fix = outside_fix(f["rule"], mod, folder, p_drive / lint.prefix, mod_dir)
             if fix:
                 t["fix"] = fix
-    findings = sorted(lint.findings, key=lambda f: (f["severity"] != ERROR, f["file"], f["line"] or 0))
+    findings = sorted(lint.findings, key=lambda f: (f["severity"] != ERROR, "stage" in f, f["file"], f["line"] or 0))
     errors = sum(f["severity"] == ERROR for f in findings)
     report = {
         "verdict": "FAIL" if errors else "PASS",
@@ -552,6 +664,8 @@ def lint_mod(
         "warnings": len(findings) - errors,
         "findings": findings,
     }
+    if code is not None:
+        report["code"] = code
     if note:
         report["note"] = note
     return report
@@ -618,6 +732,8 @@ def render_text(report: dict) -> str:
         t = f["triage"]
         if t["status"] == "known":
             out.append(f"    -> {t['owner_agent']}: {t['fix']}")
+    for skipped in report.get("code", {}).get("skipped", []):
+        out.append(f"  not checked {skipped['rule']}: {skipped['reason']}")
     if report.get("note"):
         out.append(f"  {report['note']}")
     out.append(f"  {report['errors']} error(s), {report['warnings']} warning(s)")
@@ -630,6 +746,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("mod", nargs="?", help="Mod name under workspace/ in the project cached by /dayz-init.")
     parser.add_argument("--mod-dir", type=Path, help="Lint this folder instead (its name is the mod name unless <ModName> is given too).")
     parser.add_argument("--json", action="store_true", help="Print the report as JSON after the verdict line.")
+    parser.add_argument("--external-scripts", action="append", type=Path, default=[], metavar="DIR",
+                        help="Folder of a mod this one depends on (the folder holding its config.cpp); its classes "
+                             "count as declared in the code rules. Repeatable.")
     try:
         args = parser.parse_args(argv)
         if not args.mod and not args.mod_dir:
@@ -642,13 +761,18 @@ def main(argv: Optional[list[str]] = None) -> int:
     try:
         if args.mod:
             check_mod_name(args.mod)
+        for root in args.external_scripts:
+            if not root.is_dir():
+                raise LintError(f"--external-scripts {root} not found")
         if args.mod_dir:
             mod_dir = args.mod_dir.resolve()
             mod = args.mod or mod_dir.name
-            report = lint_mod(mod, mod_dir, display_root=Path.cwd(), in_workspace=is_workspace_mod(mod_dir, mod))
+            report = lint_mod(mod, mod_dir, display_root=Path.cwd(), in_workspace=is_workspace_mod(mod_dir, mod),
+                              external_roots=args.external_scripts)
         else:
             project_dir = project_root()
-            report = lint_mod(args.mod, project_dir / "workspace" / args.mod, project_dir, project_dir=project_dir)
+            report = lint_mod(args.mod, project_dir / "workspace" / args.mod, project_dir, project_dir=project_dir,
+                              external_roots=args.external_scripts)
     except (LintError, OSError, ValueError) as e:
         return _error(str(e), args.json)
     print(report["verdict"])

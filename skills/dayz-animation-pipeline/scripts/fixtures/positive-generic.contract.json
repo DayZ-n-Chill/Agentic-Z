@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "contract_mode": "diagnostic",
+  "checks": [
+    {
+      "id": "timeline",
+      "type": "timeline",
+      "fps": 30.0,
+      "frame_start": 0,
+      "frame_end": 2,
+      "frame_count": 3
+    },
+    {
+      "id": "contact",
+      "type": "point_distance_band",
+      "frames": [0, 1, 2],
+      "point_a": "actor_contact",
+      "point_b": "target_contact",
+      "radius_a_m": 0.015,
+      "min_m": 0.0,
+      "max_m": 0.003
+    },
+    {
+      "id": "relative_lock",
+      "type": "relative_transform_lock",
+      "frames": [0, 1, 2],
+      "actor": "actor",
+      "target": "target",
+      "max_translation_drift_m": 0.0001,
+      "max_rotation_drift_deg": 0.01
+    },
+    {
+      "id": "links_clear",
+      "type": "segment_clearance",
+      "frames": [0, 1, 2],
+      "segments_a": ["left_link"],
+      "segments_b": ["right_link"],
+      "minimum_surface_gap_m": 0.001
+    },
+    {
+      "id": "joint_order",
+      "type": "ordered_projection",
+      "frames": [0, 1, 2],
+      "point_groups": [["left_joint", "right_joint"]],
+      "axis": [0.0, 1.0, 0.0],
+      "minimum_gap_m": 0.01
+    },
+    {
+      "id": "loop",
+      "type": "endpoint_match",
+      "frame_a": 0,
+      "frame_b": 2,
+      "points": ["actor_contact", "target_contact"],
+      "transforms": ["actor", "target"],
+      "max_translation_delta_m": 0.0001,
+      "max_rotation_delta_deg": 0.01
+    }
+  ]
+}

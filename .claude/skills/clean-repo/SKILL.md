@@ -57,9 +57,9 @@ It does not gate on `/dayz-preflight`, because it is domain-agnostic. Each child
 | Code | Meaning |
 |---|---|
 | 0 | Completed, dry run completed, user aborted, or no cleanup skills found |
-| 1 | A child's dry run or cleanup failed, the `/dayz-init` project cache could not be read, or git could not list the versioned `.server/` files and `--keep-server` was not passed |
+| 1 | A child's cleanup failed or its dry run for the first plan failed, the `/dayz-init` project cache could not be read, or git could not list the versioned `.server/` files for the first plan and `--keep-server` was not passed |
 | 2 | `--plan` combined with `--dry-run`, not a TTY and `--yes` not passed, or the cached project is not this checkout and `--other-project` not passed |
-| 3 | The plan changed since it was shown or approved (`--plan` mismatch, or a change while the prompt was open); nothing was removed |
+| 3 | The plan changed since it was shown or approved (`--plan` mismatch, or a change while the prompt was open), or the repeat check after the prompt could not run (a child's dry run or the `.server/` git check failed); nothing was removed |
 
 ## Discovery
 

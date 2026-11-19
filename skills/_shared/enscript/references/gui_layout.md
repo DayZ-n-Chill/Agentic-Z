@@ -4,6 +4,8 @@ Layout files define the widget tree for DayZ's GUI. They use a **custom property
 
 Every class, property and value below was checked against the vanilla layouts in `P:\gui\layouts\` and the widget classes in `P:\scripts\1_core\proto\enwidgets.c`. A citation names the first vanilla file that uses it.
 
+This is the short reference. The full format is in the UI pack: syntax and widget classes in `_shared/ui/layout-format.md`, every attribute in `_shared/ui/layout-attributes.md`, the screen rect arithmetic in `_shared/ui/layout-geometry.md`, and copyable blocks in `_shared/ui/layout-snippets.md`.
+
 ---
 
 ## Contents
@@ -101,7 +103,7 @@ color 0.0863 0.0863 0.0863 0.902   // dark panel background
 | `TextListboxWidgetClass` | `TextListboxWidget` (`:439`) | Scrollable list with columns | `day_z_assignments.layout:35` |
 | `CheckBoxWidgetClass` | `CheckBoxWidget` (`:418`) | Checkbox | `day_z_server_browser_item.layout:24` |
 | `SliderWidgetClass` | `SliderWidget` (`:358`) | Horizontal slider | `day_z_server_browser_new.layout:336` |
-| `ProgressBarWidgetClass` | `ProgressBarWidget` (`:377`) | Read-only progress bar | `day_z_hud.layout:2389` |
+| `ProgressBarWidgetClass` | `ProgressBarWidget` (`:377`) | Read-only progress bar | `day_z_hud.layout:2525` |
 | `ScrollWidgetClass` | `ScrollWidget` (`:481`) | Scroll container | `camera_tools/camera_tools.layout:268` |
 | `ItemPreviewWidgetClass` | `ItemPreviewWidget` (`P:\scripts\3_game\gameplay.c:286`) | Live 3D item render | `debug/debug_item.layout:42` |
 | `PlayerPreviewWidgetClass` | `PlayerPreviewWidget` (`P:\scripts\3_game\gameplay.c:305`) | Live 3D player render | `inventory_new/medium/day_z_inventory_new.layout:204` |
@@ -117,7 +119,7 @@ color 0.0863 0.0863 0.0863 0.902   // dark panel background
 
 Script type lines without a file are in `P:\scripts\1_core\proto\enwidgets.c`; layout files are under `P:\gui\layouts\`.
 
-Four more classes appear in vanilla layouts but belong to the game's own screens, so a mod has no use for them: `HtmlWidgetClass` (`HtmlWidget`, `P:\scripts\3_game\gameplay.c:316`; the book and note pages, `day_z_book.layout:62`), `ServerBrowserWidgetClass` (`day_z_server_browser_new.layout:118`), `SmartPanelWidgetClass` (`xbox/day_z_title_screen.layout:13`) and `ContentWidgetClass` (`day_z_hud.layout:2345`).
+Four more classes appear in vanilla layouts but belong to the game's own screens, so a mod has no use for them: `HtmlWidgetClass` (`HtmlWidget`, `P:\scripts\3_game\gameplay.c:316`; the book and note pages, `day_z_book.layout:62`), `ServerBrowserWidgetClass` (`day_z_server_browser_new.layout:118`), `SmartPanelWidgetClass` (`xbox/day_z_title_screen.layout:13`) and `ContentWidgetClass` (`day_z_hud.layout:2478`).
 
 ---
 
@@ -259,7 +261,7 @@ ppw.SetModelOrientation(Vector(yaw, 0, 0));
 ppw.Refresh();
 ```
 
-`PlayerPreviewWidget` is `P:\scripts\3_game\gameplay.c:305`: `UpdateItemInHands` `:307`, `SetPlayer(DayZPlayer)` `:308`, `Refresh` `:312`.
+`PlayerPreviewWidget` is `P:\scripts\3_game\gameplay.c:305`: `UpdateItemInHands` `:307`, `SetPlayer(DayZPlayer)` `:308`, `GetDummyPlayer` `:310`, `Refresh` `:312`. It takes only a `DayZPlayer`, and vanilla has no matching preview widget for infected, animals or other AI (measured in a mod: only humans render).
 
 ---
 

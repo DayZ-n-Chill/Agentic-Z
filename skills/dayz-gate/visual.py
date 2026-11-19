@@ -28,6 +28,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import sys
 import tempfile
 import time
 from datetime import datetime
@@ -35,6 +36,10 @@ from pathlib import Path
 from typing import Callable, Optional
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent / "_shared"))
+import helper_mod  # noqa: E402
+import window_capture  # noqa: E402
+
 REQUIREMENTS = HERE / "requirements.txt"
 
 SHOTS_FILENAME = "visual-shots.json"
@@ -63,49 +68,27 @@ CAMERA_RE = re.compile(r"\[AZ-VISUAL\]\s+CAMERA\b")  # client: menu closed, HUD 
 
 
 def helper_root(p_drive: Path) -> Path:
-    return p_drive / "Mods" / f"@{HELPER_NAME}"
+    return helper_mod.root(p_drive, HELPER_NAME)
 
 
 def install_helper(p_drive: Path, addon_builder: Path, marker: str, run: Callable[[list[str]], tuple[int, str]]) -> Path:
     """Pack visual_helper/ into P:\\Mods\\@AZ_VisualHelper\\Addons\\AZ_VisualHelper.pbo.
 
-    The source is copied to P:\\temp\\_azvisual\\ first, because AddonBuilder packs
-    only from the work drive. The folder gets the ownership marker so
-    remove_helper() and /dayz-clean-workspace may delete it. Raises VisualError
-    when a folder of that name is not ours or the PBO was not written.
+    The packing is skills/_shared/helper_mod.py, shared with the dayz-testbridge
+    MCP server. Raises VisualError when a folder of that name is not ours or the
+    PBO was not written.
     """
-    root = helper_root(p_drive)
-    if root.exists() and not _owned(root, marker):
-        raise VisualError(f"{root} exists but is not the gate's helper folder; remove it or rename it")
-    stage = p_drive / "temp" / "_azvisual"
-    if stage.exists():
-        shutil.rmtree(stage)
-    shutil.copytree(HELPER_SOURCE, stage / HELPER_NAME)
-    addons = root / "Addons"
-    addons.mkdir(parents=True, exist_ok=True)
-    (root / marker).write_text(HELPER_NAME + "\n", encoding="utf-8")
-    cmd = [str(addon_builder), str(stage / HELPER_NAME), str(addons), f"-prefix={HELPER_NAME}",
-           f"-temp={stage / 'tmp'}", "-packonly"]
-    rc, out = run(cmd)
-    pbo = addons / f"{HELPER_NAME}.pbo"
-    if rc != 0 or not pbo.is_file():
-        raise VisualError(f"could not pack the visual helper (AddonBuilder exit {rc}): {out.strip()[-300:]}")
-    shutil.rmtree(stage, ignore_errors=True)
-    return root
+    try:
+        return helper_mod.install(HELPER_SOURCE, HELPER_NAME, p_drive, addon_builder, marker, run, "_azvisual")
+    except helper_mod.ForeignFolderError as e:
+        raise VisualError(f"{helper_root(p_drive)} exists but is not the gate's helper folder; remove it or rename it") from e
+    except helper_mod.PackError as e:
+        raise VisualError(f"could not pack the visual helper ({e})") from e
 
 
 def remove_helper(p_drive: Path, marker: str) -> None:
     """Delete P:\\Mods\\@AZ_VisualHelper\\ when it holds the gate's marker."""
-    root = helper_root(p_drive)
-    if root.exists() and _owned(root, marker):
-        shutil.rmtree(root)
-
-
-def _owned(root: Path, marker: str) -> bool:
-    try:
-        return (root / marker).read_text(encoding="utf-8").strip() == HELPER_NAME
-    except OSError:
-        return False
+    helper_mod.remove(p_drive, HELPER_NAME, marker)
 
 
 def shifted(shots: list[dict]) -> list[dict]:
@@ -215,82 +198,23 @@ def last_shot_at(spec: dict) -> float:
 
 # --- capture -----------------------------------------------------------------------
 
-PW_CLIENTONLY = 0x1
-PW_RENDERFULLCONTENT = 0x2  # asks DWM for the window's own content, so DirectX windows behind others work
+PW_CLIENTONLY = window_capture.PW_CLIENTONLY
+PW_RENDERFULLCONTENT = window_capture.PW_RENDERFULLCONTENT
 
 
 def capture_window(pid: int, out: Path) -> None:
     """Save the client area of the visible window of process `pid` as a PNG (Windows only).
 
-    Uses PrintWindow with PW_RENDERFULLCONTENT, which reads the window's own
-    content even when it is behind other windows, so the capture never takes the
-    mouse or brings the window to the front. Raises VisualError when the process
-    has no visible window, the window is minimized (a minimized window draws
-    nothing), PrintWindow fails, or the picture is all black.
+    The capture is skills/_shared/window_capture.py (PrintWindow with
+    PW_RENDERFULLCONTENT), shared with the dayz-testbridge MCP server: it never
+    moves the mouse or brings the window to the front. Raises VisualError when
+    the process has no visible window, the window is minimized, PrintWindow
+    fails, or the picture is all black.
     """
-    import ctypes
-    from ctypes import wintypes
-
-    user32, gdi32 = ctypes.windll.user32, ctypes.windll.gdi32
-    try:  # physical pixels on a scaled display
-        ctypes.windll.shcore.SetProcessDpiAwareness(2)
-    except OSError:
-        user32.SetProcessDPIAware()
-
-    found: list[tuple[int, int]] = []
-    proc_pid = wintypes.DWORD()
-    rect = wintypes.RECT()
-
-    @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
-    def each(hwnd, _):
-        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(proc_pid))
-        if proc_pid.value == pid and user32.IsWindowVisible(hwnd) and user32.GetClientRect(hwnd, ctypes.byref(rect)):
-            found.append((rect.right * rect.bottom, hwnd))
-        return True
-
-    user32.EnumWindows(each, 0)
-    if not found:
-        raise VisualError(f"DayZ client PID {pid} has no visible window")
-    hwnd = max(found)[1]
-    if user32.IsIconic(hwnd):
-        raise VisualError(f"the DayZ client window (PID {pid}) is minimized; a minimized window draws nothing")
-    user32.GetClientRect(hwnd, ctypes.byref(rect))
-    width, height = rect.right, rect.bottom
-    if width <= 0 or height <= 0:
-        raise VisualError(f"the DayZ client window (PID {pid}) has no client area")
-
-    class BITMAPINFOHEADER(ctypes.Structure):
-        _fields_ = [("biSize", wintypes.DWORD), ("biWidth", wintypes.LONG), ("biHeight", wintypes.LONG),
-                    ("biPlanes", wintypes.WORD), ("biBitCount", wintypes.WORD), ("biCompression", wintypes.DWORD),
-                    ("biSizeImage", wintypes.DWORD), ("biXPelsPerMeter", wintypes.LONG),
-                    ("biYPelsPerMeter", wintypes.LONG), ("biClrUsed", wintypes.DWORD), ("biClrImportant", wintypes.DWORD)]
-
-    window_dc = user32.GetDC(hwnd)
-    memory_dc = gdi32.CreateCompatibleDC(window_dc)
-    bitmap = gdi32.CreateCompatibleBitmap(window_dc, width, height)
     try:
-        gdi32.SelectObject(memory_dc, bitmap)
-        if not user32.PrintWindow(hwnd, memory_dc, PW_CLIENTONLY | PW_RENDERFULLCONTENT):
-            raise VisualError(f"PrintWindow could not read the DayZ client window (PID {pid})")
-        pixels = ctypes.create_string_buffer(width * height * 4)
-        header = BITMAPINFOHEADER(ctypes.sizeof(BITMAPINFOHEADER), width, -height, 1, 32, 0, 0, 0, 0, 0, 0)
-        gdi32.GetDIBits(memory_dc, bitmap, 0, height, pixels, ctypes.byref(header), 0)
-    finally:
-        gdi32.DeleteObject(bitmap)
-        gdi32.DeleteDC(memory_dc)
-        user32.ReleaseDC(hwnd, window_dc)
-    save_bgra(pixels.raw, width, height, out)
-
-
-def save_bgra(raw: bytes, width: int, height: int, out: Path) -> None:
-    """Write 32-bit BGRA pixels as a PNG; an all-black picture is a failed capture, not a shot."""
-    _pil()
-    from PIL import Image
-
-    image = Image.frombuffer("RGBA", (width, height), raw, "raw", "BGRA", 0, 1).convert("RGB")
-    if image.getextrema() == ((0, 0), (0, 0), (0, 0)):
-        raise VisualError("the capture is all black: the client drew nothing (is it still loading or minimized?)")
-    image.save(out)
+        window_capture.capture_window(pid, out)
+    except window_capture.CaptureError as e:
+        raise VisualError(str(e)) from e
 
 
 class Capturer:

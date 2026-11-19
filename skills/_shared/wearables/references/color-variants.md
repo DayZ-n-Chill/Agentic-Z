@@ -20,11 +20,18 @@ In config, the color base lists the selections once and each color lists one tex
 - `UKAssVest_ColorBase` sets `hiddenSelections[]` once (`P:\DZ\characters\vests\config.cpp:896`), and each color such as `UKAssVest_Black` sets `scope=2` and its `hiddenSelectionsTextures[]` (`:1013` and `:1015` to `:1020`). A color may also change other values. `UKAssVest_Black` sets `visibilityModifier` (`:1014`) and its own `AnimEvents` (`:1021`).
 - The ground texture may differ from the worn one. `SmershVest` uses `smersh_g_co.paa` for `camoGround` and `smersh_co.paa` for the two worn selections (`P:\DZ\characters\vests\config.cpp:578` to `:582`).
 
-`hiddenSelectionsMaterials[]` swaps the `.rvmat` the same way, one entry per selection. Vanilla uses it on body parts, for example `MaleAdamTorso` at `P:\DZ\characters\tops\config.cpp:52`.
+Tops and vests use the plain three. Two kinds of vanilla item carry more selections, because they have more than one worn shape:
+
+- **Armbands.** `Armband_ColorBase` (`P:\DZ\characters\tops\config.cpp:817`) lists `camoGround`, then four selections per gender: `camoFemale_big_a`, `camoFemale_big_b`, `camoFemale_small_a`, `camoFemale_small_b`, and the same four with `camoMale` (`P:\DZ\characters\tops\config.cpp:839` to `:850`). A color class then needs nine textures in that order.
+- **Two-slot headgear.** `Bandana_ColorBase` lists `camoGround`, `camoMale_H`, `camoMale_M`, `camoFemale_H` and `camoFemale_M` (`P:\DZ\characters\headgear\config.cpp:2974` to `:2981`). The `_H` and `_M` suffixes match its two slots, headgear and mask.
+
+In the worn models, everything that is not a camo selection sits in a section named `zbytek`; see `worn-models.md`.
+
+`hiddenSelectionsMaterials[]` swaps the `.rvmat` the same way, one entry per selection. Vanilla uses it on body parts, for example `MaleAdamTorso` (`P:\DZ\characters\tops\config.cpp:46`) at `:52`.
 
 ## Skin showing through: `personality`
 
-`TShirt_ColorBase` lists a fourth selection, `personality`, after the three camo selections (`P:\DZ\characters\tops\config.cpp:2269`), while each color lists only three textures (`TShirt_Beige` at `:2360`). The script fills `personality` with the wearer's skin: `Clothing.SwitchItemSelectionTextureEx` finds the selection (`P:\scripts\4_world\entities\itembase\clothing_base.c:140`) and copies the material and texture of the player's empty hands into it. A worn model with bare skin (arms on a T-shirt) names that area `personality` so it matches every character.
+`TShirt_ColorBase` lists a fourth selection, `personality`, after the three camo selections (`P:\DZ\characters\tops\config.cpp:2269`), while each color lists only three textures (`TShirt_Beige` at `:2360`). The script fills `personality` with the wearer's skin: `Clothing.SwitchItemSelectionTextureEx` finds the selection (`P:\scripts\4_world\entities\itembase\clothing_base.c:140`) and copies the material and texture of the player's empty hands into it, or the player's decayed texture once the corpse has passed the fresh state (`:143` to `:156`). A worn model with bare skin (arms on a T-shirt) names that area `personality` so it matches every character.
 
 ## Checks before you hand back
 
@@ -33,6 +40,7 @@ In config, the color base lists the selections once and each color lists one tex
 3. Color textures end in `_co` and are packed with `/dayz-pack-texture`.
 4. Only the color classes have `scope=2`; the color base stays at `scope=0` so it never spawns.
 5. **Engine:** a hidden selection must be present in every visual LOD of a model, or that LOD keeps its original texture. Say so in the notes for Object Builder.
+6. **Engine:** a selection listed in `hiddenSelections[]` with no texture given renders invisible, not grey. That is why only the color classes spawn: `Barrel_ColorBase` (`P:\DZ\gear\containers\config.cpp:19`) lists `camoGround` (`:61`) and sets no texture, and `Barrel_Green` sets `scope=2` and the texture (`:144` and `:146`). An item that shows up invisible in game is usually missing a texture entry or has its entries out of order.
 
 ## Changing a color from script
 

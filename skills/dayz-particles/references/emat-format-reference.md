@@ -1,6 +1,6 @@
 # .emat material format reference
 
-Verified from 8 vanilla particle material files. Plain text format.
+Plain text format. Every key used by the 171 vanilla particle `.emat` files under `P:\graphics\particles` (the `materials` and `sprites` folders) is in the property table. Key names, the shaders that use them and the values shown are checked on `P:\`; the descriptions of the first twelve rows come from 8 vanilla files read in detail, and a description marked "not yet checked" is inferred from the key name and its values.
 
 ## Contents
 
@@ -16,34 +16,58 @@ Verified from 8 vanilla particle material files. Plain text format.
 
 ## Two shader types
 
+These are the two material classes particles use. Vanilla `.emat` files outside particles use other classes (`MatWaterPool`, `MatOceanOld`, `MatPBRBasic`); those are covered in `skills/_shared/textures/matpbr-emat.md`.
+
 ### `Particle` — Most common (fire, sparks, water, smoke with blending)
 
 Used when particles need additive blending, transparency sorting, or emissive glow.
 Supports sprite sheet animation (TileU/TileV).
 
-### `ParticleSprite` — Simpler (steam, flares, opaque billboards)
+### `ParticleSprite` — Billboards (steam, flares, flames, dust)
 
-Used for simpler particles that just need diffuse+ambient lighting.
-No BlendMode property available.
+Takes the same properties as `Particle`, including `BlendMode`, `Sort`, `TileU`, `TileV`, `CameraBlendFar` and `BidirLightScale`. For example, `P:\graphics\particles\materials\fire\fire_flame_01.emat` is a `ParticleSprite` with `BlendMode Additive_AlphaModulate` and `TileU 3` / `TileV 3`, and `P:\graphics\particles\materials\smoke\smoke_dust_01_w.emat` is a `ParticleSprite` with `Sort translucent` and `BlendMode Additive_AlphaModulate`.
+
+### Postprocess `.emat` files are not particle materials
+
+These two shaders cover the `.emat` files a `.ptc` may name. Weather effects also ship `.emat` files with other shaders, and those are postprocess materials:
+
+- The sandstorm material opens with the shader `SnowEffect` (`P:\graphics\materials\postprocess\sandstorm.emat:1`) and sets its tint with `ParticlesColor 0.69 0.49 0.29 1` (`P:\graphics\materials\postprocess\sandstorm.emat:29`).
+- The Nasdara rain material opens with the shader `RainEffect` (`P:\graphics\materials\postprocess\rainnasdara.emat:1`).
+
+Do not put either file on the `Material` line of a `.ptc`. Both are present on `P:\` in 1.30; that they are new in 1.30 is not yet checked on `P:\`, which holds only 1.30. See `dayz-1-30-world-particles.md`.
 
 ---
 
 ## Complete property table
 
-| Property | Available in | Type | Description |
+"Used in" names the shaders whose vanilla files use the key. A key seen only in `Particle` files has not been tried in a `ParticleSprite` file.
+
+| Property | Used in | Type | Description |
 |---|---|---|---|
 | `AlbedoMap` | Both | string | Texture: `"{GUID}path.edds"` optionally with `alpha` channel ref |
 | `Color` | Both | RGBA float | Base tint color (0-1 per channel) |
 | `Diffuse` | Both | RGBA float | Diffuse lighting response |
 | `Ambient` | Both | RGBA float | Ambient lighting response |
 | `Emissive` | Both | RGBA float | Self-illumination / glow intensity |
-| `BlendMode` | Particle only | string/int | Blending: `Additive_AlphaModulate`, `2`, or omit |
+| `BlendMode` | Both | string/int | Blending: `Additive_AlphaModulate`, `2`, `AlphaBlend`, or omit |
 | `Sort` | Both | string/int | Render sorting: `translucent`, `overlay`, `0` |
 | `Softness` | Both | float | Soft-particle edge blending (0=hard, 2=very soft) |
-| `TileU` | Particle only | int | Sprite sheet columns (for animated textures) |
-| `TileV` | Particle only | int | Sprite sheet rows |
-| `CameraBlendFar` | Particle only | float | Distance fade threshold |
-| `BidirLightScale` | Particle only | float | Bidirectional light scaling (0=disable) |
+| `TileU` | Both | int | Sprite sheet columns (for animated textures) |
+| `TileV` | Both | int | Sprite sheet rows |
+| `CameraBlendFar` | Both | float | Distance fade threshold |
+| `BidirLightScale` | Both | float | Bidirectional light scaling (0=disable) |
+| `NormalMap` | Both | string | Normal map texture, `"{GUID}path.edds"` (81 files; `P:\graphics\particles\materials\character\fluid_thick_01.emat:3`) |
+| `CameraBlendNear` | Both | float | Near counterpart of `CameraBlendFar` (`P:\graphics\particles\materials\fire\fireball_1.emat:7`); exact effect not yet checked |
+| `AlphaTest` | Both | float | Always `0` in vanilla (`P:\graphics\particles\materials\fire\fire_flame_01.emat:4`); alpha test threshold, not yet checked |
+| `DepthScale` | Both | float | 44 files, values such as `1.038` (`P:\graphics\particles\materials\character\fluid_thick_01.emat:6`); meaning not yet checked |
+| `LightScale` | Both | float | Scene light response, values such as `0.797` (`P:\graphics\particles\materials\enviroment\boat_drops.emat:15`); not yet checked |
+| `ZBias` | Particle | float | Depth bias, values such as `3.848` (`P:\graphics\particles\materials\enviroment\boat_drops.emat:6`); not yet checked |
+| `SortBias` | Particle | int | Sort order bias, values such as `4` (`P:\graphics\particles\materials\enviroment\boat_drops_1_geyser.emat:7`); not yet checked |
+| `Cull` | Particle | string | Always `none` in vanilla (`P:\graphics\particles\materials\enviroment\boat_drops.emat:7`); that it turns off back face culling is not yet checked |
+| `ZEnable` | Particle | int | Always `0` in vanilla (`P:\graphics\particles\materials\smoke\smoke_cloud_01_b_trans_m18_03.emat:7`); that it turns off the depth test is not yet checked |
+| `CastShadow` | Particle | int | Always `1` in vanilla (`P:\graphics\particles\materials\enviroment\boat_drops.emat:9`) |
+| `ReceiveShadow` | Particle | int | Always `1` in vanilla (`P:\graphics\particles\materials\enviroment\boat_drops.emat:10`) |
+| `EmissiveLV`, `EmissiveAbsoluteLV`, `AlphaToEmissiveLV`, `SphereSizeMultiplier`, `TIVisibility` | Particle | various | Only in `P:\graphics\particles\materials\fire\fire_flame_02.emat` (lines 4, 5, 6, 10 and 13, for example `AlphaToEmissiveLV PerPixel`, `TIVisibility Always`); meaning not yet checked |
 
 ---
 
@@ -53,6 +77,7 @@ No BlendMode property available.
 |---|---|---|
 | `Additive_AlphaModulate` | Adds light, modulated by alpha | Sparks, fire, water splash |
 | `2` | Numeric equivalent (legacy) | Same as additive |
+| `AlphaBlend` | Standard alpha blending, named explicitly | One vanilla file: `P:\graphics\particles\materials\smoke\smoke_anim_01.emat:3` |
 | (omitted) | Standard alpha blending | Steam, soft smoke |
 
 ---
@@ -202,7 +227,7 @@ All paths are prefixed with `Graphics/Particles/materials/`.
 |---|---|---|
 | `{CB7AF4FD8ACBFDFC}` | glow/glow1.emat | Soft glow dot |
 | `{009C2EBAACD2D72A}` | fire/sparks1.emat | Bright spark point |
-| `{0B829A150C6A13E5}` | fire/sparks_06.emat | Spark strip (8-tile) |
+| `{A1C2A33044F4946D}` | fire/sparks_06.emat | Spark strip (8-tile) |
 | `{853257EDA4B1E35D}` | fire/fire_flame_01.emat | Fire flame billboard |
 | `{3E6CE4D61F8AC71F}` | fire/fire_medium_camp_02.emat | Medium fire anim |
 | `{83BCB6516091DB01}` | fire/fire_medium_camp_04.emat | Fire burst anim |

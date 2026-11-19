@@ -1,0 +1,14 @@
+FrameWidgetClass Root
+{
+    position 0 0
+    size 1 1
+    {
+        ImageWidgetClass Child
+        {
+            position .5 -0.5
+            size 1 1
+            {
+            }
+        }
+    }
+}

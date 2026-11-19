@@ -1,0 +1,11 @@
+name = "AutoTest";
+picture = "";
+logo = "";
+logoSmall = "";
+logoOver = "";
+tooltip = "AutoTest";
+overview = "";
+action = "";
+author = "";
+authorID = "";
+version = "1.0";

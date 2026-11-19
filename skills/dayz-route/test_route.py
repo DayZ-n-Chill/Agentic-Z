@@ -209,6 +209,21 @@ def test_model_changes_still_go_to_object_builder(text):
     assert decide(text)["route"] == "dayz-object-builder"
 
 
+@pytest.mark.parametrize("text", ["inspect the model.cfg of my door", "inspect my model.cfg animations"])
+def test_inspecting_a_model_cfg_is_not_the_model_tools(text):
+    assert decide(text)["route"] != "dayz-model-tools"
+
+
+@pytest.mark.parametrize("text", ["triangulate the quads on my crate", "the ground plane in my model"])
+def test_quads_and_planes_in_a_mesh_are_not_vehicles(text):
+    assert decide(text)["route"] != "dayz-vehicle-specialist"
+
+
+@pytest.mark.parametrize("text", ["add a quad bike to my mod", "my plane wings flap", "make an ATV with four seats"])
+def test_quad_bikes_atvs_and_flying_planes_are_vehicles(text):
+    assert decide(text)["route"] == "dayz-vehicle-specialist"
+
+
 def _assert_confident(text, expected, args):
     d = decide(text)
     assert d["route"] == expected
@@ -498,6 +513,123 @@ def test_every_user_facing_dayz_skill_is_a_target():
     }
     skills = {p.parent.name for p in (REPO / "skills").glob("dayz-*/SKILL.md")}
     assert sorted(skills - not_targets - set(CFG["targets"])) == []
+
+
+# The model, texture, animation and test tools: a request for the tool goes to the skill that runs it,
+# or to the agent that reads the pack when the old tool skill became knowledge.
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("make a 3D viewer for my crate.p3d", "dayz-model-tools"),
+        ("convert this paa to png", "dayz-model-tools"),
+        ("export my truck model to glb", "dayz-model-tools"),
+        ("inspect my vest.p3d", "dayz-model-tools"),
+        ("show me the memory points of the door", "dayz-model-tools"),
+        ("build a p3d from this recipe json", "dayz-model-tools"),
+        ("reverse engineer this Workshop mod", "dayz-import-mod"),
+        ("extract the pbos of that trader mod and look for patterns", "dayz-import-mod"),
+        ("align the proxies on my mannequin", "dayz-model-tools"),
+        ("the vest proxy comes out rotated", "dayz-model-tools"),
+        ("verify MyVest in game", "dayz-launch-test"),
+        ("run the vehicle acceptance ladder", "dayz-launch-test"),
+        ("lint my rvmat", "dayz-pack-texture"),
+        ("is my normal map OpenGL or DirectX?", "dayz-pack-texture"),
+        ("check the get-in points on my truck", "dayz-p3d-audit"),
+        ("audit my car model before I pack it", "dayz-p3d-audit"),
+        ("run the winding gate on my zombie", "dayz-model-tools"),
+        ("write a motion contract for the reload", "dayz-animation-pipeline"),
+        ("write a feature spec for the trader", "dayz-scope-mod"),
+        ("open the alignment viewer for my vest", "dayz-model-tools"),
+        ("use dayz-model-tools", "dayz-model-tools"),
+        ("make realistic animations for the vault", "dayz-animation-specialist"),
+        ("port my mod to 1.30", "dayz-script-specialist"),
+        ("show me the error catalog", "dayz-launch-test"),
+        ("what hot-reloads with file patching?", "dayz-build-engineer"),
+        ("how do I run a headless client under Proton", "dayz-build-engineer"),
+    ],
+)
+def test_domain_tool_skills_route_confidently(text, expected):
+    _assert_confident(text, expected, None)
+
+
+# The reference skills: asking for the reference goes to the skill, as with dayz-particles; a reference
+# that is now a knowledge pack goes to the agent that reads it.
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("use dayz-animation-pipeline", "dayz-animation-pipeline"),
+        ("open the model pipeline", "dayz-object-builder"),
+        ("show me the AI patterns", "dayz-ai-specialist"),
+        ("open the aviation reference", "dayz-vehicle-specialist"),
+        ("where is the base building reference?", "dayz-persistence-specialist"),
+        ("show me the doors reference", "dayz-animation-specialist"),
+        ("open the sandstorm reference", "dayz-map-specialist"),
+        ("open the motorbike reference", "dayz-vehicle-specialist"),
+        ("open the persistence reference", "dayz-persistence-specialist"),
+        ("open the physics engine reference", "dayz-physics-specialist"),
+        ("open the sound system reference", "dayz-audio-fx-specialist"),
+        ("open the UI development reference", "dayz-ui-specialist"),
+        ("open the underground reference", "dayz-map-specialist"),
+        ("open the weapons reference", "dayz-weapon-specialist"),
+    ],
+)
+def test_reference_skills_route_confidently(text, expected):
+    _assert_confident(text, expected, None)
+
+
+# Doing the work a reference skill describes still goes to the specialist that reads it.
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("add a dirt bike with a kickstand", "dayz-vehicle-specialist"),
+        ("my plane stalls on takeoff", "dayz-vehicle-specialist"),
+        ("my helicopter rotor does not spin", "dayz-vehicle-specialist"),
+        ("import a Grub rip of a racing car", "dayz-vehicle-specialist"),
+        ("my watchtower loses its walls, base building is broken", "dayz-persistence-specialist"),
+        ("add an underground trigger to my bunker", "dayz-map-specialist"),
+        ("make the sandstorm less frequent", "dayz-map-specialist"),
+        ("rig a custom zombie mesh to the vanilla skeleton", "dayz-animation-specialist"),
+        ("retarget a Mixamo clip to the survivor", "dayz-animation-specialist"),
+        ("turn this GLB into a game ready model", "dayz-object-builder"),
+        ("unwrap my crate into a clean UV atlas", "dayz-object-builder"),
+    ],
+)
+def test_reference_skill_work_goes_to_the_specialist(text, expected):
+    d = decide(text)
+    assert d["route"] == expected
+    assert d["kind"] == "agent"
+    assert d["confidence"] >= CFG["threshold"]
+
+
+# A whole-mod request stays with the team even when it names a tool or reference skill's phrase.
+@pytest.mark.parametrize(
+    "text",
+    [
+        "build me a new mod that adds a dirt bike with realistic animations",
+        "create a new vest mod, here are the acceptance criteria",
+        "build me a new weapon mod with a feature spec",
+        "build me a motorbike mod and check the get-in points",
+    ],
+)
+def test_a_whole_mod_with_a_skill_phrase_is_still_the_team(text):
+    _assert_confident(text, "orchestrator", None)
+
+
+# A crash with a log stays with the debugger even when it mentions Linux or hot reload.
+@pytest.mark.parametrize(
+    "text",
+    [
+        "my linux server crashes, here is the RPT",
+        "my game crashes when I hot reload scripts",
+    ],
+)
+def test_a_crash_on_linux_or_after_hot_reload_is_the_debuggers(text):
+    _assert_confident(text, "dayz-mod-debugger", None)
+
+
+def test_naming_a_specialist_is_not_its_reference_skill():
+    # "dayz-persistence" is the start of "dayz-persistence-specialist".
+    assert decide("ask the dayz-persistence-specialist to fix my safe")["route"] == "dayz-persistence-specialist"
 
 
 def test_cli_json_and_text(monkeypatch):

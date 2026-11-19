@@ -71,7 +71,7 @@
         "re:\\A\\W*FAIL\\b",
         "re:CRITICAL[^\\n]*(scripts/editor|script-module-unlisted)"
       ],
-      "verified": "agents/dayz-mod-reviewer.md 'Run lint first' (scripts/editor/ exception) and check 2; skills/dayz-lint/lint.py:341-351 (warns on any scripts/ subfolder with .c files no module lists); vanilla plugin form at P:/scripts/editor/plugins/dayztools.c:1 (class DayZTool: WorkbenchPlugin), :46 (WorkbenchPluginAttribute with five positional arguments) and :55 (override void Run())"
+      "verified": "agents/dayz-mod-reviewer.md 'Run lint first' (scripts/editor/ exception) and check 2; skills/dayz-lint/lint.py:433-443 (warns on any scripts/ subfolder with .c files no module lists); vanilla plugin form at P:/scripts/editor/plugins/dayztools.c:1 (class DayZTool: WorkbenchPlugin), :46 (WorkbenchPluginAttribute with five positional arguments) and :55 (override void Run())"
     }
   ]
 }

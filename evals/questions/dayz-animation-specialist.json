@@ -19,7 +19,7 @@
         "re:maxValue|value range|range"
       ],
       "cite": "fence.c",
-      "verified": "P:/scripts/4_world/entities/itembase/basebuildingbase/fence.c:12 (GATE_ROTATION_ANGLE_DEG = 100) and :498 (SetAnimationPhase(\"Wall_Gate_Rotate\", value)); P:/DZ/gear/camping/config.cpp:4450; fence.p3d stores a 0 to 100 range for Wall_Gate_Rotate"
+      "verified": "P:/scripts/4_world/entities/itembase/basebuildingbase/fence.c:12 (GATE_ROTATION_ANGLE_DEG = 100) and :512 (SetAnimationPhase(\"Wall_Gate_Rotate\", value)); P:/DZ/gear/camping/config.cpp:4460; fence.p3d stores a 0 to 100 range for Wall_Gate_Rotate"
     },
     {
       "id": "user-source-missing",
@@ -52,6 +52,57 @@
         "re:source\\s*=\\s*\"user\""
       ],
       "verified": "P:/DZ/structures/residential/config.cpp:7357-7397 (class Doors with Doors5); houseblock_3f_corner1.p3d stores source doors5 for that door; P:/scripts/4_world/entities/manbase/playerbase.c:1697 (AddAction(ActionOpenDoors)) and actionopendoors.c:59-75 (OpenDoor)"
+    },
+    {
+      "id": "physics-bake-then-remove",
+      "question": "Answer only, do not edit any file. An artist delivered a Blender shot: a tower of eight wooden crates knocked down by a swinging wrecking ball, simulated with rigid body physics. A reviewer's audit script fails the file because scene.rigidbody_world is None and no object has a rigid_body. Does that prove the simulation never ran? Say what the artist most likely did, which evidence in the file a reviewer should accept instead, and which call you would use to do that step in a headless (background) Blender.",
+      "must_include": [
+        "re:\\bno\\b|\\bnot\\b|doesn't",
+        "re:bak(e|ed|ing)",
+        "re:keyframes?|\\bkeys\\b",
+        "re:bake_action|bake_to_keyframes"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*yes\\b"
+      ],
+      "verified": "skills/_shared/animation/blender-mcp-workflow.md 'Runtime rules', the bake_to_keyframes bullet (bpy.ops.rigidbody.bake_to_keyframes fails in background mode; use bpy_extras.anim_utils.bake_action) and skills/_shared/animation/blender-bpy-sim-baking-export.md 'Baking the cache' and 'Turning the simulation into keys'. Blender tool behaviour, not checkable on P:. Evidence of a simulation is either live rigid bodies or dense per-frame location keys with no rigid body world (bake, then remove the world)."
+    },
+    {
+      "id": "easing-overshoot-audit",
+      "question": "Answer only, do not edit any file. In Blender I animate a three-segment IK arm that picks a cube up and puts it down. My only quality check is that no keyframe uses linear interpolation, and the shot passes it but still looks robotic. Name the keyframe interpolation type that makes a curve go past its target value and settle back, the easing it is paired with on an arriving key, and what to do so the arm segments do not all key on the same frames. What should I add to a pause longer than a few frames so it does not look frozen?",
+      "must_include": [
+        "re:\\bBACK\\b",
+        "re:EASE_OUT|ease[- ]out",
+        "re:stagger|offset",
+        "re:moving hold|drift"
+      ],
+      "verified": "skills/_shared/animation/blender-mcp-workflow.md 'Keying in passes' step 3 (EASE_OUT with BACK for overshoot and settle), step 4 (stagger follower channels and bones by 1 to 3 frames) and step 5 (moving holds: small drift keys across any hold longer than 6 frames); skills/_shared/animation/blender-realism-and-review.md 'Fixes for robotic motion' rows 2, 4 and 6. Blender tool behaviour measured on Blender 5.1, not checkable on P:."
+    },
+    {
+      "id": "video-output-gate-order",
+      "question": "Answer only, do not edit any file. My Blender 5.x script for a six second product turntable sets scene.render.image_settings.file_format = 'FFMPEG' and that line raises TypeError, although the same script worked on an older Blender. Which attribute of the image settings must be set first, and to what value? How should the script handle a build that cannot encode video? The camera orbit is a perfect constant-speed circle: which f-curve modifier adds a little human imperfection to it?",
+      "must_include": [
+        "media_type",
+        "re:'?VIDEO'?",
+        "re:\\bNOISE\\b",
+        "re:PNG|image sequence|try|probe|build_options|codec_ffmpeg"
+      ],
+      "verified": "skills/_shared/animation/blender-mcp-workflow.md 'Runtime rules', the video output bullet (set ims.media_type = 'VIDEO' first; only then is file_format = 'FFMPEG' a valid enum value; probe with try/except and fall back to a PNG sequence); skills/_shared/animation/blender-review-loop.md 'Video output' (bpy.app.build_options.codec_ffmpeg, never assume MP4 output exists); skills/_shared/animation/blender-bpy-fcurve-modifiers.md 'Noise for camera shake' (fcurve.modifiers.new(type='NOISE')). Blender tool behaviour, not checkable on P:."
+    },
+    {
+      "id": "txa-add-spine-up-export",
+      "question": "Answer only, do not edit any file. With the DayZ Animation Tools plugin in Blender I made a two second chamber check for a DayZ character holding a rifle (right arm reaches to the bolt, torso and head follow a little) and I am about to export it as a .txa for Workbench. My bone list holds EntityPosition, Pelvis, Spine, Spine1, Spine2, Neck, Head, the right arm chain, RightHand_Dummy, RightHandRing, RightHandPinky, LeftUpLeg and RightUpLeg. Which of these must I leave out of an action animation like this and why, which Export Type must the file declare, and which skeleton must the bone names match? Does the vanilla player bone list contain RightHandRing and RightHandPinky? Cite the vanilla file.",
+      "must_include": [
+        "OFP2_ManSkeleton",
+        "re:(type|export)[^.\\n]{0,60}\\bADD\\b|\\bADD\\b[^.\\n]{0,40}(type|export)|`ADD`",
+        "re:spine[- ]up|legs?\\b",
+        "re:\\byes\\b|does (contain|list|have)|lists? (them|both|RightHandRing)|are (both )?(listed|present|in the)|contains (them|both)"
+      ],
+      "must_not_include": [
+        "re:(RightHandRing|RightHandPinky|they|ring and pinky)[^.\\n]{0,60}(do not|don't|does not|doesn't) exist in (the )?vanilla"
+      ],
+      "cite": "skeletons.anim.xml",
+      "verified": "P:/DZ/anims/cfg/skeletons.anim.xml:113 (EntityPosition), :115 (RightHand_Dummy), :230 (RightHandRing) and :247 (RightHandPinky), all in the player bone list; skills/_shared/animation/txa-bones-and-axes.md 'What to key and what to leave out' (action animations are spine-up: never key EntityPosition, Pelvis or the legs, and leave RightHand_Dummy out; Export Type ADD for action animations with Selected Bones Only, from blender-txa-export.md 'Export Type'; bone names must match OFP2_ManSkeleton). The vanilla player bone list holds the ring and pinky bones, so the question checks that fact."
     }
   ]
 }

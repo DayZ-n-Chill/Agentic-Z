@@ -4,7 +4,9 @@ How the object store saves an entity, what vanilla already writes for you, and t
 
 ## Where it runs
 
-Both hooks run on the server only. The engine calls `OnStoreSave` to collect an entity's data and `OnStoreLoad` when it reads it back (`P:\scripts\3_game\entities\entityai.c:2894` and `:2955`). Never call them yourself, and never send their data to clients; use net sync for that.
+Both hooks run on the server only. The engine calls `OnStoreSave` to collect an entity's data and `OnStoreLoad` when it reads it back (`P:\scripts\3_game\entities\entityai.c:2910` and `:2978`). Never call them yourself, and never send their data to clients; use net sync for that.
+
+Nothing registers an entity for saving in script: overriding the pair is the whole opt-in. The scripts hold no `RegisterPersistent` call; the only similar name, `RegisterPersistentObject`, belongs to the underground power generator (`P:\scripts\4_world\entities\building\underground\powergeneratorstatic.c:18`, `:26`).
 
 | Hook | Signature | Source |
 |---|---|---|
@@ -22,6 +24,19 @@ Each entity has one stream of values with no names and no type tags. Every class
 
 This means a subclass's data sits after its parent's data. If anything earlier in the chain reads one value too many or too few, every class after it reads the wrong bytes.
 
+### The base class data has no fixed width
+
+Never skip a fixed number of values after `super` to reach your own. What `EntityAI` writes depends on the object:
+
+| Part of the stream | When it is there | Source |
+|---|---|---|
+| Construction data | First in the stream, written by the entity's construction component through `HandleStoreSave`; the load reads it only when `version >= 143` and the component exists | `P:\scripts\3_game\entities\entityai.c:2912` to `:2914`; `constructionComponent` at `P:\scripts\3_game\entities\entityai.c:2981` |
+| Nothing, for a plain item or a `BaseBuildingBase` | A plain item has no construction component: `EntityAI.CreateConstructionComponent` returns `null`, so the branch is skipped. A `BaseBuildingBase` has a `Construction` component, but `Construction` does not override `HandleStoreSave`, which is an empty declaration on `ConstructionBasic` | `P:\scripts\3_game\entities\entityai.c:3474` to `:3477`; `P:\scripts\3_game\systems\construction_basic.c:34` |
+| A version and ten ints, for a rebuildable map building | `Rebuilding` overrides `HandleStoreSave` and calls `SerializeConstructionData` | `P:\scripts\4_world\classes\rebuilding\rebuilding.c:473`; `SerializeConstructionData` at `P:\scripts\4_world\classes\rebuilding\rebuilding.c:501` |
+| Eight energy values, or none | Only when the entity has an energy manager (`m_EM`) | `P:\scripts\3_game\entities\entityai.c:2917` to `:2948` |
+
+A reader that counts values instead of calling `super.OnStoreLoad` passes every test made with one kind of object and breaks on the other. Test a class that can exist with and without the energy component in both forms.
+
 ## What vanilla already saves
 
 You do not write these yourself. They are written by the base classes your class inherits from.
@@ -30,30 +45,35 @@ You do not write these yourself. They are written by the base classes your class
 |---|---|---|
 | Construction component data | `EntityAI.OnStoreSave` | `P:\scripts\3_game\entities\entityai.c:2912` |
 | Energy: amount, passive, switched on, plugged, and the energy source's persistent ID in four ints | `EntityAI.OnStoreSave` | `P:\scripts\3_game\entities\entityai.c:2917` to `:2948` |
-| Variables mask and values (temperature in `EntityAI`; quantity, wetness, liquid type, color and cleanness in `ItemBase`) | `SaveVariables` and `WriteVarsToCTX` | `P:\scripts\3_game\entities\entityai.c:3160`; `P:\scripts\4_world\entities\itembase.c:2962` |
-| Quick bar slot when a player carries it | `ItemBase.OnStoreSave` | `P:\scripts\4_world\entities\itembase.c:3190` |
-| Disease agents | `ItemBase.OnStoreSave` calls `SaveAgents` | `P:\scripts\4_world\entities\itembase.c:3190` |
-| Remote trigger pairing | `RemotelyActivatedItemBehaviour.OnStoreSave` from `ItemBase` | `P:\scripts\4_world\entities\itembase.c:3210` to `:3214` |
+| Variables mask and values (temperature in `EntityAI`; quantity, wetness, liquid type, color and cleanness in `ItemBase`) | `SaveVariables` and `WriteVarsToCTX` | `P:\scripts\3_game\entities\entityai.c:3160`; `P:\scripts\4_world\entities\itembase.c:2966` |
+| Quick bar slot when a player carries it | `ItemBase.OnStoreSave` | `P:\scripts\4_world\entities\itembase.c:3194` |
+| Disease agents | `ItemBase.OnStoreSave` calls `SaveAgents` | `P:\scripts\4_world\entities\itembase.c:3212` |
+| Remote trigger pairing | `RemotelyActivatedItemBehaviour.OnStoreSave` from `ItemBase` | `P:\scripts\4_world\entities\itembase.c:3214` to `:3218` |
 
 Attachments and cargo are stored by the engine as their own records, not in your stream. `AfterStoreLoad` runs "after all children loaded" (`P:\scripts\3_game\entities\entityai.c:1418`), and `OnBinLoadItemsDropped` fires when a child could not be put back into its parent and was dropped (`:1423`). So a safe's contents survive a restart without any script; only state the engine does not know about (a code, a timer, an owner) needs `OnStoreSave`.
 
 ## Load hook order
 
 1. `OnStoreLoad` on the entity. Read your values here and store them in member variables. Do not look up other entities yet.
-2. `AfterStoreLoad`, after this entity and all its children are loaded. Apply state that depends on loaded values or on children. `ItemBase` sets the loaded quantity here (`P:\scripts\4_world\entities\itembase.c:3218`), and `BaseBuildingBase` rebuilds its parts here (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:466`).
-3. `EEOnAfterLoad`, for links between separate entities. `ItemBase` clears its damage reset flag here (`P:\scripts\4_world\entities\itembase.c:3234`), which shows vanilla expects it to run after `AfterStoreLoad`.
+2. `AfterStoreLoad`, after this entity and all its children are loaded. Apply state that depends on loaded values or on children. `ItemBase` sets the loaded quantity here (`P:\scripts\4_world\entities\itembase.c:3222`), and `BaseBuildingBase` rebuilds its parts here (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:465`).
+3. `EEOnAfterLoad`, for links between separate entities. `ItemBase` clears its damage reset flag here (`P:\scripts\4_world\entities\itembase.c:3238`), which shows vanilla expects it to run after `AfterStoreLoad`.
 
 ## Links to other entities
 
-`GetPersistentID(out int b1, out int b2, out int b3, out int b4)` returns an ID that "stays the same even after server restart" (`P:\scripts\3_game\entities\entityai.c:3374`). To restore a link, save the four ints, keep them in `OnStoreLoad`, and look the entity up later with `GetGame().GetEntityByPersitentID(b1, b2, b3, b4)` (the vanilla name is spelled that way, `P:\scripts\3_game\global\game.c:1420`).
+`GetPersistentID(out int b1, out int b2, out int b3, out int b4)` returns an ID that "stays the same even after server restart" (`P:\scripts\3_game\entities\entityai.c:3374`). To restore a link, save the four ints, keep them in `OnStoreLoad`, and look the entity up later with `GetGame().GetEntityByPersitentID(b1, b2, b3, b4)` (the vanilla name is spelled that way, `P:\scripts\3_game\global\game.c:1421`).
 
 The lookup works only inside `EEOnAfterLoad`. The energy manager does exactly this: it stores the IDs during load because the lookup "cannot be called here" (`P:\scripts\3_game\entities\entityai.c:3041`) and calls it in `EEOnAfterLoad`, where "this function is available only in this event" (`:1393`).
 
 ## When a read fails
 
-Check the return of every `Read` and return `false` when it fails. Vanilla returns `false` only when the stream is short or broken, for example `BaseBuildingBase` (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:432` to `:463`). Returning `false` means the engine could not load the record. What the engine then does with the object is not visible in script, so treat `false` as losing the object and test every load path on a copy of the server storage.
+Check the return of every `Read` and return `false` when it fails. Vanilla returns `false` only when the stream is short or broken, for example `BaseBuildingBase` (`P:\scripts\4_world\entities\itembase\basebuildingbase.c:431` to `:463`). Returning `false` means the engine could not load the record. What the engine then does with the object is not visible in script, so treat `false` as losing the object and test every load path on a copy of the server storage.
 
 Do not return `false` to mean "this save has no value for my new field". That case is an upgrade path, covered in `versioning-and-migration.md`.
+
+Two additions, neither of which changes the advice above:
+
+* **Measured in game, not checkable on `P:\`.** A mod class that returned `false` from `OnStoreLoad` on DayZDiag 1.29 was kept by the engine: the RPT printed `!!! Scripted variables corrupted upon "<class>"` and the object stayed in the world with its script variables at their defaults, apart from what the load had already assigned. So a `false` loses the saved state, not necessarily the object, and can leave a half loaded object behind. To remove the object, delete it yourself. What the next save writes was not measured. Details: `load-and-restore.md`.
+* **Read into locals, then commit.** Vanilla reads straight into members and sets a default before it returns `false`, for example `m_Combination = 0` in `CombinationLock` (`P:\scripts\4_world\entities\itembase\combinationlock.c:145` to `:148`). That leaves partly applied state after a failed load. In mod code, read every value into a local variable and copy the locals to the members only after the last read succeeded.
 
 ## Other saving hooks worth knowing
 
@@ -63,11 +83,23 @@ Do not return `false` to mean "this save has no value for my new field". That ca
 | `void SetLifetime(float fLifeTime)` and `float GetLifetime()` | Set or read the remaining economy lifetime in seconds. Saved data does not keep an object whose lifetime the economy lets run out. | `P:\scripts\3_game\entities\entityai.c:3377` and `:3379` |
 | `ECE_NOLIFETIME`, `ECE_NOPERSISTENCY_WORLD`, `ECE_DYNAMIC_PERSISTENCY` | Spawn flags for `CreateObjectEx` that skip lifetime, skip saving in the world, or turn saving on only once a player takes the object. | `P:\scripts\3_game\ce\centraleconomy.c:30`, `:31`, `:33`; used at `P:\scripts\3_game\dayzgame.c:3669` |
 
+## Saved is not the same as kept: lifetime
+
+The central economy keeps a lifetime in seconds on every entity it persists. `SetLifetime` and `GetLifetime` set and read what remains, `SetLifetimeMax` and `GetLifetimeMax` the maximum per instance, whose default comes from the economy database (`P:\scripts\3_game\entities\entityai.c:3377` to `:3386`). A territory flag's refresh calls `RadiusLifetimeReset`, which resets lifetimes "to default value from DB within radius" (`P:\scripts\4_world\entities\itembase\basebuildingbase\totem.c:168`; documented at `P:\scripts\3_game\ce\centraleconomy.c:562` to `:570`).
+
+Measured in game on DayZDiag 1.29 with a mod's placed objects (engine behaviour, not checkable on `P:\`): a class with no entry in any `types.xml` gets a maximum lifetime of 1800 seconds, a new object starts at 1 to 2 times that, the lifetime runs down with a player standing next to it, a restart saves and restores what remains, and objects whose lifetime ran out are deleted during the next startup. Adding the entry later protects only objects created after it.
+
+So correct save code does not keep an object in the world. Every class a player places, or that otherwise persists, needs an entry with an explicit `lifetime` in the mod's own `types.xml` (vanilla gives `Fence` and `Watchtower` 3888000 at `P:\DZ\worlds\chernarusplus\ce\db\types.xml:7774` for `Fence` and `:25352` for `Watchtower`), and a persistence test with objects younger than an hour proves nothing. Evidence and limits: `lifetime-and-storage.md`.
+
+## Stored entities load after `OnMissionStart`
+
+Measured in game on DayZDiag 1.29 (not checkable on `P:\`): the engine creates stored entities after `MissionServer.OnMissionStart` returns, and an entity's `EEInit` runs before its `OnStoreLoad`. A structure the mod rebuilds from its own file, and that stored entities can rest on (a floor, a platform), is therefore created inside `OnMissionStart`, not in a delayed call; a stored vehicle parked on a platform that was rebuilt two seconds later fell to the terrain. A later pass may only bind what already exists. Details: `load-and-restore.md`.
+
 ## Vanilla examples to read
 
 | Class | What it shows | Source |
 |---|---|---|
 | `CombinationLock` | A field removed and a field added, both behind the game version | `P:\scripts\4_world\entities\itembase\combinationlock.c:128` and `:138` |
-| `DigitalCodeLock` with `CodeLockComponent` | A helper object that saves its own fields inside the owner's stream | `P:\scripts\4_world\entities\itembase\codelock.c:484`; `P:\scripts\4_world\classes\codelockcomponent.c:257` |
+| `DigitalCodeLock` with `CodeLockComponent` | A helper object that saves its own fields inside the owner's stream | `P:\scripts\4_world\entities\itembase\codelock.c:505`; `P:\scripts\4_world\classes\codelockcomponent.c:257` |
 | `TerritoryFlag` | A timer saved and checked after load | `P:\scripts\4_world\entities\itembase\basebuildingbase\totem.c:101` and `:111` |
 | `PlayerBase` | Large chain of sub systems, each with its own save call, written only on a multiplayer server | `P:\scripts\4_world\entities\manbase\playerbase.c:7353` and `:7408` |

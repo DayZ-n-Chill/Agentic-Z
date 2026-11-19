@@ -53,7 +53,16 @@ ERROR_CATEGORIES: list[tuple[str, re.Pattern]] = [
     ("compile", re.compile(r"Can't compile \"\w+\" script module|SCRIPT\s+\(E\):\s*@\"[^\"]+,\d+\"|\.c\(\d+\):")),
     ("null_pointer", re.compile(r"NULL pointer to instance")),
     ("cant_find", re.compile(r"Can't find\b")),
-    ("connection", re.compile(r"0x00020005|does not support the client's current filePatching setting")),
+    # 0x00020005 filePatching refused, 0x00020017 diag client on a non-diag server,
+    # 0x00020013 build mismatch, 0x00010002 a refused join whose decoding is unsettled
+    # (the one measured case was a signature mismatch).
+    ("connection", re.compile(
+        r"0x00020005|0x00020017|0x00020013|0x00010002|does not support the client's current filePatching setting")),
+    # Persistence the server cannot read: half-written storage, or storage written by another mod set.
+    ("storage", re.compile(
+        r"Serious stream damage detected during load|Failed to read modstorage for entity|Scripted variables corrupted")),
+    # A server that shuts itself down: `[Server] :: termination in: 10`, a retail server without BattlEye.
+    ("server_exit", re.compile(r"\[Server\] :: termination in:|BattlEye initialization failed")),
     ("mission", re.compile(r"Mission script has no main function")),
     ("missing_config", re.compile(r"No entry '")),
     ("missing_texture", re.compile(r"Cannot load texture")),

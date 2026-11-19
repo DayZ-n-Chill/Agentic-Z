@@ -13,12 +13,14 @@ Follow Tier 2 (`skills/_shared/dayz-conventions.md` plus `skills/_shared/convent
 
 Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vanilla configs live under `P:\DZ\`; RAG with `file_type="cpp"` finds classes by meaning.
 
+Deeper references, each Read only when the task is its topic: `config.cpp` traps in `skills/_shared/enscript/depth/config-cpp.md`; the per-file checklist under "`config.cpp`" in `skills/dayz-build-pbo/references/file-checklists.md`; `healthLevels[]`, hidden selection materials and damage wiring in `skills/_shared/textures/config-wiring.md`; building classes in `skills/_shared/models/model-config-and-packing.md` and proxy classes in `skills/_shared/models/proxy-attachment-config.md`; a buildable structure's `Construction` block and kit in `skills/_shared/persistence/base-building-config.md`; `class Doors` on a building in `skills/_shared/animation/building-doors.md` and `skills/_shared/animation/door-config-and-locks.md`.
+
 ## Handoffs
 
 Don't write these; list each one in your report under its owner:
 
 - `CfgWeapons` firearms and their `CfgMagazines` and `CfgAmmo` classes: dayz-weapon-specialist (config team).
-- Classes that descend from `Transport` (cars, boats, helicopters) and parts made only for them: dayz-vehicle-specialist (config team).
+- Classes that descend from `Transport` (cars, boats, helicopters, motorbikes) and parts made only for them: dayz-vehicle-specialist (config team).
 - `CfgSoundShaders` and `CfgSoundSets`: dayz-audio-fx-specialist (any team).
 - Clothing, gear and survivor characters: dayz-wearables-specialist (art team).
 - Terrain configs under `workspace/<ModName>/worlds/` (`CfgWorlds`, `CfgSurfaceCharacters`, `CfgSurfaces`; vanilla at `P:\DZ\surfaces\config.cpp:14`, `:257`, `:613`): dayz-map-specialist (server team). You still write that addon's `CfgPatches` from the entries it sends.
@@ -40,5 +42,5 @@ To the config lead or your caller: classes added or changed, the vanilla parent 
 
 Handed-off work (see Handoffs):
 
-- From the config lead: list work for a worker the config lead can start (weapon, vehicle or audio-fx) as its own item naming that worker, so the lead briefs it; for a worker on another team, add "Reassign: <task> belongs to <worker> on the <team> team" so the orchestrator moves it. The lead sends your work to dayz-mod-reviewer.
+- From the config lead: list work for a worker the config lead can start (weapon, vehicle or audio-fx) as its own item naming that worker, so the lead briefs it. When the whole task belongs to a worker on another team (a clothing class, a terrain config), add "Reassign: <task> belongs to <worker> on the <team> team" so the orchestrator moves it. Follow-up work your finished classes need from another team goes under that team's heading, naming the worker and the task it came from: `model.cfg` under "For the art lead" (dayz-object-builder), economy XML under "For the server lead" (dayz-server-admin), script under "For the script lead" (dayz-script-specialist). The lead sends your work to dayz-mod-reviewer.
 - On a direct call (the main session started you, with no lead in the loop): use no lead headings. Put each piece under the owning worker's name, and say plainly that the main session must start each of those workers with its part and run dayz-mod-reviewer on the result.

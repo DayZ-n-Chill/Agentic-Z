@@ -1,6 +1,6 @@
 # .ptc file format reference
 
-Verified from 9 vanilla particle files. Properties are per-emitter unless noted.
+Every key used by the 314 vanilla `.ptc` files under `P:\graphics\particles` is in the table below. Key names, values and counts are checked on `P:\`; the descriptions come from 9 vanilla files read in detail, and a description marked "not yet checked" is inferred from the key name and its values. Properties are per-emitter unless noted.
 All values are space-separated. Curves use keyframe pairs: `time value [time value ...]`.
 
 ## Contents
@@ -8,6 +8,7 @@ All values are space-separated. Curves use keyframe pairs: `time value [time val
 - [Structure](#structure)
 - [Complete property table](#complete-property-table)
 - [Vanilla examples (annotated)](#vanilla-examples-annotated)
+- [Runtime overrides are script, not .ptc keys](#runtime-overrides-are-script-not-ptc-keys)
 
 ---
 
@@ -26,6 +27,8 @@ EffectDef {
 }
 ```
 
+Five vanilla files spell the block `EmitterDef` instead of `EmitorDef` (for example `P:\graphics\particles\building_destruction_brick.ptc:4`), and the game registers them (`BUILDNG_DESTRUCT_BRICK`, `P:\scripts\3_game\particles\particlelist.c:382`). Whether the engine reads both spellings the same way is not yet checked; write `EmitorDef`, which the other 308 files use.
+
 ---
 
 ## Complete property table
@@ -34,7 +37,7 @@ EffectDef {
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `ShapeType` | string | Point | Emission shape: `Point`, `Box`, `Ellipse` |
+| `ShapeType` | string | Point | Emission shape: `Point`, `Box`, `Ellipse`, `Cone`, `Sphere`, `OnSphere` (one vanilla file per value is cited in `ptc-layout-and-cloudlets.md`, "Emitter shapes") |
 | `ShapeSize` | vec3 | 0 0 0 | Dimensions of emission shape (x y z meters) |
 | `ConeAngle` | vec3 | 0 0 0 | Emission cone spread (yaw pitch roll degrees) |
 | `MaxNum` | int | — | Maximum simultaneous alive particles |
@@ -51,15 +54,17 @@ EffectDef {
 | `Material` | string | — | GUID+path to .emat: `"{GUID}path.emat"` |
 | `SizeMultiplier` | float | 1 | Base scale of particle billboard |
 | `SizeRND` | float | 0 | Random size variance |
-| `BillboardingType` | string | (engine default) | `Full` = always face camera |
+| `BillboardingType` | string | (engine default) | `Full` = always face camera. Vanilla also uses `None` (`P:\graphics\particles\birds_01.ptc:19`) and `LockedAxis` (`P:\graphics\particles\breath_vapour_heavy.ptc:121`) |
 | `CenterX` | float | 0 | Horizontal pivot offset |
 | `CenterY` | float | 0 | Vertical pivot (-1=bottom, 0=center, 1=top) |
 | `ScaleX` | float | 1 | Non-uniform X scale |
 | `ScaleY` | float | 1 | Non-uniform Y scale |
 | `StretchMultiplier` | float | 0 | Velocity-based stretching (0=none, 1=full) |
 | `StreakFullUV` | int | 0 | Stretch UV along streak (0/1) |
-| `Sort` | string/int | 0 | Render order: `0`, `translucent`, `overlay` |
+| `Sort` | int | 0 | Render order. Vanilla `.ptc` files use only `0` and `1` (`P:\graphics\particles\blood_bleeding_01.ptc:82`); the names `translucent` and `overlay` belong to the `.emat` `Sort` key |
 | `LOD` | int | 0 | Level of detail threshold |
+| `LocalTransform` | int | not checked | `0` or `1`; 160 vanilla files set it, `1` in the birds (`P:\graphics\particles\birds_01.ptc:12`), `0` in the sandstorm (`P:\graphics\particles\sandstorm\sandstorm.ptc:13`). Whether `1` makes live particles move with the emitter is not yet checked |
+| `PointSprites` | int | not checked | Only in the test file `P:\graphics\particles\_test_weapon_shot.ptc:11`, set to `0`. Meaning not yet checked; no shipped effect uses it |
 
 ### Motion
 
@@ -71,7 +76,7 @@ EffectDef {
 | `VelAffect` | float | 0 | Velocity influence on direction (0-1) |
 | `AirResistance` | float | 0 | Drag (higher=slower for smoke) |
 | `AirResistanceRND` | float | 0 | Random air resistance variance |
-| `GravityMultiply` | float | 0 | Gravity influence (0=float, 1=earth gravity) |
+| `GravityMultiply` | float | 0 | Gravity influence (0=float, 1=earth gravity). A negative value makes the particle rise: vanilla birds use `GravityMultiply -0.1` (`P:\graphics\particles\birds_01.ptc:25`) |
 | `GravityMultiplyRND` | float | 0 | Random gravity variance |
 | `Wind` | float | 0 | Wind influence (0=ignore, 1=full) |
 | `Spring` | float | 0 | Spring-back force toward origin |
@@ -86,7 +91,7 @@ EffectDef {
 | `LifeTimeRND` | float | 0 | Random lifetime variance |
 | `LifetimeShortening` | float | 0 | Reduce lifetime over effect time |
 | `EffectTime` | float | — | Total effect cycle duration (master curves use this) |
-| `Repeat` | int | 0 | **0=one-shot** (auto-deletes), **1=loop** (MUST stop manually!) |
+| `Repeat` | int | not checked | **0=one-shot** (auto-deletes), **1=loop** (MUST stop manually!). With no `Repeat` line, vanilla effects keep running until stopped: `smoke_small_generator_01.ptc`, `water_jet.ptc` and the campfire's `smoke_small_camp_01.ptc` have none. The engine default is not yet checked on `P:\`; write the line explicitly. |
 
 ### Animation
 
@@ -250,11 +255,12 @@ EffectDef {
 
 ### Water jet difference: water_jet vs water_jet_weak
 
-Only two properties change between the strong and weak variants:
+Three properties change between the strong and weak variants, in both emitters:
 - `SizeMultiplier`: 1.0 → 0.3
 - `SizeRND`: 0.5 → 0.15
+- the `Color` curve keys shift slightly (`P:\graphics\particles\water_jet_weak.ptc` lines 26 and 57)
 
-Everything else (MaxNum, BirthRate, Velocity, Color, Alpha) is identical.
+Everything else (MaxNum, BirthRate, Velocity, Alpha) is identical.
 This demonstrates that creating variants is trivial — clone and tweak.
 
 ### Complex fire: fire_small_camp_01.ptc (6 emitters, 4357 bytes)
@@ -269,3 +275,10 @@ Emitter roles:
 
 Key insight: complex effects are built by layering simple emitters.
 Each emitter handles one visual aspect independently.
+Larger layered examples (a 4, a 7 and a 12 emitter effect) and the `Mast` curves in use are in `layered-effects.md`; script that turns single emitters on and off is in `effects-from-script.md`.
+
+---
+
+## Runtime overrides are script, not .ptc keys
+
+The properties above are every key the vanilla `.ptc` files use. That DayZ 1.30 added no `.ptc` key is not yet checked on `P:\`, which holds only 1.30. What 1.30 added is a script hook that changes the live values of a playing effect: an `EffectParticle` subclass overrides `ParticleParamsOverride(ParticleParamsOverrideData)` (`P:\scripts\3_game\effects\effectparticle.c:619`) and sets `EmitorParam` values there. The vanilla vehicle effects set `LIFETIME`, `VELOCITY`, `SIZE`, `AIR_RESISTANCE`, `REPEAT` and `WIND` this way (`P:\scripts\4_world\entities\effects\vehicledust.c:17` to `:22`), the wheel contact effect also sets `SPRING` (`P:\scripts\4_world\entities\effects\effwheelcontact.c:18`), and the exhaust scales `BIRTH_RATE` (`P:\scripts\3_game\effects\effectparticle\vehiclesmoke\exhaustsmoke.c:24`). Details: `dayz-1-30-particles.md`.

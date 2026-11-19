@@ -1,0 +1,94 @@
+{
+  "$id": "https://example.invalid/dayz-animation-formats/animation-inspect-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "properties": {
+        "format": {"const": "seanim"},
+        "schema_version": {"const": 1},
+        "sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+        "summary": {
+          "additionalProperties": false,
+          "properties": {
+            "anim_type": {"maximum": 3, "minimum": 0, "type": "integer"},
+            "bone_count": {"minimum": 0, "type": "integer"},
+            "frame_count": {"minimum": 1, "type": "integer"},
+            "framerate": {"exclusiveMinimum": 0, "type": "number"},
+            "looped": {"type": "boolean"},
+            "modifier_count": {"minimum": 0, "type": "integer"},
+            "note_count": {"minimum": 0, "type": "integer"},
+            "position_key_count": {"minimum": 0, "type": "integer"},
+            "precision": {"enum": ["float32", "float64"]},
+            "rotation_key_count": {"minimum": 0, "type": "integer"},
+            "scale_key_count": {"minimum": 0, "type": "integer"}
+          },
+          "required": [
+            "anim_type",
+            "bone_count",
+            "frame_count",
+            "framerate",
+            "looped",
+            "modifier_count",
+            "note_count",
+            "position_key_count",
+            "precision",
+            "rotation_key_count",
+            "scale_key_count"
+          ],
+          "type": "object"
+        },
+        "version": {"const": 1}
+      },
+      "required": [
+        "format",
+        "schema_version",
+        "sha256",
+        "summary",
+        "version"
+      ],
+      "type": "object",
+      "additionalProperties": false
+    },
+    {
+      "properties": {
+        "format": {"const": "rtm"},
+        "schema_version": {"const": 1},
+        "sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+        "summary": {
+          "additionalProperties": false,
+          "properties": {
+            "bone_count": {"minimum": 1, "type": "integer"},
+            "frame_count": {"minimum": 1, "type": "integer"},
+            "metadata_count": {"minimum": 0, "type": "integer"},
+            "motion": {
+              "items": {"type": "number"},
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "transform_count": {"minimum": 1, "type": "integer"}
+          },
+          "required": [
+            "bone_count",
+            "frame_count",
+            "metadata_count",
+            "motion",
+            "transform_count"
+          ],
+          "type": "object"
+        },
+        "version": {"const": "RTM_0101"}
+      },
+      "required": [
+        "format",
+        "schema_version",
+        "sha256",
+        "summary",
+        "version"
+      ],
+      "type": "object",
+      "additionalProperties": false
+    }
+  ],
+  "title": "DayZ animation inspect output v1"
+}

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools==83.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# Distribution name: NOT "py3d" - that name is taken on PyPI by an unrelated
+# library. The importable module stays `py3d`
+# so existing code keeps working: `import py3d`.
+name = "py3d-dayz"
+dynamic = ["version"]
+description = "DayZ/Arma MLOD .p3d reader and writer - with anti-corruption guards and a DayZ model validator."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = []
+keywords = ["arma", "dayz", "3d", "p3d", "mlod"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+    "Topic :: Games/Entertainment",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "py3d.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["py3d*"]

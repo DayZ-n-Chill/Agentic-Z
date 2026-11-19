@@ -33,9 +33,9 @@ An attribute is a class; the square brackets before a declaration call its const
 | Attribute | Effect | Source |
 |---|---|---|
 | `[Obsolete("Use X instead")]` | A compile time warning wherever the method is used; the call still runs. Vanilla tags methods and classes this way with the version (`[Obsolete("1.30: No replacement")]`). | `P:\scripts\1_core\proto\enscript.c:344`, `P:\scripts\3_game\entities\entityai.c:74` |
-| `[NonSerialized()]` | The serializer skips this field. | `P:\scripts\1_core\proto\serializer.c:7`, `:16`, `P:\scripts\3_game\client\syncplayer.c:7` |
+| `[NonSerialized()]` | The serializer skips this field. | `P:\scripts\1_core\proto\serializer.c:8`, `:16`, `P:\scripts\3_game\client\syncplayer.c:7` |
 | `[Attribute("default", "widget", "description", "range")]` | Exposes a field to the Workbench editor. | `P:\scripts\1_core\proto\enentity.c:825`, `P:\scripts\2_gamelib\entities\rendertarget.c:13` |
-| `[WorkbenchPluginAttribute(...)]`, `[ButtonAttribute(...)]` | Workbench plugins and their buttons. | `P:\scripts\1_core\workbenchapi.c:137`, `:117`, `P:\scripts\editor\plugins\dayztools.c:46` |
+| `[WorkbenchPluginAttribute(...)]`, `[ButtonAttribute(...)]` | Workbench plugins and their buttons. | `P:\scripts\1_core\workbenchapi.c:63`, `:42`, `P:\scripts\editor\plugins\dayztools.c:46` |
 | `[Test("Suite")]`, `[Step(...)]` | The script testing framework. | `P:\scripts\2_gamelib\tests\testingframework.c:96`, `:125`, `:30` |
 
 `JsonSerializer` derives from `Serializer` (`P:\scripts\3_game\gameplay.c:49`) and `JsonFileLoader` uses it (`P:\scripts\3_game\tools\jsonfileloader.c:5`). Test that a `[NonSerialized()]` field stays out of your JSON before you rely on it.
@@ -59,11 +59,12 @@ The defines come from the engine. `P:\scripts\1_core\defines.c` lists them for d
 | `SERVER` | A dedicated server. Only defined when `IsDedicatedServer()` is true, and preferred over that call when possible. | `:106`, `:112` to `:115` |
 | `NO_GUI`, `NO_GUI_INGAME` | Server builds. Wrap any code that names GUI types. | `:27` to `:34` |
 | `DIAG`, `DEVELOPER`, `DIAG_DEVELOPER` | Diag builds, internal builds, and either one. | `:75` to `:92` |
-| `RELEASE` | Retail builds. A build is always `DEVELOPER` or `RELEASE`. | `:80` to `:87` |
+| `RELEASE` | Retail and Diag builds (the source notes it "includes Diag"). A build is always `DEVELOPER` or `RELEASE`. | `:80` to `:87` |
 | `BUILD_EXPERIMENTAL` | Experimental builds. | `:95` to `:97` |
 | `DAYZ_X_XX` | The game version, such as `DAYZ_1_16`. | `:12` to `:14` |
 | `ENABLE_LOGGING` | The `-doScriptLogs=1` launch parameter. | `:37` to `:39` |
-| `PLATFORM_WINDOWS`, `PLATFORM_LINUX`, `PLATFORM_CONSOLE` | The platform. | `:148` to `:161` |
+| `LOG_TO_FILE`, `LOG_TO_SCRIPT`, `LOG_TO_RPT` | The `-logToFile=1`, `-logToScript=1` and `-logToRpt=1` launch parameters. The first two default to on in internal builds and off in retail; `LOG_TO_RPT` defaults to off in both. | `:41` to `:54` |
+| `PLATFORM_WINDOWS`, `PLATFORM_LINUX`, `PLATFORM_CONSOLE` | The platform. `SERVER_FOR_WINDOWS` is also defined on a Linux server, since it names the clients a server serves, not its host (`:117` to `:121`); the native Linux `DayZServer` 1.30 logged both it and `PLATFORM_LINUX` (measured). | `:148` to `:161` |
 | `WORKBENCH`, `BULDOZER` | Compiling in Workbench, or the land editor. | `:17` to `:24` |
 
 What follows for mod code:
@@ -71,3 +72,46 @@ What follows for mod code:
 - `SERVER` is not defined in single player or offline mode, so code inside `#ifdef SERVER` does not exist there. Use `#ifdef SERVER` only for code that must never ship in the client build; use `GetGame().IsServer()` for authority work that must also run offline (`_shared/conventions/scripts.md`).
 - Vanilla guards client only RPC cases with `#ifndef SERVER` and GUI code with `#ifndef NO_GUI` together (`P:\scripts\3_game\dayzgame.c:3157`, `:3158`).
 - Most vanilla debug code sits behind `#ifdef DIAG_DEVELOPER`, so it is missing from retail. Code you need in retail must not depend on it.
+- `PluginDeveloper` is one such case: it is registered through `RegisterPluginDiag`, whose body sits inside `#ifdef DIAG_DEVELOPER` (`P:\scripts\4_world\plugins\pluginmanager.c:66`, `:249` to `:256`), so `GetPlugin(PluginDeveloper)` is `null` on a retail server and a teleport or give built on it does nothing there. The retail substitutes (`SetPosition`, moving the vehicle of a seated player, `CreateInInventory`) are in `skills/_shared/enscript/depth/runtime-pitfalls.md`, section "Retail replacements for `PluginDeveloper`".
+- `DEVELOPER` and `DIAG_DEVELOPER` are different defines. The table of static defines says `DEVELOPER` is set in internal builds and not on the retail client, retail server or profile server, while `RELEASE` is set on the retail client and server (`P:\scripts\staticdefinesdoc.c:5` and `:6`). It has no row for DayZDiag. Reported, not checked on `P:\`: DayZDiag defines `DIAG_DEVELOPER` but not `DEVELOPER`, so a mod that calls a symbol which exists only under `#ifdef DEVELOPER` stops its whole PBO compiling there. Read the `defines:` line of `script_*.log` on the server and on the client before you rely on a define. Measured on DayZDiag the 1.30 release: both the server and the client list `DIAG_DEVELOPER` and `ENABLE_LOGGING`, so code under either compiles in a DayZDiag test and is skipped on a retail client or server. A test that passes only on DayZDiag has not tested the retail branch.
+- An `#ifdef` block that holds only a comment compiles, at file scope, in a class body and in a method body (measured on DayZDiag 1.30). Vanilla ships such blocks: `P:\scripts\4_world\classes\environment\environment.c:1-3` and, inside a method, `P:\scripts\4_world\classes\bunkerbroadcasthandler.c:338-340`. A block with nothing at all in it was not measured.
+- A define that another mod must see has to come from that mod's `CfgMods` class, not from a `#define` in one of its script files. Reported, not checked on `P:\`: since 1.26 a mod's `CfgMods` class name and the names in its `defines[]` array are defined for every mod's scripts, while a `#define X` written in a script file is seen only inside that mod. An `#ifdef` in your mod on a name the other mod only `#define`s in script compiles to nothing, so a `modded class` inside it is silently lost.
+
+## Symbols that are in the source but not in the build
+
+A correct `path:line` does not prove a symbol can be called. Check three things before you call or mod a vanilla symbol:
+
+- **Its define is active.** `PerformAction` on `ActionManagerClient` sits inside `#ifdef BOT` (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:796` to `:802`), and no vanilla script defines `BOT`; the table of static defines lists `BOT` as absent from DayZ builds (`P:\scripts\staticdefinesdoc.c:20`), so the method does not exist in any build. The public entry point is `PerformActionStart` (`P:\scripts\4_world\classes\useractionscomponent\actionmanagerclient.c:804`). In the same way `GetConsoleToolbarText` exists only under `#ifdef PLATFORM_CONSOLE` (`P:\scripts\5_mission\gui\inventorynew\inventory.c:1307`); overriding it on PC is reported (not checked on `P:\`) to give `no function to override in base class` and a client that hangs on the loading screen.
+- **Its class is not commented out.** The whole of `actionfishing.c` is one block comment that opens with `/*class ActionFishingCB` (`P:\scripts\4_world\classes\useractionscomponent\actions\continuous\actionfishing.c:1`); the live class is `ActionFishingNew` (`P:\scripts\4_world\classes\useractionscomponent\actionconstructor.c:246`). A `modded class` on the dead name fails with `Unknown type` (reported).
+- **A `proto native` is linked.** Reported, not checked on `P:\`: `GetFPS` is declared in `proto.c` yet every call threw `Function 'GetFPS' not linked` in DayZDiag 1.29. Call a `proto native` once from a test script before you build on it.
+
+## Compiler traps
+
+Measured in compiles on DayZDiag and retail servers, except the two rows marked "reported"; the compiler is native, so only the vanilla examples were checked on `P:\`. The measurements and error texts are in `skills/_shared/enscript/depth/compiler-traps.md` and `skills/_shared/enscript/depth/hard-rules.md`.
+
+| Trap | What the compiler says | What to write |
+|---|---|---|
+| A local has method scope, not block scope: the same name declared in two `case` or `if` blocks of one method | `Multiple declaration of variable 'X'` on DayZDiag; retail may let it pass | One declaration at the top of the method, or a different name per block |
+| A statement split over lines: a `+` string chain, an `&&` condition or a call's argument list continued on the next line | `Missing ';' at the end of line`, `Expected ')'`, then `Syntax error` on later lines | Keep the statement on one line, or build it in several one line statements |
+| `%` with a `float` in the expression | `Unknown operator '%'` | Compute the modulo into an `int` first. Every vanilla use has integer operands, such as `new_index % count` (`P:\scripts\1_core\proto\enscript.c:652`) |
+| A keyword used as a variable name: `out`, `owned`, `ref`, `autoptr`, `notnull`, `local`, `event` | `Broken expression (missing ';'?)` on the declaration | Rename it. `owned` is a modifier, as in `proto native owned string GetWorldFile()` (`P:\scripts\2_gamelib\gamelib.c:57`) |
+| A method named exactly like a vanilla class, called as a bare statement: a helper `FoodStage(3);` beside `class FoodStage` (`P:\scripts\4_world\classes\foodstage\foodstage.c:22`) | `Types X and Y are unrelated` | Rename the method |
+| A plain `const` class member read from a `static` method | Fatal on a retail server | Declare it `static const` |
+| `ref` on a method parameter | `Method argument can't be strong reference` on DayZDiag; retail lets it pass | Drop the outer `ref`: `array<ref X> p` |
+| A `protected` field read through a parameter from a class in another module | `Variable 'm_X' is protected` | Make the field public when a method body moves to another class |
+| `Print(...)` at file level, outside any function | `Syntax error`, then `Can't compile "<Module>" script module!` | Put it in a function |
+| A name that starts with a keyword followed by a digit: `out0`, `ref1`, `new2`, `auto3`, `inout4` | `Expected ',' or ')', not a '0'`, then `Unexpected scope` and `Syntax error` | Rename it (`dst0`). The lexer reads the keyword and then the number |
+| A variable named like a type: `Widget map = ...` (also `set`, `array`, `vector`, `string`, `Class`) | `Variable name 'map' already used as type name`, then decoy errors on the lines after it | Rename it; fix the first error of the block and ignore the rest |
+| One line that joins 18 or more terms with `+` and holds a string literal (17 compiled, 18 failed on DayZDiag 1.30) | `Formula too complex`, then `Incompatible parameter` on the same line | Build the string in steps: `s = s + part;` |
+| A method with a 17th parameter (measured on a DayZ 1.30 server) | `Maximum arguments count 16 exceeded in method 'X'` | Pass one object that carries the values |
+| A `switch` in which every case, `default` included, returns (reported, not measured) | A missing return is reported for the method | Move the last `return` out of the `switch`, after it |
+| `a & b == b` (reported, not measured) | Nothing: it compiles as `a & (b == b)`, as in C | Write `(a & b) == b` |
+| `text.Replace(a, b).Replace(c, d)` | The second call is made on an `int`: `Replace` changes the string and returns a count (`P:\scripts\1_core\proto\enstring.c:156`) | One `Replace` per statement, on a local copy |
+
+The measurement behind the 17th-parameter row is in `skills/_shared/enscript/depth/language-builtins.md`; the measurements behind the keyword-and-digit, type-name and 18-term rows are in `skills/_shared/enscript/depth/pitfalls-advanced.md`, which lists the `switch` and `a & b == b` rows as reported only. The `Replace` row follows from the vanilla return type it cites.
+
+Two things that do compile, against a common belief: C style casts, as in `(float)random_int / (float)max_range` (`P:\scripts\1_core\proto\enmath.c:110`), and a `string` plus a `bool`.
+
+A tool that reads `P:\scripts` must not decode it as strict UTF-8: a block comment in `P:\scripts\3_game\global\world.c:127` holds a cp1252 trademark byte (0x99) after the word `MangoBrand`. Decode with replacement; the game compiles the file, so an encoding finding on it is a false positive.
+
+Only the game compiles Enforce Script. `CfgConvert`, AddonBuilder ("Build Successful" means the PBO was packed) and a linter check form. A script module is proven to compile when a server or client boots with it, which is what `/dayz-gate` does.

@@ -2,9 +2,9 @@
 
 What Dabs Framework adds for UI and registration: attribute classes, the MVC layer (`ScriptView`, `ViewController`, `ViewBinding`, `RelayCommand`, observable collections) and `ScriptViewMenu`.
 
-Dabs Framework is a third party mod by InclementDab, not part of the game. Everything below is a **framework** fact, not a vanilla fact. Use it only when the mod already depends on Dabs Framework or the user asks for it; plain vanilla UI is in `../references/widget_api.md`.
+Dabs Framework is a third party mod, not part of the game. Everything below is a **framework** fact, not a vanilla fact. Use it only when the mod already depends on Dabs Framework or the user asks for it; plain vanilla UI is in `../references/widget_api.md`.
 
-**Where these facts come from.** The Steam Workshop copy of the mod (for example linked as `P:\Mods\@Dabs Framework\` by `/dayz-workdrive`); its `addons\Scripts.pbo` holds plain script, and file paths below are paths inside that PBO (for example `3_Game\DabsFramework\MVC\ScriptView.c`). Usage examples were checked against the DayZ Editor mod (`P:\Mods\@DayZ-Editor\`), which is built on Dabs. The framework changes between releases, so open the named file again when something here does not match.
+**Where to check these facts.** The Steam Workshop copy of the mod (for example linked as `P:\Mods\@Dabs Framework\` by `/dayz-workdrive`); its `addons\Scripts.pbo` holds plain script, and file paths below are paths inside that PBO (for example `3_Game\DabsFramework\MVC\ScriptView.c`). Usage examples were checked against the DayZ Editor mod (`P:\Mods\@DayZ-Editor\`), which is built on Dabs. The framework changes between releases, so open the named file again when something here does not match. In the framework's public source tree the same MVC files sit at `DabsFramework/Scripts/3_Game/DabsFramework/MVC/` on the `production` branch, not at `DabsFramework/scripts/3_Game/MVC/` on `master` (read upstream, not checked on `P:\`).
 
 ---
 
@@ -33,7 +33,7 @@ An Enforce Script attribute is a class name in square brackets written on the li
 | `RegisterAction` (`1_Core\DabsFramework\Managed\Classes\RegisterAction.c`) | `typename action_type` | Dabs's `modded class ActionConstructor` (`4_World\...\ActionConstructor.c`) adds every registered type in `RegisterActions`. |
 | `RegisterPluginAttribute` (`1_Core\...\RegisterPlugin.c`) | `typename plugin, bool client, bool server, PluginType type = PluginType.STABLE` | Dabs's `modded class PluginManager` (`4_World\...\PluginManager.c`) calls vanilla `RegisterPlugin`, `RegisterPluginDiag` or `RegisterPluginDebug` before `super.Init()`. This is a game `PluginBase` plugin, not a Workbench menu plugin. |
 | `RegisterProfileSetting` (`1_Core\...\RegisterProfileSetting.c`) | `typename type, string display_name = ""` | Adds a `ProfileSettings` subclass to the game's options menu. |
-| `RegisterProfileSettingMultistate`, `RegisterProfileSettingSlider`, `RegisterProfileSettingColor`, `RegisterProfileSettingText` (`3_Game\DabsFramework\Settings\Classes\`) | Category, field name, display name, then type specific values (the slider takes `min, max`) | Adds one option for a field of the `ProfileSettings` class above it. |
+| `RegisterProfileSettingMultistate`, `RegisterProfileSettingSlider`, `RegisterProfileSettingColor`, `RegisterProfileSettingText` (`3_Game\DabsFramework\Settings\Classes\RegisterProfileSettingBase\`) | Category, field name, display name, then type specific values (the slider takes `min, max`) | Adds one option for a field of the `ProfileSettings` class above it. |
 | `RegisterLogger`, `RegisterMissionSetting`, `RegisterDiagMenu`, `RegisterEditorObject` | See their files in `1_Core\...\Classes\` | Loggers, mission JSON settings, diag menu entries, Editor objects. |
 
 What `RegisterAction` does and does not do: it replaces only the step of modding `ActionConstructor.RegisterActions`. An item still adds the action in its own `SetActions()` with `AddAction(...)`, as in vanilla. It does not bind an action to one item type.
@@ -130,6 +130,8 @@ ButtonWidgetClass BtnRefresh {
 }
 ```
 
+When the bound widget also has child widgets, the `ScriptParamsClass` goes in a second block of its own, after the block that holds the children; it is never mixed in with them. In a count over the layouts of shipped third party mods, all 157 `ScriptParamsClass` blocks sat alone like this, and the block holds its fields directly, with no inner braces (a count over third party layouts, not checked on `P:\`; the layout side is in `skills/_shared/ui/layout-scriptclass.md`).
+
 `ViewBinding` fields you can set there:
 
 | Field | Meaning |
@@ -154,8 +156,16 @@ When a bound `ButtonWidget` is clicked or a bound `CheckBoxWidget` changes, the 
 - A `RelayCommand` subclass: `Execute(Class sender, CommandArgs args)` runs when `CanExecute()` is true. Return `true` when handled.
 - Otherwise a method of that name, called with the arguments object: `void OnRefreshExecute(ButtonCommandArgs args)`, as the DayZ Editor does (`4_World\DayZEditor\gui\Controllers\EditorHudController.c`).
 - Not handled goes on to the parent controller.
+- Only a `ButtonWidget` (in `OnClick`) and a `CheckBoxWidget` (in `OnChange`) run a command; a `Relay_Command` on any other widget type never fires (`ViewController.c`).
 
 `ButtonCommandArgs` has `GetMouseButton()` and `GetButtonState()`. `CheckBoxCommandArgs` has `GetCheckBoxState()`. Both have `Source`, the widget.
+
+#### A command that runs twice
+
+One click can run a command twice, in two ways. The symptom is the same for both: a toggle cancels itself and seems to do nothing.
+
+1. **The handler does not return `true`** (read from the Dabs source). "Handled" is the method's return value. `ViewBinding.InvokeCommand` (`3_Game\DabsFramework\MVC\ViewBinding.c`) calls the method through `g_Script.CallFunction` and, when the result is not true, calls the same method name on each parent in turn. A handler declared `void`, or one that returns false, can therefore run again on a parent that has a method of that name. Declare handlers `bool` and return `true` when the click was handled: `bool OnRefreshExecute(ButtonCommandArgs args)`.
+2. **The view overrides `OnClick` and calls `super.OnClick()` while the widget also has a `Relay_Command`** (third party mod behaviour, not checked against the Dabs source; code in `skills/_shared/enscript/depth/dabs-mvc-advanced.md`). The override and the command both run. Use the command or the override, not both.
 
 ### Which widgets bind
 
@@ -179,6 +189,10 @@ Field types with built in converters (`RegisterConversionTemplates`, same file):
 - Override `UseMouse()` (default true), `UseKeyboard()` (default false), `GetInputExcludes()` (names from `<exclude>` in `bin/specific.xml`), `CanClose()` and `HidesParentMenu()`.
 - `ScriptViewMenuTemplate<T>` is the typed controller version.
 - `EnterChildMenu(id or menu)` opens a vanilla menu or another `ScriptViewMenu` on top.
+- **ESC does not close it.** `CanCloseWithEscape()` exists in `ScriptViewMenu.c`, but nothing in the framework calls it (the comment above it marks the handling as undecided). Handle the key yourself, for example `OnKeyPress` with `KeyCode.KC_ESCAPE` calling `Close()`.
+- **The lifecycle hooks are `OnMenuEnter(UIMenuPanel parent_panel)` and `OnMenuExit(UIMenuPanel parent_panel)`.** `ScriptView` and `ScriptViewMenu` have no `OnShow` or `OnHide` to override; show or hide a plain view with `Show(bool)`.
+- **Game focus is taken on open and not given back on close.** The constructor calls `ChangeGameFocus(1, ...)` for the mouse (and the keyboard when `UseKeyboard()` is true); both `ChangeGameFocus(-1, ...)` lines in the destructor are commented out. A mod that adds its own `ChangeGameFocus` calls around a Dabs menu can leave the focus count unbalanced, so check that the player can move after the menu closes.
+- `GetInputRestrictions()` is not wired: the constructor and destructor loop over an empty local array, so overriding it does nothing. Use `GetInputExcludes()`.
 
 ```c
 class MyMod_Menu: ScriptViewMenuTemplate<MyMod_StatusController>
@@ -188,9 +202,10 @@ class MyMod_Menu: ScriptViewMenuTemplate<MyMod_StatusController>
 		return "MyMod/gui/layouts/menu.layout";
 	}
 
-	void OnCloseExecute(ButtonCommandArgs args)
+	bool OnCloseExecute(ButtonCommandArgs args)
 	{
 		Close();
+		return true;
 	}
 }
 ```
@@ -205,3 +220,17 @@ class MyMod_Menu: ScriptViewMenuTemplate<MyMod_StatusController>
 - **The update loop runs every frame.** `Update(float dt)` is queued for every view by default. Return false from `UseUpdateLoop()` when the view has no per frame work.
 - **Do not mix with a vanilla `ActionConstructor` mod for the same action.** Registering one action type both ways adds it twice.
 - **Hot reload exists only in diag builds.** `ScriptView.ReloadAll()` is compiled only under `DIAG_DEVELOPER`.
+- **A controller named as `scriptclass` on the layout root does not get its widget fields filled.** `LoadWidgetsAsVariables` runs on the controller only in the branch where `ScriptView` creates it from `GetControllerType()`. Use bindings, or look the widgets up yourself.
+- **A collection item that holds a `ref` back to its controller leaks.** `ObservableCollection` stores `ref array<ref TValue>`, and nothing breaks the cycle. Set the back reference to null in the item's destructor. Third party mod behaviour, not checked against the Dabs source: `Clear()` on the collection does not break the cycle either, so null the back reference in each row view before clearing, and do not walk the parent chain from a row; pass the controller in.
+- **Do not use `ObservableSet`.** It raises `NotifyCollectionChangedAction.Add` and `.Set`, which the enum (`MVC\Types\NotifyCollectionChangedAction.c`) does not have.
+- **`WidgetAnimator` times are milliseconds, but the `TimeSpan` helpers count seconds.** `TimeSpan` is `typedef int` (`1_Core\DabsFramework\TimeSpan.c`), so `TimeSpan.FromMinutes(1)` is 60 and animates for 60 ms. Pass plain millisecond ints: `WidgetAnimator.Animate(widget, WidgetAnimatorProperty.COLOR_A, 1.0, 300);`.
+- **Detect the framework from script with `#ifdef DABSFRAMEWORK_1_51`**, defined at the top of `MVC\ScriptedViewBase.c`. The mod has no release tags.
+
+More depth (the full `WidgetAnimator` and `LinearColor` calls, the complete `ObservableCollection` operations, click dispatch and the shipped prefab layouts) is in `skills/_shared/ui/dabs-mvc-internals.md`.
+
+Third party mod behaviour, not checked against the Dabs source; the code for each is in `skills/_shared/enscript/depth/dabs-mvc-advanced.md`:
+
+- **Do not create a `ScriptView` from an RPC handler or during early init.** The constructor creates widgets and needs a workspace. Queue the creation on `CALL_CATEGORY_GUI` instead.
+- **Widgets inside a `ButtonWidget` can bind to the wrong widget.** Auto binding and `FindAnyWidget` returned wrong, non null references for children of a button. Fetch those children yourself from the button after the view is created.
+- **A `Relay_Command` that runs twice** has two causes, a handler that does not return `true` and an `OnClick` override that calls `super.OnClick()`; both are under "A command that runs twice" above.
+- **`scriptclass "ViewBinding"` on the root widget plus `GetControllerType()` makes two controllers.** Leave the root widget without a script class.

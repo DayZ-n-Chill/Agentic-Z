@@ -17,13 +17,13 @@ Search: Grep for known names, RAG (`search_dayz_source`) for questions by meanin
 
 Workbench plugin APIs are thinly documented and change between DayZ Tools versions. Don't write a call, base class, attribute or file location from memory.
 
-1. Find real plugin code first: Grep the vanilla Workbench scripts in `P:\scripts\editor\plugins\`, `P:\scripts\editor\workbench\` and `P:\scripts\1_core\workbenchapi.c`, then use `search_dayz_source` for plugin examples by meaning.
+1. Find real plugin code first: Grep the vanilla Workbench scripts in `P:\scripts\editor\plugins\`, `P:\scripts\editor\workbench\`, the API folder `P:\scripts\1_core\workbenchapi\` (`workbench.c`, `modules\`, `plugins\workbenchplugin.c`) and `P:\scripts\1_core\workbenchapi.c` (now only `ResourceName`, `DateTimeUtcAsInt` and the attributes), then use `search_dayz_source` for plugin examples by meaning. `skills/_shared/enscript/references/workbench_api.md` maps the entry points, modules and events of the Workbench API: use it to know what to look for, and its "Where the API lives" section to see which files the current 1.30 build on `P:\` uses. `COMPONENT_SYSTEM` classes, which exist only in Workbench builds, are in `skills/_shared/enscript/references/entity_components.md`.
 2. Use only classes, methods and attributes you found there, and cite each as `path:line`.
 3. If you can't find how something is done (for example a call or attribute that isn't in those files), say so and ask the script lead or your caller. Don't invent a manifest format, a C++ SDK or an install folder. Where plugin files go is known; see the next section.
 
 ## Where plugin files go
 
-Workbench compiles plugins from the `workbench` script module of the gproj it opens. In vanilla `<DayZ Tools>\Bin\Workbench\dayz.gproj` that module's `Paths` hold only `"scripts/editor/Workbench"` and `"scripts/editor/plugins"`. The mod's `workbench\dayz.gproj` is a copy of it with mod paths added to the `game`, `world` and `mission` modules only, so it does not load the mod's plugins yet. To fix that:
+Workbench compiles plugins from the `workbench` script module of the gproj it opens. In vanilla `<DayZ Tools>\Bin\Workbench\dayz.gproj` that module's `Paths` hold only `"scripts/editor/Workbench"`, `"scripts/editor/plugins"` and `"ToolAddons"`. The mod's `workbench\dayz.gproj` is a copy of it with mod paths added to the `game`, `world` and `mission` modules only, so it does not load the mod's plugins yet. To fix that:
 
 1. Write plugin scripts to `workspace/<ModName>/scripts/editor/plugins/`, the vanilla folder name inside the mod.
 2. In `workspace/<ModName>/workbench/dayz.gproj`, add `"<ModName>/scripts/editor/plugins"` as the last line of the `workbench` module's `Paths { }`, in the same form as the scaffold's `"<ModName>/scripts/3_Game"` entries. Add it only if it is missing.

@@ -34,6 +34,7 @@ import skill_helpers as h  # noqa: E402
 # local-memory/ all live. Resolved by dayz-init/state.py: $CLAUDE_PROJECT_DIR,
 # else the nearest folder at or above the current directory that holds the
 # /dayz-init project cache (so a run from workspace/<mod>/ finds the project),
+# else the clone that holds these scripts when it has the cache,
 # else the current directory.
 PROJECT_DIR = h.load_module("dayz_scope_mod_state", h.DAYZ_INIT_STATE).find_project_dir()
 WORKSPACE = PROJECT_DIR / "workspace"

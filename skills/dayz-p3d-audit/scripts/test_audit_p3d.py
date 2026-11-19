@@ -215,7 +215,7 @@ def test_required_lods_firegeo_note_uses_7e15():
 
 
 def test_required_lods_geophys_absence_is_not_reported():
-    # Vanilla DayZ models carry no 2e13 LOD; its absence must not raise anything.
+    # Few vanilla DayZ models carry a GeoPhys LOD (4e13); its absence must not raise anything.
     lods = {"Visual": 0, "Geometry": 0, "Memory": 0, "ViewGeo": 0, "FireGeo": 0}
     assert audit.check_required_lods(lods) == []
 
@@ -378,6 +378,7 @@ def test_missing_py3d_exits_2_with_requirements_hint(monkeypatch, capsys):
         return real_import(name, *a, **kw)
 
     monkeypatch.setattr(builtins, "__import__", fake_import)
+    monkeypatch.setattr(audit, "REPO_FORK", audit.REQUIREMENTS.parent / "no-such-folder" / "__init__.py")
     with pytest.raises(SystemExit) as exc:
         audit.load_py3d()
     assert exc.value.code == 2
@@ -413,17 +414,30 @@ def _asciiz(text: str) -> bytes:
     return text.encode("utf-8") + b"\0"
 
 
+def _face_normal(points, idx):
+    a, b, c = (points[i] for i in idx[:3])
+    u = [b[k] - a[k] for k in range(3)]
+    v = [c[k] - a[k] for k in range(3)]
+    n = (u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0])
+    size = sum(x * x for x in n) ** 0.5 or 1.0
+    return tuple(x / size for x in n)
+
+
 def _write_lod(resolution, points, faces, selections=(), properties=(), masses=(), material=PEN):
+    # One stored normal per face, along its winding, so the file is a valid MLOD for
+    # any reader: the DayZ fork of py3d follows every corner's normal index.
     out = bytearray(b"P3DM")
     out += struct.pack("<LL", 28, 256)
-    out += struct.pack("<LLL", len(points), 0, len(faces))
+    out += struct.pack("<LLL", len(points), len(faces), len(faces))
     out += b"\0" * 4
     for p in points:
         out += struct.pack("fff", *p) + struct.pack("<L", 0)
     for idx in faces:
+        out += struct.pack("fff", *_face_normal(points, idx))
+    for n, idx in enumerate(faces):
         out += struct.pack("<L", len(idx))
         for i in idx:
-            out += struct.pack("<LL", i, 0) + struct.pack("ff", 0, 0)
+            out += struct.pack("<LL", i, n) + struct.pack("ff", 0, 0)
         out += b"\0" * 16  # padding for the unused fourth vertex of a triangle
         out += struct.pack("<L", 0) + _asciiz("") + _asciiz(material)
     out += b"TAGG"
@@ -470,7 +484,7 @@ def test_audit_p3d_flags_collision_lods_without_materials(tmp_path, capsys):
     pytest.importorskip("py3d")
     geometry = _write_lod(1e13, TETRA_POINTS, TETRA_FACES, selections=[("Component01", FULL)], material="")
     geophys = _write_lod(4e13, TETRA_POINTS, TETRA_FACES)
-    viewgeo = _write_lod(6e15, TETRA_POINTS, TETRA_FACES, material="")
+    viewgeo = _write_lod(6e15, TETRA_POINTS, TETRA_FACES, selections=[("Component01", FULL)], material="")
     memory = _write_lod(1e15, [(0.0, 0.0, 0.0)], [])
     visual = _write_lod(0.0, TETRA_POINTS, TETRA_FACES, material="")  # visual LODs are not checked
     model = tmp_path / "bare.p3d"
@@ -488,7 +502,7 @@ def test_audit_p3d_flags_collision_lods_without_materials(tmp_path, capsys):
 def test_audit_p3d_viewgeo_without_materials_still_passes(tmp_path, capsys):
     pytest.importorskip("py3d")
     geometry = _write_lod(1e13, TETRA_POINTS, TETRA_FACES, selections=[("Component01", FULL)])
-    viewgeo = _write_lod(6e15, TETRA_POINTS, TETRA_FACES, material="")
+    viewgeo = _write_lod(6e15, TETRA_POINTS, TETRA_FACES, selections=[("Component01", FULL)], material="")
     memory = _write_lod(1e15, [(0.0, 0.0, 0.0)], [])
     visual = _write_lod(0.0, TETRA_POINTS, TETRA_FACES)
     model = tmp_path / "viewgeo_bare.p3d"
@@ -764,6 +778,7 @@ def test_unreadable_config_is_an_error_not_a_silent_skip(tmp_path, monkeypatch, 
     fake_py3d = type("FakePy3d", (), {"P3D": staticmethod(lambda f: _Obj(lods=lods))})
     monkeypatch.setattr(audit, "load_py3d", lambda: fake_py3d)
     monkeypatch.setattr(audit, "check_visual_lod", lambda lod: [])
+    monkeypatch.setattr(audit, "check_lod0_vertex_budget", lambda p: [])  # stub corners carry no normal or uv
     model = tmp_path / "m.p3d"
     model.write_bytes(b"MLOD" + b"\0" * 8)
 
@@ -791,6 +806,7 @@ def test_ordinary_item_without_pos_center_passes_and_autocenter_item_does_not(tm
     fake_py3d = type("FakePy3d", (), {"P3D": staticmethod(lambda f: _Obj(lods=lods))})
     monkeypatch.setattr(audit, "load_py3d", lambda: fake_py3d)
     monkeypatch.setattr(audit, "check_visual_lod", lambda lod: [])  # stub faces carry no textures
+    monkeypatch.setattr(audit, "check_lod0_vertex_budget", lambda p: [])  # nor a normal or uv per corner
     model = tmp_path / "m.p3d"
     model.write_bytes(b"MLOD" + b"\0" * 8)
 

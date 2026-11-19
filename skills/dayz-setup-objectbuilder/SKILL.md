@@ -66,7 +66,10 @@ DayZ preflight
 
 [OK]    P:\ is mounted
 [OK]    DayZ Tools found: C:\...\steamapps\common\DayZ Tools
+[OK]    DayZ Diag found: C:\...\steamapps\common\DayZ\DayZDiag_x64.exe
+[OK]    DayZ Server found: C:\...\steamapps\common\DayZServer
 [OK]    Vanilla data found: P:\dz
+[OK]    Vanilla scripts found: P:\scripts
 [OK]    P:\Mods -> C:\...\steamapps\common\DayZ\!Workshop
 
 Preflight complete.

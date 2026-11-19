@@ -4,7 +4,7 @@ Mods that ship JSON config files (`cfggameplay.json`-style: admin opens it, edit
 
 See also: `examples/06_json_config.c` for the singleton-load companion pattern.
 
-Load and save with `JsonFileLoader<T>.LoadFile(path, data, errorMessage)` and `SaveFile(path, data, errorMessage)`. Both return `bool` and fill `errorMessage` (`P:\scripts\3_game\tools\jsonfileloader.c:7` and `:42`). The older `JsonLoadFile` and `JsonSaveFile` return `void`, so `if (!...JsonLoadFile(...))` does not compile, and vanilla marks them "use JsonFileLoader::LoadFile instead" (`jsonfileloader.c:104-105`).
+Load and save with `JsonFileLoader<T>.LoadFile(path, data, errorMessage)` and `SaveFile(path, data, errorMessage)`. Both return `bool` and fill `errorMessage` (`P:\scripts\3_game\tools\jsonfileloader.c:7` and `:42`). The older `JsonLoadFile` and `JsonSaveFile` return `void`, so `if (!...JsonLoadFile(...))` does not compile, and vanilla marks them "use JsonFileLoader::LoadFile instead" (`jsonfileloader.c:104-105`). `LoadFile` returns `false` with "does not exist" for a missing file and reads at most 100,000,000 characters (`:3`, `:37`). For JSON held in a string, such as a config sent over RPC, use `LoadData(string string_data, out T data, out string errorMessage)` and `MakeData(T inputData, out string outputData, out string errorMessage, bool prettyPrint = true)` (`:69` and `:85`); `SaveFile` always writes the pretty printed form.
 
 ---
 

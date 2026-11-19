@@ -155,7 +155,7 @@ def test_injected_script_is_balanced_and_prints_only_the_line_format():
 # someone opens P:\scripts and adds its declaration.
 VANILLA_CALLS = {
     "GetGame": r"P:\scripts\3_game\gameplay.c:636",
-    "GetCallQueue": r"P:\scripts\3_game\global\game.c:1549",
+    "GetCallQueue": r"P:\scripts\3_game\global\game.c:1550",
     "CallLater": r"P:\scripts\2_gamelib\tools.c:61",
     "Remove": r"P:\scripts\2_gamelib\tools.c:65",
     "GetPlayers": r"P:\scripts\3_game\global\game.c:945",

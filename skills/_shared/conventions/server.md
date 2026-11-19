@@ -11,13 +11,14 @@ Part of Tier 2. Server economy files, the `.server/<instance>/` test-server layo
 - Loot numbers (`nominal`, `min`, `lifetime`, `restock`, `cost`) live only in the mission's `types.xml`. No config.cpp class sets them: there is no `CfgSpawnablesTypes` or `CfgRandomPresence` in any `config.cpp` under `P:\DZ` or in `P:\scripts`, so a mod that adds one changes nothing. The script side only reads them back (`CEItemProfile` getters, `P:\scripts\3_game\ce\centraleconomy.c:754-765`).
 - `<lifetime>` is how long an item lies untouched on the ground before cleanup deletes it; `<restock>` is the wait before a missing item may respawn when the economy needs it (`centraleconomy.c:762` and `:763`).
 - Fixed props without `init.c` code: list spawner JSON files in `cfggameplay.json` under `WorldsData.objectSpawnersArr` (`P:\scripts\3_game\cfggameplaydatajson.c:17` and `:195`). Each file's top-level key is `Objects`, an array of `{ name, pos, ypr, scale, enableCEPersistency, customString }` (`P:\scripts\3_game\objectspawner.c:95-108`). The paths are relative to the mission folder (`objectspawner.c:18` prefixes `$mission:`), and `cfggameplay.json` is only read when the server config sets `enableCfgGameplayFile = 1;` (`P:\scripts\3_game\cfggameplayhandler.c:53`).
+- The server reads `cfggameplay.json` from the mission folder (`$mission:cfggameplay.json`, `cfggameplayhandler.c:3`) and falls back to `dz/worlds/<world>/ce/cfggameplay.json` when the mission has none (`:46` to `:51`). With the key off, or no file at all, the script defaults are used (`:62` to `:68`). On a diag build that is not a dedicated server the file is read whatever the key says (`:55` to `:60`), so a setting that works in a local diag session can still be ignored on a real server. The server sends the loaded values to each client in `RPC_CFG_GAMEPLAY_SYNC` (`:90`), so clients never read the file themselves.
 - `$mission:` is the path prefix for a file in the running mission folder (`P:\scripts\3_game\cfgbunkerbroadcasthandler.c:23`).
 - To keep an object made with `CreateObjectEx` out of the world save, add `ECE_NOPERSISTENCY_WORLD` (`P:\scripts\3_game\ce\centraleconomy.c:31`).
 
 ## Test server instances (`.server/`)
 
 - Server runtime lives at `.server/<instance>/` at the project root (not under `workspace/`). Each instance is self-contained:
-  - `.server/<instance>/mission/`: editable copy of the mission folder, created by `/dayz-add-server` from DayZ Server's `mpmissions/<template>/` and edited by the user after that (the server runs with `-filePatching`, so edits are live). Never edit the original DayZ Server install. The folder is named `mission/` whatever the template; the launcher passes `-mission=<abspath>`.
+  - `.server/<instance>/mission/`: editable copy of the mission folder, created by `/dayz-add-server` from DayZ Server's `mpmissions/<template>/` and edited by the user after that (the server runs with `-filePatching`, so edits are live). Never edit the original DayZ Server install. The folder is named `mission/` whatever the template; the launcher reaches it through the `<template>/` junction that `/dayz-add-server` creates next to it.
   - `.server/<instance>/serverDZ.cfg`: per-instance server config. Its `template = "..."` line links the instance to its mission base, so instances can differ in player count, persistence or time of day.
   - `.server/<instance>/Profiles/`: server `-profiles=` dir (RPT, script.log, BattlEye state).
   - `.server/!ClientDiagLogs/`: client `-profiles=` dir, shared by all instances.
@@ -28,5 +29,5 @@ Part of Tier 2. Server economy files, the `.server/<instance>/` test-server layo
 
 ## Mission and DayZ Server install notes
 
-- The launch skill passes `-mission=<absolute path to .server/<instance>/mission>` to pin the mission folder (otherwise the engine looks in the diag binary's local `mpmissions/`, which does not exist in the game install).
+- The launch skill passes `-mission=<absolute path to .server/<instance>/<template>>`, the junction `/dayz-add-server` creates to `mission/`, to pin the mission folder (the client never spawns without the template name) (otherwise the engine looks in the diag binary's local `mpmissions/`, which does not exist in the game install).
 - DayZ Server (Steam appid 223350) is only needed for the initial mission copy. After that it can be uninstalled; the `.server/<instance>/mission/` copy is the source of truth.

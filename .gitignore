@@ -47,3 +47,10 @@ docs/superpowers/
 
 # Claude Code worktrees: full copies of the repo, one per isolated agent session
 .claude/worktrees/
+
+# Tools and skill scripts: per-machine roots and files written at run time
+scripts/tools/dayz-ui-lab/corpora/local-roots.json
+skills/*/scripts/agent_calls.jsonl
+
+# Package metadata that `pip install -e scripts/tools/<name>` writes next to the source
+*.egg-info/

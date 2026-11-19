@@ -1,0 +1,29 @@
+{
+  "collections": [],
+  "default_state": "default",
+  "entrypoint": {
+    "layout": "../three-cards/layouts/shell.layout",
+    "subviews": [
+      "missing-mount"
+    ]
+  },
+  "scenario_id": "mount-missing",
+  "schema_version": "dayz-ui-scenario-v1",
+  "states": [
+    {
+      "name": "default"
+    }
+  ],
+  "subviews": [
+    {
+      "id": "missing-mount",
+      "layout": "../three-cards/layouts/subview.layout",
+      "mount": "DoesNotExist",
+      "subviews": []
+    }
+  ],
+  "viewport": {
+    "height": 1080,
+    "width": 1920
+  }
+}

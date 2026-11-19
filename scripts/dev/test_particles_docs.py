@@ -74,6 +74,7 @@ def test_reference_has_contents_list(ref: Path) -> None:
 
 
 INTEGRATION = SKILL / "references" / "integration-patterns.md"
+CHOICES = SKILL / "references" / "device-particle-choices.md"
 PARTICLE_LIST = Path("P:/scripts/3_game/particles/particlelist.c")
 PTC_DIR = Path("P:/graphics/particles")
 
@@ -118,7 +119,8 @@ def _registered_particles() -> dict[str, str]:
 def test_integration_particles_point_at_real_effects() -> None:
     # The device table recommended CAMP_STEAM_EXTINGUISH_START for a steam vent, but vanilla
     # registers it as "default_01", the placeholder particle (particlelist.c:35).
-    text = INTEGRATION.read_text(encoding="utf-8")
+    # The device table lives in device-particle-choices.md; the code checked spans both files.
+    text = CHOICES.read_text(encoding="utf-8") + "\n" + INTEGRATION.read_text(encoding="utf-8")
     registered = _registered_particles()
     assert registered.get("CAMP_STEAM_EXTINGUISH_START") == "default_01"
     table = [ln for ln in text.splitlines() if ln.startswith("| ") and not ln.startswith("| Device")]
@@ -146,5 +148,8 @@ def test_integration_overrides_are_vanilla_methods() -> None:
     code = "\n".join(_code_lines(INTEGRATION.read_text(encoding="utf-8")))
     overrides = set(re.findall(r"\boverride\s+\w+\s+(\w+)\s*\(", code))
     assert overrides
-    missing = [n for n in sorted(overrides) if not re.search(rf"\bvoid\s+{n}\s*\(", vanilla)]
+    # A MyMod_ hook is defined in the file itself (integration-patterns.md allows overriding it),
+    # and a vanilla method may return any type, not only void.
+    missing = [n for n in sorted(n for n in overrides if not n.startswith("MyMod_"))
+               if not re.search(rf"\b\w+\s+{n}\s*\(", vanilla)]
     assert not missing, f"overrides with no vanilla method: {missing}"

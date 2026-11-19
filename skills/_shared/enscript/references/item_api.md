@@ -21,13 +21,13 @@
 
 | Call | What it does | Source |
 |---|---|---|
-| `GetQuantity()` | Current quantity, `float`. | `P:\scripts\4_world\entities\itembase.c:3486` |
-| `GetQuantityMin()`, `GetQuantityMax()` | Limits from config, `int`. | `:3470`, `:3435` |
-| `GetQuantityNormalized()` | Quantity scaled to 0..1. | `:3416` |
-| `HasQuantity()` | Whether the item uses quantity at all. | `:3481` |
-| `SetQuantity(value, destroy_config = true, destroy_forced = false, allow_client = false, clamp_to_stack_max = true)` | Sets it; returns `bool`. Reaching 0 can delete the item, see the two `destroy` flags. | `:3315` |
-| `AddQuantity(value, destroy_config = true, destroy_forced = false)` | Adds (or with a negative value takes) quantity; returns `bool`. | `:3389` |
-| `GetLiquidType()`, `SetLiquidType(int value, bool allow_client = false)` | The liquid of a bottle or container, for example `LIQUID_WATER`. | `:3883`, `:3867` |
+| `GetQuantity()` | Current quantity, `float`. | `P:\scripts\4_world\entities\itembase.c:3490` |
+| `GetQuantityMin()`, `GetQuantityMax()` | Limits from config, `int`. | `:3474`, `:3439` |
+| `GetQuantityNormalized()` | Quantity scaled to 0..1. | `:3420` |
+| `HasQuantity()` | Whether the item uses quantity at all. | `:3485` |
+| `SetQuantity(value, destroy_config = true, destroy_forced = false, allow_client = false, clamp_to_stack_max = true)` | Sets it; returns `bool`. Reaching 0 can delete the item, see the two `destroy` flags. | `:3319` |
+| `AddQuantity(value, destroy_config = true, destroy_forced = false)` | Adds (or with a negative value takes) quantity; returns `bool`. | `:3393` |
+| `GetLiquidType()`, `SetLiquidType(int value, bool allow_client = false)` | The liquid of a bottle or container, for example `LIQUID_WATER`. | `:3887`, `:3871` |
 | `IsEmpty()` | No cargo and no attachments (declared on `EntityAI`), not "quantity is 0". | `P:\scripts\3_game\entities\entityai.c:646` |
 
 ```c
@@ -51,7 +51,7 @@ Health calls take a zone name and a health type. `""` for both means the global 
 | `AddHealth(zoneName, healthType, value)` | `:1027` |
 | `DecreaseHealth(zoneName, healthType, value, auto_delete)` | `:1049` (the three argument form is `:1034`) |
 | `SetHealthMax(zoneName = "", healthType = "")` | `:1105` |
-| `GetHealthLevel(zone = "")` returns an `int` health level, `GameConstants.STATE_PRISTINE` (0) to `STATE_RUINED` (4) (`P:\scripts\3_game\constants.c:909`, `:913`) | `:1171` |
+| `GetHealthLevel(zone = "")` returns an `int` health level, `GameConstants.STATE_PRISTINE` (0) to `STATE_RUINED` (4) (`P:\scripts\3_game\constants.c:913`, `:909`) | `P:\scripts\3_game\entities\object.c:1171` |
 | `IsRuined()`, `IsDamageDestroyed()` | `:1219`, `:981` |
 
 ```c
@@ -65,7 +65,7 @@ item.DecreaseHealth("", "", 10, false);
 
 | Call | Source |
 |---|---|
-| `GetWet()`, `SetWet(float value, bool allow_client = false)` | `P:\scripts\4_world\entities\itembase.c:3717`, `:3688` |
+| `GetWet()`, `SetWet(float value, bool allow_client = false)` | `P:\scripts\4_world\entities\itembase.c:3721`, `:3692` |
 | `CanHaveTemperature()` | `P:\scripts\3_game\entities\entityai.c:3883` |
 | `GetTemperature()` | `:2442` |
 | `SetTemperatureDirect(value, allow_client = false)` | `:2293` |
@@ -188,3 +188,4 @@ void SetQuantityOrAmmo(EntityAI ent, int value)
 - The signature is `SetObjectTexture(int index, string texture_name)` (`P:\scripts\3_game\entities\entityai.c:2881`); `SetObjectMaterial(int index, string mat_name)` is next to it (`:2884`). The index is the position in the config's `hiddenSelections[]`, starting at 0, not the selection name.
 - `GetHiddenSelectionsTextures()` reads the config's `hiddenSelectionsTextures[]` (`P:\scripts\3_game\entities\object.c:132`). Vanilla has no `GetObjectTextures` and no `SetObjectTextureGlobal`; calling a method that does not exist stops the whole script module compiling.
 - Reported, not checked on `P:\`: a selection name that differs in case from the named selection in the `.p3d` is ignored without a log line.
+- Reported, not checked on `P:\`: a texture path read back from the engine has lost the leading backslash of the config path (`\dz\gear\camping\data\crate_co.paa` in `config.cpp` comes back as `dz\gear\camping\data\crate_co.paa`). No vanilla script declares a `GetObjectTextures()` readback (see above), so check the readback call you use exists on your build before you rely on it. When you save a texture path and restore it later, compare the two without the leading backslash and without regard to case.

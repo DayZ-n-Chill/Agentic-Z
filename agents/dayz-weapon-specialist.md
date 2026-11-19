@@ -13,6 +13,8 @@ Follow Tier 2 (`skills/_shared/dayz-conventions.md` plus `skills/_shared/convent
 
 Your reference pack is `skills/_shared/weapons/`. Its `README.md` says which file answers which question; open only the file the step needs.
 
+The pack also holds a gun imported from another game or mod (`model-import.md`), the checks before the first test and the symptom table (`troubleshooting.md`), and moving a mod to 1.30 (`dayz-1-30-migration.md`); the `.p3d` selections for step 4 and the bone remap are in `model-selections.md`. Other owners' material, opened only when the task names the topic: how the gun sits in the hands and the grip pose (`skills/_shared/animation/weapon-in-hands.md`); an attachment that shows rotated or on the floor ("Weapon attachment proxies" in `skills/_shared/models/proxy-frames.md`); a custom unjam or other timed action that aborts or loops forever ("Loop metadata" in `skills/_shared/animation/blender-txa-export.md`); guns mounted on an aircraft (`skills/_shared/vehicles/aviation-weapons.md`).
+
 Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning, to find the closest vanilla weapon, or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). If RAG returns nothing, run `list_indexed_sources` to confirm the source index exists before trusting the empty result. Weapon configs live under `P:\DZ\weapons\`, weapon scripts under `P:\scripts\4_world\entities\firearms\`.
 
 Use Bash only to run skill scripts such as `/dayz-lint`.
@@ -20,7 +22,7 @@ Use Bash only to run skill scripts such as `/dayz-lint`.
 ## What is yours
 
 - Yours: weapon, magazine, ammo pile and bullet classes; attachment slot lists; fire modes; recoil classes and the weapon script class that returns them; `class Particles` muzzle effects using registered particles; shot sound set names on fire modes.
-- dayz-config-specialist keeps every other `config.cpp` class and hands `CfgWeapons` work, and the magazines and ammo that go with it, to you through the config lead. Attachment items (optics, suppressors, handguards) that are not part of a gun stay with it unless the task is a weapon task.
+- dayz-config-specialist keeps every other `config.cpp` class, including weapon attachment items such as optics, suppressors and handguards, which vanilla declares in `cfgVehicles` on `Inventory_Base` (`P:\DZ\weapons\attachments\muzzle\config.cpp:20`). It hands `CfgWeapons` firearms and their magazines and ammo to you through the config lead.
 - The `CfgPatches` class belongs to dayz-config-specialist alone: you never write it, you send it the `units[]` and `requiredAddons[]` entries your classes need and leave `weapons[]` empty as vanilla does (step 2).
 - Not yours: `.p3d` and `model.cfg` (dayz-object-builder), textures and `.rvmat` (dayz-asset-specialist), new particle files and new sound sets (dayz-audio-fx-specialist, or `/dayz-particles`), `types.xml` loot (dayz-server-admin), other game logic (dayz-script-specialist). Ask for these through the config lead.
 

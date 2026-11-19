@@ -98,52 +98,7 @@ There is no per-player module class in this CF build (`class CF_ModulePlayer` do
 
 ## CF ModStorage: Per-Entity Persistent Data
 
-ModStorage lets you attach your own save data to any entity without touching vanilla `OnStoreSave`/`OnStoreLoad`. Each mod gets a named slot, so your data cannot shift another mod's.
-
-`CF_OnStoreSave(CF_ModStorageMap storage)` and `CF_OnStoreLoad(CF_ModStorageMap storage)` are declared on CF's modded `ItemBase` (`4_World\CommunityFramework\Entities\ItemBase.c:42`) and on the other entity bases in the same folder (`BuildingBase.c`, `CarScript.c`, `DayZPlayerImplement.c`, `ZombieBase.c`, ...). `CF_ModStorageMap` has `Get(string name)` and `Contains(string name)` (`3_Game\CommunityFramework\ModStorage\CF_ModStorageMap.c:5` and `:15`).
-
-```c
-modded class ItemBase
-{
-    override void CF_OnStoreSave(CF_ModStorageMap storage)
-    {
-        super.CF_OnStoreSave(storage);
-
-        CF_ModStorage ctx = storage.Get("MyMod");
-        ctx.Write(m_MyModCustomValue);
-        ctx.Write(m_MyModTag);
-    }
-
-    override bool CF_OnStoreLoad(CF_ModStorageMap storage)
-    {
-        if (!super.CF_OnStoreLoad(storage))
-            return false;
-
-        // Mod data does not exist in saves made before the mod was added
-        if (!storage.Contains("MyMod"))
-            return true;
-
-        CF_ModStorage ctx = storage.Get("MyMod");
-        if (!ctx.Read(m_MyModCustomValue)) return false;
-        if (!ctx.Read(m_MyModTag))         return false;
-
-        return true;
-    }
-}
-```
-
-### Version-guarding inside ModStorage
-
-`CF_ModStorage.GetVersion()` returns the version the slot was saved with (`3_Game\CommunityFramework\ModStorage\CF_ModStorage.c:41`); CF's own example branches on it (`4_World\CommunityFramework\Entities\ItemBase.c:70`):
-
-```c
-int version = ctx.GetVersion();
-if (!ctx.Read(m_MyField)) return false;
-if (version >= 2)
-{
-    if (!ctx.Read(m_MyNewField)) return false;
-}
-```
+Per-entity save data through `CF_OnStoreSave` and `CF_OnStoreLoad` (the hooks, the frame, versions, and what survives removing a mod) is in `_shared/persistence/cf-modstorage.md`.
 
 ---
 

@@ -10,9 +10,9 @@ class CfgPatches
 };
 class CfgVehicles
 {
-	class Vest_Base;
+	class Clothing;
 	class Armband_ColorBase;
-	class MyVest_Base: Vest_Base
+	class MyVest_Base: Clothing
 	{
 		scope = 0;
 		displayName = "Tactical Vest";

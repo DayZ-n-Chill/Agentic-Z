@@ -1,0 +1,27 @@
+{
+  "api_id": "odol_reader.ODOL.from_bytes-v1",
+  "files": [
+    {
+      "path": "bis_reader.py",
+      "sha256": "2b2efd277f238d7ac3ed18cfefdb342ced10236f6b296d40ccec6f25ab90b4f3"
+    },
+    {
+      "path": "lzo_decompress.py",
+      "sha256": "5ecb852cca9f38258121e2b5246ff8ba438d672b04390442e2e536bc080b8658"
+    },
+    {
+      "path": "lzss_decompress.py",
+      "sha256": "be3fdf6d38794494cc657639215823fb64035e8d0b26701a6fa0122b0f613898"
+    },
+    {
+      "path": "math_types.py",
+      "sha256": "b6ac444ca190a5cb8a7e5c0f423fafeceb31ddc8a805f2374b466ae5da6fdd10"
+    },
+    {
+      "path": "odol_reader.py",
+      "sha256": "a9a0d4de9dcf2a45c347d9dd54dee4eecd77cbe51b348ca96dcd0e6b259478ac"
+    }
+  ],
+  "manifest_id": "dayz-odol-backend-2026-07-25",
+  "schema_version": "odol-backend-manifest-v1"
+}

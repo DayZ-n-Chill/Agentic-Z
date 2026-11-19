@@ -75,6 +75,15 @@ def test_verify_workspace_accepts_prefix_with_newline_or_bom(tmp_path):
     assert build.verify_workspace("MyMod", tmp_path) == mod
 
 
+def test_verify_workspace_refuses_utf16_prefix_with_hint(tmp_path):
+    mod = _scaffold(tmp_path)
+    (mod / "$PBOPREFIX$").write_text("MyMod", encoding="utf-16")
+    with pytest.raises(SystemExit) as exc:
+        build.verify_workspace("MyMod", tmp_path)
+    msg = str(exc.value.code)
+    assert "$PBOPREFIX$ is not UTF-8" in msg and "MyMod" in msg
+
+
 # --- junction ----------------------------------------------------------------
 
 def test_verify_junction_missing(p_drive, tmp_path):
@@ -195,9 +204,9 @@ def _excluded(rel_path, patterns):
     "config.cpp",
 ])
 def test_exclude_list_keeps_nested_source_temp_doc_folders(rel):
-    # A folder named Source, Temp or Doc below the mod root is part of the mod.
-    # The old *\Source\*, *\Temp\* and *\Doc\* patterns dropped these files
-    # silently, so their classes went missing in game.
+    # Staging keeps a folder named Source, Temp or Doc below the mod root.
+    # FileBank still drops it when packing (DayZ Tools' own exclude.lst has
+    # *\Source\*, *\Temp\* and *\Doc\*); the content check reports those files.
     assert not _excluded(rel, _exclude_patterns())
 
 

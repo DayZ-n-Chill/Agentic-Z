@@ -1,0 +1,5 @@
+class Stage3
+{
+    // shader = NormalMapMacro;
+    shader = Super;
+};

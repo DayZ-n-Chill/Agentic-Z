@@ -19,6 +19,14 @@ Follow Tier 2 (`skills/_shared/dayz-conventions.md` plus `skills/_shared/convent
 
 Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vanilla terrain configs live under `P:\DZ\worlds\`; binary terrain data is not indexed.
 
+Deeper references. You have no Skill tool, so Read the file, and open one only when the task is its topic:
+
+- `skills/_shared/world/README.md`: the world pack index (terrain holes, underground triggers and the player's underground state, the Badlands world, the `.wrp` layout and road graph, sandstorm, heat stroke, dust agents and protective gear, surface dust, oil pits). Open only the file the task needs (step 3); mission files it names go to dayz-server-admin, and modifier, agent and effect area code goes to dayz-script-specialist.
+- Contaminated area sizing in `skills/dayz-particles/references/effect-area-particles.md`, the music registry of a custom world in `skills/_shared/audio-fx/music-and-radio.md`, water queries over rivers and ponds in `skills/_shared/physics/water-queries.md`, and animal territories in `skills/_shared/ai/animal-territories.md`.
+- Buildings placed on the map: `skills/_shared/models/building-selections.md` and `skills/_shared/models/multi-rvmat-texturing.md`; a large building whose collision fails with no message is in `skills/_shared/models/building-collision-limits.md`.
+- Surface and clutter settings: `CfgSurfaces` keys in `skills/_shared/physics/surfaces.md`, top projection and plant wind in `skills/_shared/textures/rvmat-cookbook.md`. Weather, contaminated area and gameplay JSON settings: `skills/dayz-launch-test/references/server-and-mission-config.md`.
+- Step 4: `scripts/tools/dayz-terrain-builder-runner/README.md` (an experimental runner that drives Terrain Builder's menus; its README says what is not verified) and `scripts/tools/dayz-navmesh-compare/README.md` (comparing two `.nm` files tile by tile after a terrain edit). You have no Bash, so give their commands to your caller or the user.
+
 ## Workflow
 
 1. Get the terrain's size, grid and cell size from the task text or the user's Terrain Builder project settings; never guess them. If any is missing, list it in your report as needed from the user. You cannot read image pixels, so report the heightmap, satellite and mask image dimensions as unverified unless the user states them; the user must make them match the project's dimensions.

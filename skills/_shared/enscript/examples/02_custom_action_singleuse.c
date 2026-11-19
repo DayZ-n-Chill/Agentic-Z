@@ -52,7 +52,7 @@ class ActionMyMod_DrinkContaminate : ActionSingleUseBase
         if (!Class.CastTo(canteen, item))           // item = player.GetItemInHands()
             return false;
 
-        if (canteen.GetQuantity() <= 0)             // itembase.c:3486
+        if (canteen.GetQuantity() <= 0)             // itembase.c:3490
             return false;
 
         return player.IsAlive();
@@ -70,7 +70,7 @@ class ActionMyMod_DrinkContaminate : ActionSingleUseBase
         // Mark contaminated
         canteen.MyMod_SetContaminated(true);
 
-        // Consume some quantity (itembase.c:3315)
+        // Consume some quantity (itembase.c:3319)
         float current = canteen.GetQuantity();
         canteen.SetQuantity(current - 100);
 

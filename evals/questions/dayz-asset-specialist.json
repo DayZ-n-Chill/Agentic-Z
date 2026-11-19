@@ -57,7 +57,7 @@
       "must_not_include": [
         "re:\\A\\W*yes\\b"
       ],
-      "verified": "agents/dayz-asset-specialist.md workflow step 2; skills/_shared/textures/suffixes-and-sizes.md:29 (every side a power of two)"
+      "verified": "agents/dayz-asset-specialist.md workflow step 2; skills/_shared/textures/suffixes-and-sizes.md:37 (every side a power of two)"
     },
     {
       "id": "refused-size-reruns-the-rest",

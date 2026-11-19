@@ -15,7 +15,7 @@ This is a meta-skill that edits rule files, not DayZ content, so like `/dayz-sco
 
 ## 1. Find the repo, then draft the rule
 
-First find where this skill really lives, because every path below is relative to that Agentic-Z repo root, not to the current project. `/sync-skills` exposes the skill through a link (a junction on Windows) under `~/.claude/skills/`, and the harness reports the link path as the base directory, so resolve the link before deciding anything:
+First find the Agentic-Z repo root, because every path below is relative to it. Claude Code normally loads this skill from the agentic-z plugin, which a clone's own `.claude/settings.json` enables, so the base directory is in the plugin cache even inside a clone. It can also be a link (a junction on Windows) under `~/.claude/skills/`, which `/sync-skills --agents claude` makes, or under the Codex and Gemini skill folders; the harness reports the link path as the base directory. So resolve it before deciding anything:
 
 ```cmd
 python "<skill-dir>\check.py" root "<skill-dir>"
@@ -23,7 +23,7 @@ python "<skill-dir>\check.py" root "<skill-dir>"
 
 It follows symlinks and junctions and prints JSON with `kind` (`clone`, `plugin` or `unknown`), the resolved path, the repo `root` and any `missing` required files. Exit 0 means a usable clone or a plugin install; exit 2 means stop and ask the user where their Agentic-Z repo is, and write nothing until they answer. What it checks:
 
-- Under `~/.claude/plugins/cache/` (for example `C:\Users\<you>\.claude\plugins\cache\...`): a plugin install.
+- Under `~/.claude/plugins/cache/` (for example `C:\Users\<you>\.claude\plugins\cache\...`): it then checks the project (`CLAUDE_PROJECT_DIR`, or the working directory). When the project holds both `skills\_shared\dayz-conventions.md` and `.claude\CLAUDE.md`, it is an Agentic-Z clone: `kind` is `clone` and `root` is the project, so the rule goes into the Tier 2 or Tier 3 file there and step 3b runs. Otherwise it is a plugin install in another project.
 - Ending in `\skills\dayz-record-correction`: a clone. The repo root is two levels up (the folder that holds `skills\`), and it must hold both `skills\_shared\dayz-conventions.md` and `.claude\CLAUDE.md`. If either is missing, the command lists it under `missing` and exits 2. A copy (not a link) in `~/.claude/skills/`, where two levels up is `~/.claude`, is reported as `unknown` and also exits 2.
 
 Then draft:
@@ -35,6 +35,8 @@ Good: <a short example>
 Bad: <the version the user corrected>
 Tier: 1 | 2 | 3 (<file>)
 ```
+
+Write the rule as something that stays true. A rule outlives the session, so a present-tense claim about the current state ("X is currently broken", "the server now does Y") goes wrong silently; write instead how to check that state before acting on it. A dated or versioned fact ("on 1.30", "measured with ExtractPbo 2.35") can stay, because it stays true as history.
 
 Pick the tier by scope:
 
@@ -76,7 +78,7 @@ Compare against the baseline from step 3. Like `baseline`, it takes several minu
 python "<skill-dir>\check.py" compare --root "<repo root>"
 ```
 
-It reads the baseline from the same temp file (pass `--baseline <file>` if you used `--out`), runs the same two checks from the repo root (`python -m pytest -q .claude skills scripts/dev hooks` and `python .claude/skills/docs-sync/sync.py --check`), prints each `NEW` failure and each one that was `fixed`, and exits 1 only when something is new. Exit 2 means the baseline cannot be trusted, and nothing is compared: the file is missing or unreadable, it was made for another repo root (another clone), it is older than `--max-age-hours` (default 12, so a baseline from an earlier session is refused), or it was written by an older `check.py` without a root and time. Run `baseline` again (before editing, or after reverting your edit) before trusting any result. Wiki problems are matched without their line numbers, so a shifted line is not counted as new, and they are compared as counts, so a second copy of a problem the file already had is reported as new. Failures already in the baseline are not yours: report them, never revert for them. The root `pytest.ini` skips `.claude/worktrees/`, where Claude Code keeps full copies of the repo for its worktree sessions, so the run sees only this checkout.
+It reads the baseline from the same temp file (pass `--baseline <file>` if you used `--out`), runs the same two checks from the repo root (`python -m pytest -q .claude skills scripts/dev hooks scripts/tools` and `python .claude/skills/docs-sync/sync.py --check`), prints each `NEW` failure and each one that was `fixed`, and exits 1 only when something is new. Exit 2 means the baseline cannot be trusted, and nothing is compared: the file is missing or unreadable, it was made for another repo root (another clone), it is older than `--max-age-hours` (default 12, so a baseline from an earlier session is refused), or it was written by an older `check.py` without a root and time. Run `baseline` again (before editing, or after reverting your edit) before trusting any result. Wiki problems are matched without their line numbers, so a shifted line is not counted as new, and they are compared as counts, so a second copy of a problem the file already had is reported as new. Failures already in the baseline are not yours: report them, never revert for them. The root `pytest.ini` skips `.claude/worktrees/`, where Claude Code keeps full copies of the repo for its worktree sessions, so the run sees only this checkout.
 
 An edit to an agent file or a rules file can break the repo tests (for example `test_route.py` checks the agent list against `rules.json`). If `compare` reports a new failure, fix the problem or revert the edit, then run `compare` again. A new wiki problem after a rules-file edit usually means `/docs-sync` still needs to run (step 3).
 

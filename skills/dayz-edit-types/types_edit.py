@@ -133,7 +133,7 @@ def find_type(root: ET.Element, classname: str) -> Optional[ET.Element]:
     DayZ class names are case-insensitive: vanilla chernarusplus types.xml lists
     <type name="Bandana_Blackpattern"> (P:\DZ\worlds\chernarusplus\ce\db\types.xml:3036)
     for config class Bandana_BlackPattern (P:\DZ\characters\headgear\config.cpp:3084)
-    and Camonet (types.xml:4607) for CamoNet (P:\DZ\gear\camping\config.cpp:9808).
+    and Camonet (types.xml:4607) for CamoNet (P:\DZ\gear\camping\config.cpp:9818).
     So `akm` must find the existing AKM block, never add a second one.
     """
     key = classname.casefold()

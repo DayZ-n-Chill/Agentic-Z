@@ -1,6 +1,6 @@
 # Enforce Script style: Memory and `ref`
 
-Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`. The guide is a mirror of the [TrueDolphin/references wiki](https://github.com/TrueDolphin/references/wiki/EnScript-(Enforce-Script)-Style-Guide).
+Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`.
 
 Vanilla facts: The checked lifetime facts (`Class` against `Managed`, `ref`, `autoptr`, `delete`, deleting entities) are in `../enscript/references/language_memory.md`; it cites `P:\scripts\` and wins where the two differ.
 
@@ -24,11 +24,13 @@ Inherit from `Managed` for automatic reference counting:
 ```
 class MyClass : Managed
 {
-    // No manual deletion needed
+	// No manual deletion needed
 }
 ```
 
 **Note:** Entities (`Object`, `EntityAI`, `ItemBase`, `PlayerBase`) are owned by the engine. Give your own helper and data classes `Managed` (or a vanilla class that has it) as the root; see `../enscript/references/language_memory.md`, "The two roots".
+
+**Measured, not checked on `P:\`** (dedicated server, DayZ 1.30, a class declared in the mission module): `ref` also keeps a plain class with no `Managed` ancestor alive, so inheriting `Managed` is not what makes `ref` work, and a member field without `ref` is weak for both kinds of class. `Managed` as the root stays the style rule here, because vanilla's own script-owned classes use it (`Param`, `TimerBase`, `Serializer`; cited in `language_memory.md`). The probe and its other results are in `skills/_shared/enscript/depth/memory-management.md`.
 
 ### Freeing objects
 
@@ -64,13 +66,13 @@ Unverified: that `ref` mistakes crash the game or affect other mods. No vanilla 
 ```
 class MyClass
 {
-    ref MyOtherClass m_Member;        // Safe: member variable
-    ref array<string> m_Items;        // Safe: member variable
+	ref MyOtherClass m_Member;        // Safe: member variable
+	ref array<string> m_Items;        // Safe: member variable
 
-    void MyClass()
-    {
-        m_Member = new MyOtherClass();
-    }
+	void MyClass()
+	{
+		m_Member = new MyOtherClass();
+	}
 }
 ```
 
@@ -81,14 +83,14 @@ class MyClass
 ```
 class MyMod_Registry
 {
-    ref array<ref MyData> m_Entries;  // Owns the array AND each MyData in it
-    ref array<EntityAI> m_Items;      // Entities: the engine owns them, no ref on the element
+	ref array<ref MyData> m_Entries;  // Owns the array AND each MyData in it
+	ref array<EntityAI> m_Items;      // Entities: the engine owns them, no ref on the element
 
-    void MyMod_Registry()
-    {
-        m_Entries = new array<ref MyData>;
-        m_Entries.Insert(new MyData());  // Kept alive by the ref element type
-    }
+	void MyMod_Registry()
+	{
+		m_Entries = new array<ref MyData>;
+		m_Entries.Insert(new MyData());  // Kept alive by the ref element type
+	}
 }
 ```
 
@@ -114,16 +116,19 @@ typedef array<ref MyData> MyDataRefArray;
 1. **Method Parameters:**
 
 ```
-// AVOID: ref on parameters and return type is not needed in mod code (style)
+// WRONG: ref on a parameter fails to compile on DayZDiag
+// ("Method argument can't be strong reference", then "Can't compile "World"
+// script module!"); retail lets it pass. ref on the return type is style only.
+// Both messages: skills/_shared/enscript/depth/review-and-troubleshooting.md
 ref MyClass MyMethod(ref MyClass1 a, ref MyClass2 b)
 {
-    // ...
+	// ...
 }
 
 // CORRECT: No ref on parameters
 MyClass MyMethod(MyClass1 a, MyClass2 b)
 {
-    // ...
+	// ...
 }
 ```
 
@@ -134,15 +139,15 @@ MyClass MyMethod(MyClass1 a, MyClass2 b)
 // `ref map<int, string> GetAttachSoundSets()` (P:\scripts\3_game\inventoryitemtype.c:20)
 ref MyClass GetObject()
 {
-    ref MyClass obj = new MyClass();
-    return obj;
+	ref MyClass obj = new MyClass();
+	return obj;
 }
 
 // CORRECT: Return without ref
 MyClass GetObject()
 {
-    MyClass obj = new MyClass();
-    return obj;
+	MyClass obj = new MyClass();
+	return obj;
 }
 ```
 
@@ -153,13 +158,13 @@ MyClass GetObject()
 // e.g. `ref set<Object> victims = new set<Object>;` (P:\scripts\4_world\classes\areadamage\areadamage.c:175)
 void MyMethodAvoid()
 {
-    ref MyClass3 myClass3 = new ref MyClass3();
+	ref MyClass3 myClass3 = new ref MyClass3();
 }
 
 // CORRECT: No ref on local variables
 void MyMethod()
 {
-    MyClass3 myClass3 = new MyClass3();
+	MyClass3 myClass3 = new MyClass3();
 }
 ```
 
@@ -186,17 +191,17 @@ Hold only ONE explicit strong reference (using `ref` keyword) when possible:
 ```
 class MyMod_ItemTracker
 {
-    // GOOD: Single strong reference on member
-    ref array<EntityAI> m_Items;
+	// GOOD: Single strong reference on member
+	ref array<EntityAI> m_Items;
 
-    void AddItem(EntityAI item)
-    {
-        // CORRECT: No ref on parameter or local var
-        if (!m_Items)
-            m_Items = new array<EntityAI>;
+	void AddItem(EntityAI item)
+	{
+		// CORRECT: No ref on parameter or local var
+		if (!m_Items)
+			m_Items = new array<EntityAI>;
 
-        m_Items.Insert(item);
-    }
+		m_Items.Insert(item);
+	}
 }
 ```
 
@@ -212,28 +217,28 @@ copy reads null once the single owner lets go.
 // AVOID (style, no leak or crash): two owners make lifetime harder to follow
 class BadExample
 {
-    ref MyClass m_Object1;
-    ref MyClass m_Object2;
+	ref MyClass m_Object1;
+	ref MyClass m_Object2;
 
-    void BadExample()
-    {
-        MyClass obj = new MyClass();
-        m_Object1 = obj;
-        m_Object2 = obj;  // Second owner: valid, just less obvious
-    }
+	void BadExample()
+	{
+		MyClass obj = new MyClass();
+		m_Object1 = obj;
+		m_Object2 = obj;  // Second owner: valid, just less obvious
+	}
 }
 
 // PREFERRED (style): one owner, one weak observer
 class GoodExample
 {
-    ref MyClass m_Object;
-    MyClass m_WeakRef;  // Weak reference (no ref keyword)
+	ref MyClass m_Object;
+	MyClass m_WeakRef;  // Weak reference (no ref keyword)
 
-    void GoodExample()
-    {
-        m_Object = new MyClass();
-        m_WeakRef = m_Object;  // One strong, one weak
-    }
+	void GoodExample()
+	{
+		m_Object = new MyClass();
+		m_WeakRef = m_Object;  // One strong, one weak
+	}
 }
 ```
 
@@ -245,16 +250,16 @@ EnScript's reference counting works best when you don't over-specify references:
 // PREFERRED: Let the engine manage it
 array<EntityAI> GetItems()
 {
-    array<EntityAI> result = {};
-    // populate result
-    return result;
+	array<EntityAI> result = {};
+	// populate result
+	return result;
 }
 
 // AVOID: Over-specified refs
 ref array<EntityAI> GetItems()
 {
-    ref array<EntityAI> result = new ref array<EntityAI>;
-    return result;
+	ref array<EntityAI> result = new ref array<EntityAI>;
+	return result;
 }
 ```
 
@@ -262,14 +267,15 @@ ref array<EntityAI> GetItems()
 
 - **Freed too early**: a member made with `new` and no `ref` is freed at once, so later uses find `null` (`../enscript/references/language_memory.md`, rule 1, engine behaviour)
 - **Leaks**: two objects holding `ref`s to each other are never freed (`../enscript/references/language_memory.md`, rule 3, engine behaviour)
+- **Failed compile on DayZDiag**: `ref` on a method parameter stops the build with `Method argument can't be strong reference`, then `Can't compile "World" script module!`; the retail compiler lets it pass (`../enscript/references/language_compile.md`, compile traps table, has the first message; `skills/_shared/enscript/depth/review-and-troubleshooting.md` has both)
 - **Unverified**: crashes or effects on other mods. No vanilla source on `P:\scripts\` shows that a `ref` mistake causes either.
 
-`ref` on parameters, return types and locals is a style point only (Quick Reference Rules, rule 2); it is not on this list.
+`ref` on return types and locals is a style point only (Quick Reference Rules, rule 2); it is not on this list.
 
 #### Quick Reference Rules
 
 1. **USE `ref` for:** Member variables you own, and the element type of containers that hold objects you create (`ref array<ref MyData>`, as in `typedef array<ref Managed> TManagedRefArray;`, `P:\scripts\1_core\proto\enscript.c:737`)
-2. **Do not use `ref` for (style, not needed in mod code):** Method parameters, return types, local variables, and the aliased type of a typedef (`typedef ref T`)
+2. **Do not use `ref` for:** method parameters (a compile error on DayZDiag), and, as a style point, return types, local variables and the aliased type of a typedef (`typedef ref T`)
 3. **Do not use (style):** `new ref ClassName()`. No vanilla file uses `new ref` (grep of `P:\scripts`); whether it compiles is unverified
 4. **ALWAYS use:** `new ClassName()`
 5. **Goal:** One strong reference per object when possible

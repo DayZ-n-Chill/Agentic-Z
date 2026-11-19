@@ -92,6 +92,31 @@ def test_search_tools_work_in_clones_and_plugin_installs(path):
 
 
 @pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
+def test_testbridge_tools_work_in_clones_and_plugin_installs(path):
+    # The dayz-testbridge server is registered by the plugin (mcp__plugin_agentic-z_dayz-testbridge__*);
+    # a clone that declares it in its own .mcp.json sees mcp__dayz-testbridge__*. List both, like dayz-rag.
+    tools = set(_tools(path))
+    for tool in tools:
+        if tool.startswith("mcp__dayz-testbridge__"):
+            assert tool.replace("mcp__dayz-testbridge__", "mcp__plugin_agentic-z_dayz-testbridge__") in tools, tool
+        if tool.startswith("mcp__plugin_agentic-z_dayz-testbridge__"):
+            assert tool.replace("mcp__plugin_agentic-z_dayz-testbridge__", "mcp__dayz-testbridge__") in tools, tool
+
+
+def test_ingame_tester_drives_the_game_through_the_test_bridge():
+    # Plan task 14: the fallback in-game gate runs custom in-game checks through the
+    # dayz-testbridge tools and always stops the session it started.
+    server_py = REPO / ".claude" / "mcp" / "dayz-testbridge" / "server.py"
+    tools = set(_tools(AGENTS_DIR / "dayz-ingame-tester.md"))
+    names = {"list_commands", "session_start", "session_status", "session_stop", "session_restart", "session_restart_client",
+             "command", "mark", "logs_since", "screenshot"}
+    assert {f"mcp__plugin_agentic-z_dayz-testbridge__{n}" for n in names} <= tools
+    assert "def build_app" in server_py.read_text(encoding="utf-8")
+    text = (AGENTS_DIR / "dayz-ingame-tester.md").read_text(encoding="utf-8")
+    assert "`session_stop` always" in text and "in-game-check-validity.md" in text and "test-bridge.md" in text
+
+
+@pytest.mark.parametrize("path", AGENT_FILES, ids=lambda p: p.stem)
 def test_rag_agents_fall_back_to_rag_after_failed_greps(path):
     # The wiki (team.md) says every RAG-equipped specialist turns to RAG search
     # after two or three failed greps; an agent that drops that fallback keeps
@@ -140,7 +165,7 @@ def test_referenced_repo_files_exist(path):
 def test_referenced_agents_exist(path):
     text = path.read_text(encoding="utf-8")
     for ref in re.findall(r"`((?:dayz|figma)-[a-z-]+)`", text):
-        if ref == "dayz-rag":
+        if ref in ("dayz-rag", "dayz-testbridge"):  # the MCP servers under .claude/mcp/
             continue
         assert ref in AGENT_NAMES or (SKILLS_DIR / ref).exists(), f"{_ref_id(path)} names unknown agent {ref}"
 
@@ -209,7 +234,7 @@ def test_docs_routing_check_reads_only_the_routing_table():
 ROUTE = json.loads((SKILLS_DIR / "dayz-route" / "rules.json").read_text(encoding="utf-8"))
 
 # Lead workers reached only through another agent, never straight from /dayz-route.
-NOT_ROUTE_TARGETS = {"figma-to-dayz-layout"}  # stage 2 of the Figma pipeline, started by figma-node-normalizer
+NOT_ROUTE_TARGETS = {"figma-to-dayz-layout"}  # stage 2 of the Figma pipeline, started by the caller (dayz-lead or the main session) after figma-node-normalizer
 
 
 def test_every_lead_worker_is_a_route_target():
@@ -356,8 +381,9 @@ def test_ingame_tester_matches_gate(tmp_path, monkeypatch):
     # The ingame CLI passes the module defaults to gate_ingame.
     seen = {}
 
-    def fake_gate_ingame(mod, project_dir, rt, deps, server, port, timeout, settle, ready_pattern):
+    def fake_gate_ingame(mod, project_dir, rt, deps, server, port, timeout, settle, ready_pattern, test_bridge=False):
         seen.update(timeout=timeout, settle=settle, ready=ready_pattern)
+        assert test_bridge is False, "gate.py ingame must not load the test bridge unless --test-bridge is given"
         return {"verdict": "PASS"}
 
     monkeypatch.setattr(GATE, "gate_ingame", fake_gate_ingame)
@@ -793,15 +819,60 @@ def test_pack_index_paths_exist():
 
 
 # _shared/README.md: "Facts about the game cite the vanilla file on P:\". These files
-# hold no game facts of their own (style, answer format, tool notes, repo layout).
+# hold no game facts of their own (tool notes, working methods, measured mod results).
 CITATION_EXEMPT = {
-    "enscript-style.md",              # style guide index; facts live in enscript/references/
-    "enscript/integrations/expansion_style.md",  # style for Expansion mods; no vanilla facts
-    "answer-formatting.md",           # how to format answers
     "py3d-mlod-notes.md",             # notes on a Python library, not the game
-    "conventions/server.md",          # the .server/ test-server layout of this repo
     "dayz-conventions.md",            # environment and workflow rules; facts live in the topic files
     "textures/checking-the-look.md",  # what to look at in Object Builder and in game
+    "animation/blender-bpy-armatures.md",       # Blender bpy behaviour, no game fact
+    "animation/blender-bpy-objects-camera.md",  # Blender bpy behaviour, no game fact
+    "animation/blender-bpy-physics.md",         # Blender simulation behaviour, no game fact
+    "animation/blender-realism-and-review.md",  # animation craft and the Blender review loop, no game fact
+    "animation/blender-mcp-workflow.md",        # driving Blender through MCP; DayZ facts live in blender-txa-export.md
+    "animation/selections-for-actions.md",      # a tooling pattern for painting selections; measured results only
+    "models/tools-threejs-viewers.md",          # building Three.js viewer pages; no game fact
+    "models/tools-3d-viewer.md",                # how to run the .p3d to .glb converter; no game fact
+    "models/tools-uv-atlas.md",                 # a measured UV atlas method for hard-surface meshes
+    "models/tools-uv-atlas-traps.md",           # Blender and SLIM traps measured on the UV atlas pipeline
+    "models/tools-uv-mesh-health.md",           # Blender UV checks measured on test meshes
+    "models/tools-uv-mlod-audit.md",            # UV measurements on one assembled model
+    "models/tools-uv-multi-lod-atlas.md",       # a measured UV re-unwrap method
+    "models/tools-uv-organic-photograph.md",    # a measured projection method for a paint atlas
+    "models/tools-uv-partuv.md",                # setup and results of one UV tool
+    "models/tools-uv-tool-survey.md",           # a survey of UV tools
+    "models/blender-assembly.md",               # Blender modeling method over MCP, no game fact
+    "models/blender-detail-scan.md",            # a planning method for the detail list
+    "models/blender-visual-review.md",          # the render review method, measured tool behaviour
+    "models/tools-vlm-judge.md",                # a local vision model as a render pre-filter
+    "models/tools-vlm-checklist-format.md",     # the render checklist format of the review scripts
+    "models/generated-model-pipeline.md",       # the generation workflow; facts live in the files it indexes
+    "models/generated-model-troubleshooting.md",  # symptoms measured in game on generated mod models
+    "models/blender-headless.md",               # Blender Python API calls, no game fact
+    "models/blender-import-preflight.md",       # Blender import checks measured in Blender
+    "models/blender-external-mesh.md",          # a Blender cleanup and export workflow
+    "models/artist-returns.md",                 # file handling rules for outside binaries
+    "textures/normal-bake.md",                  # Blender bake practice measured on one mod
+    "vehicles/rip-classify-viewer.md",          # a Blender export and a browser page, no game fact
+    "persistence/deep-audit-evidence-controls.md",  # audit method; the DayZ facts in it were measured in game
+    "animation/blender-bpy-keyframes-and-actions.md",# Blender keys, Actions and the NLA, no game fact
+    "animation/blender-bpy-ik-and-baking.md",   # Blender IK, baking and context overrides, no game fact
+    "animation/blender-bpy-fcurves.md",         # Blender F-curves and easing, no game fact
+    "animation/blender-bpy-fcurve-modifiers.md",# Blender F-curve modifiers, no game fact
+    "animation/blender-bpy-materials-drivers.md",# Blender shader, driver and shape key animation, no game fact
+    "animation/blender-bpy-sim-baking-export.md",# Blender simulation baking and export, no game fact
+    "animation/blender-bpy-cloth-and-particles.md",# Blender cloth, soft bodies and particles, no game fact
+    "animation/blender-review-loop.md",         # checking Blender animation without a timeline, no game fact
+    "models/blender-assembly-checks.md",        # checks while building in Blender over MCP, no game fact
+    "models/blender-headless-export.md",        # OBJ export from a windowless Blender script, no game fact
+    "models/blender-review-checklist.md",       # the fault checklist for Blender renders
+    "models/blender-winding-flips.md",          # winding checks measured in Blender and in game on mod models
+    "models/device-recipes-power.md",           # worked specifications of a third-party mod's devices
+    "models/device-recipes-distribution.md",    # worked specifications of a third-party mod's devices
+    "models/model-build-stages.md",             # a staged build method, no game fact
+    "vehicles/gauge-needle-part.md",            # a measured needle building method on mod models
+    "vehicles/gauge-dial-frame.md",             # a measured dial frame method on mod models
+    "vehicles/gauge-dial-art.md",               # measured dial texture work on mod models
+    "vehicles/gauge-fuel-panel.md",             # a measured fuel panel method on mod models
 }
 CITATION_EXEMPT_FOLDERS = {"enscript-style"}  # the style guide's section files
 # A citation names a vanilla file, not just the drive: a path with a line
@@ -970,7 +1041,6 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
     "evals/questions/dayz-audio-fx-specialist.json": {
         "P:/scripts/3_game/entities/object.c:1251-1255",
     },
-    # basebuildingbase.c:420 opens OnStoreSave, which writes m_SyncParts01 at :425;
     # entityai.c:1393 is GetEntityByPersitentID inside EEOnAfterLoad (:1381) and
     # :3041 its "cannot be called here" comment inside OnStoreLoad.
     # plugindiagmenumodding.c:21 is "modded class PluginDiagMenu"; its note is an aside about another file.
@@ -978,12 +1048,8 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
         "P:/scripts/4_world/plugins/pluginbase/plugindiagmenu/plugindiagmenumodding.c:21",
     },
     "evals/questions/dayz-persistence-specialist.json": {
-        "P:/scripts/4_world/entities/itembase/basebuildingbase.c:420",
         "P:/scripts/3_game/entities/entityai.c:1393",
         "P:/scripts/3_game/entities/entityai.c:3041",
-    },
-    "_shared/ai/perception.md": {
-        r"P:\scripts\3_game\playerconstants.c:263",
     },
     "_shared/ai/spawning-and-performance.md": {
         r"P:\scripts\4_world\entities\creatures\infected\zombiebase.c:29",
@@ -991,17 +1057,8 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
     "_shared/animation/README.md": {
         r"P:\scripts\4_world\entities\itembase\barrel_colorbase.c:144",
     },
-    "_shared/animation/animation-sources.md": {
-        r"P:\DZ\structures\residential\config.cpp:7385",
-    },
     "_shared/audio-fx/sound-script.md": {
         r"P:\scripts\3_game\effect.c:336",
-    },
-    "_shared/container-base.md": {
-        r"P:\DZ\gear\camping\config.cpp:10261-10266",
-    },
-    "_shared/enscript/patterns/actions.md": {
-        r"P:\scripts\4_world\entities\building\underground\powergeneratorstatic.c:143",
     },
     "_shared/enscript/references/api_game.md": {
         r"P:\scripts\3_game\global\game.c:5",
@@ -1023,10 +1080,8 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
     "_shared/enscript/references/language_types.md": {
         r"P:\scripts\1_core\proto\enconvert.c:109",
         r"P:\scripts\1_core\proto\enconvert.c:22",
-        r"P:\scripts\1_core\proto\enconvert.c:556",
-    },
-    "_shared/persistence/data-audit.md": {
-        r"P:\scripts\3_game\entities\entityai.c:1393",
+        # enconvert.c:535 is "class typename"; typename is a generic word the check ignores.
+        r"P:\scripts\1_core\proto\enconvert.c:535",
     },
     "_shared/persistence/save-load-contract.md": {
         r"P:\scripts\3_game\entities\entityai.c:3041",
@@ -1042,9 +1097,6 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
     "_shared/physics/drop-and-throw.md": {
         r"P:\scripts\4_world\entities\dayzplayerimplementthrowing.c:187",
     },
-    "_shared/textures/surface-recipes.md": {
-        r"P:\DZ\characters\glasses\config.cpp:598",
-    },
     # particlelist.c:316 registers "contaminated_area_gas_around_tiny"; the citing line backticks only that effect's .ptc path.
     "dayz-particles/SKILL.md": {
         r"P:\scripts\3_game\particles\particlelist.c:316",
@@ -1052,17 +1104,19 @@ CITED_SYMBOL_EXEMPT: dict[str, set[str]] = {
     "_shared/vehicles/simulation.md": {
         r"P:\DZ\vehicles\water\config.cpp:124",
     },
+    # glass_i.rvmat:1 to :5 are its ambient, diffuse, forcedDiffuse, emmisive and specular
+    # values with alpha 0; the citing line backticks only the material's own name.
+    "_shared/vehicles/rip-textures-and-materials.md": {
+        r"P:\DZ\vehicles\wheeled\civiliansedan\data\glass_i.rvmat:1",
+    },
     "_shared/wearables/references/color-variants.md": {
         r"P:\DZ\characters\tops\config.cpp:2269",
         r"P:\DZ\characters\vests\config.cpp:578",
     },
     "_shared/wearables/references/protection-and-insulation.md": {
-        r"P:\DZ\characters\tops\config.cpp:2263",
-        r"P:\DZ\characters\vests\config.cpp:892",
         r"P:\DZ\gear\consumables\config.cpp:259",
         r"P:\DZ\gear\tools\config.cpp:1016",
         r"P:\DZ\gear\tools\config.cpp:5365",
-        r"P:\scripts\3_game\constants.c:821",
         r"P:\scripts\4_world\entities\itembase\clothing\gp5gasmask.c:13",
     },
 }
@@ -1323,7 +1377,7 @@ PANEL = REPO / "mods" / "agentic-z-panel" / "hooks" / "register.tsx"
 
 
 def test_panel_buttons_name_existing_skill_scripts():
-    """CI runs pytest only, so this catches a renamed script that would silently break a panel button."""
+    """CI runs no TypeScript build or check of the panel, so this catches a renamed script that would silently break a panel button."""
     text = PANEL.read_text(encoding="utf-8")
     block = text.split("const SKILL = {", 1)[1].split("} as const", 1)[0]
     pairs = re.findall(r"\w+:\s*\['([\w-]+)',\s*'([\w.]+)'\]", block)

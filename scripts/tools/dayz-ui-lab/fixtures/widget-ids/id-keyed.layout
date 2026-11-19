@@ -1,0 +1,24 @@
+FrameWidgetClass "{00000000EE70746B}" {
+ Name "HudDebugFrameWidget"
+ {
+  PanelWidgetClass "{000000007BEF443C}" {
+   Name "StatusWindowWidget"
+   {
+    TextWidgetClass "{000000003DB016A1}" {
+     Name "WindowLabel"
+    }
+    TextListboxWidgetClass "{00000000D7D484D1}" {
+     Name "NamesListboxWidget"
+     {
+      TextWidgetClass "{00000000B5FE8D77}" {
+       Name "VersionLabel"
+      }
+      TextWidgetClass "{6910D426B2427803}" {
+       Name "TemperatureLabel"
+      }
+     }
+    }
+   }
+  }
+ }
+}

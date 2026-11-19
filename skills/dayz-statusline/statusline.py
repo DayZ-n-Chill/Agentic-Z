@@ -143,7 +143,7 @@ def render(machine: dict, mod: Optional[str], cached: Optional[bool], now: float
     """cached: True/False for project cache present/absent, None when the lookup itself failed."""
     p = {True: "P: mounted", False: "P: NOT mounted"}.get(machine.get("p"), "P: ?")
     if cached is None:
-        m = "mod ?"  # broken state file or state.py: re-running /dayz-init is not the fix
+        m = "mod ?"  # wrong-shaped state file or missing state.py: re-running /dayz-init is not the fix
     elif not cached:
         m = "no project (/dayz-init)"
     else:

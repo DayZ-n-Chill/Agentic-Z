@@ -20,7 +20,7 @@ Then walk through [`docs/dayz-modding.md`](dayz-modding.md) for prerequisites (D
 |---|---|---|
 | **L1 — Default rules** | Apply to every clone, every agent, every skill. | `.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md` (three filenames so each CLI finds its own; same content in each) |
 | **L2 — DayZ conventions** | Apply when working inside the DayZ domain. | `skills/_shared/dayz-conventions.md` (core, read by every DayZ agent) plus topic files in `skills/_shared/conventions/` (config, assets, scripts, ui, server) loaded per task |
-| **L3 — Agents and knowledge packs** | Loaded only when the task needs them. | `agents/<name>.md`, `skills/<name>/SKILL.md` plus its scripts, and the packs under `skills/_shared/` (EnScript patterns, Figma-to-DayZ rules) |
+| **L3 — Agents and knowledge packs** | Loaded only when the task needs them. | `agents/<name>.md`, `skills/<name>/SKILL.md` plus its scripts, and the knowledge packs under `skills/_shared/` (EnScript patterns, Figma-to-DayZ rules and one pack per topic, indexed in `skills/_shared/README.md`) |
 
 L3 files that do DayZ modding work include a one-line reference to L2: *"Follow `skills/_shared/dayz-conventions.md`."* Routing and utility files (for example `dayz-router`, `/dayz-route`, `/dayz-statusline`, `/sync-skills`) do not.
 
@@ -41,8 +41,10 @@ When invoked on a task, an agent should:
 ├── skills/                             # skill definitions (L3) + L2 shared
 │   ├── _shared/
 │   │   ├── dayz-conventions.md         # L2 core rules for the DayZ domain
-│   │   └── conventions/                # L2 topic files (config, assets, scripts, ui, server)
-│   └── dayz-*/                         # one folder per DayZ skill
+│   │   ├── conventions/                # L2 topic files (config, assets, scripts, ui, server)
+│   │   ├── README.md                   # index of every knowledge pack file
+│   │   └── <topic>/                    # knowledge packs: vehicles, models, animation, ... (L3)
+│   └── <skill>/                        # one folder per skill (most are dayz-*)
 │       ├── SKILL.md
 │       └── *.py                        # helper scripts, when the skill has any
 ├── .claude/
@@ -61,6 +63,8 @@ When invoked on a task, an agent should:
 ├── evals/                              # answer tests per agent (see docs/evals.md)
 ├── mods/agentic-z-panel/               # Claude Code panel plugin (one-click DayZ buttons)
 ├── scripts/                            # ad-hoc helper scripts
+│   ├── setup/, dayz/, dev/             # .bat wrappers around the skills, grouped by audience
+│   └── tools/                          # offline Python tools (see docs/tools.md)
 ├── workspace/                          # in-progress mods (workspace/<ModName>/)
 ├── .server/                            # local test-server instances (.server/<instance>/)
 └── output/                             # one-shot deliverables
@@ -148,7 +152,7 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 |---|---|
 | [`/dayz-build-pbo`](../skills/dayz-build-pbo/SKILL.md) | Pack and deploy to `P:\Mods\@<ModName>\Addons\<ModName>.pbo` |
 | [`/dayz-deploy-pbo`](../skills/dayz-deploy-pbo/SKILL.md) | Copy prebuilt PBOs and keys from a workspace bundle to `P:\Mods\@<ModName>\` without AddonBuilder |
-| [`/dayz-pack-texture`](../skills/dayz-pack-texture/SKILL.md) | PNG/TGA → `.paa` via ImageToPAA. Validates the suffix against the vanilla set (`_co`, `_ca`, `_nohq`, `_smdi`, `_as`, `_mc` and more) |
+| [`/dayz-pack-texture`](../skills/dayz-pack-texture/SKILL.md) | PNG/TGA → `.paa` via ImageToPAA. Validates the suffix against the vanilla set (`_co`, `_ca`, `_nohq`, `_smdi`, `_as`, `_mc` and more). Also ships an `.rvmat` linter, an `.rvmat` template writer and a normal map convention check |
 | [`/dayz-build-imageset`](../skills/dayz-build-imageset/SKILL.md) | Pack `.gui-sources/<setname>/*.png` into a DayZ `.imageset` + `.paa` atlas with a 10px gutter; auto-splits into multiple parts when sprites won't fit in 4096x4096 |
 | [`/dayz-layout-preview`](../skills/dayz-layout-preview/SKILL.md) | Draw a `.layout` as PNGs at several screen sizes and flag widgets that fall off screen or have no area |
 
@@ -203,6 +207,15 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | [`/dayz-p3d-audit`](../skills/dayz-p3d-audit/SKILL.md) | Audit `.p3d` models for collision, action targeting, physics, animation issues |
 | [`/dayz-particles`](../skills/dayz-particles/SKILL.md) | Particle effect creation (`.ptc` / `.emat`) without Workbench |
 
+### Model and animation tools
+
+These skills run offline scripts on the files they are given. The knowledge behind them lives in the packs under `skills/_shared/`, indexed in [`skills/_shared/README.md`](../skills/_shared/README.md).
+
+| Command | Purpose |
+|---|---|
+| [`/dayz-model-tools`](../skills/dayz-model-tools/SKILL.md) | Run the model scripts on source `.p3d` and `.blend` files: the p3d inspector (Recipe JSON, drag memory points, rebuild), the proxy editor, the clothing alignment viewer and FBX handoff, the winding gate, the clean UV atlas pipeline with its exact overlap gate, the `.p3d` to `.glb` browser preview, the Blender build helpers and render review, and the ripped car classification viewer |
+| [`/dayz-animation-pipeline`](../skills/dayz-animation-pipeline/SKILL.md) | Run the animation scripts: `model.cfg` from JSON, SEAnim and RTM files, the rider pose solver, weapon animation viewers, motion contract checks in Blender and Mixamo retargeting |
+
 ### Search / RAG
 
 | Command | Purpose |
@@ -234,8 +247,8 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 | Command | Purpose |
 |---|---|
 | [`/sync-skills`](../.claude/skills/sync-skills/SKILL.md) | Link `skills/` and `.claude/skills/` into each agent CLI's home dir. Required after clone |
-| [`/agentic-z-update`](../.claude/skills/agentic-z-update/SKILL.md) | Pull upstream template improvements into your clone without touching `workspace/` |
-| [`/docs-sync`](../.claude/skills/docs-sync/SKILL.md) | Detect drift between canonical sources and the Docusaurus wiki; `--apply` writes mirrors |
+| [`/agentic-z-update`](../.claude/skills/agentic-z-update/SKILL.md) | Pull the latest template improvements into your clone without touching `workspace/` |
+| [`/docs-sync`](../.claude/skills/docs-sync/SKILL.md) | Detect drift between canonical sources and the React wiki; `--apply` updates only those computed counts |
 | [`/clean-repo`](../.claude/skills/clean-repo/SKILL.md) | Orchestrator — run every domain's cleanup skill |
 
 **MCP server:** [`dayz-rag`](../.claude/mcp/dayz-rag/README.md) — exposes `search_dayz_source`, `get_dayz_file` and `list_indexed_sources` to the DayZ agents. Reads the LanceDB index under `~/.claude/dayz-search-index/`, built with `/dayz-search-index` or installed with `/dayz-search-download`.
@@ -245,11 +258,43 @@ Slash commands cover the complete mod lifecycle: setup wizard, env preflight, pr
 - **DayZ Tools** (Steam) — for AddonBuilder, WorkDrive, ImageToPAA
 - **DayZ game** (Steam) — for the diag client used in `/dayz-launch-test`
 - **DayZ Server** (Steam appid 223350) — only for the initial mission bootstrap; can be uninstalled after
-- **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-search-index` and query-time embedding via `voyage-code-3`. The last full source build embedded about 66M tokens (52,048 chunks, before windowing); the current indexer produces about 62K chunks, and its local estimate of about 96M tokens runs high. Check Voyage's pricing first. Or run `/dayz-search-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
+- **Voyage AI API key** *(only for RAG)* — `VOYAGE_API_KEY` in `.env` powers `/dayz-search-index` and query-time embedding via `voyage-code-3`. The last full source build embedded about 66M tokens (52,048 chunks, before windowing); the current indexer produces about 77,600 chunks, and its local estimate of about 125M tokens runs high. Check Voyage's pricing first. Or run `/dayz-search-download` to pull the maintainer's prebuilt index from GitHub releases instead of building locally.
 
 L2 conventions: [`skills/_shared/dayz-conventions.md`](../skills/_shared/dayz-conventions.md) (core) and the topic files in [`skills/_shared/conventions/`](../skills/_shared/conventions/).
 
-**Full walkthrough — prerequisites, quick start, env vars, troubleshooting:** [`docs/dayz-modding.md`](dayz-modding.md).
+**Full walkthrough — prerequisites, quick start, env vars, troubleshooting:** [`docs/dayz-modding.md`](dayz-modding.md). Step by step detail of the four core skills: [`docs/dayz-core-skills.md`](dayz-core-skills.md).
+
+## Knowledge packs
+
+Tier 3 reference files under `skills/_shared/`, loaded one file at a time when a task needs it. [`skills/_shared/README.md`](../skills/_shared/README.md) is the index of every pack file; each pack folder's own `README.md` says which file answers which question. Facts about the game cite the vanilla file on `P:\` by path and line.
+
+| Pack | Covers |
+|---|---|
+| `_shared/enscript-style.md` and `_shared/enscript-style/` | Enforce Script code style |
+| `_shared/enscript/` | Enforce Script patterns, API notes and worked examples |
+| `_shared/vehicles/` | Cars, boats, helicopters, planes and motorbikes: import, config, `model.cfg`, doors, lights, get-in, build and debug |
+| `_shared/models/` | LODs, memory points, selections, proxies, named properties, UV mapping and texturing with several `.rvmat` files |
+| `_shared/animation/` | `model.cfg` animations, doors, clips, graphs and skeletons, items, weapons and riders in the hands, Blender authoring and realistic motion |
+| `_shared/wearables/` | Clothing, characters, slots and proxies |
+| `_shared/weapons/` | Weapon config and classes, magazines and ammo, attachments, recoil and fire modes, muzzle effects, model import, troubleshooting and the 1.30 migration |
+| `_shared/persistence/` | Save and load, versioning and migration, base building, the data audit |
+| `_shared/physics/` | Weight, collision, dropping, throwing, contact, the damage pipeline, joints, surfaces, ragdoll and fall damage |
+| `_shared/audio-fx/` | Sound config, the sound engine API and effects |
+| `_shared/textures/` | Texture suffixes, `.rvmat` materials and checking the look |
+| `_shared/ai/` | Infected, animals and human AI |
+| `_shared/ui/` | `.layout` and `.styles` files, widget script, menus and the HUD, localization, iteration and verification |
+| `_shared/world/` | Terrain holes, underground areas, the 1.30 environmental hazards, the Badlands world, the `.wrp` layout |
+| Single files in `_shared/` | Answer formatting, `Container_Base`, Figma to DayZ rules, py3d MLOD notes, Linux and Proton |
+
+Skills also carry their own packs in `<skill>/references/`.
+
+## Tools, evals and other docs
+
+| Path | What it holds |
+|---|---|
+| `scripts/tools/` | The offline Python tools: the script validator `/dayz-lint` runs as its second stage, py3d for DayZ `.p3d` files, model, layout and animation-format checkers, and viewers. [`tools.md`](tools.md) says what each does and picks one by symptom or task |
+| `evals/` | Answer tests per agent. See [`evals.md`](evals.md) |
+| [`skill-resolution.md`](skill-resolution.md) | What to do when one skill name is installed twice, as a personal skill and through a plugin |
 
 ## DayZ agents
 
@@ -277,7 +322,7 @@ The 30 agents live under `agents/`. The mod team runs a whole mod; the specialis
 | `dayz-workbench-specialist` | Workbench plugin development (editor-time tooling) |
 | `dayz-persistence-specialist` | Data that survives a server restart: save and load code, save versions, base building, the data audit before release |
 | `dayz-ai-specialist` | Infected, animals and human AI such as patrols and guards |
-| `dayz-vehicle-specialist` | Cars, boats and helicopters |
+| `dayz-vehicle-specialist` | Cars, boats, helicopters and motorbikes |
 | `dayz-weapon-specialist` | Weapons, magazines, ammo, attachments, recoil and fire modes |
 | `dayz-wearables-specialist` | Clothing, characters, inventory slots, protection, color variants and proxies |
 | `dayz-animation-specialist` | `model.cfg` animations, RTM files and the Blender handoff |

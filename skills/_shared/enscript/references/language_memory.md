@@ -21,7 +21,7 @@ Engine behaviour: a `Managed` object is freed when the last strong reference to 
 
 Rules that follow:
 
-1. A member that you create with `new` and that nothing else holds must be `ref`, or it is freed at once (engine behaviour). The symptom is a member that reads `null` right after it was set.
+1. A member that you create with `new` and that nothing else holds must be `ref`, or it is freed at once (engine behaviour). The symptom is a member that reads `null` right after it was set. (A stricter result was measured on a DayZ 1.30 dedicated server, in a class declared in the mission `init.c`: assigning `new` straight into a field without `ref` did not compile, with `Variable 'm_X' is not strong ref (missing 'ref'?) !`. The same probe found that `ref` also keeps a class with no `Managed` ancestor alive, and that a field without `ref` read `NULL` once the last strong reference went, for both kinds of class. Measured in game, not checkable on `P:\`; see `skills/_shared/enscript/depth/memory-management.md`.)
 2. Containers of objects you create need `ref` on the element type too: `ref array<ref MyData>`.
 3. Parent owns child with `ref`; child points back at the parent without `ref`. Two `ref`s pointing at each other keep both alive forever.
 4. Never `ref` an entity or a `PlayerIdentity`. The engine owns them. `PlayerIdentityBase` says "This is a C++ managed class, so script has no business managing the lifetime" (`P:\scripts\3_game\gameplay.c:382`). Hold a plain reference and null check it before every use.
@@ -29,7 +29,7 @@ Rules that follow:
 
 ## `autoptr`
 
-`autoptr` is the older owning qualifier. Vanilla uses it in ten files, mostly in `1_core` docs and examples: `autoptr map<string, int> prg_count = new map<string, int>;` (`P:\scripts\1_core\proto\enscript.c:834`) and `autoptr map<string, float> m_values;` as a member (`P:\scripts\1_core\proto\serializer.c:14`). Newer vanilla code uses `ref` for members. Use `ref` in mod code.
+`autoptr` is the older owning qualifier. Vanilla uses it in ten files: four in `1_core` (`dbgui.c`, `enphysics.c`, `enscript.c`, `serializer.c`) and six in ordinary game code in `3_game`, `4_world` and `5_mission`, such as `P:\scripts\3_game\analytics\scriptanalytics.c` and `P:\scripts\5_mission\mission\missionbase.c`. Examples: `autoptr map<string, int> prg_count = new map<string, int>;` (`P:\scripts\1_core\proto\enscript.c:834`) and `autoptr map<string, float> m_values;` as a member (`P:\scripts\1_core\proto\serializer.c:14`). Newer vanilla code uses `ref` for members. Use `ref` in mod code.
 
 ## Locals
 

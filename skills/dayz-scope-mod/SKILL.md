@@ -1,6 +1,6 @@
 ---
 name: dayz-scope-mod
-description: "Restricts edits to one mod under workspace/<ModName>/ by adding Edit deny rules for every other mod's workspace, P:\\ and deploy folders; reads stay broad. Use when a session or subagent should work on a single mod, or to lift that scope again."
+description: "Restricts edits to one mod under workspace/<ModName>/ by adding Edit deny rules for every other mod's workspace, P:\\ and deploy folders; reads stay broad. Also scopes a feature before it is built: a spec with measurable done checks, Given/When/Then scenarios and a contract for every name the next phase reads, a spec checklist and a read-only consistency gate. Use when a session or subagent should work on a single mod, to lift that scope again, or for a feature spec, acceptance criteria or \"is it ready to code?\"."
 ---
 
 <!-- skill-dir-note -->
@@ -11,6 +11,8 @@ description: "Restricts edits to one mod under workspace/<ModName>/ by adding Ed
 Scope the agent to a single DayZ mod. While scoped, the agent can read anywhere but cannot Edit or Write to any other mod's source, P:\ junction, or workshop deploy dir. Designed for sessions where you're iterating on one mod and don't want a wrong-instinct call to land in a sibling mod.
 
 Follow `skills/_shared/dayz-conventions.md`.
+
+The skill also scopes a feature before it is built, which runs no script: see "Scoping a feature" below.
 
 ## How to run
 
@@ -103,6 +105,24 @@ If `<ModName>` does not exist:
           - SuperMedKit
         Scaffold first: /dayz-new-mod NoSuchMod  or  /dayz-import-mod --source <path>
 ```
+
+## Scoping a feature
+
+Before a non-trivial feature is coded, write down what done means and how each part will be checked, so the in-game test is not spent on a spec that could never pass. Skip it for a one-line typo or a trivial reversible tweak.
+
+1. Write `output/<ModName>-plan/spec.md` from `references/spec-outline.md`, right after `dayz-mod-architect` writes the plan: Given/When/Then scenarios with in-game repro steps, measurable success criteria, every guess marked `ASSUMED` and settled with the user when it decides correctness, and a forward contract that gives every classname, selection, proxy path and layout key the next phase reads a `path:line` you opened, or `UNVERIFIED`.
+2. Run `references/spec-review.md` (18 checks) on the spec before writing code. Any fail means fix the spec first.
+3. After the code and task list exist, and before `/dayz-gate ingame`, `behavior` or `visual`, run `references/consistency-pass.md`: a read-only pass over spec, plan, task list and code. A finding marked Blocks (a criterion with no verification path, an `UNVERIFIED` symbol the code depends on, a broken hard rule) blocks the in-game session.
+
+| Question | File |
+|---|---|
+| How does the whole method work, including injected objects, push and pull eligibility, raw and derived records, dead-code search hits and decision tests? | `references/scoping-a-feature.md` |
+| What does the spec look like, section by section? | `references/spec-outline.md` |
+| Is this spec ready to implement? | `references/spec-review.md` |
+| Do spec, plan, task list and code agree before the in-game test? | `references/consistency-pass.md` |
+| Which questions do I settle with the user before writing a placeable or usable object? | `references/questions-before-building.md` |
+| How do I write the code once the spec exists: API checks, mini-audit, client and server data map, checkpoints, bug ledger, handoff? | `references/implementation-protocol.md` |
+| How do I keep parallel auditor agents independent, and when does a finding count as verified? | `references/independent-auditors.md` |
 
 ## Do not
 

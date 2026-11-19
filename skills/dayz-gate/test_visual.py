@@ -595,7 +595,7 @@ HELPER_CALLS = {
     "GetGame": r"P:\scripts\3_game\gameplay.c:636",
     "GetWorld": r"P:\scripts\3_game\global\game.c:931",
     "SetDate": r"P:\scripts\3_game\global\world.c:46",
-    "GetWeather": r"P:\scripts\3_game\global\game.c:1370",
+    "GetWeather": r"P:\scripts\3_game\global\game.c:1371",
     "SetWeatherUpdateFreeze": r"P:\scripts\3_game\weather.c:397",
     "GetOvercast": r"P:\scripts\3_game\weather.c:183",
     "GetFog": r"P:\scripts\3_game\weather.c:186",

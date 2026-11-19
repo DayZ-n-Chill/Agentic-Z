@@ -11,6 +11,8 @@ You convert normalized Figma JSON into a DayZ `.layout` file that opens in Workb
 
 Follow Tier 2 (`skills/_shared/dayz-conventions.md` plus `skills/_shared/conventions/ui.md`).
 
+Background only, for a property or style name the rules doc does not cover: `skills/_shared/ui/layout-format.md`, `skills/_shared/ui/layout-attributes.md` and `skills/_shared/ui/styles-format.md`. The rules doc still wins.
+
 Search: Grep `P:\gui\` for known names, RAG (`search_dayz_source` with `file_type="layout"`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search").
 
 ## Workflow
@@ -19,7 +21,7 @@ Search: Grep `P:\gui\` for known names, RAG (`search_dayz_source` with `file_typ
 2. **Pick each widget class, prefix first.** If the node name has a rules-doc prefix (`btn_`, `bar_`, `panel_`, `txt_` and the rest of section 4), that prefix decides the class, whatever the node's type or Figma kind: `btn_close` is a `ButtonWidgetClass` even when it was a frame. Only unprefixed nodes fall back to the section 3 mapping by type.
 3. **Size and place each widget per axis** from `sizing`, and always emit all four toggles (`hexactpos`, `vexactpos`, `hexactsize`, `vexactsize`). Values and formulas are in rules doc sections 5, 6 and 10; the ordering is:
    - **`fill` axis**: size `1`, position `0`, both of that axis's toggles `0`, whatever else the node carries. If it runs along an auto-layout parent's layout direction it overlaps its siblings; flag it for `dayz-ui-specialist`.
-   - **`hug` or `fixed` axis**: pixel size and pixel position, both toggles `1`. Take the position from the first source that applies, and never guess one (the JSON has no Figma bounds): `anchor` (section 2 for the `halign`/`valign` values), then `position`, then auto-layout flow (section 10's formula, which puts `btn_close` at `8 58`), then `0` for a top-level node, then `0` as a placeholder that you flag as unplaced.
+   - **`hug` or `fixed` axis**: pixel size and pixel position, both toggles `1`. Take the position from the first source that applies, and never guess one (the JSON has no Figma bounds): `anchor` (section 2 for the `halign`/`valign` values), then `position`, then auto-layout flow (the formula in `skills/_shared/figma-to-dayz-worked-example.md`, which puts `btn_close` at `8 58`), then `0` for a top-level node, then `0` as a placeholder that you flag as unplaced.
 
    Wrap the tree in a full-area root `FrameWidgetClass` (section 6, first row). Translate colors and fonts per sections 7 and 8.
 4. **Build the tree** in the JSON's order and shape: properties first, then one child `{ }` block inside the parent's braces. Use absolute positions with anchors; use `WrapSpacerWidgetClass` or `GridSpacerWidgetClass` only for runtime-dynamic content (section 5).
@@ -42,7 +44,7 @@ Only when the brief asks you to repair an existing `.layout` (for example after 
 - Keep node names exactly as the JSON gives them; script finds widgets by name.
 - If the design is too loose to translate without guessing, return to your caller with the one question that blocks translation, and write nothing.
 - Indent one space per level, as vanilla does, and don't mix styles in a file.
-- For the XML anti-pattern Workbench rejects, see rules doc section 1; for a full Figma-to-`.layout` translation, see section 10.
+- For the XML anti-pattern Workbench rejects, see rules doc section 1; for a full Figma-to-`.layout` translation, see `skills/_shared/figma-to-dayz-worked-example.md`.
 
 ## Report
 

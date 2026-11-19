@@ -239,8 +239,9 @@ def warn_leftover_staging(mission_dir: Path, project_dir: Path) -> None:
 def ensure_mission(template: str, mission_dir: Path, refresh: bool, project_dir: Path) -> None:
     """Ensure <instance>/mission/ exists, copied from DayZ Server install.
 
-    Folder is named `mission/` regardless of template (the launcher pins the
-    path explicitly via -mission=<abspath>, so the engine doesn't care).
+    The copy is always named `mission/`, whatever the template. The engine does
+    need the template-named path: the launcher reaches this copy through the
+    <instance>/<template>/ junction this skill creates (-mission=<instance>/<template>).
     """
     warn_leftover_staging(mission_dir, project_dir)
     if os.path.lexists(mission_dir) and not mission_dir.is_dir():

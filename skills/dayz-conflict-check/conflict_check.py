@@ -296,7 +296,7 @@ class Vanilla:
         if self._config is None:
             facts = Facts("vanilla")
             if self.available:
-                # About 200 config.cpp files and 20 MB of text; read once per run, only when
+                # About 265 config.cpp files and 36 MB of text; read once per run, only when
                 # both mods define the same config class.
                 print(f"reading vanilla config classes from {self.root / 'DZ'} (a few seconds)...",
                       file=sys.stderr, flush=True)

@@ -59,6 +59,33 @@
         "re:\\byes\\b[^.\\n]*\\bfail"
       ],
       "verified": "agents/dayz-ingame-tester.md 'What fails the gate' (a NULL pointer or Can't find line that names nothing of the mod is never a failure; with no vanilla-only run, report it as a warning); skills/dayz-gate/gate.py MOD_QUALIFIED and judge_entries"
+    },
+    {
+      "id": "companion-lifecycle-authority",
+      "question": "Answer only, do not edit any file and do not run anything. A third-party desktop companion app can start and stop DayZ processes with its own buttons and can screenshot its own WPF window. For an in-game test of MyVest on chernarus: may that app start and stop the server and client for the test, and which skills do you use to start and to stop the session? Is a screenshot of the companion's own window proof that a DayZ .layout of MyVest draws correctly in game?",
+      "must_include": [
+        "/dayz-launch-test",
+        "/dayz-stop-test",
+        "re:\\bno\\b|\\bnot\\b|isn't|doesn't"
+      ],
+      "must_not_include": [
+        "re:\\A\\W*yes\\b"
+      ],
+      "verified": "agents/dayz-ingame-tester.md step 2 (the session is started with /dayz-launch-test), step 5 (always stop the session with /dayz-stop-test) and step 0 (a DayZDiag_x64.exe the agent did not start is not stopped unasked); a WPF window is drawn by the companion, not by the game's .layout renderer, so it is no evidence about a layout"
+    },
+    {
+      "id": "drive-check-through-the-test-bridge",
+      "question": "Answer only, do not edit any file and do not run anything. MyCar passed the in-game gate, and the brief also asks you to confirm in game that MyCar drives faster than 10 km/h at full throttle. Neither /dayz-gate behavior nor /dayz-gate visual covers driving. Which tools do you use, in which order, and what do you always do at the end even if a step fails? If the drive command comes back with ok false and error not_driver, is that a FAIL of MyCar?",
+      "must_include": [
+        "session_start",
+        "re:\\bdrive\\b",
+        "session_stop",
+        "re:not_driver"
+      ],
+      "must_not_include": [
+        "re:a person (?:has to|must) drive"
+      ],
+      "verified": "agents/dayz-ingame-tester.md references (anything else goes through the dayz-testbridge MCP tools: session_start, mark, command, logs_since, session_stop always; ok false with an error code is the game's answer); .claude/mcp/dayz-testbridge/allowlist.py drive (client, refused as not_driver when the player is not the driver); skills/dayz-launch-test/assets/testbridge-mod/src/AZ_TestBridge/scripts/4_World/AZB_ClientCommands.c CmdDrive"
     }
   ]
 }

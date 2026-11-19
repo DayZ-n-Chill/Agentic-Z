@@ -4,7 +4,7 @@ How a vehicle's `DamageSystem` is laid out, which zone names script depends on, 
 
 ## Layout
 
-Reference: `OffroadHatchback` (`P:\DZ\vehicles\wheeled\config.cpp:1540` to `:2282`).
+Reference: `OffroadHatchback` (`P:\DZ\vehicles\wheeled\config.cpp:1250`), whose `DamageSystem` runs from `:1540` to `:2282`.
 
 - `class GlobalHealth` then `class Health`: `hitpoints` (`1000` on `OffroadHatchback`) and `healthLevels[]` with five steps at `1`, `0.7`, `0.5`, `0.3` and `0`, each with the materials to show at that step (`:1544`).
 - `class DamageZones`: one class per zone. Keys used by vanilla (`Front`, `:1594` to `:1669`):
@@ -40,17 +40,21 @@ Keep these names exactly; script reads them by string.
 
 A car with a `Motor` zone instead of `Engine` would never lose engine health to overrevving or low coolant, and a ruined engine would not stop it starting.
 
+A car with no `Engine` zone at all is the common import mistake, and it shows as an engine that starts and stops within a tick with fuel and every part fitted: `m_EngineHealth` is read from the `Engine` zone (`P:\scripts\4_world\entities\vehicles\carscript.c:2134` and `:2135`), and `EOnPostSimulate` stops a running engine when `m_EngineHealth <= 0` (`P:\scripts\4_world\entities\vehicles\carscript.c:850`). Declare both `Engine` and `FuelTank`, as every vanilla car does. Field notes: `invariants-engine-fluids-and-handling.md`, section "An engine that starts and stalls at once".
+
+The damage system reads a zone's `componentNames` from config (`P:\scripts\3_game\damagesystem.c:63`); the `Chassis` zone of `OffroadHatchback` has `componentNames[]` and no `memoryPoints[]` at all (`P:\DZ\vehicles\wheeled\config.cpp:1579` to `:1593`). Missing zone memory points are therefore not a cause of collision jerks or driving stutter (`invariants-engine-fluids-and-handling.md`, section "Missing zone memory points do not cause jerks").
+
 ## Damage while driving
 
 - Overrev: at or above `EngineGetRPMRedline()` the engine zone takes damage every tick; above `EngineGetRPMMax()` it also loses 5 percent of its maximum health (`carscript.c:875` to `:882`). The redline is `rpmRedline` in the `Engine` simulation class.
 - Low coolant: see `fluids-and-engine.md`.
-- Drowning: when the `drown_engine` memory point is under water for more than `DROWN_ENGINE_THRESHOLD = 0.5` seconds, the engine loses `DROWN_ENGINE_DAMAGE = 350.0` health per second (`carscript.c:102`, `:103`, `:368`, `:1234` to `:1242`).
+- Drowning: when the `drown_engine` memory point is under water for more than `DROWN_ENGINE_THRESHOLD = 0.5` seconds, the engine loses `DROWN_ENGINE_DAMAGE = 350.0` health per second (`carscript.c:102`, `:103`, `:368`, `:1234` to `:1242`). `m_DrownEnginePos`, where that point is stored, is declared `static` (`carscript.c:119`) and is written from `drown_engine` in `InitializeParticles`, which every car's constructor runs (`:287`, `:368`), so in Enforce one value is shared by all cars and the last car to set it wins. Put `drown_engine` at the same height on a mod car as on the vanilla cars, or override `GetEnginePosWS()` (`:304` to `:307`); the effect on a mixed fleet is not checked in game.
 
 ## Crash damage
 
-`Transport.OnContact` collects contacts per zone (`transport.c:315`) and `CarScript.CheckContactCache` applies them on the server (`carscript.c:1279`):
+`Transport.OnContact` collects contacts per zone (`P:\scripts\3_game\vehicles\transport.c:318`) and `CarScript.CheckContactCache` applies them on the server (`carscript.c:1279`):
 
-- Zone damage is the contact impulse times `m_dmgContactCoef`, `0.023` by default (`transport.c:91`). Vanilla cars leave it at the default; a commented line in each constructor shows a tuned value (`offroad_02.c:9`).
+- Zone damage is the contact impulse times `m_dmgContactCoef` (`carscript.c:1291`). `Transport` declares it as `0.023` (`transport.c:91`), but the `CarScript` constructor sets it to `0.058` for every car (`carscript.c:224`). `Sedan_02` raises it to `0.079` (`P:\scripts\4_world\entities\vehicles\inheritedcars\sedan_02.c:9`); the other vanilla cars only carry commented-out values (`P:\scripts\4_world\entities\vehicles\inheritedcars\offroad_02.c:9`).
 - Below `CARS_CONTACT_DMG_MIN = 150` nothing happens; below `CARS_CONTACT_DMG_THRESHOLD = 750` the hit is light and does not transfer to other zones; above it the crew is hurt too (`P:\scripts\3_game\constants.c:888`, `:889`; `carscript.c:1329` to `:1355`).
 - Crew damage is worked out as if the car weighed 1000 kg, so heavy and light cars hurt their crew the same (`carscript.c:1292`). Above `CARS_CONTACT_DMG_KILLCREW = 1200` everyone inside dies; below it each crew member loses 2 to 100 health and 50 to 150 shock (`DamageCrew`, `carscript.c:1374`; `constants.c:890`).
 

@@ -1,7 +1,7 @@
 ---
 name: dayz-gate
 description: "Runs the build, in-game, behavior and visual gates as scripts, with PASS or FAIL, triaged failures and a stored result for each. Use when gating a finished wave or checking a mod builds, loads, works and looks right in game."
-argument-hint: "build <ModName> [--yes] [--json] | ingame <ModName> [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--yes] [--json] | behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX] [--prepare-only | --logs [FILE ...]] [--yes] [--json] | visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--threshold R] [--ready-pattern REGEX] [--compare [DIR] | --accept [DIR] [--shot ID ... [--replace-failed]]] [--yes] [--json]"
+argument-hint: "build <ModName> [--yes] [--json] | ingame <ModName> [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--test-bridge] [--yes] [--json] | behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX] [--prepare-only | --logs [FILE ...]] [--yes] [--json] | visual <ModName> [--shots FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--threshold R] [--ready-pattern REGEX] [--compare [DIR] | --accept [DIR] [--shot ID ... [--replace-failed]]] [--yes] [--json]"
 ---
 
 <!-- skill-dir-note -->
@@ -17,7 +17,7 @@ Follow `skills/_shared/dayz-conventions.md`.
 
 ```cmd
 python "<skill-dir>\gate.py" build <ModName> [--yes] [--json]
-python "<skill-dir>\gate.py" ingame <ModName> [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--yes] [--json]
+python "<skill-dir>\gate.py" ingame <ModName> [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--settle S] [--ready-pattern REGEX] [--test-bridge] [--yes] [--json]
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] [--port N] [--timeout S] [--done-timeout S] [--ready-pattern REGEX] [--yes] [--json]
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--deps CF ...] [--server <instance>] --prepare-only [--json]
 python "<skill-dir>\gate.py" behavior <ModName> [--checks FILE] [--server <instance>] --logs [FILE ...] [--json]
@@ -33,8 +33,9 @@ python "<skill-dir>\gate.py" visual <ModName> [--shots FILE] [--threshold R] --a
 | `--server` | `ingame`, `behavior`, `visual`: instance added with `/dayz-add-server` (default `chernarus`). `--port` default `2302`. |
 | `--timeout` | `ingame`, `behavior`, `visual`: seconds to wait for the client to reach the mission (default 300). |
 | `--settle` | `ingame` only: seconds to keep reading after that, to catch spawn-time errors (default 30). `visual` has no `--settle`: it reads until its last shot is taken. |
+| `--test-bridge` | `ingame` only: also load the `AZ_TestBridge` test mod (packed for the run, removed after) and check that both peers answer a ping once the client is in the mission. A bridge that does not answer is ERROR (exit 2), not the mod's FAIL; when the mod itself fails, its FAIL stands. v1 checks only that both peers answer. See `dayz-launch-test/references/test-bridge.md`. |
 | `--done-timeout` | `behavior` only: the most seconds to wait for the test mission's `DONE` line after the client joins (default 600). The gate stops as soon as that line appears. |
-| `--ready-pattern` | `ingame`, `behavior` and `visual` in-game runs: regex in the client script log that means the mission is running. Default `Creating Mission: mpmissions\__cur_mp.`, printed by vanilla `CreateMission()` (`P:\scripts\5_mission\somemission.c`) when the client joins. |
+| `--ready-pattern` | `ingame`, `behavior` and `visual` in-game runs: regex in the client script log that means the mission is running. Default `Creating Mission: mpmissions\__cur_mp.`, printed by vanilla `CreateMission()` (`P:\scripts\5_mission\somemission.c:3`) when the client joins. |
 | `--checks` | `behavior`: the checks file. Default `output/<ModName>-plan/behavior-checks.json`, which `dayz-mod-architect` writes with the plan. |
 | `--prepare-only` | `behavior`: write the instance copy and stop. The first line is `PREPARED` (exit 0), then the `/dayz-launch-test` command for the copy with the `--deps` mods ahead of the mod (`launch` in `--json`). A mod that needs `--deps` and got none is refused (exit 2) before the copy is written. |
 | `--logs` | `behavior`: judge the logs of a session that already ran instead of launching one. With no files it reads the copy's server script logs. |
@@ -54,7 +55,7 @@ The first line is the verdict: `PASS` (exit 0), `FAIL` (exit 1) or `ERROR` (exit
 {
   "verdict": "FAIL", "mode": "ingame", "mod": "MyVest",
   "steps": [{"step": "stop-session", "result": "no DayZDiag session running"}, {"step": "dayz-launch-test", "rc": 0}, ...],
-  "ready": {"file": "script_2026-10-20_12-00-31.log", "line": 214, "text": "SCRIPT : Creating Mission: mpmissions\\__cur_mp.chernarusplus\\mission.c"},
+  "ready": {"file": "script_<date>_<time>.log", "line": 214, "text": "SCRIPT : Creating Mission: mpmissions\\__cur_mp.chernarusplus\\mission.c"},
   "failures": [{
     "category": "null_pointer", "file": ".server\\!ClientDiagLogs\\script_...log", "line": 230,
     "text": "SCRIPT    (E): NULL pointer to instance", "context": ["Class: 'MyVest_Helper'", "Stack trace:", "MyVest/scripts/4_World/vest.c:42"],
@@ -72,7 +73,7 @@ Every `PASS` or `FAIL` is stored for `/dayz-health` under `.server/!Health/<ModN
 
 ## What `build` does
 
-1. Runs `/dayz-lint <ModName>` first. Any lint error is a FAIL (category `lint`, file and line from the lint finding, triaged by its `lint-<rule>` entry) and the gate stops there, leaving a running session alone. Lint warnings join the report's warnings, and the report gains `"lint": {"verdict", "errors", "warnings"}`.
+1. Runs `/dayz-lint <ModName>` first, both of its stages: the mod setup checks (`config.cpp`, `CfgPatches`, `$PBOPREFIX$`, script modules, files) and the code rules of the script validator (Enforce Script, `.layout`, `inputs.xml`, `.rvmat`). Any lint error, from either stage, is a FAIL (category `lint`, file and line from the lint finding) and the gate stops there, leaving a running session alone. A setup finding is triaged by its `lint-<rule>` entry in `known-errors.json`. A code finding keeps the triage lint gave it (id `lint-<rule id in lower case>`, with the owner and fix from lint's own table, unless a catalog or learned entry matches it), so it is never reported as `new`. Lint warnings join the report's warnings, and the report gains `"lint": {"verdict", "errors", "warnings"}`. The gate passes no `--external-scripts`, so for a mod that depends on another mod the rule `ES-UNDEFINED-CLASS-REF` is not checked here; run `/dayz-lint <ModName> --external-scripts <folder>` for its verdict.
 2. Stops any running `DayZDiag_x64.exe` with `/dayz-stop-test` (a session holds the PBO open), only after `--yes` or a yes at the prompt (see `--yes`).
 3. Runs `/dayz-build-pbo <ModName>`. FAIL on a non-zero exit (every `[FAIL]` line is quoted with its hint), or on any AddonBuilder line after the command echo that reports an error, or a warning about missing files, textures or unknown classes.
 4. Bundles ("Bundle / umbrella mods" in `skills/_shared/conventions/config.md`): with no `config.cpp` and a payload in `workspace/<ModName>/Addons/*.pbo`, the build is skipped and `/dayz-deploy-pbo <ModName>` runs instead; it must exit 0, and every `[FAIL]` and every `[WARN]` about a missing `.bisign` fails the gate. A bundle with a linker `config.cpp` gets both, build first.
@@ -81,8 +82,9 @@ Every `PASS` or `FAIL` is stored for `/dayz-health` under `.server/!Health/<ModN
 
 1. Stops any running session, records the size of every log in `.server/<instance>/Profiles/` and `.server/!ClientDiagLogs/`, then runs `/dayz-launch-test <deps...> <ModName> --server <instance>`. A launch refusal is a FAIL with its `[FAIL]` lines.
 2. Polls the new log lines every 2 s until the ready line appears in the client script log plus `--settle` seconds, or `--timeout` (FAIL: no ready signal). It stops early on a `Can't compile ... script module` line, a new `crash*.log`, or a server or client process exiting (FAIL: crash).
+   With `--test-bridge`, step 1 also packs `@AZ_TestBridge` and passes `--test-bridge <token>`, and step 2 pings both peers once both wrote their hello; the report gets a `test-bridge` step.
 3. Always stops the session with `/dayz-stop-test`, then judges only the lines written after step 1, with the `dayz-ingame-tester` rules:
-   - Fail: script compile errors, missing config entries, textures or models, crashes; `NULL pointer` and `Can't find` errors only when they name the mod.
+   - Fail: script compile errors, missing config entries, textures or models, crashes, a refused join (`0x00020005`, `0x00020017`, `0x00020013`, `0x00010002`), persistence storage the server cannot read (`Serious stream damage`, `Failed to read modstorage`, `Scripted variables corrupted`) and a server that shuts itself down (`[Server] :: termination in:`, `BattlEye initialization failed`); `NULL pointer` and `Can't find` errors only when they name the mod. The category of each line is listed in [triage.md](triage.md).
    - A line names the mod when it, or its stack trace, mentions the mod's folder, its `$PBOPREFIX$` root, or a class the mod declares (top-level classes in `config.cpp`'s `Cfg*` blocks and non-modded script classes).
    - Vanilla noise: a line that names nothing of the mod and also appears in a vanilla-only run, meaning one of the two newest older sessions in the same folder whose RPT `CLI params:` line has no `@<ModName>` (plus the script logs created within 30 s after that RPT). Noise is listed, not failed. With no such run the line is a warning.
 
@@ -131,7 +133,7 @@ Each shot ends as one of these:
 
 Every status but `PASS` fails the gate. The report adds `shots` (one entry per shot with `status`, `ratio`, `threshold`, `capture`, `baseline`, `diff` and `reason`) and `visual` (the run and baseline folders). Triage marks each failure `known` with owner `user`, because only a person can say whether a new look is right: look at the capture and the diff, then accept it with `--accept --shot <id>` (add `--replace-failed` for a `FAIL`) or send it to the specialist who owns that part of the screen.
 
-The first run of a shot is always `NEW`. Look at its capture, accept it, and later runs compare against it. Keep the baselines with the project; the runs folder is ignored by git. To undo an accept, copy the shot's newest `baseline/.prev/<id>.<date_time>.png` back to `baseline/<id>.png`.
+The first run of a shot is always `NEW`. Look at its capture, accept it, and later runs compare against it. All of `output/` is ignored by git, the baselines as well as the runs: to version the baselines, force-add the baseline folder (`git add -f`) or keep a copy somewhere else. To undo an accept, copy the shot's newest `baseline/.prev/<id>.<date_time>.png` back to `baseline/<id>.png`.
 
 ### Shots file
 
@@ -147,7 +149,17 @@ python "<skill-dir>\triage.py" --stdin --json < pasted.txt
 python "<skill-dir>\triage.py" --learn <id> --fingerprint "<fingerprint or raw log line>" [--meaning "..." --fix "..." --owner <agent>]
 ```
 
-How lines are fingerprinted, what to do with each result of a pasted log, and the rules for `--learn` are in [triage.md](triage.md); read it before triaging a pasted log or recording a diagnosis.
+How lines are fingerprinted, which lines count as errors and which vanilla lines never do, what to do with each result of a pasted log, and the rules for `--learn` are in [triage.md](triage.md); read it before triaging a pasted log or recording a diagnosis.
+
+## When a run fails for a reason that is not the mod
+
+The gate judges log lines; it cannot tell that the run itself was not a valid test. The measured cases are in the references of the `/dayz-launch-test` skill:
+
+| The gate shows | Read |
+|---|---|
+| The server or client does not start or connect, a client that dies before it logs, a kick code | `skills/dayz-launch-test/references/troubleshooting.md`; `skills/dayz-launch-test/references/client-startup-failures.md` |
+| A `storage` failure, a PASS that did not test the change (stale or locked PBO, an old signature, storage written by another mod set) | `skills/dayz-launch-test/references/build-and-storage-traps.md` |
+| A scripted check that cannot fail, or a verdict from a run whose `-mod=` line is not what you meant | `skills/dayz-launch-test/references/test-cell-evidence.md` |
 
 ## Limits
 
@@ -156,8 +168,8 @@ How lines are fingerprinted, what to do with each result of a pasted log, and th
 - Dependency mapping from `requiredAddons` to `@mods` is not automatic; pass `--deps`.
 - The behavior test mission only knows the five actions above. A feature that needs more (driving, firing, eating) has no check yet; say so in the plan.
 - The test player is stripped once before the checks and each check deletes what it made, so no check can prove two items work together on the player.
-- The test mission has not yet run in a live session. Every engine name the injected `AZ_BehaviorTest` class uses is checked against its vanilla declaration in `P:\scripts`, and `test_behavior.py` pins that list with the path and line of each, so an unchecked call fails the tests before it can reach a game. The injector and parser are tested on fixture missions and logs. If the mission still fails to start live (for example an Enforce compile error), the gate reports `ERROR` rather than failing the mod, unless the session also shows a mod error. After the first live run, look for `[AZ-BEHAVIOR] START` in `.server/<instance>-behavior/Profiles/script*.log`.
-- DayZ scripts cannot save the screenshot themselves: vanilla `MakeScreenshot` (`P:\scripts\1_core\proto\proto.c:142`) made the `ScreenShots` folder in live runs but never wrote a file, so the capture is taken from outside the game with `PrintWindow`. That works while the client window is covered by other windows, but not while it is minimized (a minimized window draws nothing): such a shot, or an all-black capture, is `MISSING`. Two live sessions on October 24, 2026 gave captures that differed by 0.33% of pixels, under the default 1% threshold.
+- The test mission has not yet run in a live session. Every engine name the injected `AZ_BehaviorTest` class uses is checked against its vanilla declaration in `P:\scripts`, and `test_behavior.py` pins that list with the path and line of each, so an unchecked call fails the tests before it can reach a game. The injector and parser are tested on fixture missions and logs. If the mission still fails to start live, the gate reports `ERROR` rather than `FAIL` only when the session shows no other failure (step 5 above). An Enforce compile error in the injected `init.c` is itself such a failure when a vanilla baseline session exists and does not show it, so the verdict is then `FAIL` with that compile line; read the line before blaming the mod. After the first live run, look for `[AZ-BEHAVIOR] START` in `.server/<instance>-behavior/Profiles/script*.log`.
+- DayZ scripts cannot save the screenshot themselves: vanilla `MakeScreenshot` (`P:\scripts\1_core\proto\proto.c:142`) made the `ScreenShots` folder in live runs but never wrote a file, so the capture is taken from outside the game with `PrintWindow`. That works while the client window is covered by other windows, but not while it is minimized (a minimized window draws nothing): such a shot, or an all-black capture, is `MISSING`. Two live sessions gave captures that differed by 0.33% of pixels, under the default 1% threshold.
 - A shot is taken at a time, not at a game event, and always shows the helper's fixed camera view without the HUD. Shots of the player, a menu or the HUD need the mod to put them there; screens that move on their own need a higher threshold or `ignore` areas.
 - The visual gate needs Pillow: `py -m pip install -r "<skill-dir>\requirements.txt"`.
 
@@ -165,4 +177,5 @@ How lines are fingerprinted, what to do with each result of a pasted log, and th
 
 - Don't pass `--yes` for the user: a running `DayZDiag_x64.exe` the gate did not start may be their play session. On that `ERROR`, ask them to close it or to agree to the gate stopping it.
 - Don't edit `known-errors.json` from `--learn`; learned fingerprints are per project.
+- Don't rename or delete a mission's `storage_1` to clear a `storage` failure without asking the user: it resets their world and characters.
 - Don't `--accept` a capture nobody has looked at, and don't pass `--replace-failed` for the user; the baseline is the expected look.

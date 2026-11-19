@@ -405,7 +405,7 @@ def test_missing_relative_file_names_every_base_folder_tried(tmp_path, monkeypat
 
 
 def test_many_p3d_listing_is_capped_with_a_count(tmp_path, monkeypatch):
-    r"""A big tree used to print every path (8,256 for P:\DZ) before asking for --file."""
+    r"""A big tree used to print every path (10,626 for P:\DZ) before asking for --file."""
     monkeypatch.setattr(ob, "P_DRIVE", tmp_path)
     data = tmp_path / "MyMod" / "data"
     data.mkdir(parents=True)

@@ -1,7 +1,5 @@
 # EnScript (Enforce Script) Style Guide
 
-> **Source:** [TrueDolphin/references wiki](https://github.com/TrueDolphin/references/wiki/EnScript-(Enforce-Script)-Style-Guide). Mirrored here so DayZ agents/skills follow it offline.
->
 > **Authority:** This is best-practice for EnScript across DayZ modding. When code in `workspace/` conflicts with this guide, this guide wins unless the user says otherwise.
 
 Every script task follows this guide. It is split into focused files under `enscript-style/`, so open only the one your task needs:

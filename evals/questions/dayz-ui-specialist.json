@@ -28,7 +28,7 @@
       "must_not_include": [
         "re:<FrameWidget"
       ],
-      "verified": "P:/gui/layouts/day_z_hud.layout:1 (FrameWidgetClass HudFrameWidget {); every vanilla layout under P:/gui/layouts/ opens with '<Type>WidgetClass <name> {'; skills/_shared/enscript/references/gui_layout.md 'File Format'"
+      "verified": "P:/gui/layouts/camera_checkerboard.layout:1 (FrameWidgetClass rootFrame {: a vanilla layout opening with '<Type>WidgetClass <name> {'); skills/_shared/enscript/references/gui_layout.md 'File Format'"
     },
     {
       "id": "chat-open-check",
@@ -47,6 +47,22 @@
         "SetItem"
       ],
       "verified": "P:/scripts/1_core/proto/enwidgets.c:442 (int AddItem(string text, Class userData, int column, int row = -1)) and :443 (void SetItem(int position, string text, Class userData, int column))"
+    },
+    {
+      "id": "ui-layout",
+      "question": "Answer only, do not edit any file. Read evals/fixtures/dayz-ui-specialist/panel.layout. List every widget it declares, as widget class and name. My script expects a child of type MagicGridWidget named Grid in this layout: does the layout declare it, and is MagicGridWidget a vanilla widget class at all? Name only widgets the file declares.",
+      "must_include": [
+        "re:TextWidget(Class)?`?\\s+`?Title|Title`?\\s*[(:,-]+\\s*`?TextWidget",
+        "re:PanelWidget",
+        "re:\\bno\\b|\\bnot\\b|isn't|doesn't"
+      ],
+      "must_not_include": [
+        "re:MagicGridWidget`? (is|exists as) a (vanilla|valid|real)"
+      ],
+      "unchanged": [
+        "evals/fixtures/dayz-ui-specialist/panel.layout"
+      ],
+      "verified": "evals/fixtures/dayz-ui-specialist/panel.layout declares PanelWidgetClass Root with one child, TextWidgetClass Title, and nothing else; vanilla has no MagicGridWidget (no match under P:/scripts): its widget classes are in P:/scripts/1_core/proto/enwidgets.c:189 (TextWidget) and :473 (GridSpacerWidget, the vanilla grid)"
     }
   ]
 }

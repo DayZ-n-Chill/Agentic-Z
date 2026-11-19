@@ -1,0 +1,20 @@
+{
+  "collections": [],
+  "default_state": "default",
+  "entrypoint": {
+    "layout": "layouts/does-not-exist.layout",
+    "subviews": []
+  },
+  "scenario_id": "layout-missing",
+  "schema_version": "dayz-ui-scenario-v1",
+  "states": [
+    {
+      "name": "default"
+    }
+  ],
+  "subviews": [],
+  "viewport": {
+    "height": 1080,
+    "width": 1920
+  }
+}

@@ -1,6 +1,6 @@
 # Enforce Script style: Naming and files
 
-Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`. The guide is a mirror of the [TrueDolphin/references wiki](https://github.com/TrueDolphin/references/wiki/EnScript-(Enforce-Script)-Style-Guide).
+Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`.
 
 Vanilla facts: the vanilla calls named here (`GetGame()`, native calls, `[Obsolete]`) cite `P:\scripts\` below; the language itself is in `../enscript/references/language_types.md` and `language_compile.md`.
 

@@ -16,7 +16,7 @@ if /i "%~1"=="-h" goto usage
 echo [FAIL] Unknown argument: %1 (stop-test takes no arguments; see --help). 1>&2
 exit /b 2
 :usage
-echo Usage: stop-test.bat
+echo Usage: stop_test.bat (or scripts\dayz\stop-test.bat)
 echo   Force-kills every running DayZDiag_x64.exe process (the local test server and client).
 echo   Takes no arguments. Exits 0 when the processes are gone or none were running.
 exit /b 0

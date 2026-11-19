@@ -4,7 +4,9 @@ What it touches (TEMPLATE_PATHS):
     agents/, skills/, .claude/agents/, .claude/skills/, .claude/mcp/, .claude/settings.json
     .claude-plugin/, .mcp.json, hooks/, mods/, evals/
     docs/, scripts/
-    .claude/CLAUDE.md, AGENTS.md, GEMINI.md, README.md, CONTRIBUTING.md, LICENSE
+    .claude/CLAUDE.md, AGENTS.md, GEMINI.md, README.md, CONTRIBUTING.md, LICENSE,
+    THIRD_PARTY_NOTICES.md
+    .gitattributes
     .gitignore, pytest.ini, .env.example, package.json, package-lock.json, .github/
     .markdownlint.json, .markdownlint-cli2.jsonc, .markdownlintignore
 
@@ -63,6 +65,8 @@ TEMPLATE_PATHS = [
     ".github",
     "CONTRIBUTING.md",
     "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    ".gitattributes",
     ".markdownlint.json",
     ".markdownlint-cli2.jsonc",
     ".markdownlintignore",
@@ -72,7 +76,7 @@ TEMPLATE_PATHS = [
 class FileStatus(enum.Enum):
     UNCHANGED = "unchanged"          # no-op
     SAFE_OVERWRITE = "safe-overwrite"  # local == baseline, take upstream
-    NEW = "new"                       # baseline + local missing, take upstream
+    NEW = "new"                       # clone never had it, take upstream
     LOCALLY_DELETED = "locally-deleted"  # in baseline, missing locally, leave alone
     LOCAL_ONLY_EDIT = "local-only-edit"  # only the user changed it, leave alone
     CONFLICT = "conflict"             # both diverged, ask user
@@ -577,7 +581,9 @@ def release_lock() -> None:
 
 SEARCH_INDEX_TAG_FILE = Path.home() / ".claude" / "dayz-search-index" / "release-tag.txt"
 GITHUB_LATEST_RELEASE_URL = "https://api.github.com/repos/DayZ-n-Chill/Agentic-Z/releases/latest"
-SEARCH_INDEX_ASSET_PREFIX = "dayz-search-index-"
+GITHUB_RELEASES_URL = "https://api.github.com/repos/DayZ-n-Chill/Agentic-Z/releases?per_page=100"
+# Same prefixes /dayz-search-download accepts (download.py ASSET_PREFIXES).
+SEARCH_INDEX_ASSET_PREFIXES = ("dayz-search-index-", "dayz-rag-index-")
 
 
 def installed_search_index_tag() -> Optional[str]:
@@ -590,30 +596,54 @@ def installed_search_index_tag() -> Optional[str]:
         return None
 
 
-def latest_search_index_tag() -> Optional[str]:
-    """Query GitHub for the latest release that has a dayz-search-index-* asset.
-    Returns None on any failure (offline, rate-limited, dropped connection,
-    malformed reply, no matching asset)."""
+def _fetch_github_json(url: str):
+    """GET a GitHub API URL and decode the JSON body. Returns None on any failure."""
     req = urllib.request.Request(
-        GITHUB_LATEST_RELEASE_URL,
+        url,
         headers={"Accept": "application/vnd.github+json", "User-Agent": "agentic-z-update"},
     )
     try:
         with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
+            return json.loads(resp.read().decode("utf-8"))
     # OSError covers URLError, timeouts, ssl.SSLError and connection resets
     # (http.client.RemoteDisconnected); HTTPException covers IncompleteRead;
     # ValueError covers bad JSON and bad UTF-8.
     except (OSError, http.client.HTTPException, ValueError):
         return None
-    if not isinstance(data, dict):
+
+
+def _release_index_tag(release) -> Optional[str]:
+    """Return the release's tag if it carries a search index asset, else None."""
+    if not isinstance(release, dict):
         return None
-    tag = data.get("tag_name")
-    assets = data.get("assets")
+    tag = release.get("tag_name")
+    assets = release.get("assets")
     if not isinstance(tag, str) or not isinstance(assets, list):
         return None
     for a in assets:
-        if isinstance(a, dict) and str(a.get("name", "")).startswith(SEARCH_INDEX_ASSET_PREFIX):
+        if isinstance(a, dict) and str(a.get("name", "")).startswith(SEARCH_INDEX_ASSET_PREFIXES):
+            return tag
+    return None
+
+
+def latest_search_index_tag() -> Optional[str]:
+    """Return the tag of the newest published release that carries a search
+    index asset (dayz-search-index-* or dayz-rag-index-*), choosing it the way
+    /dayz-search-download does: the latest release if it has one, otherwise the
+    newest non-draft, non-prerelease release in the release list that does.
+    Returns None on any failure (offline, rate-limited, dropped connection,
+    malformed reply, no release with an index)."""
+    tag = _release_index_tag(_fetch_github_json(GITHUB_LATEST_RELEASE_URL))
+    if tag:
+        return tag
+    releases = _fetch_github_json(GITHUB_RELEASES_URL)
+    if not isinstance(releases, list):
+        return None
+    for release in releases:  # GitHub lists newest first.
+        if not isinstance(release, dict) or release.get("draft") or release.get("prerelease"):
+            continue
+        tag = _release_index_tag(release)
+        if tag:
             return tag
     return None
 
@@ -968,7 +998,7 @@ def main() -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Preview drift only: fetches upstream (adding the upstream remote if it is missing) and writes no files. Exits 1 if upstream changes are pending or no baseline exists yet, 0 if up to date (always 0 with --quiet).",
+        help="Preview drift only: fetches upstream (adding the upstream remote if it is missing) and writes no files. Exits 1 if upstream changes are pending, no baseline exists yet, or a newer prebuilt search index is available, 0 otherwise (always 0 with --quiet).",
     )
     parser.add_argument(
         "--quiet",
@@ -1074,9 +1104,11 @@ def main() -> int:
     # First run: record the commit the clone was made from (its merge base with
     # upstream main) as the baseline, so upstream changes made since the clone
     # are offered. A copy with no shared history ("Use this template") records
-    # upstream HEAD instead, so nothing is overwritten or added on this run: a
-    # template file missing locally is in the baseline, so it classifies as
-    # locally-deleted and stays deleted unless restored with --per-file.
+    # upstream HEAD instead, so no local file is overwritten on this run. A
+    # template file missing locally is in the baseline: if the clone once
+    # committed it, it classifies as locally-deleted and stays deleted unless
+    # restored with --per-file; if the clone never had it, compute_drift
+    # reclassifies it as new and it is added.
     # --dry-run previews against that same baseline but does not write it, so
     # its preview matches what the real first run would offer.
     if baseline_sha is None and args.dry_run:

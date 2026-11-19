@@ -307,8 +307,8 @@ SUBFOLDER_DATA = """class CfgPatches
 };
 class CfgVehicles
 {
-	class Vest_Base;
-	class MyVest_Base: Vest_Base
+	class Clothing;
+	class MyVest_Base: Clothing
 	{
 		scope = 0;
 	};
@@ -356,7 +356,7 @@ def test_items_in_a_subfolder_config_are_read(mod, tmp_path):
 def test_class_in_two_configs_is_listed_once_and_warned(mod, tmp_path):
     (mod / "data").mkdir()
     (mod / "data" / "config.cpp").write_text(
-        "class CfgVehicles\n{\n\tclass Vest_Base;\n\tclass MyVest_Black: Vest_Base\n\t{\n\t\tscope = 0;\n\t};\n};\n",
+        "class CfgVehicles\n{\n\tclass Clothing;\n\tclass MyVest_Black: Clothing\n\t{\n\t\tscope = 0;\n\t};\n};\n",
         encoding="utf-8")
     report, files = pack(mod, tmp_path)
     assert report["spawnable"].count("MyVest_Black") == 1  # the root definition wins
@@ -532,3 +532,40 @@ def test_no_bikey_names_an_unmounted_drive(mod, tmp_path):
     report = rp.release_pack("MyVest", mod, tmp_path / "out", p_mods=p_mods, date="2026-10-21")
     [warning] = [w for w in report["warnings"] if w.startswith("no-bikey")]
     assert "not mounted" not in warning and "sign the PBO" in warning
+
+
+# --- the in-game test bridge never ships (plan decision 4) ----------------------
+
+def test_a_release_that_requires_the_test_bridge_is_refused(mod, tmp_path):
+    cfg = mod / "config.cpp"
+    cfg.write_text(cfg.read_text(encoding="utf-8").replace('"JM_CF_Scripts"', '"JM_CF_Scripts", "AZ_TestBridge"'),
+                   encoding="utf-8")
+    with pytest.raises(rp.ReleaseError, match=r"AZ_TestBridge.*requiredAddons names AZ_TestBridge"):
+        pack(mod, tmp_path, deps=["@CF"])
+    assert not (tmp_path / "out").exists()
+
+
+def test_a_release_that_loads_the_test_bridge_as_a_dependency_is_refused(mod, tmp_path):
+    with pytest.raises(rp.ReleaseError, match="--deps names @AZ_TestBridge"):
+        pack(mod, tmp_path, deps=["@CF", "@AZ_TestBridge"])
+
+
+def test_a_release_whose_scripts_use_a_bridge_class_is_refused(mod, tmp_path):
+    script = mod / "scripts" / "4_World" / "probe.c"
+    script.parent.mkdir(parents=True)
+    script.write_text("class X\n{\n\tvoid F() { AZB_Drive.Stop(); }\n}\n", encoding="utf-8")
+    with pytest.raises(rp.ReleaseError, match=r"scripts/4_World/probe\.c:3 names AZB_Drive"):
+        pack(mod, tmp_path, deps=["@CF"])
+
+
+def test_a_built_pbo_that_packs_the_bridge_is_refused(mod, tmp_path):
+    p_mods = tmp_path / "Mods"
+    addons = p_mods / "@MyVest" / "Addons"
+    addons.mkdir(parents=True)
+    (addons / "MyVest.pbo").write_bytes(b"\x00prefix\x00AZ_TestBridge/scripts/3_Game/AZB_Protocol.c\x00")
+    with pytest.raises(rp.ReleaseError, match=r"MyVest\.pbo names AZ_TestBridge"):
+        rp.release_pack("MyVest", mod, tmp_path / "out", p_mods=p_mods, date="2026-10-21", deps=["@CF"])
+
+
+def test_a_clean_mod_is_not_refused(mod, tmp_path):
+    assert rp.bridge_refs(rp.mod_facts("MyVest", mod, ["@CF"], p_mods=None), mod, None) == []

@@ -32,7 +32,7 @@ def test_help_prints_usage_and_never_kills(tmp_path, bat, flag):
     # scripts/README.md promises --help on every wrapper; this one used to run taskkill instead.
     result, args_file = _run_args(tmp_path, bat, flag)
     assert result.returncode == 0
-    assert "Usage: stop-test.bat" in result.stdout
+    assert r"Usage: stop_test.bat (or scripts\dayz\stop-test.bat)" in result.stdout
     assert not args_file.exists(), "--help must not call taskkill"
 
 

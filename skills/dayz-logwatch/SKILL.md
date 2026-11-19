@@ -58,7 +58,7 @@ Stopped (session closed) after 312 s: 2 error(s), 1 known, 1 new, 4 repeat(s) no
 
 With `--json` each error is `{"event": "error", "status": "known" or "new", "id", "meaning", "fix", "owner_agent", "file", "line", "text", "category", "fingerprint", "count"}` (`count` is always 1 here, on the first sighting; repeats are only counted in the summary) and the last line is `{"event": "summary", "stopped", "seconds", "errors", "known", "new", "repeats"}`. A `new` error has `owner_agent` set to `dayz-mod-debugger` and no `id`, `meaning` or `fix`.
 
-An error line is one that triage classifies (compile errors, NULL pointers, missing classes, textures, models or config entries, crashes) or one that matches a known entry. The same error again, in any file and with any timestamp, has the same fingerprint and is only counted. A new `crash*.log` file is reported as a `new` crash for the debugger, and so is one written in the last MINUTES with `--since`.
+An error line is one that triage classifies (compile errors, NULL pointers, missing classes, textures, models or config entries, crashes, a refused join such as `0x00020005` or `0x00020017`, persistence storage the server cannot read, a server that shuts itself down) or one that matches a known entry. The categories, and the two vanilla DayZDiag lines that are never errors (the `PluginConfigDebugProfile is not Registred` stack and `Can't load @<Mod>/Anims/cfg/skeletons.anim.xml`), are listed in `skills/dayz-gate/triage.md`. The same error again, in any file and with any timestamp, has the same fingerprint and is only counted. A new `crash*.log` file is reported as a `new` crash for the debugger, and so is one written in the last MINUTES with `--since`.
 
 Exit code 0 means no error line was seen, 1 means at least one was, and 2 means it could not run (a bad `--duration`, `--since`, `--interval` or `--start-timeout` value, no cached project and no `--dir`, no `.server/` folder, an unknown instance, or a broken known-errors or learned file: bad JSON, a bad regex, or an entry that is not an object, a shipped entry without `pattern`, a learned entry without `fingerprint`, or any entry without `id`, `meaning`, `fix` or `owner_agent`) or, with `--until-closed`, that the session never started or the process list could not be read. Exit 1 takes precedence: if errors were seen (for example with `--since`) before either of those stops, the exit code is 1.
 
@@ -66,6 +66,13 @@ Exit code 0 means no error line was seen, 1 means at least one was, and 2 means 
 
 - Hand each `known` error to its `owner_agent` with the fix. Owner `user` means the user has to act.
 - Send the `new` ones to `dayz-mod-debugger` with the file and line. Once it names the cause, record it with `triage.py --learn` (see `/dayz-gate`) so the next watch knows it.
+- A `storage` or `server_exit` error (`Serious stream damage`, `Failed to read modstorage`, `Scripted variables corrupted`, `[Server] :: termination in:`) means the session is not a valid test of the mod. The entity a storage line names is not the cause. Its fix resets the world, so ask the user first. Background: `skills/dayz-launch-test/references/build-and-storage-traps.md`; other symptoms by what you see: `skills/dayz-launch-test/references/troubleshooting.md`.
+
+## What the watch cannot see
+
+- A refusal the client shows only as a modal. `0x00020017` (a diag client on a server that is not diag) was measured with nothing in the RPT, so the watch stays quiet; paste the modal's text into `triage.py --text` to get its fix.
+- A client that dies with an RPT that holds only its header (measured when Steam was running but no user was signed in). `/dayz-launch-test` checks only that `steam.exe` runs; `skills/dayz-launch-test/references/client-startup-failures.md` has the rest.
+- A mod that did not load. No error line is printed for a mod that was never mounted, so read the `-mod=` line of the session's RPT before trusting a quiet watch (`skills/dayz-launch-test/references/test-cell-evidence.md`).
 
 ## Do not
 

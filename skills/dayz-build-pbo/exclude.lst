@@ -25,8 +25,10 @@ scripts\editor\*
 *.bak
 
 ; Source, doc and temp folders at the mod root only, archives, image sources.
-; These stay anchored to the root: the patterns match case-insensitively, so
-; an unanchored *\Temp\* would also drop scripts\4_World\Temp\ or data\doc\.
+; These stay anchored to the root, so staging keeps nested folders such as
+; scripts\4_World\Temp\ or data\doc\. FileBank still drops them when it packs:
+; DayZ Tools' Bin\PboUtils\exclude.lst has *\Source\*, *\Temp\* and *\Doc\*,
+; which match at any depth. Rename such a folder so it ships.
 Source\*
 Temp\*
 Doc\*

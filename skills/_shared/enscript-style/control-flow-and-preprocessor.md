@@ -1,6 +1,6 @@
 # Enforce Script style: Control flow and preprocessor
 
-Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`. The guide is a mirror of the [TrueDolphin/references wiki](https://github.com/TrueDolphin/references/wiki/EnScript-(Enforce-Script)-Style-Guide).
+Part of the Enforce Script style guide; the index and the task table are in `../enscript-style.md`.
 
 Vanilla facts: Preprocessor defines (`SERVER`, `NO_GUI`, `DIAG_DEVELOPER`) are checked in `../enscript/references/language_compile.md`; `foreach` with an index is in `../enscript/references/language_types.md`.
 
@@ -11,26 +11,26 @@ Vanilla facts: Preprocessor defines (`SERVER`, `NO_GUI`, `DIAG_DEVELOPER`) are c
 ```
 if (condition)
 {
-    // Single condition
+	// Single condition
 }
 
 if (condition1 && condition2)
 {
-    // Multiple conditions
+	// Multiple conditions
 }
 else if (condition3)
 {
-    // Else-if branch
+	// Else-if branch
 }
 else
 {
-    // Else branch
+	// Else branch
 }
 ```
 
 **Bitwise Operators in Conditions:**
 
-Unverified: the style guide reports that Enforce Script follows C/C++ operator precedence, where `==` binds tighter than `&`, so `a & b == b` would parse as `a & (b == b)`. This guide has not checked that against the compiler or a vanilla file. Parentheses make the intent explicit whatever the precedence is, so always use them:
+Unverified: Enforce Script is reported to follow C/C++ operator precedence, where `==` binds tighter than `&`, so `a & b == b` would parse as `a & (b == b)`. That has not been checked against the compiler or a vanilla file. Parentheses make the intent explicit whatever the precedence is, so always use them:
 
 ```
 int a = 1;
@@ -50,12 +50,12 @@ if ((a & b) == b)
 ```
 for (int i = 0; i < count; i++)
 {
-    // Loop body
+	// Loop body
 }
 
 foreach (string item : collection)
 {
-    // For-each loop
+	// For-each loop
 }
 ```
 
@@ -64,53 +64,53 @@ foreach (string item : collection)
 ```
 foreach (string stateName : stateNames)
 {
-    stateName.TrimInPlace();
-    int value = typename.StringToEnum(EMyMod_State, stateName);
-    // Process value
+	stateName.TrimInPlace();
+	int value = typename.StringToEnum(EMyMod_State, stateName);
+	// Process value
 }
 ```
 
 **Foreach with Getters:**
 
-Unverified: the style guide reports that `foreach` over a getter call calls the getter again on every iteration. This guide has not checked that against the compiler or a vanilla file. Assigning the result to a local first is correct either way, so prefer it:
+Unverified: `foreach` over a getter call is reported to call the getter again on every iteration. That has not been checked against the compiler or a vanilla file. Assigning the result to a local first is correct either way, so prefer it:
 
 ```
 class MyClass
 {
-    autoptr TStringArray m_Test = {"A", "B"};
+	ref TStringArray m_Test = {"A", "B"};
 
-    TStringArray GetTest()
-    {
-        return m_Test;
-    }
+	TStringArray GetTest()
+	{
+		return m_Test;
+	}
 
-    void TestBad()
-    {
-        // AVOID: reported (unverified) to call the getter every iteration
-        foreach (string t : GetTest())
-        {
-            Print(t);
-        }
-    }
+	void TestBad()
+	{
+		// AVOID: reported (unverified) to call the getter every iteration
+		foreach (string t : GetTest())
+		{
+			Print(t);
+		}
+	}
 
-    void TestGood()
-    {
-        // CORRECT: Assign to variable first
-        TStringArray test = GetTest();
-        foreach (string t : test)
-        {
-            Print(t);
-        }
-    }
+	void TestGood()
+	{
+		// CORRECT: Assign to variable first
+		TStringArray test = GetTest();
+		foreach (string t : test)
+		{
+			Print(t);
+		}
+	}
 
-    void TestAlsoGood()
-    {
-        // CORRECT: Direct member access works fine
-        foreach (string t : m_Test)
-        {
-            Print(t);
-        }
-    }
+	void TestAlsoGood()
+	{
+		// CORRECT: Direct member access works fine
+		foreach (string t : m_Test)
+		{
+			Print(t);
+		}
+	}
 }
 ```
 
@@ -119,7 +119,7 @@ class MyClass
 ```
 while (condition)
 {
-    // Loop body
+	// Loop body
 }
 ```
 
@@ -127,33 +127,33 @@ while (condition)
 
 **Switch Default Case Issue:**
 
-Unverified: the style guide reports that the compiler can still ask for a return after a `switch` whose `default` case returns. This guide has not checked that against the compiler or a vanilla file, so treat it as reported compiler behaviour, not a confirmed rule. Writing the last return after the `switch` is safe either way:
+Unverified: the compiler is reported to still ask for a return after a `switch` whose `default` case returns. That has not been checked against the compiler or a vanilla file, so treat it as unconfirmed compiler behaviour, not a confirmed rule. Writing the last return after the `switch` is safe either way:
 
 ```
 // REPORTED (unverified): compiler may complain about a missing return
 string Test(string what)
 {
-    switch (what)
-    {
-        case "A":
-        case "B":
-            return "X";
-        default:
-            return "Y";
-    }
-    // Reported (unverified) error: function must return a value
+	switch (what)
+	{
+		case "A":
+		case "B":
+			return "X";
+		default:
+			return "Y";
+	}
+	// Reported (unverified) error: function must return a value
 }
 
 // WORKAROUND: Move last return outside switch
 string Test(string what)
 {
-    switch (what)
-    {
-        case "A":
-        case "B":
-            return "X";
-    }
-    return "Y";  // Default case moved outside
+	switch (what)
+	{
+		case "A":
+		case "B":
+			return "X";
+	}
+	return "Y";  // Default case moved outside
 }
 ```
 
@@ -167,14 +167,14 @@ array<int> list = {0, 1, 2};
 // CORRECT: Index-based bounds check
 if (index >= 0 && index < list.Count())
 {
-    int value = list[index];
+	int value = list[index];
 }
 
 // NOT A BOUNDS CHECK: tests the value, not the index
 if (!list[index])
 ```
 
-`!list[index]` reads the element and tests its value, so it says nothing about whether `index` is in range. Unverified: the style guide reports that it is true for an out-of-range index. This guide has not checked what an out-of-range read does, so never use it as a bounds check.
+`!list[index]` reads the element and tests its value, so it says nothing about whether `index` is in range. Unverified: it is reported to be true for an out-of-range index. What an out-of-range read does has not been checked, so never use it as a bounds check.
 
 **Best Practice:** Use explicit index bounds checking: `if (index >= 0 && index < array.Count())`
 
@@ -186,15 +186,15 @@ if (!list[index])
 
 ```
 #ifdef MYMOD_GROUPS
-    // Group-specific code
+	// Group-specific code
 #endif
 
 #ifdef SERVER
-    // Server-only code
+	// Server-only code
 #endif
 
 #ifndef DIAG_DEVELOPER
-    // Non-developer build code
+	// Non-developer build code
 #endif
 ```
 
@@ -209,6 +209,8 @@ Vanilla compiles `#ifdef` blocks that hold only a comment. `P:\scripts\4_world\c
 ```
 
 A comment-only block is therefore not a crash risk. Still delete blocks you no longer need, so the code stays readable.
+
+The claim that an empty `#ifdef` or `#ifndef` block segfaults even when it holds only comments was not reproduced. Measured in game, not checked on `P:\` (DayZDiag 1.30, in a mod's `4_World` scripts): a block holding only a comment compiled and ran on the server and on the client, at file scope, in a class body and in a method body. Not measured: a block with nothing at all inside, a retail build, and DayZ 1.29.
 
 ### Defines
 

@@ -33,10 +33,13 @@ python .claude\skills\sync-skills\sync.py
 - `agents/` — DayZ specialist agent definitions.
 - `.claude/mcp/` — MCP server code (dayz-rag, etc.).
 - `docs/` — deep documentation.
-- `scripts/` — thin `.bat` wrappers around skills, grouped by audience:
-  - `scripts/setup/` — pre-Claude bootstrap (workdrive, sync-skills, agentic-z-update, preflight, setup-objectbuilder)
+- `scripts/` — thin `.bat` wrappers around skills, grouped by audience, plus the offline tools:
+  - `scripts/setup/` — pre-Claude bootstrap (workdrive, sync-skills, agentic-z-update, preflight, setup-objectbuilder, statusline)
   - `scripts/dayz/` — daily DayZ workflow (build, launch, scaffold, types, search, etc.)
-  - `scripts/dev/` — template-author tools (clean-repo, docs-sync, wiki-cleaning + WCAG audit Python helpers)
+  - `scripts/dev/` — template-author tools (the clean-repo, docs-sync and evals wrappers, the answer-test runner `run_evals.py`, the skill packager `pack_skill.py`, and the repo's own tests)
+  - `scripts/tools/` — the offline Python tools, one folder per tool with its tests (see `docs/tools.md`)
+- `skills/_shared/` — the L2 DayZ rules and the knowledge packs. A new pack file gets a row in `skills/_shared/README.md` in the same change, and cites the vanilla file on `P:\` for each fact about the game.
+- `evals/` — answer tests per agent (see `docs/evals.md`).
 - `.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md` — L1 rules (edit all three together; same content in each).
 
 ## What does NOT belong here
@@ -50,7 +53,8 @@ python .claude\skills\sync-skills\sync.py
 1. Place your skill folder at `skills/<my-skill>/` with `SKILL.md` and your script.
 2. Add it to the `skills` list in `.claude-plugin/plugin.json`, then run `sync-skills` so Codex and Gemini pick it up. To test it in Claude Code before it is published, run `sync-skills --agents claude`, which links it into Claude Code's home too.
 3. Run the script directly: `python skills\<my-skill>\<script>.py [args]`.
-4. Fix issues, commit, open PR.
+4. Run the tests CI runs: `python -m pytest -q .claude skills scripts/dev hooks scripts/tools`.
+5. Fix issues, commit, open PR.
 
 ## Docs
 

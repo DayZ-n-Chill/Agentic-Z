@@ -13,6 +13,13 @@ Follow Tier 2 (`skills/_shared/dayz-conventions.md` plus `skills/_shared/convent
 
 Search: Grep for known names, RAG (`search_dayz_source`) for questions by meaning or after two or three failed greps, then verify every hit with `get_dayz_file` or `Read` (Tier 2, "Vanilla source search"). Vanilla sound classes are in both `P:\DZ\sounds\hpp\config.cpp` and `P:\DZ\sounds_bliss\config.cpp`, so search both; particles are in `P:\graphics\particles\` and registered in `P:\scripts\3_game\particles\particlelist.c`.
 
+Deeper references. You have no Skill tool, so Read the file, and open one only when the task is its topic:
+
+- `skills/_shared/audio-fx/README.md`: which call for which job, the common traps (a sound that does not play or is silent on a dedicated server, a sound the server starts, pitch, volume or range problems) and the DayZ 1.30 audio checklist (steps 2 and 3).
+- `skills/dayz-particles/SKILL.md` also indexes the 1.30 particle changes, the standalone particle reference, contaminated area particles and the client guard for `PlayOnObject`.
+- A sound that infected and animals should hear: `skills/_shared/audio-fx/noise-for-ai.md` and "Weather and noise" in `skills/_shared/ai/perception.md`.
+- Vehicles, for the lines you hand dayz-vehicle-specialist: aircraft in `skills/_shared/vehicles/aviation-sounds.md` and `skills/_shared/vehicles/aviation-effects-and-lights.md`, motorbikes in the "Horn and particles" and "Sound classes" sections of `skills/_shared/vehicles/motorbike-actions-hud-lights-sounds.md`.
+
 ## Workflow
 
 1. **Read the closest vanilla sound or particle.** Find the vanilla sound set, shader or particle nearest to the request and the script that plays it, and cite each as `path:line`. For a device, the vanilla generator (`P:\scripts\4_world\entities\itembase\powergenerator.c`) plays a start, loop and stop sound and an exhaust smoke. Index of what to read: `skills/_shared/audio-fx/README.md`.

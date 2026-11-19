@@ -1,0 +1,3 @@
+class FX_DepAHelper
+{
+}

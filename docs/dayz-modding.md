@@ -47,8 +47,37 @@ Most skills gate on `/dayz-preflight` first per the L2 convention `skills/_share
 - `/dayz-health` and `/dayz-logwatch` (they only read gate results and logs).
 - `/dayz-route` (it only classifies the text of a request).
 - `/dayz-statusline` (it only edits a settings file).
+- `/dayz-animation-pipeline` (its scripts only read and write the model, image or JSON files named on the command line, or run inside Blender through the Blender MCP server; none needs DayZ Tools or the game).
+- `/dayz-model-tools` (its proxy scripts `proxy_extract.py`, `proxy_canon.py`, `proxy_viewer.py` and `proxy_apply.py`, and its p3d inspector scripts, only read and write the `.p3d`, JSON and HTML files named on the command line, and `install_py3d.py` only runs pip on the wheel inside the repo; its `worn_overlay.py` reads vanilla clothing and does gate on preflight when its `--dz` folder is on `P:\`).
 
-Reference-only skills such as `/dayz-particles` run no scripts, so they have no gate.
+Reference-only skills such as `/dayz-particles` run no scripts, so they have no gate. `/dayz-import-mod`, `/dayz-launch-test` and `/dayz-p3d-audit` gate through their main script; their offline helpers (`pbo_inventory.py`, the three vehicle checks) read only the files they are given.
+
+## Reference and tool skills
+
+Beside the workflow skills above, the repo carries reference and tool skills for single areas of modding, and knowledge packs under `skills/_shared/` that hold the facts. A specialist agent reads the ones for its area; you can also open any of them yourself, and `/dayz-route` sends a request for the reference or the tool to the skill and a request to build or fix something to the specialist. `/dayz-route` returns only the `dayz-*` skills in this table; it has no route to the packs, so open those yourself or reach them through the specialist.
+
+| Area | Skills and packs | Specialist that reads them |
+|---|---|---|
+| Planning a feature | `/dayz-scope-mod` ("Scoping a feature") | `dayz-mod-architect` |
+| Whole mod, implementing and debugging | `skills/dayz-launch-test/references/mod-loop.md`, `skills/dayz-scope-mod/references/implementation-protocol.md` | `dayz-script-specialist`, `dayz-mod-debugger` |
+| Recording a correction from a work session | `/dayz-record-correction` | none; you run it yourself |
+| Enforce Script | pack `skills/_shared/enscript/` (depth index `depth/README.md`) | `dayz-script-specialist` |
+| UI | `/dayz-layout-preview`, pack `skills/_shared/ui/` | `dayz-ui-specialist` |
+| Vehicles | `/dayz-p3d-audit` (vehicle checks), pack `skills/_shared/vehicles/` (a ripped car: `ripped-car-proxy-split.md`) (cars, motorbikes, aircraft) | `dayz-vehicle-specialist` |
+| Weapons | pack `skills/_shared/weapons/` | `dayz-weapon-specialist` |
+| Clothing | `/dayz-model-tools`, pack `skills/_shared/wearables/` | `dayz-wearables-specialist`, `dayz-object-builder` |
+| Models | `/dayz-model-tools`, pack `skills/_shared/models/` (generated model pipeline, 3D viewer tool, Blender building and review, AI generation, the gated build harness) | `dayz-object-builder`, `dayz-asset-specialist` |
+| Textures and materials | `/dayz-pack-texture`, pack `skills/_shared/textures/` | `dayz-asset-specialist` |
+| Animation and characters | `/dayz-animation-pipeline`, `/dayz-model-tools` (winding gate), packs `skills/_shared/animation/` and `skills/_shared/wearables/` (also Blender, motion checks, Mixamo and ARDY) | `dayz-animation-specialist` |
+| Doors | `skills/_shared/animation/building-doors.md`, `skills/_shared/animation/doors.md` | `dayz-object-builder`, `dayz-animation-specialist` |
+| Base building and saved data | pack `skills/_shared/persistence/`, offline models in `scripts/tools/dayz-persistence-contracts/` | `dayz-persistence-specialist` |
+| Underground and hazards | pack `skills/_shared/world/` | `dayz-map-specialist` |
+| Physics | pack `skills/_shared/physics/` | `dayz-physics-specialist` |
+| Sound | pack `skills/_shared/audio-fx/` | `dayz-audio-fx-specialist` |
+| AI | pack `skills/_shared/ai/` | `dayz-ai-specialist` |
+| Build and test | `/dayz-launch-test` (its `references/`, including the DayZ facts behind an in-game check), `/dayz-gate ingame`, `/dayz-logwatch`, `/dayz-import-mod` ("Studying a packed mod"), and the `dayz-testbridge` MCP tools to drive the running game (`skills/dayz-launch-test/references/test-bridge.md`) | `dayz-build-engineer`, `dayz-ingame-tester` |
+
+The deep material behind them is in the packs under `skills/_shared/` (index in `skills/_shared/README.md`) and each skill's own `references/` folder. Standalone tools the skills call live in `scripts/tools/`.
 
 ---
 
@@ -65,7 +94,7 @@ You need a Windows machine with:
 | **`P:\Mods\` junction** | One-time: `cmd /c mklink /J P:\Mods "<DayZ install>\!Workshop"` | The DayZ engine and Launcher load mods from `<DayZ install>\!Workshop\`. The `P:\Mods\` junction lets builds deploy via `P:\Mods\@<ModName>\Addons\<ModName>.pbo` and actually land where the engine reads. Build-pbo hard-fails if this junction is missing or points at a regular folder. |
 | **Vanilla DayZ data on `P:\`** | DayZ Tools → "Extract Game Data" | Configs in your mod inherit from base classes (`ItemBase`, `Inventory_Base`, etc.) which only exist if vanilla PBOs are unpacked. |
 | **Python 3.10+** on `PATH` | python.org | The skills are Python scripts. |
-| **Voyage AI API key** *(optional, only for RAG)* | Sign up at [dash.voyageai.com](https://dash.voyageai.com), add `VOYAGE_API_KEY=pa-…` to `.env` at the repo root | Powers `/dayz-search-index` and the `dayz-rag` MCP server. Enables semantic search ("how does vanilla handle X?") over the indexed source. Embeddings via `voyage-code-3` (code-tuned, 1024-dim), stored in LanceDB under `~/.claude/dayz-search-index/`. The last full source build (August 2026, before windowing) embedded about 66M tokens; the current indexer makes about 62,000 chunks, and its local estimate of about 96M tokens runs high. Without it, agents fall back to `Grep` on the documented vanilla paths — fully functional, just less smart. **Shortcut:** `/dayz-search-download` pulls a prebuilt index from GitHub releases with no embedding cost; queries still need the key. |
+| **Voyage AI API key** *(optional, only for RAG)* | Sign up at [dash.voyageai.com](https://dash.voyageai.com), add `VOYAGE_API_KEY=pa-…` to `.env` at the repo root | Powers `/dayz-search-index` and the `dayz-rag` MCP server. Enables semantic search ("how does vanilla handle X?") over the indexed source. Embeddings via `voyage-code-3` (code-tuned, 1024-dim), stored in LanceDB under `~/.claude/dayz-search-index/`. The last full source build (before windowing) embedded about 66M tokens; the current indexer makes about 77,600 chunks, and its local estimate of about 125M tokens runs high. Without it, agents fall back to `Grep` on the documented vanilla paths — fully functional, just less smart. **Shortcut:** `/dayz-search-download` pulls a prebuilt index from GitHub releases with no embedding cost; queries still need the key. |
 
 ---
 
@@ -131,137 +160,7 @@ For full per-skill argument detail, see the skill's `SKILL.md` or pass `--help` 
 
 ## The four skills in detail
 
-### `/dayz-preflight`
-
-Verifies the modding environment before any other DayZ skill runs. **Every other DayZ skill that does work calls this first** and propagates non-zero exit, except the documented exceptions listed at the top of this page (with reasons in `skills/_shared/dayz-conventions.md`).
-
-| Check | Severity |
-|---|---|
-| `P:\` mounted | **hard fail** — exit 1 |
-| `AddonBuilder.exe` locatable (env / registry / Steam paths) | warn |
-| Vanilla data on `P:\` (looks for `P:\dz`, `P:\DZ`, `P:\dta`) | warn |
-| `P:\Mods\` exists or can be created | warn (creates if missing) |
-
-Hard-fail message tells you to mount `P:\` via DayZ Tools.
-
-Path resolution order for DayZ Tools:
-
-1. `$DAYZ_TOOLS_PATH` env var
-2. Windows registry (HKLM/HKCU under `Bohemia Interactive\DayZ Tools`)
-3. Steam libraries: the Steam root from the registry (`HKCU\Software\Valve\Steam` SteamPath, `HKLM\SOFTWARE\WOW6432Node\Valve\Steam` InstallPath), then both defaults (`C:\Program Files (x86)\Steam`, `C:\Program Files\Steam`), which are always checked, plus every library listed in `steamapps\libraryfolders.vdf`, each checked for `steamapps\common\DayZ Tools`
-
-Path resolution order for vanilla data:
-
-1. `$DAYZ_VANILLA_DATA_PATH` env var
-2. Canonical names on `P:\`: `P:\dz`, `P:\DZ`, `P:\dta`
-
-Helper functions `find_dayz_tools()` and `find_vanilla_data()` are exported from `preflight.py` — every other DayZ skill imports them rather than re-implementing path discovery.
-
-### `/dayz-new-mod`
-
-Scaffolds a new mod project under `workspace/<ModName>/` and creates the `P:\<ModName>\` junction so AddonBuilder and the engine can find it.
-
-```cmd
-python skills\dayz-new-mod\new_mod.py <ModName> [--author "YourHandle"]
-```
-
-**Argument rules:**
-
-- `<ModName>` — folder name and `CfgPatches` class name. **Must start with a letter; letters, digits, underscores only; max 64 chars.** Hyphens are not allowed because the name doubles as a C-style identifier in `config.cpp` and the engine would reject the parse.
-- `--author` — written into `config.cpp` as the mod author. Cached on first run. **Resolution order:**
-  1. `--author` flag (also writes to cache)
-  2. Cached value at `.claude/local-memory/dayz-author.txt`
-  3. Interactive prompt if stdin is a TTY (writes to cache)
-  4. Hard fail with instructions
-
-**Files created:**
-
-```
-workspace/<ModName>/
-├── config.cpp                 # CfgPatches + CfgMods stub registering the script modules
-├── $PBOPREFIX$                # contains: <ModName>
-├── README.md                  # light onboarding notes
-├── scripts/
-│   ├── 3_Game/.gitkeep        # Enforce Script — base game logic
-│   ├── 4_World/.gitkeep       # Enforce Script — world-level logic
-│   └── 5_Mission/.gitkeep     # Enforce Script — mission/server scripts
-├── data/.gitkeep              # models (.p3d), textures (.paa), materials (.rvmat)
-├── gui/.gitkeep               # UI layouts (.layout) and controllers
-└── workbench/                 # dayz.gproj (mod paths + FileSystem mounts) + DayZSetting.xml for /dayz-launch-workbench --mod; README placeholder if DayZ Tools is missing
-```
-
-Plus a directory junction:
-
-```
-P:\<ModName>\  ->  workspace/<ModName>/   (symlink, falls back to junction on Windows)
-```
-
-**Refuse rules:**
-
-- Preflight returns non-zero (typically `P:\` not mounted).
-- Name fails the pattern.
-- `workspace/<ModName>/` already exists.
-- `P:\<ModName>\` exists as a real folder, or as a link pointing somewhere other than `workspace/<ModName>/`.
-- No author handle available and stdin not a TTY.
-
-**Stale-junction auto-clean:** if `P:\<ModName>\` exists as a junction whose target is the about-to-be-scaffolded `workspace/<ModName>/` (typically because the workspace was deleted but the junction wasn't), the skill removes the stale link and proceeds. Common cleanup case after `rm -rf workspace/<ModName>/`.
-
-### `/dayz-build-pbo`
-
-Packs the mod into a deployable `.pbo` via AddonBuilder.
-
-```cmd
-python skills\dayz-build-pbo\build.py <ModName> [--clean]
-```
-
-**Steps performed:**
-
-1. Validate `<ModName>`.
-2. `/dayz-lint` gate: any lint error refuses the build; warnings are printed.
-3. Preflight gate.
-4. Verify the `P:\Mods\` junction is valid (hard fail).
-5. Verify `workspace/<ModName>/config.cpp` and `workspace/<ModName>/$PBOPREFIX$` exist, and that `$PBOPREFIX$` contains exactly `<ModName>`.
-6. Verify `P:\<ModName>\` is a link pointing at `workspace/<ModName>/`.
-7. Resolve `AddonBuilder.exe` via `find_dayz_tools()`.
-8. Ownership-marker gate: refuse to build into a `P:\Mods\@<ModName>\` that Agentic-Z did not create. With `--clean`, also refuse while `Addons\` holds PBOs other than `<ModName>.pbo`.
-9. Ensure `P:\Mods\@<ModName>\Addons\` and `P:\temp\<ModName>\` exist, writing the marker when this run created `@<ModName>`.
-10. Copy the mod to `P:\temp\_stage\<ModName>\` without the files `exclude.lst` names, then invoke `AddonBuilder.exe P:\temp\_stage\<ModName> P:\Mods\@<ModName>\Addons -prefix=<ModName> -temp=P:\temp\<ModName> -include=<skill>\include.lst [-clear]`. It passes no `-exclude=`, because AddonBuilder 1.0.240639 crashes on that flag. AddonBuilder's stdout/stderr stream live so you see binarization progress and config errors as they happen.
-11. Verify `P:\Mods\@<ModName>\Addons\<ModName>.pbo` exists and was refreshed by this build.
-12. Remove the temp dir on success (kept on failure for debugging).
-
-**`--clean` flag** passes `-clear` to AddonBuilder, wiping `P:\Mods\@<ModName>\Addons\` before building. Useful after large refactors or when chasing stale-asset bugs. Refused while `Addons\` holds any `.pbo` other than `<ModName>.pbo` (deployed payload from `/dayz-deploy-pbo`), since `-clear` would wipe it; build without `--clean`, or remove those PBOs first and re-deploy afterwards.
-
-Default output is binarized. A `--no-binarize` flag is not exposed yet — easy to add later when iteration speed becomes a concern.
-
-### `/dayz-launch-test`
-
-Spins up a local development environment to test one or more built mods. **Always launches the server first**, then the client connecting to it — DayZ has no offline / single-player mode for mod testing.
-
-```cmd
-python skills\dayz-launch-test\launch.py <ModName> [<ModName2> ...] [--server-only <Mod> ...] [--server <instance>] [--port N] [--dry-run]
-```
-
-**Steps performed:**
-
-1. Preflight gate.
-2. For each mod, verify `P:\Mods\@<ModName>\Addons\` holds at least one `.pbo` (any name, so mods with several PBOs work). Fails with a hint to run `/dayz-build-pbo` if the folder is missing or has no `.pbo`.
-3. Resolve `DayZDiag_x64.exe` (env `DAYZ_DIAG_PATH` → DayZ game install → Steam fallbacks). **Hard-fail if missing.** Both server and client run from the same diag binary.
-4. **First-run only:** the instance must have been added via `/dayz-add-server <instance>`, which copies the mission template from DayZ Server's `mpmissions/<template>/` into `.server/<instance>/mission/`. After this initial copy, DayZ Server can be uninstalled.
-5. Verify `.server/<instance>/serverDZ.cfg` and `.server/<instance>/mission/` exist for the selected instance (default `chernarus`). The skill never edits the cfg: if it lacks an active `allowFilePatching = 1;` (missing, commented out or another value) or a `template = "...";` line, or the `<template>/` junction to `mission/` is missing, the launch is refused with a hint to run `/dayz-add-server <instance>`, which sets these up.
-6. Refuse if the port is already in use (not checked on `--dry-run`), then spawn the server: `DayZDiag_x64.exe -server -config=<instance>/serverDZ.cfg -profiles=<instance>/Profiles -mission=<instance>/<template> -mod=P:\Mods\@Mod1;P:\Mods\@Mod2 [-serverMod=P:\Mods\@ServerOnly1;...] -filePatching -port=<port>`. `-mission=` is the absolute `.server/<instance>/<template>` path (for example `dayzOffline.chernarusplus`), the junction to `mission/` that `/dayz-add-server` creates; without a path named after the template the client connects but never spawns.
-7. Wait (up to 180 seconds) until the server has bound its UDP port.
-8. Spawn the client: `DayZDiag_x64.exe -profiles=.server/!ClientDiagLogs -mod=P:\Mods\@Mod1;P:\Mods\@Mod2 -connect=127.0.0.1 -port=<port> -filePatching -window -x=<W> -y=<H>`. Windowed mode and resolution come from `.claude/local-memory/dayz-client-display.json`, created with `{"windowed": true, "width": 1920, "height": 1080}` on the first non-dry-run launch; edit it to change them (invalid contents fall back to the defaults). **The client must be DayZ Diag, not retail.** Retail `DayZ_x64.exe` blocks past the loading screen with `-filePatching`. The client `-profiles=` points at the shared top-level `.server/!ClientDiagLogs/` (vanilla naming convention; client diag artifacts don't need per-instance isolation).
-9. Print both PIDs and exit. **You close both windows manually** to stop them. (Or run `/dayz-stop-test`.)
-
-**`--server <instance>`** selects which instance to test on. Defaults to `chernarus`. The instance must have been added via `/dayz-add-server` first.
-
-**`--server-only <Mod> ...`** loads these mods on the server via `-serverMod=` and never on the client, for server-side mods that exit when loaded client-side. Their PBOs must exist. A mod cannot be named both as shared and as server-only.
-
-**`--dry-run`** prints the resolved server and client commands without launching. Useful for verifying paths and arg construction.
-
-**`--port`** overrides the default `2302`.
-
-**`-filePatching`** is set on both server and client so the engine reads raw `.cpp` / `.c` files from the `P:\<ModName>\` junction instead of only the binarized PBO. This lets you iterate on Enforce Script and configs without rebuilding the PBO every change. The PBO must still exist (the engine looks up the addon by name there) but the actual content can come from source.
+The step by step behaviour of `/dayz-preflight`, `/dayz-new-mod`, `/dayz-build-pbo` and `/dayz-launch-test` (checks, arguments, files created, refuse rules, launch commands) and the map of where their files live are in [`dayz-core-skills.md`](dayz-core-skills.md).
 
 ---
 
@@ -313,7 +212,7 @@ All DayZ skills resolve paths in this order: env var → Windows registry (Tools
 | `DAYZ_GAME_PATH` | DayZ game install (contains both `DayZ_x64.exe` retail and `DayZDiag_x64.exe`) | preflight, launch-test (used to find diag) |
 | `DAYZ_DIAG_PATH` | Direct path to `DayZDiag_x64.exe` if it lives outside the DayZ game install | launch-test |
 | `DAYZ_SERVER_PATH` | DayZ Server install (containing `DayZServer_x64.exe`). Read by `find_dayz_server()`; `/dayz-add-server` copies the mission template from it. `/dayz-launch-test` runs the diag build and does not use it. | `/dayz-add-server` |
-| `DAYZ_VANILLA_DATA_PATH` | Folder on `P:\` containing unpacked vanilla DayZ PBOs (default candidates: `P:\dz`, `P:\DZ`, `P:\dta`) | preflight, future skills that read vanilla configs |
+| `DAYZ_VANILLA_DATA_PATH` | Folder on `P:\` containing unpacked vanilla DayZ PBOs (default when unset: `P:\dz`, which also matches `P:\DZ` because Windows paths ignore case) | preflight, future skills that read vanilla configs |
 | `DAYZ_WORK_DRIVE` | Folder that WorkDrive mounts as `P:\`. If it is unset, the cached path from the last mount is used, then DayZ Tools' `settings.ini` `[ProjectDrive] path`. There is no default and no registry lookup: if none of these is found, `/dayz-workdrive` fails and asks for `--path`. | `/dayz-workdrive` |
 
 PowerShell example:
@@ -348,6 +247,7 @@ Two locations hold per-clone, gitignored, user/machine-specific state:
 | `.server/<instance>/serverDZ.cfg` | Per-instance server config. Tunable. | `/dayz-add-server` (default written on first add; preserved thereafter) |
 | `.server/<instance>/Profiles/` | Per-instance server `-profiles=` dir (RPT, script.log, BattlEye state). | `/dayz-add-server` (created empty); populated by `/dayz-launch-test` |
 | `.server/!ClientDiagLogs/` | Shared client `-profiles=` dir (RPT, BattlEye state, Users/, DataCache/). | `/dayz-add-server` (created empty); populated by `/dayz-launch-test` |
+| `.server/<instance>-bridge/` and `.server/!TestBridge/session.json` | The storage-free instance copy a `dayz-testbridge` session runs on, and the record of the running session (token, process ids, log offsets). | `dayz-testbridge` `session_start`; the record is deleted by `session_stop` |
 
 Override the author handle: `python skills\dayz-new-mod\new_mod.py MyMod --author "NewHandle"` (overwrites the cache) or delete `.claude/local-memory/dayz-author.txt`.
 
@@ -359,7 +259,7 @@ Override the author handle: `python skills\dayz-new-mod\new_mod.py MyMod --autho
 
 The core L2 rules live at `skills/_shared/dayz-conventions.md`; topic rules (config, assets, scripts, UI, server) live in `skills/_shared/conventions/`. The high-level rules:
 
-- **Every DayZ skill MUST gate on `/dayz-preflight`** at the start of execution and halt on non-zero exit, even offline scaffolding skills. The exceptions are the emergency stop (`/dayz-stop-test`), meta-skills that edit settings or rule files rather than DayZ content (`/dayz-scope-mod`, `/dayz-record-correction`), `/dayz-init` (runs preflight inside its own steps), `/dayz-workdrive` (mounts `P:\`), the gate itself (`/dayz-preflight`), `/dayz-search-download`, `/dayz-ask`, `/dayz-gate` (gates through the skills it runs), the read-only and report skills (`/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe`, `/dayz-layout-preview`, `/dayz-upgrade-guard`, `/dayz-release-pack`, `/dayz-server-kit`, `/dayz-health`, `/dayz-logwatch`), `/dayz-route` and `/dayz-statusline`. The reason for each is in `skills/_shared/dayz-conventions.md`. The discipline of "preflight first" keeps the workflow uniform and catches a dismounted drive at the first action of a session.
+- **Every DayZ skill MUST gate on `/dayz-preflight`** at the start of execution and halt on non-zero exit, even offline scaffolding skills. The exceptions are the emergency stop (`/dayz-stop-test`), meta-skills that edit settings or rule files rather than DayZ content (`/dayz-scope-mod`, `/dayz-record-correction`), `/dayz-init` (runs preflight inside its own steps), `/dayz-workdrive` (mounts `P:\`), the gate itself (`/dayz-preflight`), `/dayz-search-download`, `/dayz-ask`, `/dayz-gate` (gates through the skills it runs), the read-only and report skills (`/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe`, `/dayz-layout-preview`, `/dayz-upgrade-guard`, `/dayz-release-pack`, `/dayz-server-kit`, `/dayz-health`, `/dayz-logwatch`), `/dayz-route`, `/dayz-statusline`, and the tool skills whose scripts work offline on the files they are given (`/dayz-model-tools`, `/dayz-animation-pipeline`; the `worn_overlay.py` of `/dayz-model-tools` still gates when it reads from `P:\`). The reason for each is in `skills/_shared/dayz-conventions.md`. The discipline of "preflight first" keeps the workflow uniform and catches a dismounted drive at the first action of a session.
 - **`P:\` must be mounted** by DayZ Tools before any DayZ work. Preflight enforces.
 - **DayZ cannot be tested standalone.** A local server MUST be loaded with the same mod set as the client. `/dayz-launch-test` enforces; never launch the client alone for mod testing.
 - **Mod source under `workspace/<ModName>/`**. Built `.pbo` deploys to `P:\Mods\@<ModName>\Addons\`. Scaffold owns the `P:\<ModName>\` junction; build/test skills only verify it.
@@ -381,19 +281,19 @@ When a Superpowers workflow (`/brainstorming`, `/writing-plans`, `/executing-pla
 | scripting (Enforce Script) | `dayz-script-specialist` |
 | config / data (config.cpp, CfgVehicles, etc.) | `dayz-config-specialist` |
 | UI (`.layout`, widgets, HUD, menus, color theme) | `dayz-ui-specialist` |
-| 3D model (`.p3d`, LODs, named selections) | `dayz-object-builder` |
+| 3D model (`.p3d`, LODs, named selections, memory points, proxies, UV atlases, a Blender, FBX, GLB or AI-generated mesh) | `dayz-object-builder` |
 | textures / materials (`.paa`, `.rvmat`) | `dayz-asset-specialist` |
-| terrain / map / clutter | `dayz-map-specialist` |
+| terrain / map / clutter, underground areas, environmental hazards (sandstorm, heat stroke) | `dayz-map-specialist` |
 | server / Central Economy / `types.xml` / `init.c` | `dayz-server-admin` |
 | Workbench plugin (editor-time tooling) | `dayz-workbench-specialist` |
-| saving data across restarts, save versions, base building saves | `dayz-persistence-specialist` |
+| saving data across restarts, save versions, base building parts and saves | `dayz-persistence-specialist` |
 | infected, animals, patrols and guards | `dayz-ai-specialist` |
-| cars, boats and helicopters | `dayz-vehicle-specialist` |
+| cars, trucks, motorbikes, boats, helicopters and planes, importing a ripped car | `dayz-vehicle-specialist` |
 | weapons, magazines, ammo, attachments | `dayz-weapon-specialist` |
 | clothing, gear and characters | `dayz-wearables-specialist` |
-| moving parts, `model.cfg` animations, RTM | `dayz-animation-specialist` |
+| moving parts, doors, `model.cfg` animations, RTM and SEAnim, rigging a custom infected or survivor, Mixamo retargeting | `dayz-animation-specialist` |
 | sound sets, sound shaders, particles | `dayz-audio-fx-specialist` |
-| weight, collision, dropping and throwing | `dayz-physics-specialist` |
+| weight, collision, dropping, throwing and ragdolls | `dayz-physics-specialist` |
 | log / crash forensics (RPT, script.log, BattlEye) | `dayz-mod-debugger` |
 | README, changelog, Workshop text, server owner kit | `dayz-docs-writer` |
 | Figma → `.layout` conversion | `figma-node-normalizer` → `figma-to-dayz-layout` → `dayz-layout-validator` (gate mode), then `dayz-ui-specialist` for the widget script (in order) |
@@ -478,50 +378,3 @@ Checklist:
 ### `[FAIL] P:\<ModName> junction is missing` / junction got corrupted
 
 The mod folder is fine but the `P:\<ModName>\` link to it is gone. Run `/dayz-add-scaffold <ModName> --piece junction` to recreate it; your files in `workspace/<ModName>/` are not touched. If `P:\<ModName>\` still exists as a link pointing somewhere else, remove it first with `cmd /c rmdir P:\<ModName>` (this removes only the link, not the target), then run the same command.
-
----
-
-## Where everything lives (ASCII map)
-
-```
-<repo>/
-├── skills/
-│   ├── dayz-preflight/
-│   │   ├── SKILL.md
-│   │   └── preflight.py            # exports find_dayz_tools, find_dayz_game,
-│   │                               # find_dayz_diag, find_dayz_server,
-│   │                               # find_vanilla_data
-│   ├── dayz-new-mod/
-│   │   ├── SKILL.md
-│   │   └── new_mod.py
-│   ├── dayz-build-pbo/
-│   │   ├── SKILL.md
-│   │   └── build.py
-│   ├── dayz-launch-test/
-│   │   ├── SKILL.md
-│   │   └── launch.py
-│   └── _shared/
-│       ├── dayz-conventions.md      # L2 core rules every DayZ skill follows
-│       └── conventions/             # L2 topic rules (config, assets, scripts, ui, server)
-├── .claude/
-│   └── local-memory/                # gitignored, per-clone
-│       ├── dayz-author.txt
-│       ├── dayz-current-project.txt
-│       └── dayz-init-state.json
-├── workspace/
-│   └── <ModName>/                   # your mod source (created by /dayz-new-mod)
-├── .server/
-│   └── <instance>/                  # local test server (created by /dayz-add-server)
-└── docs/
-    └── dayz-modding.md              # this file
-```
-
-On `P:\`:
-
-```
-P:\
-├── <ModName>\           # junction → <repo>\workspace\<ModName>\  (created by /dayz-new-mod)
-├── Mods\@<ModName>\Addons\<ModName>.pbo    # built artifact (created by /dayz-build-pbo)
-├── temp\<ModName>\      # AddonBuilder temp (created and cleaned by /dayz-build-pbo)
-└── dz\                  # vanilla DayZ data (you extract this once via DayZ Tools)
-```

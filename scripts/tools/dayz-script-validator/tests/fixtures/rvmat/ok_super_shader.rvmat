@@ -1,0 +1,4 @@
+class Stage3
+{
+    shader = Super;
+};

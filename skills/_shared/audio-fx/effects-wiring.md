@@ -1,6 +1,6 @@
 # Effects wiring: sound plus particles
 
-How a sound and a particle are put on one device, and how config hooks sounds and particles to weapons and item events. The particle file and its registration are covered by `/dayz-particles`; open `dayz-particles/SKILL.md` and its `references/` files for `.ptc`, `.emat` and the particle API.
+How a sound and a particle are put on one device, and how config hooks sounds and particles to weapons and item events. The particle file and its registration are covered by `/dayz-particles`; open `dayz-particles/SKILL.md` and its `references/` files for `.ptc`, `.emat` and the particle API. Line numbers are from the 1.30 scripts on `P:\`; statements about 1.29, such as what a version added, are not yet checked on `P:\`.
 
 ## The vanilla generator: sound and smoke together
 
@@ -35,9 +35,22 @@ class EffGeneratorSmoke : EffectParticle
 2. Register a new particle in `3_Game` with a modded `ParticleList`, as the vanilla comment at `particlelist.c:3` to `9` shows: `static const int MYMOD_EXHAUST = RegisterParticle("MyMod/data/particles/", "mymod_exhaust");`. `RegisterParticle(string root_path, string file_name)` (line 452) lowercases both parts and takes the name without `.ptc`.
 3. Write a small `EffectParticle` subclass that calls `SetParticleID` with your ID, like `EffGeneratorSmoke`. Put it in `3_Game` or `4_World`.
 4. In the device, keep `ref Effect m_Smoke;`, start it with `SEffectManager.PlayOnObject` next to the loop sound, and free it with `SEffectManager.DestroyEffect` where the loop sound stops, and in the destructor or `EEDelete`.
-5. Wrap all of it in the client check (`!GetGame().IsDedicatedServer()`). Particles are client only like sounds (Tier 2, `conventions/scripts.md`).
+5. Wrap all of it in the client check (`!GetGame().IsDedicatedServer()`). Particles are client only like sounds (Tier 2, `conventions/scripts.md`). Since 1.30 vanilla particle code uses the wider `IsHeadlessOrDedicatedServer()`, which also skips headless clients: the particle pool is built only when it is false (`P:\scripts\3_game\particles\particlemanager\particlemanager.c:65`), and the particle patterns in `dayz-particles/references/integration-patterns.md` use it throughout. When one block starts both the sound and the particle, use the wider check for the whole block.
 
 The full device pattern for particles, with toggles and cleanup, is Pattern D in `dayz-particles/references/integration-patterns.md`. The sound side is in `sound-script.md`.
+
+## Effects the server starts
+
+A sound set and a particle both play on clients only, so the usual route is a synced state that each client reacts to (`sound-script.md`, "Starting a sound from the server"). Vanilla also has two ready made server routes:
+
+- Item sounds: `StartItemSoundServer(id)` sends the sound to every client by RPC. See `item-and-player-sounds.md`.
+- Short particle effects: `SEffectManager.CreateParticleServer(vector pos, EffecterParameters parameters)` creates an effecter entity on the server that shows the particle on nearby clients (`P:\scripts\3_game\effectmanager.c:586`). Vanilla uses it for tree cutting, fishing, fish traps and, since 1.30, ceiling dust. See `dayz-particles/references/dayz-1-30-particles.md`.
+
+Since 1.30 a surface can also name the sound that goes with its particle: `SurfaceInfo` has a sound set getter beside most of its particle getters, such as `GetWheelContactSoundSetName()` beside `GetWheelContactParticleId()` (`P:\scripts\3_game\surfaceinfo.c:54`). The full list of getters, and which ones have no sound set getter, is in `dayz-particles/references/dayz-1-30-particles.md`. The vanilla wheel contact effect reads both and creates the sound with `SEffectManager.CreateSound` (`P:\scripts\4_world\entities\effects\effwheelcontact.c:34`).
+
+## Weather sounds
+
+Weather sounds are config only; script does not start them. The weather class `Sandstorm` names three sound sets in `soundSets[]`: `SandStorm_Debris_SoundSet`, `SandStorm_Close_SoundSet` and `SandStorm_Dist_SoundSet` (`P:\DZ\data\config.cpp:1534` to `:1539`), next to its `particlePath` (`P:\DZ\data\config.cpp:1540`). The engine plays them with the weather. The visual side is in `dayz-particles/references/dayz-1-30-world-particles.md`, "Sandstorm", and what the sandstorm does to AI hearing is in `noise-for-ai.md`.
 
 ## Config hooks: sounds and particles without script
 
@@ -55,7 +68,7 @@ The full device pattern for particles, with toggles and cleanup, is Pattern D in
 
 ### Item animation events
 
-Items name sound sets for animation events under `class AnimEvents` and `class SoundWeapon`. `TShirt_ColorBase` (`P:\DZ\characters\tops\config.cpp:2244`) has `class AnimEvents` at line 2339 with `class pickUpItem { soundSet="Shirt_pickup_SoundSet"; id=797; };` (line 2345). The set is a normal sound set, `Shirt_pickup_SoundSet: baseCharacter_SoundSet` (`P:\DZ\sounds\hpp\config.cpp:321595`). To give a mod item its own pickup or drop sound, redeclare this block in its `CfgVehicles` class with the mod's own sound set, and keep the event class name and `id` as vanilla has them.
+Items name sound sets for animation events under `class AnimEvents` and `class SoundWeapon`. `TShirt_ColorBase` (`P:\DZ\characters\tops\config.cpp:2244`) has `class AnimEvents` at line 2339 with `class pickUpItem { soundSet="Shirt_pickup_SoundSet"; id=797; };` (line 2345). The set is a normal sound set, `Shirt_pickup_SoundSet: baseCharacter_SoundSet` (`P:\DZ\sounds\hpp\config.cpp:322265`). To give a mod item its own pickup or drop sound, redeclare this block in its `CfgVehicles` class with the mod's own sound set, and keep the event class name and `id` as vanilla has them.
 
 ## Hand to the in-game test
 

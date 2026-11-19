@@ -351,7 +351,14 @@ def add_missing_pieces(
     piece the writer skipped (workbench/ without DayZ Tools), leaves the links in place (the import itself succeeded), names what failed
     and how to retry, and returns 1.
     """
-    get_author = _scaffold.lazy_author(author)
+    resolve_author = _scaffold.lazy_author(author)
+    resolved: list[str] = []
+
+    def get_author() -> str:
+        handle = resolve_author()
+        resolved[:] = [handle]
+        return handle
+
     failed: list[str] = []
     for key, rel, _why in missing:
         if no_scaffold:
@@ -367,10 +374,14 @@ def add_missing_pieces(
             print(f"  {FAIL} Could not add {rel}: {e.code if isinstance(e, SystemExit) else e}")
             failed.append(key)
             continue
-        if result == _scaffold.SKIPPED:
-            # The writer printed why (e.g. DayZ Tools not detected for workbench/).
+        if result in (_scaffold.SKIPPED, _scaffold.WRONG):
+            # The writer printed why (e.g. DayZ Tools not detected for workbench/,
+            # or a file where the piece needs a folder).
             print(f"  {FAIL} Could not add {rel}: see the warning above.")
             failed.append(key)
+    if resolved:
+        # Cache the handle once the pieces using it were written, as /dayz-add-scaffold does.
+        _nm.remember_author(resolved[0])
     if not failed:
         return 0
     print()

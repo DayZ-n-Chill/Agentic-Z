@@ -159,7 +159,7 @@ def list_releases() -> list:
 def resolve_release_and_asset(tag: str | None) -> tuple[dict, dict]:
     """The release to install and its index asset. With an explicit tag, a
     release without an index asset is an error. Without one, a latest release
-    that shipped no index (1.2.2 did) falls back to the newest published
+    that shipped no index (1.2.2 and every release from v2.0.0 on did) falls back to the newest published
     release that has one, and says which tag it used."""
     release = resolve_release(tag)
     asset = match_asset(release)
@@ -501,7 +501,7 @@ def main(argv: list[str] | None = None) -> int:
         install(extracted, INDEX_ROOT, tag)
 
     report_installed(INDEX_ROOT)
-    log("OK", "Done. Restart Claude Code to reconnect the dayz-rag MCP server.")
+    log("OK", "Done. The dayz-rag MCP server picks up the new index on its next search.")
     return 0
 
 

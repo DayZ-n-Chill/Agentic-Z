@@ -7,7 +7,9 @@
 ## What you get
 
 - **A 30-agent mod team**: an orchestrator that plans and tracks a whole mod, a Haiku router that picks the handler for a request, team leads, specialists for scripts, configs, models, textures, UI, Figma, maps, server admin, Workbench plugins, saving data, AI, vehicles, weapons, wearables, animation, audio and effects, and physics, and gatekeepers that review, build and test every task in game before you see it.
-- **44 slash-command skills** (40 in the plugin, plus 4 clone-only template-maintenance skills) that drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc.
+- **46 slash-command skills** (42 in the plugin, plus 4 clone-only template-maintenance skills). 40 of them drive DayZ Tools end-to-end — preflight, scaffold, build PBOs, launch a local diag server + client, manage `types.xml`, scope the agent to a single mod, etc. The other 2 run the offline model and animation scripts; the facts every skill relies on live in the knowledge packs under `skills/_shared/`.
+- **Knowledge packs** under `skills/_shared/`: per-topic reference files the specialists load only when a task needs them (vehicles, models, animation, wearables, weapons, persistence, physics, audio and effects, textures, AI, Enforce Script, and single-file packs such as answer formatting, `Container_Base`, the Figma to DayZ rules and Linux with Proton). Facts about the game cite the vanilla file on `P:\` by path and line.
+- **Offline tools** under `scripts/tools/`: an Enforce Script, `.layout`, `config.cpp`, `inputs.xml` and `.rvmat` validator that `/dayz-lint` runs as its second stage, py3d for reading and writing MLOD `.p3d` models, model, layout and animation-format checkers, and viewers. [`docs/tools.md`](docs/tools.md) says which tool to reach for.
 - **A semantic-search RAG** over the vanilla DayZ source (Enforce Script, configs, layouts, materials), exposed through the `dayz-rag` MCP server to the specialists, reviewer, debugger, architect and layout agents. Embeddings via Voyage AI (`voyage-code-3`) stored in LanceDB; needs `VOYAGE_API_KEY` in `.env`. Skip the build with `/dayz-search-download`, which pulls the prebuilt index from GitHub releases.
 - **Three-CLI support out of the box.** The same skills and rules files work in Claude Code, Codex CLI, and Gemini CLI. One `sync-skills` run wires the skills up in all three. The agents, hooks and RAG server are Claude Code only.
 
@@ -64,7 +66,7 @@ Full prerequisites, env-var overrides, and troubleshooting: **[`docs/dayz-moddin
 | **Vanilla data on `P:\`** | DayZ Tools → "Extract Game Data". Your configs inherit from vanilla classes such as `Inventory_Base` and `Clothing`, and your scripts from `ItemBase`. |
 | **Python 3.10+** on `PATH` | The skills are Python scripts. |
 
-Search (optional) embeds through Voyage AI's hosted API (`voyage-code-3`, code-tuned, 1024-dim) and stores the vectors in LanceDB under `~/.claude/dayz-search-index/`, where the `dayz-rag` MCP server reads them. Install its Python packages once from the repo root with `pip install -r .claude\mcp\dayz-rag\requirements.txt -r skills\dayz-search-index\requirements.txt`. Add `VOYAGE_API_KEY=pa-…` to `.env` at the repo root; queries need it either way. The last full local build with `/dayz-search-index` (August 2026, before windowing) embedded about 52,000 chunks and about 66M tokens; the current indexer makes about 62,000 chunks, and its local estimate of about 96M tokens runs high, so check Voyage's pricing first. To skip the build, `/dayz-search-download` installs the prebuilt index from GitHub releases with no embedding cost.
+Search (optional) embeds through Voyage AI's hosted API (`voyage-code-3`, code-tuned, 1024-dim) and stores the vectors in LanceDB under `~/.claude/dayz-search-index/`, where the `dayz-rag` MCP server reads them. Install its Python packages once from the repo root with `pip install -r .claude\mcp\dayz-rag\requirements.txt -r skills\dayz-search-index\requirements.txt`. Add `VOYAGE_API_KEY=pa-…` to `.env` at the repo root; queries need it either way. The last full local build with `/dayz-search-index` (before windowing) embedded about 52,000 chunks and about 66M tokens; the current indexer makes about 77,600 chunks, and its local estimate of about 125M tokens runs high, so check Voyage's pricing first. To skip the build, `/dayz-search-download` installs the prebuilt index from GitHub releases with no embedding cost.
 
 ---
 
@@ -85,10 +87,11 @@ L3 files reference L2 in one line. The more specific tier wins ties. Corrections
 ```
 <repo>/
 ├── agents/                 # 30 agents: mod team, router, specialists, agent-creator (L3)
-├── skills/                 # 40 plugin slash-command skills (L3) + L2 shared conventions
+├── skills/                 # 42 plugin slash-command skills (L3) + L2 shared conventions
 │   ├── _shared/dayz-conventions.md   # L2 core
 │   ├── _shared/conventions/          # L2 topic files (config, assets, scripts, ui, server)
-│   └── dayz-*/             # one folder per DayZ skill
+│   ├── _shared/<topic>/    # knowledge packs (vehicles, models, animation, ...), indexed in _shared/README.md
+│   └── <skill>/            # one folder per skill (most are dayz-*)
 ├── .claude/
 │   ├── skills/             # 4 repo-only skills: agentic-z-update, clean-repo, docs-sync, sync-skills
 │   ├── mcp/dayz-rag/       # local RAG MCP server (search_dayz_source, get_dayz_file, ...)
@@ -97,6 +100,10 @@ L3 files reference L2 in one line. The more specific tier wins ties. Corrections
 │   └── settings.local.json # gitignored, per-clone Claude Code settings
 ├── AGENTS.md / GEMINI.md              # L1 rules for Codex and Gemini (same text as .claude/CLAUDE.md)
 ├── docs/                   # deep docs (DayZ workflow, model routing)
+├── evals/                  # answer tests per agent (questions/) and the files they read (fixtures/)
+├── scripts/
+│   ├── setup/ dayz/ dev/   # .bat wrappers around the skills, grouped by audience
+│   └── tools/              # offline Python tools (see docs/tools.md)
 ├── mods/agentic-z-panel/   # Claude Code panel plugin (one-click DayZ buttons)
 ├── workspace/              # in-progress mods (workspace/<ModName>/)
 ├── .server/                # local test-server instances (.server/<instance>/)
@@ -107,7 +114,7 @@ L3 files reference L2 in one line. The more specific tier wins ties. Corrections
 
 ## DayZ skills (slash commands)
 
-Most skills gate on `/dayz-preflight` first per L2 conventions. Exceptions, each with its reason, are listed in `skills/_shared/dayz-conventions.md`: `/dayz-stop-test` (escape hatch that must work even when the environment is broken), `/dayz-scope-mod` and `/dayz-record-correction` (they edit settings or rule files, not DayZ content), `/dayz-init` (runs preflight inside its own steps), `/dayz-workdrive` (it mounts the `P:\` that preflight checks), `/dayz-preflight` itself, `/dayz-gate` (it gates through the scripts it runs), `/dayz-search-download` (it only downloads a prebuilt index into `~/.claude/` and never reads or writes `P:\`), `/dayz-ask` (it only reads vanilla files and checks itself that `P:\` is mounted), the skills that only read files and write reports (`/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe`, `/dayz-layout-preview`, `/dayz-upgrade-guard`, `/dayz-release-pack`, `/dayz-server-kit`, `/dayz-health`, `/dayz-logwatch`), `/dayz-route` and `/dayz-statusline`.
+Most skills gate on `/dayz-preflight` first per L2 conventions. Exceptions, each with its reason, are listed in `skills/_shared/dayz-conventions.md`: `/dayz-stop-test` (escape hatch that must work even when the environment is broken), `/dayz-scope-mod` and `/dayz-record-correction` (they edit settings or rule files, not DayZ content), `/dayz-init` (runs preflight inside its own steps), `/dayz-workdrive` (it mounts the `P:\` that preflight checks), `/dayz-preflight` itself, `/dayz-gate` (it gates through the scripts it runs), `/dayz-search-download` (it only downloads a prebuilt index into `~/.claude/` and never reads or writes `P:\`), `/dayz-ask` (it only reads vanilla files and checks itself that `P:\` is mounted), the skills that only read files and write reports (`/dayz-lint`, `/dayz-balance`, `/dayz-conflict-check`, `/dayz-recipe`, `/dayz-layout-preview`, `/dayz-upgrade-guard`, `/dayz-release-pack`, `/dayz-server-kit`, `/dayz-health`, `/dayz-logwatch`), `/dayz-route` and `/dayz-statusline`. The model and animation tool skills that run offline scripts on the files they are given are listed there too, each with its reason.
 
 ### Front door
 
@@ -194,6 +201,15 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Exceptions, each
 | [`/dayz-p3d-audit`](skills/dayz-p3d-audit/SKILL.md) | Audit `.p3d` models for collision, action targeting, physics, animation issues. |
 | [`/dayz-particles`](skills/dayz-particles/SKILL.md) | Particle effect creation (`.ptc` / `.emat`) without Workbench. |
 
+### Model and animation tools
+
+These skills run offline scripts on the files they are given. The knowledge behind them lives in the packs under `skills/_shared/`, indexed in [`skills/_shared/README.md`](skills/_shared/README.md).
+
+| Command | Purpose |
+|---|---|
+| [`/dayz-model-tools`](skills/dayz-model-tools/SKILL.md) | Run the model scripts on source `.p3d` and `.blend` files: the p3d inspector (Recipe JSON, drag memory points, rebuild), the proxy editor, the clothing alignment viewer and FBX handoff, the winding gate, the clean UV atlas pipeline with its exact overlap gate, the `.p3d` to `.glb` browser preview, the Blender build helpers and render review, and the ripped car classification viewer. |
+| [`/dayz-animation-pipeline`](skills/dayz-animation-pipeline/SKILL.md) | Run the animation scripts: `model.cfg` from JSON, SEAnim and RTM files, the rider pose solver, weapon animation viewers, motion contract checks in Blender and Mixamo retargeting. |
+
 ### Search / RAG
 
 | Command | Purpose |
@@ -225,7 +241,7 @@ Most skills gate on `/dayz-preflight` first per L2 conventions. Exceptions, each
 | Command | Purpose |
 |---|---|
 | [`/sync-skills`](.claude/skills/sync-skills/SKILL.md) | Link `skills/` and `.claude/skills/` into each agent CLI's home dir. Required after clone. |
-| [`/agentic-z-update`](.claude/skills/agentic-z-update/SKILL.md) | Pull upstream template improvements into your clone without touching `workspace/`. |
+| [`/agentic-z-update`](.claude/skills/agentic-z-update/SKILL.md) | Pull the latest Agentic-Z template changes into your clone without touching `workspace/`. |
 | [`/docs-sync`](.claude/skills/docs-sync/SKILL.md) | Check the React wiki (its own private repo, `DayZ-n-Chill/Agentic-Z-Wiki`, cloned next to this one) against the source: every agent and skill is listed, counts match the repo and the grade files, and each graded item appears once in the grades tables; `--apply` updates only those computed counts. |
 | [`/clean-repo`](.claude/skills/clean-repo/SKILL.md) | Repo-wide cleanup orchestrator across every domain. |
 
@@ -243,7 +259,7 @@ For a whole mod, start the orchestrator as your main session: `claude --agent ag
 | [`dayz-lead`](agents/dayz-lead.md) | Runs one team (script, config, art, UI, server, release) and its gates. |
 | [`dayz-build-checker`](agents/dayz-build-checker.md) | Gate: the PBO builds with no AddonBuilder errors. |
 | [`dayz-ingame-tester`](agents/dayz-ingame-tester.md) | Gate: the mod loads on a diag server and client with clean logs. |
-| [`dayz-build-engineer`](agents/dayz-build-engineer.md) | Builds, launches test sessions and deploys after your yes. |
+| [`dayz-build-engineer`](agents/dayz-build-engineer.md) | Builds the PBO (or deploys a bundle), sets up the test server and launches a test session for you. |
 | [`dayz-docs-writer`](agents/dayz-docs-writer.md) | Keeps the mod's README, changelog and classname list current, and writes the Workshop text and server kit with `/dayz-release-pack` and `/dayz-server-kit`. |
 
 You can still call any specialist below directly for a single task.
@@ -254,17 +270,17 @@ You can still call any specialist below directly for a single task.
 |---|---|
 | [`dayz-script-specialist`](agents/dayz-script-specialist.md) | Enforce Script — modded classes, RPCs, replication, gameplay logic. |
 | [`dayz-config-specialist`](agents/dayz-config-specialist.md) | `config.cpp`, CfgPatches, CfgVehicles, inheritance, hidden selections. |
-| [`dayz-asset-specialist`](agents/dayz-asset-specialist.md) | `.p3d` / `.paa` / `.rvmat` and Workbench asset integration. |
+| [`dayz-asset-specialist`](agents/dayz-asset-specialist.md) | `.paa` textures (via `/dayz-pack-texture`) and `.rvmat` materials; `.p3d` goes to `dayz-object-builder`. |
 | [`dayz-object-builder`](agents/dayz-object-builder.md) | `.p3d` LODs, named selections, geometry, damage zones. |
 | [`dayz-map-specialist`](agents/dayz-map-specialist.md) | Terrain Builder, DayZ Editor, map objects, clutter, surfaces. |
 | [`dayz-ui-specialist`](agents/dayz-ui-specialist.md) | `.layout` files, widget scripting, HUD/menu, UI theme. |
-| [`dayz-server-admin`](agents/dayz-server-admin.md) | `types.xml`, `init.c`, `cfggameplay.json`, server performance. |
-| [`dayz-mod-debugger`](agents/dayz-mod-debugger.md) | Log/RPT/crash analysis, BattlEye diagnosis, performance profiling. |
+| [`dayz-server-admin`](agents/dayz-server-admin.md) | `types.xml`, `init.c`, `cfggameplay.json`, `events.xml`, spawns and `serverDZ.cfg`. |
+| [`dayz-mod-debugger`](agents/dayz-mod-debugger.md) | Log/RPT/crash analysis and BattlEye diagnosis; traces each failure to a file and line and names the owning worker. |
 | [`dayz-mod-reviewer`](agents/dayz-mod-reviewer.md) | Audit `workspace/<ModName>/` for convention compliance; routes findings. |
 | [`dayz-workbench-specialist`](agents/dayz-workbench-specialist.md) | Workbench plugin development (editor-time tooling). |
 | [`dayz-persistence-specialist`](agents/dayz-persistence-specialist.md) | Data that survives a server restart: `OnStoreSave` and `OnStoreLoad`, save versions, base building, the data audit before release. Script lead. |
 | [`dayz-ai-specialist`](agents/dayz-ai-specialist.md) | Infected, animals and human AI such as patrols and guards, written from scratch. Script lead. |
-| [`dayz-vehicle-specialist`](agents/dayz-vehicle-specialist.md) | Cars, boats and helicopters: engine, gearbox, wheels, doors, fluids, seats and damage. Config lead. |
+| [`dayz-vehicle-specialist`](agents/dayz-vehicle-specialist.md) | Cars, boats, helicopters and motorbikes: engine, gearbox, wheels, doors, fluids, seats and damage. Config lead. |
 | [`dayz-weapon-specialist`](agents/dayz-weapon-specialist.md) | Weapons, magazines, ammo, attachments, recoil and fire modes. Config lead. |
 | [`dayz-wearables-specialist`](agents/dayz-wearables-specialist.md) | Clothing, characters, inventory slots, protection, color variants and proxies. Art lead. |
 | [`dayz-animation-specialist`](agents/dayz-animation-specialist.md) | `model.cfg` animations, RTM files and the Blender handoff. Art lead. |
@@ -298,6 +314,8 @@ The full text lives in `.claude/CLAUDE.md` / `AGENTS.md` / `GEMINI.md`.
 - **[`docs/model-routing.md`](docs/model-routing.md)** — when to use Opus / Sonnet / Haiku and the subagent patterns.
 - **[`docs/evals.md`](docs/evals.md)**: answer tests that score each agent's answers, so a change can only keep or raise the score.
 - **[`docs/prompt-conventions.md`](docs/prompt-conventions.md)** — why agent and skill files use caps the way they do (RFC 2119 directives, when to cap, when to stay lowercase).
+- **[`skills/_shared/README.md`](skills/_shared/README.md)**: the index of every knowledge pack file and what it covers.
+- **[`docs/tools.md`](docs/tools.md)**: what each tool under `scripts/tools/` does, with tables that pick a tool by symptom and by task.
 - **The wiki** lives in its own private repo, `DayZ-n-Chill/Agentic-Z-Wiki` (React + MUI, Vite). `/docs-sync` checks it against this repo when it is cloned next to this one. The old Docusaurus wiki is archived in that repo too, under `archive/wiki-docusaurus/`.
 
 ---
@@ -334,7 +352,7 @@ The shipped configuration is the security baseline. **Tighten it for your enviro
 
 - **`.claude/settings.json`** (committed) — narrow Bash allowlist limited to running this repo's own skills (`Bash(python skills/*)`, `Bash(npm list *)`, etc.) plus an explicit deny list that blocks the dangerous escape hatches: `Bash(python -c *)`, `Bash(python -m *)`, `Bash(node -e *)`, `Bash(node -p *)`, `Bash(npm install *)`, `Bash(npx *)`. Editing this file affects every clone — keep allows narrow and prefer deny rules over removing them.
 - **`.claude/settings.local.json`** (gitignored, per-clone) — your machine-specific overrides. **Never set `dangerouslySkipPermissions: true` in a long-lived clone**; it bypasses every prompt including the deny list. Use `/fewer-permission-prompts` to build a real allowlist incrementally as you hit prompts.
-- **`agents/*.md`** — every agent declares an explicit `tools:` allowlist. Auditor/diagnostic agents cannot Edit/Write: `dayz-mod-debugger` also has no Bash, and `dayz-mod-reviewer` gets Bash only to run `/dayz-lint`. The two run-only gates (`dayz-build-checker`, `dayz-ingame-tester`) and `dayz-build-engineer` get Bash and Skill to run the build and test skills but no Edit/Write. `dayz-layout-validator` gets Bash and Skill to run the layout syntax check and preview but no Edit/Write; repairs go to `figma-to-dayz-layout`. `dayz-lead` can only read and start agents; `dayz-orchestrator` has the broadest list (including Bash and Agent) because it runs as your main session. Authoring specialists get Read/Write/Edit/Glob/Grep plus the `dayz-rag` MCP tools; `dayz-asset-specialist`, `dayz-object-builder`, `dayz-server-admin` and `dayz-ui-specialist` also get Bash and Skill, to run the texture, model, types.xml, imageset and layout preview skills; `dayz-script-specialist`, `dayz-persistence-specialist`, `dayz-vehicle-specialist`, `dayz-weapon-specialist` and `dayz-wearables-specialist` also get Bash and Skill, to run `/dayz-lint` on the mod's scripts (and `/dayz-particles` for weapons). `dayz-physics-specialist` gets Bash and Skill without Edit or Write, to run the model audit. `dayz-docs-writer` gets Read/Write/Edit/Glob/Grep for the docs plus Bash and Skill, used only to run `/dayz-release-pack` and `/dayz-server-kit` and a few read only `git status` and `git log` commands. None of the DayZ agents has network tools. The exceptions are `agent-creator`, which has WebFetch to read the official subagent spec, and `figma-node-normalizer`, which reads Figma through the Figma MCP server's read-only tools. Subagents inherit only what's listed — no implicit full-toolset escalation.
+- **`agents/*.md`** — every agent declares an explicit `tools:` allowlist. Auditor/diagnostic agents cannot Edit/Write: `dayz-mod-debugger` also has no Bash, and `dayz-mod-reviewer` gets Bash only to run `/dayz-lint`. The two run-only gates (`dayz-build-checker`, `dayz-ingame-tester`) and `dayz-build-engineer` get Bash and Skill to run the build and test skills but no Edit/Write. `dayz-layout-validator` gets Bash and Skill to run the layout syntax check and preview but no Edit/Write; repairs go to `figma-to-dayz-layout`. `dayz-lead` can only read and start agents; `dayz-orchestrator` has the broadest list (including Bash and Agent) because it runs as your main session. Authoring specialists get Read/Write/Edit/Glob/Grep plus the `dayz-rag` MCP tools; `dayz-asset-specialist`, `dayz-object-builder`, `dayz-server-admin` and `dayz-ui-specialist` also get Bash and Skill, to run the texture, model, types.xml, imageset and layout preview skills; `dayz-ai-specialist`, `dayz-script-specialist`, `dayz-persistence-specialist`, `dayz-vehicle-specialist`, `dayz-weapon-specialist` and `dayz-wearables-specialist` also get Bash and Skill, to run `/dayz-lint` on the mod's scripts (and `/dayz-particles` for weapons). `dayz-physics-specialist` gets Bash and Skill without Edit or Write, to run the model audit. `dayz-docs-writer` gets Read/Write/Edit/Glob/Grep for the docs plus Bash and Skill, used only to run `/dayz-release-pack` and `/dayz-server-kit` and a few read only `git status` and `git log` commands. None of the DayZ agents has network tools. The exceptions are `agent-creator`, which has WebFetch to read the official subagent spec, and `figma-node-normalizer`, which reads Figma through the Figma MCP server's read-only tools. Subagents inherit only what's listed — no implicit full-toolset escalation.
 
 If you fork the repo to publish a downstream variant, run `git diff main -- .claude/settings.json agents/` before pushing and convince yourself any widened permissions are intentional.
 
@@ -351,6 +369,16 @@ Agentic-Z collects no personal data, sends no telemetry, and keeps nothing on an
 
 ---
 
+## Thank you, DayZ community
+
+Agentic-Z exists because of the DayZ modding community. Over the years, modders, server owners, testers and players have shared their findings, answered questions, published tools and taken apart problems in the open. That shared knowledge is a big part of what made this project possible.
+
+To everyone who has ever posted a fix, written a guide, shared a config, or helped a stranger get their mod to load: thank you. We love this community, and we're grateful for every bit of help along the way.
+
+— DayZ n' Chill
+
 ## License
 
 See [`LICENSE`](LICENSE). Copyright (c) 2026 DayZ n' Chill. Source available for non-commercial use only. You may use it free of charge to develop DayZ mods, but you may not sell it, sell services that use it, or make money from anything made with it.
+
+Material from other projects keeps its own license; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
